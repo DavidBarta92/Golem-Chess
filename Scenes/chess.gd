@@ -365,11 +365,40 @@ func get_king_moves(piece_position : Vector2):
 	
 	return _moves
 	
+func get_directions_from_matrix(matrix: Array) -> Array:
+	var directions := []
+	var rows := matrix.size()
+	if rows == 0:
+		return directions
+	var cols: int = matrix[0].size()
+	var center_x := int(rows / 2)
+	var center_y := int(cols / 2)
+
+	for x in range(rows):
+		for y in range(cols):
+			if x == center_x and y == center_y:
+				continue
+			if matrix[x][y] == 1:
+				var offset := Vector2(center_x - x, y - center_y)
+				directions.append(offset)
+
+	return directions
+	
 func get_knight_moves(piece_position : Vector2):
 	var _moves = []
-	var directions = [Vector2(2, 1), Vector2(2, -1), Vector2(1, 2), Vector2(1, -2),
-	Vector2(-2, 1), Vector2(-2, -1), Vector2(-1, 2), Vector2(-1, -2)]
+	var teszt_array = [
+	[0,0,0,0,1],
+	[0,1,1,1,0],
+	[0,1,0,1,0],
+	[0,1,1,1,0],
+	[0,0,0,0,0]
+	]
 	
+	var dir = get_directions_from_matrix(teszt_array)
+	print(dir)
+	
+	var directions = dir
+	print(directions)
 	for i in directions:
 		var pos = piece_position + i
 		if is_valid_position(pos):
