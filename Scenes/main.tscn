@@ -1,5 +1,6 @@
-[gd_scene load_steps=26 format=3 uid="uid://cwftxr73pdl8"]
+[gd_scene load_steps=27 format=3 uid="uid://cwftxr73pdl8"]
 
+[ext_resource type="Script" uid="uid://bmwxm03yki7x2" path="res://Scenes/Multiplayer.gd" id="1_hptm8"]
 [ext_resource type="PackedScene" uid="uid://cc03qg5anporg" path="res://Scenes/board.tscn" id="1_jjgbg"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="1_ynf5e"]
 [ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="2_hptm8"]
@@ -57,6 +58,7 @@ texture = ExtResource("7_wsu2k")
 texture = ExtResource("8_k12tt")
 
 [node name="Main" type="Node2D"]
+script = ExtResource("1_hptm8")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(72, -72)
