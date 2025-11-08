@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://cwftxr73pdl8"]
+[gd_scene load_steps=28 format=3 uid="uid://cwftxr73pdl8"]
 
 [ext_resource type="Script" uid="uid://bmwxm03yki7x2" path="res://Scenes/Multiplayer.gd" id="1_hptm8"]
 [ext_resource type="PackedScene" uid="uid://cc03qg5anporg" path="res://Scenes/board.tscn" id="1_jjgbg"]
@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="6_jkdf5"]
 [ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="7_wsu2k"]
 [ext_resource type="Texture2D" uid="uid://c56dxei2cm0ig" path="res://Assets/black_queen.png" id="8_k12tt"]
+[ext_resource type="Texture2D" uid="uid://5ia02q3iu1vp" path="res://Assets/Chess_board_new.png" id="11_d1ilt"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_h1bgf"]
 texture = ExtResource("1_ynf5e")
@@ -62,6 +63,7 @@ script = ExtResource("1_hptm8")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(72, -72)
+ignore_rotation = false
 zoom = Vector2(3, 3)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
@@ -183,3 +185,4 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
 [node name="board" parent="." instance=ExtResource("1_jjgbg")]
+texture = ExtResource("11_d1ilt")

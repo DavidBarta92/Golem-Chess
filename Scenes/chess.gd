@@ -1,6 +1,6 @@
 extends Sprite2D
 
-const BOARD_SIZE = 8
+const BOARD_SIZE = 5
 const CELL_WIDTH = 18
 
 const TEXTURE_HOLDER = preload("res://Scenes/texture_holder.tscn")
@@ -78,15 +78,12 @@ func set_turn(_turn):
 		$"../Camera2D".global_rotation_degrees = 180
 
 func _ready():
-	board.append([4, 2, 3, 5, 6, 3, 2, 4])
-	board.append([1, 1, 1, 1, 1, 1, 1, 1])
-	board.append([0, 0, 0, 0, 0, 0, 0, 0])
-	board.append([0, 0, 0, 0, 0, 0, 0, 0])
-	board.append([0, 0, 0, 0, 0, 0, 0, 0])
-	board.append([0, 0, 0, 0, 0, 0, 0, 0])
-	board.append([-1, -1, -1, -1, -1, -1, -1, -1])
-	board.append([-4, -2, -3, -5, -6, -3, -2, -4])
-	
+	board.append([1, 1, 1, 1, 1])
+	board.append([0, 0, 0, 0, 0])
+	board.append([0, 0, 0, 0, 0])
+	board.append([0, 0, 0, 0, 0])
+	board.append([-1, -1, -1, -1, -1,])
+
 	var white_buttons = get_tree().get_nodes_in_group("white_pieces")
 	var black_buttons = get_tree().get_nodes_in_group("black_pieces")
 	
@@ -101,8 +98,9 @@ func _input(event):
 		if event is InputEventMouseButton && event.pressed && promotion_square == null:
 			if event.button_index == MOUSE_BUTTON_LEFT:
 				if is_mouse_out(): return
-				var var1 = snapped(get_global_mouse_position().x, 0) / CELL_WIDTH
-				var var2 = abs(snapped(get_global_mouse_position().y, 0)) / CELL_WIDTH
+				var local_pos = to_local(get_global_mouse_position())
+				var var1 = int(local_pos.x / CELL_WIDTH)
+				var var2 = int(abs(local_pos.y) / CELL_WIDTH)
 				if !state && (white && board[var2][var1] > 0 || !white && board[var2][var1] < 0):
 					selected_piece = Vector2(var2, var1)
 					show_options()
@@ -129,8 +127,10 @@ func display_board():
 			var holder = TEXTURE_HOLDER.instantiate()
 			if !side:
 				holder.global_rotation_degrees = 180
+				$"../Camera2D".global_rotation_degrees = 180
 			pieces.add_child(holder)
-			holder.global_position = Vector2(j * CELL_WIDTH + (CELL_WIDTH / 2), -i * CELL_WIDTH - (CELL_WIDTH / 2))
+			var offset = -(BOARD_SIZE * CELL_WIDTH) / 2.0
+			holder.position = Vector2(j * CELL_WIDTH + (CELL_WIDTH / 2) + offset, -i * CELL_WIDTH - (CELL_WIDTH / 2) - offset)
 			
 			match board[i][j]:
 				-6: holder.texture = BLACK_KING
@@ -162,7 +162,8 @@ func show_dots():
 		var holder = TEXTURE_HOLDER.instantiate()
 		dots.add_child(holder)
 		holder.texture = PIECE_MOVE
-		holder.global_position = Vector2(i.y * CELL_WIDTH + (CELL_WIDTH / 2), -i.x * CELL_WIDTH - (CELL_WIDTH / 2))
+		var offset = -(BOARD_SIZE * CELL_WIDTH) / 2.0
+		holder.position = Vector2(i.y * CELL_WIDTH + (CELL_WIDTH / 2) + offset, -i.x * CELL_WIDTH - (CELL_WIDTH / 2) - offset)
 
 func delete_dots():
 	for child in dots.get_children():
