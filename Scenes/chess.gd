@@ -85,7 +85,7 @@ func assign_test_cards():
 	
 func _input(event):
 	if side != null && side == white:
-		if event is InputEventMouseButton && event.pressed == null:
+		if event is InputEventMouseButton && event.pressed:
 			if event.button_index == MOUSE_BUTTON_LEFT:
 				if is_mouse_out(): return
 				var local_pos = to_local(get_global_mouse_position())
@@ -226,12 +226,12 @@ func get_card_based_moves(piece_position: Vector2, piece: Piece) -> Array:
 			continue
 		
 		if is_empty(target_pos) || is_enemy(target_pos):
-			# Szimuláljuk a lépést és ellenőrizzük a sakkot
 			var original_value = board[target_pos.x][target_pos.y]
 			board[target_pos.x][target_pos.y] = board[piece_position.x][piece_position.y]
 			board[piece_position.x][piece_position.y] = 0
 			
-			# Visszaállítjuk
+			_moves.append(target_pos)
+			
 			board[piece_position.x][piece_position.y] = board[target_pos.x][target_pos.y]
 			board[target_pos.x][target_pos.y] = original_value
 	
