@@ -3,7 +3,6 @@ extends Node2D
 var multiplayer_peer = ENetMultiplayerPeer.new()
 var is_server = false
 
-# Szerver változók
 var connected_peer_ids = []
 var server_turn = true
 
@@ -34,7 +33,6 @@ func host_game(port = 9999):
 	
 	print("✓ Szerver elindult a %d porton" % port)
 	
-	# A szerver hozzáadja magát játékosként
 	_on_peer_connected(1)
 	return true
 
@@ -64,13 +62,12 @@ func _on_peer_connected(peer_id):
 		
 		if connected_peer_ids.size() == 2:
 			print("⚔ Játék kezdődik!")
-			# Az első játékos (szerver) közvetlenül beállítja
+
 			if connected_peer_ids[0] == 1:
 				$board.set_turn(server_turn)
 			else:
 				give_turn.rpc_id(connected_peer_ids[0], server_turn)
 			
-			# A második játékos (kliens) RPC-vel kapja
 			give_turn.rpc_id(connected_peer_ids[1], !server_turn)
 
 func _on_peer_disconnected(peer_id):
@@ -91,12 +88,15 @@ func _on_server_disconnected():
 	print("✗ A szerver lecsatlakozott!")
 
 func send_move(start_pos, end_pos, promotion = null):
+	print("📤 send_move() hívva: ", start_pos, " → ", end_pos, " my_id=", multiplayer.get_unique_id())
 	send_move_info.rpc_id(1, multiplayer.get_unique_id(), start_pos, end_pos, promotion)
 
 @rpc("any_peer", "call_local", "reliable")
 func send_move_info(id, start_pos, end_pos, promotion):
-	# Ez csak a szerveren fut
+	print("🔧 send_move_info() - id=", id, " server_turn=", server_turn, " connected[0]=", connected_peer_ids[0], " connected[1]=", connected_peer_ids[1], " is_server=", is_server)
+	
 	if !is_server || connected_peer_ids.size() < 2:
+		print("⚠️ SKIP: is_server=", is_server, " conn_size=", connected_peer_ids.size())
 		return
 	
 	if id == connected_peer_ids[0] && server_turn:
@@ -110,11 +110,10 @@ func send_move_info(id, start_pos, end_pos, promotion):
 
 @rpc("authority", "call_local", "reliable")
 func return_enemy_move(start_pos, end_pos, promotion):
-	# Ez a klienseken fut
+	print("📥 return_enemy_move() MEGÉRKEZETT: ", start_pos, " → ", end_pos, " my_id=", multiplayer.get_unique_id())
 	$board.set_move(start_pos, end_pos, promotion)
 
 @rpc("authority", "call_remote", "reliable")
 func give_turn(turn):
-	# Ez a klienseken fut (beleértve a szerver-klienst is)
 	print("🎮 Kaptam színt: %s" % ("Fehér" if turn else "Fekete"))
 	$board.set_turn(turn)

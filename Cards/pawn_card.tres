@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="Card" load_steps=2 format=3 uid="uid://1ee03folo1hn"]
+
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="1_nm70a"]
+
+[resource]
+script = ExtResource("1_nm70a")
+duration = 1
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"
