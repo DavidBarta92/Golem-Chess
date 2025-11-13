@@ -40,9 +40,13 @@ var side #white - true, black - false
 
 func set_turn(_turn):
 	side = _turn
-	display_board()
-	if !side:
+	print("🎯 set_turn() hívva: side=", side)
+	
+	# Csak a kamerát állítjuk, a bábuk már frissültek
+	if side != null && !side:
 		$"../Camera2D".global_rotation_degrees = 180
+	else:
+		$"../Camera2D".global_rotation_degrees = 0
 
 func _ready():
 	board.append([1, 1, 1, 1, 1])
@@ -65,24 +69,6 @@ func create_pieces_from_board():
 				piece_objects[pos] = piece
 				print("🔷 Piece létrehozva: pos=%s, color=%s" % [pos, "fehér" if color > 0 else "fekete"])
 	
-	# TESZT: Adjunk kártyákat néhány bábuhoz
-	assign_test_cards()
-
-func assign_test_cards():
-	# Fehér bábuhoz Knight kártya
-	if piece_objects.has(Vector2(0, 1)):
-		var knight_card = CardLibrary.get_card("Knight")
-		if knight_card:
-			piece_objects[Vector2(0, 1)].attach_card(knight_card)
-	
-	# Fekete bábuhoz Rook kártya
-	if piece_objects.has(Vector2(4, 2)):
-		var rook_card = CardLibrary.get_card("Rook")
-		if rook_card:
-			piece_objects[Vector2(4, 2)].attach_card(rook_card)
-	
-	print("🎴 Teszt kártyák hozzárendelve!")
-	
 func _input(event):
 	if side != null && side == white:
 		if event is InputEventMouseButton && event.pressed:
@@ -101,23 +87,55 @@ func _input(event):
 				
 				if var1 < 0 || var1 >= BOARD_SIZE || var2 < 0 || var2 >= BOARD_SIZE:
 					return
-					
+				
+				var clicked_pos = Vector2(var2, var1)
+				
+				# Első kattintás: bábu kiválasztása
 				if !state && (white && board[var2][var1] > 0 || !white && board[var2][var1] < 0):
-					selected_piece = Vector2(var2, var1)
-					show_options()
-					state = true
+					print("🔍 Kiválasztás próba: pos=", clicked_pos)
+					print("  piece_objects.has?", piece_objects.has(clicked_pos))
+	
+					if piece_objects.has(clicked_pos):
+						var piece = piece_objects[clicked_pos]
+						print("  Piece info:", piece.get_info() if piece.has_method("get_info") else "N/A")
+						print("  can_move?", piece.can_move())
+						print("  attached_card:", piece.attached_card)
+						print("  turns_remaining:", piece.turns_remaining)
+		
+						if piece.can_move():
+							selected_piece = clicked_pos
+							show_options()
+							state = true
+						else:
+							print("⚠️ Nincs használható kártya ezen a bábun")
+					else:
+						print("  ❌ Nincs piece_objects-ben!")
+				
+				# Második kattintás: lépés végrehajtása
 				elif state:
-					if moves.has(Vector2(var2, var1)):
-						get_parent().send_move(selected_piece, Vector2(var2, var1))
-						set_move(selected_piece, Vector2(var2, var1))
-						
+					if moves.has(clicked_pos):
+						# Küldjük a lépést a szervernek
+						send_move_action(selected_piece, clicked_pos)
+					
 					delete_dots()
 					state = false
-			
+
+func send_move_action(from: Vector2, to: Vector2):
+	var player_id = 0 if side else 1
+	var action = {
+		"type": "move_piece",
+		"player_id": player_id,
+		"from": from,
+		"to": to
+	}
+	
+	print("📤 Lépés action küldése: ", action)
+	GameController.send_action(action)
+	
 func is_mouse_out():
 	if get_rect().has_point(to_local(get_global_mouse_position())): return false
 	return true
-
+	
 func display_board():
 	print("🎨 display_board() hívva: white=", white, " side=", side)
 	for child in pieces_node.get_children():
@@ -305,3 +323,34 @@ func is_stalemate():
 				if board[i][j] < 0:
 					if get_moves(Vector2(i, j)) != []: return false
 	return true
+
+# Szerver state alapján frissítés
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int):
+	print("🔄 Board frissítése szerver state-ből")
+	print("📦 Kapott pieces_data:")
+	for pos in pieces_data:
+		print("  ", pos, " -> ", pieces_data[pos])
+	
+	# Piece objektumok frissítése
+	piece_objects.clear()
+	
+	for pos in pieces_data:
+		var data = pieces_data[pos]
+		var piece = Piece.new(data.position, data.color)
+		
+		# Kártya csatolása ha van
+		if data.card_name != "":
+			var card = CardLibrary.get_card(data.card_name)
+			if card:
+				piece.attach_card(card)
+				piece.turns_remaining = data.turns_remaining
+				print("  🎴 Piece-hez kártya csatolva: pos=%s, card=%s, turns=%d" % [pos, data.card_name, data.turns_remaining])
+		
+		piece_objects[pos] = piece
+	
+	print("  ✅ %d piece frissítve" % piece_objects.size())
+	print("  🃏 Fehér kéz: ", player_hands[0])
+	print("  🃏 Fekete kéz: ", player_hands[1])
+	
+	# Újrarajzoljuk a táblát
+	display_board()

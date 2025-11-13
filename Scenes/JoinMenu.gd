@@ -10,8 +10,8 @@ func _on_connect_button_pressed():
 	print("Csatlakozás IP-hez: ", ip)
 	
 	# Beállítjuk a GameState-ben
-	GameState.is_hosting = false
-	GameState.server_ip = ip
+	GameConfig.is_hosting = false
+	GameConfig.server_ip = ip
 	
 	# Betöltjük a játékot
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")

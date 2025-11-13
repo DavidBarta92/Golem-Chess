@@ -6,16 +6,18 @@ var is_server = false
 var connected_peer_ids = []
 var server_turn = true
 
+var game_host: NetworkGameHost = null
+
 func _ready():
 	# Várunk egy kicsit, hogy a board betöltődjön
 	await get_tree().create_timer(0.1).timeout
 	
-	if GameState.is_hosting:
+	if GameConfig.is_hosting:
 		print("🎮 Host módban indulunk")
-		host_game(GameState.server_port)
+		host_game(GameConfig.server_port)
 	else:
-		print("🎮 Join módban indulunk - IP: %s" % GameState.server_ip)
-		join_game(GameState.server_ip, GameState.server_port)
+		print("🎮 Join módban indulunk - IP: %s" % GameConfig.server_ip)
+		join_game(GameConfig.server_ip, GameConfig.server_port)
 
 func host_game(port = 9999):
 	var error = multiplayer_peer.create_server(port, 2, 0, 0, 0)
@@ -33,9 +35,13 @@ func host_game(port = 9999):
 	
 	print("✓ Szerver elindult a %d porton" % port)
 	
+	# ÚJ: NetworkGameHost inicializálás
+	game_host = NetworkGameHost.new(self)
+	GameController.set_game_host(game_host)
+	
 	_on_peer_connected(1)
 	return true
-
+	
 func join_game(ip, port = 9999):
 	var error = multiplayer_peer.create_client(ip, port)
 	if error != OK:
@@ -62,7 +68,11 @@ func _on_peer_connected(peer_id):
 		
 		if connected_peer_ids.size() == 2:
 			print("⚔ Játék kezdődik!")
-
+			
+			# ÚJ: Game state inicializálás a board adatokkal
+			var board_data = $board.board  # A chess.gd board változója
+			game_host.initialize_game(board_data)
+			
 			if connected_peer_ids[0] == 1:
 				$board.set_turn(server_turn)
 			else:
@@ -107,13 +117,39 @@ func send_move_info(id, start_pos, end_pos, promotion):
 		print("♟ Fekete lépett: %s → %s" % [start_pos, end_pos])
 		return_enemy_move.rpc_id(connected_peer_ids[0], start_pos, end_pos, promotion)
 		server_turn = !server_turn
-
+		
 @rpc("authority", "call_local", "reliable")
 func return_enemy_move(start_pos, end_pos, promotion):
 	print("📥 return_enemy_move() MEGÉRKEZETT: ", start_pos, " → ", end_pos, " my_id=", multiplayer.get_unique_id())
 	$board.set_move(start_pos, end_pos, promotion)
-
+	
 @rpc("authority", "call_remote", "reliable")
 func give_turn(turn):
 	print("🎮 Kaptam színt: %s" % ("Fehér" if turn else "Fekete"))
 	$board.set_turn(turn)
+	
+@rpc("authority", "call_remote", "reliable")
+func receive_game_state(state_data: Dictionary):
+	print("📥 Game state érkezett a szervertől")
+	print("  Pieces: ", state_data.pieces.size())
+	print("  Fehér kéz: ", state_data.player_hands[0])
+	print("  Fekete kéz: ", state_data.player_hands[1])
+	
+	# Deserializáljuk és alkalmazzuk
+	apply_game_state(state_data)
+
+func apply_game_state(state_data: Dictionary):
+	# Pieces frissítése a board-on
+	var pieces_data = {}
+	
+	for piece_data in state_data.pieces:  # <-- Most már Array
+		var pos = Vector2(piece_data.position[0], piece_data.position[1])
+		pieces_data[pos] = {
+			"position": pos,
+			"color": piece_data.color,
+			"card_name": piece_data.card_name,
+			"turns_remaining": piece_data.turns_remaining
+		}
+	
+	# Küldjük a board-nak frissítésre
+	$board.update_from_server_state(pieces_data, state_data.player_hands, state_data.current_turn)

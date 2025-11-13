@@ -17,8 +17,9 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GameState="*res://GameState.gd"
 CardLibrary="*res://Scripts/CardLibrary.gd"
+GameConfig="*res://GameConfig.gd"
+GameController="*res://Scripts/GameController.gd"
 
 [rendering]
 
