@@ -171,18 +171,21 @@ func display_board():
 
 func show_options():
 	moves = get_moves(selected_piece)
+	print("🎯 show_options() - mozgási lehetőségek: ", moves)
 	if moves == []:
 		state = false
 		return
 	show_dots()
 	
 func show_dots():
+	print("🔵 show_dots() - pontok megjelenítése: ", moves.size(), " darab")
 	for i in moves:
 		var holder = TEXTURE_HOLDER.instantiate()
 		dots.add_child(holder)
 		holder.texture = PIECE_MOVE
 		var offset = -(BOARD_SIZE * CELL_WIDTH) / 2.0
 		holder.position = Vector2(i.y * CELL_WIDTH + (CELL_WIDTH / 2) + offset, -i.x * CELL_WIDTH - (CELL_WIDTH / 2) - offset)
+		print("  🔵 Pont pozíció: ", holder.position)
 
 func delete_dots():
 	for child in dots.get_children():
@@ -208,7 +211,8 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	if piece_objects.has(end_pos): 
 		var piece = piece_objects[end_pos]
 		if piece.attached_card:
-			piece.use_turn()
+			if piece.turns_remaining != -1:  # Ha nem végtelen
+				piece.use_turn()
 	
 	display_board()
 	
@@ -331,7 +335,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	for pos in pieces_data:
 		print("  ", pos, " -> ", pieces_data[pos])
 	
-	# Piece objektumok frissítése
+	# Piece objektumok TELJES frissítése
 	piece_objects.clear()
 	
 	for pos in pieces_data:

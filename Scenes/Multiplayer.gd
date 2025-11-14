@@ -35,7 +35,7 @@ func host_game(port = 9999):
 	
 	print("✓ Szerver elindult a %d porton" % port)
 	
-	# ÚJ: NetworkGameHost inicializálás
+	# NetworkGameHost inicializálás
 	game_host = NetworkGameHost.new(self)
 	GameController.set_game_host(game_host)
 	
@@ -69,10 +69,14 @@ func _on_peer_connected(peer_id):
 		if connected_peer_ids.size() == 2:
 			print("⚔ Játék kezdődik!")
 			
-			# ÚJ: Game state inicializálás a board adatokkal
-			var board_data = $board.board  # A chess.gd board változója
+			# Game state inicializálás a board adatokkal
+			var board_data = $board.board
 			game_host.initialize_game(board_data)
 			
+			# 🔥 ÚJ: Várunk egy kicsit hogy a broadcast lefusson
+			await get_tree().create_timer(0.2).timeout
+			
+			# Körök kiosztása
 			if connected_peer_ids[0] == 1:
 				$board.set_turn(server_turn)
 			else:
@@ -139,10 +143,12 @@ func receive_game_state(state_data: Dictionary):
 	apply_game_state(state_data)
 
 func apply_game_state(state_data: Dictionary):
+	print("🔄 apply_game_state() KEZDÉS")
+	
 	# Pieces frissítése a board-on
 	var pieces_data = {}
 	
-	for piece_data in state_data.pieces:  # <-- Most már Array
+	for piece_data in state_data.pieces:
 		var pos = Vector2(piece_data.position[0], piece_data.position[1])
 		pieces_data[pos] = {
 			"position": pos,
@@ -150,6 +156,9 @@ func apply_game_state(state_data: Dictionary):
 			"card_name": piece_data.card_name,
 			"turns_remaining": piece_data.turns_remaining
 		}
+		print("  🔷 Piece betöltve: pos=%s, card=%s, turns=%d" % [pos, piece_data.card_name, piece_data.turns_remaining])
 	
 	# Küldjük a board-nak frissítésre
 	$board.update_from_server_state(pieces_data, state_data.player_hands, state_data.current_turn)
+	
+	print("✅ apply_game_state() VÉGE")
