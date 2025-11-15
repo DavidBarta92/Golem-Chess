@@ -1,4 +1,3 @@
-# DeckManager.gd - Pakli kezelés
 class_name DeckManager
 
 const DECK_SIZE = 5
@@ -26,7 +25,7 @@ static func create_starting_deck() -> Array[String]:
 	
 	print("📚 Pakli létrehozva: ", deck)
 	return deck
-
+	
 # Húzás
 static func draw_card(deck: Array[String], hand: Array[String]) -> bool:
 	if deck.size() == 0:

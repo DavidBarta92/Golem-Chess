@@ -25,6 +25,7 @@ func detach_card() -> Card:
 func can_move() -> bool:
 	# Végtelen kártya (-1) vagy van hátralevő kör
 	return attached_card != null && (turns_remaining > 0 || turns_remaining == -1)
+	# return has_card() && (turns_remaining > 0 || turns_remaining == -1)
 
 func get_movement_directions() -> Array:
 	if attached_card:
@@ -49,3 +50,6 @@ func get_info() -> String:
 			return "%s (végtelen)" % attached_card.card_name
 		return "%s (még %d kör)" % [attached_card.card_name, turns_remaining]
 	return "Nincs kártya"
+	
+func has_card() -> bool:
+	return attached_card != null
