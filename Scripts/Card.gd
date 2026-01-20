@@ -1,13 +1,13 @@
-# card.gd
+﻿# card.gd
 extends Resource
 class_name Card
 
 @export var card_name: String = "New Card"
-@export var duration: int = 2  # Hány körig használható
+@export var card_code: String = "New Card"
+@export var duration: int = 2
 @export var texture: Texture2D
 @export var description: String = ""
-
-# 5x5 mátrix - középen a bábu (2,2)
+@export var is_owned: bool = true
 @export var movement_pattern: Array[Array] = [
 	[0, 0, 0, 0, 0],
 	[0, 0, 0, 0, 0],
@@ -21,7 +21,7 @@ func get_directions() -> Array:
 	var rows := movement_pattern.size()
 	if rows == 0:
 		return directions
-	
+
 	var cols: int = movement_pattern[0].size()
 	var center_x := int(rows / 2)
 	var center_y := int(cols / 2)

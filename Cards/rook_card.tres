@@ -5,5 +5,7 @@
 [resource]
 script = ExtResource("1_vm8pc")
 card_name = "Rook"
+card_code = "rook"
+duration = 5
 movement_pattern = Array[Array]([[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

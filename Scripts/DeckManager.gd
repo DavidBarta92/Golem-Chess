@@ -1,7 +1,7 @@
 class_name DeckManager
 
-const DECK_SIZE = 5
-const HAND_SIZE = 2
+const DECK_SIZE = 24
+const HAND_SIZE = 5
 const KING_CARD_NAME = "King"
 
 # Kezdő pakli generálás
@@ -30,7 +30,7 @@ static func create_starting_deck() -> Array[String]:
 static func draw_card(deck: Array[String], hand: Array[String]) -> bool:
 	if deck.size() == 0:
 		print("⚠️ Pakli üres, nem lehet húzni!")
-		return false
+		deck.assign(create_starting_deck())
 	
 	if hand.size() >= HAND_SIZE:
 		print("⚠️ Kéz tele van!")

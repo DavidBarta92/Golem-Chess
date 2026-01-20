@@ -8,6 +8,12 @@ var player_hands: Dictionary = {}  # int (player_id) -> Array[String] (card name
 var current_turn_player: int = 0  # 0 = fehér, 1 = fekete
 var white_king_position: Vector2 = Vector2(-1, -1)
 var black_king_position: Vector2 = Vector2(-1, -1)
+var attached_card_this_turn: Dictionary = {
+	0: false,
+	1: false,
+}
+var game_over: bool = false
+var winner_player: int = -1
 
 func _init():
 	pass
@@ -27,3 +33,4 @@ func is_white_turn() -> bool:
 
 func switch_turn():
 	current_turn_player = 1 - current_turn_player
+	attached_card_this_turn[current_turn_player] = false

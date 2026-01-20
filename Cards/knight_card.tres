@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_pwodd")
 card_name = "Knight"
-duration = 3
+card_code = "knight"
+duration = 5
 movement_pattern = Array[Array]([[0, 0, 0, 0, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

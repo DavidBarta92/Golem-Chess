@@ -1,0 +1,133 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardVisual.gd" id="1"]
+[ext_resource type="Script" path="res://Scripts/CardPatternView.gd" id="2"]
+[ext_resource type="Texture2D" path="res://Assets/card_base.svg" id="3"]
+[ext_resource type="Texture2D" path="res://Assets/Piece_move.png" id="4"]
+[ext_resource type="Shader" path="res://Shaders/card_tilt.gdshader" id="5"]
+[ext_resource type="Shader" path="res://Shaders/card_shimmer.gdshader" id="6"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_face"]
+resource_local_to_scene = true
+shader = ExtResource("5")
+shader_parameter/x_rot = 0.0
+shader_parameter/y_rot = 0.0
+shader_parameter/warp_strength = 0.045
+shader_parameter/shine_strength = 0.18
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_shimmer"]
+resource_local_to_scene = true
+shader = ExtResource("6")
+shader_parameter/strength = 0.16
+shader_parameter/speed = 0.65
+shader_parameter/band_scale = 14.0
+shader_parameter/corner_radius = 0.075
+
+[node name="CardVisual" type="Button"]
+custom_minimum_size = Vector2(112, 156)
+offset_right = 112.0
+offset_bottom = 156.0
+pivot_offset = Vector2(56, 78)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_button")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_button")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_button")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_button")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_button")
+script = ExtResource("1")
+
+[node name="Shadow" type="TextureRect" parent="."]
+self_modulate = Color(0, 0, 0, 0.22)
+show_behind_parent = true
+mouse_filter = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 9.0
+offset_right = 5.0
+offset_bottom = 9.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3")
+expand_mode = 1
+
+[node name="CardFace" type="TextureRect" parent="."]
+material = SubResource("ShaderMaterial_face")
+mouse_filter = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3")
+expand_mode = 1
+
+[node name="Shimmer" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_shimmer")
+mouse_filter = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 1, 1, 1)
+
+[node name="DurationLabel" type="Label" parent="."]
+mouse_filter = 2
+layout_mode = 1
+anchors_preset = 0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = 38.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.65)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 18
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PatternView" type="Control" parent="."]
+mouse_filter = 2
+layout_mode = 1
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 42.0
+offset_right = 92.0
+offset_bottom = 114.0
+script = ExtResource("2")
+dot_texture = ExtResource("4")
+
+[node name="NameLabel" type="Label" parent="."]
+mouse_filter = 2
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -34.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.8)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 14
+text = "Card"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3

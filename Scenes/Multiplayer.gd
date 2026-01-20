@@ -4,6 +4,7 @@ var multiplayer_peer = ENetMultiplayerPeer.new()
 var is_server = false
 
 var connected_peer_ids = []
+var peer_player_ids: Dictionary = {}
 var server_turn = true
 
 var game_host: NetworkGameHost = null
@@ -54,6 +55,7 @@ func join_game(ip, port = 9999):
 	multiplayer.connected_to_server.connect(_on_connection_succeeded)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
+	GameController.set_game_host(self)
 	return true
 
 func _on_peer_connected(peer_id):
@@ -67,11 +69,16 @@ func _on_peer_connected(peer_id):
 		print("  Játékosok: %d/2" % connected_peer_ids.size())
 		
 		if connected_peer_ids.size() == 2:
+			var first_player_id: int = 0 if server_turn else 1
+			peer_player_ids[connected_peer_ids[0]] = first_player_id
+			peer_player_ids[connected_peer_ids[1]] = 1 - first_player_id
 			print("⚔ Játék kezdődik!")
 			
 			# Game state inicializálás a board adatokkal
 			var board_data = $board.board
 			game_host.initialize_game(board_data)
+			game_host.game_state.current_turn_player = 0 if server_turn else 1
+			game_host.broadcast_full_state()
 			
 			# 🔥 ÚJ: Várunk egy kicsit hogy a broadcast lefusson
 			await get_tree().create_timer(0.2).timeout
@@ -104,6 +111,22 @@ func _on_server_disconnected():
 func send_move(start_pos, end_pos, promotion = null):
 	print("📤 send_move() hívva: ", start_pos, " → ", end_pos, " my_id=", multiplayer.get_unique_id())
 	send_move_info.rpc_id(1, multiplayer.get_unique_id(), start_pos, end_pos, promotion)
+
+func close_game_connection():
+	multiplayer_peer.close()
+	multiplayer.multiplayer_peer = null
+
+func on_player_action(action: Dictionary):
+	send_player_action.rpc_id(1, multiplayer.get_unique_id(), action)
+
+@rpc("any_peer", "call_local", "reliable")
+func send_player_action(peer_id: int, action: Dictionary):
+	if !is_server || game_host == null:
+		return
+
+	var player_id: int = int(peer_player_ids.get(peer_id, action.get("player_id", 0)))
+	action["player_id"] = player_id
+	game_host.on_player_action(action)
 
 @rpc("any_peer", "call_local", "reliable")
 func send_move_info(id, start_pos, end_pos, promotion):
@@ -159,6 +182,6 @@ func apply_game_state(state_data: Dictionary):
 		print("  🔷 Piece betöltve: pos=%s, card=%s, turns=%d" % [pos, piece_data.card_name, piece_data.turns_remaining])
 	
 	# Küldjük a board-nak frissítésre
-	$board.update_from_server_state(pieces_data, state_data.player_hands, state_data.current_turn)
+	$board.update_from_server_state(pieces_data, state_data.player_hands, state_data.current_turn, state_data.get("game_over", false), state_data.get("winner_player", -1))
 	
 	print("✅ apply_game_state() VÉGE")

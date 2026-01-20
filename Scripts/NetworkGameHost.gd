@@ -1,4 +1,4 @@
-# NetworkGameHost.gd - Multiplayer játék host
+﻿# NetworkGameHost.gd - Multiplayer jĂˇtĂ©k host
 class_name NetworkGameHost
 
 var game_state: GameStateData
@@ -8,7 +8,7 @@ func _init(mp_node):
 	multiplayer_node = mp_node
 	game_state = GameStateData.new()
 
-# Játékállapot inicializálása
+# JĂˇtĂ©kĂˇllapot inicializĂˇlĂˇsa
 func initialize_game(board_data: Array):
 	for i in range(board_data.size()):
 		for j in range(board_data[i].size()):
@@ -16,210 +16,248 @@ func initialize_game(board_data: Array):
 			if value != 0:
 				var pos = Vector2(i, j)
 				var color = 1 if value > 0 else -1
-				var piece = Piece.new(pos, color)  # <-- Piece osztály használata!
+				var piece = Piece.new(pos, color)  # <-- Piece osztĂˇly hasznĂˇlata!
 				game_state.set_piece(pos, piece)
-	
-	# Paklik és kezek
+
+	# Paklik Ă©s kezek
 	var white_deck: Array[String] = []
 	white_deck.assign(DeckManager.create_starting_deck())
 	var black_deck: Array[String] = []
 	black_deck.assign(DeckManager.create_starting_deck())
-	
+
 	game_state.player_decks[0] = white_deck
 	game_state.player_decks[1] = black_deck
-	
+
 	var white_hand: Array[String] = []
 	var black_hand: Array[String] = []
-	
+
 	DeckManager.draw_starting_hand(white_deck, white_hand)
 	DeckManager.draw_starting_hand(black_deck, black_hand)
-	
+
 	game_state.player_hands[0] = white_hand
 	game_state.player_hands[1] = black_hand
-	
-	print("🎮 NetworkGameHost: Game state inicializálva!")
-	
-	# TESZT: Automatikusan kijátsszuk a király kártyákat
+
+	print("đźŽ® NetworkGameHost: Game state inicializĂˇlva!")
+
+	# TESZT: Automatikusan kijĂˇtsszuk a kirĂˇly kĂˇrtyĂˇkat
 	var white_first_piece_pos = Vector2(0, 1)
 	var black_first_piece_pos = Vector2(4, 2)
-	
+
 	var white_piece = game_state.get_piece(white_first_piece_pos)
 	var black_piece = game_state.get_piece(black_first_piece_pos)
-	
-	if white_piece:
+
+	if false && white_piece:
 		var king_card = CardLibrary.get_card("King")
 		if king_card:
 			white_piece.attach_card(king_card)
 			white_piece.turns_remaining = -1
 			game_state.white_king_position = white_first_piece_pos
-			print("👑 Fehér király hozzáadva: ", white_first_piece_pos)
-	
-	if black_piece:
+			print("đź‘‘ FehĂ©r kirĂˇly hozzĂˇadva: ", white_first_piece_pos)
+
+	if false && black_piece:
 		var king_card = CardLibrary.get_card("King")
 		if king_card:
 			black_piece.attach_card(king_card)
 			black_piece.turns_remaining = -1
 			game_state.black_king_position = black_first_piece_pos
-			print("👑 Fekete király hozzáadva: ", black_first_piece_pos)
-	
-	# Broadcast kezdő state
+			print("đź‘‘ Fekete kirĂˇly hozzĂˇadva: ", black_first_piece_pos)
+
+	# Broadcast kezdĹ‘ state
 	broadcast_full_state()
 
-# Játékos akció kezelése
+# JĂˇtĂ©kos akciĂł kezelĂ©se
 func on_player_action(action: Dictionary):
-	print("🎯 Action received: ", action)
-	
+	print("đźŽŻ Action received: ", action)
+
 	match action.type:
 		"attach_card":
 			handle_attach_card(action)
 		"move_piece":
 			handle_move_piece(action)
 		_:
-			push_warning("⚠️ Ismeretlen action type: ", action.type)
+			push_warning("âš ď¸Ź Ismeretlen action type: ", action.type)
 
 func handle_attach_card(action: Dictionary):
 	var player_id = action.player_id
 	var card_name = action.card_name
 	var piece_pos = action.piece_pos
-	
-	print("🎴 Kártya csatolás: %s játékos, %s kártya, %s pozíció" % [player_id, card_name, piece_pos])
-	
-	# Validálások
-	if !game_state.player_hands[player_id].has(card_name):
-		push_warning("⚠️ Nincs ilyen kártya a kézben!")
+
+	print("đźŽ´ KĂˇrtya csatolĂˇs: %s jĂˇtĂ©kos, %s kĂˇrtya, %s pozĂ­ciĂł" % [player_id, card_name, piece_pos])
+
+	# ValidĂˇlĂˇsok
+	if game_state.game_over:
 		return
-	
+	if game_state.current_turn_player != player_id:
+		return
+	if bool(game_state.attached_card_this_turn.get(player_id, false)):
+		return
+
+	if !game_state.player_hands[player_id].has(card_name):
+		push_warning("âš ď¸Ź Nincs ilyen kĂˇrtya a kĂ©zben!")
+		return
+
 	var piece = game_state.get_piece(piece_pos)
 	if piece == null:
-		push_warning("⚠️ Nincs bábu ezen a pozíción!")
+		push_warning("âš ď¸Ź Nincs bĂˇbu ezen a pozĂ­ciĂłn!")
 		return
-	
+
 	var expected_color = 1 if player_id == 0 else -1
 	if piece.color != expected_color:
-		push_warning("⚠️ Nem a játékos bábuja!")
+		push_warning("âš ď¸Ź Nem a jĂˇtĂ©kos bĂˇbuja!")
 		return
-	
+
 	if piece.attached_card != null:
-		push_warning("⚠️ Már van kártya ezen a bábun!")
+		push_warning("âš ď¸Ź MĂˇr van kĂˇrtya ezen a bĂˇbun!")
 		return
-	
-	# Alkalmazzuk a változást
+
+	# Alkalmazzuk a vĂˇltozĂˇst
 	var card = CardLibrary.get_card(card_name)
 	if card:
 		piece.attach_card(card)
-		
-		# Király pozíció követése
+
+		# KirĂˇly pozĂ­ciĂł kĂ¶vetĂ©se
 		if card_name == "King":
 			if player_id == 0:
 				game_state.white_king_position = piece_pos
 			else:
 				game_state.black_king_position = piece_pos
-		
-		# Kártya kijátszása a kézből
+
+		# KĂˇrtya kijĂˇtszĂˇsa a kĂ©zbĹ‘l
 		DeckManager.play_card(game_state.player_hands[player_id], card_name, game_state.player_decks[player_id])
-		
-		print("✅ Kártya sikeresen csatolva!")
+		game_state.attached_card_this_turn[player_id] = true
+
+		print("âś… KĂˇrtya sikeresen csatolva!")
 		broadcast_full_state()
 
 func handle_move_piece(action: Dictionary):
 	var player_id = action.player_id
 	var from_pos = action.from
 	var to_pos = action.to
-	
-	print("♟️ Lépés: %s játékos, %s → %s" % [player_id, from_pos, to_pos])
-	
-	# 1. Validálás: Létezik-e a bábu?
+
+	print("â™źď¸Ź LĂ©pĂ©s: %s jĂˇtĂ©kos, %s â†’ %s" % [player_id, from_pos, to_pos])
+
+	# 1. ValidĂˇlĂˇs: LĂ©tezik-e a bĂˇbu?
+	if game_state.game_over:
+		return
+
 	var piece = game_state.get_piece(from_pos)
 	if piece == null:
-		push_warning("⚠️ Nincs bábu a kiindulási pozíción!")
+		push_warning("âš ď¸Ź Nincs bĂˇbu a kiindulĂˇsi pozĂ­ciĂłn!")
 		return
-	
-	# 2. Validálás: A játékos bábuja-e?
+
+	# 2. ValidĂˇlĂˇs: A jĂˇtĂ©kos bĂˇbuja-e?
 	var expected_color = 1 if player_id == 0 else -1
 	if piece.color != expected_color:
-		push_warning("⚠️ Nem a játékos bábuja!")
+		push_warning("âš ď¸Ź Nem a jĂˇtĂ©kos bĂˇbuja!")
 		return
-	
-	# 3. Validálás: Van-e kártya és tud-e lépni?
+
+	# 3. ValidĂˇlĂˇs: Van-e kĂˇrtya Ă©s tud-e lĂ©pni?
 	if !piece.can_move():
-		push_warning("⚠️ Nincs használható kártya ezen a bábun!")
+		push_warning("âš ď¸Ź Nincs hasznĂˇlhatĂł kĂˇrtya ezen a bĂˇbun!")
 		return
-	
-	# 4. Validálás: A játékos köre van-e?
+
+	# 4. ValidĂˇlĂˇs: A jĂˇtĂ©kos kĂ¶re van-e?
 	if game_state.current_turn_player != player_id:
-		push_warning("⚠️ Nem a játékos köre!")
+		push_warning("âš ď¸Ź Nem a jĂˇtĂ©kos kĂ¶re!")
 		return
-	
-	# 5. Validálás: Érvényes lépés-e?
+
+	# 5. ValidĂˇlĂˇs: Ă‰rvĂ©nyes lĂ©pĂ©s-e?
 	if !is_valid_move(piece, from_pos, to_pos):
-		push_warning("⚠️ Érvénytelen lépés!")
+		push_warning("âš ď¸Ź Ă‰rvĂ©nytelen lĂ©pĂ©s!")
 		return
-	
-	# 6. Alkalmazzuk a lépést
+
+	# 6. Alkalmazzuk a lĂ©pĂ©st
 	var captured_piece = game_state.get_piece(to_pos)
-	
-	# Leütés kezelése
+
+	# LeĂĽtĂ©s kezelĂ©se
 	if captured_piece != null:
-		print("💥 Bábu leütve: ", to_pos)
-		
-		# Király leütés?
+		print("đź’Ą BĂˇbu leĂĽtve: ", to_pos)
+
+		# KirĂˇly leĂĽtĂ©s?
 		if captured_piece.attached_card != null && captured_piece.attached_card.card_name == "King":
-			print("👑 KIRÁLY LEÜTVE! Játékos %d nyert!" % player_id)
-			# TODO: Játék vége
-		
-		# Leütött bábu kártyájának visszaadása
+			print("đź‘‘ KIRĂLY LEĂśTVE! JĂˇtĂ©kos %d nyert!" % player_id)
+			# TODO: JĂˇtĂ©k vĂ©ge
+
+		# LeĂĽtĂ¶tt bĂˇbu kĂˇrtyĂˇjĂˇnak visszaadĂˇsa
 		if captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
 			var enemy_player = 1 - player_id
 			DeckManager.return_card_to_deck(game_state.player_decks[enemy_player], captured_piece.attached_card.card_name)
-	
-	# Bábu mozgatása
+
+	# BĂˇbu mozgatĂˇsa
 	game_state.remove_piece(from_pos)
 	piece.position = to_pos
 	game_state.set_piece(to_pos, piece)
-	
-	# Király pozíció frissítése
+
+	# KirĂˇly pozĂ­ciĂł frissĂ­tĂ©se
 	if piece.attached_card != null && piece.attached_card.card_name == "King":
 		if player_id == 0:
 			game_state.white_king_position = to_pos
 		else:
 			game_state.black_king_position = to_pos
-	
-	# Bázis elfoglalás?
-	var base_y = 2  # Középső oszlop
+
+	# BĂˇzis elfoglalĂˇs?
+	var base_y = 2  # KĂ¶zĂ©psĹ‘ oszlop
 	if (player_id == 0 && to_pos.x == 4 && to_pos.y == base_y) || \
 	   (player_id == 1 && to_pos.x == 0 && to_pos.y == base_y):
-		print("🏁 BÁZIS ELFOGLALVA! Játékos %d nyert!" % player_id)
-		# TODO: Játék vége
-	
-	# Kártya használat (kör csökkentés) - MOST MÁR MŰKÖDIK! 🎉
+		print("đźŹ BĂZIS ELFOGLALVA! JĂˇtĂ©kos %d nyert!" % player_id)
+		finish_game(player_id)
+		broadcast_full_state()
+		return
+
+	if !has_any_piece(1 - player_id):
+		finish_game(player_id)
+		broadcast_full_state()
+		return
+
+	# KĂˇrtya hasznĂˇlat (kĂ¶r csĂ¶kkentĂ©s) - MOST MĂR MĹ°KĂ–DIK! đźŽ‰
 	piece.use_turn()
-	
-	# Kör váltás
+
+	# KĂ¶r vĂˇltĂˇs
 	game_state.switch_turn()
-	
-	print("✅ Lépés végrehajtva! Következő játékos: ", game_state.current_turn_player)
-	
+
+	print("âś… LĂ©pĂ©s vĂ©grehajtva! KĂ¶vetkezĹ‘ jĂˇtĂ©kos: ", game_state.current_turn_player)
+
 	# Broadcast
 	broadcast_full_state()
 
-# Segédfüggvény: Lépés validálása
+# SegĂ©dfĂĽggvĂ©ny: LĂ©pĂ©s validĂˇlĂˇsa
+func finish_game(winner_player: int):
+	game_state.game_over = true
+	game_state.winner_player = winner_player
+
+func has_any_piece(player_id: int) -> bool:
+	var expected_color: int = 1 if player_id == 0 else -1
+	for pos in game_state.pieces:
+		var piece: Piece = game_state.pieces[pos]
+		if piece.color == expected_color:
+			return true
+	return false
+
 func is_valid_move(piece: Piece, from_pos: Vector2, to_pos: Vector2) -> bool:
 	if piece.attached_card == null:
 		return false
-	
-	var directions = piece.get_movement_directions()
-	var move_vector = to_pos - from_pos
-	
-	return directions.has(move_vector)
-	
+	if to_pos.x < 0 || to_pos.x >= 5 || to_pos.y < 0 || to_pos.y >= 5:
+		return false
+
+	var target_piece: Piece = game_state.get_piece(to_pos)
+	if target_piece != null && target_piece.color == piece.color:
+		return false
+
+	var directions: Array = piece.get_movement_directions()
+	var move_vector: Vector2 = to_pos - from_pos
+	for direction: Vector2 in directions:
+		if move_vector == direction * piece.color:
+			return true
+	return false
+
 # Teljes state broadcast minden kliensnek
 func broadcast_full_state():
-	print("📡 Broadcasting full state...")
-	
-	# Szerializáljuk a game state-et Dictionary-vé
+	print("đź“ˇ Broadcasting full state...")
+
+	# SzerializĂˇljuk a game state-et Dictionary-vĂ©
 	var state_data = serialize_state()
-	
-	# A SZERVER saját magának is frissíti (ha van board node)
+
+	# A SZERVER sajĂˇt magĂˇnak is frissĂ­ti (ha van board node)
 	if multiplayer_node.has_node("board"):
 		var pieces_data = {}
 		for piece_data in state_data.pieces:
@@ -230,14 +268,14 @@ func broadcast_full_state():
 				"card_name": piece_data.card_name,
 				"turns_remaining": piece_data.turns_remaining
 			}
-		multiplayer_node.get_node("board").update_from_server_state(pieces_data, state_data.player_hands, state_data.current_turn)
-	
-	# Küldjük el minden KLIENS-nek
+		multiplayer_node.get_node("board").update_from_server_state(pieces_data, state_data.player_hands, state_data.current_turn, state_data.game_over, state_data.winner_player)
+
+	# KĂĽldjĂĽk el minden KLIENS-nek
 	for peer_id in multiplayer_node.connected_peer_ids:
 		if peer_id != 1:
 			multiplayer_node.receive_game_state.rpc_id(peer_id, state_data)
-	
-	print("✅ State broadcast kész")
+
+	print("âś… State broadcast kĂ©sz")
 
 func serialize_state() -> Dictionary:
 	var data = {
@@ -247,10 +285,12 @@ func serialize_state() -> Dictionary:
 			0: game_state.player_decks[0].size(),
 			1: game_state.player_decks[1].size()
 		},
-		"current_turn": game_state.current_turn_player
+		"current_turn": game_state.current_turn_player,
+		"game_over": game_state.game_over,
+		"winner_player": game_state.winner_player
 	}
-	
-	# Pieces szerializálása (most már Piece objektumokból!)
+
+	# Pieces szerializĂˇlĂˇsa (most mĂˇr Piece objektumokbĂłl!)
 	for pos in game_state.pieces:
 		var piece: Piece = game_state.pieces[pos]
 		data.pieces.append({
@@ -259,5 +299,5 @@ func serialize_state() -> Dictionary:
 			"card_name": piece.attached_card.card_name if piece.attached_card else "",
 			"turns_remaining": piece.turns_remaining
 		})
-	
+
 	return data
