@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://b2oed0tahffou"]
+[gd_scene format=3 uid="uid://b2oed0tahffou"]
 
 [ext_resource type="Script" uid="uid://cef2ndnwft8t1" path="res://Scenes/MainMenu.gd" id="1_tt5f1"]
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=683751200]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tt5f1")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1578044636]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -25,15 +25,15 @@ offset_bottom = 100.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="HostButton" type="Button" parent="VBoxContainer"]
+[node name="HostButton" type="Button" parent="VBoxContainer" unique_id=584776113]
 layout_mode = 2
 text = "Host Game"
 
-[node name="JoinButton" type="Button" parent="VBoxContainer"]
+[node name="JoinButton" type="Button" parent="VBoxContainer" unique_id=188560366]
 layout_mode = 2
 text = "Join Game"
 
-[node name="Label" type="Label" parent="."]
+[node name="Label" type="Label" parent="." unique_id=1540343529]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0

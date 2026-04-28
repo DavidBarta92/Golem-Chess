@@ -29,6 +29,7 @@ const PLAYER_DECK_SIZE = 24
 const CARD_UI_SIZE = Vector2(112, 156)
 const CARD_UI_GAP = 12
 const CARD_HAND_MARGIN = 18
+const HOVER_CARD_MARGIN = 24
 const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD = Vector2(0, 2)
 const BLACK_BASE_FIELD = Vector2(4, 2)
@@ -61,6 +62,8 @@ var attached_card_this_turn: Dictionary = {
 	-1: false,
 }
 var game_over: bool = false
+var hover_card_preview: CardVisual
+var hover_duration_label: Label
 var result_overlay: ColorRect
 var result_label: Label
 
@@ -86,6 +89,7 @@ func _ready():
 
 	create_pieces_from_board()
 	setup_player_card_hands()
+	create_hover_piece_ui()
 	create_result_ui()
 
 func create_pieces_from_board():
@@ -223,6 +227,39 @@ func create_deck_visual(hand_node: Control, owner_color: int) -> CardVisual:
 	deck_visual.scale = Vector2.ONE * 0.96
 	deck_visual.z_index = -1
 	return deck_visual
+
+func create_hover_piece_ui():
+	hover_card_preview = CARD_VISUAL.instantiate() as CardVisual
+	canvas_layer.add_child(hover_card_preview)
+	hover_card_preview.visible = false
+	hover_card_preview.draggable = false
+	hover_card_preview.disabled = true
+	hover_card_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hover_card_preview.anchor_left = 1.0
+	hover_card_preview.anchor_right = 1.0
+	hover_card_preview.anchor_top = 0.5
+	hover_card_preview.anchor_bottom = 0.5
+	hover_card_preview.offset_left = -CARD_UI_SIZE.x - HOVER_CARD_MARGIN
+	hover_card_preview.offset_right = -HOVER_CARD_MARGIN
+	hover_card_preview.offset_top = -CARD_UI_SIZE.y * 0.5
+	hover_card_preview.offset_bottom = CARD_UI_SIZE.y * 0.5
+	hover_card_preview.z_index = 900
+
+	hover_duration_label = Label.new()
+	canvas_layer.add_child(hover_duration_label)
+	hover_duration_label.visible = false
+	hover_duration_label.size = Vector2(48, 32)
+	hover_duration_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hover_duration_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hover_duration_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hover_duration_label.z_index = 901
+
+	var label_settings: LabelSettings = LabelSettings.new()
+	label_settings.font_size = 22
+	label_settings.font_color = Color(1.0, 1.0, 1.0)
+	label_settings.outline_size = 5
+	label_settings.outline_color = Color(0.0, 0.0, 0.0)
+	hover_duration_label.label_settings = label_settings
 
 func create_result_ui():
 	result_overlay = ColorRect.new()
@@ -585,6 +622,7 @@ func _input(event):
 					delete_dots()
 					state = false
 					hovered_piece = Vector2(-1, -1)
+					hide_hover_piece_details()
 
 func send_move_action(from_pos: Vector2, to_pos: Vector2):
 	if GameController.current_game_host:
@@ -620,18 +658,63 @@ func update_hovered_piece():
 		if hovered_piece != Vector2(-1, -1):
 			hovered_piece = Vector2(-1, -1)
 			delete_dots()
+			hide_hover_piece_details()
 		return
 
 	var board_pos: Vector2 = get_mouse_board_position()
 	if board_pos == hovered_piece:
+		update_hover_duration_label_position()
 		return
 
 	hovered_piece = board_pos
 	delete_dots()
+	hide_hover_piece_details()
 
 	if is_valid_position(board_pos) && !is_empty(board_pos):
 		moves = get_moves(board_pos)
 		show_dots()
+		show_hover_piece_details(board_pos)
+
+func show_hover_piece_details(board_pos: Vector2):
+	if !piece_objects.has(board_pos):
+		return
+
+	var piece: Piece = piece_objects[board_pos] as Piece
+	if piece.attached_card == null:
+		return
+
+	var preview_card: Card = piece.attached_card.duplicate() as Card
+	if preview_card:
+		preview_card.duration = piece.turns_remaining
+		hover_card_preview.set_card(preview_card)
+		hover_card_preview.set_face_down(false)
+		hover_card_preview.visible = true
+
+	hover_duration_label.text = "INF" if piece.turns_remaining < 0 else str(piece.turns_remaining)
+	hover_duration_label.visible = true
+	update_hover_duration_label_position()
+
+func hide_hover_piece_details():
+	if hover_card_preview:
+		hover_card_preview.visible = false
+	if hover_duration_label:
+		hover_duration_label.visible = false
+
+func update_hover_duration_label_position():
+	if !hover_duration_label or !hover_duration_label.visible:
+		return
+	if !is_valid_position(hovered_piece):
+		return
+
+	var piece_screen_position: Vector2 = get_board_position_screen_position(hovered_piece)
+	hover_duration_label.global_position = piece_screen_position + Vector2(-hover_duration_label.size.x * 0.5, -46.0)
+
+func get_board_position_screen_position(board_pos: Vector2) -> Vector2:
+	return get_global_transform_with_canvas() * get_board_position_local_position(board_pos)
+
+func get_board_position_local_position(board_pos: Vector2) -> Vector2:
+	var offset: float = -(BOARD_SIZE * CELL_WIDTH) / 2.0
+	return Vector2(board_pos.y * CELL_WIDTH + (CELL_WIDTH / 2.0) + offset, -board_pos.x * CELL_WIDTH - (CELL_WIDTH / 2.0) - offset)
 
 func display_board():
 	print("đźŽ¨ display_board() hĂ­vva: white=", white, " side=", side)
@@ -673,6 +756,7 @@ func show_options():
 		return
 	delete_dots()
 	show_dots()
+	show_hover_piece_details(selected_piece)
 
 func show_dots():
 	for i in moves:
@@ -757,6 +841,7 @@ func finish_game(winner_color: int):
 	state = false
 	hovered_piece = Vector2(-1, -1)
 	delete_dots()
+	hide_hover_piece_details()
 	update_card_drag_permissions()
 	show_result_message(winner_color)
 
@@ -930,6 +1015,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	setup_deck_visuals()
 
 	delete_dots()
+	hide_hover_piece_details()
 	update_card_presentation()
 	display_board()
 
