@@ -1,11 +1,14 @@
-[gd_resource type="Resource" script_class="Card" load_steps=2 format=3 uid="uid://1ee03folo1hn"]
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://1ee03folo1hn"]
 
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="1_nm70a"]
+[ext_resource type="Texture2D" uid="uid://cp1uawqey4by2" path="res://Assets/black_pawn.png" id="1_svcd4"]
+[ext_resource type="Texture2D" uid="uid://dbvechm6s4q8g" path="res://Assets/white_pawn.png" id="3_vedvu"]
 
 [resource]
 script = ExtResource("1_nm70a")
-card_name = "pawn"
+card_name = "Pawn"
 card_code = "pawn"
-duration = 1
+white_piece_texture = ExtResource("3_vedvu")
+black_piece_texture = ExtResource("1_svcd4")
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

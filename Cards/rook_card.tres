@@ -1,11 +1,14 @@
-[gd_resource type="Resource" script_class="Card" load_steps=2 format=3 uid="uid://b637m34t1b78b"]
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://b637m34t1b78b"]
 
+[ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="1_cyxjc"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="1_vm8pc"]
+[ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="3_kw14y"]
 
 [resource]
 script = ExtResource("1_vm8pc")
 card_name = "Rook"
 card_code = "rook"
-duration = 5
-movement_pattern = Array[Array]([[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]])
+white_piece_texture = ExtResource("3_kw14y")
+black_piece_texture = ExtResource("1_cyxjc")
+movement_pattern = Array[Array]([[0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [1, 1, 0, 1, 1], [0, 0, 1, 0, 0], [0, 0, 1, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

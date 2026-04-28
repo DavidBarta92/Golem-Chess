@@ -1,11 +1,15 @@
-[gd_resource type="Resource" script_class="Card" load_steps=2 format=3 uid="uid://n54b1joh2s3l"]
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://n54b1joh2s3l"]
 
+[ext_resource type="Texture2D" uid="uid://bh2jylbtvodfh" path="res://Assets/black_king.png" id="1_4ea1p"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="1_81wtr"]
+[ext_resource type="Texture2D" uid="uid://wixkaesiefxb" path="res://Assets/white_king.png" id="3_ywkix"]
 
 [resource]
 script = ExtResource("1_81wtr")
 card_name = "King"
 card_code = "king"
 duration = -1
+white_piece_texture = ExtResource("3_ywkix")
+black_piece_texture = ExtResource("1_4ea1p")
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

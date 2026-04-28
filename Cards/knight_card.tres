@@ -1,11 +1,14 @@
-[gd_resource type="Resource" script_class="Card" load_steps=2 format=3 uid="uid://bnqev01kdt5eo"]
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://bnqev01kdt5eo"]
 
+[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_4rupa"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="1_pwodd"]
+[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_wpy1n"]
 
 [resource]
 script = ExtResource("1_pwodd")
 card_name = "Knight"
 card_code = "knight"
-duration = 5
-movement_pattern = Array[Array]([[0, 0, 0, 0, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]])
+white_piece_texture = ExtResource("3_wpy1n")
+black_piece_texture = ExtResource("1_4rupa")
+movement_pattern = Array[Array]([[0, 1, 0, 1, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 1, 0, 1, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

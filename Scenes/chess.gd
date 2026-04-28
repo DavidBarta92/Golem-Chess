@@ -471,6 +471,7 @@ func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 		return false
 
 	piece.attach_card(card)
+	display_board()
 	return true
 
 func apply_remote_card_attach(piece_position: Vector2, card_name: String, owner_color: int, hand_index: int, replacement_card_name: String = ""):
@@ -716,6 +717,51 @@ func get_board_position_local_position(board_pos: Vector2) -> Vector2:
 	var offset: float = -(BOARD_SIZE * CELL_WIDTH) / 2.0
 	return Vector2(board_pos.y * CELL_WIDTH + (CELL_WIDTH / 2.0) + offset, -board_pos.x * CELL_WIDTH - (CELL_WIDTH / 2.0) - offset)
 
+func get_default_piece_texture(piece_value: int) -> Texture2D:
+	match piece_value:
+		-6:
+			return BLACK_KING
+		-5:
+			return BLACK_QUEEN
+		-4:
+			return BLACK_ROOK
+		-3:
+			return BLACK_BISHOP
+		-2:
+			return BLACK_KNIGHT
+		-1:
+			return BLACK_PAWN
+		6:
+			return WHITE_KING
+		5:
+			return WHITE_QUEEN
+		4:
+			return WHITE_ROOK
+		3:
+			return WHITE_BISHOP
+		2:
+			return WHITE_KNIGHT
+		1:
+			return WHITE_PAWN
+
+	return null
+
+func get_attached_card_piece_texture(piece: Piece) -> Texture2D:
+	if piece == null or piece.attached_card == null:
+		return null
+	if piece.color > 0:
+		return piece.attached_card.white_piece_texture
+	return piece.attached_card.black_piece_texture
+
+func get_piece_texture_for_position(board_pos: Vector2, piece_value: int) -> Texture2D:
+	var attached_texture: Texture2D = null
+	if piece_objects.has(board_pos):
+		var piece: Piece = piece_objects[board_pos] as Piece
+		attached_texture = get_attached_card_piece_texture(piece)
+	if attached_texture != null:
+		return attached_texture
+	return get_default_piece_texture(piece_value)
+
 func display_board():
 	print("đźŽ¨ display_board() hĂ­vva: white=", white, " side=", side)
 	for child in pieces_node.get_children():
@@ -730,21 +776,7 @@ func display_board():
 			pieces_node.add_child(holder)
 			var offset = -(BOARD_SIZE * CELL_WIDTH) / 2.0
 			holder.position = Vector2(j * CELL_WIDTH + (CELL_WIDTH / 2) + offset, -i * CELL_WIDTH - (CELL_WIDTH / 2) - offset)
-
-			match board[i][j]:
-				-6: holder.texture = BLACK_KING
-				-5: holder.texture = BLACK_QUEEN
-				-4: holder.texture = BLACK_ROOK
-				-3: holder.texture = BLACK_BISHOP
-				-2: holder.texture = BLACK_KNIGHT
-				-1: holder.texture = BLACK_PAWN
-				0: holder.texture = null
-				6: holder.texture = WHITE_KING
-				5: holder.texture = WHITE_QUEEN
-				4: holder.texture = WHITE_ROOK
-				3: holder.texture = WHITE_BISHOP
-				2: holder.texture = WHITE_KNIGHT
-				1: holder.texture = WHITE_PAWN
+			holder.texture = get_piece_texture_for_position(Vector2(i, j), int(board[i][j]))
 
 	if white: turn.texture = TURN_WHITE
 	else: turn.texture = TURN_BLACK

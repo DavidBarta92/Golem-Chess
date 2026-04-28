@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://dfheckgprs3lw"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_d0i41"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="1_pwodd"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_pndra"]
+
+[resource]
+script = ExtResource("1_pwodd")
+card_name = "Bishop"
+card_code = "bishop"
+white_piece_texture = ExtResource("3_pndra")
+black_piece_texture = ExtResource("1_d0i41")
+movement_pattern = Array[Array]([[1, 0, 0, 0, 1], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [1, 0, 0, 0, 1]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"
