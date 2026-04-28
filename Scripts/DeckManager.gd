@@ -2,6 +2,7 @@ class_name DeckManager
 
 const DECK_SIZE = 24
 const HAND_SIZE = 5
+const STARTING_HAND_SIZE = 3
 const KING_CARD_NAME = "King"
 
 # Kezdő pakli generálás
@@ -43,7 +44,7 @@ static func draw_card(deck: Array[String], hand: Array[String]) -> bool:
 
 # Kezdő kéz húzása
 static func draw_starting_hand(deck: Array[String], hand: Array[String]):
-	for i in range(HAND_SIZE):
+	for i in range(STARTING_HAND_SIZE):
 		draw_card(deck, hand)
 
 # Kártya kijátszása

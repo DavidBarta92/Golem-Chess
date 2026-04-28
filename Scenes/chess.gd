@@ -25,6 +25,7 @@ const TURN_BLACK = preload("res://Assets/turn-black.png")
 const PIECE_MOVE = preload("res://Assets/Piece_move.png")
 
 const PLAYER_HAND_SIZE = 5
+const STARTING_PLAYER_HAND_SIZE = 3
 const PLAYER_DECK_SIZE = 24
 const CARD_UI_SIZE = Vector2(112, 156)
 const CARD_UI_GAP = 12
@@ -109,8 +110,8 @@ func create_pieces_from_board():
 func setup_player_card_hands():
 	white_card_deck = create_random_card_deck()
 	black_card_deck = create_random_card_deck()
-	white_card_hand = draw_cards_from_deck(1, PLAYER_HAND_SIZE)
-	black_card_hand = draw_cards_from_deck(-1, PLAYER_HAND_SIZE)
+	white_card_hand = draw_cards_from_deck(1, STARTING_PLAYER_HAND_SIZE)
+	black_card_hand = draw_cards_from_deck(-1, STARTING_PLAYER_HAND_SIZE)
 
 	white_card_visuals = populate_card_hand(white_pieces, white_card_hand, 1)
 	black_card_visuals = populate_card_hand(black_pieces, black_card_hand, -1)
