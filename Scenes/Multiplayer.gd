@@ -8,16 +8,62 @@ var peer_player_ids: Dictionary = {}
 var server_turn = true
 
 var game_host: NetworkGameHost = null
+var singleplayer_ai: RandomAIPlayer = null
+var singleplayer_ai_turn_in_progress: bool = false
 
 func _ready():
 	await get_tree().create_timer(0.1).timeout
 
-	if GameConfig.is_hosting:
+	if GameConfig.is_singleplayer:
+		print("Starting in singleplayer mode")
+		start_singleplayer_game()
+	elif GameConfig.is_hosting:
 		print("Starting in host mode")
 		host_game(GameConfig.server_port)
 	else:
 		print("Starting in join mode - IP: %s" % GameConfig.server_ip)
 		join_game(GameConfig.server_ip, GameConfig.server_port)
+
+func start_singleplayer_game():
+	is_server = true
+	server_turn = true
+	connected_peer_ids = [1]
+	peer_player_ids[1] = 0
+	singleplayer_ai = RandomAIPlayer.new(1)
+
+	game_host = NetworkGameHost.new(self)
+	GameController.set_game_host(game_host)
+
+	var board_data = $board.board
+	game_host.initialize_game(board_data)
+	game_host.game_state.current_turn_player = 0
+	game_host.finish_if_player_has_no_valid_turn(game_host.game_state.current_turn_player)
+	game_host.broadcast_full_state()
+	$board.set_turn(true)
+
+func on_host_state_changed():
+	maybe_play_singleplayer_ai_turn()
+
+func maybe_play_singleplayer_ai_turn():
+	if !GameConfig.is_singleplayer:
+		return
+	if singleplayer_ai == null or game_host == null or game_host.game_state == null:
+		return
+	if singleplayer_ai_turn_in_progress or game_host.game_state.game_over:
+		return
+	if game_host.game_state.current_turn_player != singleplayer_ai.player_id:
+		return
+
+	singleplayer_ai_turn_in_progress = true
+	call_deferred("_play_singleplayer_ai_turn")
+
+func _play_singleplayer_ai_turn():
+	await get_tree().create_timer(0.45).timeout
+	if singleplayer_ai != null and game_host != null and !game_host.game_state.game_over and game_host.game_state.current_turn_player == singleplayer_ai.player_id:
+		await singleplayer_ai.play_turn(game_host, get_tree())
+
+	singleplayer_ai_turn_in_progress = false
+	maybe_play_singleplayer_ai_turn()
 
 func host_game(port = 9999):
 	var error = multiplayer_peer.create_server(port, 2, 0, 0, 0)

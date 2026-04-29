@@ -279,6 +279,9 @@ func broadcast_full_state():
 		if peer_id != 1:
 			multiplayer_node.receive_game_state.rpc_id(peer_id, state_data)
 
+	if multiplayer_node.has_method("on_host_state_changed"):
+		multiplayer_node.on_host_state_changed()
+
 	print("State broadcast complete")
 
 func serialize_state() -> Dictionary:
