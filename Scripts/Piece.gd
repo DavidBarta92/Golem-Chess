@@ -13,17 +13,16 @@ func _init(pos: Vector2, col: int):
 func attach_card(card: Card):
 	attached_card = card
 	turns_remaining = card.duration
-	print("🎴 Kártya csatolva: %s a %s bábuhoz (pozíció: %s, körök: %d)" % [card.card_name, "fehér" if color > 0 else "fekete", position, turns_remaining])
+	print("Card attached: %s to %s piece (position: %s, turns: %d)" % [card.card_name, "white" if color > 0 else "black", position, turns_remaining])
 
 func detach_card() -> Card:
 	var old_card = attached_card
 	attached_card = null
 	turns_remaining = 0
-	print("♻️ Kártya lecsatolva: %s (visszakerül a pakliba)" % old_card.card_name if old_card else "")
+	print("Card detached: %s" % old_card.card_name if old_card else "")
 	return old_card
 
 func can_move() -> bool:
-	# Végtelen kártya (-1) vagy van hátralevő kör
 	return attached_card != null && (turns_remaining > 0 || turns_remaining == -1)
 	# return has_card() && (turns_remaining > 0 || turns_remaining == -1)
 
@@ -33,23 +32,22 @@ func get_movement_directions() -> Array:
 	return []
 
 func use_turn():
-	# Ha végtelen (-1), ne csökkentsük
 	if turns_remaining == -1:
-		print("⏱️ Végtelen kártya használata: %s" % attached_card.card_name)
+		print("Infinite card used: %s" % attached_card.card_name)
 		return
-	
+
 	if turns_remaining > 0:
 		turns_remaining -= 1
-		print("⏱️ Kártya használat: %s - hátralevő körök: %d" % [attached_card.card_name, turns_remaining])
+		print("Card used: %s - turns remaining: %d" % [attached_card.card_name, turns_remaining])
 		if turns_remaining == 0:
 			detach_card()
 
 func get_info() -> String:
 	if attached_card:
 		if turns_remaining == -1:
-			return "%s (végtelen)" % attached_card.card_name
-		return "%s (még %d kör)" % [attached_card.card_name, turns_remaining]
-	return "Nincs kártya"
-	
+			return "%s (infinite)" % attached_card.card_name
+		return "%s (%d turns left)" % [attached_card.card_name, turns_remaining]
+	return "No card"
+
 func has_card() -> bool:
 	return attached_card != null

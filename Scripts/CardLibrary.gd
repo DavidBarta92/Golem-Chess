@@ -1,10 +1,10 @@
-﻿extends Node
+extends Node
 
 var all_cards: Dictionary = {}  # card_code -> Card resource
 
 func _ready():
 	load_all_cards()
-	print("đź“š CardLibrary betĂ¶ltve: %d kĂˇrtya" % all_cards.size())
+	print("CardLibrary loaded: %d cards" % all_cards.size())
 
 func load_all_cards():
 	all_cards.clear()
@@ -12,7 +12,7 @@ func load_all_cards():
 	var dir: DirAccess = DirAccess.open(cards_path)
 
 	if dir == null:
-		push_error("âťŚ Nem talĂˇlhatĂł a Cards mappa!")
+		push_error("Cards folder not found.")
 		return
 
 	dir.list_dir_begin()
@@ -26,7 +26,7 @@ func load_all_cards():
 				var card: Card = load(card_path) as Card
 				if card:
 					all_cards[card.card_name] = card
-					print("  âś“ BetĂ¶ltve: %s (duration: %d)" % [card.card_name, card.duration])
+					print("  Loaded: %s (duration: %d)" % [card.card_name, card.duration])
 		file_name = dir.get_next()
 
 	dir.list_dir_end()

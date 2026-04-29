@@ -16,21 +16,21 @@ static func create_starting_deck() -> Array[String]:
 	var deck: Array[String] = []
 	deck.assign(STARTING_DECK)
 	deck.shuffle()
-	print("Pakli letrehozva: ", deck)
+	print("Deck created: ", deck)
 	return deck
 
 static func draw_card(deck: Array[String], hand: Array[String]) -> bool:
 	if deck.is_empty():
-		print("Pakli ures, nem lehet huzni.")
+		print("Deck is empty, cannot draw.")
 		return false
 
 	if hand.size() >= HAND_SIZE:
-		print("Kez tele van.")
+		print("Hand is full.")
 		return false
 
 	var drawn_card: String = deck.pop_front()
 	hand.append(drawn_card)
-	print("Kartya huzva: %s (pakli: %d, kez: %d)" % [drawn_card, deck.size(), hand.size()])
+	print("Card drawn: %s (deck: %d, hand: %d)" % [drawn_card, deck.size(), hand.size()])
 	return true
 
 static func draw_starting_hand(deck: Array[String], hand: Array[String]):
@@ -46,14 +46,14 @@ static func draw_starting_hand(deck: Array[String], hand: Array[String]):
 static func play_card(hand: Array[String], card_name: String, deck: Array[String]) -> bool:
 	var index: int = hand.find(card_name)
 	if index == -1:
-		print("Kartya nincs a kezben: %s" % card_name)
+		print("Card is not in hand: %s" % card_name)
 		return false
 
 	hand.remove_at(index)
-	print("Kartya kijatszva: %s" % card_name)
+	print("Card played: %s" % card_name)
 	draw_card(deck, hand)
 	return true
 
 static func return_card_to_deck(deck: Array[String], card_name: String):
 	deck.append(card_name)
-	print("Kartya visszakerult a pakliba: %s" % card_name)
+	print("Card returned to deck: %s" % card_name)

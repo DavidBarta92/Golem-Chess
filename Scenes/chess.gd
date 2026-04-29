@@ -108,9 +108,9 @@ func create_pieces_from_board():
 				var color: int = 1 if value > 0 else -1
 				var piece = Piece.new(pos, color)
 				piece_objects[pos] = piece
-				print("đź”· Piece lĂ©trehozva: pos=%s, color=%s" % [pos, "fehĂ©r" if color > 0 else "fekete"])
+				print("Piece created: pos=%s, color=%s" % [pos, "white" if color > 0 else "black"])
 
-	print("Babuk letrehozva kezdokartya nelkul.")
+	print("Pieces initialized without starting cards.")
 
 func setup_player_card_hands():
 	white_card_deck = DeckManager.create_starting_deck()
@@ -499,15 +499,15 @@ func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 
 	var piece: Piece = piece_objects[piece_position] as Piece
 	if piece.attached_card != null:
-		push_warning("Ehhez a babuhoz mar tartozik kartya: %s" % piece_position)
+		push_warning("This piece already has a card: %s" % piece_position)
 		return false
 
 	var card: Card = CardLibrary.duplicate_card(card_name)
 	if card == null:
-		push_warning("Nem talalhato kartya a babuhoz csatolashoz: %s" % card_name)
+		push_warning("Card not found for attach: %s" % card_name)
 		return false
 	if !can_attach_card_name(piece.color, card.card_name):
-		push_warning("A kiraly kartyat kell eloszor kijatszani.")
+		push_warning("The King card must be played first.")
 		return false
 
 	piece.attach_card(card)
@@ -561,7 +561,7 @@ func remove_card_from_hand_index(owner_color: int, hand_index: int, should_draw_
 func insert_drawn_card(owner_color: int, hand_index: int, card_name: String):
 	var card: Card = CardLibrary.duplicate_card(card_name)
 	if card == null:
-		push_warning("Nem talalhato kartya huzashoz: %s" % card_name)
+		push_warning("Card not found for draw: %s" % card_name)
 		return
 
 	var visuals: Array[CardVisual] = get_card_visuals(owner_color)
@@ -690,7 +690,7 @@ func update_deck_count_hover():
 	if label_y < 0.0:
 		label_y = deck_rect.end.y + DECK_COUNT_LABEL_GAP
 
-	deck_count_label.text = "%d lap" % get_card_deck_count(hovered_deck_color)
+	deck_count_label.text = "%d cards" % get_card_deck_count(hovered_deck_color)
 	deck_count_label.global_position = Vector2(
 		deck_rect.get_center().x - deck_count_label.size.x * 0.5,
 		label_y
@@ -725,7 +725,7 @@ func _input(event):
 				var var1 = int(adjusted_x / CELL_WIDTH)
 				var var2 = int(adjusted_y / CELL_WIDTH)
 
-				print("KattintĂˇs: grid=(", var1, ",", var2, ") board[", var2, "][", var1, "]=", board[var2][var1] if var2 < BOARD_SIZE && var1 < BOARD_SIZE else "invalid")
+				print("Click: grid=(", var1, ",", var2, ") board[", var2, "][", var1, "]=", board[var2][var1] if var2 < BOARD_SIZE && var1 < BOARD_SIZE else "invalid")
 
 				if var1 < 0 || var1 >= BOARD_SIZE || var2 < 0 || var2 >= BOARD_SIZE:
 					return
@@ -881,7 +881,7 @@ func get_piece_texture_for_position(board_pos: Vector2, piece_value: int) -> Tex
 	return get_default_piece_texture(piece_value)
 
 func display_board():
-	print("đźŽ¨ display_board() hĂ­vva: white=", white, " side=", side)
+	print("display_board() called: white=", white, " side=", side)
 	for child in pieces_node.get_children():
 		child.queue_free()
 
@@ -924,7 +924,7 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	if game_over:
 		return
 
-	print("đź”„ set_move KEZDĂ‰S: white=", white, " start=", start_pos, " end=", end_pos, " bĂˇbu=", board[start_pos.x][start_pos.y])
+	print("set_move() start: white=", white, " start=", start_pos, " end=", end_pos, " piece=", board[start_pos.x][start_pos.y])
 	var moving_color: int = 1 if board[start_pos.x][start_pos.y] > 0 else -1
 	var captured_piece: Piece = piece_objects[end_pos] as Piece if piece_objects.has(end_pos) else null
 	var captured_king: bool = is_king_piece(captured_piece)
@@ -934,7 +934,7 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 		piece.position = end_pos
 		piece_objects.erase(start_pos)
 		piece_objects[end_pos] = piece
-		print("  đź”· Piece mozgatva: %s -> %s" % [start_pos, end_pos])
+		print("  Piece moved: %s -> %s" % [start_pos, end_pos])
 
 	var just_now = false
 
@@ -960,7 +960,7 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	white = !white
 	reset_current_turn_card_attach()
 	update_card_presentation()
-	print("âś… set_move VĂ‰GE: white MOST=", white)
+	print("set_move() end: white now=", white)
 
 	display_board()
 
@@ -1007,7 +1007,7 @@ func finish_if_current_player_has_no_valid_turn() -> bool:
 
 	var losing_color: int = get_current_turn_color()
 	var winner_color: int = -losing_color
-	print("Nincs ervenyes lepes a jatekosnak: ", losing_color, ". Nyertes: ", winner_color)
+	print("No valid moves for player: ", losing_color, ". Winner: ", winner_color)
 	finish_game(winner_color)
 	return true
 
@@ -1034,26 +1034,26 @@ func show_result_message(winner_color: int):
 		return
 
 	if side == null:
-		result_label.text = "FEHĂ‰R NYERT!" if winner_color == 1 else "FEKETE NYERT!"
+		result_label.text = "WHITE WINS!" if winner_color == 1 else "BLACK WINS!"
 	else:
-		result_label.text = "NYERTĂ‰L!" if winner_color == get_own_color() else "VESZTETTĂ‰L!"
+		result_label.text = "YOU WON!" if winner_color == get_own_color() else "YOU LOST!"
 	result_overlay.visible = true
 
 func get_moves(selected : Vector2):
 	if piece_objects.has(selected):
 		var piece: Piece = piece_objects[selected] as Piece
 		if piece.can_move():
-			print("đźŽ´ KĂˇrtya mozgĂˇs hasznĂˇlata: %s" % piece.get_info())
+			print("Using card movement: %s" % piece.get_info())
 			return get_card_based_moves(selected, piece)
 		else:
-			print("âš ď¸Ź Nincs hasznĂˇlhatĂł kĂˇrtya ezen a bĂˇbun!")
+			print("No usable card on this piece.")
 			return []
 
 	return []
 
 func get_card_based_moves(piece_position: Vector2, piece: Piece) -> Array:
 	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves(piece_objects, piece_position, BOARD_SIZE)
-	print("  Ervenyes lepesek: ", valid_moves)
+	print("  Valid moves: ", valid_moves)
 	return valid_moves
 
 func is_valid_position(pos : Vector2):

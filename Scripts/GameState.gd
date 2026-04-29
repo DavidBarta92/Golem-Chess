@@ -1,11 +1,10 @@
-# GameState.gd - Központi játékállapot (nem autoload, instance)
+# GameState.gd - Shared game state data, not an autoload.
 class_name GameStateData
 
-# Game state
-var pieces: Dictionary = {}  # Vector2 -> Piece (a Piece.gd-ből!)
+var pieces: Dictionary = {}  # Vector2 -> Piece
 var player_decks: Dictionary = {}  # int (player_id) -> Array[String] (card names)
 var player_hands: Dictionary = {}  # int (player_id) -> Array[String] (card names)
-var current_turn_player: int = 0  # 0 = fehér, 1 = fekete
+var current_turn_player: int = 0  # 0 = white, 1 = black
 var white_king_position: Vector2 = Vector2(-1, -1)
 var black_king_position: Vector2 = Vector2(-1, -1)
 var attached_card_this_turn: Dictionary = {
@@ -18,7 +17,6 @@ var winner_player: int = -1
 func _init():
 	pass
 
-# Segédfüggvények
 func get_piece(pos: Vector2) -> Piece:
 	return pieces.get(pos)
 
