@@ -8,8 +8,8 @@ var peer_player_ids: Dictionary = {}
 var server_turn = true
 
 var game_host: NetworkGameHost = null
-var singleplayer_ai: RandomAIPlayer = null
-var singleplayer_ai_turn_in_progress: bool = false
+var ai_players: Dictionary = {}
+var ai_turn_in_progress: bool = false
 
 func _ready():
 	await get_tree().create_timer(0.1).timeout
@@ -28,8 +28,9 @@ func start_singleplayer_game():
 	is_server = true
 	server_turn = true
 	connected_peer_ids = [1]
-	peer_player_ids[1] = 0
-	singleplayer_ai = RandomAIPlayer.new(1)
+	peer_player_ids.clear()
+	peer_player_ids[1] = get_local_human_player_id()
+	ai_players.clear()
 
 	game_host = NetworkGameHost.new(self)
 	GameController.set_game_host(game_host)
@@ -37,9 +38,25 @@ func start_singleplayer_game():
 	var board_data = $board.board
 	game_host.initialize_game(board_data)
 	game_host.game_state.current_turn_player = 0
+	setup_singleplayer_ai_controllers()
 	game_host.finish_if_player_has_no_valid_turn(game_host.game_state.current_turn_player)
 	game_host.broadcast_full_state()
-	$board.set_turn(true)
+	$board.set_turn(get_side_for_player_id(get_local_human_player_id()))
+
+func setup_singleplayer_ai_controllers():
+	ai_players.clear()
+	for player_id in [0, 1]:
+		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
+			ai_players[player_id] = RandomAIPlayer.new(player_id)
+
+func get_local_human_player_id() -> int:
+	for player_id in [0, 1]:
+		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
+			return player_id
+	return 0
+
+func get_side_for_player_id(player_id: int) -> bool:
+	return player_id == 0
 
 func on_host_state_changed():
 	maybe_play_singleplayer_ai_turn()
@@ -47,22 +64,25 @@ func on_host_state_changed():
 func maybe_play_singleplayer_ai_turn():
 	if !GameConfig.is_singleplayer:
 		return
-	if singleplayer_ai == null or game_host == null or game_host.game_state == null:
+	if game_host == null or game_host.game_state == null:
 		return
-	if singleplayer_ai_turn_in_progress or game_host.game_state.game_over:
-		return
-	if game_host.game_state.current_turn_player != singleplayer_ai.player_id:
+	if ai_turn_in_progress or game_host.game_state.game_over:
 		return
 
-	singleplayer_ai_turn_in_progress = true
-	call_deferred("_play_singleplayer_ai_turn")
+	var current_player_id: int = game_host.game_state.current_turn_player
+	if !ai_players.has(current_player_id):
+		return
 
-func _play_singleplayer_ai_turn():
+	ai_turn_in_progress = true
+	call_deferred("_play_singleplayer_ai_turn", current_player_id)
+
+func _play_singleplayer_ai_turn(player_id: int):
 	await get_tree().create_timer(0.45).timeout
-	if singleplayer_ai != null and game_host != null and !game_host.game_state.game_over and game_host.game_state.current_turn_player == singleplayer_ai.player_id:
-		await singleplayer_ai.play_turn(game_host, get_tree())
+	var ai_player: RandomAIPlayer = ai_players.get(player_id, null) as RandomAIPlayer
+	if ai_player != null and game_host != null and !game_host.game_state.game_over and game_host.game_state.current_turn_player == player_id:
+		await ai_player.play_turn(game_host, get_tree())
 
-	singleplayer_ai_turn_in_progress = false
+	ai_turn_in_progress = false
 	maybe_play_singleplayer_ai_turn()
 
 func host_game(port = 9999):

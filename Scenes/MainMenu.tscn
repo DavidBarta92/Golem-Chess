@@ -25,9 +25,9 @@ offset_bottom = 100.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="SingleplayerButton" type="Button" parent="VBoxContainer"]
+[node name="SingleplayerButton" type="Button" parent="VBoxContainer" unique_id=2029327827]
 layout_mode = 2
-text = "singleplayer"
+text = "Singleplayer"
 
 [node name="HostButton" type="Button" parent="VBoxContainer" unique_id=584776113]
 layout_mode = 2

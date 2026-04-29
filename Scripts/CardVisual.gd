@@ -15,6 +15,8 @@ signal drag_released(card_visual: CardVisual)
 @onready var card_face: TextureRect = $CardFace
 @onready var shimmer: ColorRect = $Shimmer
 @onready var duration_label: Label = $DurationLabel
+@onready var effect_icon_texture: TextureRect = $EffectIconTexture
+@onready var effect_icon_label: Label = $EffectIconLabel
 @onready var name_label: Label = $NameLabel
 @onready var pattern_view: CardPatternView = $PatternView
 
@@ -187,17 +189,24 @@ func _apply_card() -> void:
 	if card == null:
 		name_label.text = ""
 		duration_label.text = ""
+		effect_icon_texture.texture = null
+		effect_icon_label.text = ""
 		pattern_view.set_pattern([])
 	else:
 		name_label.text = card.card_name
 		duration_label.text = "INF" if card.duration < 0 else str(card.duration)
+		effect_icon_texture.texture = card.effect_icon
+		effect_icon_label.text = CardEffect.get_effect_label(card.effect_type)
 		pattern_view.set_pattern(card.movement_pattern)
 
 	_apply_face_state()
 
 func _apply_face_state() -> void:
+	var has_effect_icon: bool = card != null && card.has_effect()
 	name_label.visible = !face_down
 	duration_label.visible = !face_down
+	effect_icon_texture.visible = !face_down && has_effect_icon && card.effect_icon != null
+	effect_icon_label.visible = !face_down && has_effect_icon && card.effect_icon == null
 	pattern_view.visible = !face_down
 	shimmer.visible = !face_down
 	card_face.material = null if face_down else face_material

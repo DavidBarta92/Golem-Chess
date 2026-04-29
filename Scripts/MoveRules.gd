@@ -42,17 +42,30 @@ static func get_card_moves_for_piece(pieces: Dictionary, piece_position: Vector2
 	if card == null:
 		return valid_moves
 
-	var directions: Array = card.get_directions()
-	for direction: Vector2 in directions:
+	var movement_options: Array[Dictionary] = card.get_movement_options()
+	for movement_option: Dictionary in movement_options:
+		var direction: Vector2 = movement_option.get("offset", Vector2.ZERO)
+		var movement_type: int = int(movement_option.get("movement_type", CardEffect.MOVEMENT_MOVE_AND_CAPTURE))
 		var target_pos: Vector2 = piece_position + (direction * piece_color)
 		if !is_valid_position(target_pos, board_size):
 			continue
 
 		var target_piece: Piece = get_piece_at(pieces, target_pos)
-		if target_piece == null || target_piece.color != piece_color:
+		if is_target_allowed_by_movement_type(target_piece, piece_color, movement_type):
 			valid_moves.append(target_pos)
 
 	return valid_moves
+
+static func is_target_allowed_by_movement_type(target_piece: Piece, piece_color: int, movement_type: int) -> bool:
+	match movement_type:
+		CardEffect.MOVEMENT_MOVE_ONLY:
+			return target_piece == null
+		CardEffect.MOVEMENT_CAPTURE_ONLY:
+			return target_piece != null && target_piece.color != piece_color
+		CardEffect.MOVEMENT_MOVE_AND_CAPTURE:
+			return target_piece == null || target_piece.color != piece_color
+		_:
+			return false
 
 static func get_piece_moves(pieces: Dictionary, piece_position: Vector2, board_size: int = DEFAULT_BOARD_SIZE) -> Array[Vector2]:
 	var piece: Piece = get_piece_at(pieces, piece_position)
