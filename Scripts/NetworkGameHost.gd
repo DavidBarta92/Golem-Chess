@@ -125,6 +125,7 @@ func handle_attach_card(action: Dictionary):
 		# KĂˇrtya kijĂˇtszĂˇsa a kĂ©zbĹ‘l
 		DeckManager.play_card(game_state.player_hands[player_id], card_name, game_state.player_decks[player_id])
 		game_state.attached_card_this_turn[player_id] = true
+		finish_if_player_has_no_valid_turn(player_id)
 
 		print("âś… KĂˇrtya sikeresen csatolva!")
 		broadcast_full_state()
@@ -214,6 +215,7 @@ func handle_move_piece(action: Dictionary):
 
 	# KĂ¶r vĂˇltĂˇs
 	game_state.switch_turn()
+	finish_if_player_has_no_valid_turn(game_state.current_turn_player)
 
 	print("âś… LĂ©pĂ©s vĂ©grehajtva! KĂ¶vetkezĹ‘ jĂˇtĂ©kos: ", game_state.current_turn_player)
 
@@ -225,30 +227,43 @@ func finish_game(winner_player: int):
 	game_state.game_over = true
 	game_state.winner_player = winner_player
 
+func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
+	if game_state.game_over:
+		return false
+	if player_has_valid_turn_action(player_id):
+		return false
+
+	var winner_player: int = 1 - player_id
+	print("Nincs ervenyes lepes: vesztes jatekos=%d, nyertes jatekos=%d" % [player_id, winner_player])
+	finish_game(winner_player)
+	return true
+
+func player_has_valid_turn_action(player_id: int) -> bool:
+	var player_color: int = 1 if player_id == 0 else -1
+	var can_attach_card: bool = !bool(game_state.attached_card_this_turn.get(player_id, false))
+	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
+	return MoveRules.has_valid_turn_action(game_state.pieces, player_color, hand_cards, can_attach_card, 5)
+
+func get_hand_cards_for_player(player_id: int) -> Array[Card]:
+	var hand_cards: Array[Card] = []
+	if !game_state.player_hands.has(player_id):
+		return hand_cards
+
+	var hand_card_names: Array = game_state.player_hands[player_id]
+	for card_name_value in hand_card_names:
+		var card_name: String = str(card_name_value)
+		var card: Card = CardLibrary.get_card(card_name)
+		if card != null:
+			hand_cards.append(card)
+
+	return hand_cards
+
 func has_any_piece(player_id: int) -> bool:
 	var expected_color: int = 1 if player_id == 0 else -1
-	for pos in game_state.pieces:
-		var piece: Piece = game_state.pieces[pos]
-		if piece.color == expected_color:
-			return true
-	return false
+	return MoveRules.has_any_piece(game_state.pieces, expected_color)
 
-func is_valid_move(piece: Piece, from_pos: Vector2, to_pos: Vector2) -> bool:
-	if piece.attached_card == null:
-		return false
-	if to_pos.x < 0 || to_pos.x >= 5 || to_pos.y < 0 || to_pos.y >= 5:
-		return false
-
-	var target_piece: Piece = game_state.get_piece(to_pos)
-	if target_piece != null && target_piece.color == piece.color:
-		return false
-
-	var directions: Array = piece.get_movement_directions()
-	var move_vector: Vector2 = to_pos - from_pos
-	for direction: Vector2 in directions:
-		if move_vector == direction * piece.color:
-			return true
-	return false
+func is_valid_move(_piece: Piece, from_pos: Vector2, to_pos: Vector2) -> bool:
+	return MoveRules.is_valid_move(game_state.pieces, from_pos, to_pos, 5)
 
 # Teljes state broadcast minden kliensnek
 func broadcast_full_state():

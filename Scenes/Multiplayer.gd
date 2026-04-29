@@ -78,6 +78,7 @@ func _on_peer_connected(peer_id):
 			var board_data = $board.board
 			game_host.initialize_game(board_data)
 			game_host.game_state.current_turn_player = 0 if server_turn else 1
+			game_host.finish_if_player_has_no_valid_turn(game_host.game_state.current_turn_player)
 			game_host.broadcast_full_state()
 			
 			# 🔥 ÚJ: Várunk egy kicsit hogy a broadcast lefusson

@@ -436,6 +436,8 @@ func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector
 
 	var replacement_card_name: String = remove_card_from_hand(card_visual)
 	mark_card_attached_this_turn(card_visual.owner_color)
+	if finish_if_current_player_has_no_valid_turn():
+		return
 
 	if get_parent().has_method("send_card_attach"):
 		get_parent().send_card_attach(piece_position, card_name, card_visual.owner_color, hand_index, replacement_card_name)
@@ -840,12 +842,13 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 
 	display_board()
 
+	if finish_if_current_player_has_no_valid_turn():
+		return
+
 	if (start_pos.x != end_pos.x || start_pos.y != end_pos.y) && (white && board[end_pos.x][end_pos.y] > 0 || !white && board[end_pos.x][end_pos.y] < 0):
 		start_pos = end_pos
 		show_options()
 		state = true
-	elif is_stalemate():
-		print("DRAW")
 
 func get_winner_after_move(moving_color: int, end_pos: Vector2) -> int:
 	if is_opponent_base_field(moving_color, end_pos):
@@ -860,11 +863,25 @@ func is_opponent_base_field(moving_color: int, pos: Vector2) -> bool:
 	return pos == WHITE_BASE_FIELD
 
 func has_any_piece(owner_color: int) -> bool:
-	for i in BOARD_SIZE:
-		for j in BOARD_SIZE:
-			if board[i][j] * owner_color > 0:
-				return true
-	return false
+	return MoveRules.has_any_piece(piece_objects, owner_color)
+
+func current_player_has_valid_turn_action() -> bool:
+	var current_color: int = get_current_turn_color()
+	var hand_cards: Array[Card] = get_card_hand(current_color)
+	var can_attach_card: bool = !has_attached_card_this_turn(current_color)
+	return MoveRules.has_valid_turn_action(piece_objects, current_color, hand_cards, can_attach_card, BOARD_SIZE)
+
+func finish_if_current_player_has_no_valid_turn() -> bool:
+	if game_over:
+		return false
+	if current_player_has_valid_turn_action():
+		return false
+
+	var losing_color: int = get_current_turn_color()
+	var winner_color: int = -losing_color
+	print("Nincs ervenyes lepes a jatekosnak: ", losing_color, ". Nyertes: ", winner_color)
+	finish_game(winner_color)
+	return true
 
 func finish_game(winner_color: int):
 	if game_over:
@@ -907,29 +924,9 @@ func get_moves(selected : Vector2):
 	return []
 
 func get_card_based_moves(piece_position: Vector2, piece: Piece) -> Array:
-	var _moves: Array = []
-	var directions: Array = piece.get_movement_directions()
-
-	print("  đź“Ť IrĂˇnyok: ", directions)
-
-	for direction: Vector2 in directions:
-		var target_pos: Vector2 = piece_position + (direction * piece.color)
-
-		if !is_valid_position(target_pos):
-			continue
-
-		if is_empty(target_pos) || is_enemy_for_color(target_pos, piece.color):
-			var original_value: int = board[target_pos.x][target_pos.y]
-			board[target_pos.x][target_pos.y] = board[piece_position.x][piece_position.y]
-			board[piece_position.x][piece_position.y] = 0
-
-			_moves.append(target_pos)
-
-			board[piece_position.x][piece_position.y] = board[target_pos.x][target_pos.y]
-			board[target_pos.x][target_pos.y] = original_value
-
-	print("  âś… Ă‰rvĂ©nyes lĂ©pĂ©sek: ", _moves)
-	return _moves
+	var valid_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(piece_objects, piece_position, piece.color, piece.attached_card, BOARD_SIZE)
+	print("  Ervenyes lepesek: ", valid_moves)
+	return valid_moves
 
 func is_valid_position(pos : Vector2):
 	if pos.x >= 0 && pos.x < BOARD_SIZE && pos.y >= 0 && pos.y < BOARD_SIZE: return true
@@ -1001,18 +998,7 @@ func is_in_check(king_pos: Vector2):
 	return false
 
 func is_stalemate():
-	if white:
-		for i in BOARD_SIZE:
-			for j in BOARD_SIZE:
-				if board[i][j] > 0:
-					if get_moves(Vector2(i, j)) != []: return false
-
-	else:
-		for i in BOARD_SIZE:
-			for j in BOARD_SIZE:
-				if board[i][j] < 0:
-					if get_moves(Vector2(i, j)) != []: return false
-	return true
+	return !current_player_has_valid_turn_action()
 
 func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1):
 	board.clear()
