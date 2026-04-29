@@ -53,7 +53,7 @@ func choose_random_turn_move(host: NetworkGameHost) -> Dictionary:
 	var player_color: int = 1 if player_id == 0 else -1
 	var can_attach_card: bool = !bool(host.game_state.attached_card_this_turn.get(player_id, false))
 	var hand_cards: Array[Card] = host.get_hand_cards_for_player(player_id)
-	var valid_moves: Array[Dictionary] = MoveRules.get_valid_turn_moves(host.game_state.pieces, player_color, hand_cards, can_attach_card, BOARD_SIZE)
+	var valid_moves: Array[Dictionary] = MoveRules.get_valid_turn_moves(host.game_state.pieces, player_color, hand_cards, can_attach_card, BOARD_SIZE, host.game_state.board_effects)
 	if valid_moves.is_empty():
 		return {}
 

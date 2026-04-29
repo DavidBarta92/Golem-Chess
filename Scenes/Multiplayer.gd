@@ -247,7 +247,10 @@ func apply_game_state(state_data: Dictionary):
 		state_data.current_turn,
 		state_data.get("game_over", false),
 		state_data.get("winner_player", -1),
-		state_data.get("player_decks_size", {})
+		state_data.get("player_decks_size", {}),
+		state_data.get("hidden_cards", []),
+		state_data.get("player_base_fields", {}),
+		state_data.get("board_effects", [])
 	)
 
 	print("apply_game_state() end")

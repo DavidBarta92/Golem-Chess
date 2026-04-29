@@ -7,6 +7,11 @@ var player_hands: Dictionary = {}  # int (player_id) -> Array[String] (card name
 var current_turn_player: int = 0  # 0 = white, 1 = black
 var white_king_position: Vector2 = Vector2(-1, -1)
 var black_king_position: Vector2 = Vector2(-1, -1)
+var player_base_fields: Dictionary = {
+	0: Vector2(0, 2),
+	1: Vector2(4, 2),
+}
+var board_effects: Array = []
 var attached_card_this_turn: Dictionary = {
 	0: false,
 	1: false,

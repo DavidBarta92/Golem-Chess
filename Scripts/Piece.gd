@@ -31,16 +31,18 @@ func get_movement_directions() -> Array:
 		return attached_card.get_directions()
 	return []
 
-func use_turn():
+func use_turn() -> Card:
 	if turns_remaining == -1:
 		print("Infinite card used: %s" % attached_card.card_name)
-		return
+		return null
 
 	if turns_remaining > 0:
 		turns_remaining -= 1
 		print("Card used: %s - turns remaining: %d" % [attached_card.card_name, turns_remaining])
 		if turns_remaining == 0:
-			detach_card()
+			return detach_card()
+
+	return null
 
 func get_info() -> String:
 	if attached_card:

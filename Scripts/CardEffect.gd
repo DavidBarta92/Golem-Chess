@@ -4,6 +4,7 @@ class_name CardEffect
 const TYPE_NONE: String = "none"
 const TYPE_SHARED_CONTROL: String = "shared_control"
 const TYPE_STEAL_CARD: String = "steal_card"
+const TYPE_GRANT_CARD: String = "grant_card"
 const TYPE_MOVE_BASE: String = "move_base"
 const TYPE_INVISIBLE_TO_ENEMY: String = "invisible_to_enemy"
 const TYPE_INVALID_SQUARES: String = "invalid_squares"
@@ -31,6 +32,8 @@ static func get_effect_label(effect_type: String) -> String:
 			return "SC"
 		TYPE_STEAL_CARD:
 			return "ST"
+		TYPE_GRANT_CARD:
+			return "GC"
 		TYPE_MOVE_BASE:
 			return "MB"
 		TYPE_INVISIBLE_TO_ENEMY:
@@ -50,6 +53,8 @@ static func get_effect_display_name(effect_type: String) -> String:
 			return "Shared Control"
 		TYPE_STEAL_CARD:
 			return "Steal Card"
+		TYPE_GRANT_CARD:
+			return "Grant Card"
 		TYPE_MOVE_BASE:
 			return "Move Base"
 		TYPE_INVISIBLE_TO_ENEMY:

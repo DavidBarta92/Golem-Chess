@@ -10,5 +10,7 @@ card_name = "Pawn"
 card_code = "pawn"
 white_piece_texture = ExtResource("3_vedvu")
 black_piece_texture = ExtResource("1_svcd4")
+effect_type = "frozen_squares"
+effect_params = Array[Array]([[1, 0, 1, 0, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 1, 1, 0, 0]])
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

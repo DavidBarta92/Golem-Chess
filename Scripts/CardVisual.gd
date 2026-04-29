@@ -38,6 +38,8 @@ var hand_index: int = -1
 var owner_color: int = 0
 var draggable: bool = true
 var face_down: bool = false
+var ambient_motion_enabled: bool = false
+var ambient_motion_time: float = 0.0
 var is_dragging: bool = false
 var is_assigned: bool = false
 var is_hovered: bool = false
@@ -67,6 +69,8 @@ func _process(_delta: float) -> void:
 		drag_moved.emit(self)
 	elif is_hovered:
 		update_tilt_from_mouse()
+	elif ambient_motion_enabled:
+		update_ambient_motion(_delta)
 
 	update_shimmer_time(_delta)
 
@@ -109,6 +113,16 @@ func set_face_down(value: bool) -> void:
 	face_down = value
 	if is_node_ready():
 		_apply_face_state()
+
+func set_ambient_motion_enabled(value: bool) -> void:
+	ambient_motion_enabled = value
+	ambient_motion_time = randf() * TAU
+	if !value and is_node_ready():
+		position = home_position
+		rotation = 0.0
+		if face_material:
+			face_material.set_shader_parameter("x_rot", 0.0)
+			face_material.set_shader_parameter("y_rot", 0.0)
 
 func set_hand_context(new_owner_color: int, new_hand_index: int, new_home_position: Vector2) -> void:
 	owner_color = new_owner_color
@@ -191,13 +205,13 @@ func _apply_card() -> void:
 		duration_label.text = ""
 		effect_icon_texture.texture = null
 		effect_icon_label.text = ""
-		pattern_view.set_pattern([])
+		pattern_view.set_card(null)
 	else:
 		name_label.text = card.card_name
 		duration_label.text = "INF" if card.duration < 0 else str(card.duration)
 		effect_icon_texture.texture = card.effect_icon
 		effect_icon_label.text = CardEffect.get_effect_label(card.effect_type)
-		pattern_view.set_pattern(card.movement_pattern)
+		pattern_view.set_card(card)
 
 	_apply_face_state()
 
@@ -285,6 +299,18 @@ func update_tilt_from_mouse() -> void:
 	face_material.set_shader_parameter("x_rot", x_rot)
 	face_material.set_shader_parameter("y_rot", y_rot)
 	rotation = deg_to_rad(y_rot * 0.08)
+
+func update_ambient_motion(delta: float) -> void:
+	if face_down or face_material == null:
+		return
+
+	ambient_motion_time += delta
+	var sway: float = sin(ambient_motion_time * 1.35)
+	var tilt: float = sin(ambient_motion_time * 1.85 + 0.7)
+	position = home_position + Vector2(0.0, sway * 4.0)
+	rotation = deg_to_rad(sway * 2.4)
+	face_material.set_shader_parameter("x_rot", tilt * 5.5)
+	face_material.set_shader_parameter("y_rot", sway * 6.5)
 
 func reset_tilt_and_scale() -> void:
 	if tween_hover and tween_hover.is_running():

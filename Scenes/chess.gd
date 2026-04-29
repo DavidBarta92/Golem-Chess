@@ -29,6 +29,10 @@ const CARD_UI_SIZE = Vector2(112, 156)
 const CARD_UI_GAP = 12
 const CARD_HAND_MARGIN = 18
 const HOVER_CARD_MARGIN = 24
+const HIDDEN_CARD_MARGIN = 24
+const HIDDEN_CARD_GAP = 10
+const HIDDEN_CARD_SCALE = 0.78
+const BOARD_MARKER_LINE_WIDTH = 1.8
 const DECK_COUNT_LABEL_SIZE = Vector2(88, 28)
 const DECK_COUNT_LABEL_GAP = 8
 const INVALID_BOARD_POS = Vector2(-1, -1)
@@ -71,6 +75,14 @@ var has_received_server_state: bool = false
 var deck_count_label: Label
 var white_deck_count_override: int = -1
 var black_deck_count_override: int = -1
+var hidden_card_preview_container: Control
+var hidden_card_previews: Array[CardVisual] = []
+var board_markers_node: Node2D
+var current_board_effects: Array = []
+var current_player_base_fields: Dictionary = {
+	0: WHITE_BASE_FIELD,
+	1: BLACK_BASE_FIELD,
+}
 
 var side
 
@@ -86,6 +98,7 @@ func set_turn(_turn):
 
 func _ready():
 	randomize()
+	create_board_markers_node()
 	board.append([1, 1, 1, 1, 1])
 	board.append([0, 0, 0, 0, 0])
 	board.append([0, 0, 0, 0, 0])
@@ -95,8 +108,19 @@ func _ready():
 	create_pieces_from_board()
 	setup_player_card_hands()
 	create_hover_piece_ui()
+	create_hidden_card_preview_ui()
 	create_result_ui()
 	create_deck_count_ui()
+
+func create_board_markers_node():
+	board_markers_node = Node2D.new()
+	board_markers_node.name = "BoardMarkers"
+	board_markers_node.z_index = 1
+	add_child(board_markers_node)
+	move_child(board_markers_node, 0)
+	pieces_node.z_index = 10
+	dots.z_index = 20
+	turn.z_index = 30
 
 func create_pieces_from_board():
 	piece_objects.clear()
@@ -314,6 +338,17 @@ func create_deck_count_ui():
 	label_settings.outline_size = 4
 	label_settings.outline_color = Color(0.0, 0.0, 0.0)
 	deck_count_label.label_settings = label_settings
+
+func create_hidden_card_preview_ui():
+	hidden_card_preview_container = Control.new()
+	canvas_layer.add_child(hidden_card_preview_container)
+	hidden_card_preview_container.visible = false
+	hidden_card_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hidden_card_preview_container.anchor_left = 0.5
+	hidden_card_preview_container.anchor_right = 0.5
+	hidden_card_preview_container.anchor_top = 0.5
+	hidden_card_preview_container.anchor_bottom = 0.5
+	hidden_card_preview_container.z_index = 850
 
 func get_card_home_position(index: int) -> Vector2:
 	return Vector2(index * (CARD_UI_SIZE.x + CARD_UI_GAP), 0)
@@ -730,13 +765,14 @@ func _input(event):
 				if var1 < 0 || var1 >= BOARD_SIZE || var2 < 0 || var2 >= BOARD_SIZE:
 					return
 
-				if !state && (white && board[var2][var1] > 0 || !white && board[var2][var1] < 0):
-					selected_piece = Vector2(var2, var1)
+				var clicked_pos: Vector2 = Vector2(var2, var1)
+				if !state && can_player_control_piece_at(clicked_pos, get_own_player_id()):
+					selected_piece = clicked_pos
 					show_options()
 					state = true
 				elif state:
-					if moves.has(Vector2(var2, var1)):
-						send_move_action(selected_piece, Vector2(var2, var1))
+					if moves.has(clicked_pos):
+						send_move_action(selected_piece, clicked_pos)
 
 					delete_dots()
 					state = false
@@ -882,6 +918,7 @@ func get_piece_texture_for_position(board_pos: Vector2, piece_value: int) -> Tex
 
 func display_board():
 	print("display_board() called: white=", white, " side=", side)
+	update_board_markers()
 	for child in pieces_node.get_children():
 		child.queue_free()
 
@@ -1044,15 +1081,21 @@ func get_moves(selected : Vector2):
 		var piece: Piece = piece_objects[selected] as Piece
 		if piece.can_move():
 			print("Using card movement: %s" % piece.get_info())
-			return get_card_based_moves(selected, piece)
+			return get_card_based_moves(selected, piece, get_move_preview_player_id(selected, piece))
 		else:
 			print("No usable card on this piece.")
 			return []
 
 	return []
 
-func get_card_based_moves(piece_position: Vector2, piece: Piece) -> Array:
-	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves(piece_objects, piece_position, BOARD_SIZE)
+func get_move_preview_player_id(piece_position: Vector2, piece: Piece) -> int:
+	var own_player_id: int = get_own_player_id()
+	if can_control_current_turn() && can_player_control_piece_at(piece_position, own_player_id):
+		return own_player_id
+	return get_player_id_for_color(piece.color)
+
+func get_card_based_moves(piece_position: Vector2, piece: Piece, player_id: int) -> Array:
+	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(piece_objects, piece_position, player_id, BOARD_SIZE)
 	print("  Valid moves: ", valid_moves)
 	return valid_moves
 
@@ -1072,13 +1115,19 @@ func is_enemy_for_color(pos: Vector2, owner_color: int) -> bool:
 	return board[pos.x][pos.y] * owner_color < 0
 
 func is_current_player_piece(pos : Vector2) -> bool:
-	return white && board[pos.x][pos.y] > 0 || !white && board[pos.x][pos.y] < 0
+	return can_player_control_piece_at(pos, get_own_player_id())
 
 func is_own_piece(pos: Vector2) -> bool:
 	return is_piece_owned_by(pos, get_controllable_color())
 
 func is_piece_owned_by(pos: Vector2, owner_color: int) -> bool:
 	return board[pos.x][pos.y] * owner_color > 0
+
+func can_player_control_piece_at(pos: Vector2, player_id: int) -> bool:
+	if !piece_objects.has(pos):
+		return false
+	var piece: Piece = piece_objects[pos] as Piece
+	return CardEffectResolver.can_player_control_piece(piece, player_id)
 
 func can_control_current_turn() -> bool:
 	return !game_over && (side == null || side == white)
@@ -1128,7 +1177,7 @@ func is_in_check(king_pos: Vector2):
 func is_stalemate():
 	return !current_player_has_valid_turn_action()
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = []):
 	var previous_white_hand_names: Array[String] = get_card_names_from_hand(white_card_hand)
 	var previous_black_hand_names: Array[String] = get_card_names_from_hand(black_card_hand)
 
@@ -1163,6 +1212,8 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	if !player_deck_sizes.is_empty():
 		white_deck_count_override = get_int_from_state_dict(player_deck_sizes, 0, white_card_deck.size())
 		black_deck_count_override = get_int_from_state_dict(player_deck_sizes, 1, black_card_deck.size())
+	current_player_base_fields = parse_player_base_fields(player_base_fields)
+	current_board_effects = parse_board_effects(board_effects)
 	white_card_hand = create_card_hand_from_names(current_white_hand_names)
 	black_card_hand = create_card_hand_from_names(current_black_hand_names)
 	white_card_visuals = populate_card_hand(white_pieces, white_card_hand, 1)
@@ -1171,6 +1222,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 
 	delete_dots()
 	hide_hover_piece_details()
+	update_hidden_card_previews(hidden_cards)
 	update_card_presentation()
 	display_board()
 	if has_received_server_state:
@@ -1180,3 +1232,189 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 
 	if server_game_over && winner_player != -1:
 		finish_game(get_color_for_player_id(winner_player))
+
+func update_hidden_card_previews(hidden_cards: Array):
+	clear_hidden_card_previews()
+	if hidden_cards.is_empty():
+		if hidden_card_preview_container:
+			hidden_card_preview_container.visible = false
+		return
+
+	arrange_hidden_card_preview_container(hidden_cards.size())
+	hidden_card_preview_container.visible = true
+
+	var scaled_card_size: Vector2 = CARD_UI_SIZE * HIDDEN_CARD_SCALE
+	for i in hidden_cards.size():
+		var hidden_card_data: Dictionary = hidden_cards[i]
+		var card_name: String = str(hidden_card_data.get("card_name", ""))
+		if card_name.is_empty():
+			continue
+
+		var card: Card = CardLibrary.duplicate_card(card_name)
+		if card == null:
+			continue
+
+		card.duration = int(hidden_card_data.get("turns_remaining", card.duration))
+		var card_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
+		hidden_card_preview_container.add_child(card_visual)
+		card_visual.set_hand_context(0, i, Vector2(0.0, i * (scaled_card_size.y + HIDDEN_CARD_GAP)))
+		card_visual.set_card(card)
+		card_visual.set_face_down(false)
+		card_visual.draggable = false
+		card_visual.disabled = true
+		card_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_visual.scale = Vector2.ONE * HIDDEN_CARD_SCALE
+		card_visual.z_index = 850 + i
+		card_visual.set_ambient_motion_enabled(true)
+		hidden_card_previews.append(card_visual)
+
+func clear_hidden_card_previews():
+	for card_visual: CardVisual in hidden_card_previews:
+		if card_visual and is_instance_valid(card_visual):
+			card_visual.set_ambient_motion_enabled(false)
+			card_visual.queue_free()
+	hidden_card_previews.clear()
+
+func arrange_hidden_card_preview_container(card_count: int):
+	if hidden_card_preview_container == null:
+		return
+
+	var scaled_card_size: Vector2 = CARD_UI_SIZE * HIDDEN_CARD_SCALE
+	var total_height: float = float(card_count) * scaled_card_size.y + float(maxi(0, card_count - 1)) * HIDDEN_CARD_GAP
+	var board_screen_width: float = BOARD_SIZE * CELL_WIDTH * get_board_screen_scale()
+	var left_offset: float = -board_screen_width * 0.5 - HIDDEN_CARD_MARGIN - scaled_card_size.x
+	hidden_card_preview_container.offset_left = left_offset
+	hidden_card_preview_container.offset_right = left_offset + scaled_card_size.x
+	hidden_card_preview_container.offset_top = -total_height * 0.5
+	hidden_card_preview_container.offset_bottom = total_height * 0.5
+
+func get_board_screen_scale() -> float:
+	var camera: Camera2D = $"../Camera2D"
+	if camera == null:
+		return 1.0
+	return absf(camera.zoom.x)
+
+func parse_player_base_fields(player_base_fields: Dictionary) -> Dictionary:
+	var parsed_fields: Dictionary = {
+		0: WHITE_BASE_FIELD,
+		1: BLACK_BASE_FIELD,
+	}
+	if player_base_fields.is_empty():
+		return parsed_fields
+
+	for player_id in [0, 1]:
+		if player_base_fields.has(player_id):
+			parsed_fields[player_id] = value_to_vector2(player_base_fields[player_id], parsed_fields[player_id])
+			continue
+
+		var string_key: String = str(player_id)
+		if player_base_fields.has(string_key):
+			parsed_fields[player_id] = value_to_vector2(player_base_fields[string_key], parsed_fields[player_id])
+
+	return parsed_fields
+
+func parse_board_effects(board_effects: Array) -> Array:
+	var parsed_effects: Array = []
+	for effect_value in board_effects:
+		var effect: Dictionary = effect_value
+		var parsed_squares: Array[Vector2] = []
+		var square_values: Array = effect.get("squares", [])
+		for square_value in square_values:
+			var square_pos: Vector2 = value_to_vector2(square_value, INVALID_BOARD_POS)
+			if is_valid_position(square_pos):
+				parsed_squares.append(square_pos)
+
+		parsed_effects.append({
+			"effect_type": str(effect.get("effect_type", "")),
+			"squares": parsed_squares,
+		})
+
+	return parsed_effects
+
+func value_to_vector2(value, fallback: Vector2) -> Vector2:
+	if value is Vector2:
+		return value
+	if value is Vector2i:
+		var vector_value: Vector2i = value
+		return Vector2(vector_value.x, vector_value.y)
+	if value is Array:
+		var array_value: Array = value
+		if array_value.size() >= 2:
+			return Vector2(float(array_value[0]), float(array_value[1]))
+	if value is Dictionary:
+		var dict_value: Dictionary = value
+		if dict_value.has("x") && dict_value.has("y"):
+			return Vector2(float(dict_value.x), float(dict_value.y))
+	return fallback
+
+func update_board_markers():
+	if board_markers_node == null:
+		return
+
+	for child in board_markers_node.get_children():
+		child.queue_free()
+
+	for effect_value in current_board_effects:
+		var effect: Dictionary = effect_value
+		var effect_type: String = str(effect.get("effect_type", ""))
+		var squares: Array = effect.get("squares", [])
+		for square_value in squares:
+			var square_pos: Vector2 = value_to_vector2(square_value, INVALID_BOARD_POS)
+			if !is_valid_position(square_pos):
+				continue
+			if effect_type == CardEffect.TYPE_INVALID_SQUARES:
+				add_board_square_x_marker(square_pos, Color(1.0, 0.08, 0.06, 0.9), Color(1.0, 0.0, 0.0, 0.16))
+			elif effect_type == CardEffect.TYPE_FROZEN_SQUARES:
+				add_board_square_x_marker(square_pos, Color(0.08, 0.4, 1.0, 0.92), Color(0.0, 0.35, 1.0, 0.18))
+
+	for player_id in [0, 1]:
+		var base_pos: Vector2 = current_player_base_fields.get(player_id, WHITE_BASE_FIELD if player_id == 0 else BLACK_BASE_FIELD)
+		if is_valid_position(base_pos):
+			add_board_base_marker(base_pos, player_id)
+
+func add_board_square_fill(board_pos: Vector2, marker_color: Color):
+	var rect: Rect2 = get_board_cell_rect_local(board_pos)
+	var marker := Polygon2D.new()
+	marker.color = marker_color
+	marker.polygon = PackedVector2Array([
+		rect.position,
+		rect.position + Vector2(rect.size.x, 0.0),
+		rect.position + rect.size,
+		rect.position + Vector2(0.0, rect.size.y),
+	])
+	board_markers_node.add_child(marker)
+
+func add_board_square_x_marker(board_pos: Vector2, line_color: Color, fill_color: Color):
+	add_board_square_fill(board_pos, fill_color)
+	var rect: Rect2 = get_board_cell_rect_local(board_pos).grow(-CELL_WIDTH * 0.22)
+	add_board_line([rect.position, rect.position + rect.size], line_color, BOARD_MARKER_LINE_WIDTH)
+	add_board_line([rect.position + Vector2(0.0, rect.size.y), rect.position + Vector2(rect.size.x, 0.0)], line_color, BOARD_MARKER_LINE_WIDTH)
+
+func add_board_base_marker(board_pos: Vector2, player_id: int):
+	var outer_rect: Rect2 = get_board_cell_rect_local(board_pos).grow(-CELL_WIDTH * 0.08)
+	var marker_color: Color = Color(1.0, 1.0, 1.0, 1.0) if player_id == 0 else Color(0.0, 0.0, 0.0, 1.0)
+	add_board_rect_outline(outer_rect, marker_color, BOARD_MARKER_LINE_WIDTH * 1.5)
+
+func add_board_rect_outline(rect: Rect2, line_color: Color, line_width: float):
+	add_board_line([
+		rect.position,
+		rect.position + Vector2(rect.size.x, 0.0),
+		rect.position + rect.size,
+		rect.position + Vector2(0.0, rect.size.y),
+		rect.position,
+	], line_color, line_width)
+
+func add_board_line(points: Array, line_color: Color, line_width: float):
+	var line := Line2D.new()
+	line.default_color = line_color
+	line.width = line_width
+	line.joint_mode = Line2D.LINE_JOINT_ROUND
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	for point_value in points:
+		line.add_point(point_value)
+	board_markers_node.add_child(line)
+
+func get_board_cell_rect_local(board_pos: Vector2) -> Rect2:
+	var center: Vector2 = get_board_position_local_position(board_pos)
+	return Rect2(center - Vector2.ONE * CELL_WIDTH * 0.5, Vector2.ONE * CELL_WIDTH)

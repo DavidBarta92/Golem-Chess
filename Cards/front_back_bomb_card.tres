@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://cxm871auef183"]
+
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="1_card"]
+
+[resource]
+script = ExtResource("1_card")
+card_name = "Front Back Bomb"
+card_code = "front_back_bomb"
+duration = 1
+description = "Bombs the squares directly in front of and behind the linked piece."
+effect_type = "bomb"
+effect_params = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"
