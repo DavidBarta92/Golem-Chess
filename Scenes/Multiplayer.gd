@@ -183,6 +183,13 @@ func apply_game_state(state_data: Dictionary):
 		print("  🔷 Piece betöltve: pos=%s, card=%s, turns=%d" % [pos, piece_data.card_name, piece_data.turns_remaining])
 	
 	# Küldjük a board-nak frissítésre
-	$board.update_from_server_state(pieces_data, state_data.player_hands, state_data.current_turn, state_data.get("game_over", false), state_data.get("winner_player", -1))
+	$board.update_from_server_state(
+		pieces_data,
+		state_data.player_hands,
+		state_data.current_turn,
+		state_data.get("game_over", false),
+		state_data.get("winner_player", -1),
+		state_data.get("player_decks_size", {})
+	)
 	
 	print("✅ apply_game_state() VÉGE")

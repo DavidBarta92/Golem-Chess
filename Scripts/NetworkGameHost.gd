@@ -109,6 +109,9 @@ func handle_attach_card(action: Dictionary):
 	if piece.attached_card != null:
 		push_warning("âš ď¸Ź MĂˇr van kĂˇrtya ezen a bĂˇbun!")
 		return
+	if !can_attach_card_name(player_id, card_name):
+		push_warning("A kiraly kartyat kell eloszor kijatszani.")
+		return
 
 	# Alkalmazzuk a vĂˇltozĂˇst
 	var card = CardLibrary.get_card(card_name)
@@ -169,18 +172,18 @@ func handle_move_piece(action: Dictionary):
 
 	# 6. Alkalmazzuk a lĂ©pĂ©st
 	var captured_piece = game_state.get_piece(to_pos)
+	var captured_king: bool = is_king_piece(captured_piece)
 
 	# LeĂĽtĂ©s kezelĂ©se
 	if captured_piece != null:
 		print("đź’Ą BĂˇbu leĂĽtve: ", to_pos)
 
 		# KirĂˇly leĂĽtĂ©s?
-		if captured_piece.attached_card != null && captured_piece.attached_card.card_name == "King":
+		if captured_king:
 			print("đź‘‘ KIRĂLY LEĂśTVE! JĂˇtĂ©kos %d nyert!" % player_id)
-			# TODO: JĂˇtĂ©k vĂ©ge
 
 		# LeĂĽtĂ¶tt bĂˇbu kĂˇrtyĂˇjĂˇnak visszaadĂˇsa
-		if captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
+		if !captured_king && captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
 			var enemy_player = 1 - player_id
 			DeckManager.return_card_to_deck(game_state.player_decks[enemy_player], captured_piece.attached_card.card_name)
 
@@ -196,16 +199,16 @@ func handle_move_piece(action: Dictionary):
 		else:
 			game_state.black_king_position = to_pos
 
-	# BĂˇzis elfoglalĂˇs?
-	var base_y = 2  # KĂ¶zĂ©psĹ‘ oszlop
-	if (player_id == 0 && to_pos.x == 4 && to_pos.y == base_y) || \
-	   (player_id == 1 && to_pos.x == 0 && to_pos.y == base_y):
-		print("đźŹ BĂZIS ELFOGLALVA! JĂˇtĂ©kos %d nyert!" % player_id)
+	if captured_king:
 		finish_game(player_id)
 		broadcast_full_state()
 		return
 
-	if !has_any_piece(1 - player_id):
+	# BĂˇzis elfoglalĂˇs?
+	var base_y = 2  # KĂ¶zĂ©psĹ‘ oszlop
+	var entered_opponent_base: bool = (player_id == 0 && to_pos.x == 4 && to_pos.y == base_y) || (player_id == 1 && to_pos.x == 0 && to_pos.y == base_y)
+	if is_king_piece(piece) && entered_opponent_base:
+		print("đźŹ BĂZIS ELFOGLALVA! JĂˇtĂ©kos %d nyert!" % player_id)
 		finish_game(player_id)
 		broadcast_full_state()
 		return
@@ -243,6 +246,15 @@ func player_has_valid_turn_action(player_id: int) -> bool:
 	var can_attach_card: bool = !bool(game_state.attached_card_this_turn.get(player_id, false))
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
 	return MoveRules.has_valid_turn_action(game_state.pieces, player_color, hand_cards, can_attach_card, 5)
+
+func can_attach_card_name(player_id: int, card_name: String) -> bool:
+	var player_color: int = 1 if player_id == 0 else -1
+	if MoveRules.has_attached_king(game_state.pieces, player_color):
+		return true
+	return card_name == MoveRules.KING_CARD_NAME
+
+func is_king_piece(piece: Piece) -> bool:
+	return piece != null && piece.attached_card != null && piece.attached_card.card_name == MoveRules.KING_CARD_NAME
 
 func get_hand_cards_for_player(player_id: int) -> Array[Card]:
 	var hand_cards: Array[Card] = []
@@ -283,7 +295,14 @@ func broadcast_full_state():
 				"card_name": piece_data.card_name,
 				"turns_remaining": piece_data.turns_remaining
 			}
-		multiplayer_node.get_node("board").update_from_server_state(pieces_data, state_data.player_hands, state_data.current_turn, state_data.game_over, state_data.winner_player)
+		multiplayer_node.get_node("board").update_from_server_state(
+			pieces_data,
+			state_data.player_hands,
+			state_data.current_turn,
+			state_data.game_over,
+			state_data.winner_player,
+			state_data.player_decks_size
+		)
 
 	# KĂĽldjĂĽk el minden KLIENS-nek
 	for peer_id in multiplayer_node.connected_peer_ids:

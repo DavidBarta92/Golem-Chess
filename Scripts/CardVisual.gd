@@ -114,6 +114,35 @@ func fly_home() -> void:
 	tween_move.parallel().tween_property(face_material, "shader_parameter/y_rot", 0.0, 0.22)
 	tween_move.parallel().tween_property(shadow, "self_modulate:a", normal_shadow_alpha, 0.22)
 
+func fly_from_global_position(start_global_position: Vector2) -> void:
+	is_dragging = false
+	drop_target_active = false
+	set_process(false)
+	_kill_hover_tweens()
+	_kill_move_tween()
+
+	global_position = start_global_position
+	scale = Vector2.ONE * 0.52
+	rotation = deg_to_rad(-8.0 if owner_color == 1 else 8.0)
+	z_index = 90
+	shadow.self_modulate.a = 0.4
+
+	tween_move = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween_move.tween_property(self, "position", home_position, 0.44)
+	tween_move.parallel().tween_property(self, "scale", Vector2.ONE, 0.38)
+	tween_move.parallel().tween_property(self, "rotation", 0.0, 0.38)
+	tween_move.parallel().tween_property(shadow, "self_modulate:a", normal_shadow_alpha, 0.38)
+	tween_move.tween_callback(Callable(self, "_finish_draw_fly"))
+
+func play_draw_pulse() -> void:
+	_kill_hover_tweens()
+	tween_hover = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween_hover.tween_property(self, "scale", Vector2.ONE * 1.05, 0.08)
+	tween_hover.tween_property(self, "scale", Vector2.ONE * 0.96, 0.16)
+
+func _finish_draw_fly() -> void:
+	z_index = 0
+
 func assign_and_hide() -> void:
 	is_assigned = true
 	is_dragging = false

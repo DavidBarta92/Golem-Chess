@@ -2,6 +2,7 @@ extends RefCounted
 class_name MoveRules
 
 const DEFAULT_BOARD_SIZE: int = 5
+const KING_CARD_NAME: String = "King"
 
 static func get_piece_at(pieces: Dictionary, pos: Vector2) -> Piece:
 	if !pieces.has(pos):
@@ -20,6 +21,21 @@ static func has_any_piece(pieces: Dictionary, player_color: int) -> bool:
 
 static func card_can_be_used(card: Card) -> bool:
 	return card != null && (card.duration > 0 || card.duration == -1)
+
+static func is_king_card(card: Card) -> bool:
+	return card != null && card.card_name == KING_CARD_NAME
+
+static func has_attached_king(pieces: Dictionary, player_color: int) -> bool:
+	for position_value: Vector2 in pieces:
+		var piece: Piece = get_piece_at(pieces, position_value)
+		if piece != null && piece.color == player_color && is_king_card(piece.attached_card):
+			return true
+	return false
+
+static func can_attach_card_for_turn(pieces: Dictionary, player_color: int, card: Card) -> bool:
+	if has_attached_king(pieces, player_color):
+		return true
+	return is_king_card(card)
 
 static func get_card_moves_for_piece(pieces: Dictionary, piece_position: Vector2, piece_color: int, card: Card, board_size: int = DEFAULT_BOARD_SIZE) -> Array[Vector2]:
 	var valid_moves: Array[Vector2] = []
@@ -42,10 +58,15 @@ static func get_piece_moves(pieces: Dictionary, piece_position: Vector2, board_s
 	var piece: Piece = get_piece_at(pieces, piece_position)
 	if piece == null || !piece.can_move():
 		return []
+	if !has_attached_king(pieces, piece.color):
+		return []
 	return get_card_moves_for_piece(pieces, piece_position, piece.color, piece.attached_card, board_size)
 
 static func get_existing_card_moves(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE) -> Array[Dictionary]:
 	var valid_moves: Array[Dictionary] = []
+	if !has_attached_king(pieces, player_color):
+		return valid_moves
+
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
@@ -74,6 +95,8 @@ static func get_attach_card_moves(pieces: Dictionary, player_color: int, hand_ca
 		for card: Card in hand_cards:
 			if !card_can_be_used(card):
 				continue
+			if !can_attach_card_for_turn(pieces, player_color, card):
+				continue
 			var targets: Array[Vector2] = get_card_moves_for_piece(pieces, piece_position, player_color, card, board_size)
 			for target_pos: Vector2 in targets:
 				valid_moves.append({
@@ -92,6 +115,9 @@ static func get_valid_turn_moves(pieces: Dictionary, player_color: int, hand_car
 	return valid_moves
 
 static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE) -> bool:
+	if !has_attached_king(pieces, player_color):
+		return false
+
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
@@ -110,6 +136,8 @@ static func has_valid_attachment_move(pieces: Dictionary, player_color: int, han
 
 		for card: Card in hand_cards:
 			if !card_can_be_used(card):
+				continue
+			if !can_attach_card_for_turn(pieces, player_color, card):
 				continue
 			if !get_card_moves_for_piece(pieces, piece_position, player_color, card, board_size).is_empty():
 				return true

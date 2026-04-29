@@ -25,12 +25,12 @@ const TURN_BLACK = preload("res://Assets/turn-black.png")
 const PIECE_MOVE = preload("res://Assets/Piece_move.png")
 
 const PLAYER_HAND_SIZE = 5
-const STARTING_PLAYER_HAND_SIZE = 3
-const PLAYER_DECK_SIZE = 24
 const CARD_UI_SIZE = Vector2(112, 156)
 const CARD_UI_GAP = 12
 const CARD_HAND_MARGIN = 18
 const HOVER_CARD_MARGIN = 24
+const DECK_COUNT_LABEL_SIZE = Vector2(88, 28)
+const DECK_COUNT_LABEL_GAP = 8
 const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD = Vector2(0, 2)
 const BLACK_BASE_FIELD = Vector2(4, 2)
@@ -67,6 +67,10 @@ var hover_card_preview: CardVisual
 var hover_duration_label: Label
 var result_overlay: ColorRect
 var result_label: Label
+var has_received_server_state: bool = false
+var deck_count_label: Label
+var white_deck_count_override: int = -1
+var black_deck_count_override: int = -1
 
 var side
 
@@ -92,6 +96,7 @@ func _ready():
 	setup_player_card_hands()
 	create_hover_piece_ui()
 	create_result_ui()
+	create_deck_count_ui()
 
 func create_pieces_from_board():
 	piece_objects.clear()
@@ -108,29 +113,21 @@ func create_pieces_from_board():
 	print("Babuk letrehozva kezdokartya nelkul.")
 
 func setup_player_card_hands():
-	white_card_deck = create_random_card_deck()
-	black_card_deck = create_random_card_deck()
-	white_card_hand = draw_cards_from_deck(1, STARTING_PLAYER_HAND_SIZE)
-	black_card_hand = draw_cards_from_deck(-1, STARTING_PLAYER_HAND_SIZE)
+	white_card_deck = DeckManager.create_starting_deck()
+	black_card_deck = DeckManager.create_starting_deck()
+	white_card_hand = draw_starting_cards_from_deck(1)
+	black_card_hand = draw_starting_cards_from_deck(-1)
 
 	white_card_visuals = populate_card_hand(white_pieces, white_card_hand, 1)
 	black_card_visuals = populate_card_hand(black_pieces, black_card_hand, -1)
 	setup_deck_visuals()
 	update_card_presentation()
 
-func create_random_card_deck() -> Array[String]:
-	var deck: Array[String] = []
-	var card_names: Array = CardLibrary.get_all_card_names()
-
-	if card_names.is_empty():
-		push_warning("Nincs betoltott kartya, nem lehet paklit generalni!")
-		return deck
-
-	for i in PLAYER_DECK_SIZE:
-		var card_name: String = str(card_names[randi() % card_names.size()])
-		deck.append(card_name)
-
-	return deck
+func draw_starting_cards_from_deck(owner_color: int) -> Array[Card]:
+	var hand_names: Array[String] = []
+	var deck: Array[String] = get_card_deck(owner_color)
+	DeckManager.draw_starting_hand(deck, hand_names)
+	return create_card_hand_from_names(hand_names)
 
 func draw_cards_from_deck(owner_color: int, amount: int) -> Array[Card]:
 	var hand: Array[Card] = []
@@ -147,8 +144,6 @@ func draw_cards_from_deck(owner_color: int, amount: int) -> Array[Card]:
 
 func draw_card_name(owner_color: int) -> String:
 	var deck: Array[String] = get_card_deck(owner_color)
-	if deck.is_empty():
-		deck.append_array(create_random_card_deck())
 	if deck.is_empty():
 		return ""
 
@@ -170,6 +165,14 @@ func get_hand_names_from_state(player_hands: Dictionary, player_id: int) -> Arra
 	if player_hands.has(string_key):
 		return player_hands[string_key]
 	return []
+
+func get_int_from_state_dict(data: Dictionary, player_id: int, default_value: int) -> int:
+	if data.has(player_id):
+		return int(data[player_id])
+	var string_key: String = str(player_id)
+	if data.has(string_key):
+		return int(data[string_key])
+	return default_value
 
 func configure_card_hand_container(hand_node: Control, is_top: bool):
 	var hand_width = CARD_UI_SIZE.x * PLAYER_HAND_SIZE + CARD_UI_GAP * (PLAYER_HAND_SIZE - 1)
@@ -295,6 +298,23 @@ func create_result_ui():
 	label_settings.outline_color = Color(0.0, 0.0, 0.0)
 	result_label.label_settings = label_settings
 
+func create_deck_count_ui():
+	deck_count_label = Label.new()
+	canvas_layer.add_child(deck_count_label)
+	deck_count_label.visible = false
+	deck_count_label.size = DECK_COUNT_LABEL_SIZE
+	deck_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	deck_count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	deck_count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	deck_count_label.z_index = 950
+
+	var label_settings: LabelSettings = LabelSettings.new()
+	label_settings.font_size = 18
+	label_settings.font_color = Color(1.0, 1.0, 1.0)
+	label_settings.outline_size = 4
+	label_settings.outline_color = Color(0.0, 0.0, 0.0)
+	deck_count_label.label_settings = label_settings
+
 func get_card_home_position(index: int) -> Vector2:
 	return Vector2(index * (CARD_UI_SIZE.x + CARD_UI_GAP), 0)
 
@@ -309,6 +329,11 @@ func get_card_visuals(owner_color: int) -> Array[CardVisual]:
 
 func get_card_deck(owner_color: int) -> Array[String]:
 	return white_card_deck if owner_color == 1 else black_card_deck
+
+func get_card_deck_count(owner_color: int) -> int:
+	if owner_color == 1:
+		return white_deck_count_override if white_deck_count_override >= 0 else white_card_deck.size()
+	return black_deck_count_override if black_deck_count_override >= 0 else black_card_deck.size()
 
 func get_card_hand_node(owner_color: int) -> Control:
 	return white_pieces if owner_color == 1 else black_pieces
@@ -406,7 +431,8 @@ func get_card_drop_piece_position(card_visual: CardVisual) -> Vector2:
 		return INVALID_BOARD_POS
 
 	var board_pos: Vector2 = get_mouse_board_position()
-	if is_valid_position(board_pos) && is_piece_owned_by(board_pos, card_visual.owner_color) && can_attach_card_to_piece(board_pos):
+	var card_name: String = card_visual.card.card_name if card_visual.card else ""
+	if is_valid_position(board_pos) && is_piece_owned_by(board_pos, card_visual.owner_color) && can_attach_card_to_piece(board_pos, card_name, card_visual.owner_color):
 		return board_pos
 
 	return INVALID_BOARD_POS
@@ -415,14 +441,14 @@ func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector
 	if not piece_objects.has(piece_position) or card_visual.card == null:
 		card_visual.fly_home()
 		return
+	var card_name: String = card_visual.card.card_name
 	if has_attached_card_this_turn(card_visual.owner_color):
 		card_visual.fly_home()
 		return
-	if !can_attach_card_to_piece(piece_position):
+	if !can_attach_card_to_piece(piece_position, card_name, card_visual.owner_color):
 		card_visual.fly_home()
 		return
 
-	var card_name: String = card_visual.card.card_name
 	var hand_index: int = get_card_visual_index(card_visual)
 	if GameController.current_game_host:
 		send_card_attach_action(card_visual.owner_color, card_name, piece_position, hand_index)
@@ -452,12 +478,20 @@ func send_card_attach_action(owner_color: int, card_name: String, piece_position
 	}
 	GameController.send_action(action)
 
-func can_attach_card_to_piece(piece_position: Vector2) -> bool:
+func can_attach_card_to_piece(piece_position: Vector2, card_name: String = "", owner_color: int = 0) -> bool:
 	if not piece_objects.has(piece_position):
 		return false
 
 	var piece: Piece = piece_objects[piece_position] as Piece
+	var piece_owner_color: int = owner_color if owner_color != 0 else piece.color
+	if !card_name.is_empty() && !can_attach_card_name(piece_owner_color, card_name):
+		return false
 	return piece.attached_card == null
+
+func can_attach_card_name(owner_color: int, card_name: String) -> bool:
+	if MoveRules.has_attached_king(piece_objects, owner_color):
+		return true
+	return card_name == MoveRules.KING_CARD_NAME
 
 func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 	if not piece_objects.has(piece_position):
@@ -471,6 +505,9 @@ func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 	var card: Card = CardLibrary.duplicate_card(card_name)
 	if card == null:
 		push_warning("Nem talalhato kartya a babuhoz csatolashoz: %s" % card_name)
+		return false
+	if !can_attach_card_name(piece.color, card.card_name):
+		push_warning("A kiraly kartyat kell eloszor kijatszani.")
 		return false
 
 	piece.attach_card(card)
@@ -544,6 +581,43 @@ func insert_drawn_card(owner_color: int, hand_index: int, card_name: String):
 	card_visual.global_position = get_card_draw_start_position(owner_color)
 	card_visual.scale = Vector2.ONE * 0.72
 	arrange_card_visuals(visuals, true)
+	animate_card_draw(owner_color, card_visual)
+
+func animate_card_draw(owner_color: int, card_visual: CardVisual):
+	if card_visual == null or !is_instance_valid(card_visual):
+		return
+
+	var deck_visual: CardVisual = get_deck_visual(owner_color)
+	if deck_visual and is_instance_valid(deck_visual):
+		deck_visual.play_draw_pulse()
+	card_visual.fly_from_global_position(get_card_draw_start_position(owner_color))
+
+func get_card_names_from_hand(cards: Array[Card]) -> Array[String]:
+	var names: Array[String] = []
+	for card: Card in cards:
+		if card:
+			names.append(card.card_name)
+	return names
+
+func arrays_match(left: Array, right: Array) -> bool:
+	if left.size() != right.size():
+		return false
+	for i in left.size():
+		if left[i] != right[i]:
+			return false
+	return true
+
+func animate_state_draw_if_needed(owner_color: int, previous_names: Array, current_names: Array):
+	if previous_names.is_empty() or arrays_match(previous_names, current_names):
+		return
+	if current_names.size() < previous_names.size():
+		return
+
+	var visuals: Array[CardVisual] = get_card_visuals(owner_color)
+	if visuals.is_empty():
+		return
+
+	animate_card_draw(owner_color, visuals[visuals.size() - 1])
 
 func handle_card_reorder(card_visual: CardVisual):
 	if card_visual.owner_color == 1:
@@ -595,6 +669,47 @@ func arrange_card_visuals(visuals: Array[CardVisual], animate: bool):
 
 func _process(_delta):
 	update_hovered_piece()
+	update_deck_count_hover()
+
+func update_deck_count_hover():
+	if deck_count_label == null:
+		return
+
+	var hovered_deck_color: int = get_hovered_deck_color()
+	if hovered_deck_color == 0:
+		deck_count_label.visible = false
+		return
+
+	var deck_visual: CardVisual = get_deck_visual(hovered_deck_color)
+	if deck_visual == null or !is_instance_valid(deck_visual):
+		deck_count_label.visible = false
+		return
+
+	var deck_rect: Rect2 = deck_visual.get_global_rect()
+	var label_y: float = deck_rect.position.y - deck_count_label.size.y - DECK_COUNT_LABEL_GAP
+	if label_y < 0.0:
+		label_y = deck_rect.end.y + DECK_COUNT_LABEL_GAP
+
+	deck_count_label.text = "%d lap" % get_card_deck_count(hovered_deck_color)
+	deck_count_label.global_position = Vector2(
+		deck_rect.get_center().x - deck_count_label.size.x * 0.5,
+		label_y
+	)
+	deck_count_label.visible = true
+
+func get_hovered_deck_color() -> int:
+	if is_mouse_over_deck(1):
+		return 1
+	if is_mouse_over_deck(-1):
+		return -1
+	return 0
+
+func is_mouse_over_deck(owner_color: int) -> bool:
+	var deck_visual: CardVisual = get_deck_visual(owner_color)
+	if deck_visual == null or !is_instance_valid(deck_visual) or !deck_visual.visible:
+		return false
+
+	return deck_visual.get_global_rect().has_point(get_viewport().get_mouse_position())
 
 func _input(event):
 	if can_control_current_turn():
@@ -811,6 +926,8 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 
 	print("đź”„ set_move KEZDĂ‰S: white=", white, " start=", start_pos, " end=", end_pos, " bĂˇbu=", board[start_pos.x][start_pos.y])
 	var moving_color: int = 1 if board[start_pos.x][start_pos.y] > 0 else -1
+	var captured_piece: Piece = piece_objects[end_pos] as Piece if piece_objects.has(end_pos) else null
+	var captured_king: bool = is_king_piece(captured_piece)
 
 	if piece_objects.has(start_pos):
 		var piece: Piece = piece_objects[start_pos] as Piece
@@ -823,6 +940,11 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 
 	board[end_pos.x][end_pos.y] = board[start_pos.x][start_pos.y]
 	board[start_pos.x][start_pos.y] = 0
+
+	if captured_king:
+		display_board()
+		finish_game(moving_color)
+		return
 
 	if piece_objects.has(end_pos):
 		var piece: Piece = piece_objects[end_pos] as Piece
@@ -851,9 +973,7 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 		state = true
 
 func get_winner_after_move(moving_color: int, end_pos: Vector2) -> int:
-	if is_opponent_base_field(moving_color, end_pos):
-		return moving_color
-	if !has_any_piece(-moving_color):
+	if is_opponent_base_field(moving_color, end_pos) && is_king_piece_at(end_pos):
 		return moving_color
 	return 0
 
@@ -864,6 +984,14 @@ func is_opponent_base_field(moving_color: int, pos: Vector2) -> bool:
 
 func has_any_piece(owner_color: int) -> bool:
 	return MoveRules.has_any_piece(piece_objects, owner_color)
+
+func is_king_piece(piece: Piece) -> bool:
+	return piece != null && piece.attached_card != null && piece.attached_card.card_name == MoveRules.KING_CARD_NAME
+
+func is_king_piece_at(piece_position: Vector2) -> bool:
+	if !piece_objects.has(piece_position):
+		return false
+	return is_king_piece(piece_objects[piece_position] as Piece)
 
 func current_player_has_valid_turn_action() -> bool:
 	var current_color: int = get_current_turn_color()
@@ -924,7 +1052,7 @@ func get_moves(selected : Vector2):
 	return []
 
 func get_card_based_moves(piece_position: Vector2, piece: Piece) -> Array:
-	var valid_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(piece_objects, piece_position, piece.color, piece.attached_card, BOARD_SIZE)
+	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves(piece_objects, piece_position, BOARD_SIZE)
 	print("  Ervenyes lepesek: ", valid_moves)
 	return valid_moves
 
@@ -1000,7 +1128,10 @@ func is_in_check(king_pos: Vector2):
 func is_stalemate():
 	return !current_player_has_valid_turn_action()
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}):
+	var previous_white_hand_names: Array[String] = get_card_names_from_hand(white_card_hand)
+	var previous_black_hand_names: Array[String] = get_card_names_from_hand(black_card_hand)
+
 	board.clear()
 	for i in BOARD_SIZE:
 		board.append([0, 0, 0, 0, 0])
@@ -1027,8 +1158,13 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	if was_white_turn != white:
 		reset_current_turn_card_attach()
 
-	white_card_hand = create_card_hand_from_names(get_hand_names_from_state(player_hands, 0))
-	black_card_hand = create_card_hand_from_names(get_hand_names_from_state(player_hands, 1))
+	var current_white_hand_names: Array = get_hand_names_from_state(player_hands, 0)
+	var current_black_hand_names: Array = get_hand_names_from_state(player_hands, 1)
+	if !player_deck_sizes.is_empty():
+		white_deck_count_override = get_int_from_state_dict(player_deck_sizes, 0, white_card_deck.size())
+		black_deck_count_override = get_int_from_state_dict(player_deck_sizes, 1, black_card_deck.size())
+	white_card_hand = create_card_hand_from_names(current_white_hand_names)
+	black_card_hand = create_card_hand_from_names(current_black_hand_names)
 	white_card_visuals = populate_card_hand(white_pieces, white_card_hand, 1)
 	black_card_visuals = populate_card_hand(black_pieces, black_card_hand, -1)
 	setup_deck_visuals()
@@ -1037,6 +1173,10 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	hide_hover_piece_details()
 	update_card_presentation()
 	display_board()
+	if has_received_server_state:
+		animate_state_draw_if_needed(1, previous_white_hand_names, current_white_hand_names)
+		animate_state_draw_if_needed(-1, previous_black_hand_names, current_black_hand_names)
+	has_received_server_state = true
 
 	if server_game_over && winner_player != -1:
 		finish_game(get_color_for_player_id(winner_player))
