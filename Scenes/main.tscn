@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3 uid="uid://cwftxr73pdl8"]
+[gd_scene format=3 uid="uid://cwftxr73pdl8"]
 
 [ext_resource type="Script" uid="uid://bmwxm03yki7x2" path="res://Scenes/Multiplayer.gd" id="1_hptm8"]
 [ext_resource type="PackedScene" uid="uid://cc03qg5anporg" path="res://Scenes/board.tscn" id="1_jjgbg"]
@@ -59,17 +59,17 @@ texture = ExtResource("7_wsu2k")
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_kltya"]
 texture = ExtResource("8_k12tt")
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=806867114]
 script = ExtResource("1_hptm8")
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1813103451]
 position = Vector2(72, -72)
 ignore_rotation = false
 zoom = Vector2(3, 3)
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=348762509]
 
-[node name="white_pieces" type="Control" parent="CanvasLayer"]
+[node name="white_pieces" type="Control" parent="CanvasLayer" unique_id=1440425958]
 visible = false
 layout_mode = 3
 anchors_preset = 8
@@ -84,7 +84,7 @@ offset_bottom = 50.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="2" type="Button" parent="CanvasLayer/white_pieces" groups=["white_pieces"]]
+[node name="2" type="Button" parent="CanvasLayer/white_pieces" unique_id=2070857938 groups=["white_pieces"]]
 layout_mode = 0
 offset_right = 100.0
 offset_bottom = 100.0
@@ -94,7 +94,7 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_fevyy")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
-[node name="3" type="Button" parent="CanvasLayer/white_pieces" groups=["white_pieces"]]
+[node name="3" type="Button" parent="CanvasLayer/white_pieces" unique_id=994567844 groups=["white_pieces"]]
 layout_mode = 0
 offset_left = 100.0
 offset_right = 200.0
@@ -105,7 +105,7 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_3pmx8")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
-[node name="4" type="Button" parent="CanvasLayer/white_pieces" groups=["white_pieces"]]
+[node name="4" type="Button" parent="CanvasLayer/white_pieces" unique_id=1180433439 groups=["white_pieces"]]
 layout_mode = 0
 offset_left = 200.0
 offset_right = 300.0
@@ -116,7 +116,7 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_1w6v2")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
-[node name="5" type="Button" parent="CanvasLayer/white_pieces" groups=["white_pieces"]]
+[node name="5" type="Button" parent="CanvasLayer/white_pieces" unique_id=1176381114 groups=["white_pieces"]]
 layout_mode = 0
 offset_left = 300.0
 offset_right = 400.0
@@ -127,7 +127,7 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_ueoa1")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
-[node name="black_pieces" type="Control" parent="CanvasLayer"]
+[node name="black_pieces" type="Control" parent="CanvasLayer" unique_id=586022683]
 visible = false
 layout_mode = 3
 anchors_preset = 8
@@ -142,7 +142,7 @@ offset_bottom = 50.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="2" type="Button" parent="CanvasLayer/black_pieces" groups=["black_pieces"]]
+[node name="2" type="Button" parent="CanvasLayer/black_pieces" unique_id=1902709892 groups=["black_pieces"]]
 layout_mode = 0
 offset_right = 100.0
 offset_bottom = 100.0
@@ -152,7 +152,7 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_6vcvc")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
-[node name="3" type="Button" parent="CanvasLayer/black_pieces" groups=["black_pieces"]]
+[node name="3" type="Button" parent="CanvasLayer/black_pieces" unique_id=1871889355 groups=["black_pieces"]]
 layout_mode = 0
 offset_left = 100.0
 offset_right = 200.0
@@ -163,7 +163,7 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_7k868")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
-[node name="4" type="Button" parent="CanvasLayer/black_pieces" groups=["black_pieces"]]
+[node name="4" type="Button" parent="CanvasLayer/black_pieces" unique_id=1057227890 groups=["black_pieces"]]
 layout_mode = 0
 offset_left = 200.0
 offset_right = 300.0
@@ -174,7 +174,7 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_hpc6h")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
-[node name="5" type="Button" parent="CanvasLayer/black_pieces" groups=["black_pieces"]]
+[node name="5" type="Button" parent="CanvasLayer/black_pieces" unique_id=1358167941 groups=["black_pieces"]]
 layout_mode = 0
 offset_left = 300.0
 offset_right = 400.0
@@ -185,13 +185,20 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_kltya")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
-[node name="board" parent="." instance=ExtResource("1_jjgbg")]
+[node name="board" parent="." unique_id=171164572 instance=ExtResource("1_jjgbg")]
 texture = ExtResource("11_d1ilt")
 
-[node name="host_label" type="Label" parent="."]
+[node name="host_label" type="Label" parent="." unique_id=261984928]
 offset_left = 136.0
 offset_top = -84.0
 offset_right = 225.0
 offset_bottom = -61.0
 text = "HOST"
 script = ExtResource("12_6iyac")
+
+[node name="Label" type="Label" parent="." unique_id=1045090627]
+offset_left = -64.0
+offset_top = -99.0
+offset_right = 12.0
+offset_bottom = -63.0
+text = "asd"

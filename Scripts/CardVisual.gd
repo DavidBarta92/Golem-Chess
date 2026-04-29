@@ -20,10 +20,17 @@ signal drag_released(card_visual: CardVisual)
 
 var card: Card
 var face_material: ShaderMaterial
+var shimmer_material: ShaderMaterial
 var tween_hover: Tween
 var tween_reset: Tween
 var tween_move: Tween
 var normal_shadow_alpha: float = 0.22
+var shimmer_time: float = 0.0
+var last_position: Vector2 = Vector2.ZERO
+var last_scale: Vector2 = Vector2.ONE
+var last_rotation: float = 0.0
+var last_x_rot: float = 0.0
+var last_y_rot: float = 0.0
 var home_position: Vector2 = Vector2.ZERO
 var hand_index: int = -1
 var owner_color: int = 0
@@ -39,20 +46,47 @@ func _ready() -> void:
 	pivot_offset = size * 0.5
 	face_material = card_face.material.duplicate() as ShaderMaterial
 	card_face.material = face_material
+	shimmer_material = shimmer.material.duplicate() as ShaderMaterial
+	shimmer.material = shimmer_material
+	last_position = position
+	last_scale = scale
+	last_rotation = rotation
+	last_x_rot = float(face_material.get_shader_parameter("x_rot"))
+	last_y_rot = float(face_material.get_shader_parameter("y_rot"))
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	gui_input.connect(_on_gui_input)
-	set_process(false)
+	set_process(true)
 	_apply_card()
 
 func _process(_delta: float) -> void:
 	if is_dragging:
 		global_position = get_global_mouse_position() - drag_offset
 		drag_moved.emit(self)
+	elif is_hovered:
+		update_tilt_from_mouse()
+
+	update_shimmer_time(_delta)
+
+func update_shimmer_time(delta: float) -> void:
+	if shimmer_material == null:
 		return
 
-	if is_hovered:
-		update_tilt_from_mouse()
+	var moved: bool = !position.is_equal_approx(last_position)
+	var scaled: bool = !scale.is_equal_approx(last_scale)
+	var rotated: bool = !is_equal_approx(rotation, last_rotation)
+	var current_x_rot: float = float(face_material.get_shader_parameter("x_rot"))
+	var current_y_rot: float = float(face_material.get_shader_parameter("y_rot"))
+	var tilted: bool = !is_equal_approx(current_x_rot, last_x_rot) || !is_equal_approx(current_y_rot, last_y_rot)
+	if !face_down && visible && (moved || scaled || rotated || tilted):
+		shimmer_time += delta
+		shimmer_material.set_shader_parameter("shimmer_time", shimmer_time)
+
+	last_position = position
+	last_scale = scale
+	last_rotation = rotation
+	last_x_rot = current_x_rot
+	last_y_rot = current_y_rot
 
 func _input(event: InputEvent) -> void:
 	if not is_dragging:
@@ -102,7 +136,6 @@ func set_drop_target_active(active: bool) -> void:
 func fly_home() -> void:
 	is_dragging = false
 	drop_target_active = false
-	set_process(false)
 	z_index = 0
 	disabled = false
 	_kill_move_tween()
@@ -117,7 +150,6 @@ func fly_home() -> void:
 func fly_from_global_position(start_global_position: Vector2) -> void:
 	is_dragging = false
 	drop_target_active = false
-	set_process(false)
 	_kill_hover_tweens()
 	_kill_move_tween()
 
@@ -147,7 +179,6 @@ func assign_and_hide() -> void:
 	is_assigned = true
 	is_dragging = false
 	drop_target_active = false
-	set_process(false)
 	disabled = true
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
@@ -199,7 +230,6 @@ func start_drag() -> void:
 	is_hovered = false
 	drop_target_active = false
 	disabled = false
-	set_process(true)
 	move_to_front()
 	z_index = 100
 	drag_offset = get_global_mouse_position() - global_position
@@ -208,7 +238,6 @@ func start_drag() -> void:
 
 func finish_drag() -> void:
 	is_dragging = false
-	set_process(false)
 	drag_released.emit(self)
 
 func _on_mouse_entered() -> void:
@@ -216,7 +245,6 @@ func _on_mouse_entered() -> void:
 		return
 
 	is_hovered = true
-	set_process(true)
 	move_to_front()
 	z_index = 50
 	if tween_reset and tween_reset.is_running():
@@ -232,7 +260,6 @@ func _on_mouse_exited() -> void:
 		return
 
 	is_hovered = false
-	set_process(false)
 	z_index = 0
 	reset_tilt_and_scale()
 
