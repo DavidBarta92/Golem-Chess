@@ -10,6 +10,5 @@ card_name = "Bishop"
 card_code = "bishop"
 white_piece_texture = ExtResource("3_pndra")
 black_piece_texture = ExtResource("1_d0i41")
-effect_type = "steal_card"
-movement_pattern = Array[Array]([[1, 0, 2, 0, 1], [0, 1, 2, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [1, 0, 0, 0, 1]])
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

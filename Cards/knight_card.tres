@@ -10,7 +10,6 @@ card_name = "Knight"
 card_code = "knight"
 white_piece_texture = ExtResource("3_wpy1n")
 black_piece_texture = ExtResource("1_4rupa")
-effect_type = "move_base"
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 movement_pattern = Array[Array]([[0, 1, 0, 1, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 1, 0, 1, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"
