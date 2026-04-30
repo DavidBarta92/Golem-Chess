@@ -41,7 +41,7 @@ text = "Join Game"
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
-text = "Golem v0.0.3 alpha"
+text = "Golem v0.0.4 alpha"
 
 [connection signal="pressed" from="VBoxContainer/SingleplayerButton" to="." method="_on_singleplayer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HostButton" to="." method="_on_host_button_pressed"]

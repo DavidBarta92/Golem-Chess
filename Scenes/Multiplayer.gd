@@ -47,7 +47,8 @@ func setup_singleplayer_ai_controllers():
 	ai_players.clear()
 	for player_id in [0, 1]:
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
-			ai_players[player_id] = RandomAIPlayer.new(player_id)
+			var ai_difficulty: String = GameConfig.get_player_ai_difficulty(player_id)
+			ai_players[player_id] = HeuristicAIPlayer.new(player_id, ai_difficulty)
 
 func get_local_human_player_id() -> int:
 	for player_id in [0, 1]:
@@ -78,7 +79,7 @@ func maybe_play_singleplayer_ai_turn():
 
 func _play_singleplayer_ai_turn(player_id: int):
 	await get_tree().create_timer(0.45).timeout
-	var ai_player: RandomAIPlayer = ai_players.get(player_id, null) as RandomAIPlayer
+	var ai_player: AIPlayerBase = ai_players.get(player_id, null) as AIPlayerBase
 	if ai_player != null and game_host != null and !game_host.game_state.game_over and game_host.game_state.current_turn_player == player_id:
 		await ai_player.play_turn(game_host, get_tree())
 
