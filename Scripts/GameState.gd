@@ -3,6 +3,7 @@ class_name GameStateData
 
 var pieces: Dictionary = {}  # Vector2 -> Piece
 var player_decks: Dictionary = {}  # int (player_id) -> Array[String] (card names)
+var player_initial_decks: Dictionary = {}  # int (player_id) -> Array[String] (full starting deck order)
 var player_hands: Dictionary = {}  # int (player_id) -> Array[String] (card names)
 var current_turn_player: int = 0  # 0 = white, 1 = black
 var white_king_position: Vector2 = Vector2(-1, -1)
@@ -18,6 +19,8 @@ var attached_card_this_turn: Dictionary = {
 }
 var game_over: bool = false
 var winner_player: int = -1
+var win_condition: String = ""
+var match_logger: MatchCsvLogger = null
 
 func _init():
 	pass

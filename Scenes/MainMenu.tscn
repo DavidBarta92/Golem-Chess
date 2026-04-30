@@ -44,7 +44,7 @@ anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
 offset_top = -56.0
-offset_right = 250.0
+offset_right = 720.0
 offset_bottom = -16.0
 grow_vertical = 0
 
@@ -53,6 +53,12 @@ custom_minimum_size = Vector2(96, 0)
 layout_mode = 2
 text = "1"
 placeholder_text = "Matches"
+
+[node name="CsvLogDirField" type="LineEdit" parent="AIVsAIControls"]
+custom_minimum_size = Vector2(460, 0)
+layout_mode = 2
+text = "user://ai_match_logs"
+placeholder_text = "CSV folder"
 
 [node name="AIVsAIButton" type="Button" parent="AIVsAIControls"]
 layout_mode = 2

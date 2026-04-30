@@ -5,6 +5,7 @@ const CONTROLLER_AI: String = "ai"
 const AI_DIFFICULTY_EASY: String = "easy"
 const AI_DIFFICULTY_NORMAL: String = "normal"
 const AI_DIFFICULTY_HARD: String = "hard"
+const DEFAULT_AI_VS_AI_CSV_LOG_DIR: String = "user://ai_match_logs"
 
 var is_singleplayer: bool = false
 var is_hosting: bool = false
@@ -13,6 +14,8 @@ var server_ip: String = "127.0.0.1"
 var server_port: int = 9999
 var ai_vs_ai_match_count: int = 1
 var ai_vs_ai_matches_played: int = 0
+var ai_vs_ai_log_session_id: String = ""
+var ai_vs_ai_csv_log_dir: String = DEFAULT_AI_VS_AI_CSV_LOG_DIR
 var ai_vs_ai_results: Dictionary = {
 	0: 0,
 	1: 0,
@@ -46,11 +49,25 @@ func start_ai_vs_ai_batch(match_count: int) -> void:
 	is_ai_vs_ai_batch = true
 	ai_vs_ai_match_count = max(1, match_count)
 	ai_vs_ai_matches_played = 0
+	ai_vs_ai_log_session_id = ""
 	ai_vs_ai_results = {
 		0: 0,
 		1: 0,
 	}
 	set_singleplayer_controllers(CONTROLLER_AI, CONTROLLER_AI)
+
+func set_ai_vs_ai_csv_log_dir(log_dir: String) -> void:
+	var cleaned_log_dir: String = log_dir.strip_edges()
+	if cleaned_log_dir.is_empty():
+		ai_vs_ai_csv_log_dir = DEFAULT_AI_VS_AI_CSV_LOG_DIR
+		return
+
+	ai_vs_ai_csv_log_dir = cleaned_log_dir.replace("\\", "/")
+
+func get_ai_vs_ai_csv_log_dir() -> String:
+	if ai_vs_ai_csv_log_dir.strip_edges().is_empty():
+		return DEFAULT_AI_VS_AI_CSV_LOG_DIR
+	return ai_vs_ai_csv_log_dir
 
 func record_ai_vs_ai_result(winner_player_id: int) -> void:
 	if !is_ai_vs_ai_batch:

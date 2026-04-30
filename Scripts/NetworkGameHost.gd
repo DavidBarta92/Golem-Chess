@@ -21,7 +21,13 @@ func initialize_game(board_data: Array):
 	white_deck.assign(DeckManager.create_starting_deck())
 	var black_deck: Array[String] = []
 	black_deck.assign(DeckManager.create_starting_deck())
+	var white_initial_deck: Array[String] = []
+	white_initial_deck.assign(white_deck)
+	var black_initial_deck: Array[String] = []
+	black_initial_deck.assign(black_deck)
 
+	game_state.player_initial_decks[0] = white_initial_deck
+	game_state.player_initial_decks[1] = black_initial_deck
 	game_state.player_decks[0] = white_deck
 	game_state.player_decks[1] = black_deck
 
@@ -33,6 +39,7 @@ func initialize_game(board_data: Array):
 
 	game_state.player_hands[0] = white_hand
 	game_state.player_hands[1] = black_hand
+	setup_match_logging()
 
 	print("NetworkGameHost: game state initialized")
 
@@ -60,6 +67,13 @@ func initialize_game(board_data: Array):
 
 	broadcast_full_state()
 
+func setup_match_logging() -> void:
+	if !GameConfig.is_ai_vs_ai_batch:
+		return
+
+	game_state.match_logger = MatchCsvLogger.new()
+	game_state.match_logger.start_match(game_state)
+
 func on_player_action(action: Dictionary):
 	print("Action received: ", action)
 
@@ -72,9 +86,9 @@ func on_player_action(action: Dictionary):
 			push_warning("Unknown action type: ", action.type)
 
 func handle_attach_card(action: Dictionary):
-	var player_id = action.player_id
-	var card_name = action.card_name
-	var piece_pos = action.piece_pos
+	var player_id: int = int(action.player_id)
+	var card_name: String = str(action.card_name)
+	var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.piece_pos, Vector2(-1, -1))
 
 	print("Attach card: player=%s, card=%s, position=%s" % [player_id, card_name, piece_pos])
 
@@ -108,6 +122,11 @@ func handle_attach_card(action: Dictionary):
 
 	var card = CardLibrary.get_card(card_name)
 	if card:
+		var hand_before: Array = duplicate_player_card_list(game_state.player_hands[player_id])
+		var deck_before: Array = duplicate_player_card_list(game_state.player_decks[player_id])
+		var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
+		var piece_card_before: String = piece.attached_card.card_name if piece.attached_card != null else ""
+		var piece_turns_before: int = piece.turns_remaining
 		piece.attach_card(card)
 
 		if card_name == "King":
@@ -118,6 +137,7 @@ func handle_attach_card(action: Dictionary):
 
 		DeckManager.play_card(game_state.player_hands[player_id], card_name, game_state.player_decks[player_id])
 		game_state.attached_card_this_turn[player_id] = true
+		log_card_attached(player_id, card, piece, piece_pos, hand_before, deck_before, deck_top_before, piece_card_before, piece_turns_before)
 		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_ATTACH, game_state, {
 			"player_id": player_id,
 			"piece": piece,
@@ -125,14 +145,15 @@ func handle_attach_card(action: Dictionary):
 			"card": card,
 		})
 		finish_if_player_has_no_valid_turn(player_id)
+		log_turn_snapshot("after_attach")
 
 		print("Card attached successfully")
 		broadcast_full_state()
 
 func handle_move_piece(action: Dictionary):
-	var player_id = action.player_id
-	var from_pos = action.from
-	var to_pos = action.to
+	var player_id: int = int(action.player_id)
+	var from_pos: Vector2 = CardEffectResolver.as_vector2(action.from, Vector2(-1, -1))
+	var to_pos: Vector2 = CardEffectResolver.as_vector2(action.to, Vector2(-1, -1))
 
 	print("Move: player=%s, %s -> %s" % [player_id, from_pos, to_pos])
 
@@ -162,6 +183,7 @@ func handle_move_piece(action: Dictionary):
 
 	var captured_piece = game_state.get_piece(to_pos)
 	var captured_king: bool = is_king_piece(captured_piece)
+	var move_log_context: Dictionary = create_move_log_context(player_id, from_pos, to_pos, piece, captured_piece)
 
 	if captured_piece != null:
 		print("Piece captured at: ", to_pos)
@@ -175,12 +197,16 @@ func handle_move_piece(action: Dictionary):
 				"capturing_piece_pos": from_pos,
 			})
 			if game_state.game_over:
+				log_move_result(move_log_context, game_state.win_condition)
 				broadcast_full_state()
 				return
 			if game_state.get_piece(from_pos) != piece:
+				log_move_result(move_log_context, "capturing_piece_removed")
 				game_state.switch_turn()
+				advance_logged_turn()
 				CardEffectResolver.tick_board_effects(game_state)
 				finish_if_player_has_no_valid_turn(game_state.current_turn_player)
+				log_turn_snapshot("turn_end")
 				broadcast_full_state()
 				return
 
@@ -190,6 +216,7 @@ func handle_move_piece(action: Dictionary):
 		if !captured_king && captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
 			var enemy_player = 1 - player_id
 			DeckManager.return_card_to_deck(game_state.player_decks[enemy_player], captured_piece.attached_card.card_name)
+			log_card_returned_to_deck(enemy_player, captured_piece.attached_card, to_pos, "captured_piece")
 
 	game_state.remove_piece(from_pos)
 	piece.position = to_pos
@@ -203,7 +230,8 @@ func handle_move_piece(action: Dictionary):
 			game_state.black_king_position = to_pos
 
 	if captured_king:
-		finish_game(player_id)
+		finish_game(player_id, "king_capture")
+		log_move_result(move_log_context, game_state.win_condition)
 		broadcast_full_state()
 		return
 
@@ -217,6 +245,7 @@ func handle_move_piece(action: Dictionary):
 			"captured_piece_pos": to_pos,
 		})
 		if game_state.game_over:
+			log_move_result(move_log_context, game_state.win_condition)
 			broadcast_full_state()
 			return
 
@@ -225,7 +254,8 @@ func handle_move_piece(action: Dictionary):
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	if is_king_piece(piece) && piece.color == player_color && entered_opponent_base:
 		print("Opponent base reached by king. Player %d wins." % player_id)
-		finish_game(player_id)
+		finish_game(player_id, "base_reached")
+		log_move_result(move_log_context, game_state.win_condition)
 		broadcast_full_state()
 		return
 
@@ -239,11 +269,13 @@ func handle_move_piece(action: Dictionary):
 			"to_pos": to_pos,
 		})
 		if game_state.game_over:
+			log_move_result(move_log_context, game_state.win_condition)
 			broadcast_full_state()
 			return
 
 	var expired_card: Card = piece.use_turn()
 	if expired_card != null:
+		log_card_expired(player_id, expired_card, piece, to_pos)
 		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_EXPIRE, game_state, {
 			"player_id": player_id,
 			"piece": piece,
@@ -251,20 +283,27 @@ func handle_move_piece(action: Dictionary):
 			"card": expired_card,
 		})
 		if game_state.game_over:
+			log_move_result(move_log_context, game_state.win_condition)
 			broadcast_full_state()
 			return
 
+	log_move_result(move_log_context, "")
 	game_state.switch_turn()
+	advance_logged_turn()
 	CardEffectResolver.tick_board_effects(game_state)
 	finish_if_player_has_no_valid_turn(game_state.current_turn_player)
+	log_turn_snapshot("turn_end")
 
 	print("Move complete. Next player: ", game_state.current_turn_player)
 
 	broadcast_full_state()
 
-func finish_game(winner_player: int):
+func finish_game(winner_player: int, win_condition: String = "unknown"):
 	game_state.game_over = true
 	game_state.winner_player = winner_player
+	game_state.win_condition = win_condition
+	if game_state.match_logger != null:
+		game_state.match_logger.log_match_end(game_state, win_condition)
 
 func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 	if game_state.game_over:
@@ -274,7 +313,7 @@ func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 
 	var winner_player: int = 1 - player_id
 	print("No valid moves: losing player=%d, winning player=%d" % [player_id, winner_player])
-	finish_game(winner_player)
+	finish_game(winner_player, "no_valid_move")
 	return true
 
 func player_has_valid_turn_action(player_id: int) -> bool:
@@ -427,3 +466,79 @@ func serialize_board_effects() -> Array:
 
 func vector2_to_array(value: Vector2) -> Array:
 	return [value.x, value.y]
+
+func duplicate_player_card_list(source) -> Array:
+	var output: Array = []
+	if source is Array:
+		for card_name_value in source:
+			output.append(str(card_name_value))
+	return output
+
+func setup_logger_if_needed() -> MatchCsvLogger:
+	return game_state.match_logger
+
+func log_card_attached(player_id: int, card: Card, piece: Piece, piece_pos: Vector2, hand_before: Array, deck_before: Array, deck_top_before: String, piece_card_before: String, piece_turns_before: int) -> void:
+	if game_state.match_logger == null:
+		return
+
+	var drawn_card: String = ""
+	if deck_before.size() > game_state.player_decks[player_id].size():
+		drawn_card = deck_top_before
+	game_state.match_logger.log_card_event(game_state, "attach_card", {
+		"player_id": player_id,
+		"card": card,
+		"piece": piece,
+		"piece_pos": piece_pos,
+		"piece_card_before": piece_card_before,
+		"piece_turns_before": piece_turns_before,
+		"hand_before": hand_before,
+		"deck_count_before": deck_before.size(),
+		"deck_top_before": deck_top_before,
+		"drawn_card": drawn_card,
+		"reason": "played_from_hand",
+	})
+
+func log_card_returned_to_deck(player_id: int, card: Card, piece_pos: Vector2, reason: String) -> void:
+	if game_state.match_logger == null:
+		return
+
+	game_state.match_logger.log_card_event(game_state, "return_to_deck", {
+		"player_id": player_id,
+		"card": card,
+		"piece_pos": piece_pos,
+		"returned_card": card.card_name if card != null else "",
+		"target_zone": "deck",
+		"reason": reason,
+	})
+
+func log_card_expired(player_id: int, card: Card, piece: Piece, piece_pos: Vector2) -> void:
+	if game_state.match_logger == null:
+		return
+
+	game_state.match_logger.log_card_event(game_state, "expire_card", {
+		"player_id": player_id,
+		"card": card,
+		"piece": piece,
+		"piece_pos": piece_pos,
+		"reason": "duration_ended",
+	})
+
+func create_move_log_context(player_id: int, from_pos: Vector2, to_pos: Vector2, piece: Piece, captured_piece: Piece) -> Dictionary:
+	if game_state.match_logger == null:
+		return {}
+	return game_state.match_logger.create_move_context(game_state, player_id, from_pos, to_pos, piece, captured_piece)
+
+func log_move_result(move_log_context: Dictionary, win_condition_after: String) -> void:
+	if game_state.match_logger == null or move_log_context.is_empty():
+		return
+	game_state.match_logger.log_move_event(game_state, move_log_context, win_condition_after)
+
+func advance_logged_turn() -> void:
+	if game_state.match_logger == null:
+		return
+	game_state.match_logger.advance_turn()
+
+func log_turn_snapshot(event_type: String) -> void:
+	if game_state.match_logger == null:
+		return
+	game_state.match_logger.log_turn_snapshot(game_state, event_type)

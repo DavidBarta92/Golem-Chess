@@ -6,12 +6,14 @@ const MAX_AI_VS_AI_MATCH_COUNT: int = 9999
 
 @onready var ai_vs_ai_controls: Control = $AIVsAIControls
 @onready var ai_match_count_field: LineEdit = $AIVsAIControls/MatchCountField
+@onready var ai_csv_log_dir_field: LineEdit = $AIVsAIControls/CsvLogDirField
 
 var ai_vs_ai_unlock_presses: int = 0
 
 func _ready():
 	ai_vs_ai_controls.visible = false
 	ai_match_count_field.text = str(GameConfig.ai_vs_ai_match_count)
+	ai_csv_log_dir_field.text = GameConfig.get_ai_vs_ai_csv_log_dir()
 
 func _input(event):
 	if ai_vs_ai_controls.visible:
@@ -41,6 +43,7 @@ func _on_ai_vs_ai_button_pressed():
 	GameConfig.is_singleplayer = true
 	GameConfig.is_hosting = true
 	GameConfig.server_ip = ""
+	GameConfig.set_ai_vs_ai_csv_log_dir(ai_csv_log_dir_field.text)
 	GameConfig.start_ai_vs_ai_batch(match_count)
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 
