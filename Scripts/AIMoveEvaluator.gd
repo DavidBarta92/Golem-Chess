@@ -4,6 +4,95 @@ class_name AIMoveEvaluator
 const DIFFICULTY_EASY: String = "easy"
 const DIFFICULTY_NORMAL: String = "normal"
 const DIFFICULTY_HARD: String = "hard"
+const MIN_DIFFICULTY_LEVEL: int = 1
+const MAX_DIFFICULTY_LEVEL: int = 12
+
+const DIFFICULTY_CONFIGS: Dictionary = {
+	1: {
+		"search_depth": 1,
+		"own_top_n": 1,
+		"opponent_top_n": 0,
+		"randomness": 45.0,
+		"opponent_response_weight": 0.0,
+	},
+	2: {
+		"search_depth": 1,
+		"own_top_n": 2,
+		"opponent_top_n": 0,
+		"randomness": 35.0,
+		"opponent_response_weight": 0.0,
+	},
+	3: {
+		"search_depth": 1,
+		"own_top_n": 3,
+		"opponent_top_n": 0,
+		"randomness": 28.0,
+		"opponent_response_weight": 0.0,
+	},
+	4: {
+		"search_depth": 1,
+		"own_top_n": 4,
+		"opponent_top_n": 0,
+		"randomness": 20.0,
+		"opponent_response_weight": 0.0,
+	},
+	5: {
+		"search_depth": 2,
+		"own_top_n": 5,
+		"opponent_top_n": 2,
+		"randomness": 15.0,
+		"opponent_response_weight": 0.35,
+	},
+	6: {
+		"search_depth": 2,
+		"own_top_n": 6,
+		"opponent_top_n": 4,
+		"randomness": 10.0,
+		"opponent_response_weight": 0.50,
+	},
+	7: {
+		"search_depth": 2,
+		"own_top_n": 7,
+		"opponent_top_n": 6,
+		"randomness": 6.0,
+		"opponent_response_weight": 0.58,
+	},
+	8: {
+		"search_depth": 2,
+		"own_top_n": 8,
+		"opponent_top_n": 8,
+		"randomness": 4.0,
+		"opponent_response_weight": 0.64,
+	},
+	9: {
+		"search_depth": 2,
+		"own_top_n": 9,
+		"opponent_top_n": 10,
+		"randomness": 2.0,
+		"opponent_response_weight": 0.70,
+	},
+	10: {
+		"search_depth": 2,
+		"own_top_n": 10,
+		"opponent_top_n": 14,
+		"randomness": 1.0,
+		"opponent_response_weight": 0.76,
+	},
+	11: {
+		"search_depth": 2,
+		"own_top_n": 11,
+		"opponent_top_n": 20,
+		"randomness": 0.0,
+		"opponent_response_weight": 0.80,
+	},
+	12: {
+		"search_depth": 2,
+		"own_top_n": 12,
+		"opponent_top_n": 30,
+		"randomness": 0.0,
+		"opponent_response_weight": 0.82,
+	},
+}
 
 const SCORE_WIN: float = 100000.0
 const SCORE_CAPTURE_KING: float = 160.0
@@ -15,6 +104,10 @@ const SCORE_KING_BASE_PROGRESS: float = 35.0
 const SCORE_ATTACH_CARD: float = 10.0
 const SCORE_CENTER: float = 4.0
 const SCORE_USE_EXISTING_CARD: float = 4.0
+const SCORE_DRAW_CARD: float = 14.0
+const SCORE_DRAW_LOW_HAND: float = 16.0
+const SCORE_ATTACH_SETUP_MOBILITY: float = 5.0
+const PENALTY_ATTACH_SETUP_NO_MOVE: float = 8.0
 const PENALTY_GIVE_CARD: float = 35.0
 const SCORE_INVALID_MOVE_REDUCTION: float = 8.0
 const PENALTY_OWN_MOVE_REDUCTION: float = 5.0
@@ -28,26 +121,55 @@ const SCORE_MOVE_BASE_AVG_DISTANCE: float = 8.0
 const PENALTY_MOVE_BASE_NOOP: float = 20.0
 const PENALTY_KING_THREATENED: float = 1400.0
 const PENALTY_PIECE_THREATENED: float = 35.0
+const OPPONENT_RESPONSE_WEIGHT_NORMAL: float = 0.62
+const OPPONENT_RESPONSE_WEIGHT_HARD: float = 0.82
 
 var difficulty: String = DIFFICULTY_NORMAL
+var difficulty_level: int = 12
 var search_depth: int = 1
+var own_top_n: int = 6
+var opponent_top_n: int = 4
 var randomness: float = 8.0
+var opponent_response_weight: float = OPPONENT_RESPONSE_WEIGHT_NORMAL
+var last_profile: Dictionary = {}
 
 func _init(new_difficulty: String = DIFFICULTY_NORMAL):
 	set_difficulty(new_difficulty)
 
 func set_difficulty(new_difficulty: String) -> void:
 	difficulty = new_difficulty
-	match difficulty:
+	difficulty_level = parse_difficulty_level(new_difficulty)
+	apply_difficulty_config(difficulty_level)
+
+func parse_difficulty_level(raw_difficulty: String) -> int:
+	var cleaned_difficulty: String = raw_difficulty.strip_edges().to_lower()
+	match cleaned_difficulty:
 		DIFFICULTY_EASY:
-			search_depth = 1
-			randomness = 35.0
+			return 2
 		DIFFICULTY_HARD:
-			search_depth = 1
-			randomness = 0.0
+			return 12
+		DIFFICULTY_NORMAL:
+			return 6
 		_:
-			search_depth = 1
-			randomness = 8.0
+			pass
+
+	if cleaned_difficulty.begins_with("level_"):
+		cleaned_difficulty = cleaned_difficulty.trim_prefix("level_")
+	if cleaned_difficulty.begins_with("level "):
+		cleaned_difficulty = cleaned_difficulty.trim_prefix("level ")
+
+	if cleaned_difficulty.is_valid_int():
+		return clampi(int(cleaned_difficulty), MIN_DIFFICULTY_LEVEL, MAX_DIFFICULTY_LEVEL)
+	return 6
+
+func apply_difficulty_config(level: int) -> void:
+	var clamped_level: int = clampi(level, MIN_DIFFICULTY_LEVEL, MAX_DIFFICULTY_LEVEL)
+	var config: Dictionary = DIFFICULTY_CONFIGS.get(clamped_level, DIFFICULTY_CONFIGS[6])
+	search_depth = int(config.get("search_depth", 2))
+	own_top_n = int(config.get("own_top_n", 6))
+	opponent_top_n = int(config.get("opponent_top_n", 4))
+	randomness = float(config.get("randomness", 8.0))
+	opponent_response_weight = float(config.get("opponent_response_weight", OPPONENT_RESPONSE_WEIGHT_NORMAL))
 
 func choose_best_move(game_state: GameStateData, player_id: int, valid_moves: Array[Dictionary], board_size: int = 5) -> Dictionary:
 	if game_state == null or valid_moves.is_empty():
@@ -65,6 +187,495 @@ func choose_best_move(game_state: GameStateData, player_id: int, valid_moves: Ar
 			best_score = move_score
 
 	return best_move
+
+func choose_best_turn_plan(game_state: GameStateData, player_id: int, turn_plans: Array[Dictionary], board_size: int = 5, turn_planner = null) -> Dictionary:
+	if game_state == null or turn_plans.is_empty():
+		last_profile = create_profile(0)
+		return {}
+
+	var profile: Dictionary = create_profile(turn_plans.size())
+	var start_usec: int = Time.get_ticks_usec()
+	var scored_plans: Array[Dictionary] = score_own_turn_plans(game_state, player_id, turn_plans, board_size, profile)
+	var response_candidates: Array[Dictionary] = get_response_candidate_plans(scored_plans)
+	profile["own_response_candidate_count"] = response_candidates.size()
+	if should_score_opponent_responses(turn_planner):
+		profile["own_response_pruned_plan_count"] = max(0, turn_plans.size() - response_candidates.size())
+
+	var best_plan: Dictionary = choose_best_scored_plan(scored_plans, profile)
+	var best_score: float = float(profile.get("best_plan_score", -INF))
+	if should_score_opponent_responses(turn_planner):
+		best_plan = {}
+		best_score = -INF
+		for scored_plan: Dictionary in response_candidates:
+			var plan: Dictionary = scored_plan.get("plan", {})
+			var own_score: float = float(scored_plan.get("score", 0.0))
+			var opponent_response_score: float = score_best_opponent_response(
+				game_state,
+				player_id,
+				plan,
+				board_size,
+				turn_planner,
+				profile
+			)
+			var plan_score: float = own_score - opponent_response_score * opponent_response_weight
+			if randomness > 0.0:
+				plan_score += randf_range(-randomness, randomness)
+
+			if best_plan.is_empty() or plan_score > best_score:
+				best_plan = plan
+				best_score = plan_score
+
+	profile["choose_best_turn_plan_ms"] = usec_to_ms(Time.get_ticks_usec() - start_usec)
+	profile["best_plan_score"] = best_score
+	profile["best_plan_type"] = str(best_plan.get("plan_type", ""))
+	last_profile = profile
+	return best_plan
+
+func score_own_turn_plans(game_state: GameStateData, player_id: int, turn_plans: Array[Dictionary], board_size: int, profile: Dictionary) -> Array[Dictionary]:
+	var scored_plans: Array[Dictionary] = []
+	var own_score_start_usec: int = Time.get_ticks_usec()
+	for plan: Dictionary in turn_plans:
+		scored_plans.append({
+			"plan": plan,
+			"score": score_turn_plan(game_state, player_id, plan, board_size),
+		})
+	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - own_score_start_usec)
+	increment_profile_count(profile, "evaluated_own_plans", turn_plans.size())
+	return scored_plans
+
+func should_score_opponent_responses(turn_planner) -> bool:
+	return search_depth >= 2 \
+		&& turn_planner != null \
+		&& opponent_response_weight > 0.0 \
+		&& own_top_n > 0 \
+		&& opponent_top_n > 0
+
+func get_response_candidate_plans(scored_plans: Array[Dictionary]) -> Array[Dictionary]:
+	if scored_plans.is_empty():
+		return []
+	if search_depth < 2 or own_top_n <= 0:
+		return []
+	return get_top_scored_plans(scored_plans, own_top_n)
+
+func choose_best_scored_plan(scored_plans: Array[Dictionary], profile: Dictionary) -> Dictionary:
+	var best_plan: Dictionary = {}
+	var best_score: float = -INF
+	for scored_plan: Dictionary in scored_plans:
+		var plan: Dictionary = scored_plan.get("plan", {})
+		var plan_score: float = float(scored_plan.get("score", 0.0))
+		if randomness > 0.0:
+			plan_score += randf_range(-randomness, randomness)
+
+		if best_plan.is_empty() or plan_score > best_score:
+			best_plan = plan
+			best_score = plan_score
+
+	profile["best_plan_score"] = best_score
+	profile["best_plan_type"] = str(best_plan.get("plan_type", ""))
+	return best_plan
+
+func score_turn_plan_with_response(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5, turn_planner = null, profile: Dictionary = {}) -> float:
+	var own_score_start_usec: int = Time.get_ticks_usec()
+	var own_score: float = score_turn_plan(game_state, player_id, plan, board_size)
+	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - own_score_start_usec)
+	increment_profile_count(profile, "evaluated_own_plans")
+	if !should_score_opponent_responses(turn_planner):
+		return own_score
+
+	var opponent_response_score: float = score_best_opponent_response(game_state, player_id, plan, board_size, turn_planner, profile)
+	return own_score - opponent_response_score * opponent_response_weight
+
+func score_best_opponent_response(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int, turn_planner, profile: Dictionary = {}) -> float:
+	var simulator_start_usec: int = Time.get_ticks_usec()
+	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	add_profile_time(profile, "simulator_ms", Time.get_ticks_usec() - simulator_start_usec)
+	if simulated_state.game_over:
+		if simulated_state.winner_player == player_id:
+			return -SCORE_WIN
+		return SCORE_WIN
+
+	var opponent_player_id: int = 1 - player_id
+	var opponent_planner_start_usec: int = Time.get_ticks_usec()
+	var opponent_plans: Array[Dictionary] = turn_planner.create_turn_plans_from_state(simulated_state, opponent_player_id, board_size)
+	add_profile_time(profile, "opponent_planner_ms", Time.get_ticks_usec() - opponent_planner_start_usec)
+	increment_profile_count(profile, "opponent_response_branch_count")
+	increment_profile_count(profile, "opponent_response_plan_count", opponent_plans.size())
+	if opponent_plans.is_empty():
+		return 0.0
+
+	var selected_response_plans: Array[Dictionary] = select_top_opponent_response_plans(
+		simulated_state,
+		opponent_player_id,
+		opponent_plans,
+		board_size,
+		profile
+	)
+	increment_profile_count(profile, "opponent_response_selected_plan_count", selected_response_plans.size())
+	increment_profile_count(profile, "opponent_response_pruned_plan_count", max(0, opponent_plans.size() - selected_response_plans.size()))
+	if selected_response_plans.is_empty():
+		return 0.0
+
+	var best_response_score: float = -INF
+	var response_eval_start_usec: int = Time.get_ticks_usec()
+	for opponent_plan: Dictionary in selected_response_plans:
+		var response_score: float = score_turn_plan(simulated_state, opponent_player_id, opponent_plan, board_size)
+		if response_score > best_response_score:
+			best_response_score = response_score
+	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - response_eval_start_usec)
+	increment_profile_count(profile, "evaluated_response_plans", selected_response_plans.size())
+
+	return best_response_score if best_response_score != -INF else 0.0
+
+func select_top_opponent_response_plans(
+	game_state: GameStateData,
+	player_id: int,
+	opponent_plans: Array[Dictionary],
+	board_size: int,
+	profile: Dictionary
+) -> Array[Dictionary]:
+	if opponent_top_n <= 0:
+		return []
+
+	var fast_score_start_usec: int = Time.get_ticks_usec()
+	var scored_plans: Array[Dictionary] = []
+	for plan: Dictionary in opponent_plans:
+		scored_plans.append({
+			"plan": plan,
+			"score": score_turn_plan_fast(game_state, player_id, plan, board_size),
+		})
+	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - fast_score_start_usec)
+	return extract_plans(get_top_scored_plans(scored_plans, opponent_top_n))
+
+func extract_plans(scored_plans: Array[Dictionary]) -> Array[Dictionary]:
+	var plans: Array[Dictionary] = []
+	for scored_plan: Dictionary in scored_plans:
+		var plan: Dictionary = scored_plan.get("plan", {})
+		if !plan.is_empty():
+			plans.append(plan)
+	return plans
+
+func get_top_scored_plans(scored_plans: Array[Dictionary], limit: int) -> Array[Dictionary]:
+	var sorted_plans: Array[Dictionary] = scored_plans.duplicate()
+	sorted_plans.sort_custom(Callable(self, "sort_scored_plan_desc"))
+
+	var output: Array[Dictionary] = []
+	var output_count: int = mini(maxi(0, limit), sorted_plans.size())
+	for index: int in range(output_count):
+		output.append(sorted_plans[index])
+	return output
+
+func sort_scored_plan_desc(left: Dictionary, right: Dictionary) -> bool:
+	return float(left.get("score", 0.0)) > float(right.get("score", 0.0))
+
+func create_profile(own_turn_plan_count: int) -> Dictionary:
+	return {
+		"own_turn_plan_count": own_turn_plan_count,
+		"own_response_candidate_count": 0,
+		"own_response_pruned_plan_count": 0,
+		"evaluated_own_plans": 0,
+		"opponent_response_branch_count": 0,
+		"opponent_response_plan_count": 0,
+		"opponent_response_selected_plan_count": 0,
+		"opponent_response_pruned_plan_count": 0,
+		"evaluated_response_plans": 0,
+		"choose_best_turn_plan_ms": 0.0,
+		"opponent_planner_ms": 0.0,
+		"evaluator_ms": 0.0,
+		"simulator_ms": 0.0,
+		"best_plan_score": 0.0,
+		"best_plan_type": "",
+		"difficulty_level": difficulty_level,
+		"search_depth": search_depth,
+		"own_top_n": own_top_n,
+		"opponent_top_n": opponent_top_n,
+		"randomness": randomness,
+		"opponent_response_weight": opponent_response_weight,
+	}
+
+func add_profile_time(profile: Dictionary, key: String, elapsed_usec: int) -> void:
+	if profile.is_empty():
+		return
+	profile[key] = float(profile.get(key, 0.0)) + usec_to_ms(elapsed_usec)
+
+func increment_profile_count(profile: Dictionary, key: String, amount: int = 1) -> void:
+	if profile.is_empty():
+		return
+	profile[key] = int(profile.get(key, 0)) + amount
+
+func usec_to_ms(elapsed_usec: int) -> float:
+	return float(elapsed_usec) / 1000.0
+
+func score_turn_plan_fast(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5) -> float:
+	var score: float = 0.0
+	if bool(plan.get("uses_draw", false)):
+		score += score_draw_action(game_state, player_id, str(plan.get("drawn_card_name", ""))) * 0.85
+
+	var setup_attach_actions: Array = plan.get("setup_attach_actions", [])
+	for attach_action_value in setup_attach_actions:
+		var attach_action: Dictionary = attach_action_value
+		score += score_attach_setup_fast(game_state, player_id, attach_action, board_size)
+
+	var move: Dictionary = plan.get("move", {})
+	if !move.is_empty():
+		score += score_move_fast(game_state, player_id, move, board_size)
+
+	var actions: Array = plan.get("actions", [])
+	score -= float(maxi(0, actions.size() - 1)) * 0.4
+	return score
+
+func score_attach_setup_fast(game_state: GameStateData, player_id: int, attach_action: Dictionary, board_size: int) -> float:
+	var piece_pos: Vector2 = CardEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+	var piece: Piece = game_state.get_piece(piece_pos)
+	if piece == null:
+		return 0.0
+
+	var card: Card = attach_action.get("card", null) as Card
+	if card == null:
+		card = CardLibrary.get_card(str(attach_action.get("card_name", "")))
+	if card == null:
+		return 0.0
+
+	var move: Dictionary = {
+		"from": piece_pos,
+		"to": piece_pos,
+		"card": card,
+		"requires_attach": true,
+	}
+	var score: float = SCORE_ATTACH_CARD + max(0, card.duration) * 2.0
+	if MoveRules.is_king_card(card):
+		score += SCORE_ATTACH_KING * 0.85
+	score += float(card.get_directions().size()) * 2.5
+	score += score_card_effect_fast(game_state, player_id, piece, card, piece_pos, piece_pos, null, move, board_size) * 0.65
+	return score
+
+func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = 5) -> float:
+	var from_pos: Vector2 = AIStateSimulator.get_move_from(move)
+	var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
+	var moving_piece: Piece = game_state.get_piece(from_pos)
+	if moving_piece == null:
+		return -SCORE_WIN
+
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var opponent_player_id: int = 1 - player_id
+	var card: Card = AIStateSimulator.get_card_for_candidate(game_state.pieces, move)
+	var captured_piece: Piece = AIStateSimulator.get_captured_piece(game_state.pieces, move)
+	var score: float = 0.0
+	if bool(move.get("requires_attach", false)):
+		if card != null:
+			score += SCORE_ATTACH_CARD + max(0, card.duration) * 2.0
+			if MoveRules.is_king_card(card):
+				score += SCORE_ATTACH_KING * 0.85
+	else:
+		score += SCORE_USE_EXISTING_CARD
+
+	if captured_piece != null:
+		score += score_capture(captured_piece) * 0.9
+
+	if AIStateSimulator.is_own_king_candidate(game_state.pieces, move, player_id):
+		score += score_king_base_progress(game_state, player_id, from_pos, to_pos)
+		var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, opponent_player_id)
+		if moving_piece.color == player_color && to_pos == opponent_base:
+			score += SCORE_WIN
+
+	score += score_center_control(to_pos, board_size) * 0.7
+	score += score_card_effect_fast(game_state, player_id, moving_piece, card, from_pos, to_pos, captured_piece, move, board_size)
+	return score
+
+func score_card_effect_fast(
+	game_state: GameStateData,
+	player_id: int,
+	moving_piece: Piece,
+	card: Card,
+	from_pos: Vector2,
+	to_pos: Vector2,
+	captured_piece: Piece,
+	move: Dictionary,
+	board_size: int
+) -> float:
+	if card == null or !card.has_effect():
+		return 0.0
+
+	var effect_source_pos: Vector2 = get_effect_source_pos(card, from_pos, to_pos)
+	var score: float = 0.0
+	match card.effect_type:
+		CardEffect.TYPE_SHARED_CONTROL:
+			score += score_shared_control_effect_fast(card)
+		CardEffect.TYPE_INVISIBLE_TO_ENEMY:
+			score += 32.0
+			if MoveRules.is_king_card(card):
+				score += 80.0
+		CardEffect.TYPE_STEAL_CARD:
+			score += 50.0
+		CardEffect.TYPE_GRANT_CARD:
+			score += 45.0
+		CardEffect.TYPE_GIVE_CARD:
+			score -= PENALTY_GIVE_CARD
+		CardEffect.TYPE_MOVE_BASE:
+			score += score_move_base_effect(game_state, player_id, moving_piece, card, effect_source_pos, board_size)
+		CardEffect.TYPE_INVALID_SQUARES:
+			score += score_invalid_squares_effect_fast(game_state, player_id, moving_piece, card, effect_source_pos, board_size)
+		CardEffect.TYPE_FROZEN_SQUARES:
+			score += score_frozen_squares_effect_fast(game_state, player_id, moving_piece, card, effect_source_pos, board_size)
+		CardEffect.TYPE_BOMB:
+			score += score_bomb_effect(game_state, player_id, moving_piece, card, effect_source_pos, board_size)
+		_:
+			pass
+
+	if card.effect_trigger == CardEffect.TRIGGER_ON_CAPTURE && captured_piece != null:
+		score += 20.0
+	if card.effect_trigger == CardEffect.TRIGGER_ON_MOVE:
+		score += 8.0
+	if card.effect_trigger == CardEffect.TRIGGER_ON_EXPIRE:
+		score += 5.0
+	if to_pos == from_pos:
+		score -= 10.0
+	return score
+
+func score_invalid_squares_effect_fast(game_state: GameStateData, player_id: int, moving_piece: Piece, card: Card, source_pos: Vector2, board_size: int) -> float:
+	if moving_piece == null:
+		return 0.0
+
+	var effect_color: int = moving_piece.color
+	var target_squares: Array[Vector2] = CardEffectResolver.get_effect_squares(card, source_pos, board_size, effect_color)
+	target_squares = CardEffectResolver.filter_out_base_fields(game_state, target_squares)
+	if target_squares.is_empty():
+		return 0.0
+
+	var opponent_positions: Array[Vector2] = get_piece_positions_for_player(game_state.pieces, 1 - player_id)
+	var own_positions: Array[Vector2] = get_piece_positions_for_player(game_state.pieces, player_id)
+	var score: float = float(target_squares.size()) * 2.0
+	for target_square: Vector2 in target_squares:
+		for opponent_pos: Vector2 in opponent_positions:
+			var opponent_distance: float = get_manhattan_distance(target_square, opponent_pos)
+			if opponent_distance <= 1.0:
+				score += 10.0
+			elif opponent_distance <= 2.0:
+				score += 4.0
+		for own_pos: Vector2 in own_positions:
+			var own_distance: float = get_manhattan_distance(target_square, own_pos)
+			if own_distance <= 1.0:
+				score -= 6.0
+	return score
+
+func score_frozen_squares_effect_fast(game_state: GameStateData, player_id: int, moving_piece: Piece, card: Card, source_pos: Vector2, board_size: int) -> float:
+	if moving_piece == null:
+		return 0.0
+
+	var effect_color: int = moving_piece.color
+	var target_squares: Array[Vector2] = CardEffectResolver.get_effect_squares(card, source_pos, board_size, effect_color)
+	var score: float = 0.0
+	for target_pos: Vector2 in target_squares:
+		var target_piece: Piece = game_state.get_piece(target_pos)
+		if target_piece == null:
+			continue
+
+		var target_player_id: int = CardEffectResolver.get_player_id_for_color(target_piece.color)
+		if !card_effect_targets_player(card, target_player_id):
+			continue
+
+		var piece_score: float = get_piece_target_score(target_piece) * 0.75 + SCORE_FROZEN_ENEMY_PIECE
+		if target_player_id == player_id:
+			score -= piece_score
+		else:
+			score += piece_score
+	return score
+
+func score_shared_control_effect_fast(card: Card) -> float:
+	var movement_count: int = 0
+	if card != null:
+		movement_count = card.get_directions().size()
+	return float(movement_count) * (SCORE_SHARED_OWN_MOBILITY - PENALTY_SHARED_OPPONENT_MOBILITY)
+
+func score_turn_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5) -> float:
+	var breakdown: Dictionary = score_turn_plan_breakdown(game_state, player_id, plan, board_size)
+	return float(breakdown.get("total", 0.0))
+
+func score_turn_plan_breakdown(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5) -> Dictionary:
+	var draw_score: float = 0.0
+	var move_score: float = 0.0
+	var setup_score: float = 0.0
+	var action_score: float = 0.0
+
+	if bool(plan.get("uses_draw", false)):
+		draw_score = score_draw_action(game_state, player_id, str(plan.get("drawn_card_name", "")))
+
+	var move: Dictionary = plan.get("move", {})
+	if !move.is_empty():
+		move_score = score_move(game_state, player_id, move, board_size)
+
+	var setup_attach_actions: Array = plan.get("setup_attach_actions", [])
+	for attach_action_value in setup_attach_actions:
+		var attach_action: Dictionary = attach_action_value
+		setup_score += score_attach_setup(game_state, player_id, attach_action, board_size)
+
+	var actions: Array = plan.get("actions", [])
+	action_score = -float(maxi(0, actions.size() - 1)) * 0.8
+	var total_score: float = draw_score + move_score + setup_score + action_score
+	return {
+		"draw": draw_score,
+		"move": move_score,
+		"setup": setup_score,
+		"action_count": action_score,
+		"total": total_score,
+	}
+
+func score_draw_action(game_state: GameStateData, player_id: int, drawn_card_name: String) -> float:
+	var score: float = SCORE_DRAW_CARD
+	var hand_size: int = 0
+	if game_state.player_hands.has(player_id):
+		var hand: Array = game_state.player_hands[player_id]
+		hand_size = hand.size()
+
+	if hand_size < 3:
+		score += SCORE_DRAW_LOW_HAND * float(3 - hand_size)
+
+	var drawn_card: Card = CardLibrary.get_card(drawn_card_name)
+	if drawn_card != null:
+		score += max(0, drawn_card.duration) * 2.0
+		if MoveRules.is_king_card(drawn_card):
+			score += SCORE_ATTACH_KING * 0.35
+		if drawn_card.has_effect():
+			score += 8.0
+
+	return score
+
+func score_attach_setup(game_state: GameStateData, player_id: int, attach_action: Dictionary, board_size: int) -> float:
+	var piece_pos: Vector2 = CardEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+	var piece: Piece = game_state.get_piece(piece_pos)
+	if piece == null:
+		return 0.0
+
+	var card: Card = attach_action.get("card", null) as Card
+	if card == null:
+		card = CardLibrary.get_card(str(attach_action.get("card_name", "")))
+	if card == null:
+		return 0.0
+
+	var score: float = SCORE_ATTACH_CARD
+	if MoveRules.is_king_card(card):
+		score += SCORE_ATTACH_KING
+
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var setup_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
+		game_state.pieces,
+		piece_pos,
+		player_color,
+		card,
+		board_size,
+		game_state.board_effects
+	)
+	score += float(setup_moves.size()) * SCORE_ATTACH_SETUP_MOBILITY
+	if setup_moves.is_empty():
+		score -= PENALTY_ATTACH_SETUP_NO_MOVE
+
+	var setup_move: Dictionary = {
+		"from": piece_pos,
+		"to": piece_pos,
+		"card": card,
+		"requires_attach": true,
+	}
+	score += score_card_effect(game_state, player_id, piece, card, piece_pos, piece_pos, null, setup_move, board_size) * 0.65
+	return score
 
 func score_move(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = 5) -> float:
 	var from_pos: Vector2 = AIStateSimulator.get_move_from(move)

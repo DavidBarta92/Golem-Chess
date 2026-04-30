@@ -1,14 +1,17 @@
 extends RefCounted
 class_name RandomAIPlayer
 
+const AI_TURN_PLANNER_SCRIPT = preload("res://Scripts/AITurnPlanner.gd")
 const BOARD_SIZE: int = 5
 const DRAW_AT_TURN_START_BELOW_HAND_SIZE: int = 3
 
 var player_id: int = 1
 var action_delay: float = 0.35
+var planner
 
 func _init(new_player_id: int = 1):
 	player_id = new_player_id
+	planner = AI_TURN_PLANNER_SCRIPT.new()
 
 func can_play_turn(host: NetworkGameHost) -> bool:
 	return host != null \
@@ -20,12 +23,29 @@ func play_turn(host: NetworkGameHost, tree: SceneTree) -> bool:
 	if !can_play_turn(host):
 		return false
 
-	if await try_draw_card_at_turn_start(host, tree):
-		if !can_play_turn(host):
-			return true
+	var selected_plan: Dictionary = choose_random_turn_plan(host)
+	if planner == null:
+		return false
+	return await planner.execute_turn_plan(host, tree, player_id, selected_plan, action_delay)
 
-	var selected_move: Dictionary = choose_random_turn_move(host)
-	return await execute_turn_move(host, tree, selected_move)
+func choose_random_turn_plan(host: NetworkGameHost) -> Dictionary:
+	var turn_plans: Array[Dictionary] = get_turn_plans(host)
+	if turn_plans.is_empty():
+		return {}
+
+	var active_plans: Array[Dictionary] = []
+	for plan: Dictionary in turn_plans:
+		if str(plan.get("plan_type", "")) != "end_turn":
+			active_plans.append(plan)
+
+	if active_plans.is_empty():
+		return turn_plans[randi() % turn_plans.size()]
+	return active_plans[randi() % active_plans.size()]
+
+func get_turn_plans(host: NetworkGameHost) -> Array[Dictionary]:
+	if planner == null:
+		return []
+	return planner.create_turn_plans(host, player_id, BOARD_SIZE)
 
 func choose_random_turn_move(host: NetworkGameHost) -> Dictionary:
 	var valid_moves: Array[Dictionary] = get_valid_turn_moves(host)

@@ -1,16 +1,19 @@
 extends RefCounted
 class_name HeuristicAIPlayer
 
+const AI_TURN_PLANNER_SCRIPT = preload("res://Scripts/AITurnPlanner.gd")
 const BOARD_SIZE: int = 5
 const DRAW_AT_TURN_START_BELOW_HAND_SIZE: int = 3
 
 var player_id: int = 1
 var action_delay: float = 0.35
 var evaluator: AIMoveEvaluator
+var planner
 
 func _init(new_player_id: int = 1, ai_difficulty: String = AIMoveEvaluator.DIFFICULTY_NORMAL):
 	player_id = new_player_id
 	evaluator = AIMoveEvaluator.new(ai_difficulty)
+	planner = AI_TURN_PLANNER_SCRIPT.new()
 
 func can_play_turn(host: NetworkGameHost) -> bool:
 	return host != null \
@@ -22,12 +25,32 @@ func play_turn(host: NetworkGameHost, tree: SceneTree) -> bool:
 	if !can_play_turn(host):
 		return false
 
-	if await try_draw_card_at_turn_start(host, tree):
-		if !can_play_turn(host):
-			return true
+	var selected_plan: Dictionary = choose_turn_plan(host)
+	return await execute_turn_plan(host, tree, selected_plan)
 
-	var selected_move: Dictionary = choose_turn_move(host)
-	return await execute_turn_move(host, tree, selected_move)
+func choose_turn_plan(host: NetworkGameHost) -> Dictionary:
+	var planner_start_usec: int = Time.get_ticks_usec()
+	var turn_plans: Array[Dictionary] = get_turn_plans(host)
+	var own_planner_ms: float = float(Time.get_ticks_usec() - planner_start_usec) / 1000.0
+	if turn_plans.is_empty():
+		return {}
+
+	var selected_plan: Dictionary = evaluator.choose_best_turn_plan(host.game_state, player_id, turn_plans, BOARD_SIZE, planner)
+	var profile: Dictionary = evaluator.last_profile.duplicate()
+	profile["own_planner_ms"] = own_planner_ms
+	profile["own_turn_plan_count"] = turn_plans.size()
+	AIPerformanceCsvLogger.log_decision(host.game_state, player_id, profile, selected_plan)
+	return selected_plan
+
+func get_turn_plans(host: NetworkGameHost) -> Array[Dictionary]:
+	if planner == null:
+		return []
+	return planner.create_turn_plans(host, player_id, BOARD_SIZE)
+
+func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, selected_plan: Dictionary) -> bool:
+	if planner == null:
+		return false
+	return await planner.execute_turn_plan(host, tree, player_id, selected_plan, action_delay)
 
 func choose_turn_move(host: NetworkGameHost) -> Dictionary:
 	var valid_moves: Array[Dictionary] = get_valid_turn_moves(host)
