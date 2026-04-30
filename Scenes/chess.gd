@@ -1061,16 +1061,41 @@ func finish_game(winner_color: int):
 	show_result_message(winner_color)
 
 	await get_tree().create_timer(8.0).timeout
+	var next_scene: String = get_next_scene_after_game(winner_color)
 	if get_parent().has_method("close_game_connection"):
 		get_parent().close_game_connection()
 	if get_tree():
-		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+		get_tree().change_scene_to_file(next_scene)
+
+func get_next_scene_after_game(winner_color: int) -> String:
+	if GameConfig.is_ai_vs_ai_batch:
+		var winner_player_id: int = get_player_id_for_color(winner_color)
+		GameConfig.record_ai_vs_ai_result(winner_player_id)
+		print("AI vs AI match %d/%d finished. White wins: %d, Black wins: %d" % [
+			GameConfig.ai_vs_ai_matches_played,
+			GameConfig.ai_vs_ai_match_count,
+			int(GameConfig.ai_vs_ai_results.get(0, 0)),
+			int(GameConfig.ai_vs_ai_results.get(1, 0)),
+		])
+
+		if GameConfig.should_continue_ai_vs_ai_batch():
+			return "res://Scenes/main.tscn"
+
+		GameConfig.stop_ai_vs_ai_batch()
+
+	return MAIN_MENU_SCENE
 
 func show_result_message(winner_color: int):
 	if result_label == null or result_overlay == null:
 		return
 
-	if side == null:
+	if GameConfig.is_ai_vs_ai_batch:
+		result_label.text = "%s WINS!\nMATCH %d / %d" % [
+			"WHITE" if winner_color == 1 else "BLACK",
+			GameConfig.ai_vs_ai_matches_played + 1,
+			GameConfig.ai_vs_ai_match_count,
+		]
+	elif side == null:
 		result_label.text = "WHITE WINS!" if winner_color == 1 else "BLACK WINS!"
 	else:
 		result_label.text = "YOU WON!" if winner_color == get_own_color() else "YOU LOST!"

@@ -1,6 +1,35 @@
 extends Control
 
+const AI_VS_AI_UNLOCK_KEY: Key = KEY_A
+const AI_VS_AI_UNLOCK_PRESS_COUNT: int = 3
+const MAX_AI_VS_AI_MATCH_COUNT: int = 9999
+
+@onready var ai_vs_ai_controls: Control = $AIVsAIControls
+@onready var ai_match_count_field: LineEdit = $AIVsAIControls/MatchCountField
+
+var ai_vs_ai_unlock_presses: int = 0
+
+func _ready():
+	ai_vs_ai_controls.visible = false
+	ai_match_count_field.text = str(GameConfig.ai_vs_ai_match_count)
+
+func _input(event):
+	if ai_vs_ai_controls.visible:
+		return
+
+	var key_event: InputEventKey = event as InputEventKey
+	if key_event == null or !key_event.pressed or key_event.echo:
+		return
+
+	if key_event.keycode == AI_VS_AI_UNLOCK_KEY:
+		ai_vs_ai_unlock_presses += 1
+		if ai_vs_ai_unlock_presses >= AI_VS_AI_UNLOCK_PRESS_COUNT:
+			ai_vs_ai_controls.visible = true
+	else:
+		ai_vs_ai_unlock_presses = 0
+
 func _on_singleplayer_button_pressed():
+	GameConfig.stop_ai_vs_ai_batch()
 	GameConfig.is_singleplayer = true
 	GameConfig.is_hosting = true
 	GameConfig.server_ip = ""
@@ -8,13 +37,23 @@ func _on_singleplayer_button_pressed():
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 
 func _on_ai_vs_ai_button_pressed():
+	var match_count: int = get_ai_vs_ai_match_count()
 	GameConfig.is_singleplayer = true
 	GameConfig.is_hosting = true
 	GameConfig.server_ip = ""
-	GameConfig.set_singleplayer_controllers(GameConfig.CONTROLLER_AI, GameConfig.CONTROLLER_AI)
+	GameConfig.start_ai_vs_ai_batch(match_count)
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 
+func get_ai_vs_ai_match_count() -> int:
+	var match_count: int = int(ai_match_count_field.text.strip_edges())
+	if match_count < 1:
+		return 1
+	if match_count > MAX_AI_VS_AI_MATCH_COUNT:
+		return MAX_AI_VS_AI_MATCH_COUNT
+	return match_count
+
 func _on_host_button_pressed():
+	GameConfig.stop_ai_vs_ai_batch()
 	GameConfig.is_singleplayer = false
 	GameConfig.is_hosting = true
 	GameConfig.server_ip = ""
@@ -22,6 +61,7 @@ func _on_host_button_pressed():
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 
 func _on_join_button_pressed():
+	GameConfig.stop_ai_vs_ai_batch()
 	GameConfig.is_singleplayer = false
 	GameConfig.reset_multiplayer_controllers()
 	get_tree().change_scene_to_file("res://Scenes/JoinMenu.tscn")

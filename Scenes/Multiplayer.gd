@@ -41,7 +41,10 @@ func start_singleplayer_game():
 	setup_singleplayer_ai_controllers()
 	game_host.finish_if_player_has_no_valid_turn(game_host.game_state.current_turn_player)
 	game_host.broadcast_full_state()
-	$board.set_turn(get_side_for_player_id(get_local_human_player_id()))
+	if GameConfig.is_ai_vs_ai_batch:
+		$board.set_turn(null)
+	else:
+		$board.set_turn(get_side_for_player_id(get_local_human_player_id()))
 
 func setup_singleplayer_ai_controllers():
 	ai_players.clear()
