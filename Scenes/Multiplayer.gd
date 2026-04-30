@@ -5,6 +5,7 @@ var is_server = false
 
 var connected_peer_ids = []
 var peer_player_ids: Dictionary = {}
+var peer_player_names: Dictionary = {}
 var server_turn = true
 
 var game_host: NetworkGameHost = null
@@ -30,6 +31,8 @@ func start_singleplayer_game():
 	connected_peer_ids = [1]
 	peer_player_ids.clear()
 	peer_player_ids[1] = get_local_human_player_id()
+	peer_player_names.clear()
+	setup_singleplayer_player_names()
 	ai_players.clear()
 
 	game_host = NetworkGameHost.new(self)
@@ -52,6 +55,13 @@ func setup_singleplayer_ai_controllers():
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
 			var ai_difficulty: String = GameConfig.get_player_ai_difficulty(player_id)
 			ai_players[player_id] = HeuristicAIPlayer.new(player_id, ai_difficulty)
+
+func setup_singleplayer_player_names() -> void:
+	for player_id in [0, 1]:
+		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
+			peer_player_names[player_id] = GameConfig.get_local_player_name()
+		else:
+			peer_player_names[player_id] = "AI %s" % ("White" if player_id == 0 else "Black")
 
 func get_local_human_player_id() -> int:
 	for player_id in [0, 1]:
@@ -107,6 +117,7 @@ func host_game(port = 9999):
 
 	game_host = NetworkGameHost.new(self)
 	GameController.set_game_host(game_host)
+	peer_player_names[1] = GameConfig.get_local_player_name()
 
 	_on_peer_connected(1)
 	return true
@@ -163,10 +174,12 @@ func _on_peer_disconnected(peer_id):
 
 	print("Player disconnected: ", peer_id)
 	connected_peer_ids.erase(peer_id)
+	peer_player_names.erase(peer_id)
 	print("  Players: %d/2" % connected_peer_ids.size())
 
 func _on_connection_succeeded():
 	print("Connected to server")
+	register_player_name.rpc_id(1, multiplayer.get_unique_id(), GameConfig.get_local_player_name())
 
 func _on_connection_failed():
 	push_error("Failed to connect to server")
@@ -181,6 +194,15 @@ func send_move(start_pos, end_pos, promotion = null):
 func close_game_connection():
 	multiplayer_peer.close()
 	multiplayer.multiplayer_peer = null
+
+@rpc("any_peer", "call_local", "reliable")
+func register_player_name(peer_id: int, player_name: String):
+	if !is_server:
+		return
+
+	peer_player_names[peer_id] = GameConfig.sanitize_player_name(player_name)
+	if game_host != null && game_host.game_state != null && game_host.game_state.player_hands.has(0):
+		game_host.broadcast_full_state()
 
 func on_player_action(action: Dictionary):
 	send_player_action.rpc_id(1, multiplayer.get_unique_id(), action)
@@ -254,7 +276,24 @@ func apply_game_state(state_data: Dictionary):
 		state_data.get("player_decks_size", {}),
 		state_data.get("hidden_cards", []),
 		state_data.get("player_base_fields", {}),
-		state_data.get("board_effects", [])
+		state_data.get("board_effects", []),
+		state_data.get("player_names", {})
 	)
 
 	print("apply_game_state() end")
+
+func get_player_names_by_id() -> Dictionary:
+	if GameConfig.is_singleplayer:
+		return {
+			0: str(peer_player_names.get(0, "AI White")),
+			1: str(peer_player_names.get(1, "AI Black")),
+		}
+
+	var player_names: Dictionary = {
+		0: "Player",
+		1: "Player",
+	}
+	for peer_id in peer_player_ids:
+		var player_id: int = int(peer_player_ids[peer_id])
+		player_names[player_id] = str(peer_player_names.get(peer_id, "Player"))
+	return player_names

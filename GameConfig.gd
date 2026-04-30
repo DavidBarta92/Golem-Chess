@@ -6,12 +6,15 @@ const AI_DIFFICULTY_EASY: String = "easy"
 const AI_DIFFICULTY_NORMAL: String = "normal"
 const AI_DIFFICULTY_HARD: String = "hard"
 const DEFAULT_AI_VS_AI_CSV_LOG_DIR: String = "user://ai_match_logs"
+const DEFAULT_PLAYER_NAME: String = "Player"
+const MAX_PLAYER_NAME_LENGTH: int = 24
 
 var is_singleplayer: bool = false
 var is_hosting: bool = false
 var is_ai_vs_ai_batch: bool = false
 var server_ip: String = "127.0.0.1"
 var server_port: int = 9999
+var player_name: String = DEFAULT_PLAYER_NAME
 var ai_vs_ai_match_count: int = 1
 var ai_vs_ai_matches_played: int = 0
 var ai_vs_ai_log_session_id: String = ""
@@ -40,6 +43,20 @@ func set_player_ai_difficulty(player_id: int, difficulty: String) -> void:
 
 func get_player_ai_difficulty(player_id: int) -> String:
 	return str(player_ai_difficulties.get(player_id, AI_DIFFICULTY_NORMAL))
+
+func set_local_player_name(new_player_name: String) -> void:
+	player_name = sanitize_player_name(new_player_name)
+
+func get_local_player_name() -> String:
+	return sanitize_player_name(player_name)
+
+func sanitize_player_name(raw_player_name: String) -> String:
+	var cleaned_name: String = raw_player_name.strip_edges()
+	if cleaned_name.is_empty():
+		return DEFAULT_PLAYER_NAME
+	if cleaned_name.length() > MAX_PLAYER_NAME_LENGTH:
+		cleaned_name = cleaned_name.substr(0, MAX_PLAYER_NAME_LENGTH)
+	return cleaned_name
 
 func set_singleplayer_controllers(player_0_controller: String = CONTROLLER_HUMAN, player_1_controller: String = CONTROLLER_AI) -> void:
 	set_player_controller(0, player_0_controller)

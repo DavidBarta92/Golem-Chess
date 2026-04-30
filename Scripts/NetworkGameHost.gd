@@ -377,7 +377,8 @@ func broadcast_full_state():
 			local_state_data.player_decks_size,
 			local_state_data.hidden_cards,
 			local_state_data.player_base_fields,
-			local_state_data.board_effects
+			local_state_data.board_effects,
+			local_state_data.player_names
 		)
 
 	for peer_id in multiplayer_node.connected_peer_ids:
@@ -408,6 +409,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"winner_player": game_state.winner_player,
 		"player_base_fields": serialize_player_base_fields(),
 		"board_effects": serialize_board_effects(),
+		"player_names": get_serialized_player_names(),
 	}
 
 	for pos in game_state.pieces:
@@ -466,6 +468,15 @@ func serialize_board_effects() -> Array:
 
 func vector2_to_array(value: Vector2) -> Array:
 	return [value.x, value.y]
+
+func get_serialized_player_names() -> Dictionary:
+	if multiplayer_node != null && multiplayer_node.has_method("get_player_names_by_id"):
+		return multiplayer_node.get_player_names_by_id()
+
+	return {
+		0: "Player",
+		1: "Player",
+	}
 
 func duplicate_player_card_list(source) -> Array:
 	var output: Array = []

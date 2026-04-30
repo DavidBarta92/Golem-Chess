@@ -5,6 +5,7 @@ const AI_VS_AI_UNLOCK_PRESS_COUNT: int = 3
 const MAX_AI_VS_AI_MATCH_COUNT: int = 9999
 
 @onready var ai_vs_ai_controls: Control = $AIVsAIControls
+@onready var player_name_field: LineEdit = $VBoxContainer/PlayerNameField
 @onready var ai_match_count_field: LineEdit = $AIVsAIControls/MatchCountField
 @onready var ai_csv_log_dir_field: LineEdit = $AIVsAIControls/CsvLogDirField
 
@@ -12,11 +13,14 @@ var ai_vs_ai_unlock_presses: int = 0
 
 func _ready():
 	ai_vs_ai_controls.visible = false
+	player_name_field.text = GameConfig.get_local_player_name()
 	ai_match_count_field.text = str(GameConfig.ai_vs_ai_match_count)
 	ai_csv_log_dir_field.text = GameConfig.get_ai_vs_ai_csv_log_dir()
 
 func _input(event):
 	if ai_vs_ai_controls.visible:
+		return
+	if get_viewport().gui_get_focus_owner() is LineEdit:
 		return
 
 	var key_event: InputEventKey = event as InputEventKey
@@ -31,6 +35,7 @@ func _input(event):
 		ai_vs_ai_unlock_presses = 0
 
 func _on_singleplayer_button_pressed():
+	save_player_name()
 	GameConfig.stop_ai_vs_ai_batch()
 	GameConfig.is_singleplayer = true
 	GameConfig.is_hosting = true
@@ -39,6 +44,7 @@ func _on_singleplayer_button_pressed():
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 
 func _on_ai_vs_ai_button_pressed():
+	save_player_name()
 	var match_count: int = get_ai_vs_ai_match_count()
 	GameConfig.is_singleplayer = true
 	GameConfig.is_hosting = true
@@ -55,7 +61,11 @@ func get_ai_vs_ai_match_count() -> int:
 		return MAX_AI_VS_AI_MATCH_COUNT
 	return match_count
 
+func save_player_name() -> void:
+	GameConfig.set_local_player_name(player_name_field.text)
+
 func _on_host_button_pressed():
+	save_player_name()
 	GameConfig.stop_ai_vs_ai_batch()
 	GameConfig.is_singleplayer = false
 	GameConfig.is_hosting = true
@@ -64,6 +74,7 @@ func _on_host_button_pressed():
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 
 func _on_join_button_pressed():
+	save_player_name()
 	GameConfig.stop_ai_vs_ai_batch()
 	GameConfig.is_singleplayer = false
 	GameConfig.reset_multiplayer_controllers()

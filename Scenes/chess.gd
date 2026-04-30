@@ -35,6 +35,8 @@ const HIDDEN_CARD_SCALE = 0.78
 const BOARD_MARKER_LINE_WIDTH = 1.8
 const DECK_COUNT_LABEL_SIZE = Vector2(88, 28)
 const DECK_COUNT_LABEL_GAP = 8
+const PLAYER_NAME_LABEL_SIZE = Vector2(180, 28)
+const PLAYER_NAME_LABEL_GAP = 8
 const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD = Vector2(0, 2)
 const BLACK_BASE_FIELD = Vector2(4, 2)
@@ -73,6 +75,8 @@ var result_overlay: ColorRect
 var result_label: Label
 var has_received_server_state: bool = false
 var deck_count_label: Label
+var player_name_labels: Dictionary = {}
+var quit_confirmation_dialog: ConfirmationDialog
 var white_deck_count_override: int = -1
 var black_deck_count_override: int = -1
 var hidden_card_preview_container: Control
@@ -82,6 +86,10 @@ var current_board_effects: Array = []
 var current_player_base_fields: Dictionary = {
 	0: WHITE_BASE_FIELD,
 	1: BLACK_BASE_FIELD,
+}
+var current_player_names: Dictionary = {
+	0: "Player",
+	1: "Player",
 }
 
 var side
@@ -111,6 +119,9 @@ func _ready():
 	create_hidden_card_preview_ui()
 	create_result_ui()
 	create_deck_count_ui()
+	create_player_name_ui()
+	create_quit_confirmation_ui()
+	update_player_name_labels()
 
 func create_board_markers_node():
 	board_markers_node = Node2D.new()
@@ -339,6 +350,38 @@ func create_deck_count_ui():
 	label_settings.outline_color = Color(0.0, 0.0, 0.0)
 	deck_count_label.label_settings = label_settings
 
+func create_player_name_ui():
+	player_name_labels[1] = create_player_name_label()
+	player_name_labels[-1] = create_player_name_label()
+
+func create_player_name_label() -> Label:
+	var name_label: Label = Label.new()
+	canvas_layer.add_child(name_label)
+	name_label.visible = false
+	name_label.size = PLAYER_NAME_LABEL_SIZE
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.z_index = 940
+
+	var label_settings: LabelSettings = LabelSettings.new()
+	label_settings.font_size = 20
+	label_settings.font_color = Color(1.0, 1.0, 1.0)
+	label_settings.outline_size = 4
+	label_settings.outline_color = Color(0.0, 0.0, 0.0)
+	name_label.label_settings = label_settings
+	return name_label
+
+func create_quit_confirmation_ui():
+	quit_confirmation_dialog = ConfirmationDialog.new()
+	canvas_layer.add_child(quit_confirmation_dialog)
+	quit_confirmation_dialog.title = "Leave Game"
+	quit_confirmation_dialog.dialog_text = "Do you really want to leave the game?"
+	quit_confirmation_dialog.ok_button_text = "Yes"
+	quit_confirmation_dialog.cancel_button_text = "No"
+	quit_confirmation_dialog.exclusive = true
+	quit_confirmation_dialog.confirmed.connect(_on_quit_confirmed)
+
 func create_hidden_card_preview_ui():
 	hidden_card_preview_container = Control.new()
 	canvas_layer.add_child(hidden_card_preview_container)
@@ -390,6 +433,45 @@ func update_card_presentation():
 	configure_card_hand_container(black_pieces, local_color != -1)
 	update_card_face_visibility(local_color)
 	update_card_drag_permissions()
+	update_player_name_labels()
+
+func update_player_name_labels():
+	for owner_color in [1, -1]:
+		if !player_name_labels.has(owner_color):
+			continue
+
+		var name_label: Label = player_name_labels[owner_color] as Label
+		var deck_visual: CardVisual = get_deck_visual(owner_color)
+		if name_label == null or deck_visual == null or !is_instance_valid(deck_visual) or !deck_visual.visible:
+			if name_label != null:
+				name_label.visible = false
+			continue
+
+		var deck_rect: Rect2 = deck_visual.get_global_rect()
+		var is_top_hand: bool = is_card_hand_top(owner_color)
+		var label_x: float = deck_rect.get_center().x - PLAYER_NAME_LABEL_SIZE.x * 0.5
+		var label_y: float = deck_rect.end.y + PLAYER_NAME_LABEL_GAP if is_top_hand else deck_rect.position.y - PLAYER_NAME_LABEL_SIZE.y - PLAYER_NAME_LABEL_GAP
+		if label_y < 0.0:
+			label_y = deck_rect.end.y + PLAYER_NAME_LABEL_GAP
+
+		name_label.text = get_display_name_for_player(get_player_id_for_color(owner_color))
+		name_label.global_position = Vector2(
+			max(0.0, label_x),
+			label_y
+		)
+		name_label.visible = true
+
+func is_card_hand_top(owner_color: int) -> bool:
+	var local_color: int = get_local_view_color()
+	return owner_color != local_color
+
+func get_display_name_for_player(player_id: int) -> String:
+	if current_player_names.has(player_id):
+		return str(current_player_names[player_id])
+	var string_key: String = str(player_id)
+	if current_player_names.has(string_key):
+		return str(current_player_names[string_key])
+	return "Player"
 
 func update_card_drag_permissions():
 	var active_color: int = get_controllable_color()
@@ -747,6 +829,13 @@ func is_mouse_over_deck(owner_color: int) -> bool:
 	return deck_visual.get_global_rect().has_point(get_viewport().get_mouse_position())
 
 func _input(event):
+	if event is InputEventKey:
+		var key_event: InputEventKey = event as InputEventKey
+		if key_event.pressed && !key_event.echo && key_event.keycode == KEY_ESCAPE:
+			show_quit_confirmation()
+			get_viewport().set_input_as_handled()
+			return
+
 	if can_control_current_turn():
 		if event is InputEventMouseButton && event.pressed:
 			if event.button_index == MOUSE_BUTTON_LEFT:
@@ -778,6 +867,18 @@ func _input(event):
 					state = false
 					hovered_piece = Vector2(-1, -1)
 					hide_hover_piece_details()
+
+func show_quit_confirmation():
+	if quit_confirmation_dialog == null:
+		return
+	quit_confirmation_dialog.popup_centered(Vector2i(360, 140))
+
+func _on_quit_confirmed():
+	GameConfig.stop_ai_vs_ai_batch()
+	if get_parent().has_method("close_game_connection"):
+		get_parent().close_game_connection()
+	if get_tree():
+		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 
 func send_move_action(from_pos: Vector2, to_pos: Vector2):
 	if GameController.current_game_host:
@@ -1202,7 +1303,7 @@ func is_in_check(king_pos: Vector2):
 func is_stalemate():
 	return !current_player_has_valid_turn_action()
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = []):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}):
 	var previous_white_hand_names: Array[String] = get_card_names_from_hand(white_card_hand)
 	var previous_black_hand_names: Array[String] = get_card_names_from_hand(black_card_hand)
 
@@ -1239,6 +1340,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 		black_deck_count_override = get_int_from_state_dict(player_deck_sizes, 1, black_card_deck.size())
 	current_player_base_fields = parse_player_base_fields(player_base_fields)
 	current_board_effects = parse_board_effects(board_effects)
+	current_player_names = parse_player_names(player_names)
 	white_card_hand = create_card_hand_from_names(current_white_hand_names)
 	black_card_hand = create_card_hand_from_names(current_black_hand_names)
 	white_card_visuals = populate_card_hand(white_pieces, white_card_hand, 1)
@@ -1257,6 +1359,19 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 
 	if server_game_over && winner_player != -1:
 		finish_game(get_color_for_player_id(winner_player))
+
+func parse_player_names(player_names: Dictionary) -> Dictionary:
+	var parsed_names: Dictionary = current_player_names.duplicate()
+	for player_id in [0, 1]:
+		if player_names.has(player_id):
+			parsed_names[player_id] = GameConfig.sanitize_player_name(str(player_names[player_id]))
+			continue
+
+		var string_key: String = str(player_id)
+		if player_names.has(string_key):
+			parsed_names[player_id] = GameConfig.sanitize_player_name(str(player_names[string_key]))
+
+	return parsed_names
 
 func update_hidden_card_previews(hidden_cards: Array):
 	clear_hidden_card_previews()
