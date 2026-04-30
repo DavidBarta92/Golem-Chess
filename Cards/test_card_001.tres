@@ -7,7 +7,7 @@
 [resource]
 script = ExtResource("2_w705l")
 card_name = "Test_001"
-card_code = "test_001"
+card_code = "test_0012"
 white_piece_texture = ExtResource("3_qk5hi")
 black_piece_texture = ExtResource("1_iluj2")
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])

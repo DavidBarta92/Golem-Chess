@@ -6,20 +6,20 @@ const STARTING_HAND_SIZE = 3
 const KING_CARD_NAME = "King"
 const STARTING_DECK: Array[String] = [
 	KING_CARD_NAME,
-	"Test_001",
-	"Test_001 Shared Control",
-	"Test_001 Steal Card",
-	"Test_001 Grant Card",
-	"Test_001 Move Base 1",
-	"Test_001 Move Base 2",
-	"Test_001 Invisible",
-	"Test_001 Frozen 1",
-	"Test_001 Frozen 2",
-	"Test_001 Frozen 3",
-	"Test_001 Invalid 1",
-	"Test_001 Invalid 2",
-	"Test_001 Invalid 3",
-	"Test_001 Bomb"
+	"Scout",
+	"Ranger",
+	"Craftsman",
+	"Troubadour",
+	"Councillor",
+	"Bard",
+	"Commander",
+	"Guardian",
+	"Herald",
+	"Marshal",
+	"Oracle",
+	"Scholar",
+	"Steward",
+	"Traveler"
 ]
 
 static func create_starting_deck() -> Array[String]:

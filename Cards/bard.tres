@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://c5fdbxx65hvlk"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_q8bla"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_f7vjj"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_f7vjj"]
+
+[resource]
+script = ExtResource("2_f7vjj")
+card_name = "Bard"
+card_code = "bard"
+white_piece_texture = ExtResource("3_f7vjj")
+black_piece_texture = ExtResource("1_q8bla")
+effect_type = "grant_card"
+effect_trigger = "on_expire"
+effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 1, 0], [0, 0, 1, 1, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

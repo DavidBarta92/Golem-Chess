@@ -25,11 +25,11 @@ offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="NameLabel" type="Label" parent="VBoxContainer"]
+[node name="NameLabel" type="Label" parent="VBoxContainer" unique_id=1137982642]
 layout_mode = 2
 text = "Player name"
 
-[node name="PlayerNameField" type="LineEdit" parent="VBoxContainer"]
+[node name="PlayerNameField" type="LineEdit" parent="VBoxContainer" unique_id=984049382]
 layout_mode = 2
 text = "Player"
 placeholder_text = "Player"
@@ -38,17 +38,18 @@ placeholder_text = "Player"
 layout_mode = 2
 text = "Singleplayer"
 
-[node name="HostButton" type="Button" parent="VBoxContainer" unique_id=584776113]
+[node name="MultiplayerButton" type="Button" parent="VBoxContainer" unique_id=516859431]
 layout_mode = 2
-text = "Host Game"
+text = "Multiplayer"
 
-[node name="JoinButton" type="Button" parent="VBoxContainer" unique_id=188560366]
+[node name="ExitButton" type="Button" parent="VBoxContainer" unique_id=1409857597]
 layout_mode = 2
-text = "Join Game"
+text = "Exit"
 
-[node name="AIVsAIControls" type="HBoxContainer" parent="."]
+[node name="AIVsAIControls" type="HBoxContainer" parent="." unique_id=155862287]
 visible = false
 layout_mode = 1
+anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
@@ -57,19 +58,19 @@ offset_right = 720.0
 offset_bottom = -16.0
 grow_vertical = 0
 
-[node name="MatchCountField" type="LineEdit" parent="AIVsAIControls"]
+[node name="MatchCountField" type="LineEdit" parent="AIVsAIControls" unique_id=1242614590]
 custom_minimum_size = Vector2(96, 0)
 layout_mode = 2
 text = "1"
 placeholder_text = "Matches"
 
-[node name="CsvLogDirField" type="LineEdit" parent="AIVsAIControls"]
+[node name="CsvLogDirField" type="LineEdit" parent="AIVsAIControls" unique_id=1869860804]
 custom_minimum_size = Vector2(460, 0)
 layout_mode = 2
 text = "user://ai_match_logs"
 placeholder_text = "CSV folder"
 
-[node name="AIVsAIButton" type="Button" parent="AIVsAIControls"]
+[node name="AIVsAIButton" type="Button" parent="AIVsAIControls" unique_id=991887199]
 layout_mode = 2
 text = "AI vs AI"
 
@@ -77,9 +78,9 @@ text = "AI vs AI"
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
-text = "Golem v0.0.4 alpha"
+text = "Golem v0.0.5 alpha"
 
 [connection signal="pressed" from="VBoxContainer/SingleplayerButton" to="." method="_on_singleplayer_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/HostButton" to="." method="_on_host_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/JoinButton" to="." method="_on_join_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MultiplayerButton" to="." method="_on_multiplayer_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ExitButton" to="." method="_on_exit_button_pressed"]
 [connection signal="pressed" from="AIVsAIControls/AIVsAIButton" to="." method="_on_ai_vs_ai_button_pressed"]

@@ -64,18 +64,9 @@ func get_ai_vs_ai_match_count() -> int:
 func save_player_name() -> void:
 	GameConfig.set_local_player_name(player_name_field.text)
 
-func _on_host_button_pressed():
+func _on_multiplayer_button_pressed():
 	save_player_name()
-	GameConfig.stop_ai_vs_ai_batch()
-	GameConfig.is_singleplayer = false
-	GameConfig.is_hosting = true
-	GameConfig.server_ip = ""
-	GameConfig.reset_multiplayer_controllers()
-	get_tree().change_scene_to_file("res://Scenes/main.tscn")
+	get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
 
-func _on_join_button_pressed():
-	save_player_name()
-	GameConfig.stop_ai_vs_ai_batch()
-	GameConfig.is_singleplayer = false
-	GameConfig.reset_multiplayer_controllers()
-	get_tree().change_scene_to_file("res://Scenes/JoinMenu.tscn")
+func _on_exit_button_pressed():
+	get_tree().quit()
