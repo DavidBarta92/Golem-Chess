@@ -80,8 +80,12 @@ func on_player_action(action: Dictionary):
 	match action.type:
 		"attach_card":
 			handle_attach_card(action)
+		"draw_card":
+			handle_draw_card(action)
 		"move_piece":
 			handle_move_piece(action)
+		"end_turn":
+			handle_end_turn(action)
 		_:
 			push_warning("Unknown action type: ", action.type)
 
@@ -129,7 +133,7 @@ func handle_attach_card(action: Dictionary):
 		var piece_turns_before: int = piece.turns_remaining
 		piece.attach_card(card)
 
-		if card_name == "King":
+		if MoveRules.is_king_card(card):
 			if player_id == 0:
 				game_state.white_king_position = piece_pos
 			else:
@@ -144,11 +148,51 @@ func handle_attach_card(action: Dictionary):
 			"piece_pos": piece_pos,
 			"card": card,
 		})
-		finish_if_player_has_no_valid_turn(player_id)
 		log_turn_snapshot("after_attach")
 
 		print("Card attached successfully")
+		if maybe_auto_end_turn(player_id):
+			return
 		broadcast_full_state()
+
+func handle_draw_card(action: Dictionary):
+	var player_id: int = int(action.player_id)
+	print("Draw card: player=%s" % player_id)
+
+	if game_state.game_over:
+		return
+	if game_state.current_turn_player != player_id:
+		return
+	if bool(game_state.drawn_card_this_turn.get(player_id, false)):
+		push_warning("This player has already drawn this turn.")
+		return
+	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
+		return
+
+	var player_deck: Array = game_state.player_decks[player_id]
+	var player_hand: Array = game_state.player_hands[player_id]
+	if player_deck.is_empty():
+		push_warning("Deck is empty.")
+		return
+	if player_hand.size() >= DeckManager.HAND_SIZE:
+		push_warning("Hand is full.")
+		return
+
+	var hand_before: Array = duplicate_player_card_list(player_hand)
+	var deck_before: Array = duplicate_player_card_list(player_deck)
+	var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
+	var drawn_card_name: String = str(player_deck.pop_front())
+	player_hand.append(drawn_card_name)
+	game_state.player_decks[player_id] = player_deck
+	game_state.player_hands[player_id] = player_hand
+	game_state.drawn_card_this_turn[player_id] = true
+	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", "hand")
+	log_card_drawn(player_id, drawn_card_name, hand_before, deck_before, deck_top_before)
+	log_turn_snapshot("after_draw")
+	print("Card drawn manually: player=%d, card=%s" % [player_id, drawn_card_name])
+	if maybe_auto_end_turn(player_id):
+		return
+	broadcast_full_state()
 
 func handle_move_piece(action: Dictionary):
 	var player_id: int = int(action.player_id)
@@ -176,6 +220,9 @@ func handle_move_piece(action: Dictionary):
 	if game_state.current_turn_player != player_id:
 		push_warning("It is not this player's turn.")
 		return
+	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
+		push_warning("This player has already moved this turn.")
+		return
 
 	if !is_valid_move(piece, from_pos, to_pos, player_id):
 		push_warning("Invalid move.")
@@ -183,6 +230,8 @@ func handle_move_piece(action: Dictionary):
 
 	var captured_piece = game_state.get_piece(to_pos)
 	var captured_king: bool = is_king_piece(captured_piece)
+	var captured_king_card_returned: bool = true
+	var captured_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
 	var move_log_context: Dictionary = create_move_log_context(player_id, from_pos, to_pos, piece, captured_piece)
 
 	if captured_piece != null:
@@ -202,19 +251,15 @@ func handle_move_piece(action: Dictionary):
 				return
 			if game_state.get_piece(from_pos) != piece:
 				log_move_result(move_log_context, "capturing_piece_removed")
-				game_state.switch_turn()
-				advance_logged_turn()
-				CardEffectResolver.tick_board_effects(game_state)
-				finish_if_player_has_no_valid_turn(game_state.current_turn_player)
-				log_turn_snapshot("turn_end")
+				game_state.moved_piece_this_turn[player_id] = true
+				log_turn_snapshot("after_move")
 				broadcast_full_state()
 				return
 
-		if captured_king:
-			print("King captured. Player %d wins." % player_id)
-
-		if !captured_king && captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
-			var enemy_player = 1 - player_id
+		if captured_king && captured_piece.attached_card != null:
+			captured_king_card_returned = return_card_to_player_hand(captured_piece_owner_player_id, captured_piece.attached_card, to_pos, "captured_king")
+		elif captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
+			var enemy_player = captured_piece_owner_player_id
 			DeckManager.return_card_to_deck(game_state.player_decks[enemy_player], captured_piece.attached_card.card_name)
 			log_card_returned_to_deck(enemy_player, captured_piece.attached_card, to_pos, "captured_piece")
 
@@ -222,7 +267,7 @@ func handle_move_piece(action: Dictionary):
 	piece.position = to_pos
 	game_state.set_piece(to_pos, piece)
 
-	if piece.attached_card != null && piece.attached_card.card_name == "King":
+	if MoveRules.is_king_card(piece.attached_card):
 		var moved_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(piece.color)
 		if moved_piece_owner_player_id == 0:
 			game_state.white_king_position = to_pos
@@ -230,10 +275,15 @@ func handle_move_piece(action: Dictionary):
 			game_state.black_king_position = to_pos
 
 	if captured_king:
-		finish_game(player_id, "king_capture")
-		log_move_result(move_log_context, game_state.win_condition)
-		broadcast_full_state()
-		return
+		var captured_player_id: int = captured_piece_owner_player_id
+		CardEffectResolver.clear_king_position_if_needed(game_state, captured_player_id, true)
+		if !captured_king_card_returned && !player_has_available_king_card(captured_player_id):
+			print("King card deleted and player %d has no available king cards." % captured_player_id)
+			finish_game(player_id, "king_card_lost")
+			log_move_result(move_log_context, game_state.win_condition)
+			broadcast_full_state()
+			return
+		print("King piece captured. King card returned or replacement king remains for player %d." % captured_player_id)
 
 	if captured_piece != null && piece.attached_card != null:
 		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_CAPTURE, game_state, {
@@ -288,15 +338,88 @@ func handle_move_piece(action: Dictionary):
 			return
 
 	log_move_result(move_log_context, "")
+	game_state.moved_piece_this_turn[player_id] = true
+	log_turn_snapshot("after_move")
+
+	print("Move complete. Waiting for END TURN from player: ", game_state.current_turn_player)
+
+	if maybe_auto_end_turn(player_id):
+		return
+	broadcast_full_state()
+
+func handle_end_turn(action: Dictionary):
+	var player_id: int = int(action.player_id)
+	print("End turn: player=%s" % player_id)
+
+	if game_state.game_over:
+		return
+	if game_state.current_turn_player != player_id:
+		push_warning("It is not this player's turn.")
+		return
+
+	end_current_turn()
+
+func end_current_turn():
+	if game_state.game_over:
+		return
+
 	game_state.switch_turn()
 	advance_logged_turn()
 	CardEffectResolver.tick_board_effects(game_state)
 	finish_if_player_has_no_valid_turn(game_state.current_turn_player)
 	log_turn_snapshot("turn_end")
-
-	print("Move complete. Next player: ", game_state.current_turn_player)
-
+	print("Turn ended. Next player: ", game_state.current_turn_player)
 	broadcast_full_state()
+
+func maybe_auto_end_turn(player_id: int) -> bool:
+	if game_state.game_over or game_state.current_turn_player != player_id:
+		return false
+	if player_has_remaining_turn_action(player_id):
+		return false
+
+	print("All available turn actions are complete. Auto-ending turn for player: ", player_id)
+	end_current_turn()
+	return true
+
+func player_has_remaining_turn_action(player_id: int) -> bool:
+	if can_draw_card_for_player(player_id):
+		return true
+	if can_attach_any_card_for_player(player_id):
+		return true
+	if can_move_any_piece_for_player(player_id):
+		return true
+	return false
+
+func can_attach_any_card_for_player(player_id: int) -> bool:
+	if bool(game_state.attached_card_this_turn.get(player_id, false)):
+		return false
+	if !game_state.player_hands.has(player_id):
+		return false
+
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
+	if hand_cards.is_empty():
+		return false
+
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece == null or piece.color != player_color or piece.attached_card != null:
+			continue
+
+		for card: Card in hand_cards:
+			if !MoveRules.card_can_be_used(card):
+				continue
+			if MoveRules.can_attach_card_for_turn(game_state.pieces, player_color, card):
+				return true
+
+	return false
+
+func can_move_any_piece_for_player(player_id: int) -> bool:
+	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
+		return false
+
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	return MoveRules.has_valid_piece_move(game_state.pieces, player_color, 5, game_state.board_effects)
 
 func finish_game(winner_player: int, win_condition: String = "unknown"):
 	game_state.game_over = true
@@ -319,17 +442,43 @@ func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 func player_has_valid_turn_action(player_id: int) -> bool:
 	var player_color: int = 1 if player_id == 0 else -1
 	var can_attach_card: bool = !bool(game_state.attached_card_this_turn.get(player_id, false))
+	var can_move_piece: bool = !bool(game_state.moved_piece_this_turn.get(player_id, false))
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
-	return MoveRules.has_valid_turn_action(game_state.pieces, player_color, hand_cards, can_attach_card, 5, game_state.board_effects)
+	if can_move_piece && MoveRules.has_valid_turn_action(game_state.pieces, player_color, hand_cards, can_attach_card, 5, game_state.board_effects):
+		return true
+	if can_move_piece && can_draw_card_for_player(player_id):
+		var simulated_hand_cards: Array[Card] = get_hand_cards_with_next_draw(player_id)
+		return MoveRules.has_valid_turn_action(game_state.pieces, player_color, simulated_hand_cards, can_attach_card, 5, game_state.board_effects)
+	return false
+
+func can_draw_card_for_player(player_id: int) -> bool:
+	if bool(game_state.drawn_card_this_turn.get(player_id, false)):
+		return false
+	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
+		return false
+	var player_deck: Array = game_state.player_decks[player_id]
+	var player_hand: Array = game_state.player_hands[player_id]
+	return !player_deck.is_empty() && player_hand.size() < DeckManager.HAND_SIZE
+
+func get_hand_cards_with_next_draw(player_id: int) -> Array[Card]:
+	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
+	if !can_draw_card_for_player(player_id):
+		return hand_cards
+	var player_deck: Array = game_state.player_decks[player_id]
+	var next_card_name: String = str(player_deck[0])
+	var next_card: Card = CardLibrary.get_card(next_card_name)
+	if next_card != null:
+		hand_cards.append(next_card)
+	return hand_cards
 
 func can_attach_card_name(player_id: int, card_name: String) -> bool:
 	var player_color: int = 1 if player_id == 0 else -1
 	if MoveRules.has_attached_king(game_state.pieces, player_color):
 		return true
-	return card_name == MoveRules.KING_CARD_NAME
+	return DeckManager.is_king_card_name(card_name)
 
 func is_king_piece(piece: Piece) -> bool:
-	return piece != null && piece.attached_card != null && piece.attached_card.card_name == MoveRules.KING_CARD_NAME
+	return piece != null && MoveRules.is_king_card(piece.attached_card)
 
 func get_hand_cards_for_player(player_id: int) -> Array[Card]:
 	var hand_cards: Array[Card] = []
@@ -378,7 +527,8 @@ func broadcast_full_state():
 			local_state_data.hidden_cards,
 			local_state_data.player_base_fields,
 			local_state_data.board_effects,
-			local_state_data.player_names
+			local_state_data.player_names,
+			local_state_data.recent_card_transfers
 		)
 
 	for peer_id in multiplayer_node.connected_peer_ids:
@@ -390,6 +540,7 @@ func broadcast_full_state():
 	if multiplayer_node.has_method("on_host_state_changed"):
 		multiplayer_node.on_host_state_changed()
 
+	game_state.recent_card_transfers.clear()
 	print("State broadcast complete")
 
 func serialize_state() -> Dictionary:
@@ -410,6 +561,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"player_base_fields": serialize_player_base_fields(),
 		"board_effects": serialize_board_effects(),
 		"player_names": get_serialized_player_names(),
+		"recent_card_transfers": serialize_recent_card_transfers(viewer_player_id),
 	}
 
 	for pos in game_state.pieces:
@@ -425,6 +577,22 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		})
 
 	return data
+
+func serialize_recent_card_transfers(_viewer_player_id: int) -> Array:
+	var serialized_transfers: Array = []
+	for transfer_value in game_state.recent_card_transfers:
+		var transfer: Dictionary = transfer_value
+		var source_pos: Vector2 = CardEffectResolver.as_vector2(transfer.get("source_pos", [-1, -1]), Vector2(-1, -1))
+		serialized_transfers.append({
+			"source_player_id": int(transfer.get("source_player_id", -1)),
+			"target_player_id": int(transfer.get("target_player_id", -1)),
+			"card_name": str(transfer.get("card_name", "")),
+			"source_zone": str(transfer.get("source_zone", "")),
+			"target_zone": str(transfer.get("target_zone", "")),
+			"source_pos": vector2_to_array(source_pos),
+		})
+
+	return serialized_transfers
 
 func append_hidden_card_data(hidden_cards: Array, piece: Piece) -> void:
 	if piece == null or piece.attached_card == null:
@@ -485,6 +653,35 @@ func duplicate_player_card_list(source) -> Array:
 			output.append(str(card_name_value))
 	return output
 
+func return_card_to_player_hand(player_id: int, card: Card, piece_pos: Vector2, reason: String) -> bool:
+	if card == null:
+		return false
+	if !game_state.player_hands.has(player_id):
+		game_state.player_hands[player_id] = []
+	var hand: Array = game_state.player_hands[player_id]
+	if hand.size() >= DeckManager.HAND_SIZE:
+		log_card_deleted(player_id, card, piece_pos, reason + "_hand_full")
+		print("Card deleted instead of returning to hand: player=%d, card=%s" % [player_id, card.card_name])
+		return false
+	hand.append(card.card_name)
+	game_state.player_hands[player_id] = hand
+	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, card.card_name, "piece", "hand", piece_pos)
+	log_card_returned_to_hand(player_id, card, piece_pos, reason)
+	return true
+
+func player_has_available_king_card(player_id: int) -> bool:
+	if game_state.player_hands.has(player_id) && DeckManager.has_king_card(game_state.player_hands[player_id]):
+		return true
+	if game_state.player_decks.has(player_id) && DeckManager.has_king_card(game_state.player_decks[player_id]):
+		return true
+
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null && piece.color == player_color && MoveRules.is_king_card(piece.attached_card):
+			return true
+	return false
+
 func setup_logger_if_needed() -> MatchCsvLogger:
 	return game_state.match_logger
 
@@ -520,6 +717,50 @@ func log_card_returned_to_deck(player_id: int, card: Card, piece_pos: Vector2, r
 		"returned_card": card.card_name if card != null else "",
 		"target_zone": "deck",
 		"reason": reason,
+	})
+
+func log_card_returned_to_hand(player_id: int, card: Card, piece_pos: Vector2, reason: String) -> void:
+	if game_state.match_logger == null:
+		return
+
+	game_state.match_logger.log_card_event(game_state, "return_to_hand", {
+		"player_id": player_id,
+		"card": card,
+		"piece_pos": piece_pos,
+		"returned_card": card.card_name if card != null else "",
+		"target_zone": "hand",
+		"reason": reason,
+	})
+
+func log_card_deleted(player_id: int, card: Card, piece_pos: Vector2, reason: String) -> void:
+	if game_state.match_logger == null:
+		return
+
+	game_state.match_logger.log_card_event(game_state, "delete_card", {
+		"player_id": player_id,
+		"card": card,
+		"piece_pos": piece_pos,
+		"returned_card": card.card_name if card != null else "",
+		"target_zone": "deleted",
+		"reason": reason,
+	})
+
+func log_card_drawn(player_id: int, drawn_card_name: String, hand_before: Array, deck_before: Array, deck_top_before: String) -> void:
+	if game_state.match_logger == null:
+		return
+
+	var drawn_card: Card = CardLibrary.get_card(drawn_card_name)
+	game_state.match_logger.log_card_event(game_state, "draw_card", {
+		"player_id": player_id,
+		"card": drawn_card,
+		"card_name": drawn_card_name,
+		"hand_before": hand_before,
+		"deck_count_before": deck_before.size(),
+		"deck_top_before": deck_top_before,
+		"drawn_card": drawn_card_name,
+		"source_zone": "deck",
+		"target_zone": "hand",
+		"reason": "manual_draw",
 	})
 
 func log_card_expired(player_id: int, card: Card, piece: Piece, piece_pos: Vector2) -> void:

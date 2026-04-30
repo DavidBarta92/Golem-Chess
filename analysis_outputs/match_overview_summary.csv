@@ -1,0 +1,13 @@
+﻿metric,value
+match_count,100
+white_wins,56
+black_wins,44
+white_win_rate,0.560000
+black_win_rate,0.440000
+avg_move_events_per_match,7.320000
+median_move_events_per_match,7.000000
+avg_turn_count,6.420000
+avg_action_count,6.420000
+win_condition_king_capture,60
+win_condition_base_reached,30
+win_condition_effect_king_capture,10

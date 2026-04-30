@@ -26,7 +26,9 @@ static func resolve_trigger(trigger: String, game_state: GameStateData, context:
 		CardEffect.TYPE_STEAL_CARD:
 			result = resolve_steal_card(game_state, player_id, card)
 		CardEffect.TYPE_GRANT_CARD:
-			result = resolve_grant_card(game_state, player_id, card)
+			result = resolve_grant_card(game_state, player_id, card, source_pos)
+		CardEffect.TYPE_GIVE_CARD:
+			result = resolve_give_card(game_state, player_id, card)
 		CardEffect.TYPE_MOVE_BASE:
 			result = resolve_move_base(game_state, player_id, card, source_pos, board_size, effect_color)
 		CardEffect.TYPE_INVALID_SQUARES:
@@ -96,7 +98,8 @@ static func resolve_steal_card(game_state: GameStateData, player_id: int, card: 
 		if stolen_card_name.is_empty():
 			return build_card_transfer_result(source_player_id, player_id, source, "hand_or_deck", stolen_cards)
 
-		give_card_to_player(game_state, player_id, stolen_card_name, max_hand_size)
+		var target_zone: String = give_card_to_player(game_state, player_id, stolen_card_name, max_hand_size)
+		register_card_transfer(game_state, source_player_id, player_id, stolen_card_name, source, target_zone)
 		stolen_cards.append(stolen_card_name)
 		if game_state.match_logger != null:
 			game_state.match_logger.log_card_event(game_state, "steal_card", {
@@ -105,13 +108,13 @@ static func resolve_steal_card(game_state: GameStateData, player_id: int, card: 
 				"source_player_id": source_player_id,
 				"target_player_id": player_id,
 				"source_zone": source,
-				"target_zone": "hand_or_deck",
+				"target_zone": target_zone,
 				"reason": card.card_name,
 			})
 		print("Card stolen: player=%d stole %s from player=%d" % [player_id, stolen_card_name, source_player_id])
 	return build_card_transfer_result(source_player_id, player_id, source, "hand_or_deck", stolen_cards)
 
-static func resolve_grant_card(game_state: GameStateData, player_id: int, card: Card) -> Dictionary:
+static func resolve_grant_card(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2 = Vector2(-1, -1)) -> Dictionary:
 	var params: Dictionary = card.effect_settings
 	var granted_card_name: String = str(params.get("card_name", ""))
 	if granted_card_name.is_empty():
@@ -122,7 +125,8 @@ static func resolve_grant_card(game_state: GameStateData, player_id: int, card: 
 	var max_hand_size: int = max(1, int(params.get("max_hand_size", DEFAULT_MAX_HAND_SIZE)))
 	var granted_cards: Array = []
 	for grant_index in range(amount):
-		give_card_to_player(game_state, target_player_id, granted_card_name, max_hand_size)
+		var target_zone: String = give_card_to_player(game_state, target_player_id, granted_card_name, max_hand_size)
+		register_card_transfer(game_state, player_id, target_player_id, granted_card_name, "effect", target_zone, source_pos)
 		granted_cards.append(granted_card_name)
 		if game_state.match_logger != null:
 			game_state.match_logger.log_card_event(game_state, "grant_card", {
@@ -131,12 +135,41 @@ static func resolve_grant_card(game_state: GameStateData, player_id: int, card: 
 				"source_player_id": player_id,
 				"target_player_id": target_player_id,
 				"source_zone": "effect",
-				"target_zone": "hand_or_deck",
+				"target_zone": target_zone,
 				"reason": card.card_name,
 			})
 
 	print("Card granted: %s x%d to player=%d" % [granted_card_name, amount, target_player_id])
 	return build_card_transfer_result(player_id, target_player_id, "effect", "hand_or_deck", granted_cards)
+
+static func resolve_give_card(game_state: GameStateData, player_id: int, card: Card) -> Dictionary:
+	var params: Dictionary = card.effect_settings
+	var target_player_id: int = int(params.get("target_player_id", 1 - player_id))
+	var amount: int = max(1, int(params.get("amount", 1)))
+	var max_hand_size: int = max(1, int(params.get("max_hand_size", DEFAULT_MAX_HAND_SIZE)))
+	var given_cards: Array = []
+
+	for give_index in range(amount):
+		var given_card_name: String = take_card_from_player_zone(game_state, player_id, "hand")
+		if given_card_name.is_empty():
+			return build_card_transfer_result(player_id, target_player_id, "hand", "hand_or_deck", given_cards)
+
+		var target_zone: String = give_card_to_player(game_state, target_player_id, given_card_name, max_hand_size)
+		register_card_transfer(game_state, player_id, target_player_id, given_card_name, "hand", target_zone)
+		given_cards.append(given_card_name)
+		if game_state.match_logger != null:
+			game_state.match_logger.log_card_event(game_state, "give_card", {
+				"player_id": player_id,
+				"card_name": given_card_name,
+				"source_player_id": player_id,
+				"target_player_id": target_player_id,
+				"source_zone": "hand",
+				"target_zone": target_zone,
+				"reason": card.card_name,
+			})
+		print("Card given: player=%d gave %s to player=%d" % [player_id, given_card_name, target_player_id])
+
+	return build_card_transfer_result(player_id, target_player_id, "hand", "hand_or_deck", given_cards)
 
 static func build_card_transfer_result(source_player_id: int, target_player_id: int, source_zone: String, target_zone: String, card_names: Array) -> Dictionary:
 	return {
@@ -150,7 +183,7 @@ static func build_card_transfer_result(source_player_id: int, target_player_id: 
 
 static func take_card_from_player_zone(game_state: GameStateData, source_player_id: int, source: String) -> String:
 	var source_cards: Array = []
-	if source == "enemy_deck":
+	if source == "enemy_deck" or source == "deck":
 		source_cards = game_state.player_decks.get(source_player_id, [])
 	else:
 		source_cards = game_state.player_hands.get(source_player_id, [])
@@ -162,31 +195,56 @@ static func take_card_from_player_zone(game_state: GameStateData, source_player_
 	var stolen_card_name: String = str(source_cards[stolen_index])
 	source_cards.remove_at(stolen_index)
 
-	if source == "enemy_deck":
+	if source == "enemy_deck" or source == "deck":
 		game_state.player_decks[source_player_id] = source_cards
 	else:
 		game_state.player_hands[source_player_id] = source_cards
 
 	return stolen_card_name
 
-static func give_card_to_player(game_state: GameStateData, player_id: int, card_name: String, max_hand_size: int) -> void:
+static func give_card_to_player(game_state: GameStateData, player_id: int, card_name: String, max_hand_size: int) -> String:
 	var hand: Array = game_state.player_hands.get(player_id, [])
 	if hand.size() < max_hand_size:
 		hand.append(card_name)
 		game_state.player_hands[player_id] = hand
-		return
+		return "hand"
 
 	var deck: Array = game_state.player_decks.get(player_id, [])
 	deck.append(card_name)
 	game_state.player_decks[player_id] = deck
+	return "deck"
+
+static func register_card_transfer(game_state: GameStateData, source_player_id: int, target_player_id: int, card_name: String, source_zone: String, target_zone: String, source_pos: Vector2 = Vector2(-1, -1)) -> void:
+	if game_state == null:
+		return
+
+	game_state.recent_card_transfers.append({
+		"source_player_id": source_player_id,
+		"target_player_id": target_player_id,
+		"card_name": card_name,
+		"source_zone": source_zone,
+		"target_zone": target_zone,
+		"source_pos": [source_pos.x, source_pos.y],
+	})
 
 static func resolve_move_base(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2, board_size: int, effect_color: int) -> Dictionary:
-	var target_squares: Array[Vector2] = get_effect_squares(card, source_pos, board_size, effect_color)
-	if target_squares.is_empty():
+	var raw_target_squares: Array[Vector2] = get_effect_squares_unfiltered(card, source_pos, effect_color)
+	if raw_target_squares.is_empty():
 		return {}
 
-	var target_pos: Vector2 = target_squares[0]
+	var target_pos: Vector2 = raw_target_squares[0]
 	if !MoveRules.is_valid_position(target_pos, board_size):
+		print("Move base ignored: target outside board: %s" % target_pos)
+		return {
+			"squares": [],
+			"base_player_id": player_id,
+			"base_before": get_base_field_for_player(game_state, player_id),
+			"base_after": get_base_field_for_player(game_state, player_id),
+		}
+
+	var target_squares: Array[Vector2] = []
+	target_squares.append(target_pos)
+	if target_squares.is_empty():
 		return {}
 
 	var base_before: Vector2 = get_base_field_for_player(game_state, player_id)
@@ -201,6 +259,8 @@ static func resolve_move_base(game_state: GameStateData, player_id: int, card: C
 
 static func resolve_board_zone_effect(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2, board_size: int, effect_color: int) -> Dictionary:
 	var squares: Array[Vector2] = get_effect_squares(card, source_pos, board_size, effect_color)
+	if card.effect_type == CardEffect.TYPE_INVALID_SQUARES:
+		squares = filter_out_base_fields(game_state, squares)
 	if squares.is_empty():
 		return {}
 
@@ -226,12 +286,29 @@ static func resolve_board_zone_effect(game_state: GameStateData, player_id: int,
 
 static func get_effect_squares(card: Card, source_pos: Vector2, board_size: int, effect_color: int) -> Array[Vector2]:
 	var squares: Array[Vector2] = []
-	for offset: Vector2 in card.get_effect_offsets():
-		var square_pos: Vector2 = source_pos + (offset * effect_color)
+	for square_pos: Vector2 in get_effect_squares_unfiltered(card, source_pos, effect_color):
 		if MoveRules.is_valid_position(square_pos, board_size):
 			squares.append(square_pos)
 
 	return squares
+
+static func get_effect_squares_unfiltered(card: Card, source_pos: Vector2, effect_color: int) -> Array[Vector2]:
+	var squares: Array[Vector2] = []
+	for offset: Vector2 in card.get_effect_offsets():
+		squares.append(source_pos + (offset * effect_color))
+	return squares
+
+static func filter_out_base_fields(game_state: GameStateData, squares: Array[Vector2]) -> Array[Vector2]:
+	var filtered_squares: Array[Vector2] = []
+	for square_pos: Vector2 in squares:
+		var is_base_field: bool = false
+		for player_id in [0, 1]:
+			if square_pos == get_base_field_for_player(game_state, player_id):
+				is_base_field = true
+				break
+		if !is_base_field:
+			filtered_squares.append(square_pos)
+	return filtered_squares
 
 static func resolve_bomb(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2, board_size: int, effect_color: int) -> Dictionary:
 	var positions_to_remove: Array[Vector2] = []
@@ -274,21 +351,28 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 	var target_player_id: int = get_player_id_for_color(target_piece.color)
 	var target_card: Card = target_piece.attached_card
 	var target_was_king: bool = is_king_piece(target_piece)
+	var king_card_returned: bool = true
 
-	if target_card != null && !target_was_king && target_piece.turns_remaining > 0:
-		return_card_to_owner_deck(game_state, target_player_id, target_card.card_name)
+	if target_card != null:
+		if target_was_king:
+			king_card_returned = return_card_to_owner_hand(game_state, target_player_id, target_card.card_name, target_pos)
+		elif target_piece.turns_remaining > 0:
+			return_card_to_owner_deck(game_state, target_player_id, target_card.card_name)
 
 	game_state.remove_piece(target_pos)
 	clear_king_position_if_needed(game_state, target_player_id, target_was_king)
 
 	if target_was_king:
-		var winner_player_id: int = 1 - target_player_id
-		game_state.game_over = true
-		game_state.winner_player = winner_player_id
-		game_state.win_condition = "effect_king_capture"
-		if game_state.match_logger != null:
-			game_state.match_logger.log_match_end(game_state, game_state.win_condition)
-		print("King removed by effect. Effect owner=%d, winner=%d" % [effect_owner_player_id, winner_player_id])
+		if !king_card_returned && !player_has_available_king_card(game_state, target_player_id):
+			var winner_player_id: int = 1 - target_player_id
+			game_state.game_over = true
+			game_state.winner_player = winner_player_id
+			game_state.win_condition = "king_card_lost"
+			if game_state.match_logger != null:
+				game_state.match_logger.log_match_end(game_state, game_state.win_condition)
+			print("King card deleted by effect capture and player=%d has no available king cards. Winner=%d" % [target_player_id, winner_player_id])
+			return
+		print("King removed by effect. King card returned to player=%d hand. Effect owner=%d" % [target_player_id, effect_owner_player_id])
 
 static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id: int, card_name: String) -> void:
 	if !game_state.player_decks.has(owner_player_id):
@@ -304,6 +388,51 @@ static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id
 			"target_zone": "deck",
 			"reason": "effect_capture",
 		})
+
+static func return_card_to_owner_hand(game_state: GameStateData, owner_player_id: int, card_name: String, source_pos: Vector2 = Vector2(-1, -1)) -> bool:
+	if !game_state.player_hands.has(owner_player_id):
+		game_state.player_hands[owner_player_id] = []
+	var hand: Array = game_state.player_hands[owner_player_id]
+	if hand.size() >= DeckManager.HAND_SIZE:
+		log_deleted_card(game_state, owner_player_id, card_name, "effect_capture_king_hand_full")
+		print("Card deleted instead of returning to hand: player=%d, card=%s" % [owner_player_id, card_name])
+		return false
+	hand.append(card_name)
+	game_state.player_hands[owner_player_id] = hand
+	register_card_transfer(game_state, owner_player_id, owner_player_id, card_name, "piece", "hand", source_pos)
+	if game_state.match_logger != null:
+		game_state.match_logger.log_card_event(game_state, "return_to_hand", {
+			"player_id": owner_player_id,
+			"card_name": card_name,
+			"returned_card": card_name,
+			"target_zone": "hand",
+			"reason": "effect_capture_king",
+		})
+	return true
+
+static func log_deleted_card(game_state: GameStateData, owner_player_id: int, card_name: String, reason: String) -> void:
+	if game_state.match_logger == null:
+		return
+	game_state.match_logger.log_card_event(game_state, "delete_card", {
+		"player_id": owner_player_id,
+		"card_name": card_name,
+		"returned_card": card_name,
+		"target_zone": "deleted",
+		"reason": reason,
+	})
+
+static func player_has_available_king_card(game_state: GameStateData, player_id: int) -> bool:
+	if game_state.player_hands.has(player_id) && DeckManager.has_king_card(game_state.player_hands[player_id]):
+		return true
+	if game_state.player_decks.has(player_id) && DeckManager.has_king_card(game_state.player_decks[player_id]):
+		return true
+
+	var player_color: int = get_color_for_player_id(player_id)
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null && piece.color == player_color && MoveRules.is_king_card(piece.attached_card):
+			return true
+	return false
 
 static func tick_board_effects(game_state: GameStateData) -> void:
 	var remaining_effects: Array = []
@@ -363,7 +492,7 @@ static func piece_has_attached_effect(piece: Piece, effect_type: String) -> bool
 	return piece != null && piece.attached_card != null && piece.attached_card.effect_type == effect_type
 
 static func is_king_piece(piece: Piece) -> bool:
-	return piece != null && piece.attached_card != null && piece.attached_card.card_name == MoveRules.KING_CARD_NAME
+	return piece != null && MoveRules.is_king_card(piece.attached_card)
 
 static func clear_king_position_if_needed(game_state: GameStateData, player_id: int, was_king: bool) -> void:
 	if !was_king:

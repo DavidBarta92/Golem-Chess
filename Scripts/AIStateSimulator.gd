@@ -74,7 +74,7 @@ static func is_own_king_candidate(pieces: Dictionary, move: Dictionary, player_i
 		return false
 
 	var card: Card = get_card_for_candidate(pieces, move)
-	return card != null && card.card_name == MoveRules.KING_CARD_NAME
+	return MoveRules.is_king_card(card)
 
 static func get_hand_cards_from_state(game_state: GameStateData, player_id: int) -> Array[Card]:
 	var hand_cards: Array[Card] = []

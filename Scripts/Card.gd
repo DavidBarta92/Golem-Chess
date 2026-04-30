@@ -10,7 +10,8 @@ class_name Card
 @export var black_piece_texture: Texture2D
 @export var description: String = ""
 @export var is_owned: bool = true
-@export_enum("none", "shared_control", "steal_card", "grant_card", "move_base", "invisible_to_enemy", "invalid_squares", "frozen_squares", "bomb") var effect_type: String = CardEffect.TYPE_NONE
+@export var is_king_card: bool = false
+@export_enum("none", "shared_control", "steal_card", "grant_card", "give_card", "move_base", "invisible_to_enemy", "invalid_squares", "frozen_squares", "bomb") var effect_type: String = CardEffect.TYPE_NONE
 @export_enum("on_attach", "on_move", "on_capture", "on_captured", "on_expire", "while_attached") var effect_trigger: String = CardEffect.TRIGGER_ON_ATTACH
 @export var effect_icon: Texture2D
 @export var effect_params: Array[Array] = [

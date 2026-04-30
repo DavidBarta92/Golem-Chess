@@ -2,7 +2,6 @@ extends RefCounted
 class_name MoveRules
 
 const DEFAULT_BOARD_SIZE: int = 5
-const KING_CARD_NAME: String = "King"
 
 static func get_piece_at(pieces: Dictionary, pos: Vector2) -> Piece:
 	if !pieces.has(pos):
@@ -23,7 +22,7 @@ static func card_can_be_used(card: Card) -> bool:
 	return card != null && (card.duration > 0 || card.duration == -1)
 
 static func is_king_card(card: Card) -> bool:
-	return card != null && card.card_name == KING_CARD_NAME
+	return card != null && card.is_king_card
 
 static func has_attached_king(pieces: Dictionary, player_color: int) -> bool:
 	for position_value: Vector2 in pieces:

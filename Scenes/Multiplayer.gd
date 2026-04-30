@@ -1,5 +1,7 @@
 extends Node2D
 
+const HEURISTIC_AI_PLAYER_SCRIPT = preload("res://Scripts/HeuristicAIPlayer.gd")
+
 var multiplayer_peer = ENetMultiplayerPeer.new()
 var is_server = false
 
@@ -54,7 +56,7 @@ func setup_singleplayer_ai_controllers():
 	for player_id in [0, 1]:
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
 			var ai_difficulty: String = GameConfig.get_player_ai_difficulty(player_id)
-			ai_players[player_id] = HeuristicAIPlayer.new(player_id, ai_difficulty)
+			ai_players[player_id] = HEURISTIC_AI_PLAYER_SCRIPT.new(player_id, ai_difficulty)
 
 func setup_singleplayer_player_names() -> void:
 	for player_id in [0, 1]:
@@ -92,7 +94,7 @@ func maybe_play_singleplayer_ai_turn():
 
 func _play_singleplayer_ai_turn(player_id: int):
 	await get_tree().create_timer(0.45).timeout
-	var ai_player: AIPlayerBase = ai_players.get(player_id, null) as AIPlayerBase
+	var ai_player = ai_players.get(player_id, null)
 	if ai_player != null and game_host != null and !game_host.game_state.game_over and game_host.game_state.current_turn_player == player_id:
 		await ai_player.play_turn(game_host, get_tree())
 
@@ -277,7 +279,8 @@ func apply_game_state(state_data: Dictionary):
 		state_data.get("hidden_cards", []),
 		state_data.get("player_base_fields", {}),
 		state_data.get("board_effects", []),
-		state_data.get("player_names", {})
+		state_data.get("player_names", {}),
+		state_data.get("recent_card_transfers", [])
 	)
 
 	print("apply_game_state() end")

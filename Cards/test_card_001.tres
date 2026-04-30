@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://ckal6ucml6ino"]
+
+[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_iluj2"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_w705l"]
+[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_qk5hi"]
+
+[resource]
+script = ExtResource("2_w705l")
+card_name = "Test_001"
+card_code = "test_001"
+white_piece_texture = ExtResource("3_qk5hi")
+black_piece_texture = ExtResource("1_iluj2")
+effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 1, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

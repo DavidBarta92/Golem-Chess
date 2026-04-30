@@ -5,11 +5,21 @@ const HAND_SIZE = 5
 const STARTING_HAND_SIZE = 3
 const KING_CARD_NAME = "King"
 const STARTING_DECK: Array[String] = [
-	"Rook", "Rook", "Rook",
-	"Bishop", "Bishop", "Bishop",
 	KING_CARD_NAME,
-	"Knight", "Knight", "Knight",
-	"Pawn", "Pawn", "Pawn", "Pawn", "Pawn"
+	"Test_001",
+	"Test_001 Shared Control",
+	"Test_001 Steal Card",
+	"Test_001 Grant Card",
+	"Test_001 Move Base 1",
+	"Test_001 Move Base 2",
+	"Test_001 Invisible",
+	"Test_001 Frozen 1",
+	"Test_001 Frozen 2",
+	"Test_001 Frozen 3",
+	"Test_001 Invalid 1",
+	"Test_001 Invalid 2",
+	"Test_001 Invalid 3",
+	"Test_001 Bomb"
 ]
 
 static func create_starting_deck() -> Array[String]:
@@ -34,16 +44,17 @@ static func draw_card(deck: Array[String], hand: Array[String]) -> bool:
 	return true
 
 static func draw_starting_hand(deck: Array[String], hand: Array[String]):
-	var king_index: int = deck.find(KING_CARD_NAME)
+	var king_index: int = find_king_card_index(deck)
 	if king_index != -1 && hand.size() < HAND_SIZE:
+		var king_card_name: String = deck[king_index]
 		deck.remove_at(king_index)
-		hand.append(KING_CARD_NAME)
+		hand.append(king_card_name)
 
 	while hand.size() < STARTING_HAND_SIZE:
 		if !draw_card(deck, hand):
 			return
 
-static func play_card(hand: Array[String], card_name: String, deck: Array[String]) -> bool:
+static func play_card(hand: Array[String], card_name: String, _deck: Array[String]) -> bool:
 	var index: int = hand.find(card_name)
 	if index == -1:
 		print("Card is not in hand: %s" % card_name)
@@ -51,9 +62,24 @@ static func play_card(hand: Array[String], card_name: String, deck: Array[String
 
 	hand.remove_at(index)
 	print("Card played: %s" % card_name)
-	draw_card(deck, hand)
 	return true
 
 static func return_card_to_deck(deck: Array[String], card_name: String):
 	deck.append(card_name)
 	print("Card returned to deck: %s" % card_name)
+
+static func find_king_card_index(deck: Array[String]) -> int:
+	for i in deck.size():
+		if is_king_card_name(deck[i]):
+			return i
+	return -1
+
+static func is_king_card_name(card_name: String) -> bool:
+	var card: Card = CardLibrary.get_card(card_name)
+	return card != null && card.is_king_card
+
+static func has_king_card(card_names: Array) -> bool:
+	for card_name_value in card_names:
+		if is_king_card_name(str(card_name_value)):
+			return true
+	return false

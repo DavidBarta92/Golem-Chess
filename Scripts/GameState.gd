@@ -13,7 +13,16 @@ var player_base_fields: Dictionary = {
 	1: Vector2(4, 2),
 }
 var board_effects: Array = []
+var recent_card_transfers: Array = []
 var attached_card_this_turn: Dictionary = {
+	0: false,
+	1: false,
+}
+var moved_piece_this_turn: Dictionary = {
+	0: false,
+	1: false,
+}
+var drawn_card_this_turn: Dictionary = {
 	0: false,
 	1: false,
 }
@@ -40,3 +49,5 @@ func is_white_turn() -> bool:
 func switch_turn():
 	current_turn_player = 1 - current_turn_player
 	attached_card_this_turn[current_turn_player] = false
+	moved_piece_this_turn[current_turn_player] = false
+	drawn_card_this_turn[current_turn_player] = false

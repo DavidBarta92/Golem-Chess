@@ -1,5 +1,4 @@
 extends RefCounted
-class_name AIPlayerBase
 
 const BOARD_SIZE: int = 5
 
@@ -22,6 +21,8 @@ func get_valid_turn_moves(host: NetworkGameHost) -> Array[Dictionary]:
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	var can_attach_card: bool = !bool(host.game_state.attached_card_this_turn.get(player_id, false))
+	if bool(host.game_state.moved_piece_this_turn.get(player_id, false)):
+		return valid_moves
 	var hand_cards: Array[Card] = host.get_hand_cards_for_player(player_id)
 	valid_moves = MoveRules.get_valid_turn_moves(
 		host.game_state.pieces,
@@ -41,8 +42,9 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 		return false
 
 	if selected_move.is_empty():
-		host.finish_if_player_has_no_valid_turn(player_id)
-		host.broadcast_full_state()
+		if try_draw_card(host, tree):
+			return true
+		end_turn(host)
 		return false
 
 	if bool(selected_move.get("requires_attach", false)):
@@ -71,4 +73,29 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 		"to": AIStateSimulator.get_move_to(selected_move),
 	}
 	host.on_player_action(move_action)
+	if host.game_state.game_over:
+		return true
+	if tree != null:
+		await tree.create_timer(action_delay).timeout
+	end_turn(host)
 	return true
+
+func try_draw_card(host: NetworkGameHost, tree: SceneTree) -> bool:
+	if host == null or host.game_state == null or !host.can_draw_card_for_player(player_id):
+		return false
+
+	host.on_player_action({
+		"type": "draw_card",
+		"player_id": player_id,
+	})
+	if tree != null:
+		await tree.create_timer(action_delay).timeout
+	return true
+
+func end_turn(host: NetworkGameHost) -> void:
+	if host == null or host.game_state == null or host.game_state.game_over:
+		return
+	host.on_player_action({
+		"type": "end_turn",
+		"player_id": player_id,
+	})

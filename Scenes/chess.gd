@@ -25,8 +25,8 @@ const TURN_BLACK = preload("res://Assets/turn-black.png")
 const PIECE_MOVE = preload("res://Assets/Piece_move.png")
 
 const PLAYER_HAND_SIZE = 5
-const CARD_UI_SIZE = Vector2(112, 156)
-const CARD_UI_GAP = 12
+const CARD_UI_SIZE = Vector2(126, 176)
+const CARD_UI_GAP = 14
 const CARD_HAND_MARGIN = 18
 const HOVER_CARD_MARGIN = 24
 const HIDDEN_CARD_MARGIN = 24
@@ -68,6 +68,14 @@ var attached_card_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
+var moved_piece_this_turn: Dictionary = {
+	1: false,
+	-1: false,
+}
+var drawn_card_this_turn: Dictionary = {
+	1: false,
+	-1: false,
+}
 var game_over: bool = false
 var hover_card_preview: CardVisual
 var hover_duration_label: Label
@@ -77,6 +85,7 @@ var has_received_server_state: bool = false
 var deck_count_label: Label
 var player_name_labels: Dictionary = {}
 var quit_confirmation_dialog: ConfirmationDialog
+var end_turn_button: Button
 var white_deck_count_override: int = -1
 var black_deck_count_override: int = -1
 var hidden_card_preview_container: Control
@@ -121,6 +130,7 @@ func _ready():
 	create_deck_count_ui()
 	create_player_name_ui()
 	create_quit_confirmation_ui()
+	create_end_turn_ui()
 	update_player_name_labels()
 
 func create_board_markers_node():
@@ -382,6 +392,23 @@ func create_quit_confirmation_ui():
 	quit_confirmation_dialog.exclusive = true
 	quit_confirmation_dialog.confirmed.connect(_on_quit_confirmed)
 
+func create_end_turn_ui():
+	end_turn_button = Button.new()
+	canvas_layer.add_child(end_turn_button)
+	end_turn_button.text = "END TURN"
+	end_turn_button.anchor_left = 1.0
+	end_turn_button.anchor_right = 1.0
+	end_turn_button.anchor_top = 1.0
+	end_turn_button.anchor_bottom = 1.0
+	end_turn_button.offset_left = -152.0
+	end_turn_button.offset_right = -24.0
+	end_turn_button.offset_top = -64.0
+	end_turn_button.offset_bottom = -24.0
+	end_turn_button.z_index = 960
+	end_turn_button.focus_mode = Control.FOCUS_NONE
+	end_turn_button.pressed.connect(_on_end_turn_pressed)
+	update_end_turn_button()
+
 func create_hidden_card_preview_ui():
 	hidden_card_preview_container = Control.new()
 	canvas_layer.add_child(hidden_card_preview_container)
@@ -434,6 +461,7 @@ func update_card_presentation():
 	update_card_face_visibility(local_color)
 	update_card_drag_permissions()
 	update_player_name_labels()
+	update_end_turn_button()
 
 func update_player_name_labels():
 	for owner_color in [1, -1]:
@@ -481,6 +509,35 @@ func update_card_drag_permissions():
 	for card_visual in black_card_visuals:
 		card_visual.draggable = can_drag && card_visual.owner_color == active_color
 
+func update_end_turn_button():
+	if end_turn_button == null:
+		return
+	end_turn_button.visible = !game_over
+	end_turn_button.disabled = !can_control_current_turn()
+
+func _on_end_turn_pressed():
+	if !can_control_current_turn():
+		return
+
+	if GameController.current_game_host:
+		GameController.send_action({
+			"type": "end_turn",
+			"player_id": get_own_player_id(),
+		})
+		return
+
+	end_current_turn_locally()
+
+func end_current_turn_locally():
+	white = !white
+	reset_current_turn_card_attach()
+	state = false
+	delete_dots()
+	hide_hover_piece_details()
+	update_card_presentation()
+	display_board()
+	finish_if_current_player_has_no_valid_turn()
+
 func update_card_face_visibility(local_color: int):
 	for card_visual in white_card_visuals:
 		card_visual.set_face_down(card_visual.owner_color != local_color)
@@ -522,7 +579,23 @@ func mark_card_attached_this_turn(owner_color: int):
 	update_card_drag_permissions()
 
 func reset_current_turn_card_attach():
-	attached_card_this_turn[get_current_turn_color()] = false
+	var current_color: int = get_current_turn_color()
+	attached_card_this_turn[current_color] = false
+	moved_piece_this_turn[current_color] = false
+	drawn_card_this_turn[current_color] = false
+
+func has_moved_piece_this_turn(owner_color: int) -> bool:
+	return bool(moved_piece_this_turn.get(owner_color, false))
+
+func mark_piece_moved_this_turn(owner_color: int):
+	moved_piece_this_turn[owner_color] = true
+	update_end_turn_button()
+
+func has_drawn_card_this_turn(owner_color: int) -> bool:
+	return bool(drawn_card_this_turn.get(owner_color, false))
+
+func mark_card_drawn_this_turn(owner_color: int):
+	drawn_card_this_turn[owner_color] = true
 
 func _on_card_drag_started(card_visual: CardVisual):
 	card_visual.set_drop_target_active(false)
@@ -577,13 +650,11 @@ func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector
 		card_visual.fly_home()
 		return
 
-	var replacement_card_name: String = remove_card_from_hand(card_visual)
+	remove_card_from_hand(card_visual)
 	mark_card_attached_this_turn(card_visual.owner_color)
-	if finish_if_current_player_has_no_valid_turn():
-		return
 
 	if get_parent().has_method("send_card_attach"):
-		get_parent().send_card_attach(piece_position, card_name, card_visual.owner_color, hand_index, replacement_card_name)
+		get_parent().send_card_attach(piece_position, card_name, card_visual.owner_color, hand_index, "")
 
 func send_card_attach_action(owner_color: int, card_name: String, piece_position: Vector2, hand_index: int):
 	var action: Dictionary = {
@@ -608,7 +679,7 @@ func can_attach_card_to_piece(piece_position: Vector2, card_name: String = "", o
 func can_attach_card_name(owner_color: int, card_name: String) -> bool:
 	if MoveRules.has_attached_king(piece_objects, owner_color):
 		return true
-	return card_name == MoveRules.KING_CARD_NAME
+	return DeckManager.is_king_card_name(card_name)
 
 func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 	if not piece_objects.has(piece_position):
@@ -631,12 +702,12 @@ func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 	display_board()
 	return true
 
-func apply_remote_card_attach(piece_position: Vector2, card_name: String, owner_color: int, hand_index: int, replacement_card_name: String = ""):
+func apply_remote_card_attach(piece_position: Vector2, card_name: String, owner_color: int, hand_index: int, _replacement_card_name: String = ""):
 	if apply_card_to_piece(piece_position, card_name):
-		remove_card_from_hand_index(owner_color, hand_index, true, replacement_card_name)
+		remove_card_from_hand_index(owner_color, hand_index, false, _replacement_card_name)
 
 func remove_card_from_hand(card_visual: CardVisual) -> String:
-	return remove_card_from_hand_index(card_visual.owner_color, get_card_visual_index(card_visual), true)
+	return remove_card_from_hand_index(card_visual.owner_color, get_card_visual_index(card_visual), false)
 
 func get_card_visual_index(card_visual: CardVisual) -> int:
 	if card_visual.owner_color == 1:
@@ -736,6 +807,119 @@ func animate_state_draw_if_needed(owner_color: int, previous_names: Array, curre
 
 	animate_card_draw(owner_color, visuals[visuals.size() - 1])
 
+func animate_recent_card_transfers(recent_card_transfers: Array, previous_white_names: Array, current_white_names: Array, previous_black_names: Array, current_black_names: Array):
+	var used_indices_by_owner: Dictionary = {
+		1: [],
+		-1: [],
+	}
+
+	for transfer_value in recent_card_transfers:
+		var transfer: Dictionary = transfer_value
+		if str(transfer.get("target_zone", "")) != "hand":
+			continue
+
+		var target_player_id: int = int(transfer.get("target_player_id", -1))
+		if target_player_id < 0:
+			continue
+
+		var owner_color: int = get_color_for_player_id(target_player_id)
+		var card_name: String = str(transfer.get("card_name", ""))
+		if card_name.is_empty():
+			continue
+
+		var previous_names: Array = previous_white_names if owner_color == 1 else previous_black_names
+		var current_names: Array = current_white_names if owner_color == 1 else current_black_names
+		var used_indices: Array = used_indices_by_owner.get(owner_color, [])
+		var target_visual: CardVisual = find_transfer_target_visual(owner_color, previous_names, current_names, card_name, used_indices)
+		if target_visual == null:
+			continue
+
+		used_indices_by_owner[owner_color] = used_indices
+		play_transfer_source_pulse(transfer)
+		target_visual.fly_from_global_position(get_card_transfer_source_position(transfer))
+
+func find_transfer_target_visual(owner_color: int, previous_names: Array, current_names: Array, card_name: String, used_indices: Array) -> CardVisual:
+	var visuals: Array[CardVisual] = get_card_visuals(owner_color)
+	if visuals.is_empty():
+		return null
+
+	var previous_count: int = count_card_name(previous_names, card_name)
+	var seen_count: int = 0
+	for index in range(current_names.size()):
+		if str(current_names[index]) != card_name:
+			continue
+		seen_count += 1
+		if seen_count <= previous_count:
+			continue
+		if used_indices.has(index) or index >= visuals.size():
+			continue
+		used_indices.append(index)
+		return visuals[index]
+
+	var last_index: int = mini(current_names.size(), visuals.size()) - 1
+	for index in range(last_index, -1, -1):
+		if used_indices.has(index):
+			continue
+		if str(current_names[index]) == card_name:
+			used_indices.append(index)
+			return visuals[index]
+
+	return null
+
+func count_card_name(card_names: Array, card_name: String) -> int:
+	var count: int = 0
+	for card_name_value in card_names:
+		if str(card_name_value) == card_name:
+			count += 1
+	return count
+
+func play_transfer_source_pulse(transfer: Dictionary) -> void:
+	var source_zone: String = str(transfer.get("source_zone", ""))
+	if source_zone != "deck" and source_zone != "enemy_deck":
+		return
+
+	var source_player_id: int = int(transfer.get("source_player_id", -1))
+	if source_player_id < 0:
+		return
+
+	var deck_visual: CardVisual = get_deck_visual(get_color_for_player_id(source_player_id))
+	if deck_visual != null and is_instance_valid(deck_visual):
+		deck_visual.play_draw_pulse()
+
+func get_card_transfer_source_position(transfer: Dictionary) -> Vector2:
+	var source_player_id: int = int(transfer.get("source_player_id", -1))
+	var source_color: int = get_color_for_player_id(source_player_id) if source_player_id >= 0 else get_local_view_color()
+	var source_zone: String = str(transfer.get("source_zone", ""))
+	var source_pos: Vector2 = value_to_vector2(transfer.get("source_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+
+	if source_zone == "piece":
+		if is_valid_position(source_pos):
+			return get_board_position_screen_position(source_pos)
+		return get_card_hand_source_position(source_color)
+
+	if source_zone == "deck" or source_zone == "enemy_deck":
+		return get_card_draw_start_position(source_color)
+
+	if source_zone == "hand" or source_zone == "enemy_hand":
+		return get_card_hand_source_position(source_color)
+
+	if source_zone == "effect" and is_valid_position(source_pos):
+		return get_board_position_screen_position(source_pos)
+
+	return get_viewport().get_visible_rect().size * 0.5
+
+func get_card_hand_source_position(owner_color: int) -> Vector2:
+	var visuals: Array[CardVisual] = get_card_visuals(owner_color)
+	for card_visual: CardVisual in visuals:
+		if card_visual != null and is_instance_valid(card_visual) and card_visual.visible:
+			return card_visual.global_position
+
+	var hand_node: Control = get_card_hand_node(owner_color)
+	if hand_node == null:
+		return get_viewport().get_visible_rect().size * 0.5
+
+	return hand_node.global_position + get_card_home_position(maxi(0, visuals.size() - 1))
+
 func handle_card_reorder(card_visual: CardVisual):
 	if card_visual.owner_color == 1:
 		handle_card_reorder_in_hand(card_visual, white_card_visuals, white_card_hand)
@@ -828,6 +1012,38 @@ func is_mouse_over_deck(owner_color: int) -> bool:
 
 	return deck_visual.get_global_rect().has_point(get_viewport().get_mouse_position())
 
+func try_handle_deck_click() -> bool:
+	var active_color: int = get_controllable_color()
+	if !can_control_current_turn() or has_drawn_card_this_turn(active_color):
+		return false
+	if !is_mouse_over_deck(active_color):
+		return false
+	if !can_draw_card_locally(active_color):
+		return true
+
+	request_card_draw(active_color)
+	return true
+
+func can_draw_card_locally(owner_color: int) -> bool:
+	if get_card_hand(owner_color).size() >= DeckManager.HAND_SIZE:
+		return false
+	return get_card_deck_count(owner_color) > 0
+
+func request_card_draw(owner_color: int):
+	if GameController.current_game_host:
+		GameController.send_action({
+			"type": "draw_card",
+			"player_id": get_player_id_for_color(owner_color),
+		})
+		mark_card_drawn_this_turn(owner_color)
+		return
+
+	var card_name: String = draw_card_name(owner_color)
+	if card_name.is_empty():
+		return
+	insert_drawn_card(owner_color, get_card_hand(owner_color).size(), card_name)
+	mark_card_drawn_this_turn(owner_color)
+
 func _input(event):
 	if event is InputEventKey:
 		var key_event: InputEventKey = event as InputEventKey
@@ -839,7 +1055,12 @@ func _input(event):
 	if can_control_current_turn():
 		if event is InputEventMouseButton && event.pressed:
 			if event.button_index == MOUSE_BUTTON_LEFT:
+				if try_handle_deck_click():
+					get_viewport().set_input_as_handled()
+					return
 				if is_mouse_out(): return
+				if has_moved_piece_this_turn(get_controllable_color()):
+					return
 				var local_pos: Vector2 = to_local(get_global_mouse_position())
 
 				var offset = (BOARD_SIZE * CELL_WIDTH) / 2.0
@@ -889,6 +1110,7 @@ func send_move_action(from_pos: Vector2, to_pos: Vector2):
 			"to": to_pos,
 		}
 		GameController.send_action(action)
+		mark_piece_moved_this_turn(get_controllable_color())
 		return
 
 	if get_parent().has_method("send_move"):
@@ -1066,6 +1288,8 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	var moving_color: int = 1 if board[start_pos.x][start_pos.y] > 0 else -1
 	var captured_piece: Piece = piece_objects[end_pos] as Piece if piece_objects.has(end_pos) else null
 	var captured_king: bool = is_king_piece(captured_piece)
+	var captured_king_owner_color: int = captured_piece.color if captured_piece != null else 0
+	var captured_king_card_returned: bool = true
 
 	if piece_objects.has(start_pos):
 		var piece: Piece = piece_objects[start_pos] as Piece
@@ -1080,14 +1304,17 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	board[start_pos.x][start_pos.y] = 0
 
 	if captured_king:
-		display_board()
-		finish_game(moving_color)
-		return
+		captured_king_card_returned = return_captured_king_card_to_hand(captured_piece)
 
 	if piece_objects.has(end_pos):
 		var piece: Piece = piece_objects[end_pos] as Piece
 		if piece.attached_card:
 			piece.use_turn()
+
+	if captured_king && !captured_king_card_returned && !player_has_available_king_card(captured_king_owner_color):
+		display_board()
+		finish_game(-captured_king_owner_color)
+		return
 
 	var winner_color: int = get_winner_after_move(moving_color, end_pos)
 	if winner_color != 0:
@@ -1095,20 +1322,42 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 		finish_game(winner_color)
 		return
 
-	white = !white
-	reset_current_turn_card_attach()
+	mark_piece_moved_this_turn(moving_color)
 	update_card_presentation()
-	print("set_move() end: white now=", white)
+	print("set_move() end: waiting for END TURN")
 
 	display_board()
-
-	if finish_if_current_player_has_no_valid_turn():
-		return
 
 	if (start_pos.x != end_pos.x || start_pos.y != end_pos.y) && (white && board[end_pos.x][end_pos.y] > 0 || !white && board[end_pos.x][end_pos.y] < 0):
 		start_pos = end_pos
 		show_options()
 		state = true
+
+func return_captured_king_card_to_hand(captured_piece: Piece) -> bool:
+	if captured_piece == null or captured_piece.attached_card == null:
+		return false
+	var owner_color: int = captured_piece.color
+	var hand: Array[Card] = get_card_hand(owner_color)
+	if hand.size() >= DeckManager.HAND_SIZE:
+		print("King card deleted because the hand is full.")
+		return false
+	var returned_card: Card = captured_piece.attached_card.duplicate() as Card
+	if returned_card != null:
+		hand.append(returned_card)
+		return true
+	return false
+
+func player_has_available_king_card(owner_color: int) -> bool:
+	for card: Card in get_card_hand(owner_color):
+		if MoveRules.is_king_card(card):
+			return true
+	if DeckManager.has_king_card(get_card_deck(owner_color)):
+		return true
+	for position_value in piece_objects:
+		var piece: Piece = piece_objects[position_value] as Piece
+		if piece != null && piece.color == owner_color && MoveRules.is_king_card(piece.attached_card):
+			return true
+	return false
 
 func get_winner_after_move(moving_color: int, end_pos: Vector2) -> int:
 	if is_opponent_base_field(moving_color, end_pos) && is_king_piece_at(end_pos):
@@ -1124,7 +1373,7 @@ func has_any_piece(owner_color: int) -> bool:
 	return MoveRules.has_any_piece(piece_objects, owner_color)
 
 func is_king_piece(piece: Piece) -> bool:
-	return piece != null && piece.attached_card != null && piece.attached_card.card_name == MoveRules.KING_CARD_NAME
+	return piece != null && MoveRules.is_king_card(piece.attached_card)
 
 func is_king_piece_at(piece_position: Vector2) -> bool:
 	if !piece_objects.has(piece_position):
@@ -1133,9 +1382,19 @@ func is_king_piece_at(piece_position: Vector2) -> bool:
 
 func current_player_has_valid_turn_action() -> bool:
 	var current_color: int = get_current_turn_color()
+	if has_moved_piece_this_turn(current_color):
+		return false
 	var hand_cards: Array[Card] = get_card_hand(current_color)
 	var can_attach_card: bool = !has_attached_card_this_turn(current_color)
-	return MoveRules.has_valid_turn_action(piece_objects, current_color, hand_cards, can_attach_card, BOARD_SIZE)
+	if MoveRules.has_valid_turn_action(piece_objects, current_color, hand_cards, can_attach_card, BOARD_SIZE, current_board_effects):
+		return true
+	if !has_drawn_card_this_turn(current_color) && get_card_hand(current_color).size() < DeckManager.HAND_SIZE && !get_card_deck(current_color).is_empty():
+		var simulated_hand: Array[Card] = hand_cards.duplicate()
+		var next_card: Card = CardLibrary.duplicate_card(get_card_deck(current_color)[0])
+		if next_card != null:
+			simulated_hand.append(next_card)
+			return MoveRules.has_valid_turn_action(piece_objects, current_color, simulated_hand, can_attach_card, BOARD_SIZE, current_board_effects)
+	return false
 
 func finish_if_current_player_has_no_valid_turn() -> bool:
 	if game_over:
@@ -1159,6 +1418,7 @@ func finish_game(winner_color: int):
 	delete_dots()
 	hide_hover_piece_details()
 	update_card_drag_permissions()
+	update_end_turn_button()
 	show_result_message(winner_color)
 
 	await get_tree().create_timer(8.0).timeout
@@ -1221,7 +1481,7 @@ func get_move_preview_player_id(piece_position: Vector2, piece: Piece) -> int:
 	return get_player_id_for_color(piece.color)
 
 func get_card_based_moves(piece_position: Vector2, piece: Piece, player_id: int) -> Array:
-	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(piece_objects, piece_position, player_id, BOARD_SIZE)
+	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(piece_objects, piece_position, player_id, BOARD_SIZE, current_board_effects)
 	print("  Valid moves: ", valid_moves)
 	return valid_moves
 
@@ -1303,7 +1563,7 @@ func is_in_check(king_pos: Vector2):
 func is_stalemate():
 	return !current_player_has_valid_turn_action()
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = []):
 	var previous_white_hand_names: Array[String] = get_card_names_from_hand(white_card_hand)
 	var previous_black_hand_names: Array[String] = get_card_names_from_hand(black_card_hand)
 
@@ -1353,8 +1613,11 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	update_card_presentation()
 	display_board()
 	if has_received_server_state:
-		animate_state_draw_if_needed(1, previous_white_hand_names, current_white_hand_names)
-		animate_state_draw_if_needed(-1, previous_black_hand_names, current_black_hand_names)
+		if recent_card_transfers.is_empty():
+			animate_state_draw_if_needed(1, previous_white_hand_names, current_white_hand_names)
+			animate_state_draw_if_needed(-1, previous_black_hand_names, current_black_hand_names)
+		else:
+			animate_recent_card_transfers(recent_card_transfers, previous_white_hand_names, current_white_hand_names, previous_black_hand_names, current_black_hand_names)
 	has_received_server_state = true
 
 	if server_game_over && winner_player != -1:

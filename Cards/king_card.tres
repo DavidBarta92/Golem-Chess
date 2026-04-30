@@ -9,6 +9,7 @@ script = ExtResource("1_81wtr")
 card_name = "King"
 card_code = "king"
 duration = -1
+is_king_card = true
 white_piece_texture = ExtResource("3_ywkix")
 black_piece_texture = ExtResource("1_4ea1p")
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]])

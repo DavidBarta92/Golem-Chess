@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://b65bkgqopg51r"
+valid=false
+
+[deps]
+
+source_file="res://analysis_outputs/effect_value_summary.csv"
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true
