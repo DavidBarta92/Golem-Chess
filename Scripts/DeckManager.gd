@@ -44,12 +44,6 @@ static func draw_card(deck: Array[String], hand: Array[String]) -> bool:
 	return true
 
 static func draw_starting_hand(deck: Array[String], hand: Array[String]):
-	var king_index: int = find_king_card_index(deck)
-	if king_index != -1 && hand.size() < HAND_SIZE:
-		var king_card_name: String = deck[king_index]
-		deck.remove_at(king_index)
-		hand.append(king_card_name)
-
 	while hand.size() < STARTING_HAND_SIZE:
 		if !draw_card(deck, hand):
 			return

@@ -6,6 +6,7 @@ const BURN_SHADER = preload("res://Shaders/card_burn.gdshader")
 signal drag_started(card_visual: CardVisual)
 signal drag_moved(card_visual: CardVisual)
 signal drag_released(card_visual: CardVisual)
+signal burn_finished(card_visual: CardVisual)
 
 @export var angle_x_max: float = 13.0
 @export var angle_y_max: float = 13.0
@@ -222,15 +223,24 @@ func play_burn_away_and_free() -> void:
 	burn_material.set_shader_parameter("seed", randf() * 1000.0)
 	card_face.material = burn_material
 	shimmer.visible = false
+	name_label.visible = false
+	duration_label.visible = false
+	effect_icon_texture.visible = false
+	effect_icon_label.visible = false
+	pattern_view.visible = false
 	shadow.self_modulate.a = 0.32
+	modulate.a = 1.0
 
 	tween_burn = create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tween_burn.tween_property(burn_material, "shader_parameter/burn_progress", 1.0, 1.15)
 	tween_burn.parallel().tween_property(self, "position", position + Vector2(0.0, -28.0), 1.15)
 	tween_burn.parallel().tween_property(self, "scale", scale * 0.82, 1.15)
 	tween_burn.parallel().tween_property(self, "rotation", rotation + deg_to_rad(randf_range(-7.0, 7.0)), 1.15)
-	tween_burn.parallel().tween_property(self, "modulate:a", 0.0, 0.9).set_delay(0.28)
-	tween_burn.tween_callback(Callable(self, "queue_free"))
+	tween_burn.tween_callback(Callable(self, "_finish_burn_away"))
+
+func _finish_burn_away() -> void:
+	burn_finished.emit(self)
+	queue_free()
 
 func _apply_card() -> void:
 	if card == null:

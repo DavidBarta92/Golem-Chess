@@ -28,15 +28,26 @@ float value_noise(vec2 p) {
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
+float fbm(vec2 p) {
+	float value = 0.0;
+	float amplitude = 0.5;
+	for (int i = 0; i < 4; i++) {
+		value += value_noise(p) * amplitude;
+		p *= 2.03;
+		amplitude *= 0.5;
+	}
+	return value;
+}
+
 void fragment() {
 	vec4 base = texture(TEXTURE, UV) * COLOR;
-	float noise = value_noise(UV * noise_scale);
-	float burn_value = UV.y + (noise - 0.5) * noise_strength;
-	float threshold = burn_progress * 1.22 - 0.12;
-	float burned = smoothstep(threshold - 0.025, threshold + 0.025, burn_value);
-	float distance_to_edge = abs(burn_value - threshold);
+	float noise = fbm(UV * noise_scale);
+	float dissolve_map = clamp(noise + (UV.y - 0.5) * noise_strength, 0.0, 1.0);
+	float threshold = burn_progress * 1.12 - 0.06;
+	float burned = smoothstep(dissolve_map - 0.035, dissolve_map + 0.035, threshold);
+	float distance_to_edge = abs(dissolve_map - threshold);
 	float edge = (1.0 - smoothstep(0.0, edge_width, distance_to_edge)) * (1.0 - burned);
-	float ash = smoothstep(edge_width * 1.8, 0.0, burn_value - threshold) * (1.0 - burned);
+	float ash = smoothstep(edge_width * 1.8, 0.0, threshold - dissolve_map) * (1.0 - burned);
 
 	vec3 color = mix(base.rgb, ash_color.rgb, ash * 0.7);
 	color = mix(color, ember_color.rgb, edge * 0.85);

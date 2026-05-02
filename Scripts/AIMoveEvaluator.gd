@@ -507,7 +507,7 @@ func score_card_effect_fast(
 		CardEffect.TYPE_STEAL_CARD:
 			score += 50.0
 		CardEffect.TYPE_GRANT_CARD:
-			score += 45.0
+			score += score_grant_card_effect(game_state, player_id, card)
 		CardEffect.TYPE_GIVE_CARD:
 			score -= PENALTY_GIVE_CARD
 		CardEffect.TYPE_MOVE_BASE:
@@ -585,6 +585,24 @@ func score_shared_control_effect_fast(card: Card) -> float:
 	if card != null:
 		movement_count = card.get_directions().size()
 	return float(movement_count) * (SCORE_SHARED_OWN_MOBILITY - PENALTY_SHARED_OPPONENT_MOBILITY)
+
+func score_grant_card_effect(game_state: GameStateData, player_id: int, card: Card) -> float:
+	if game_state == null or card == null:
+		return 0.0
+
+	var target_player_id: int = int(card.effect_settings.get("target_player_id", player_id))
+	var granted_card_name: String = str(card.effect_settings.get("card_name", card.card_name))
+	if granted_card_name.is_empty():
+		return 0.0
+
+	var deck: Array = game_state.player_decks.get(target_player_id, [])
+	var available_count: int = 0
+	for deck_card_name_value in deck:
+		if str(deck_card_name_value) == granted_card_name:
+			available_count += 1
+
+	var amount: int = max(1, int(card.effect_settings.get("amount", 1)))
+	return 45.0 * min(amount, available_count)
 
 func score_turn_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5) -> float:
 	var breakdown: Dictionary = score_turn_plan_breakdown(game_state, player_id, plan, board_size)
@@ -817,7 +835,7 @@ func score_card_effect(
 		CardEffect.TYPE_STEAL_CARD:
 			score += 50.0
 		CardEffect.TYPE_GRANT_CARD:
-			score += 45.0
+			score += score_grant_card_effect(game_state, player_id, card)
 		CardEffect.TYPE_GIVE_CARD:
 			score -= PENALTY_GIVE_CARD
 		CardEffect.TYPE_MOVE_BASE:

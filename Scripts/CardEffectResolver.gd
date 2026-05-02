@@ -125,22 +125,26 @@ static func resolve_grant_card(game_state: GameStateData, player_id: int, card: 
 	var max_hand_size: int = max(1, int(params.get("max_hand_size", DEFAULT_MAX_HAND_SIZE)))
 	var granted_cards: Array = []
 	for grant_index in range(amount):
+		if !take_named_card_from_player_deck(game_state, target_player_id, granted_card_name):
+			print("Card grant ignored: %s is not in player=%d deck" % [granted_card_name, target_player_id])
+			return build_card_transfer_result(target_player_id, target_player_id, "deck", "hand_or_deleted", granted_cards)
+
 		var target_zone: String = give_card_to_player(game_state, target_player_id, granted_card_name, max_hand_size)
-		register_card_transfer(game_state, player_id, target_player_id, granted_card_name, "effect", target_zone, source_pos)
+		register_card_transfer(game_state, target_player_id, target_player_id, granted_card_name, "deck", target_zone, source_pos)
 		granted_cards.append(granted_card_name)
 		if game_state.match_logger != null:
 			game_state.match_logger.log_card_event(game_state, "grant_card", {
 				"player_id": target_player_id,
 				"card_name": granted_card_name,
-				"source_player_id": player_id,
+				"source_player_id": target_player_id,
 				"target_player_id": target_player_id,
-				"source_zone": "effect",
+				"source_zone": "deck",
 				"target_zone": target_zone,
 				"reason": card.card_name,
 			})
 
 	print("Card granted: %s x%d to player=%d" % [granted_card_name, amount, target_player_id])
-	return build_card_transfer_result(player_id, target_player_id, "effect", "hand_or_deleted", granted_cards)
+	return build_card_transfer_result(target_player_id, target_player_id, "deck", "hand_or_deleted", granted_cards)
 
 static func resolve_give_card(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2 = Vector2(-1, -1)) -> Dictionary:
 	var params: Dictionary = card.effect_settings
@@ -202,6 +206,19 @@ static func take_card_from_player_zone(game_state: GameStateData, source_player_
 		game_state.player_hands[source_player_id] = source_cards
 
 	return stolen_card_name
+
+static func take_named_card_from_player_deck(game_state: GameStateData, player_id: int, card_name: String) -> bool:
+	if !game_state.player_decks.has(player_id):
+		return false
+
+	var deck: Array = game_state.player_decks[player_id]
+	var card_index: int = deck.find(card_name)
+	if card_index == -1:
+		return false
+
+	deck.remove_at(card_index)
+	game_state.player_decks[player_id] = deck
+	return true
 
 static func give_card_to_player(game_state: GameStateData, player_id: int, card_name: String, max_hand_size: int) -> String:
 	var hand: Array = game_state.player_hands.get(player_id, [])

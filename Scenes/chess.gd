@@ -41,6 +41,7 @@ const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD = Vector2(0, 2)
 const BLACK_BASE_FIELD = Vector2(4, 2)
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
+const CARD_BURN_SEQUENCE_GAP = 0.08
 
 @onready var pieces_node = $Pieces
 @onready var dots = $Dots
@@ -100,6 +101,8 @@ var current_player_names: Dictionary = {
 	0: "Player",
 	1: "Player",
 }
+var pending_card_burn_animations: Array = []
+var card_burn_animation_sequence_running: bool = false
 
 var side
 
@@ -557,7 +560,7 @@ func tick_attached_cards_locally() -> void:
 		if MoveRules.is_king_card(expired_card):
 			handle_expired_king_card_locally(piece.color, expired_card)
 			continue
-		play_card_expire_animation(piece_pos, expired_card)
+		queue_card_expire_animation(piece_pos, expired_card)
 
 func handle_expired_king_card_locally(owner_color: int, expired_card: Card) -> void:
 	var hand: Array[Card] = get_card_hand(owner_color)
@@ -843,7 +846,7 @@ func animate_recent_card_transfers(recent_card_transfers: Array, previous_white_
 		var target_zone: String = str(transfer.get("target_zone", ""))
 		if target_zone == "deleted":
 			play_transfer_source_pulse(transfer)
-			play_card_transfer_burn_animation(transfer)
+			queue_card_transfer_burn_animation(transfer)
 			continue
 		if target_zone != "hand":
 			continue
@@ -920,16 +923,23 @@ func animate_recent_card_expirations(recent_card_expirations: Array) -> void:
 		if expired_card.effect_type == CardEffect.TYPE_GIVE_CARD && expired_card.effect_trigger == CardEffect.TRIGGER_ON_EXPIRE:
 			continue
 
-		play_card_expire_animation(piece_pos, expired_card)
+		queue_card_expire_animation(piece_pos, expired_card)
 
-func play_card_transfer_burn_animation(transfer: Dictionary) -> void:
+func queue_card_transfer_burn_animation(transfer: Dictionary) -> void:
+	pending_card_burn_animations.append({
+		"type": "transfer",
+		"transfer": transfer.duplicate(true),
+	})
+	process_card_burn_animation_queue()
+
+func play_card_transfer_burn_animation(transfer: Dictionary) -> CardVisual:
 	if canvas_layer == null:
-		return
+		return null
 
 	var card_name: String = str(transfer.get("card_name", ""))
 	var card: Card = CardLibrary.duplicate_card(card_name)
 	if card == null:
-		return
+		return null
 
 	var card_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
 	canvas_layer.add_child(card_visual)
@@ -947,10 +957,47 @@ func play_card_transfer_burn_animation(transfer: Dictionary) -> void:
 	card_visual.rotation = deg_to_rad(randf_range(-4.0, 4.0))
 	card_visual.z_index = 980
 	card_visual.play_burn_away_and_free()
+	return card_visual
 
-func play_card_expire_animation(piece_position: Vector2, expired_card: Card) -> void:
-	if expired_card == null or canvas_layer == null or !is_valid_position(piece_position):
+func queue_card_expire_animation(piece_position: Vector2, expired_card: Card) -> void:
+	if expired_card == null:
 		return
+
+	var queued_card: Card = expired_card.duplicate() as Card
+	if queued_card == null:
+		queued_card = expired_card
+	pending_card_burn_animations.append({
+		"type": "expire",
+		"piece_position": piece_position,
+		"expired_card": queued_card,
+	})
+	process_card_burn_animation_queue()
+
+func process_card_burn_animation_queue() -> void:
+	if card_burn_animation_sequence_running:
+		return
+
+	card_burn_animation_sequence_running = true
+	while !pending_card_burn_animations.is_empty():
+		var animation_data: Dictionary = pending_card_burn_animations.pop_front()
+		var card_visual: CardVisual = null
+		var animation_type: String = str(animation_data.get("type", ""))
+		if animation_type == "transfer":
+			card_visual = play_card_transfer_burn_animation(animation_data.get("transfer", {}))
+		elif animation_type == "expire":
+			var piece_position: Vector2 = value_to_vector2(animation_data.get("piece_position", INVALID_BOARD_POS), INVALID_BOARD_POS)
+			var expired_card: Card = animation_data.get("expired_card", null) as Card
+			card_visual = play_card_expire_animation(piece_position, expired_card)
+		if card_visual != null and is_instance_valid(card_visual):
+			await card_visual.burn_finished
+		if !pending_card_burn_animations.is_empty() and get_tree() != null:
+			await get_tree().create_timer(CARD_BURN_SEQUENCE_GAP).timeout
+
+	card_burn_animation_sequence_running = false
+
+func play_card_expire_animation(piece_position: Vector2, expired_card: Card) -> CardVisual:
+	if expired_card == null or canvas_layer == null or !is_valid_position(piece_position):
+		return null
 
 	var display_card: Card = expired_card.duplicate() as Card
 	if display_card == null:
@@ -973,6 +1020,7 @@ func play_card_expire_animation(piece_position: Vector2, expired_card: Card) -> 
 	card_visual.rotation = deg_to_rad(randf_range(-4.0, 4.0))
 	card_visual.z_index = 980
 	card_visual.play_burn_away_and_free()
+	return card_visual
 
 func play_transfer_source_pulse(transfer: Dictionary) -> void:
 	var source_zone: String = str(transfer.get("source_zone", ""))
@@ -1141,7 +1189,7 @@ func request_card_draw(owner_color: int):
 	if card_name.is_empty():
 		return
 	if get_card_hand(owner_color).size() >= DeckManager.HAND_SIZE:
-		play_card_transfer_burn_animation({
+		queue_card_transfer_burn_animation({
 			"source_player_id": get_player_id_for_color(owner_color),
 			"target_player_id": get_player_id_for_color(owner_color),
 			"card_name": card_name,
