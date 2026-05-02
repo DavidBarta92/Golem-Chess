@@ -280,7 +280,8 @@ func apply_game_state(state_data: Dictionary):
 		state_data.get("player_base_fields", {}),
 		state_data.get("board_effects", []),
 		state_data.get("player_names", {}),
-		state_data.get("recent_card_transfers", [])
+		state_data.get("recent_card_transfers", []),
+		state_data.get("recent_card_expirations", [])
 	)
 
 	print("apply_game_state() end")

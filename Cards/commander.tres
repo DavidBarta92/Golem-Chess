@@ -8,9 +8,9 @@
 script = ExtResource("2_vk2ja")
 card_name = "Commander"
 card_code = "commander"
+duration = 4
 white_piece_texture = ExtResource("3_f0dav")
 black_piece_texture = ExtResource("1_ggl4b")
-effect_type = "grant_card"
 effect_trigger = "on_expire"
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 1, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])

@@ -96,7 +96,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 
 const SCORE_WIN: float = 100000.0
 const SCORE_CAPTURE_KING: float = 160.0
-const SCORE_ATTACH_KING: float = 600.0
+const SCORE_ATTACH_KING: float = 35.0
 const SCORE_THREATEN_KING: float = 420.0
 const SCORE_CAPTURE_PIECE: float = 45.0
 const SCORE_CAPTURE_CARD: float = 75.0

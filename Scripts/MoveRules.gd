@@ -32,9 +32,7 @@ static func has_attached_king(pieces: Dictionary, player_color: int) -> bool:
 	return false
 
 static func can_attach_card_for_turn(pieces: Dictionary, player_color: int, card: Card) -> bool:
-	if has_attached_king(pieces, player_color):
-		return true
-	return is_king_card(card)
+	return card_can_be_used(card)
 
 static func get_card_moves_for_piece(pieces: Dictionary, piece_position: Vector2, piece_color: int, card: Card, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
 	var valid_moves: Array[Vector2] = []
@@ -75,8 +73,6 @@ static func get_piece_moves(pieces: Dictionary, piece_position: Vector2, board_s
 	var piece: Piece = get_piece_at(pieces, piece_position)
 	if piece == null || !piece.can_move():
 		return []
-	if !has_attached_king(pieces, piece.color):
-		return []
 	var owner_player_id: int = 0 if piece.color == 1 else 1
 	return get_piece_moves_for_player(pieces, piece_position, owner_player_id, board_size, board_effects)
 
@@ -88,15 +84,10 @@ static func get_piece_moves_for_player(pieces: Dictionary, piece_position: Vecto
 		return []
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	if !has_attached_king(pieces, player_color):
-		return []
-
 	return get_card_moves_for_piece(pieces, piece_position, player_color, piece.attached_card, board_size, board_effects)
 
 static func get_existing_card_moves(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
 	var valid_moves: Array[Dictionary] = []
-	if !has_attached_king(pieces, player_color):
-		return valid_moves
 
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
@@ -147,9 +138,6 @@ static func get_valid_turn_moves(pieces: Dictionary, player_color: int, hand_car
 	return valid_moves
 
 static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
-	if !has_attached_king(pieces, player_color):
-		return false
-
 	var player_id: int = 0 if player_color == 1 else 1
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value

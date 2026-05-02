@@ -529,6 +529,8 @@ func _on_end_turn_pressed():
 	end_current_turn_locally()
 
 func end_current_turn_locally():
+	if should_tick_attached_cards_this_end_turn_locally():
+		tick_attached_cards_locally()
 	white = !white
 	reset_current_turn_card_attach()
 	state = false
@@ -537,6 +539,40 @@ func end_current_turn_locally():
 	update_card_presentation()
 	display_board()
 	finish_if_current_player_has_no_valid_turn()
+
+func tick_attached_cards_locally() -> void:
+	var positions: Array = piece_objects.keys()
+	for position_value in positions:
+		var piece_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
+		if !piece_objects.has(piece_pos):
+			continue
+
+		var piece: Piece = piece_objects[piece_pos] as Piece
+		if piece == null or piece.attached_card == null:
+			continue
+
+		var expired_card: Card = piece.use_turn()
+		if expired_card == null:
+			continue
+		if MoveRules.is_king_card(expired_card):
+			handle_expired_king_card_locally(piece.color, expired_card)
+			continue
+		play_card_expire_animation(piece_pos, expired_card)
+
+func handle_expired_king_card_locally(owner_color: int, expired_card: Card) -> void:
+	var hand: Array[Card] = get_card_hand(owner_color)
+	if hand.size() >= DeckManager.HAND_SIZE:
+		print("King card deleted because the hand is full.")
+		if !player_has_available_king_card(owner_color):
+			finish_game(-owner_color)
+		return
+
+	var returned_card: Card = expired_card.duplicate() as Card
+	if returned_card != null:
+		hand.append(returned_card)
+
+func should_tick_attached_cards_this_end_turn_locally() -> bool:
+	return !white
 
 func update_card_face_visibility(local_color: int):
 	for card_visual in white_card_visuals:
@@ -671,15 +707,7 @@ func can_attach_card_to_piece(piece_position: Vector2, card_name: String = "", o
 		return false
 
 	var piece: Piece = piece_objects[piece_position] as Piece
-	var piece_owner_color: int = owner_color if owner_color != 0 else piece.color
-	if !card_name.is_empty() && !can_attach_card_name(piece_owner_color, card_name):
-		return false
 	return piece.attached_card == null
-
-func can_attach_card_name(owner_color: int, card_name: String) -> bool:
-	if MoveRules.has_attached_king(piece_objects, owner_color):
-		return true
-	return DeckManager.is_king_card_name(card_name)
 
 func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 	if not piece_objects.has(piece_position):
@@ -693,9 +721,6 @@ func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 	var card: Card = CardLibrary.duplicate_card(card_name)
 	if card == null:
 		push_warning("Card not found for attach: %s" % card_name)
-		return false
-	if !can_attach_card_name(piece.color, card.card_name):
-		push_warning("The King card must be played first.")
 		return false
 
 	piece.attach_card(card)
@@ -815,7 +840,12 @@ func animate_recent_card_transfers(recent_card_transfers: Array, previous_white_
 
 	for transfer_value in recent_card_transfers:
 		var transfer: Dictionary = transfer_value
-		if str(transfer.get("target_zone", "")) != "hand":
+		var target_zone: String = str(transfer.get("target_zone", ""))
+		if target_zone == "deleted":
+			play_transfer_source_pulse(transfer)
+			play_card_transfer_burn_animation(transfer)
+			continue
+		if target_zone != "hand":
 			continue
 
 		var target_player_id: int = int(transfer.get("target_player_id", -1))
@@ -872,6 +902,77 @@ func count_card_name(card_names: Array, card_name: String) -> int:
 		if str(card_name_value) == card_name:
 			count += 1
 	return count
+
+func animate_recent_card_expirations(recent_card_expirations: Array) -> void:
+	for expiration_value in recent_card_expirations:
+		var expiration: Dictionary = expiration_value
+		var card_name: String = str(expiration.get("card_name", ""))
+		if card_name.is_empty():
+			continue
+
+		var piece_pos: Vector2 = value_to_vector2(expiration.get("piece_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		if !is_valid_position(piece_pos):
+			continue
+
+		var expired_card: Card = CardLibrary.duplicate_card(card_name)
+		if expired_card == null:
+			continue
+		if expired_card.effect_type == CardEffect.TYPE_GIVE_CARD && expired_card.effect_trigger == CardEffect.TRIGGER_ON_EXPIRE:
+			continue
+
+		play_card_expire_animation(piece_pos, expired_card)
+
+func play_card_transfer_burn_animation(transfer: Dictionary) -> void:
+	if canvas_layer == null:
+		return
+
+	var card_name: String = str(transfer.get("card_name", ""))
+	var card: Card = CardLibrary.duplicate_card(card_name)
+	if card == null:
+		return
+
+	var card_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
+	canvas_layer.add_child(card_visual)
+	card_visual.set_card(card)
+	card_visual.set_face_down(false)
+	card_visual.draggable = false
+	card_visual.disabled = true
+	card_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var animation_scale: float = 0.74
+	var source_position: Vector2 = get_card_transfer_source_position(transfer)
+	var visual_size: Vector2 = CARD_UI_SIZE * animation_scale
+	card_visual.global_position = source_position - visual_size * 0.5
+	card_visual.scale = Vector2.ONE * animation_scale
+	card_visual.rotation = deg_to_rad(randf_range(-4.0, 4.0))
+	card_visual.z_index = 980
+	card_visual.play_burn_away_and_free()
+
+func play_card_expire_animation(piece_position: Vector2, expired_card: Card) -> void:
+	if expired_card == null or canvas_layer == null or !is_valid_position(piece_position):
+		return
+
+	var display_card: Card = expired_card.duplicate() as Card
+	if display_card == null:
+		display_card = expired_card
+	display_card.duration = 0
+
+	var card_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
+	canvas_layer.add_child(card_visual)
+	card_visual.set_card(display_card)
+	card_visual.set_face_down(false)
+	card_visual.draggable = false
+	card_visual.disabled = true
+	card_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var animation_scale: float = 0.74
+	var piece_screen_position: Vector2 = get_board_position_screen_position(piece_position)
+	var visual_size: Vector2 = CARD_UI_SIZE * animation_scale
+	card_visual.global_position = piece_screen_position - visual_size * 0.5 + Vector2(0.0, -visual_size.y * 0.72)
+	card_visual.scale = Vector2.ONE * animation_scale
+	card_visual.rotation = deg_to_rad(randf_range(-4.0, 4.0))
+	card_visual.z_index = 980
+	card_visual.play_burn_away_and_free()
 
 func play_transfer_source_pulse(transfer: Dictionary) -> void:
 	var source_zone: String = str(transfer.get("source_zone", ""))
@@ -1025,8 +1126,6 @@ func try_handle_deck_click() -> bool:
 	return true
 
 func can_draw_card_locally(owner_color: int) -> bool:
-	if get_card_hand(owner_color).size() >= DeckManager.HAND_SIZE:
-		return false
 	return get_card_deck_count(owner_color) > 0
 
 func request_card_draw(owner_color: int):
@@ -1040,6 +1139,16 @@ func request_card_draw(owner_color: int):
 
 	var card_name: String = draw_card_name(owner_color)
 	if card_name.is_empty():
+		return
+	if get_card_hand(owner_color).size() >= DeckManager.HAND_SIZE:
+		play_card_transfer_burn_animation({
+			"source_player_id": get_player_id_for_color(owner_color),
+			"target_player_id": get_player_id_for_color(owner_color),
+			"card_name": card_name,
+			"source_zone": "deck",
+			"target_zone": "deleted",
+		})
+		mark_card_drawn_this_turn(owner_color)
 		return
 	insert_drawn_card(owner_color, get_card_hand(owner_color).size(), card_name)
 	mark_card_drawn_this_turn(owner_color)
@@ -1306,11 +1415,6 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	if captured_king:
 		captured_king_card_returned = return_captured_king_card_to_hand(captured_piece)
 
-	if piece_objects.has(end_pos):
-		var piece: Piece = piece_objects[end_pos] as Piece
-		if piece.attached_card:
-			piece.use_turn()
-
 	if captured_king && !captured_king_card_returned && !player_has_available_king_card(captured_king_owner_color):
 		display_board()
 		finish_game(-captured_king_owner_color)
@@ -1563,7 +1667,7 @@ func is_in_check(king_pos: Vector2):
 func is_stalemate():
 	return !current_player_has_valid_turn_action()
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = []):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = []):
 	var previous_white_hand_names: Array[String] = get_card_names_from_hand(white_card_hand)
 	var previous_black_hand_names: Array[String] = get_card_names_from_hand(black_card_hand)
 
@@ -1618,6 +1722,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 			animate_state_draw_if_needed(-1, previous_black_hand_names, current_black_hand_names)
 		else:
 			animate_recent_card_transfers(recent_card_transfers, previous_white_hand_names, current_white_hand_names, previous_black_hand_names, current_black_hand_names)
+		animate_recent_card_expirations(recent_card_expirations)
 	has_received_server_state = true
 
 	if server_game_over && winner_player != -1:

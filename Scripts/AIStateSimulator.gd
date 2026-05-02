@@ -32,6 +32,7 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.player_base_fields = duplicate_vector2_dictionary(source_state.player_base_fields)
 	cloned_state.board_effects = duplicate_board_effects(source_state.board_effects)
 	cloned_state.recent_card_transfers = []
+	cloned_state.recent_card_expirations = []
 	cloned_state.attached_card_this_turn = source_state.attached_card_this_turn.duplicate()
 	cloned_state.moved_piece_this_turn = source_state.moved_piece_this_turn.duplicate()
 	cloned_state.drawn_card_this_turn = source_state.drawn_card_this_turn.duplicate()
@@ -97,7 +98,7 @@ static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: D
 		if simulated_state.game_over:
 			return simulated_state
 
-	end_simulated_turn(simulated_state, player_id)
+	end_simulated_turn(simulated_state, player_id, board_size)
 	return simulated_state
 
 static func apply_draw_action(game_state: GameStateData, player_id: int) -> void:
@@ -108,10 +109,12 @@ static func apply_draw_action(game_state: GameStateData, player_id: int) -> void
 
 	var deck: Array = game_state.player_decks[player_id]
 	var hand: Array = game_state.player_hands[player_id]
-	if deck.is_empty() or hand.size() >= DeckManager.HAND_SIZE:
+	if deck.is_empty():
 		return
 
-	hand.append(str(deck.pop_front()))
+	var drawn_card_name: String = str(deck.pop_front())
+	if hand.size() < DeckManager.HAND_SIZE:
+		hand.append(drawn_card_name)
 	game_state.player_decks[player_id] = deck
 	game_state.player_hands[player_id] = hand
 	game_state.drawn_card_this_turn[player_id] = true
@@ -138,7 +141,7 @@ static func apply_attach_action(game_state: GameStateData, player_id: int, actio
 	piece.attached_card = card
 	piece.turns_remaining = card.duration
 	game_state.attached_card_this_turn[player_id] = true
-	simulate_on_attach_effect(game_state, player_id, piece, piece_pos, card, board_size)
+	simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_ATTACH, player_id, piece, piece_pos, card, board_size)
 
 static func apply_move_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> void:
 	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
@@ -174,42 +177,48 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 		CardEffectResolver.clear_king_position_if_needed(game_state, captured_player_id, true)
 
 	if moving_piece.attached_card != null:
-		moving_piece.use_turn()
+		var moving_card: Card = moving_piece.attached_card
+		if captured_piece != null:
+			simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_CAPTURE, player_id, moving_piece, to_pos, moving_card, board_size, {
+				"captured_piece": captured_piece,
+				"captured_piece_pos": to_pos,
+			})
+			if game_state.game_over:
+				return
+
+		simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_MOVE, player_id, moving_piece, to_pos, moving_card, board_size, {
+			"from_pos": from_pos,
+			"to_pos": to_pos,
+		})
+		if game_state.game_over:
+			return
 
 	_refresh_king_positions(game_state)
 
-static func simulate_on_attach_effect(game_state: GameStateData, player_id: int, piece: Piece, source_pos: Vector2, card: Card, board_size: int) -> void:
-	if card == null or !card.has_effect() or card.effect_trigger != CardEffect.TRIGGER_ON_ATTACH:
+static func simulate_trigger_effect(
+	game_state: GameStateData,
+	trigger: String,
+	player_id: int,
+	piece: Piece,
+	source_pos: Vector2,
+	card: Card,
+	board_size: int,
+	extra_context: Dictionary = {}
+) -> void:
+	if card == null or !card.has_effect() or card.effect_trigger != trigger:
 		return
 
-	var effect_color: int = piece.color
-	match card.effect_type:
-		CardEffect.TYPE_MOVE_BASE:
-			var raw_target_squares: Array[Vector2] = CardEffectResolver.get_effect_squares_unfiltered(card, source_pos, effect_color)
-			if raw_target_squares.is_empty():
-				return
-			var target_pos: Vector2 = raw_target_squares[0]
-			if MoveRules.is_valid_position(target_pos, board_size):
-				game_state.player_base_fields[player_id] = target_pos
-		CardEffect.TYPE_INVALID_SQUARES, CardEffect.TYPE_FROZEN_SQUARES:
-			var squares: Array[Vector2] = CardEffectResolver.get_effect_squares(card, source_pos, board_size, effect_color)
-			if card.effect_type == CardEffect.TYPE_INVALID_SQUARES:
-				squares = CardEffectResolver.filter_out_base_fields(game_state, squares)
-			if squares.is_empty():
-				return
-			game_state.board_effects.append({
-				"effect_type": card.effect_type,
-				"owner_player_id": player_id,
-				"target_player_id": int(card.effect_settings.get("target_player_id", -1)),
-				"squares": squares,
-				"turns_remaining": max(1, int(card.effect_settings.get("turns_remaining", card.duration))),
-			})
-		CardEffect.TYPE_BOMB:
-			for target_pos: Vector2 in CardEffectResolver.get_effect_squares(card, source_pos, board_size, effect_color):
-				game_state.remove_piece(target_pos)
-			_refresh_king_positions(game_state)
-		_:
-			pass
+	var context: Dictionary = {
+		"player_id": player_id,
+		"piece": piece,
+		"piece_pos": source_pos,
+		"card": card,
+	}
+	for key in extra_context:
+		context[key] = extra_context[key]
+
+	CardEffectResolver.resolve_trigger(trigger, game_state, context, board_size)
+	_refresh_king_positions(game_state)
 
 static func remove_card_name_from_hand(game_state: GameStateData, player_id: int, card_name: String) -> void:
 	if !game_state.player_hands.has(player_id):
@@ -221,13 +230,53 @@ static func remove_card_name_from_hand(game_state: GameStateData, player_id: int
 		hand.remove_at(card_index)
 	game_state.player_hands[player_id] = hand
 
-static func end_simulated_turn(game_state: GameStateData, player_id: int) -> void:
+static func end_simulated_turn(game_state: GameStateData, player_id: int, board_size: int) -> void:
 	if game_state.game_over:
 		return
 
 	game_state.current_turn_player = player_id
+	if should_tick_attached_cards_this_end_turn(game_state):
+		tick_attached_cards(game_state, board_size)
+		if game_state.game_over:
+			return
 	game_state.switch_turn()
 	CardEffectResolver.tick_board_effects(game_state)
+
+static func tick_attached_cards(game_state: GameStateData, board_size: int) -> void:
+	var positions: Array = game_state.pieces.keys()
+	for position_value in positions:
+		var piece_pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var piece: Piece = game_state.get_piece(piece_pos)
+		if piece == null or piece.attached_card == null:
+			continue
+
+		var player_id: int = CardEffectResolver.get_player_id_for_color(piece.color)
+		var expired_card: Card = piece.use_turn()
+		if expired_card == null:
+			continue
+
+		if MoveRules.is_king_card(expired_card):
+			handle_expired_king_card(game_state, player_id, expired_card, piece_pos)
+			if game_state.game_over:
+				return
+			continue
+
+		simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_EXPIRE, player_id, piece, piece_pos, expired_card, board_size)
+		if game_state.game_over:
+			return
+
+	_refresh_king_positions(game_state)
+
+static func handle_expired_king_card(game_state: GameStateData, player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
+	CardEffectResolver.clear_king_position_if_needed(game_state, player_id, true)
+	var king_card_returned: bool = CardEffectResolver.return_card_to_owner_hand(game_state, player_id, expired_card.card_name, piece_pos)
+	if !king_card_returned && !CardEffectResolver.player_has_available_king_card(game_state, player_id):
+		game_state.game_over = true
+		game_state.winner_player = 1 - player_id
+		game_state.win_condition = "king_card_lost"
+
+static func should_tick_attached_cards_this_end_turn(game_state: GameStateData) -> bool:
+	return game_state.current_turn_player == 1
 
 static func _refresh_king_positions(game_state: GameStateData) -> void:
 	game_state.white_king_position = find_king_position(game_state.pieces, 0)

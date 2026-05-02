@@ -46,7 +46,7 @@ func create_turn_plans_from_state(game_state: GameStateData, player_id: int, boa
 
 		var hand_after_draw: Array[Card] = duplicate_card_array(current_hand_cards)
 		var drawn_card: Card = CardLibrary.get_card(drawn_card_name)
-		if drawn_card != null:
+		if drawn_card != null && hand_after_draw.size() < DeckManager.HAND_SIZE:
 			hand_after_draw.append(drawn_card)
 
 		add_branch_plans(
@@ -76,8 +76,7 @@ func can_draw_card_from_state(game_state: GameStateData, player_id: int) -> bool
 		return false
 
 	var player_deck: Array = game_state.player_decks[player_id]
-	var player_hand: Array = game_state.player_hands[player_id]
-	return !player_deck.is_empty() && player_hand.size() < DeckManager.HAND_SIZE
+	return !player_deck.is_empty()
 
 func add_branch_plans(
 	plans: Array[Dictionary],

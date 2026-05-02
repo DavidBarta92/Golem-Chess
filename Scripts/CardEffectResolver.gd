@@ -28,7 +28,7 @@ static func resolve_trigger(trigger: String, game_state: GameStateData, context:
 		CardEffect.TYPE_GRANT_CARD:
 			result = resolve_grant_card(game_state, player_id, card, source_pos)
 		CardEffect.TYPE_GIVE_CARD:
-			result = resolve_give_card(game_state, player_id, card)
+			result = resolve_give_card(game_state, player_id, card, source_pos)
 		CardEffect.TYPE_MOVE_BASE:
 			result = resolve_move_base(game_state, player_id, card, source_pos, board_size, effect_color)
 		CardEffect.TYPE_INVALID_SQUARES:
@@ -96,7 +96,7 @@ static func resolve_steal_card(game_state: GameStateData, player_id: int, card: 
 	for steal_index in range(amount):
 		var stolen_card_name: String = take_card_from_player_zone(game_state, source_player_id, source)
 		if stolen_card_name.is_empty():
-			return build_card_transfer_result(source_player_id, player_id, source, "hand_or_deck", stolen_cards)
+			return build_card_transfer_result(source_player_id, player_id, source, "hand_or_deleted", stolen_cards)
 
 		var target_zone: String = give_card_to_player(game_state, player_id, stolen_card_name, max_hand_size)
 		register_card_transfer(game_state, source_player_id, player_id, stolen_card_name, source, target_zone)
@@ -112,11 +112,11 @@ static func resolve_steal_card(game_state: GameStateData, player_id: int, card: 
 				"reason": card.card_name,
 			})
 		print("Card stolen: player=%d stole %s from player=%d" % [player_id, stolen_card_name, source_player_id])
-	return build_card_transfer_result(source_player_id, player_id, source, "hand_or_deck", stolen_cards)
+	return build_card_transfer_result(source_player_id, player_id, source, "hand_or_deleted", stolen_cards)
 
 static func resolve_grant_card(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2 = Vector2(-1, -1)) -> Dictionary:
 	var params: Dictionary = card.effect_settings
-	var granted_card_name: String = str(params.get("card_name", ""))
+	var granted_card_name: String = str(params.get("card_name", card.card_name))
 	if granted_card_name.is_empty():
 		return {}
 
@@ -140,9 +140,9 @@ static func resolve_grant_card(game_state: GameStateData, player_id: int, card: 
 			})
 
 	print("Card granted: %s x%d to player=%d" % [granted_card_name, amount, target_player_id])
-	return build_card_transfer_result(player_id, target_player_id, "effect", "hand_or_deck", granted_cards)
+	return build_card_transfer_result(player_id, target_player_id, "effect", "hand_or_deleted", granted_cards)
 
-static func resolve_give_card(game_state: GameStateData, player_id: int, card: Card) -> Dictionary:
+static func resolve_give_card(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2 = Vector2(-1, -1)) -> Dictionary:
 	var params: Dictionary = card.effect_settings
 	var target_player_id: int = int(params.get("target_player_id", 1 - player_id))
 	var amount: int = max(1, int(params.get("amount", 1)))
@@ -152,10 +152,11 @@ static func resolve_give_card(game_state: GameStateData, player_id: int, card: C
 	for give_index in range(amount):
 		var given_card_name: String = take_card_from_player_zone(game_state, player_id, "hand")
 		if given_card_name.is_empty():
-			return build_card_transfer_result(player_id, target_player_id, "hand", "hand_or_deck", given_cards)
+			return build_card_transfer_result(player_id, target_player_id, "hand", "hand_or_deleted", given_cards)
 
 		var target_zone: String = give_card_to_player(game_state, target_player_id, given_card_name, max_hand_size)
-		register_card_transfer(game_state, player_id, target_player_id, given_card_name, "hand", target_zone)
+		var animation_source_zone: String = "piece" if source_pos != Vector2(-1, -1) else "hand"
+		register_card_transfer(game_state, player_id, target_player_id, given_card_name, animation_source_zone, target_zone, source_pos)
 		given_cards.append(given_card_name)
 		if game_state.match_logger != null:
 			game_state.match_logger.log_card_event(game_state, "give_card", {
@@ -169,7 +170,7 @@ static func resolve_give_card(game_state: GameStateData, player_id: int, card: C
 			})
 		print("Card given: player=%d gave %s to player=%d" % [player_id, given_card_name, target_player_id])
 
-	return build_card_transfer_result(player_id, target_player_id, "hand", "hand_or_deck", given_cards)
+	return build_card_transfer_result(player_id, target_player_id, "hand", "hand_or_deleted", given_cards)
 
 static func build_card_transfer_result(source_player_id: int, target_player_id: int, source_zone: String, target_zone: String, card_names: Array) -> Dictionary:
 	return {
@@ -209,10 +210,7 @@ static func give_card_to_player(game_state: GameStateData, player_id: int, card_
 		game_state.player_hands[player_id] = hand
 		return "hand"
 
-	var deck: Array = game_state.player_decks.get(player_id, [])
-	deck.append(card_name)
-	game_state.player_decks[player_id] = deck
-	return "deck"
+	return "deleted"
 
 static func register_card_transfer(game_state: GameStateData, source_player_id: int, target_player_id: int, card_name: String, source_zone: String, target_zone: String, source_pos: Vector2 = Vector2(-1, -1)) -> void:
 	if game_state == null:

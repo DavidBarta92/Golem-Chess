@@ -8,9 +8,10 @@
 script = ExtResource("2_6ensw")
 card_name = "Oracle"
 card_code = "oracle"
+duration = 4
 white_piece_texture = ExtResource("3_6ensw")
 black_piece_texture = ExtResource("1_c80hc")
-effect_type = "grant_card"
+effect_type = "none"
 effect_trigger = "on_expire"
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])

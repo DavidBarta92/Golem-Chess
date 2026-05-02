@@ -1,6 +1,8 @@
 ﻿extends Button
 class_name CardVisual
 
+const BURN_SHADER = preload("res://Shaders/card_burn.gdshader")
+
 signal drag_started(card_visual: CardVisual)
 signal drag_moved(card_visual: CardVisual)
 signal drag_released(card_visual: CardVisual)
@@ -26,6 +28,7 @@ var shimmer_material: ShaderMaterial
 var tween_hover: Tween
 var tween_reset: Tween
 var tween_move: Tween
+var tween_burn: Tween
 var normal_shadow_alpha: float = 0.22
 var shimmer_time: float = 0.0
 var last_position: Vector2 = Vector2.ZERO
@@ -199,6 +202,36 @@ func assign_and_hide() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
 
+func play_burn_away_and_free() -> void:
+	is_assigned = true
+	is_dragging = false
+	is_hovered = false
+	drop_target_active = false
+	draggable = false
+	disabled = true
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face_down = false
+	z_index = 980
+	_kill_hover_tweens()
+	_kill_move_tween()
+	_kill_burn_tween()
+
+	var burn_material: ShaderMaterial = ShaderMaterial.new()
+	burn_material.shader = BURN_SHADER
+	burn_material.set_shader_parameter("burn_progress", 0.0)
+	burn_material.set_shader_parameter("seed", randf() * 1000.0)
+	card_face.material = burn_material
+	shimmer.visible = false
+	shadow.self_modulate.a = 0.32
+
+	tween_burn = create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	tween_burn.tween_property(burn_material, "shader_parameter/burn_progress", 1.0, 1.15)
+	tween_burn.parallel().tween_property(self, "position", position + Vector2(0.0, -28.0), 1.15)
+	tween_burn.parallel().tween_property(self, "scale", scale * 0.82, 1.15)
+	tween_burn.parallel().tween_property(self, "rotation", rotation + deg_to_rad(randf_range(-7.0, 7.0)), 1.15)
+	tween_burn.parallel().tween_property(self, "modulate:a", 0.0, 0.9).set_delay(0.28)
+	tween_burn.tween_callback(Callable(self, "queue_free"))
+
 func _apply_card() -> void:
 	if card == null:
 		name_label.text = ""
@@ -340,3 +373,7 @@ func _kill_hover_tweens() -> void:
 func _kill_move_tween() -> void:
 	if tween_move and tween_move.is_running():
 		tween_move.kill()
+
+func _kill_burn_tween() -> void:
+	if tween_burn and tween_burn.is_running():
+		tween_burn.kill()

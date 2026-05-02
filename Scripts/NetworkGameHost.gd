@@ -120,9 +120,6 @@ func handle_attach_card(action: Dictionary):
 	if piece.attached_card != null:
 		push_warning("This piece already has a card.")
 		return
-	if !can_attach_card_name(player_id, card_name):
-		push_warning("The King card must be played first.")
-		return
 
 	var card = CardLibrary.get_card(card_name)
 	if card:
@@ -174,20 +171,20 @@ func handle_draw_card(action: Dictionary):
 	if player_deck.is_empty():
 		push_warning("Deck is empty.")
 		return
-	if player_hand.size() >= DeckManager.HAND_SIZE:
-		push_warning("Hand is full.")
-		return
 
 	var hand_before: Array = duplicate_player_card_list(player_hand)
 	var deck_before: Array = duplicate_player_card_list(player_deck)
 	var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
 	var drawn_card_name: String = str(player_deck.pop_front())
-	player_hand.append(drawn_card_name)
+	var target_zone: String = "deleted"
+	if player_hand.size() < DeckManager.HAND_SIZE:
+		player_hand.append(drawn_card_name)
+		target_zone = "hand"
 	game_state.player_decks[player_id] = player_deck
 	game_state.player_hands[player_id] = player_hand
 	game_state.drawn_card_this_turn[player_id] = true
-	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", "hand")
-	log_card_drawn(player_id, drawn_card_name, hand_before, deck_before, deck_top_before)
+	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", target_zone)
+	log_card_drawn(player_id, drawn_card_name, hand_before, deck_before, deck_top_before, target_zone)
 	log_turn_snapshot("after_draw")
 	print("Card drawn manually: player=%d, card=%s" % [player_id, drawn_card_name])
 	if maybe_auto_end_turn(player_id):
@@ -323,20 +320,6 @@ func handle_move_piece(action: Dictionary):
 			broadcast_full_state()
 			return
 
-	var expired_card: Card = piece.use_turn()
-	if expired_card != null:
-		log_card_expired(player_id, expired_card, piece, to_pos)
-		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_EXPIRE, game_state, {
-			"player_id": player_id,
-			"piece": piece,
-			"piece_pos": to_pos,
-			"card": expired_card,
-		})
-		if game_state.game_over:
-			log_move_result(move_log_context, game_state.win_condition)
-			broadcast_full_state()
-			return
-
 	log_move_result(move_log_context, "")
 	game_state.moved_piece_this_turn[player_id] = true
 	log_turn_snapshot("after_move")
@@ -363,6 +346,12 @@ func end_current_turn():
 	if game_state.game_over:
 		return
 
+	if should_tick_attached_cards_this_end_turn():
+		tick_attached_cards()
+		if game_state.game_over:
+			broadcast_full_state()
+			return
+
 	game_state.switch_turn()
 	advance_logged_turn()
 	CardEffectResolver.tick_board_effects(game_state)
@@ -370,6 +359,45 @@ func end_current_turn():
 	log_turn_snapshot("turn_end")
 	print("Turn ended. Next player: ", game_state.current_turn_player)
 	broadcast_full_state()
+
+func tick_attached_cards() -> void:
+	var positions: Array = game_state.pieces.keys()
+	for position_value in positions:
+		var piece_pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var piece: Piece = game_state.get_piece(piece_pos)
+		if piece == null or piece.attached_card == null:
+			continue
+
+		var player_id: int = CardEffectResolver.get_player_id_for_color(piece.color)
+		var expired_card: Card = piece.use_turn()
+		if expired_card == null:
+			continue
+
+		if MoveRules.is_king_card(expired_card):
+			handle_expired_king_card(player_id, expired_card, piece_pos)
+			if game_state.game_over:
+				return
+			continue
+
+		register_card_expiration(player_id, expired_card, piece_pos)
+		log_card_expired(player_id, expired_card, piece, piece_pos)
+		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_EXPIRE, game_state, {
+			"player_id": player_id,
+			"piece": piece,
+			"piece_pos": piece_pos,
+			"card": expired_card,
+		})
+		if game_state.game_over:
+			return
+
+func handle_expired_king_card(player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
+	CardEffectResolver.clear_king_position_if_needed(game_state, player_id, true)
+	var king_card_returned: bool = return_card_to_player_hand(player_id, expired_card, piece_pos, "expired_king")
+	if !king_card_returned && !player_has_available_king_card(player_id):
+		finish_game(1 - player_id, "king_card_lost")
+
+func should_tick_attached_cards_this_end_turn() -> bool:
+	return game_state.current_turn_player == 1
 
 func maybe_auto_end_turn(player_id: int) -> bool:
 	if game_state.game_over or game_state.current_turn_player != player_id:
@@ -457,12 +485,13 @@ func can_draw_card_for_player(player_id: int) -> bool:
 	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
 		return false
 	var player_deck: Array = game_state.player_decks[player_id]
-	var player_hand: Array = game_state.player_hands[player_id]
-	return !player_deck.is_empty() && player_hand.size() < DeckManager.HAND_SIZE
+	return !player_deck.is_empty()
 
 func get_hand_cards_with_next_draw(player_id: int) -> Array[Card]:
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
 	if !can_draw_card_for_player(player_id):
+		return hand_cards
+	if hand_cards.size() >= DeckManager.HAND_SIZE:
 		return hand_cards
 	var player_deck: Array = game_state.player_decks[player_id]
 	var next_card_name: String = str(player_deck[0])
@@ -470,12 +499,6 @@ func get_hand_cards_with_next_draw(player_id: int) -> Array[Card]:
 	if next_card != null:
 		hand_cards.append(next_card)
 	return hand_cards
-
-func can_attach_card_name(player_id: int, card_name: String) -> bool:
-	var player_color: int = 1 if player_id == 0 else -1
-	if MoveRules.has_attached_king(game_state.pieces, player_color):
-		return true
-	return DeckManager.is_king_card_name(card_name)
 
 func is_king_piece(piece: Piece) -> bool:
 	return piece != null && MoveRules.is_king_card(piece.attached_card)
@@ -528,7 +551,8 @@ func broadcast_full_state():
 			local_state_data.player_base_fields,
 			local_state_data.board_effects,
 			local_state_data.player_names,
-			local_state_data.recent_card_transfers
+			local_state_data.recent_card_transfers,
+			local_state_data.recent_card_expirations
 		)
 
 	for peer_id in multiplayer_node.connected_peer_ids:
@@ -541,6 +565,7 @@ func broadcast_full_state():
 		multiplayer_node.on_host_state_changed()
 
 	game_state.recent_card_transfers.clear()
+	game_state.recent_card_expirations.clear()
 	print("State broadcast complete")
 
 func serialize_state() -> Dictionary:
@@ -562,6 +587,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"board_effects": serialize_board_effects(),
 		"player_names": get_serialized_player_names(),
 		"recent_card_transfers": serialize_recent_card_transfers(viewer_player_id),
+		"recent_card_expirations": serialize_recent_card_expirations(),
 	}
 
 	for pos in game_state.pieces:
@@ -593,6 +619,19 @@ func serialize_recent_card_transfers(_viewer_player_id: int) -> Array:
 		})
 
 	return serialized_transfers
+
+func serialize_recent_card_expirations() -> Array:
+	var serialized_expirations: Array = []
+	for expiration_value in game_state.recent_card_expirations:
+		var expiration: Dictionary = expiration_value
+		var piece_pos: Vector2 = CardEffectResolver.as_vector2(expiration.get("piece_pos", [-1, -1]), Vector2(-1, -1))
+		serialized_expirations.append({
+			"player_id": int(expiration.get("player_id", -1)),
+			"card_name": str(expiration.get("card_name", "")),
+			"piece_pos": vector2_to_array(piece_pos),
+		})
+
+	return serialized_expirations
 
 func append_hidden_card_data(hidden_cards: Array, piece: Piece) -> void:
 	if piece == null or piece.attached_card == null:
@@ -745,7 +784,7 @@ func log_card_deleted(player_id: int, card: Card, piece_pos: Vector2, reason: St
 		"reason": reason,
 	})
 
-func log_card_drawn(player_id: int, drawn_card_name: String, hand_before: Array, deck_before: Array, deck_top_before: String) -> void:
+func log_card_drawn(player_id: int, drawn_card_name: String, hand_before: Array, deck_before: Array, deck_top_before: String, target_zone: String = "hand") -> void:
 	if game_state.match_logger == null:
 		return
 
@@ -759,7 +798,7 @@ func log_card_drawn(player_id: int, drawn_card_name: String, hand_before: Array,
 		"deck_top_before": deck_top_before,
 		"drawn_card": drawn_card_name,
 		"source_zone": "deck",
-		"target_zone": "hand",
+		"target_zone": target_zone,
 		"reason": "manual_draw",
 	})
 
@@ -773,6 +812,16 @@ func log_card_expired(player_id: int, card: Card, piece: Piece, piece_pos: Vecto
 		"piece": piece,
 		"piece_pos": piece_pos,
 		"reason": "duration_ended",
+	})
+
+func register_card_expiration(player_id: int, card: Card, piece_pos: Vector2) -> void:
+	if card == null:
+		return
+
+	game_state.recent_card_expirations.append({
+		"player_id": player_id,
+		"card_name": card.card_name,
+		"piece_pos": piece_pos,
 	})
 
 func create_move_log_context(player_id: int, from_pos: Vector2, to_pos: Vector2, piece: Piece, captured_piece: Piece) -> Dictionary:

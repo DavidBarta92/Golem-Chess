@@ -14,6 +14,7 @@ var player_base_fields: Dictionary = {
 }
 var board_effects: Array = []
 var recent_card_transfers: Array = []
+var recent_card_expirations: Array = []
 var attached_card_this_turn: Dictionary = {
 	0: false,
 	1: false,
