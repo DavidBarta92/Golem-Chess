@@ -6,12 +6,15 @@ const CARDS_PER_PAGE: int = 8
 const CARD_COLUMNS: int = 4
 const CARD_SIZE: Vector2 = Vector2(126, 176)
 const MAX_DECK_SIZE: int = 15
+const REMOVE_BUTTON_VISIBLE_SECONDS: float = 1.0
 
 var all_card_names: Array = []
 var current_page: int = 0
 var is_creating_deck: bool = false
+var editing_deck_id: String = ""
 var selected_deck_cards: Array = []
 var dragged_card_name: String = ""
+var hovered_deck_card_index: int = -1
 
 var card_grid: GridContainer
 var previous_button: Button
@@ -26,6 +29,8 @@ var deck_card_scroll: ScrollContainer
 var deck_card_list: VBoxContainer
 var deck_count_label: Label
 var done_button: Button
+var remove_card_button: Button
+var remove_card_timer: Timer
 
 func _ready() -> void:
 	_build_ui()
@@ -180,6 +185,23 @@ func _build_ui() -> void:
 	back_button.offset_right = 136.0
 	back_button.offset_bottom = -24.0
 	back_button.pressed.connect(_on_back_pressed)
+
+	remove_card_button = Button.new()
+	add_child(remove_card_button)
+	remove_card_button.text = "X"
+	remove_card_button.tooltip_text = "Remove card"
+	remove_card_button.custom_minimum_size = Vector2(30, 30)
+	remove_card_button.size = Vector2(30, 30)
+	remove_card_button.visible = false
+	remove_card_button.z_index = 20
+	remove_card_button.pressed.connect(_on_remove_card_pressed)
+
+	remove_card_timer = Timer.new()
+	add_child(remove_card_timer)
+	remove_card_timer.one_shot = true
+	remove_card_timer.wait_time = REMOVE_BUTTON_VISIBLE_SECONDS
+	remove_card_timer.timeout.connect(_hide_remove_card_button)
+
 	_populate_saved_decks_list()
 
 func _load_cards() -> void:
@@ -231,17 +253,23 @@ func _on_next_pressed() -> void:
 
 func _on_new_deck_pressed() -> void:
 	is_creating_deck = true
+	editing_deck_id = ""
 	selected_deck_cards.clear()
 	dragged_card_name = ""
+	hovered_deck_card_index = -1
 	deck_name_edit.text = ""
+	_hide_remove_card_button()
 	_refresh_selected_deck_cards()
 	_update_deck_editor_state()
 	_show_page(current_page)
 
 func _on_deck_editor_back_pressed() -> void:
 	is_creating_deck = false
+	editing_deck_id = ""
 	selected_deck_cards.clear()
 	dragged_card_name = ""
+	hovered_deck_card_index = -1
+	_hide_remove_card_button()
 	_refresh_selected_deck_cards()
 	_update_deck_editor_state()
 	_show_page(current_page)
@@ -269,10 +297,16 @@ func _on_done_pressed() -> void:
 	if !_can_complete_deck():
 		return
 
-	PlayerDeckStore.save_new_deck(deck_name_edit.text, selected_deck_cards)
+	if editing_deck_id.is_empty():
+		PlayerDeckStore.save_new_deck(deck_name_edit.text, selected_deck_cards)
+	else:
+		PlayerDeckStore.save_existing_deck(editing_deck_id, deck_name_edit.text, selected_deck_cards)
 	is_creating_deck = false
+	editing_deck_id = ""
 	selected_deck_cards.clear()
 	deck_name_edit.text = ""
+	hovered_deck_card_index = -1
+	_hide_remove_card_button()
 	_refresh_selected_deck_cards()
 	_populate_saved_decks_list()
 	_update_deck_editor_state()
@@ -302,7 +336,7 @@ func _update_deck_editor_state() -> void:
 			visual.disabled = !visual.collection_owned
 
 func _can_complete_deck() -> bool:
-	return is_creating_deck && !deck_name_edit.text.strip_edges().is_empty() && selected_deck_cards.size() == MAX_DECK_SIZE
+	return is_creating_deck && !deck_name_edit.text.strip_edges().is_empty() && selected_deck_cards.size() == MAX_DECK_SIZE && _has_selected_king_card()
 
 func _can_add_card_to_deck(card_name: String) -> bool:
 	var card: Card = CardLibrary.get_card(card_name)
@@ -313,18 +347,21 @@ func _refresh_selected_deck_cards() -> void:
 		deck_card_list.remove_child(child)
 		child.queue_free()
 
-	for deck_card in selected_deck_cards:
+	for index in range(selected_deck_cards.size()):
+		var deck_card = selected_deck_cards[index]
 		if !(deck_card is Dictionary):
 			continue
 		var card: Card = CardLibrary.duplicate_card(str(deck_card.get("card_name", "")))
 		if card == null:
 			continue
-		deck_card_list.add_child(_create_deck_card_row(card))
+		deck_card_list.add_child(_create_deck_card_row(card, index))
 
-func _create_deck_card_row(card: Card) -> Control:
+func _create_deck_card_row(card: Card, deck_card_index: int) -> Control:
 	var row_frame := PanelContainer.new()
 	row_frame.custom_minimum_size = Vector2(0, 34)
 	row_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_frame.mouse_filter = Control.MOUSE_FILTER_STOP
+	row_frame.mouse_entered.connect(_on_deck_card_row_mouse_entered.bind(deck_card_index, row_frame))
 
 	var row := HBoxContainer.new()
 	row_frame.add_child(row)
@@ -385,21 +422,24 @@ func _create_saved_deck_row(deck_data: Dictionary) -> Control:
 	row_frame.custom_minimum_size = Vector2(0, 44)
 	row_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	var row := VBoxContainer.new()
+	var row := HBoxContainer.new()
 	row_frame.add_child(row)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_theme_constant_override("separation", 8)
 
 	var name_label := Label.new()
 	row.add_child(name_label)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_label.text = str(deck_data.get("name", "Unnamed deck"))
 	name_label.clip_text = true
 
-	var cards_value = deck_data.get("cards", [])
-	var card_count: int = cards_value.size() if cards_value is Array else 0
-	var count_label := Label.new()
-	row.add_child(count_label)
-	count_label.text = "%d/%d" % [card_count, MAX_DECK_SIZE]
-	count_label.add_theme_font_size_override("font_size", 12)
+	var edit_button := Button.new()
+	row.add_child(edit_button)
+	edit_button.text = "✎"
+	edit_button.tooltip_text = "Edit deck"
+	edit_button.custom_minimum_size = Vector2(34, 34)
+	edit_button.pressed.connect(_on_edit_deck_pressed.bind(deck_data.duplicate(true)))
 
 	return row_frame
 
@@ -435,3 +475,77 @@ func _is_card_already_selected(card: Card) -> bool:
 		if deck_card is Dictionary && str(deck_card.get("card_code", "")) == card_code:
 			return true
 	return false
+
+func _has_selected_king_card() -> bool:
+	for deck_card in selected_deck_cards:
+		if !(deck_card is Dictionary):
+			continue
+
+		var card: Card = CardLibrary.get_card(str(deck_card.get("card_name", "")))
+		if card != null && card.is_king_card:
+			return true
+
+		var card_by_code: Card = CardLibrary.get_card_by_code(str(deck_card.get("card_code", "")))
+		if card_by_code != null && card_by_code.is_king_card:
+			return true
+
+	return false
+
+func _on_edit_deck_pressed(deck_data: Dictionary) -> void:
+	is_creating_deck = true
+	editing_deck_id = str(deck_data.get("deck_id", ""))
+	deck_name_edit.text = str(deck_data.get("name", ""))
+	selected_deck_cards.clear()
+
+	var cards = deck_data.get("cards", [])
+	if cards is Array:
+		for index in range(cards.size()):
+			var deck_card = cards[index]
+			if deck_card is Dictionary:
+				var normalized_card: Dictionary = deck_card.duplicate(true)
+				normalized_card["slot"] = index
+				selected_deck_cards.append(normalized_card)
+
+	dragged_card_name = ""
+	hovered_deck_card_index = -1
+	_hide_remove_card_button()
+	_refresh_selected_deck_cards()
+	_update_deck_editor_state()
+	_show_page(current_page)
+
+func _on_deck_card_row_mouse_entered(deck_card_index: int, row_frame: Control) -> void:
+	if !is_creating_deck:
+		return
+
+	hovered_deck_card_index = deck_card_index
+	var row_rect := row_frame.get_global_rect()
+	remove_card_button.global_position = Vector2(row_rect.end.x + 6.0, row_rect.position.y + row_rect.size.y * 0.5 - remove_card_button.size.y * 0.5)
+	remove_card_button.visible = true
+	remove_card_button.move_to_front()
+	remove_card_timer.start()
+
+func _on_remove_card_pressed() -> void:
+	if hovered_deck_card_index < 0 or hovered_deck_card_index >= selected_deck_cards.size():
+		_hide_remove_card_button()
+		return
+
+	selected_deck_cards.remove_at(hovered_deck_card_index)
+	for index in range(selected_deck_cards.size()):
+		if selected_deck_cards[index] is Dictionary:
+			var deck_card: Dictionary = selected_deck_cards[index]
+			deck_card["slot"] = index
+			selected_deck_cards[index] = deck_card
+
+	hovered_deck_card_index = -1
+	_hide_remove_card_button()
+	_refresh_selected_deck_cards()
+	_update_deck_editor_state()
+	_show_page(current_page)
+
+func _hide_remove_card_button() -> void:
+	if remove_card_button == null:
+		return
+
+	remove_card_button.visible = false
+	if remove_card_timer != null && !remove_card_timer.is_stopped():
+		remove_card_timer.stop()

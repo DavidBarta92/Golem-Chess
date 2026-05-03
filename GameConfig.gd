@@ -19,6 +19,7 @@ var ai_vs_ai_match_count: int = 1
 var ai_vs_ai_matches_played: int = 0
 var ai_vs_ai_log_session_id: String = ""
 var ai_vs_ai_csv_log_dir: String = DEFAULT_AI_VS_AI_CSV_LOG_DIR
+var selected_deck_id: String = ""
 var ai_vs_ai_results: Dictionary = {
 	0: 0,
 	1: 0,
@@ -85,6 +86,28 @@ func get_ai_vs_ai_csv_log_dir() -> String:
 	if ai_vs_ai_csv_log_dir.strip_edges().is_empty():
 		return DEFAULT_AI_VS_AI_CSV_LOG_DIR
 	return ai_vs_ai_csv_log_dir
+
+func set_selected_deck_id(deck_id: String) -> void:
+	selected_deck_id = deck_id.strip_edges()
+
+func get_selected_deck_id() -> String:
+	if selected_deck_id.strip_edges().is_empty():
+		select_first_available_deck()
+	return selected_deck_id
+
+func select_first_available_deck() -> void:
+	var first_deck: Dictionary = PlayerDeckStore.get_first_deck()
+	selected_deck_id = str(first_deck.get("deck_id", ""))
+
+func has_selected_deck() -> bool:
+	return !get_selected_deck_id().is_empty()
+
+func get_selected_deck_card_names() -> Array[String]:
+	var deck_id: String = get_selected_deck_id()
+	if deck_id.is_empty():
+		var empty_card_names: Array[String] = []
+		return empty_card_names
+	return PlayerDeckStore.get_deck_card_names(deck_id)
 
 func record_ai_vs_ai_result(winner_player_id: int) -> void:
 	if !is_ai_vs_ai_batch:

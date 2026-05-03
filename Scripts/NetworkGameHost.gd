@@ -17,10 +17,8 @@ func initialize_game(board_data: Array):
 				var piece = Piece.new(pos, color)
 				game_state.set_piece(pos, piece)
 
-	var white_deck: Array[String] = []
-	white_deck.assign(DeckManager.create_starting_deck())
-	var black_deck: Array[String] = []
-	black_deck.assign(DeckManager.create_starting_deck())
+	var white_deck: Array[String] = create_starting_deck_for_player_id(0)
+	var black_deck: Array[String] = create_starting_deck_for_player_id(1)
 	var white_initial_deck: Array[String] = []
 	white_initial_deck.assign(white_deck)
 	var black_initial_deck: Array[String] = []
@@ -66,6 +64,16 @@ func initialize_game(board_data: Array):
 			print("Black king added: ", black_first_piece_pos)
 
 	broadcast_full_state()
+
+func create_starting_deck_for_player_id(player_id: int) -> Array[String]:
+	if multiplayer_node != null && multiplayer_node.has_method("get_starting_deck_for_player_id"):
+		var selected_deck: Array[String] = multiplayer_node.get_starting_deck_for_player_id(player_id)
+		if !selected_deck.is_empty():
+			selected_deck.shuffle()
+			print("Player %d selected deck: %s" % [player_id, selected_deck])
+			return selected_deck
+
+	return DeckManager.create_starting_deck()
 
 func setup_match_logging() -> void:
 	if !GameConfig.is_ai_vs_ai_batch:

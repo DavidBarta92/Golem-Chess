@@ -36,12 +36,7 @@ func _input(event):
 
 func _on_singleplayer_button_pressed():
 	save_player_name()
-	GameConfig.stop_ai_vs_ai_batch()
-	GameConfig.is_singleplayer = true
-	GameConfig.is_hosting = true
-	GameConfig.server_ip = ""
-	GameConfig.set_singleplayer_controllers(GameConfig.CONTROLLER_HUMAN, GameConfig.CONTROLLER_AI)
-	get_tree().change_scene_to_file("res://Scenes/main.tscn")
+	get_tree().change_scene_to_file("res://Scenes/SingleplayerMenu.tscn")
 
 func _on_ai_vs_ai_button_pressed():
 	save_player_name()

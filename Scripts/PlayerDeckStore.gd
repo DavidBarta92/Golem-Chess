@@ -31,11 +31,54 @@ func list_decks() -> Array:
 	ensure_loaded()
 	return _get_decks().duplicate(true)
 
+func get_deck(deck_id: String) -> Dictionary:
+	ensure_loaded()
+	for deck in _get_decks():
+		if deck is Dictionary && str(deck.get("deck_id", "")) == deck_id:
+			return deck.duplicate(true)
+	return {}
+
+func get_first_deck() -> Dictionary:
+	ensure_loaded()
+	var decks: Array = _get_decks()
+	for deck in decks:
+		if deck is Dictionary:
+			return deck.duplicate(true)
+	return {}
+
+func get_deck_card_names(deck_id: String) -> Array[String]:
+	var deck: Dictionary = get_deck(deck_id)
+	if deck.is_empty():
+		var empty_card_names: Array[String] = []
+		return empty_card_names
+	return get_card_names_from_deck(deck)
+
+func get_card_names_from_deck(deck: Dictionary) -> Array[String]:
+	var card_names: Array[String] = []
+	var cards = deck.get("cards", [])
+	if !(cards is Array):
+		return card_names
+
+	for deck_card in cards:
+		var card_name: String = ""
+		if deck_card is Dictionary:
+			card_name = str(deck_card.get("card_name", ""))
+			if card_name.is_empty():
+				var card: Card = CardLibrary.get_card_by_code(str(deck_card.get("card_code", "")))
+				card_name = card.card_name if card != null else ""
+		else:
+			card_name = str(deck_card)
+
+		if !card_name.is_empty():
+			card_names.append(card_name)
+
+	return card_names
+
 func save_new_deck(deck_name: String, cards: Array) -> Dictionary:
 	ensure_loaded()
 
 	var now := Time.get_datetime_string_from_system(true)
-	var deck := {
+	var deck: Dictionary = {
 		"deck_id": _generate_deck_id(),
 		"provider": LOCAL_PROVIDER,
 		"name": deck_name.strip_edges(),

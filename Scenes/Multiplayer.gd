@@ -8,7 +8,9 @@ var is_server = false
 var connected_peer_ids = []
 var peer_player_ids: Dictionary = {}
 var peer_player_names: Dictionary = {}
+var peer_player_decks: Dictionary = {}
 var server_turn = true
+var multiplayer_game_started: bool = false
 
 var game_host: NetworkGameHost = null
 var ai_players: Dictionary = {}
@@ -30,10 +32,12 @@ func _ready():
 func start_singleplayer_game():
 	is_server = true
 	server_turn = true
+	multiplayer_game_started = true
 	connected_peer_ids = [1]
 	peer_player_ids.clear()
 	peer_player_ids[1] = get_local_human_player_id()
 	peer_player_names.clear()
+	peer_player_decks.clear()
 	setup_singleplayer_player_names()
 	ai_players.clear()
 
@@ -114,12 +118,14 @@ func host_game(port = 9999):
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 
 	server_turn = true if randi_range(0, 1) else false
+	multiplayer_game_started = false
 
 	print("Server started on port %d" % port)
 
 	game_host = NetworkGameHost.new(self)
 	GameController.set_game_host(game_host)
 	peer_player_names[1] = GameConfig.get_local_player_name()
+	peer_player_decks[1] = GameConfig.get_selected_deck_card_names()
 
 	_on_peer_connected(1)
 	return true
@@ -148,27 +154,7 @@ func _on_peer_connected(peer_id):
 	if connected_peer_ids.size() < 2 && !connected_peer_ids.has(peer_id):
 		connected_peer_ids.append(peer_id)
 		print("  Players: %d/2" % connected_peer_ids.size())
-
-		if connected_peer_ids.size() == 2:
-			var first_player_id: int = 0 if server_turn else 1
-			peer_player_ids[connected_peer_ids[0]] = first_player_id
-			peer_player_ids[connected_peer_ids[1]] = 1 - first_player_id
-			print("Game starting")
-
-			var board_data = $board.board
-			game_host.initialize_game(board_data)
-			game_host.game_state.current_turn_player = 0 if server_turn else 1
-			game_host.finish_if_player_has_no_valid_turn(game_host.game_state.current_turn_player)
-			game_host.broadcast_full_state()
-
-			await get_tree().create_timer(0.2).timeout
-
-			if connected_peer_ids[0] == 1:
-				$board.set_turn(server_turn)
-			else:
-				give_turn.rpc_id(connected_peer_ids[0], server_turn)
-
-			give_turn.rpc_id(connected_peer_ids[1], !server_turn)
+		_try_start_multiplayer_game()
 
 func _on_peer_disconnected(peer_id):
 	if !is_server:
@@ -177,11 +163,12 @@ func _on_peer_disconnected(peer_id):
 	print("Player disconnected: ", peer_id)
 	connected_peer_ids.erase(peer_id)
 	peer_player_names.erase(peer_id)
+	peer_player_decks.erase(peer_id)
 	print("  Players: %d/2" % connected_peer_ids.size())
 
 func _on_connection_succeeded():
 	print("Connected to server")
-	register_player_name.rpc_id(1, multiplayer.get_unique_id(), GameConfig.get_local_player_name())
+	register_player_name.rpc_id(1, multiplayer.get_unique_id(), GameConfig.get_local_player_name(), GameConfig.get_selected_deck_card_names())
 
 func _on_connection_failed():
 	push_error("Failed to connect to server")
@@ -198,13 +185,46 @@ func close_game_connection():
 	multiplayer.multiplayer_peer = null
 
 @rpc("any_peer", "call_local", "reliable")
-func register_player_name(peer_id: int, player_name: String):
+func register_player_name(peer_id: int, player_name: String, deck_card_names: Array = []):
 	if !is_server:
 		return
 
 	peer_player_names[peer_id] = GameConfig.sanitize_player_name(player_name)
+	peer_player_decks[peer_id] = duplicate_string_array(deck_card_names)
+	_try_start_multiplayer_game()
 	if game_host != null && game_host.game_state != null && game_host.game_state.player_hands.has(0):
 		game_host.broadcast_full_state()
+
+func _try_start_multiplayer_game() -> void:
+	if !is_server or GameConfig.is_singleplayer or multiplayer_game_started:
+		return
+	if connected_peer_ids.size() < 2:
+		return
+
+	for peer_id in connected_peer_ids:
+		if !peer_player_names.has(peer_id) or !peer_player_decks.has(peer_id):
+			return
+
+	multiplayer_game_started = true
+	var first_player_id: int = 0 if server_turn else 1
+	peer_player_ids[connected_peer_ids[0]] = first_player_id
+	peer_player_ids[connected_peer_ids[1]] = 1 - first_player_id
+	print("Game starting")
+
+	var board_data = $board.board
+	game_host.initialize_game(board_data)
+	game_host.game_state.current_turn_player = 0 if server_turn else 1
+	game_host.finish_if_player_has_no_valid_turn(game_host.game_state.current_turn_player)
+	game_host.broadcast_full_state()
+
+	await get_tree().create_timer(0.2).timeout
+
+	if connected_peer_ids[0] == 1:
+		$board.set_turn(server_turn)
+	else:
+		give_turn.rpc_id(connected_peer_ids[0], server_turn)
+
+	give_turn.rpc_id(connected_peer_ids[1], !server_turn)
 
 func on_player_action(action: Dictionary):
 	send_player_action.rpc_id(1, multiplayer.get_unique_id(), action)
@@ -301,3 +321,23 @@ func get_player_names_by_id() -> Dictionary:
 		var player_id: int = int(peer_player_ids[peer_id])
 		player_names[player_id] = str(peer_player_names.get(peer_id, "Player"))
 	return player_names
+
+func get_starting_deck_for_player_id(player_id: int) -> Array[String]:
+	if GameConfig.is_singleplayer:
+		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
+			return GameConfig.get_selected_deck_card_names()
+		var empty_ai_deck: Array[String] = []
+		return empty_ai_deck
+
+	for peer_id in peer_player_ids:
+		if int(peer_player_ids[peer_id]) == player_id:
+			return duplicate_string_array(peer_player_decks.get(peer_id, []))
+	var empty_deck: Array[String] = []
+	return empty_deck
+
+func duplicate_string_array(source) -> Array[String]:
+	var output: Array[String] = []
+	if source is Array:
+		for value in source:
+			output.append(str(value))
+	return output

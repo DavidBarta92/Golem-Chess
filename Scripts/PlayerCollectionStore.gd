@@ -111,7 +111,7 @@ func _get_items() -> Array:
 	return items if items is Array else []
 
 func _normalize_collection(raw_data: Dictionary) -> Dictionary:
-	var normalized := {
+	var normalized: Dictionary = {
 		"schema_version": int(raw_data.get("schema_version", COLLECTION_SCHEMA_VERSION)),
 		"provider": str(raw_data.get("provider", LOCAL_PROVIDER)),
 		"items": [],

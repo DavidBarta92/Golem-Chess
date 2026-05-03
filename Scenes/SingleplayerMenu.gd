@@ -1,31 +1,23 @@
 extends Control
 
+@onready var start_button: Button = $VBoxContainer/StartButton
 @onready var deck_option_button: OptionButton = $VBoxContainer/DeckOptionButton
-@onready var host_button: Button = $VBoxContainer/HostButton
-@onready var join_button: Button = $VBoxContainer/JoinButton
 
 var deck_ids: Array[String] = []
 
 func _ready() -> void:
 	_populate_deck_options()
 
-func _on_host_button_pressed():
+func _on_start_button_pressed() -> void:
 	_save_selected_deck()
 	GameConfig.stop_ai_vs_ai_batch()
-	GameConfig.is_singleplayer = false
+	GameConfig.is_singleplayer = true
 	GameConfig.is_hosting = true
 	GameConfig.server_ip = ""
-	GameConfig.reset_multiplayer_controllers()
+	GameConfig.set_singleplayer_controllers(GameConfig.CONTROLLER_HUMAN, GameConfig.CONTROLLER_AI)
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 
-func _on_join_button_pressed():
-	_save_selected_deck()
-	GameConfig.stop_ai_vs_ai_batch()
-	GameConfig.is_singleplayer = false
-	GameConfig.reset_multiplayer_controllers()
-	get_tree().change_scene_to_file("res://Scenes/JoinMenu.tscn")
-
-func _on_back_button_pressed():
+func _on_back_button_pressed() -> void:
 	get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")
 
 func _populate_deck_options() -> void:
@@ -36,13 +28,11 @@ func _populate_deck_options() -> void:
 	if decks.is_empty():
 		deck_option_button.add_item("No saved decks")
 		deck_option_button.disabled = true
-		host_button.disabled = true
-		join_button.disabled = true
+		start_button.disabled = true
 		return
 
 	deck_option_button.disabled = false
-	host_button.disabled = false
-	join_button.disabled = false
+	start_button.disabled = false
 
 	var selected_index: int = 0
 	var current_deck_id: String = GameConfig.get_selected_deck_id()
