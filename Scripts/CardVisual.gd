@@ -2,6 +2,7 @@
 class_name CardVisual
 
 const BURN_SHADER = preload("res://Shaders/card_burn.gdshader")
+const GRAYSCALE_SHADER = preload("res://Shaders/card_grayscale.gdshader")
 
 signal drag_started(card_visual: CardVisual)
 signal drag_moved(card_visual: CardVisual)
@@ -49,6 +50,8 @@ var is_assigned: bool = false
 var is_hovered: bool = false
 var drop_target_active: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
+var collection_owned: bool = true
+var hover_raise_enabled: bool = true
 
 func _ready() -> void:
 	pivot_offset = size * 0.5
@@ -113,10 +116,19 @@ func set_card(value: Card) -> void:
 	if is_node_ready():
 		_apply_card()
 
+func set_collection_owned(value: bool) -> void:
+	collection_owned = value
+	if is_node_ready():
+		_apply_collection_state()
+
+func set_hover_raise_enabled(value: bool) -> void:
+	hover_raise_enabled = value
+
 func set_face_down(value: bool) -> void:
 	face_down = value
 	if is_node_ready():
 		_apply_face_state()
+		_apply_collection_state()
 
 func set_ambient_motion_enabled(value: bool) -> void:
 	ambient_motion_enabled = value
@@ -257,6 +269,7 @@ func _apply_card() -> void:
 		pattern_view.set_card(card)
 
 	_apply_face_state()
+	_apply_collection_state()
 
 func _apply_face_state() -> void:
 	var has_effect_icon: bool = card != null && card.has_effect()
@@ -270,6 +283,25 @@ func _apply_face_state() -> void:
 	if face_down:
 		rotation = 0.0
 		scale = Vector2.ONE
+
+func _apply_collection_state() -> void:
+	if collection_owned:
+		card_face.material = null if face_down else face_material
+		self_modulate = Color.WHITE
+		disabled = false
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		return
+
+	var grayscale_material := ShaderMaterial.new()
+	grayscale_material.shader = GRAYSCALE_SHADER
+	grayscale_material.set_shader_parameter("strength", 1.0)
+	grayscale_material.set_shader_parameter("darken", 0.24)
+	card_face.material = grayscale_material
+	self_modulate = Color(0.72, 0.72, 0.72, 1.0)
+	shimmer.visible = false
+	draggable = false
+	disabled = true
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -307,12 +339,13 @@ func finish_drag() -> void:
 	drag_released.emit(self)
 
 func _on_mouse_entered() -> void:
-	if is_dragging or is_assigned or face_down:
+	if is_dragging or is_assigned or face_down or !collection_owned:
 		return
 
 	is_hovered = true
-	move_to_front()
-	z_index = 50
+	if hover_raise_enabled:
+		move_to_front()
+		z_index = 50
 	if tween_reset and tween_reset.is_running():
 		tween_reset.kill()
 	if tween_hover and tween_hover.is_running():
@@ -322,15 +355,16 @@ func _on_mouse_entered() -> void:
 	tween_hover.parallel().tween_property(shadow, "self_modulate:a", 0.34, 0.18)
 
 func _on_mouse_exited() -> void:
-	if is_dragging or is_assigned or face_down:
+	if is_dragging or is_assigned or face_down or !collection_owned:
 		return
 
 	is_hovered = false
-	z_index = 0
+	if hover_raise_enabled:
+		z_index = 0
 	reset_tilt_and_scale()
 
 func update_tilt_from_mouse() -> void:
-	if face_down:
+	if face_down or !collection_owned:
 		return
 
 	var mouse_pos: Vector2 = get_local_mouse_position()
@@ -344,7 +378,7 @@ func update_tilt_from_mouse() -> void:
 	rotation = deg_to_rad(y_rot * 0.08)
 
 func update_ambient_motion(delta: float) -> void:
-	if face_down or face_material == null:
+	if face_down or !collection_owned or face_material == null:
 		return
 
 	ambient_motion_time += delta

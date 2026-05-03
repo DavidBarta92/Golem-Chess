@@ -42,6 +42,10 @@ text = "Singleplayer"
 layout_mode = 2
 text = "Multiplayer"
 
+[node name="DeckbuilderButton" type="Button" parent="VBoxContainer" unique_id=464422607]
+layout_mode = 2
+text = "Deckbuilder"
+
 [node name="ExitButton" type="Button" parent="VBoxContainer" unique_id=1409857597]
 layout_mode = 2
 text = "Exit"
@@ -82,5 +86,6 @@ text = "Golem v0.0.5 alpha"
 
 [connection signal="pressed" from="VBoxContainer/SingleplayerButton" to="." method="_on_singleplayer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MultiplayerButton" to="." method="_on_multiplayer_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/DeckbuilderButton" to="." method="_on_deckbuilder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ExitButton" to="." method="_on_exit_button_pressed"]
 [connection signal="pressed" from="AIVsAIControls/AIVsAIButton" to="." method="_on_ai_vs_ai_button_pressed"]

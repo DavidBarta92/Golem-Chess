@@ -68,5 +68,9 @@ func _on_multiplayer_button_pressed():
 	save_player_name()
 	get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
 
+func _on_deckbuilder_button_pressed():
+	save_player_name()
+	get_tree().change_scene_to_file("res://Scenes/Deckbuilder.tscn")
+
 func _on_exit_button_pressed():
 	get_tree().quit()

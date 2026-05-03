@@ -34,11 +34,28 @@ func load_all_cards():
 func get_card(card_name: String) -> Card:
 	return all_cards.get(card_name)
 
+func get_card_by_code(card_code: String) -> Card:
+	if card_code.is_empty():
+		return null
+
+	for card_value in all_cards.values():
+		if card_value is Card:
+			var card := card_value as Card
+			if card.card_code == card_code:
+				return card
+	return null
+
 func get_all_card_names() -> Array:
 	return all_cards.keys()
 
 func get_all_card_codes() -> Array:
-	return all_cards.keys()
+	var card_codes: Array = []
+	for card_value in all_cards.values():
+		if card_value is Card:
+			var card := card_value as Card
+			var card_code := card.card_code.strip_edges()
+			card_codes.append(card_code if !card_code.is_empty() else card.card_name)
+	return card_codes
 
 func duplicate_card(card_name: String) -> Card:
 	var original = get_card(card_name)
