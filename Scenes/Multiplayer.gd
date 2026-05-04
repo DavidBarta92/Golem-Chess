@@ -59,8 +59,8 @@ func setup_singleplayer_ai_controllers():
 	ai_players.clear()
 	for player_id in [0, 1]:
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
-			var ai_difficulty: String = GameConfig.get_player_ai_difficulty(player_id)
-			ai_players[player_id] = HEURISTIC_AI_PLAYER_SCRIPT.new(player_id, ai_difficulty)
+			var ai_difficulty_level: int = GameConfig.get_player_ai_difficulty_level(player_id)
+			ai_players[player_id] = HEURISTIC_AI_PLAYER_SCRIPT.new(player_id, ai_difficulty_level)
 
 func setup_singleplayer_player_names() -> void:
 	for player_id in [0, 1]:

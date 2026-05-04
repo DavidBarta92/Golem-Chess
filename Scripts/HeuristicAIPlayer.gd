@@ -10,9 +10,9 @@ var action_delay: float = 0.35
 var evaluator: AIMoveEvaluator
 var planner
 
-func _init(new_player_id: int = 1, ai_difficulty: String = AIMoveEvaluator.DIFFICULTY_NORMAL):
+func _init(new_player_id: int = 1, ai_difficulty_level: int = AIMoveEvaluator.DEFAULT_DIFFICULTY_LEVEL):
 	player_id = new_player_id
-	evaluator = AIMoveEvaluator.new(ai_difficulty)
+	evaluator = AIMoveEvaluator.new(ai_difficulty_level)
 	planner = AI_TURN_PLANNER_SCRIPT.new()
 
 func can_play_turn(host: NetworkGameHost) -> bool:

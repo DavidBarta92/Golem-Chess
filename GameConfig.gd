@@ -2,10 +2,9 @@ extends Node
 
 const CONTROLLER_HUMAN: String = "human"
 const CONTROLLER_AI: String = "ai"
-const AI_DIFFICULTY_EASY: String = "easy"
-const AI_DIFFICULTY_NORMAL: String = "normal"
-const AI_DIFFICULTY_HARD: String = "hard"
-const DEFAULT_AI_DIFFICULTY: String = AI_DIFFICULTY_HARD
+const MIN_AI_DIFFICULTY_LEVEL: int = 1
+const MAX_AI_DIFFICULTY_LEVEL: int = 12
+const DEFAULT_AI_DIFFICULTY_LEVEL: int = 12
 const DEFAULT_AI_VS_AI_CSV_LOG_DIR: String = "user://ai_match_logs"
 const DEFAULT_PLAYER_NAME: String = "Player"
 const MAX_PLAYER_NAME_LENGTH: int = 24
@@ -29,9 +28,9 @@ var player_controllers: Dictionary = {
 	0: CONTROLLER_HUMAN,
 	1: CONTROLLER_HUMAN,
 }
-var player_ai_difficulties: Dictionary = {
-	0: DEFAULT_AI_DIFFICULTY,
-	1: DEFAULT_AI_DIFFICULTY,
+var player_ai_difficulty_levels: Dictionary = {
+	0: DEFAULT_AI_DIFFICULTY_LEVEL,
+	1: DEFAULT_AI_DIFFICULTY_LEVEL,
 }
 
 func set_player_controller(player_id: int, controller_type: String) -> void:
@@ -40,11 +39,29 @@ func set_player_controller(player_id: int, controller_type: String) -> void:
 func get_player_controller(player_id: int) -> String:
 	return str(player_controllers.get(player_id, CONTROLLER_HUMAN))
 
-func set_player_ai_difficulty(player_id: int, difficulty: String) -> void:
-	player_ai_difficulties[player_id] = difficulty
+func set_player_ai_difficulty_level(player_id: int, difficulty_level) -> void:
+	player_ai_difficulty_levels[player_id] = clamp_ai_difficulty_level(difficulty_level)
 
-func get_player_ai_difficulty(player_id: int) -> String:
-	return str(player_ai_difficulties.get(player_id, DEFAULT_AI_DIFFICULTY))
+func get_player_ai_difficulty_level(player_id: int) -> int:
+	return clamp_ai_difficulty_level(player_ai_difficulty_levels.get(player_id, DEFAULT_AI_DIFFICULTY_LEVEL))
+
+func set_player_ai_difficulty(player_id: int, difficulty_level) -> void:
+	set_player_ai_difficulty_level(player_id, difficulty_level)
+
+func get_player_ai_difficulty(player_id: int) -> int:
+	return get_player_ai_difficulty_level(player_id)
+
+func clamp_ai_difficulty_level(raw_level) -> int:
+	var level: int = DEFAULT_AI_DIFFICULTY_LEVEL
+	if raw_level is int:
+		level = int(raw_level)
+	elif raw_level is float:
+		level = int(raw_level)
+	elif raw_level is String:
+		var cleaned_level: String = str(raw_level).strip_edges()
+		if cleaned_level.is_valid_int():
+			level = int(cleaned_level)
+	return clampi(level, MIN_AI_DIFFICULTY_LEVEL, MAX_AI_DIFFICULTY_LEVEL)
 
 func set_local_player_name(new_player_name: String) -> void:
 	player_name = sanitize_player_name(new_player_name)

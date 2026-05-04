@@ -1,11 +1,9 @@
 extends RefCounted
 class_name AIMoveEvaluator
 
-const DIFFICULTY_EASY: String = "easy"
-const DIFFICULTY_NORMAL: String = "normal"
-const DIFFICULTY_HARD: String = "hard"
 const MIN_DIFFICULTY_LEVEL: int = 1
 const MAX_DIFFICULTY_LEVEL: int = 12
+const DEFAULT_DIFFICULTY_LEVEL: int = 12
 
 const DIFFICULTY_CONFIGS: Dictionary = {
 	1: {
@@ -121,46 +119,37 @@ const SCORE_MOVE_BASE_AVG_DISTANCE: float = 8.0
 const PENALTY_MOVE_BASE_NOOP: float = 20.0
 const PENALTY_KING_THREATENED: float = 1400.0
 const PENALTY_PIECE_THREATENED: float = 35.0
-const OPPONENT_RESPONSE_WEIGHT_NORMAL: float = 0.62
-const OPPONENT_RESPONSE_WEIGHT_HARD: float = 0.82
+const DEFAULT_OPPONENT_RESPONSE_WEIGHT: float = 0.62
 
-var difficulty: String = DIFFICULTY_NORMAL
-var difficulty_level: int = 12
+var difficulty_level: int = DEFAULT_DIFFICULTY_LEVEL
 var search_depth: int = 1
 var own_top_n: int = 6
 var opponent_top_n: int = 4
 var randomness: float = 8.0
-var opponent_response_weight: float = OPPONENT_RESPONSE_WEIGHT_NORMAL
+var opponent_response_weight: float = DEFAULT_OPPONENT_RESPONSE_WEIGHT
 var last_profile: Dictionary = {}
 
-func _init(new_difficulty: String = DIFFICULTY_NORMAL):
-	set_difficulty(new_difficulty)
+func _init(new_difficulty_level = DEFAULT_DIFFICULTY_LEVEL):
+	set_difficulty_level(new_difficulty_level)
 
-func set_difficulty(new_difficulty: String) -> void:
-	difficulty = new_difficulty
-	difficulty_level = parse_difficulty_level(new_difficulty)
+func set_difficulty_level(new_difficulty_level) -> void:
+	difficulty_level = parse_difficulty_level(new_difficulty_level)
 	apply_difficulty_config(difficulty_level)
 
-func parse_difficulty_level(raw_difficulty: String) -> int:
-	var cleaned_difficulty: String = raw_difficulty.strip_edges().to_lower()
-	match cleaned_difficulty:
-		DIFFICULTY_EASY:
-			return 2
-		DIFFICULTY_HARD:
-			return 12
-		DIFFICULTY_NORMAL:
-			return 6
-		_:
-			pass
+func set_difficulty(new_difficulty_level) -> void:
+	set_difficulty_level(new_difficulty_level)
 
-	if cleaned_difficulty.begins_with("level_"):
-		cleaned_difficulty = cleaned_difficulty.trim_prefix("level_")
-	if cleaned_difficulty.begins_with("level "):
-		cleaned_difficulty = cleaned_difficulty.trim_prefix("level ")
-
-	if cleaned_difficulty.is_valid_int():
-		return clampi(int(cleaned_difficulty), MIN_DIFFICULTY_LEVEL, MAX_DIFFICULTY_LEVEL)
-	return 6
+func parse_difficulty_level(raw_difficulty_level) -> int:
+	var level: int = DEFAULT_DIFFICULTY_LEVEL
+	if raw_difficulty_level is int:
+		level = int(raw_difficulty_level)
+	elif raw_difficulty_level is float:
+		level = int(raw_difficulty_level)
+	elif raw_difficulty_level is String:
+		var cleaned_level: String = str(raw_difficulty_level).strip_edges()
+		if cleaned_level.is_valid_int():
+			level = int(cleaned_level)
+	return clampi(level, MIN_DIFFICULTY_LEVEL, MAX_DIFFICULTY_LEVEL)
 
 func apply_difficulty_config(level: int) -> void:
 	var clamped_level: int = clampi(level, MIN_DIFFICULTY_LEVEL, MAX_DIFFICULTY_LEVEL)
@@ -169,7 +158,7 @@ func apply_difficulty_config(level: int) -> void:
 	own_top_n = int(config.get("own_top_n", 6))
 	opponent_top_n = int(config.get("opponent_top_n", 4))
 	randomness = float(config.get("randomness", 8.0))
-	opponent_response_weight = float(config.get("opponent_response_weight", OPPONENT_RESPONSE_WEIGHT_NORMAL))
+	opponent_response_weight = float(config.get("opponent_response_weight", DEFAULT_OPPONENT_RESPONSE_WEIGHT))
 
 func choose_best_move(game_state: GameStateData, player_id: int, valid_moves: Array[Dictionary], board_size: int = 5) -> Dictionary:
 	if game_state == null or valid_moves.is_empty():
