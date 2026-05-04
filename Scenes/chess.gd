@@ -29,6 +29,8 @@ const CARD_UI_SIZE = Vector2(126, 176)
 const CARD_UI_GAP = 14
 const CARD_HAND_MARGIN = 18
 const HOVER_CARD_MARGIN = 24
+const HOVER_DESCRIPTION_GAP = 14
+const HOVER_DESCRIPTION_SIZE = Vector2(260, 118)
 const HIDDEN_CARD_MARGIN = 24
 const HIDDEN_CARD_GAP = 10
 const HIDDEN_CARD_SCALE = 0.78
@@ -80,6 +82,8 @@ var drawn_card_this_turn: Dictionary = {
 var game_over: bool = false
 var hover_card_preview: CardVisual
 var hover_duration_label: Label
+var hover_description_panel: PanelContainer
+var hover_description_label: Label
 var result_overlay: ColorRect
 var result_label: Label
 var has_received_server_state: bool = false
@@ -281,6 +285,45 @@ func create_deck_visual(hand_node: Control, owner_color: int) -> CardVisual:
 	return deck_visual
 
 func create_hover_piece_ui():
+	hover_description_panel = PanelContainer.new()
+	canvas_layer.add_child(hover_description_panel)
+	hover_description_panel.visible = false
+	hover_description_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hover_description_panel.anchor_left = 1.0
+	hover_description_panel.anchor_right = 1.0
+	hover_description_panel.anchor_top = 0.5
+	hover_description_panel.anchor_bottom = 0.5
+	hover_description_panel.offset_right = -CARD_UI_SIZE.x - HOVER_CARD_MARGIN - HOVER_DESCRIPTION_GAP
+	hover_description_panel.offset_left = hover_description_panel.offset_right - HOVER_DESCRIPTION_SIZE.x
+	hover_description_panel.offset_top = -HOVER_DESCRIPTION_SIZE.y * 0.5
+	hover_description_panel.offset_bottom = HOVER_DESCRIPTION_SIZE.y * 0.5
+	hover_description_panel.z_index = 900
+	var description_style: StyleBoxFlat = StyleBoxFlat.new()
+	description_style.bg_color = Color(0.05, 0.055, 0.065, 0.86)
+	description_style.border_color = Color(1.0, 1.0, 1.0, 0.16)
+	description_style.border_width_left = 1
+	description_style.border_width_top = 1
+	description_style.border_width_right = 1
+	description_style.border_width_bottom = 1
+	description_style.corner_radius_top_left = 6
+	description_style.corner_radius_top_right = 6
+	description_style.corner_radius_bottom_left = 6
+	description_style.corner_radius_bottom_right = 6
+	description_style.content_margin_left = 12
+	description_style.content_margin_top = 10
+	description_style.content_margin_right = 12
+	description_style.content_margin_bottom = 10
+	hover_description_panel.add_theme_stylebox_override("panel", description_style)
+
+	hover_description_label = Label.new()
+	hover_description_panel.add_child(hover_description_label)
+	hover_description_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hover_description_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	hover_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hover_description_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hover_description_label.add_theme_font_size_override("font_size", 15)
+	hover_description_label.add_theme_color_override("font_color", Color(0.94, 0.94, 0.9))
+
 	hover_card_preview = CARD_VISUAL.instantiate() as CardVisual
 	canvas_layer.add_child(hover_card_preview)
 	hover_card_preview.visible = false
@@ -1323,7 +1366,11 @@ func show_hover_piece_details(board_pos: Vector2):
 		preview_card.duration = piece.turns_remaining
 		hover_card_preview.set_card(preview_card)
 		hover_card_preview.set_face_down(false)
+		hover_card_preview.disabled = true
+		hover_card_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		hover_card_preview.visible = true
+		hover_description_label.text = preview_card.description.strip_edges()
+		hover_description_panel.visible = !hover_description_label.text.is_empty()
 
 	hover_duration_label.text = "INF" if piece.turns_remaining < 0 else str(piece.turns_remaining)
 	hover_duration_label.visible = true
@@ -1332,6 +1379,10 @@ func show_hover_piece_details(board_pos: Vector2):
 func hide_hover_piece_details():
 	if hover_card_preview:
 		hover_card_preview.visible = false
+	if hover_description_panel:
+		hover_description_panel.visible = false
+	if hover_description_label:
+		hover_description_label.text = ""
 	if hover_duration_label:
 		hover_duration_label.visible = false
 

@@ -9,6 +9,7 @@ script = ExtResource("2_edm7k")
 card_name = "Councillor"
 card_code = "councillor"
 duration = 4
+description = "No special effect."
 white_piece_texture = ExtResource("3_og51p")
 black_piece_texture = ExtResource("1_ce0md")
 effect_trigger = "on_expire"

@@ -7,6 +7,7 @@ const CARD_COLUMNS: int = 4
 const CARD_SIZE: Vector2 = Vector2(126, 176)
 const MAX_DECK_SIZE: int = 15
 const REMOVE_BUTTON_VISIBLE_SECONDS: float = 1.0
+const CARD_DESCRIPTION_HEIGHT: int = 76
 
 var all_card_names: Array = []
 var current_page: int = 0
@@ -15,6 +16,7 @@ var editing_deck_id: String = ""
 var selected_deck_cards: Array = []
 var dragged_card_name: String = ""
 var hovered_deck_card_index: int = -1
+var hovered_browser_card_name: String = ""
 
 var card_grid: GridContainer
 var previous_button: Button
@@ -31,11 +33,16 @@ var deck_count_label: Label
 var done_button: Button
 var remove_card_button: Button
 var remove_card_timer: Timer
+var card_description_panel: PanelContainer
+var card_description_label: Label
 
 func _ready() -> void:
 	_build_ui()
 	_load_cards()
 	_show_page(0)
+
+func _process(_delta: float) -> void:
+	_update_browser_card_description_hover()
 
 func _build_ui() -> void:
 	var root := MarginContainer.new()
@@ -88,6 +95,36 @@ func _build_ui() -> void:
 	next_button.custom_minimum_size = Vector2(54, 42)
 	next_button.text = ">"
 	next_button.pressed.connect(_on_next_pressed)
+
+	card_description_panel = PanelContainer.new()
+	browser.add_child(card_description_panel)
+	card_description_panel.custom_minimum_size = Vector2(0, CARD_DESCRIPTION_HEIGHT)
+	card_description_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var description_style: StyleBoxFlat = StyleBoxFlat.new()
+	description_style.bg_color = Color(0.05, 0.055, 0.065, 0.86)
+	description_style.border_color = Color(1.0, 1.0, 1.0, 0.14)
+	description_style.border_width_left = 1
+	description_style.border_width_top = 1
+	description_style.border_width_right = 1
+	description_style.border_width_bottom = 1
+	description_style.corner_radius_top_left = 6
+	description_style.corner_radius_top_right = 6
+	description_style.corner_radius_bottom_left = 6
+	description_style.corner_radius_bottom_right = 6
+	description_style.content_margin_left = 14
+	description_style.content_margin_top = 10
+	description_style.content_margin_right = 14
+	description_style.content_margin_bottom = 10
+	card_description_panel.add_theme_stylebox_override("panel", description_style)
+
+	card_description_label = Label.new()
+	card_description_panel.add_child(card_description_label)
+	card_description_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_description_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	card_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	card_description_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	card_description_label.add_theme_font_size_override("font_size", 16)
+	card_description_label.add_theme_color_override("font_color", Color(0.94, 0.94, 0.9))
 
 	var deck_panel_frame := PanelContainer.new()
 	main_layout.add_child(deck_panel_frame)
@@ -214,6 +251,7 @@ func _load_cards() -> void:
 
 func _show_page(page_index: int) -> void:
 	current_page = clampi(page_index, 0, max(0, _get_page_count() - 1))
+	_clear_browser_card_description()
 	for child in card_grid.get_children():
 		card_grid.remove_child(child)
 		child.queue_free()
@@ -234,6 +272,8 @@ func _show_page(page_index: int) -> void:
 		card_visual.set_card(card)
 		card_visual.set_face_down(false)
 		card_visual.set_collection_owned(PlayerCollectionStore.owns_card(card))
+		card_visual.mouse_entered.connect(_on_browser_card_mouse_entered.bind(card))
+		card_visual.mouse_exited.connect(_on_browser_card_mouse_exited.bind(card.card_name))
 		card_visual.drag_started.connect(_on_card_drag_started.bind(card_name))
 		card_visual.drag_released.connect(_on_card_drag_released.bind(card_name))
 
@@ -276,6 +316,62 @@ func _on_deck_editor_back_pressed() -> void:
 
 func _on_deck_name_changed(_new_text: String) -> void:
 	_update_deck_editor_state()
+
+func _on_browser_card_mouse_entered(card: Card) -> void:
+	if card == null:
+		return
+
+	hovered_browser_card_name = card.card_name
+	card_description_label.text = card.description.strip_edges()
+
+func _on_browser_card_mouse_exited(card_name: String) -> void:
+	if hovered_browser_card_name != card_name:
+		return
+
+	_clear_browser_card_description()
+
+func _update_browser_card_description_hover() -> void:
+	if card_grid == null or card_description_label == null:
+		return
+
+	var mouse_position: Vector2 = get_viewport().get_mouse_position()
+	var hovered_card: Card = null
+	for child in card_grid.get_children():
+		if !(child is CardVisual):
+			continue
+
+		var card_visual: CardVisual = child as CardVisual
+		if card_visual.is_visible_in_tree() && card_visual.get_global_rect().has_point(mouse_position):
+			hovered_card = card_visual.card
+			break
+
+	if hovered_card == null && deck_card_list != null:
+		for child in deck_card_list.get_children():
+			if !(child is Control):
+				continue
+
+			var deck_card_row: Control = child as Control
+			if !deck_card_row.is_visible_in_tree() or !deck_card_row.get_global_rect().has_point(mouse_position):
+				continue
+
+			hovered_card = CardLibrary.get_card(str(deck_card_row.get_meta("card_name", "")))
+			break
+
+	if hovered_card == null:
+		if !hovered_browser_card_name.is_empty():
+			_clear_browser_card_description()
+		return
+
+	if hovered_browser_card_name == hovered_card.card_name:
+		return
+
+	hovered_browser_card_name = hovered_card.card_name
+	card_description_label.text = hovered_card.description.strip_edges()
+
+func _clear_browser_card_description() -> void:
+	hovered_browser_card_name = ""
+	if card_description_label != null:
+		card_description_label.text = ""
 
 func _on_card_drag_started(_card_visual: CardVisual, card_name: String) -> void:
 	dragged_card_name = card_name
@@ -361,6 +457,7 @@ func _create_deck_card_row(card: Card, deck_card_index: int) -> Control:
 	row_frame.custom_minimum_size = Vector2(0, 34)
 	row_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row_frame.mouse_filter = Control.MOUSE_FILTER_STOP
+	row_frame.set_meta("card_name", card.card_name)
 	row_frame.mouse_entered.connect(_on_deck_card_row_mouse_entered.bind(deck_card_index, row_frame))
 
 	var row := HBoxContainer.new()

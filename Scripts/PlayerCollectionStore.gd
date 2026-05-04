@@ -23,6 +23,8 @@ func ensure_loaded() -> void:
 			if parsed is Dictionary:
 				collection_data = _normalize_collection(parsed)
 				is_loaded = true
+				_add_missing_default_cards()
+				save_collection()
 				return
 
 	collection_data = _create_default_collection()
@@ -176,6 +178,26 @@ func _create_default_collection() -> Dictionary:
 		"provider": LOCAL_PROVIDER,
 		"items": items,
 	}
+
+func _add_missing_default_cards() -> void:
+	var items: Array = _get_items()
+	var owned_default_card_codes: Dictionary = {}
+	for item in items:
+		if item is Dictionary && str(item.get("variant_id", DEFAULT_VARIANT_ID)) == DEFAULT_VARIANT_ID:
+			owned_default_card_codes[str(item.get("card_code", ""))] = true
+
+	var card_names: Array = CardLibrary.get_all_card_names()
+	card_names.sort()
+	for card_name in card_names:
+		var card: Card = CardLibrary.get_card(str(card_name))
+		if card == null:
+			continue
+		var card_code: String = get_card_code(card)
+		if owned_default_card_codes.has(card_code):
+			continue
+		items.append(_create_collection_item(card, DEFAULT_VARIANT_ID, DEFAULT_VARIANT_NAME, _generate_default_instance_id(card)))
+
+	collection_data["items"] = items
 
 func _create_collection_item(card: Card, variant_id: String, variant_name: String, instance_id: String) -> Dictionary:
 	var card_code: String = get_card_code(card)

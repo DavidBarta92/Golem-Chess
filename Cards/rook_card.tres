@@ -8,6 +8,7 @@
 script = ExtResource("1_vm8pc")
 card_name = "Rook"
 card_code = "rook"
+description = "No special effect."
 white_piece_texture = ExtResource("3_kw14y")
 black_piece_texture = ExtResource("1_cyxjc")
 effect_params = Array[Array]([[0, 0, 0, 0, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0]])

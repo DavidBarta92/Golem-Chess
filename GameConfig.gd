@@ -5,6 +5,7 @@ const CONTROLLER_AI: String = "ai"
 const AI_DIFFICULTY_EASY: String = "easy"
 const AI_DIFFICULTY_NORMAL: String = "normal"
 const AI_DIFFICULTY_HARD: String = "hard"
+const DEFAULT_AI_DIFFICULTY: String = AI_DIFFICULTY_HARD
 const DEFAULT_AI_VS_AI_CSV_LOG_DIR: String = "user://ai_match_logs"
 const DEFAULT_PLAYER_NAME: String = "Player"
 const MAX_PLAYER_NAME_LENGTH: int = 24
@@ -29,8 +30,8 @@ var player_controllers: Dictionary = {
 	1: CONTROLLER_HUMAN,
 }
 var player_ai_difficulties: Dictionary = {
-	0: AI_DIFFICULTY_NORMAL,
-	1: AI_DIFFICULTY_NORMAL,
+	0: DEFAULT_AI_DIFFICULTY,
+	1: DEFAULT_AI_DIFFICULTY,
 }
 
 func set_player_controller(player_id: int, controller_type: String) -> void:
@@ -43,7 +44,7 @@ func set_player_ai_difficulty(player_id: int, difficulty: String) -> void:
 	player_ai_difficulties[player_id] = difficulty
 
 func get_player_ai_difficulty(player_id: int) -> String:
-	return str(player_ai_difficulties.get(player_id, AI_DIFFICULTY_NORMAL))
+	return str(player_ai_difficulties.get(player_id, DEFAULT_AI_DIFFICULTY))
 
 func set_local_player_name(new_player_name: String) -> void:
 	player_name = sanitize_player_name(new_player_name)

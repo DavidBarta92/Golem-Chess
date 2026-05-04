@@ -8,6 +8,7 @@
 script = ExtResource("1_pwodd")
 card_name = "Bishop"
 card_code = "bishop"
+description = "No special effect."
 white_piece_texture = ExtResource("3_pndra")
 black_piece_texture = ExtResource("1_d0i41")
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]])

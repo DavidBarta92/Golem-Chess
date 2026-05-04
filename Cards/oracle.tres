@@ -9,6 +9,7 @@ script = ExtResource("2_6ensw")
 card_name = "Oracle"
 card_code = "oracle"
 duration = 4
+description = "When this card expires, take a King card from your deck and add it to your hand."
 white_piece_texture = ExtResource("3_6ensw")
 black_piece_texture = ExtResource("1_c80hc")
 effect_type = "grant_card"

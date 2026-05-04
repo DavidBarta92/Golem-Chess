@@ -9,6 +9,7 @@ script = ExtResource("2_e2whl")
 card_name = "Scholar"
 card_code = "scholar"
 duration = 4
+description = "When the linked piece captures, take a King card from your deck and add it to your hand."
 white_piece_texture = ExtResource("3_gx4e3")
 black_piece_texture = ExtResource("1_gux7p")
 effect_type = "grant_card"
