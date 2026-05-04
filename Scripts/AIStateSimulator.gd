@@ -142,6 +142,10 @@ static func apply_attach_action(game_state: GameStateData, player_id: int, actio
 	piece.turns_remaining = card.duration
 	game_state.attached_card_this_turn[player_id] = true
 	simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_ATTACH, player_id, piece, piece_pos, card, board_size)
+	if game_state.game_over:
+		return
+	CardEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, card, board_size)
+	_refresh_king_positions(game_state)
 
 static func apply_move_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> void:
 	if bool(game_state.moved_piece_this_turn.get(player_id, false)):

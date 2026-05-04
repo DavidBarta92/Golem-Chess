@@ -153,6 +153,15 @@ func handle_attach_card(action: Dictionary):
 			"piece_pos": piece_pos,
 			"card": card,
 		})
+		if game_state.game_over:
+			log_turn_snapshot("after_attach")
+			broadcast_full_state()
+			return
+		CardEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, card, 5)
+		if game_state.game_over:
+			log_turn_snapshot("after_attach")
+			broadcast_full_state()
+			return
 		log_turn_snapshot("after_attach")
 
 		print("Card attached successfully")

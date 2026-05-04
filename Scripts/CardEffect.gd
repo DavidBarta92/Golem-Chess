@@ -11,6 +11,12 @@ const TYPE_INVISIBLE_TO_ENEMY: String = "invisible_to_enemy"
 const TYPE_INVALID_SQUARES: String = "invalid_squares"
 const TYPE_FROZEN_SQUARES: String = "frozen_squares"
 const TYPE_BOMB: String = "bomb"
+const TYPE_UNCAPTURABLE: String = "uncapturable"
+const TYPE_INCREASE_OWN_DURATIONS: String = "increase_own_durations"
+const TYPE_INCREASE_ENEMY_DURATIONS: String = "increase_enemy_durations"
+const TYPE_DECREASE_OWN_DURATIONS: String = "decrease_own_durations"
+const TYPE_DECREASE_ENEMY_DURATIONS: String = "decrease_enemy_durations"
+const TYPE_INCREASE_SELF_DURATION: String = "increase_self_duration"
 
 const TRIGGER_ON_ATTACH: String = "on_attach"
 const TRIGGER_ON_MOVE: String = "on_move"
@@ -18,6 +24,7 @@ const TRIGGER_ON_CAPTURE: String = "on_capture"
 const TRIGGER_ON_CAPTURED: String = "on_captured"
 const TRIGGER_ON_EXPIRE: String = "on_expire"
 const TRIGGER_WHILE_ATTACHED: String = "while_attached"
+const TRIGGER_ON_SYMBOL_COUNT: String = "on_symbol_count"
 
 const MOVEMENT_NONE: int = 0
 const MOVEMENT_MOVE_AND_CAPTURE: int = 1
@@ -47,6 +54,18 @@ static func get_effect_label(effect_type: String) -> String:
 			return "FR"
 		TYPE_BOMB:
 			return "BO"
+		TYPE_UNCAPTURABLE:
+			return "UC"
+		TYPE_INCREASE_OWN_DURATIONS:
+			return "O+"
+		TYPE_INCREASE_ENEMY_DURATIONS:
+			return "E+"
+		TYPE_DECREASE_OWN_DURATIONS:
+			return "O-"
+		TYPE_DECREASE_ENEMY_DURATIONS:
+			return "E-"
+		TYPE_INCREASE_SELF_DURATION:
+			return "S+"
 		_:
 			return "FX" if has_effect(effect_type) else ""
 
@@ -70,5 +89,17 @@ static func get_effect_display_name(effect_type: String) -> String:
 			return "Frozen Squares"
 		TYPE_BOMB:
 			return "Bomb"
+		TYPE_UNCAPTURABLE:
+			return "Uncapturable"
+		TYPE_INCREASE_OWN_DURATIONS:
+			return "Increase Own Durations"
+		TYPE_INCREASE_ENEMY_DURATIONS:
+			return "Increase Enemy Durations"
+		TYPE_DECREASE_OWN_DURATIONS:
+			return "Decrease Own Durations"
+		TYPE_DECREASE_ENEMY_DURATIONS:
+			return "Decrease Enemy Durations"
+		TYPE_INCREASE_SELF_DURATION:
+			return "Increase Self Duration"
 		_:
 			return ""

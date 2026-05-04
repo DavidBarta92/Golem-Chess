@@ -63,11 +63,16 @@ static func is_target_allowed_by_movement_type(target_piece: Piece, piece_color:
 		CardEffect.MOVEMENT_MOVE_ONLY:
 			return target_piece == null
 		CardEffect.MOVEMENT_CAPTURE_ONLY:
-			return target_piece != null && target_piece.color != piece_color
+			return can_capture_target_piece(target_piece, piece_color)
 		CardEffect.MOVEMENT_MOVE_AND_CAPTURE:
-			return target_piece == null || target_piece.color != piece_color
+			return target_piece == null || can_capture_target_piece(target_piece, piece_color)
 		_:
 			return false
+
+static func can_capture_target_piece(target_piece: Piece, piece_color: int) -> bool:
+	if target_piece == null or target_piece.color == piece_color:
+		return false
+	return !CardEffectResolver.piece_has_attached_effect(target_piece, CardEffect.TYPE_UNCAPTURABLE)
 
 static func get_piece_moves(pieces: Dictionary, piece_position: Vector2, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
 	var piece: Piece = get_piece_at(pieces, piece_position)

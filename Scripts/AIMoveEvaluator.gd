@@ -518,6 +518,18 @@ func score_card_effect_fast(
 			score += score_frozen_squares_effect_fast(game_state, player_id, moving_piece, card, effect_source_pos, board_size)
 		CardEffect.TYPE_BOMB:
 			score += score_bomb_effect(game_state, player_id, moving_piece, card, effect_source_pos, board_size)
+		CardEffect.TYPE_UNCAPTURABLE:
+			score += score_uncapturable_effect(card)
+		CardEffect.TYPE_INCREASE_OWN_DURATIONS:
+			score += score_duration_adjustment_effect(game_state, player_id, player_id, 1)
+		CardEffect.TYPE_INCREASE_ENEMY_DURATIONS:
+			score += score_duration_adjustment_effect(game_state, player_id, 1 - player_id, 1)
+		CardEffect.TYPE_DECREASE_OWN_DURATIONS:
+			score += score_duration_adjustment_effect(game_state, player_id, player_id, -1)
+		CardEffect.TYPE_DECREASE_ENEMY_DURATIONS:
+			score += score_duration_adjustment_effect(game_state, player_id, 1 - player_id, -1)
+		CardEffect.TYPE_INCREASE_SELF_DURATION:
+			score += 18.0
 		_:
 			pass
 
@@ -846,6 +858,18 @@ func score_card_effect(
 			score += score_frozen_squares_effect(game_state, player_id, moving_piece, card, effect_source_pos, board_size)
 		CardEffect.TYPE_BOMB:
 			score += score_bomb_effect(game_state, player_id, moving_piece, card, effect_source_pos, board_size)
+		CardEffect.TYPE_UNCAPTURABLE:
+			score += score_uncapturable_effect(card)
+		CardEffect.TYPE_INCREASE_OWN_DURATIONS:
+			score += score_duration_adjustment_effect(game_state, player_id, player_id, 1)
+		CardEffect.TYPE_INCREASE_ENEMY_DURATIONS:
+			score += score_duration_adjustment_effect(game_state, player_id, 1 - player_id, 1)
+		CardEffect.TYPE_DECREASE_OWN_DURATIONS:
+			score += score_duration_adjustment_effect(game_state, player_id, player_id, -1)
+		CardEffect.TYPE_DECREASE_ENEMY_DURATIONS:
+			score += score_duration_adjustment_effect(game_state, player_id, 1 - player_id, -1)
+		CardEffect.TYPE_INCREASE_SELF_DURATION:
+			score += 18.0
 		_:
 			pass
 
@@ -1045,6 +1069,37 @@ func get_frozen_piece_score(game_state: GameStateData, piece: Piece, piece_pos: 
 func card_effect_targets_player(card: Card, target_player_id: int) -> bool:
 	var effect_target_player_id: int = int(card.effect_settings.get("target_player_id", -1))
 	return effect_target_player_id == -1 || effect_target_player_id == target_player_id
+
+func score_uncapturable_effect(card: Card) -> float:
+	var score: float = 46.0
+	if MoveRules.is_king_card(card):
+		score += 120.0
+	return score
+
+func score_duration_adjustment_effect(game_state: GameStateData, player_id: int, target_player_id: int, delta: int) -> float:
+	var target_color: int = CardEffectResolver.get_color_for_player_id(target_player_id)
+	var target_is_own: bool = target_player_id == player_id
+	var score: float = 0.0
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece == null or piece.color != target_color or piece.attached_card == null or piece.turns_remaining <= 0:
+			continue
+
+		var piece_value: float = 16.0 + float(piece.turns_remaining) * 2.0
+		if CardEffectResolver.is_king_piece(piece):
+			piece_value += 110.0
+
+		if delta > 0:
+			if target_is_own:
+				score += piece_value
+			else:
+				score -= piece_value
+		else:
+			if target_is_own:
+				score -= piece_value
+			else:
+				score += piece_value
+	return score
 
 func count_valid_turn_moves_for_player(game_state: GameStateData, pieces: Dictionary, player_id: int, board_effects: Array, board_size: int) -> int:
 	var hand_cards: Array[Card] = AIStateSimulator.get_hand_cards_from_state(game_state, player_id)

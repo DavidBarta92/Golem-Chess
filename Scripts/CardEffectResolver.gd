@@ -16,6 +16,7 @@ static func resolve_trigger(trigger: String, game_state: GameStateData, context:
 
 	var player_id: int = get_context_player_id(context)
 	var source_pos: Vector2 = get_context_piece_position(context)
+	var source_piece: Piece = get_context_piece(context)
 	var effect_color: int = get_context_effect_color(context, player_id)
 	var effect_log_context: Dictionary = {}
 	if game_state.match_logger != null:
@@ -37,6 +38,16 @@ static func resolve_trigger(trigger: String, game_state: GameStateData, context:
 			result = resolve_board_zone_effect(game_state, player_id, card, source_pos, board_size, effect_color)
 		CardEffect.TYPE_BOMB:
 			result = resolve_bomb(game_state, player_id, card, source_pos, board_size, effect_color)
+		CardEffect.TYPE_INCREASE_OWN_DURATIONS:
+			result = resolve_duration_adjustment(game_state, player_id, card, source_piece, source_pos, board_size, player_id, 1)
+		CardEffect.TYPE_INCREASE_ENEMY_DURATIONS:
+			result = resolve_duration_adjustment(game_state, player_id, card, source_piece, source_pos, board_size, 1 - player_id, 1)
+		CardEffect.TYPE_DECREASE_OWN_DURATIONS:
+			result = resolve_duration_adjustment(game_state, player_id, card, source_piece, source_pos, board_size, player_id, -1)
+		CardEffect.TYPE_DECREASE_ENEMY_DURATIONS:
+			result = resolve_duration_adjustment(game_state, player_id, card, source_piece, source_pos, board_size, 1 - player_id, -1)
+		CardEffect.TYPE_INCREASE_SELF_DURATION:
+			result = resolve_self_duration_adjustment(game_state, player_id, source_piece, source_pos, board_size, 1)
 		_:
 			pass
 
@@ -44,6 +55,29 @@ static func resolve_trigger(trigger: String, game_state: GameStateData, context:
 		game_state.match_logger.log_effect_event(game_state, effect_log_context, result)
 
 	return true
+
+static func resolve_symbol_count_trigger(game_state: GameStateData, player_id: int, piece: Piece, piece_pos: Vector2, card: Card, board_size: int = DEFAULT_BOARD_SIZE) -> bool:
+	if game_state == null or game_state.game_over:
+		return false
+	if card == null or !card.has_effect() or card.effect_trigger != CardEffect.TRIGGER_ON_SYMBOL_COUNT:
+		return false
+
+	var symbol: String = card.symbol.strip_edges()
+	if symbol.is_empty():
+		return false
+
+	var required_count: int = max(1, int(card.effect_settings.get("symbol_count", 3)))
+	if count_symbol_pieces_for_player(game_state, player_id, symbol) < required_count:
+		return false
+
+	return resolve_trigger(CardEffect.TRIGGER_ON_SYMBOL_COUNT, game_state, {
+		"player_id": player_id,
+		"piece": piece,
+		"piece_pos": piece_pos,
+		"card": card,
+		"symbol": symbol,
+		"symbol_count": required_count,
+	}, board_size)
 
 static func get_context_card(context: Dictionary) -> Card:
 	var card: Card = context.get("card", null) as Card
@@ -358,6 +392,116 @@ static func resolve_bomb(game_state: GameStateData, player_id: int, card: Card, 
 		"card_names": affected_card_names,
 	}
 
+static func resolve_self_duration_adjustment(game_state: GameStateData, player_id: int, source_piece: Piece, source_pos: Vector2, board_size: int, delta: int) -> Dictionary:
+	if source_piece == null or source_piece.attached_card == null:
+		return {}
+
+	var source_player_id: int = get_player_id_for_color(source_piece.color)
+	return adjust_piece_duration(game_state, player_id, source_player_id, source_pos, source_piece, delta, board_size)
+
+static func resolve_duration_adjustment(game_state: GameStateData, effect_owner_player_id: int, _card: Card, _source_piece: Piece, _source_pos: Vector2, board_size: int, target_player_id: int, delta: int) -> Dictionary:
+	var affected_positions: Array[Vector2] = []
+	var affected_card_names: Array = []
+	var expired_card_names: Array = []
+	var own_pieces_affected: int = 0
+	var enemy_pieces_affected: int = 0
+	var expired_count: int = 0
+	var positions: Array = game_state.pieces.keys()
+
+	for position_value in positions:
+		var piece_pos: Vector2 = as_vector2(position_value, Vector2(-1, -1))
+		var piece: Piece = game_state.get_piece(piece_pos)
+		if piece == null or piece.attached_card == null:
+			continue
+
+		var piece_player_id: int = get_player_id_for_color(piece.color)
+		if piece_player_id != target_player_id:
+			continue
+
+		var result: Dictionary = adjust_piece_duration(game_state, effect_owner_player_id, piece_player_id, piece_pos, piece, delta, board_size)
+		if result.is_empty():
+			continue
+
+		affected_positions.append(piece_pos)
+		affected_card_names.append(str(result.get("card_name", "")))
+		if bool(result.get("expired", false)):
+			expired_count += 1
+			expired_card_names.append(str(result.get("card_name", "")))
+		if piece_player_id == effect_owner_player_id:
+			own_pieces_affected += 1
+		else:
+			enemy_pieces_affected += 1
+		if game_state.game_over:
+			break
+
+	return {
+		"target_player_id": target_player_id,
+		"affected_positions": affected_positions,
+		"affected_count": affected_positions.size(),
+		"own_pieces_affected": own_pieces_affected,
+		"enemy_pieces_affected": enemy_pieces_affected,
+		"card_names": affected_card_names,
+		"expired_count": expired_count,
+		"expired_card_names": expired_card_names,
+		"duration_delta": delta,
+	}
+
+static func adjust_piece_duration(game_state: GameStateData, effect_owner_player_id: int, piece_owner_player_id: int, piece_pos: Vector2, piece: Piece, delta: int, board_size: int) -> Dictionary:
+	if piece == null or piece.attached_card == null or piece.turns_remaining == -1 or delta == 0:
+		return {}
+
+	var before: int = piece.turns_remaining
+	piece.turns_remaining += delta
+	var affected_card: Card = piece.attached_card
+	var result: Dictionary = {
+		"card_name": affected_card.card_name,
+		"turns_before": before,
+		"turns_after": piece.turns_remaining,
+		"expired": false,
+	}
+
+	if piece.turns_remaining <= 0:
+		result["expired"] = true
+		expire_piece_card_due_to_duration_adjustment(game_state, effect_owner_player_id, piece_owner_player_id, piece_pos, piece, affected_card, board_size)
+
+	return result
+
+static func expire_piece_card_due_to_duration_adjustment(game_state: GameStateData, effect_owner_player_id: int, piece_owner_player_id: int, piece_pos: Vector2, piece: Piece, expired_card: Card, board_size: int) -> void:
+	if piece == null or expired_card == null:
+		return
+
+	piece.detach_card()
+
+	if MoveRules.is_king_card(expired_card):
+		clear_king_position_if_needed(game_state, piece_owner_player_id, true)
+		var king_card_returned: bool = return_card_to_owner_hand(game_state, piece_owner_player_id, expired_card.card_name, piece_pos)
+		if !king_card_returned && !player_has_available_king_card(game_state, piece_owner_player_id):
+			game_state.game_over = true
+			game_state.winner_player = 1 - piece_owner_player_id
+			game_state.win_condition = "king_card_lost"
+			if game_state.match_logger != null:
+				game_state.match_logger.log_match_end(game_state, game_state.win_condition)
+		return
+
+	register_card_expiration(game_state, piece_owner_player_id, expired_card.card_name, piece_pos)
+	resolve_trigger(CardEffect.TRIGGER_ON_EXPIRE, game_state, {
+		"player_id": piece_owner_player_id,
+		"piece": piece,
+		"piece_pos": piece_pos,
+		"card": expired_card,
+		"expired_by_player_id": effect_owner_player_id,
+	}, board_size)
+
+static func register_card_expiration(game_state: GameStateData, player_id: int, card_name: String, piece_pos: Vector2) -> void:
+	if game_state == null:
+		return
+
+	game_state.recent_card_expirations.append({
+		"player_id": player_id,
+		"card_name": card_name,
+		"piece_pos": [piece_pos.x, piece_pos.y],
+	})
+
 static func remove_piece_as_effect_capture(game_state: GameStateData, effect_owner_player_id: int, target_pos: Vector2) -> void:
 	var target_piece: Piece = game_state.get_piece(target_pos)
 	if target_piece == null:
@@ -505,6 +649,20 @@ static func is_piece_visible_to_player(piece: Piece, viewer_player_id: int) -> b
 
 static func piece_has_attached_effect(piece: Piece, effect_type: String) -> bool:
 	return piece != null && piece.attached_card != null && piece.attached_card.effect_type == effect_type
+
+static func count_symbol_pieces_for_player(game_state: GameStateData, player_id: int, symbol: String) -> int:
+	if game_state == null or symbol.strip_edges().is_empty():
+		return 0
+
+	var player_color: int = get_color_for_player_id(player_id)
+	var count: int = 0
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece == null or piece.color != player_color or piece.attached_card == null:
+			continue
+		if piece.attached_card.symbol.strip_edges() == symbol:
+			count += 1
+	return count
 
 static func is_king_piece(piece: Piece) -> bool:
 	return piece != null && MoveRules.is_king_card(piece.attached_card)
