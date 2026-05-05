@@ -69,7 +69,30 @@ mouse_filter = 2
 texture = ExtResource("3")
 expand_mode = 1
 
+[node name="TypeFrame" type="TextureRect" parent="." unique_id=372516518]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+
+[node name="CardArt" type="TextureRect" parent="." unique_id=1315429242]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+
 [node name="Shimmer" type="ColorRect" parent="." unique_id=195997734]
+visible = false
 material = SubResource("ShaderMaterial_shimmer")
 layout_mode = 1
 anchors_preset = 15
@@ -150,6 +173,8 @@ offset_bottom = 164.0
 mouse_filter = 2
 script = ExtResource("2")
 dot_texture = ExtResource("7_7hptf")
+active_color = Color(0.34117648, 0.36862746, 0.87058824, 1)
+guide_color = Color(0.41960785, 0.47843137, 0.45882353, 0.3882353)
 
 [node name="NameLabel" type="Label" parent="." unique_id=312057828]
 layout_mode = 1

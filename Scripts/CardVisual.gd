@@ -3,9 +3,16 @@ class_name CardVisual
 
 const BURN_SHADER = preload("res://Shaders/card_burn.gdshader")
 const GRAYSCALE_SHADER = preload("res://Shaders/card_grayscale.gdshader")
+const CARD_ART_MASK_SHADER = preload("res://Shaders/card_art_mask.gdshader")
 const CARD_FRONT_TEXTURE = preload("res://Assets/card_base.svg")
 const CARD_BACK_TEXTURE = preload("res://Assets/card_back_1.svg")
+const BASIC_TYPE_FRAME_TEXTURE = preload("res://Assets/basic_frame.svg")
+const KING_TYPE_FRAME_TEXTURE = preload("res://Assets/king_frame.svg")
+const BASIC_TYPE_MASK_TEXTURE = preload("res://Assets/basic_mask.svg")
+const KING_TYPE_MASK_TEXTURE = preload("res://Assets/king_mask.svg")
 const CARD_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR
+const CARD_ART_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+const CARD_SHIMMER_ENABLED: bool = false
 
 signal drag_started(card_visual: CardVisual)
 signal drag_moved(card_visual: CardVisual)
@@ -20,6 +27,8 @@ signal burn_finished(card_visual: CardVisual)
 
 @onready var shadow: TextureRect = $Shadow
 @onready var card_face: TextureRect = $CardFace
+@onready var type_frame: TextureRect = $TypeFrame
+@onready var card_art: TextureRect = $CardArt
 @onready var shimmer: ColorRect = $Shimmer
 @onready var duration_label: Label = $DurationLabel
 @onready var effect_icon_texture: TextureRect = $EffectIconTexture
@@ -31,6 +40,7 @@ signal burn_finished(card_visual: CardVisual)
 
 var card: Card
 var face_material: ShaderMaterial
+var card_art_material: ShaderMaterial
 var shimmer_material: ShaderMaterial
 var tween_hover: Tween
 var tween_reset: Tween
@@ -66,8 +76,12 @@ func _ready() -> void:
 	pivot_offset = size * 0.5
 	face_material = card_face.material.duplicate() as ShaderMaterial
 	card_face.material = face_material
+	card_art_material = ShaderMaterial.new()
+	card_art_material.shader = CARD_ART_MASK_SHADER
+	card_art.material = card_art_material
 	shimmer_material = shimmer.material.duplicate() as ShaderMaterial
 	shimmer.material = shimmer_material
+	shimmer.visible = CARD_SHIMMER_ENABLED
 	last_position = position
 	last_scale = scale
 	last_rotation = rotation
@@ -83,6 +97,8 @@ func _apply_texture_filter() -> void:
 	texture_filter = CARD_TEXTURE_FILTER
 	shadow.texture_filter = CARD_TEXTURE_FILTER
 	card_face.texture_filter = CARD_TEXTURE_FILTER
+	type_frame.texture_filter = CARD_ART_TEXTURE_FILTER
+	card_art.texture_filter = CARD_ART_TEXTURE_FILTER
 	effect_icon_texture.texture_filter = CARD_TEXTURE_FILTER
 
 func _process(_delta: float) -> void:
@@ -109,6 +125,7 @@ func update_shimmer_time(delta: float) -> void:
 	if !face_down && visible && (moved || scaled || rotated || tilted):
 		shimmer_time += delta
 		shimmer_material.set_shader_parameter("shimmer_time", shimmer_time)
+		_update_pattern_shimmer_space()
 		pattern_view.set_shimmer_time(shimmer_time)
 
 	last_position = position
@@ -116,6 +133,11 @@ func update_shimmer_time(delta: float) -> void:
 	last_rotation = rotation
 	last_x_rot = current_x_rot
 	last_y_rot = current_y_rot
+
+func _update_pattern_shimmer_space() -> void:
+	var canvas_transform: Transform2D = get_global_transform_with_canvas()
+	var visual_size: Vector2 = Vector2(canvas_transform.x.length() * size.x, canvas_transform.y.length() * size.y)
+	pattern_view.set_shimmer_space(canvas_transform.origin, visual_size)
 
 func _input(event: InputEvent) -> void:
 	if not is_dragging:
@@ -258,6 +280,8 @@ func play_burn_away_and_free() -> void:
 	shimmer.visible = false
 	name_label.visible = false
 	description_label.visible = false
+	type_frame.visible = false
+	card_art.visible = false
 	duration_label.visible = false
 	effect_icon_texture.visible = false
 	effect_icon_label.visible = false
@@ -294,8 +318,37 @@ func _apply_card() -> void:
 		effect_icon_label.text = CardEffect.get_effect_label(card.effect_type)
 		pattern_view.set_card(card)
 
+	_apply_art_state()
 	_apply_face_state()
 	_apply_collection_state()
+
+func _apply_art_state() -> void:
+	var type_frame_texture: Texture2D = _get_type_frame_texture()
+	var type_mask_texture: Texture2D = _get_type_mask_texture()
+	var has_card_art: bool = card != null && card.card_art != null
+	var has_card_mask: bool = card != null && card.card_art_mask != null
+
+	type_frame.texture = type_frame_texture
+	type_frame.visible = !face_down && card != null && type_frame_texture != null
+
+	card_art.texture = card.card_art if has_card_art else null
+	card_art.visible = !face_down && has_card_art
+	if card_art_material != null:
+		card_art_material.set_shader_parameter("type_mask_texture", type_mask_texture)
+		card_art_material.set_shader_parameter("card_mask_texture", card.card_art_mask if has_card_mask else type_mask_texture)
+		card_art_material.set_shader_parameter("has_card_mask", has_card_mask)
+
+func _get_type_frame_texture() -> Texture2D:
+	if card != null && card.is_king_card:
+		return KING_TYPE_FRAME_TEXTURE
+
+	return BASIC_TYPE_FRAME_TEXTURE
+
+func _get_type_mask_texture() -> Texture2D:
+	if card != null && card.is_king_card:
+		return KING_TYPE_MASK_TEXTURE
+
+	return BASIC_TYPE_MASK_TEXTURE
 
 func _apply_face_state() -> void:
 	var has_effect_icon: bool = card != null && card.has_effect()
@@ -304,9 +357,10 @@ func _apply_face_state() -> void:
 	duration_label.visible = !face_down
 	effect_icon_texture.visible = !face_down && has_effect_icon && card.effect_icon != null
 	effect_icon_label.visible = !face_down && has_effect_icon && card.effect_icon == null
-	king_icon_label.visible = !face_down && card != null && card.is_king_card
+	king_icon_label.visible = false
 	pattern_view.visible = !face_down
-	shimmer.visible = !face_down
+	shimmer.visible = CARD_SHIMMER_ENABLED && !face_down
+	_apply_art_state()
 	card_face.texture = CARD_BACK_TEXTURE if face_down else CARD_FRONT_TEXTURE
 	card_face.material = null if face_down else face_material
 	if face_down:

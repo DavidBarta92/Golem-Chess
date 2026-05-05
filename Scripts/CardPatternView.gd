@@ -5,7 +5,7 @@ const PATTERN_SHIMMER_SHADER = preload("res://Shaders/pattern_shimmer.gdshader")
 const GRID_SIZE: int = 5
 const GUIDE_DOT_RADIUS_RATIO: float = 0.0675
 const MOVE_DOT_SIZE_RATIO: float = 0.36
-const X_MARKER_SIZE_RATIO: float = 0.36
+const X_MARKER_SIZE_RATIO: float = 0.26
 const BASE_MARKER_SIZE_RATIO: float = 0.57
 const DOT_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 
@@ -53,6 +53,13 @@ func set_card(card: Card) -> void:
 func set_shimmer_time(value: float) -> void:
 	if pattern_shimmer_material != null:
 		pattern_shimmer_material.set_shader_parameter("shimmer_time", value)
+
+func set_shimmer_space(origin: Vector2, visual_size: Vector2) -> void:
+	if pattern_shimmer_material == null:
+		return
+
+	pattern_shimmer_material.set_shader_parameter("shimmer_origin", origin)
+	pattern_shimmer_material.set_shader_parameter("shimmer_size", visual_size)
 
 func _draw() -> void:
 	var cell_size: float = minf(size.x, size.y) / float(GRID_SIZE)

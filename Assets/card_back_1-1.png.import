@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgwp8p11q6hrm"
-path="res://.godot/imported/king_mask.svg-e40fb8f982de9595159883e2be5ecadf.ctex"
+uid="uid://yic2sl10eogk"
+path="res://.godot/imported/card_back_1-1.png-947eec03b887f8bd99cd8b7f917577b9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/king_mask.svg"
-dest_files=["res://.godot/imported/king_mask.svg-e40fb8f982de9595159883e2be5ecadf.ctex"]
+source_file="res://Assets/card_back_1-1.png"
+dest_files=["res://.godot/imported/card_back_1-1.png-947eec03b887f8bd99cd8b7f917577b9.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=4.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

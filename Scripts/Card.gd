@@ -6,6 +6,8 @@ class_name Card
 @export var card_code: String = "New Card"
 @export var duration: int = 2
 @export var texture: Texture2D
+@export var card_art: Texture2D
+@export var card_art_mask: Texture2D
 @export var white_piece_texture: Texture2D
 @export var black_piece_texture: Texture2D
 @export var description: String = ""
