@@ -363,12 +363,14 @@ func end_current_turn():
 	if game_state.game_over:
 		return
 
+	var ending_player_id: int = game_state.current_turn_player
 	if should_tick_attached_cards_this_end_turn():
 		tick_attached_cards()
 		if game_state.game_over:
 			broadcast_full_state()
 			return
 
+	clear_piece_exhaustion_for_player(ending_player_id)
 	game_state.switch_turn()
 	advance_logged_turn()
 	CardEffectResolver.tick_board_effects(game_state)
@@ -376,6 +378,13 @@ func end_current_turn():
 	log_turn_snapshot("turn_end")
 	print("Turn ended. Next player: ", game_state.current_turn_player)
 	broadcast_full_state()
+
+func clear_piece_exhaustion_for_player(player_id: int) -> void:
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null && piece.color == player_color:
+			piece.exhausted_this_turn = false
 
 func tick_attached_cards() -> void:
 	var positions: Array = game_state.pieces.keys()
@@ -555,7 +564,8 @@ func broadcast_full_state():
 				"position": pos,
 				"color": piece_data.color,
 				"card_name": piece_data.card_name,
-				"turns_remaining": piece_data.turns_remaining
+				"turns_remaining": piece_data.turns_remaining,
+				"exhausted_this_turn": piece_data.exhausted_this_turn
 			}
 		multiplayer_node.get_node("board").update_from_server_state(
 			pieces_data,
@@ -616,7 +626,8 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 			"position": [pos.x, pos.y],
 			"color": piece.color,
 			"card_name": piece.attached_card.card_name if piece.attached_card else "",
-			"turns_remaining": piece.turns_remaining
+			"turns_remaining": piece.turns_remaining,
+			"exhausted_this_turn": piece.exhausted_this_turn
 		})
 
 	return data

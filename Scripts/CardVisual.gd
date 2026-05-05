@@ -3,6 +3,9 @@ class_name CardVisual
 
 const BURN_SHADER = preload("res://Shaders/card_burn.gdshader")
 const GRAYSCALE_SHADER = preload("res://Shaders/card_grayscale.gdshader")
+const CARD_FRONT_TEXTURE = preload("res://Assets/card_base.svg")
+const CARD_BACK_TEXTURE = preload("res://Assets/card_back_1.svg")
+const CARD_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR
 
 signal drag_started(card_visual: CardVisual)
 signal drag_moved(card_visual: CardVisual)
@@ -23,6 +26,7 @@ signal burn_finished(card_visual: CardVisual)
 @onready var effect_icon_label: Label = $EffectIconLabel
 @onready var king_icon_label: Label = $KingIconLabel
 @onready var name_label: Label = $NameLabel
+@onready var description_label: RichTextLabel = $DescriptionLabel
 @onready var pattern_view: CardPatternView = $PatternView
 
 var card: Card
@@ -53,8 +57,12 @@ var drop_target_active: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
 var collection_owned: bool = true
 var hover_raise_enabled: bool = true
+var rest_scale: Vector2 = Vector2.ONE
 
 func _ready() -> void:
+	_apply_texture_filter()
+	description_label.scroll_active = false
+	description_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pivot_offset = size * 0.5
 	face_material = card_face.material.duplicate() as ShaderMaterial
 	card_face.material = face_material
@@ -70,6 +78,12 @@ func _ready() -> void:
 	gui_input.connect(_on_gui_input)
 	set_process(true)
 	_apply_card()
+
+func _apply_texture_filter() -> void:
+	texture_filter = CARD_TEXTURE_FILTER
+	shadow.texture_filter = CARD_TEXTURE_FILTER
+	card_face.texture_filter = CARD_TEXTURE_FILTER
+	effect_icon_texture.texture_filter = CARD_TEXTURE_FILTER
 
 func _process(_delta: float) -> void:
 	if is_dragging:
@@ -95,6 +109,7 @@ func update_shimmer_time(delta: float) -> void:
 	if !face_down && visible && (moved || scaled || rotated || tilted):
 		shimmer_time += delta
 		shimmer_material.set_shader_parameter("shimmer_time", shimmer_time)
+		pattern_view.set_shimmer_time(shimmer_time)
 
 	last_position = position
 	last_scale = scale
@@ -124,6 +139,11 @@ func set_collection_owned(value: bool) -> void:
 
 func set_hover_raise_enabled(value: bool) -> void:
 	hover_raise_enabled = value
+
+func set_rest_scale(value: Vector2) -> void:
+	rest_scale = value
+	if !is_dragging and !is_assigned:
+		scale = rest_scale
 
 func set_face_down(value: bool) -> void:
 	face_down = value
@@ -163,7 +183,7 @@ func set_drop_target_active(active: bool) -> void:
 		return
 
 	drop_target_active = active
-	var target_scale: Vector2 = Vector2.ONE * (drop_target_scale if active else drag_scale)
+	var target_scale: Vector2 = rest_scale * (drop_target_scale if active else drag_scale)
 	_tween_scale(target_scale, 0.12)
 
 func fly_home() -> void:
@@ -174,7 +194,7 @@ func fly_home() -> void:
 	_kill_move_tween()
 	tween_move = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tween_move.tween_property(self, "position", home_position, 0.26)
-	tween_move.parallel().tween_property(self, "scale", Vector2.ONE, 0.22)
+	tween_move.parallel().tween_property(self, "scale", rest_scale, 0.22)
 	tween_move.parallel().tween_property(self, "rotation", 0.0, 0.22)
 	tween_move.parallel().tween_property(face_material, "shader_parameter/x_rot", 0.0, 0.22)
 	tween_move.parallel().tween_property(face_material, "shader_parameter/y_rot", 0.0, 0.22)
@@ -187,14 +207,14 @@ func fly_from_global_position(start_global_position: Vector2) -> void:
 	_kill_move_tween()
 
 	global_position = start_global_position
-	scale = Vector2.ONE * 0.52
+	scale = rest_scale * 0.52
 	rotation = deg_to_rad(-8.0 if owner_color == 1 else 8.0)
 	z_index = 90
 	shadow.self_modulate.a = 0.4
 
 	tween_move = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tween_move.tween_property(self, "position", home_position, 0.44)
-	tween_move.parallel().tween_property(self, "scale", Vector2.ONE, 0.38)
+	tween_move.parallel().tween_property(self, "scale", rest_scale, 0.38)
 	tween_move.parallel().tween_property(self, "rotation", 0.0, 0.38)
 	tween_move.parallel().tween_property(shadow, "self_modulate:a", normal_shadow_alpha, 0.38)
 	tween_move.tween_callback(Callable(self, "_finish_draw_fly"))
@@ -202,8 +222,8 @@ func fly_from_global_position(start_global_position: Vector2) -> void:
 func play_draw_pulse() -> void:
 	_kill_hover_tweens()
 	tween_hover = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tween_hover.tween_property(self, "scale", Vector2.ONE * 1.05, 0.08)
-	tween_hover.tween_property(self, "scale", Vector2.ONE * 0.96, 0.16)
+	tween_hover.tween_property(self, "scale", rest_scale * 1.05, 0.08)
+	tween_hover.tween_property(self, "scale", rest_scale * 0.96, 0.16)
 
 func _finish_draw_fly() -> void:
 	z_index = 0
@@ -237,6 +257,7 @@ func play_burn_away_and_free() -> void:
 	card_face.material = burn_material
 	shimmer.visible = false
 	name_label.visible = false
+	description_label.visible = false
 	duration_label.visible = false
 	effect_icon_texture.visible = false
 	effect_icon_label.visible = false
@@ -259,6 +280,7 @@ func _finish_burn_away() -> void:
 func _apply_card() -> void:
 	if card == null:
 		name_label.text = ""
+		description_label.text = ""
 		duration_label.text = ""
 		effect_icon_texture.texture = null
 		effect_icon_label.text = ""
@@ -266,6 +288,7 @@ func _apply_card() -> void:
 		pattern_view.set_card(null)
 	else:
 		name_label.text = card.card_name
+		description_label.text = card.description.strip_edges()
 		duration_label.text = "INF" if card.duration < 0 else str(card.duration)
 		effect_icon_texture.texture = card.effect_icon
 		effect_icon_label.text = CardEffect.get_effect_label(card.effect_type)
@@ -277,19 +300,22 @@ func _apply_card() -> void:
 func _apply_face_state() -> void:
 	var has_effect_icon: bool = card != null && card.has_effect()
 	name_label.visible = !face_down
+	description_label.visible = !face_down
 	duration_label.visible = !face_down
 	effect_icon_texture.visible = !face_down && has_effect_icon && card.effect_icon != null
 	effect_icon_label.visible = !face_down && has_effect_icon && card.effect_icon == null
 	king_icon_label.visible = !face_down && card != null && card.is_king_card
 	pattern_view.visible = !face_down
 	shimmer.visible = !face_down
+	card_face.texture = CARD_BACK_TEXTURE if face_down else CARD_FRONT_TEXTURE
 	card_face.material = null if face_down else face_material
 	if face_down:
 		rotation = 0.0
-		scale = Vector2.ONE
+		scale = rest_scale
 
 func _apply_collection_state() -> void:
 	if collection_owned:
+		card_face.texture = CARD_BACK_TEXTURE if face_down else CARD_FRONT_TEXTURE
 		card_face.material = null if face_down else face_material
 		self_modulate = Color.WHITE
 		disabled = false
@@ -300,6 +326,7 @@ func _apply_collection_state() -> void:
 	grayscale_material.shader = GRAYSCALE_SHADER
 	grayscale_material.set_shader_parameter("strength", 1.0)
 	grayscale_material.set_shader_parameter("darken", 0.24)
+	card_face.texture = CARD_FRONT_TEXTURE
 	card_face.material = grayscale_material
 	self_modulate = Color(0.72, 0.72, 0.72, 1.0)
 	shimmer.visible = false
@@ -335,7 +362,7 @@ func start_drag() -> void:
 	move_to_front()
 	z_index = 100
 	drag_offset = get_global_mouse_position() - global_position
-	scale = Vector2.ONE * drag_scale
+	scale = rest_scale * drag_scale
 	drag_started.emit(self)
 
 func finish_drag() -> void:
@@ -355,7 +382,7 @@ func _on_mouse_entered() -> void:
 	if tween_hover and tween_hover.is_running():
 		tween_hover.kill()
 	tween_hover = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween_hover.tween_property(self, "scale", Vector2.ONE * hover_scale, 0.18)
+	tween_hover.tween_property(self, "scale", rest_scale * hover_scale, 0.18)
 	tween_hover.parallel().tween_property(shadow, "self_modulate:a", 0.34, 0.18)
 
 func _on_mouse_exited() -> void:
@@ -399,7 +426,7 @@ func reset_tilt_and_scale() -> void:
 	if tween_reset and tween_reset.is_running():
 		tween_reset.kill()
 	tween_reset = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween_reset.tween_property(self, "scale", Vector2.ONE, 0.24)
+	tween_reset.tween_property(self, "scale", rest_scale, 0.24)
 	tween_reset.parallel().tween_property(self, "rotation", 0.0, 0.24)
 	tween_reset.parallel().tween_property(shadow, "self_modulate:a", normal_shadow_alpha, 0.24)
 	if face_material:

@@ -23,9 +23,10 @@ const TURN_WHITE = preload("res://Assets/turn-white.png")
 const TURN_BLACK = preload("res://Assets/turn-black.png")
 
 const PIECE_MOVE = preload("res://Assets/Piece_move.png")
+const PIECE_EXHAUSTED_SHADER = preload("res://Shaders/piece_exhausted.gdshader")
 
 const PLAYER_HAND_SIZE = 5
-const CARD_UI_SIZE = Vector2(126, 176)
+const CARD_UI_SIZE = Vector2(164, 229)
 const CARD_UI_GAP = 14
 const CARD_HAND_MARGIN = 18
 const HOVER_CARD_MARGIN = 24
@@ -575,8 +576,10 @@ func _on_end_turn_pressed():
 	end_current_turn_locally()
 
 func end_current_turn_locally():
+	var ending_color: int = get_current_turn_color()
 	if should_tick_attached_cards_this_end_turn_locally():
 		tick_attached_cards_locally()
+	clear_piece_exhaustion_for_color(ending_color)
 	white = !white
 	reset_current_turn_card_attach()
 	state = false
@@ -665,6 +668,12 @@ func reset_current_turn_card_attach():
 	attached_card_this_turn[current_color] = false
 	moved_piece_this_turn[current_color] = false
 	drawn_card_this_turn[current_color] = false
+
+func clear_piece_exhaustion_for_color(owner_color: int) -> void:
+	for position_value in piece_objects:
+		var piece: Piece = piece_objects[position_value] as Piece
+		if piece != null && piece.color == owner_color:
+			piece.exhausted_this_turn = false
 
 func has_moved_piece_this_turn(owner_color: int) -> bool:
 	return bool(moved_piece_this_turn.get(owner_color, false))
@@ -1463,9 +1472,23 @@ func display_board():
 			var offset = -(BOARD_SIZE * CELL_WIDTH) / 2.0
 			holder.position = Vector2(j * CELL_WIDTH + (CELL_WIDTH / 2) + offset, -i * CELL_WIDTH - (CELL_WIDTH / 2) - offset)
 			holder.texture = get_piece_texture_for_position(Vector2(i, j), int(board[i][j]))
+			apply_piece_exhausted_material(holder, Vector2(i, j))
 
 	if white: turn.texture = TURN_WHITE
 	else: turn.texture = TURN_BLACK
+
+func apply_piece_exhausted_material(holder: Sprite2D, board_pos: Vector2) -> void:
+	holder.material = null
+	if !piece_objects.has(board_pos):
+		return
+
+	var piece: Piece = piece_objects[board_pos] as Piece
+	if piece == null || !piece.exhausted_this_turn:
+		return
+
+	var material := ShaderMaterial.new()
+	material.shader = PIECE_EXHAUSTED_SHADER
+	holder.material = material
 
 func show_options():
 	moves = get_moves(selected_piece)
@@ -1786,6 +1809,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 			if card:
 				piece.attach_card(card)
 				piece.turns_remaining = int(data.turns_remaining)
+				piece.exhausted_this_turn = bool(data.get("exhausted_this_turn", false))
 
 		piece_objects[piece_position] = piece
 		if is_valid_position(piece_position):
@@ -1961,6 +1985,8 @@ func update_board_markers():
 	for child in board_markers_node.get_children():
 		child.queue_free()
 
+	add_enemy_attack_markers()
+
 	for effect_value in current_board_effects:
 		var effect: Dictionary = effect_value
 		var effect_type: String = str(effect.get("effect_type", ""))
@@ -1978,6 +2004,12 @@ func update_board_markers():
 		var base_pos: Vector2 = current_player_base_fields.get(player_id, WHITE_BASE_FIELD if player_id == 0 else BLACK_BASE_FIELD)
 		if is_valid_position(base_pos):
 			add_board_base_marker(base_pos, player_id)
+
+func add_enemy_attack_markers():
+	var enemy_color: int = -get_local_view_color()
+	var attacked_squares: Array[Vector2] = MoveRules.get_attacked_squares_for_player(piece_objects, enemy_color, BOARD_SIZE, current_board_effects)
+	for square_pos: Vector2 in attacked_squares:
+		add_board_square_fill(square_pos, Color(1.0, 0.05, 0.03, 0.105))
 
 func add_board_square_fill(board_pos: Vector2, marker_color: Color):
 	var rect: Rect2 = get_board_cell_rect_local(board_pos)

@@ -1,7 +1,13 @@
 ﻿extends Control
 class_name CardPatternView
 
+const PATTERN_SHIMMER_SHADER = preload("res://Shaders/pattern_shimmer.gdshader")
 const GRID_SIZE: int = 5
+const GUIDE_DOT_RADIUS_RATIO: float = 0.0675
+const MOVE_DOT_SIZE_RATIO: float = 0.36
+const X_MARKER_SIZE_RATIO: float = 0.36
+const BASE_MARKER_SIZE_RATIO: float = 0.57
+const DOT_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 
 @export var dot_texture: Texture2D
 @export var active_color: Color = Color(1.0, 1.0, 1.0, 1.0)
@@ -12,12 +18,19 @@ const GRID_SIZE: int = 5
 @export var base_color: Color = Color(1.0, 0.84, 0.12, 1.0)
 @export var bomb_color: Color = Color(1.0, 0.36, 0.08, 1.0)
 @export var center_color: Color = Color(0.08, 0.08, 0.08, 0.9)
-@export var guide_color: Color = Color(0.1, 0.1, 0.1, 0.13)
+@export var guide_color: Color = Color(0.42, 0.48, 0.46, 0.5)
 
 var movement_pattern: Array = []
 var effect_pattern: Array = []
 var effect_type: String = CardEffect.TYPE_NONE
 var has_effect_pattern: bool = false
+var pattern_shimmer_material: ShaderMaterial
+
+func _ready() -> void:
+	texture_filter = DOT_TEXTURE_FILTER
+	pattern_shimmer_material = ShaderMaterial.new()
+	pattern_shimmer_material.shader = PATTERN_SHIMMER_SHADER
+	material = pattern_shimmer_material
 
 func set_pattern(pattern: Array) -> void:
 	movement_pattern = pattern
@@ -37,6 +50,10 @@ func set_card(card: Card) -> void:
 	has_effect_pattern = !effect_pattern.is_empty()
 	queue_redraw()
 
+func set_shimmer_time(value: float) -> void:
+	if pattern_shimmer_material != null:
+		pattern_shimmer_material.set_shader_parameter("shimmer_time", value)
+
 func _draw() -> void:
 	var cell_size: float = minf(size.x, size.y) / float(GRID_SIZE)
 	var grid_size: float = cell_size * GRID_SIZE
@@ -46,10 +63,10 @@ func _draw() -> void:
 		for col in range(GRID_SIZE):
 			var cell_origin: Vector2 = origin + Vector2(col, row) * cell_size
 			var center: Vector2 = cell_origin + Vector2.ONE * cell_size * 0.5
-			draw_circle(center, cell_size * 0.08, guide_color)
+			draw_circle(center, cell_size * GUIDE_DOT_RADIUS_RATIO, guide_color)
 
 			if row == 2 and col == 2:
-				draw_circle(center, cell_size * 0.16, center_color)
+				draw_circle(center, cell_size * GUIDE_DOT_RADIUS_RATIO, center_color)
 			else:
 				var movement_type: int = _get_pattern_value(movement_pattern, row, col)
 				if movement_type != CardEffect.MOVEMENT_NONE:
@@ -86,7 +103,7 @@ func _get_movement_color(movement_type: int) -> Color:
 			return active_color
 
 func _draw_move_dot(center: Vector2, cell_size: float, dot_color: Color) -> void:
-	var dot_size: float = cell_size * 0.62
+	var dot_size: float = cell_size * MOVE_DOT_SIZE_RATIO
 	var rect: Rect2 = Rect2(center - Vector2.ONE * dot_size * 0.5, Vector2.ONE * dot_size)
 
 	if dot_texture:
@@ -108,13 +125,13 @@ func _draw_effect_marker(center: Vector2, cell_size: float) -> void:
 			_draw_move_dot(center, cell_size, active_color)
 
 func _draw_x_marker(center: Vector2, cell_size: float, marker_color: Color) -> void:
-	var half_size: float = cell_size * 0.28
-	var width: float = maxf(2.0, cell_size * 0.12)
+	var half_size: float = cell_size * X_MARKER_SIZE_RATIO
+	var width: float = maxf(1.4, cell_size * 0.09)
 	draw_line(center + Vector2(-half_size, -half_size), center + Vector2(half_size, half_size), marker_color, width)
 	draw_line(center + Vector2(-half_size, half_size), center + Vector2(half_size, -half_size), marker_color, width)
 
 func _draw_base_marker(center: Vector2, cell_size: float) -> void:
-	var square_size: float = cell_size * 0.5
+	var square_size: float = cell_size * BASE_MARKER_SIZE_RATIO
 	var rect: Rect2 = Rect2(center - Vector2.ONE * square_size * 0.5, Vector2.ONE * square_size)
 	draw_rect(rect, Color(base_color.r, base_color.g, base_color.b, 0.28), true)
 	draw_rect(rect, base_color, false, maxf(2.0, cell_size * 0.1))

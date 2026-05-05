@@ -15,6 +15,7 @@ static func clone_piece(piece: Piece) -> Piece:
 	var cloned_piece: Piece = Piece.new(piece.position, piece.color)
 	cloned_piece.attached_card = piece.attached_card
 	cloned_piece.turns_remaining = piece.turns_remaining
+	cloned_piece.exhausted_this_turn = piece.exhausted_this_turn
 	return cloned_piece
 
 static func clone_game_state(source_state: GameStateData) -> GameStateData:
@@ -140,6 +141,7 @@ static func apply_attach_action(game_state: GameStateData, player_id: int, actio
 	remove_card_name_from_hand(game_state, player_id, card_name)
 	piece.attached_card = card
 	piece.turns_remaining = card.duration
+	piece.exhausted_this_turn = true
 	game_state.attached_card_this_turn[player_id] = true
 	simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_ATTACH, player_id, piece, piece_pos, card, board_size)
 	if game_state.game_over:
@@ -299,6 +301,7 @@ static func apply_candidate_to_pieces(source_pieces: Dictionary, move: Dictionar
 		if card != null:
 			moving_piece.attached_card = card
 			moving_piece.turns_remaining = card.duration
+			moving_piece.exhausted_this_turn = true
 
 	simulated_pieces.erase(from_pos)
 	moving_piece.position = to_pos

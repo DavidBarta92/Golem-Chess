@@ -2,9 +2,16 @@ extends Control
 
 const CARD_VISUAL = preload("res://Scenes/CardVisual.tscn")
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
-const CARDS_PER_PAGE: int = 8
-const CARD_COLUMNS: int = 4
-const CARD_SIZE: Vector2 = Vector2(126, 176)
+const CARD_VISUAL_SIZE: Vector2 = Vector2(164, 229)
+const DESKTOP_CARDS_PER_PAGE: int = 8
+const DESKTOP_CARD_COLUMNS: int = 4
+const DESKTOP_CARD_SLOT_SIZE: Vector2 = Vector2(148, 207)
+const MEDIUM_CARDS_PER_PAGE: int = 6
+const MEDIUM_CARD_COLUMNS: int = 3
+const MEDIUM_CARD_SLOT_SIZE: Vector2 = Vector2(132, 184)
+const COMPACT_CARDS_PER_PAGE: int = 4
+const COMPACT_CARD_COLUMNS: int = 2
+const COMPACT_CARD_SLOT_SIZE: Vector2 = Vector2(120, 168)
 const MAX_DECK_SIZE: int = 15
 const REMOVE_BUTTON_VISIBLE_SECONDS: float = 1.0
 const CARD_DESCRIPTION_HEIGHT: int = 76
@@ -17,7 +24,14 @@ var selected_deck_cards: Array = []
 var dragged_card_name: String = ""
 var hovered_deck_card_index: int = -1
 var hovered_browser_card_name: String = ""
+var current_cards_per_page: int = DESKTOP_CARDS_PER_PAGE
+var current_card_columns: int = DESKTOP_CARD_COLUMNS
+var current_card_slot_size: Vector2 = DESKTOP_CARD_SLOT_SIZE
 
+var root_margin: MarginContainer
+var main_layout: HBoxContainer
+var browser: VBoxContainer
+var deck_panel_frame: PanelContainer
 var card_grid: GridContainer
 var previous_button: Button
 var next_button: Button
@@ -38,6 +52,8 @@ var card_description_label: Label
 
 func _ready() -> void:
 	_build_ui()
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_apply_responsive_layout(false)
 	_load_cards()
 	_show_page(0)
 
@@ -45,21 +61,21 @@ func _process(_delta: float) -> void:
 	_update_browser_card_description_hover()
 
 func _build_ui() -> void:
-	var root := MarginContainer.new()
-	add_child(root)
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("margin_left", 34)
-	root.add_theme_constant_override("margin_top", 30)
-	root.add_theme_constant_override("margin_right", 34)
-	root.add_theme_constant_override("margin_bottom", 30)
+	root_margin = MarginContainer.new()
+	add_child(root_margin)
+	root_margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root_margin.add_theme_constant_override("margin_left", 34)
+	root_margin.add_theme_constant_override("margin_top", 30)
+	root_margin.add_theme_constant_override("margin_right", 34)
+	root_margin.add_theme_constant_override("margin_bottom", 30)
 
-	var main_layout := HBoxContainer.new()
-	root.add_child(main_layout)
+	main_layout = HBoxContainer.new()
+	root_margin.add_child(main_layout)
 	main_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	main_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	main_layout.add_theme_constant_override("separation", 28)
 
-	var browser := VBoxContainer.new()
+	browser = VBoxContainer.new()
 	main_layout.add_child(browser)
 	browser.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	browser.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -67,7 +83,7 @@ func _build_ui() -> void:
 
 	card_grid = GridContainer.new()
 	browser.add_child(card_grid)
-	card_grid.columns = CARD_COLUMNS
+	card_grid.columns = current_card_columns
 	card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	card_grid.add_theme_constant_override("h_separation", 20)
@@ -126,7 +142,7 @@ func _build_ui() -> void:
 	card_description_label.add_theme_font_size_override("font_size", 16)
 	card_description_label.add_theme_color_override("font_color", Color(0.94, 0.94, 0.9))
 
-	var deck_panel_frame := PanelContainer.new()
+	deck_panel_frame = PanelContainer.new()
 	main_layout.add_child(deck_panel_frame)
 	deck_panel_frame.custom_minimum_size = Vector2(230, 0)
 
@@ -256,8 +272,8 @@ func _show_page(page_index: int) -> void:
 		card_grid.remove_child(child)
 		child.queue_free()
 
-	var start_index: int = current_page * CARDS_PER_PAGE
-	var end_index: int = min(start_index + CARDS_PER_PAGE, all_card_names.size())
+	var start_index: int = current_page * current_cards_per_page
+	var end_index: int = min(start_index + current_cards_per_page, all_card_names.size())
 	for index in range(start_index, end_index):
 		var card_name: String = str(all_card_names[index])
 		var card: Card = CardLibrary.duplicate_card(card_name)
@@ -265,8 +281,8 @@ func _show_page(page_index: int) -> void:
 			continue
 
 		var card_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
-		card_grid.add_child(card_visual)
-		card_visual.custom_minimum_size = CARD_SIZE
+		var card_slot: Control = _create_browser_card_slot(card_visual)
+		card_grid.add_child(card_slot)
 		card_visual.draggable = is_creating_deck
 		card_visual.set_hover_raise_enabled(false)
 		card_visual.set_card(card)
@@ -283,7 +299,116 @@ func _show_page(page_index: int) -> void:
 	_update_deck_editor_state()
 
 func _get_page_count() -> int:
-	return int(ceil(float(all_card_names.size()) / float(CARDS_PER_PAGE)))
+	return int(ceil(float(all_card_names.size()) / float(current_cards_per_page)))
+
+func _create_browser_card_slot(card_visual: CardVisual) -> Control:
+	var card_slot := Control.new()
+	card_slot.custom_minimum_size = current_card_slot_size
+	card_slot.mouse_filter = Control.MOUSE_FILTER_PASS
+	card_slot.clip_contents = false
+	card_slot.add_child(card_visual)
+	card_slot.resized.connect(_on_browser_card_slot_resized.bind(card_slot, card_visual))
+	_configure_browser_card_layout(card_slot, card_visual)
+	return card_slot
+
+func _configure_browser_card_layout(card_slot: Control, card_visual: CardVisual) -> void:
+	card_slot.custom_minimum_size = current_card_slot_size
+	card_visual.custom_minimum_size = CARD_VISUAL_SIZE
+	card_visual.size = CARD_VISUAL_SIZE
+	var scale_factor: float = _get_card_scale_for_slot_size(current_card_slot_size)
+	card_visual.set_rest_scale(Vector2.ONE * scale_factor)
+	var available_size: Vector2 = card_slot.size
+	if available_size.x <= 0.0 or available_size.y <= 0.0:
+		available_size = current_card_slot_size
+	card_visual.position = (available_size - CARD_VISUAL_SIZE * scale_factor) * 0.5
+
+func _on_browser_card_slot_resized(card_slot: Control, card_visual: CardVisual) -> void:
+	if card_visual != null:
+		_configure_browser_card_layout(card_slot, card_visual)
+
+func _get_card_scale_for_slot_size(slot_size: Vector2) -> float:
+	if slot_size.x <= 0.0 or slot_size.y <= 0.0:
+		return 1.0
+
+	return minf(slot_size.x / CARD_VISUAL_SIZE.x, slot_size.y / CARD_VISUAL_SIZE.y)
+
+func _get_browser_card_visual(node: Node) -> CardVisual:
+	if node is CardVisual:
+		return node as CardVisual
+
+	for child in node.get_children():
+		if child is CardVisual:
+			return child as CardVisual
+
+	return null
+
+func _get_scaled_card_rect(card_visual: CardVisual) -> Rect2:
+	var scaled_size: Vector2 = CARD_VISUAL_SIZE * card_visual.scale
+	var scaled_top_left: Vector2 = card_visual.global_position + card_visual.pivot_offset * (Vector2.ONE - card_visual.scale)
+	return Rect2(scaled_top_left, scaled_size)
+
+func _on_viewport_size_changed() -> void:
+	_apply_responsive_layout(true)
+
+func _apply_responsive_layout(refresh_page: bool) -> void:
+	var viewport_width: float = get_viewport_rect().size.x
+	var next_columns: int = DESKTOP_CARD_COLUMNS
+	var next_cards_per_page: int = DESKTOP_CARDS_PER_PAGE
+	var next_card_slot_size: Vector2 = DESKTOP_CARD_SLOT_SIZE
+	var next_margin: int = 34
+	var next_gap: int = 20
+	var next_layout_gap: int = 28
+	var next_deck_width: int = 230
+
+	if viewport_width < 980.0:
+		next_columns = COMPACT_CARD_COLUMNS
+		next_cards_per_page = COMPACT_CARDS_PER_PAGE
+		next_card_slot_size = COMPACT_CARD_SLOT_SIZE
+		next_margin = 18
+		next_gap = 14
+		next_layout_gap = 18
+		next_deck_width = 220
+	elif viewport_width < 1180.0:
+		next_columns = MEDIUM_CARD_COLUMNS
+		next_cards_per_page = MEDIUM_CARDS_PER_PAGE
+		next_card_slot_size = MEDIUM_CARD_SLOT_SIZE
+		next_margin = 24
+		next_gap = 16
+		next_layout_gap = 22
+		next_deck_width = 224
+
+	var layout_changed: bool = next_columns != current_card_columns or next_cards_per_page != current_cards_per_page
+	current_card_columns = next_columns
+	current_cards_per_page = next_cards_per_page
+	current_card_slot_size = next_card_slot_size
+
+	if root_margin != null:
+		root_margin.add_theme_constant_override("margin_left", next_margin)
+		root_margin.add_theme_constant_override("margin_top", next_margin)
+		root_margin.add_theme_constant_override("margin_right", next_margin)
+		root_margin.add_theme_constant_override("margin_bottom", next_margin)
+	if main_layout != null:
+		main_layout.add_theme_constant_override("separation", next_layout_gap)
+	if card_grid != null:
+		card_grid.columns = current_card_columns
+		card_grid.add_theme_constant_override("h_separation", next_gap)
+		card_grid.add_theme_constant_override("v_separation", next_gap)
+	if deck_panel_frame != null:
+		deck_panel_frame.custom_minimum_size = Vector2(next_deck_width, 0)
+
+	if refresh_page:
+		if layout_changed:
+			_show_page(current_page)
+		else:
+			_update_existing_card_sizes()
+
+func _update_existing_card_sizes() -> void:
+	if card_grid == null:
+		return
+	for child in card_grid.get_children():
+		var card_visual: CardVisual = _get_browser_card_visual(child)
+		if card_visual != null && child is Control:
+			_configure_browser_card_layout(child as Control, card_visual)
 
 func _on_previous_pressed() -> void:
 	_show_page(current_page - 1)
@@ -337,11 +462,8 @@ func _update_browser_card_description_hover() -> void:
 	var mouse_position: Vector2 = get_viewport().get_mouse_position()
 	var hovered_card: Card = null
 	for child in card_grid.get_children():
-		if !(child is CardVisual):
-			continue
-
-		var card_visual: CardVisual = child as CardVisual
-		if card_visual.is_visible_in_tree() && card_visual.get_global_rect().has_point(mouse_position):
+		var card_visual: CardVisual = _get_browser_card_visual(child)
+		if card_visual != null && card_visual.is_visible_in_tree() && _get_scaled_card_rect(card_visual).has_point(mouse_position):
 			hovered_card = card_visual.card
 			break
 
@@ -425,9 +547,9 @@ func _update_deck_editor_state() -> void:
 	deck_count_label.text = "%d/%d" % [selected_deck_cards.size(), MAX_DECK_SIZE]
 	done_button.disabled = !_can_complete_deck()
 
-	for card_visual in card_grid.get_children():
-		if card_visual is CardVisual:
-			var visual := card_visual as CardVisual
+	for child in card_grid.get_children():
+		var visual: CardVisual = _get_browser_card_visual(child)
+		if visual != null:
 			visual.draggable = is_creating_deck && visual.collection_owned && !_is_card_already_selected(visual.card) && selected_deck_cards.size() < MAX_DECK_SIZE
 			visual.disabled = !visual.collection_owned
 

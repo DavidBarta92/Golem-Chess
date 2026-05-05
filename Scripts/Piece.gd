@@ -5,25 +5,28 @@ var position: Vector2
 var color: int  # 1 = white, -1 = black
 var attached_card: Card = null
 var turns_remaining: int = 0
+var exhausted_this_turn: bool = false
 
 func _init(pos: Vector2, col: int):
 	position = pos
 	color = col
 
-func attach_card(card: Card):
+func attach_card(card: Card, exhaust_for_turn: bool = true):
 	attached_card = card
 	turns_remaining = card.duration
+	exhausted_this_turn = exhaust_for_turn
 	print("Card attached: %s to %s piece (position: %s, turns: %d)" % [card.card_name, "white" if color > 0 else "black", position, turns_remaining])
 
 func detach_card() -> Card:
 	var old_card = attached_card
 	attached_card = null
 	turns_remaining = 0
+	exhausted_this_turn = false
 	print("Card detached: %s" % old_card.card_name if old_card else "")
 	return old_card
 
 func can_move() -> bool:
-	return attached_card != null && (turns_remaining > 0 || turns_remaining == -1)
+	return !exhausted_this_turn && attached_card != null && (turns_remaining > 0 || turns_remaining == -1)
 	# return has_card() && (turns_remaining > 0 || turns_remaining == -1)
 
 func get_movement_directions() -> Array:

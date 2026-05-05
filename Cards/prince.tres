@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://gx71tu87d5ip"]
+
+[ext_resource type="Texture2D" uid="uid://bh2jylbtvodfh" path="res://Assets/black_king.png" id="1_lhqjs"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_ntwde"]
+[ext_resource type="Texture2D" uid="uid://wixkaesiefxb" path="res://Assets/white_king.png" id="3_8wts2"]
+
+[resource]
+script = ExtResource("2_ntwde")
+card_name = "Prince"
+card_code = "prince"
+white_piece_texture = ExtResource("3_8wts2")
+black_piece_texture = ExtResource("1_lhqjs")
+description = "A King card. Keep at least one King available to stay in the game. This card is invisible to enemy."
+is_king_card = true
+effect_type = "invisible_to_enemy"
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

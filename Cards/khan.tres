@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://f0ryhd8hch5q"]
+
+[ext_resource type="Texture2D" uid="uid://bh2jylbtvodfh" path="res://Assets/black_king.png" id="1_qnl8q"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_l0wl3"]
+[ext_resource type="Texture2D" uid="uid://wixkaesiefxb" path="res://Assets/white_king.png" id="3_veuos"]
+
+[resource]
+script = ExtResource("2_l0wl3")
+card_name = "Khan"
+card_code = "khan"
+duration = 3
+white_piece_texture = ExtResource("3_veuos")
+black_piece_texture = ExtResource("1_qnl8q")
+description = "A King card. Keep at least one King available to stay in the game."
+is_king_card = true
+effect_type = "bomb"
+effect_trigger = "on_captured"
+effect_params = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

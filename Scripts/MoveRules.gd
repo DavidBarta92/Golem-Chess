@@ -136,10 +136,23 @@ static func get_attach_card_moves(pieces: Dictionary, player_color: int, hand_ca
 
 	return valid_moves
 
+static func can_attach_any_card(pieces: Dictionary, player_color: int, hand_cards: Array[Card]) -> bool:
+	for position_value: Vector2 in pieces:
+		var piece_position: Vector2 = position_value
+		var piece: Piece = get_piece_at(pieces, piece_position)
+		if piece == null || piece.color != player_color || piece.attached_card != null:
+			continue
+
+		for card: Card in hand_cards:
+			if !card_can_be_used(card):
+				continue
+			if can_attach_card_for_turn(pieces, player_color, card):
+				return true
+
+	return false
+
 static func get_valid_turn_moves(pieces: Dictionary, player_color: int, hand_cards: Array[Card], can_attach_card: bool, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
 	var valid_moves: Array[Dictionary] = get_existing_card_moves(pieces, player_color, board_size, board_effects)
-	if can_attach_card:
-		valid_moves.append_array(get_attach_card_moves(pieces, player_color, hand_cards, board_size, board_effects))
 	return valid_moves
 
 static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
@@ -154,21 +167,7 @@ static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_si
 	return false
 
 static func has_valid_attachment_move(pieces: Dictionary, player_color: int, hand_cards: Array[Card], board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
-	for position_value: Vector2 in pieces:
-		var piece_position: Vector2 = position_value
-		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || piece.color != player_color || piece.attached_card != null:
-			continue
-
-		for card: Card in hand_cards:
-			if !card_can_be_used(card):
-				continue
-			if !can_attach_card_for_turn(pieces, player_color, card):
-				continue
-			if !get_card_moves_for_piece(pieces, piece_position, player_color, card, board_size, board_effects).is_empty():
-				return true
-
-	return false
+	return can_attach_any_card(pieces, player_color, hand_cards)
 
 static func has_valid_turn_action(pieces: Dictionary, player_color: int, hand_cards: Array[Card], can_attach_card: bool, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
 	if has_valid_piece_move(pieces, player_color, board_size, board_effects):
@@ -184,3 +183,35 @@ static func is_valid_move(pieces: Dictionary, from_pos: Vector2, to_pos: Vector2
 static func is_valid_move_for_player(pieces: Dictionary, from_pos: Vector2, to_pos: Vector2, player_id: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
 	var valid_moves: Array[Vector2] = get_piece_moves_for_player(pieces, from_pos, player_id, board_size, board_effects)
 	return valid_moves.has(to_pos)
+
+static func get_attacked_squares_for_player(pieces: Dictionary, attacking_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
+	var attacked_squares: Array[Vector2] = []
+	var player_id: int = 0 if attacking_color == 1 else 1
+
+	for position_value: Vector2 in pieces:
+		var piece_position: Vector2 = position_value
+		var piece: Piece = get_piece_at(pieces, piece_position)
+		if piece == null || piece.color != attacking_color || !piece.can_move():
+			continue
+		if CardEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
+			continue
+
+		for movement_option: Dictionary in piece.attached_card.get_movement_options():
+			var movement_type: int = int(movement_option.get("movement_type", CardEffect.MOVEMENT_MOVE_AND_CAPTURE))
+			if movement_type == CardEffect.MOVEMENT_MOVE_ONLY:
+				continue
+
+			var offset: Vector2 = movement_option.get("offset", Vector2.ZERO)
+			var target_pos: Vector2 = piece_position + (offset * attacking_color)
+			if !is_valid_position(target_pos, board_size):
+				continue
+			if CardEffectResolver.is_square_invalid(board_effects, target_pos, player_id):
+				continue
+
+			var target_piece: Piece = get_piece_at(pieces, target_pos)
+			if target_piece != null && target_piece.color == attacking_color:
+				continue
+			if !attacked_squares.has(target_pos):
+				attacked_squares.append(target_pos)
+
+	return attacked_squares

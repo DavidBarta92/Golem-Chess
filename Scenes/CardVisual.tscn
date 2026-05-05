@@ -1,11 +1,13 @@
 [gd_scene format=3 uid="uid://67s030mxf45n"]
 
 [ext_resource type="Script" uid="uid://dgl5umdn6mctq" path="res://Scripts/CardVisual.gd" id="1"]
-[ext_resource type="Script" path="res://Scripts/CardPatternView.gd" id="2"]
+[ext_resource type="Script" uid="uid://b4rbx66i3ardt" path="res://Scripts/CardPatternView.gd" id="2"]
 [ext_resource type="Texture2D" uid="uid://dl0388jfrwad7" path="res://Assets/card_base.svg" id="3"]
-[ext_resource type="Texture2D" uid="uid://bf7ly1ygo8gw4" path="res://Assets/Piece_move.png" id="4"]
 [ext_resource type="Shader" uid="uid://2w0ypeypns36" path="res://Shaders/card_tilt.gdshader" id="5"]
+[ext_resource type="FontFile" uid="uid://qkd6nyfjtoyf" path="res://Fonts/OLDENGL.TTF" id="5_7hptf"]
 [ext_resource type="Shader" uid="uid://cmkftqqcjg2yk" path="res://Shaders/card_shimmer.gdshader" id="6"]
+[ext_resource type="Texture2D" uid="uid://p0jd58h8006b" path="res://Assets/dot.svg" id="7_7hptf"]
+[ext_resource type="FontFile" uid="uid://b1beq61l8rupp" path="res://Fonts/Rosemartin.otf" id="8_5weds"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
 
@@ -14,7 +16,7 @@ resource_local_to_scene = true
 shader = ExtResource("5")
 shader_parameter/x_rot = 0.0
 shader_parameter/y_rot = 0.0
-shader_parameter/warp_strength = 0.045
+shader_parameter/warp_strength = 0.0
 shader_parameter/shine_strength = 0.18
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_shimmer"]
@@ -24,12 +26,13 @@ shader_parameter/strength = 0.16
 shader_parameter/speed = 0.65
 shader_parameter/band_scale = 14.0
 shader_parameter/corner_radius = 0.075
+shader_parameter/shimmer_time = 0.0
 
 [node name="CardVisual" type="Button" unique_id=377554225]
-custom_minimum_size = Vector2(126, 176)
-offset_right = 126.0
-offset_bottom = 176.0
-pivot_offset = Vector2(63, 88)
+custom_minimum_size = Vector2(164, 229)
+offset_right = 164.0
+offset_bottom = 229.0
+pivot_offset = Vector2(82, 114.5)
 theme_override_styles/normal = SubResource("StyleBoxEmpty_button")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_button")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_button")
@@ -46,8 +49,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 5.0
 offset_top = 9.0
-offset_right = 5.0
-offset_bottom = 9.0
+offset_right = 7.0
+offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -72,69 +75,67 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 4.0
-offset_top = 4.0
-offset_right = -4.0
-offset_bottom = -4.0
+offset_left = 6.0
+offset_top = 7.0
+offset_right = -5.0
+offset_bottom = -6.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
 [node name="DurationLabel" type="Label" parent="." unique_id=336129338]
 layout_mode = 1
-offset_left = 12.0
-offset_top = 10.0
-offset_right = 38.0
-offset_bottom = 34.0
-theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
-theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.65)
+offset_left = 11.0
+offset_top = 12.0
+offset_right = 49.0
+offset_bottom = 52.0
+theme_override_colors/font_color = Color(0.8745098, 0.85882354, 0.81960785, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 18
+theme_override_fonts/font = ExtResource("5_7hptf")
+theme_override_font_sizes/font_size = 37
 text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="EffectIconTexture" type="TextureRect" parent="."]
+[node name="EffectIconTexture" type="TextureRect" parent="." unique_id=970024804]
 visible = false
 layout_mode = 1
-offset_left = 92.0
-offset_top = 10.0
-offset_right = 116.0
-offset_bottom = 34.0
+offset_left = 120.0
+offset_top = 13.0
+offset_right = 151.0
+offset_bottom = 44.0
 mouse_filter = 2
 expand_mode = 1
 
-[node name="EffectIconLabel" type="Label" parent="."]
+[node name="EffectIconLabel" type="Label" parent="." unique_id=991651344]
 visible = false
 layout_mode = 1
-offset_left = 90.0
-offset_top = 10.0
-offset_right = 118.0
-offset_bottom = 34.0
-mouse_filter = 2
+offset_left = 117.0
+offset_top = 13.0
+offset_right = 153.0
+offset_bottom = 44.0
 theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
 theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.75)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 16
 text = "FX"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="KingIconLabel" type="Label" parent="."]
+[node name="KingIconLabel" type="Label" parent="." unique_id=220777662]
 visible = false
 layout_mode = 1
-offset_left = 49.0
-offset_top = 7.0
-offset_right = 77.0
-offset_bottom = 35.0
-mouse_filter = 2
+offset_left = 64.0
+offset_top = 9.0
+offset_right = 100.0
+offset_bottom = 46.0
 theme_override_colors/font_color = Color(0.88, 0.62, 0.08, 1)
 theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.85)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 29
 text = "♛"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -142,13 +143,13 @@ vertical_alignment = 1
 [node name="PatternView" type="Control" parent="." unique_id=824120483]
 layout_mode = 1
 anchors_preset = 0
-offset_left = 22.0
-offset_top = 44.0
-offset_right = 104.0
-offset_bottom = 126.0
+offset_left = 20.0
+offset_top = 40.0
+offset_right = 144.0
+offset_bottom = 164.0
 mouse_filter = 2
 script = ExtResource("2")
-dot_texture = ExtResource("4")
+dot_texture = ExtResource("7_7hptf")
 
 [node name="NameLabel" type="Label" parent="." unique_id=312057828]
 layout_mode = 1
@@ -156,18 +157,32 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = -38.0
-offset_right = -10.0
-offset_bottom = -10.0
+offset_left = 20.0
+offset_top = -61.0
+offset_right = -20.0
+offset_bottom = -35.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
-theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.8)
+theme_override_colors/font_color = Color(0.8745098, 0.85882354, 0.81960785, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = ExtResource("8_5weds")
+theme_override_font_sizes/font_size = 16
 text = "Card"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
+
+[node name="DescriptionLabel" type="RichTextLabel" parent="." unique_id=1754150722]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 189.0
+offset_right = 145.0
+offset_bottom = 212.0
+mouse_filter = 2
+theme_override_colors/default_color = Color(0.09803922, 0.09803922, 0.09803922, 1)
+theme_override_fonts/normal_font = ExtResource("8_5weds")
+theme_override_font_sizes/normal_font_size = 5
+text = "DescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescription"
+scroll_active = false
