@@ -188,6 +188,9 @@ func handle_draw_card(action: Dictionary):
 	if player_deck.is_empty():
 		push_warning("Deck is empty.")
 		return
+	if player_hand.size() >= DeckManager.HAND_SIZE:
+		push_warning("Hand is full.")
+		return
 
 	var hand_before: Array = duplicate_player_card_list(player_hand)
 	var deck_before: Array = duplicate_player_card_list(player_deck)
@@ -511,7 +514,8 @@ func can_draw_card_for_player(player_id: int) -> bool:
 	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
 		return false
 	var player_deck: Array = game_state.player_decks[player_id]
-	return !player_deck.is_empty()
+	var player_hand: Array = game_state.player_hands[player_id]
+	return !player_deck.is_empty() && player_hand.size() < DeckManager.HAND_SIZE
 
 func get_hand_cards_with_next_draw(player_id: int) -> Array[Card]:
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)

@@ -326,8 +326,7 @@ func get_starting_deck_for_player_id(player_id: int) -> Array[String]:
 	if GameConfig.is_singleplayer:
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
 			return GameConfig.get_selected_deck_card_names()
-		var empty_ai_deck: Array[String] = []
-		return empty_ai_deck
+		return GameConfig.get_selected_ai_deck_card_names()
 
 	for peer_id in peer_player_ids:
 		if int(peer_player_ids[peer_id]) == player_id:

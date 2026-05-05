@@ -102,8 +102,11 @@ const SCORE_KING_BASE_PROGRESS: float = 35.0
 const SCORE_ATTACH_CARD: float = 10.0
 const SCORE_CENTER: float = 4.0
 const SCORE_USE_EXISTING_CARD: float = 4.0
-const SCORE_DRAW_CARD: float = 14.0
-const SCORE_DRAW_LOW_HAND: float = 16.0
+const SCORE_DRAW_HAND_LOW: float = 42.0
+const SCORE_DRAW_HAND_TWO: float = 24.0
+const SCORE_DRAW_HAND_THREE: float = 5.0
+const PENALTY_DRAW_HAND_FOUR: float = 14.0
+const PENALTY_DRAW_FULL_HAND: float = 120.0
 const SCORE_ATTACH_SETUP_MOBILITY: float = 5.0
 const PENALTY_ATTACH_SETUP_NO_MOVE: float = 8.0
 const PENALTY_GIVE_CARD: float = 35.0
@@ -639,24 +642,47 @@ func score_turn_plan_breakdown(game_state: GameStateData, player_id: int, plan: 
 	}
 
 func score_draw_action(game_state: GameStateData, player_id: int, drawn_card_name: String) -> float:
-	var score: float = SCORE_DRAW_CARD
 	var hand_size: int = 0
 	if game_state.player_hands.has(player_id):
 		var hand: Array = game_state.player_hands[player_id]
 		hand_size = hand.size()
 
-	if hand_size < 3:
-		score += SCORE_DRAW_LOW_HAND * float(3 - hand_size)
+	var score: float = get_draw_hand_size_score(hand_size)
+	if hand_size >= DeckManager.HAND_SIZE:
+		return score
 
 	var drawn_card: Card = CardLibrary.get_card(drawn_card_name)
 	if drawn_card != null:
-		score += max(0, drawn_card.duration) * 2.0
+		var card_quality_score: float = max(0, drawn_card.duration) * 1.25
 		if MoveRules.is_king_card(drawn_card):
-			score += SCORE_ATTACH_KING * 0.35
+			card_quality_score += SCORE_ATTACH_KING * 0.15
 		if drawn_card.has_effect():
-			score += 8.0
+			card_quality_score += 4.0
+		score += card_quality_score * get_draw_card_quality_multiplier(hand_size)
 
 	return score
+
+func get_draw_hand_size_score(hand_size: int) -> float:
+	if hand_size <= 1:
+		return SCORE_DRAW_HAND_LOW
+	if hand_size == 2:
+		return SCORE_DRAW_HAND_TWO
+	if hand_size == 3:
+		return SCORE_DRAW_HAND_THREE
+	if hand_size == 4:
+		return -PENALTY_DRAW_HAND_FOUR
+	return -PENALTY_DRAW_FULL_HAND
+
+func get_draw_card_quality_multiplier(hand_size: int) -> float:
+	if hand_size <= 1:
+		return 0.85
+	if hand_size == 2:
+		return 0.60
+	if hand_size == 3:
+		return 0.30
+	if hand_size == 4:
+		return 0.10
+	return 0.0
 
 func score_attach_setup(game_state: GameStateData, player_id: int, attach_action: Dictionary, board_size: int) -> float:
 	var piece_pos: Vector2 = CardEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))

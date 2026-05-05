@@ -76,7 +76,8 @@ func can_draw_card_from_state(game_state: GameStateData, player_id: int) -> bool
 		return false
 
 	var player_deck: Array = game_state.player_decks[player_id]
-	return !player_deck.is_empty()
+	var player_hand: Array = game_state.player_hands[player_id]
+	return !player_deck.is_empty() && player_hand.size() < DeckManager.HAND_SIZE
 
 func add_branch_plans(
 	plans: Array[Dictionary],

@@ -20,6 +20,7 @@ var ai_vs_ai_matches_played: int = 0
 var ai_vs_ai_log_session_id: String = ""
 var ai_vs_ai_csv_log_dir: String = DEFAULT_AI_VS_AI_CSV_LOG_DIR
 var selected_deck_id: String = ""
+var selected_ai_deck_id: String = ""
 var ai_vs_ai_results: Dictionary = {
 	0: 0,
 	1: 0,
@@ -122,6 +123,25 @@ func has_selected_deck() -> bool:
 
 func get_selected_deck_card_names() -> Array[String]:
 	var deck_id: String = get_selected_deck_id()
+	if deck_id.is_empty():
+		var empty_card_names: Array[String] = []
+		return empty_card_names
+	return PlayerDeckStore.get_deck_card_names(deck_id)
+
+func set_selected_ai_deck_id(deck_id: String) -> void:
+	selected_ai_deck_id = deck_id.strip_edges()
+
+func get_selected_ai_deck_id() -> String:
+	if selected_ai_deck_id.strip_edges().is_empty():
+		select_first_available_ai_deck()
+	return selected_ai_deck_id
+
+func select_first_available_ai_deck() -> void:
+	var first_deck: Dictionary = PlayerDeckStore.get_first_deck()
+	selected_ai_deck_id = str(first_deck.get("deck_id", ""))
+
+func get_selected_ai_deck_card_names() -> Array[String]:
+	var deck_id: String = get_selected_ai_deck_id()
 	if deck_id.is_empty():
 		var empty_card_names: Array[String] = []
 		return empty_card_names
