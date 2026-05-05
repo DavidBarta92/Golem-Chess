@@ -8,10 +8,10 @@
 script = ExtResource("2_78ie6")
 card_name = "Craftsman"
 card_code = "craftsman"
-duration = 4
-description = "No special effect."
+duration = 5
 white_piece_texture = ExtResource("3_78ie6")
 black_piece_texture = ExtResource("1_v45vy")
+description = "No special effect."
 effect_trigger = "on_expire"
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]])

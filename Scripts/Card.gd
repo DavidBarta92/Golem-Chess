@@ -1,10 +1,10 @@
-﻿# card.gd
+# card.gd
 extends Resource
 class_name Card
 
 @export var card_name: String = "New Card"
 @export var card_code: String = "New Card"
-@export var duration: int = 2
+@export var duration: int = 3
 @export var texture: Texture2D
 @export var card_art: Texture2D
 @export var card_art_mask: Texture2D

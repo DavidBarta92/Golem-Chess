@@ -8,7 +8,7 @@
 script = ExtResource("2_50y3g")
 card_name = "Jester"
 card_code = "jester"
-duration = 4
+duration = 5
 description = "When the linked piece is captured, move your base field to the lower-right target square."
 white_piece_texture = ExtResource("3_0w2lt")
 black_piece_texture = ExtResource("1_xnrh2")

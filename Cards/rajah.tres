@@ -8,7 +8,7 @@
 script = ExtResource("2_l0wl3")
 card_name = "Rajah"
 card_code = "rajah"
-duration = 5
+duration = 6
 white_piece_texture = ExtResource("3_veuos")
 black_piece_texture = ExtResource("1_qnl8q")
 description = "A King card. Keep at least one King available to stay in the game."

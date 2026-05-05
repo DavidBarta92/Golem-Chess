@@ -8,7 +8,7 @@
 script = ExtResource("2_j8rry")
 card_name = "Troubadour"
 card_code = "troubadour"
-duration = 4
+duration = 5
 description = "When the linked piece is captured, take a King card from your deck and add it to your hand."
 white_piece_texture = ExtResource("3_rqqbm")
 black_piece_texture = ExtResource("1_2pj1y")

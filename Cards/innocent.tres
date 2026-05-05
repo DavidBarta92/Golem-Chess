@@ -8,7 +8,7 @@
 script = ExtResource("2_card")
 card_name = "Innocent"
 card_code = "innocent"
-duration = 5
+duration = 6
 description = "When this card expires, take a King card from your deck and add it to your hand."
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")

@@ -8,7 +8,7 @@
 script = ExtResource("2_card")
 card_name = "Elephant"
 card_code = "elephant"
-duration = 3
+duration = 4
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "No special effect."

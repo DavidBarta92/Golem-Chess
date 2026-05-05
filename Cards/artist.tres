@@ -8,7 +8,7 @@
 script = ExtResource("2_card")
 card_name = "Artist"
 card_code = "artist"
-duration = 4
+duration = 5
 description = "When the linked piece captures, take a King card from your deck and add it to your hand."
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")

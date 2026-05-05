@@ -8,7 +8,7 @@
 script = ExtResource("2_card")
 card_name = "Caregiver"
 card_code = "caregiver"
-duration = 4
+duration = 5
 description = "When the linked piece is captured, give a random card from your hand to your opponent."
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
