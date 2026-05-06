@@ -147,7 +147,7 @@ text = "FX"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="KingIconLabel" type="Label" parent="." unique_id=220777662]
+[node name="NexusIconLabel" type="Label" parent="." unique_id=220777662]
 visible = false
 layout_mode = 1
 offset_left = 64.0

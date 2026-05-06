@@ -3,9 +3,9 @@ class_name DeckManager
 const DECK_SIZE = 15
 const HAND_SIZE = 5
 const STARTING_HAND_SIZE = 3
-const KING_CARD_NAME = "King"
+const DEFAULT_NEXUS_CARD_NAME = "King"
 const STARTING_DECK: Array[String] = [
-	KING_CARD_NAME,
+	DEFAULT_NEXUS_CARD_NAME,
 	"Scout",
 	"Ranger",
 	"Craftsman",
@@ -62,18 +62,18 @@ static func return_card_to_deck(deck: Array[String], card_name: String):
 	deck.append(card_name)
 	print("Card returned to deck: %s" % card_name)
 
-static func find_king_card_index(deck: Array[String]) -> int:
+static func find_nexus_card_index(deck: Array[String]) -> int:
 	for i in deck.size():
-		if is_king_card_name(deck[i]):
+		if is_nexus_card_name(deck[i]):
 			return i
 	return -1
 
-static func is_king_card_name(card_name: String) -> bool:
+static func is_nexus_card_name(card_name: String) -> bool:
 	var card: Card = CardLibrary.get_card(card_name)
-	return card != null && card.is_king_card
+	return MoveRules.is_nexus_card(card)
 
-static func has_king_card(card_names: Array) -> bool:
+static func has_nexus_card(card_names: Array) -> bool:
 	for card_name_value in card_names:
-		if is_king_card_name(str(card_name_value)):
+		if is_nexus_card_name(str(card_name_value)):
 			return true
 	return false

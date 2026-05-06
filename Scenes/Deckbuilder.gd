@@ -554,7 +554,7 @@ func _update_deck_editor_state() -> void:
 			visual.disabled = !visual.collection_owned
 
 func _can_complete_deck() -> bool:
-	return is_creating_deck && !deck_name_edit.text.strip_edges().is_empty() && selected_deck_cards.size() == MAX_DECK_SIZE && _has_selected_king_card()
+	return is_creating_deck && !deck_name_edit.text.strip_edges().is_empty() && selected_deck_cards.size() == MAX_DECK_SIZE && _has_selected_nexus_card()
 
 func _can_add_card_to_deck(card_name: String) -> bool:
 	var card: Card = CardLibrary.get_card(card_name)
@@ -695,17 +695,17 @@ func _is_card_already_selected(card: Card) -> bool:
 			return true
 	return false
 
-func _has_selected_king_card() -> bool:
+func _has_selected_nexus_card() -> bool:
 	for deck_card in selected_deck_cards:
 		if !(deck_card is Dictionary):
 			continue
 
 		var card: Card = CardLibrary.get_card(str(deck_card.get("card_name", "")))
-		if card != null && card.is_king_card:
+		if MoveRules.is_nexus_card(card):
 			return true
 
 		var card_by_code: Card = CardLibrary.get_card_by_code(str(deck_card.get("card_code", "")))
-		if card_by_code != null && card_by_code.is_king_card:
+		if MoveRules.is_nexus_card(card_by_code):
 			return true
 
 	return false

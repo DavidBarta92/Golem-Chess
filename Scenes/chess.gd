@@ -603,16 +603,16 @@ func tick_attached_cards_locally() -> void:
 		var expired_card: Card = piece.use_turn()
 		if expired_card == null:
 			continue
-		if MoveRules.is_king_card(expired_card):
-			handle_expired_king_card_locally(piece.color, expired_card)
+		if MoveRules.is_nexus_card(expired_card):
+			handle_expired_nexus_card_locally(piece.color, expired_card)
 			continue
 		queue_card_expire_animation(piece_pos, expired_card)
 
-func handle_expired_king_card_locally(owner_color: int, expired_card: Card) -> void:
+func handle_expired_nexus_card_locally(owner_color: int, expired_card: Card) -> void:
 	var hand: Array[Card] = get_card_hand(owner_color)
 	if hand.size() >= DeckManager.HAND_SIZE:
-		print("King card deleted because the hand is full.")
-		if !player_has_available_king_card(owner_color):
+		print("Nexus card deleted because the hand is full.")
+		if !player_has_available_nexus_card(owner_color):
 			finish_game(-owner_color)
 		return
 
@@ -1518,9 +1518,9 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	print("set_move() start: white=", white, " start=", start_pos, " end=", end_pos, " piece=", board[start_pos.x][start_pos.y])
 	var moving_color: int = 1 if board[start_pos.x][start_pos.y] > 0 else -1
 	var captured_piece: Piece = piece_objects[end_pos] as Piece if piece_objects.has(end_pos) else null
-	var captured_king: bool = is_king_piece(captured_piece)
-	var captured_king_owner_color: int = captured_piece.color if captured_piece != null else 0
-	var captured_king_card_returned: bool = true
+	var captured_nexus: bool = is_nexus_piece(captured_piece)
+	var captured_nexus_owner_color: int = captured_piece.color if captured_piece != null else 0
+	var captured_nexus_card_returned: bool = true
 
 	if piece_objects.has(start_pos):
 		var piece: Piece = piece_objects[start_pos] as Piece
@@ -1534,12 +1534,12 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	board[end_pos.x][end_pos.y] = board[start_pos.x][start_pos.y]
 	board[start_pos.x][start_pos.y] = 0
 
-	if captured_king:
-		captured_king_card_returned = return_captured_king_card_to_hand(captured_piece)
+	if captured_nexus:
+		captured_nexus_card_returned = return_captured_nexus_card_to_hand(captured_piece)
 
-	if captured_king && !captured_king_card_returned && !player_has_available_king_card(captured_king_owner_color):
+	if captured_nexus && !captured_nexus_card_returned && !player_has_available_nexus_card(captured_nexus_owner_color):
 		display_board()
-		finish_game(-captured_king_owner_color)
+		finish_game(-captured_nexus_owner_color)
 		return
 
 	var winner_color: int = get_winner_after_move(moving_color, end_pos)
@@ -1559,13 +1559,13 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 		show_options()
 		state = true
 
-func return_captured_king_card_to_hand(captured_piece: Piece) -> bool:
+func return_captured_nexus_card_to_hand(captured_piece: Piece) -> bool:
 	if captured_piece == null or captured_piece.attached_card == null:
 		return false
 	var owner_color: int = captured_piece.color
 	var hand: Array[Card] = get_card_hand(owner_color)
 	if hand.size() >= DeckManager.HAND_SIZE:
-		print("King card deleted because the hand is full.")
+		print("Nexus card deleted because the hand is full.")
 		return false
 	var returned_card: Card = captured_piece.attached_card.duplicate() as Card
 	if returned_card != null:
@@ -1573,20 +1573,20 @@ func return_captured_king_card_to_hand(captured_piece: Piece) -> bool:
 		return true
 	return false
 
-func player_has_available_king_card(owner_color: int) -> bool:
+func player_has_available_nexus_card(owner_color: int) -> bool:
 	for card: Card in get_card_hand(owner_color):
-		if MoveRules.is_king_card(card):
+		if MoveRules.is_nexus_card(card):
 			return true
-	if DeckManager.has_king_card(get_card_deck(owner_color)):
+	if DeckManager.has_nexus_card(get_card_deck(owner_color)):
 		return true
 	for position_value in piece_objects:
 		var piece: Piece = piece_objects[position_value] as Piece
-		if piece != null && piece.color == owner_color && MoveRules.is_king_card(piece.attached_card):
+		if piece != null && piece.color == owner_color && MoveRules.is_nexus_card(piece.attached_card):
 			return true
 	return false
 
 func get_winner_after_move(moving_color: int, end_pos: Vector2) -> int:
-	if is_opponent_base_field(moving_color, end_pos) && is_king_piece_at(end_pos):
+	if is_opponent_base_field(moving_color, end_pos) && is_nexus_piece_at(end_pos):
 		return moving_color
 	return 0
 
@@ -1598,13 +1598,13 @@ func is_opponent_base_field(moving_color: int, pos: Vector2) -> bool:
 func has_any_piece(owner_color: int) -> bool:
 	return MoveRules.has_any_piece(piece_objects, owner_color)
 
-func is_king_piece(piece: Piece) -> bool:
-	return piece != null && MoveRules.is_king_card(piece.attached_card)
+func is_nexus_piece(piece: Piece) -> bool:
+	return piece != null && MoveRules.is_nexus_card(piece.attached_card)
 
-func is_king_piece_at(piece_position: Vector2) -> bool:
+func is_nexus_piece_at(piece_position: Vector2) -> bool:
 	if !piece_objects.has(piece_position):
 		return false
-	return is_king_piece(piece_objects[piece_position] as Piece)
+	return is_nexus_piece(piece_objects[piece_position] as Piece)
 
 func current_player_has_valid_turn_action() -> bool:
 	var current_color: int = get_current_turn_color()

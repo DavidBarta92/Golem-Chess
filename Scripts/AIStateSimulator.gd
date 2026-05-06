@@ -28,8 +28,8 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.player_initial_decks = duplicate_card_list_dictionary(source_state.player_initial_decks)
 	cloned_state.player_hands = duplicate_card_list_dictionary(source_state.player_hands)
 	cloned_state.current_turn_player = source_state.current_turn_player
-	cloned_state.white_king_position = source_state.white_king_position
-	cloned_state.black_king_position = source_state.black_king_position
+	cloned_state.white_nexus_position = source_state.white_nexus_position
+	cloned_state.black_nexus_position = source_state.black_nexus_position
 	cloned_state.player_base_fields = duplicate_vector2_dictionary(source_state.player_base_fields)
 	cloned_state.board_effects = duplicate_board_effects(source_state.board_effects)
 	cloned_state.recent_card_transfers = []
@@ -147,7 +147,7 @@ static func apply_attach_action(game_state: GameStateData, player_id: int, actio
 	if game_state.game_over:
 		return
 	CardEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, card, board_size)
-	_refresh_king_positions(game_state)
+	_refresh_nexus_positions(game_state)
 
 static func apply_move_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> void:
 	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
@@ -165,22 +165,22 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 	game_state.set_piece(to_pos, moving_piece)
 	game_state.moved_piece_this_turn[player_id] = true
 
-	if MoveRules.is_king_card(moving_piece.attached_card):
+	if MoveRules.is_nexus_card(moving_piece.attached_card):
 		if player_id == 0:
-			game_state.white_king_position = to_pos
+			game_state.white_nexus_position = to_pos
 		else:
-			game_state.black_king_position = to_pos
+			game_state.black_nexus_position = to_pos
 
 	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
-	if MoveRules.is_king_card(moving_piece.attached_card) && to_pos == opponent_base:
+	if MoveRules.is_nexus_card(moving_piece.attached_card) && to_pos == opponent_base:
 		game_state.game_over = true
 		game_state.winner_player = player_id
 		game_state.win_condition = "base_reached"
 		return
 
-	if captured_piece != null && CardEffectResolver.is_king_piece(captured_piece):
+	if captured_piece != null && CardEffectResolver.is_nexus_piece(captured_piece):
 		var captured_player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color)
-		CardEffectResolver.clear_king_position_if_needed(game_state, captured_player_id, true)
+		CardEffectResolver.clear_nexus_position_if_needed(game_state, captured_player_id, true)
 
 	if moving_piece.attached_card != null:
 		var moving_card: Card = moving_piece.attached_card
@@ -199,7 +199,7 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 		if game_state.game_over:
 			return
 
-	_refresh_king_positions(game_state)
+	_refresh_nexus_positions(game_state)
 
 static func simulate_trigger_effect(
 	game_state: GameStateData,
@@ -224,7 +224,7 @@ static func simulate_trigger_effect(
 		context[key] = extra_context[key]
 
 	CardEffectResolver.resolve_trigger(trigger, game_state, context, board_size)
-	_refresh_king_positions(game_state)
+	_refresh_nexus_positions(game_state)
 
 static func remove_card_name_from_hand(game_state: GameStateData, player_id: int, card_name: String) -> void:
 	if !game_state.player_hands.has(player_id):
@@ -261,8 +261,8 @@ static func tick_attached_cards(game_state: GameStateData, board_size: int) -> v
 		if expired_card == null:
 			continue
 
-		if MoveRules.is_king_card(expired_card):
-			handle_expired_king_card(game_state, player_id, expired_card, piece_pos)
+		if MoveRules.is_nexus_card(expired_card):
+			handle_expired_nexus_card(game_state, player_id, expired_card, piece_pos)
 			if game_state.game_over:
 				return
 			continue
@@ -271,22 +271,22 @@ static func tick_attached_cards(game_state: GameStateData, board_size: int) -> v
 		if game_state.game_over:
 			return
 
-	_refresh_king_positions(game_state)
+	_refresh_nexus_positions(game_state)
 
-static func handle_expired_king_card(game_state: GameStateData, player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
-	CardEffectResolver.clear_king_position_if_needed(game_state, player_id, true)
-	var king_card_returned: bool = CardEffectResolver.return_card_to_owner_hand(game_state, player_id, expired_card.card_name, piece_pos)
-	if !king_card_returned && !CardEffectResolver.player_has_available_king_card(game_state, player_id):
+static func handle_expired_nexus_card(game_state: GameStateData, player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
+	CardEffectResolver.clear_nexus_position_if_needed(game_state, player_id, true)
+	var nexus_card_returned: bool = CardEffectResolver.return_card_to_owner_hand(game_state, player_id, expired_card.card_name, piece_pos)
+	if !nexus_card_returned && !CardEffectResolver.player_has_available_nexus_card(game_state, player_id):
 		game_state.game_over = true
 		game_state.winner_player = 1 - player_id
-		game_state.win_condition = "king_card_lost"
+		game_state.win_condition = "nexus_card_lost"
 
 static func should_tick_attached_cards_this_end_turn(game_state: GameStateData) -> bool:
 	return game_state.current_turn_player == 1
 
-static func _refresh_king_positions(game_state: GameStateData) -> void:
-	game_state.white_king_position = find_king_position(game_state.pieces, 0)
-	game_state.black_king_position = find_king_position(game_state.pieces, 1)
+static func _refresh_nexus_positions(game_state: GameStateData) -> void:
+	game_state.white_nexus_position = find_nexus_position(game_state.pieces, 0)
+	game_state.black_nexus_position = find_nexus_position(game_state.pieces, 1)
 
 static func apply_candidate_to_pieces(source_pieces: Dictionary, move: Dictionary) -> Dictionary:
 	var simulated_pieces: Dictionary = clone_pieces(source_pieces)
@@ -329,16 +329,16 @@ static func get_captured_piece(pieces: Dictionary, move: Dictionary) -> Piece:
 	var to_pos: Vector2 = get_move_to(move)
 	return pieces.get(to_pos, null) as Piece
 
-static func find_king_position(pieces: Dictionary, player_id: int) -> Vector2:
+static func find_nexus_position(pieces: Dictionary, player_id: int) -> Vector2:
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	for position_value in pieces:
 		var position: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && CardEffectResolver.is_king_piece(piece):
+		if piece != null && piece.color == player_color && CardEffectResolver.is_nexus_piece(piece):
 			return position
 	return Vector2(-1, -1)
 
-static func is_own_king_candidate(pieces: Dictionary, move: Dictionary, player_id: int) -> bool:
+static func is_own_nexus_candidate(pieces: Dictionary, move: Dictionary, player_id: int) -> bool:
 	var from_pos: Vector2 = get_move_from(move)
 	var moving_piece: Piece = pieces.get(from_pos, null) as Piece
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
@@ -346,7 +346,7 @@ static func is_own_king_candidate(pieces: Dictionary, move: Dictionary, player_i
 		return false
 
 	var card: Card = get_card_for_candidate(pieces, move)
-	return MoveRules.is_king_card(card)
+	return MoveRules.is_nexus_card(card)
 
 static func get_hand_cards_from_state(game_state: GameStateData, player_id: int) -> Array[Card]:
 	var hand_cards: Array[Card] = []

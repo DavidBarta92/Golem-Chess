@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://s2klg64atwwf"
-path="res://.godot/imported/king_frame.svg-bea6ef7cf7b8d60cc441d03d28d3fe07.ctex"
+uid="uid://bgwp8p11q6hrm"
+path="res://.godot/imported/nexus_mask.svg-37170d42394d6028214dd85b86a8e1d3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/king_frame.svg"
-dest_files=["res://.godot/imported/king_frame.svg-bea6ef7cf7b8d60cc441d03d28d3fe07.ctex"]
+source_file="res://Assets/nexus_mask.svg"
+dest_files=["res://.godot/imported/nexus_mask.svg-37170d42394d6028214dd85b86a8e1d3.ctex"]
 
 [params]
 

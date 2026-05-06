@@ -7,9 +7,11 @@ const CARD_ART_MASK_SHADER = preload("res://Shaders/card_art_mask.gdshader")
 const CARD_FRONT_TEXTURE = preload("res://Assets/card_base.svg")
 const CARD_BACK_TEXTURE = preload("res://Assets/card_back_1.svg")
 const BASIC_TYPE_FRAME_TEXTURE = preload("res://Assets/basic_frame.svg")
-const KING_TYPE_FRAME_TEXTURE = preload("res://Assets/king_frame.svg")
+const NEXUS_TYPE_FRAME_TEXTURE = preload("res://Assets/nexus_frame.svg")
+const SHARED_TYPE_FRAME_TEXTURE = preload("res://Assets/shared_frame.svg")
 const BASIC_TYPE_MASK_TEXTURE = preload("res://Assets/basic_mask.svg")
-const KING_TYPE_MASK_TEXTURE = preload("res://Assets/king_mask.svg")
+const NEXUS_TYPE_MASK_TEXTURE = preload("res://Assets/nexus_mask.svg")
+const SHARED_TYPE_MASK_TEXTURE = preload("res://Assets/shared_mask.svg")
 const CARD_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR
 const CARD_ART_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 const CARD_SHIMMER_ENABLED: bool = false
@@ -33,7 +35,7 @@ signal burn_finished(card_visual: CardVisual)
 @onready var duration_label: Label = $DurationLabel
 @onready var effect_icon_texture: TextureRect = $EffectIconTexture
 @onready var effect_icon_label: Label = $EffectIconLabel
-@onready var king_icon_label: Label = $KingIconLabel
+@onready var nexus_icon_label: Label = $NexusIconLabel
 @onready var name_label: Label = $NameLabel
 @onready var description_label: RichTextLabel = $DescriptionLabel
 @onready var pattern_view: CardPatternView = $PatternView
@@ -285,7 +287,7 @@ func play_burn_away_and_free() -> void:
 	duration_label.visible = false
 	effect_icon_texture.visible = false
 	effect_icon_label.visible = false
-	king_icon_label.visible = false
+	nexus_icon_label.visible = false
 	pattern_view.visible = false
 	shadow.self_modulate.a = 0.32
 	modulate.a = 1.0
@@ -308,7 +310,7 @@ func _apply_card() -> void:
 		duration_label.text = ""
 		effect_icon_texture.texture = null
 		effect_icon_label.text = ""
-		king_icon_label.visible = false
+		nexus_icon_label.visible = false
 		pattern_view.set_card(null)
 	else:
 		name_label.text = card.card_name
@@ -339,14 +341,18 @@ func _apply_art_state() -> void:
 		card_art_material.set_shader_parameter("has_card_mask", has_card_mask)
 
 func _get_type_frame_texture() -> Texture2D:
-	if card != null && card.is_king_card:
-		return KING_TYPE_FRAME_TEXTURE
+	if card != null && MoveRules.is_nexus_card(card):
+		return NEXUS_TYPE_FRAME_TEXTURE
+	if card != null && MoveRules.is_shared_card(card):
+		return SHARED_TYPE_FRAME_TEXTURE
 
 	return BASIC_TYPE_FRAME_TEXTURE
 
 func _get_type_mask_texture() -> Texture2D:
-	if card != null && card.is_king_card:
-		return KING_TYPE_MASK_TEXTURE
+	if card != null && MoveRules.is_nexus_card(card):
+		return NEXUS_TYPE_MASK_TEXTURE
+	if card != null && MoveRules.is_shared_card(card):
+		return SHARED_TYPE_MASK_TEXTURE
 
 	return BASIC_TYPE_MASK_TEXTURE
 
@@ -357,7 +363,7 @@ func _apply_face_state() -> void:
 	duration_label.visible = !face_down
 	effect_icon_texture.visible = !face_down && has_effect_icon && card.effect_icon != null
 	effect_icon_label.visible = !face_down && has_effect_icon && card.effect_icon == null
-	king_icon_label.visible = false
+	nexus_icon_label.visible = false
 	pattern_view.visible = !face_down
 	shimmer.visible = CARD_SHIMMER_ENABLED && !face_down
 	_apply_art_state()

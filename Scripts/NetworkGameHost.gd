@@ -48,20 +48,20 @@ func initialize_game(board_data: Array):
 	var black_piece = game_state.get_piece(black_first_piece_pos)
 
 	if false && white_piece:
-		var king_card = CardLibrary.get_card("King")
-		if king_card:
-			white_piece.attach_card(king_card)
+		var nexus_card = CardLibrary.get_card("King")
+		if nexus_card:
+			white_piece.attach_card(nexus_card)
 			white_piece.turns_remaining = -1
-			game_state.white_king_position = white_first_piece_pos
-			print("White king added: ", white_first_piece_pos)
+			game_state.white_nexus_position = white_first_piece_pos
+			print("White nexus added: ", white_first_piece_pos)
 
 	if false && black_piece:
-		var king_card = CardLibrary.get_card("King")
-		if king_card:
-			black_piece.attach_card(king_card)
+		var nexus_card = CardLibrary.get_card("King")
+		if nexus_card:
+			black_piece.attach_card(nexus_card)
 			black_piece.turns_remaining = -1
-			game_state.black_king_position = black_first_piece_pos
-			print("Black king added: ", black_first_piece_pos)
+			game_state.black_nexus_position = black_first_piece_pos
+			print("Black nexus added: ", black_first_piece_pos)
 
 	broadcast_full_state()
 
@@ -138,11 +138,11 @@ func handle_attach_card(action: Dictionary):
 		var piece_turns_before: int = piece.turns_remaining
 		piece.attach_card(card)
 
-		if MoveRules.is_king_card(card):
+		if MoveRules.is_nexus_card(card):
 			if player_id == 0:
-				game_state.white_king_position = piece_pos
+				game_state.white_nexus_position = piece_pos
 			else:
-				game_state.black_king_position = piece_pos
+				game_state.black_nexus_position = piece_pos
 
 		DeckManager.play_card(game_state.player_hands[player_id], card_name, game_state.player_decks[player_id])
 		game_state.attached_card_this_turn[player_id] = true
@@ -246,8 +246,8 @@ func handle_move_piece(action: Dictionary):
 		return
 
 	var captured_piece = game_state.get_piece(to_pos)
-	var captured_king: bool = is_king_piece(captured_piece)
-	var captured_king_card_returned: bool = true
+	var captured_nexus: bool = is_nexus_piece(captured_piece)
+	var captured_nexus_card_returned: bool = true
 	var captured_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
 	var move_log_context: Dictionary = create_move_log_context(player_id, from_pos, to_pos, piece, captured_piece)
 
@@ -273,8 +273,8 @@ func handle_move_piece(action: Dictionary):
 				broadcast_full_state()
 				return
 
-		if captured_king && captured_piece.attached_card != null:
-			captured_king_card_returned = return_card_to_player_hand(captured_piece_owner_player_id, captured_piece.attached_card, to_pos, "captured_king")
+		if captured_nexus && captured_piece.attached_card != null:
+			captured_nexus_card_returned = return_card_to_player_hand(captured_piece_owner_player_id, captured_piece.attached_card, to_pos, "captured_nexus")
 		elif captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
 			var enemy_player = captured_piece_owner_player_id
 			DeckManager.return_card_to_deck(game_state.player_decks[enemy_player], captured_piece.attached_card.card_name)
@@ -284,23 +284,23 @@ func handle_move_piece(action: Dictionary):
 	piece.position = to_pos
 	game_state.set_piece(to_pos, piece)
 
-	if MoveRules.is_king_card(piece.attached_card):
+	if MoveRules.is_nexus_card(piece.attached_card):
 		var moved_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(piece.color)
 		if moved_piece_owner_player_id == 0:
-			game_state.white_king_position = to_pos
+			game_state.white_nexus_position = to_pos
 		else:
-			game_state.black_king_position = to_pos
+			game_state.black_nexus_position = to_pos
 
-	if captured_king:
+	if captured_nexus:
 		var captured_player_id: int = captured_piece_owner_player_id
-		CardEffectResolver.clear_king_position_if_needed(game_state, captured_player_id, true)
-		if !captured_king_card_returned && !player_has_available_king_card(captured_player_id):
-			print("King card deleted and player %d has no available king cards." % captured_player_id)
-			finish_game(player_id, "king_card_lost")
+		CardEffectResolver.clear_nexus_position_if_needed(game_state, captured_player_id, true)
+		if !captured_nexus_card_returned && !player_has_available_nexus_card(captured_player_id):
+			print("Nexus card deleted and player %d has no available nexus cards." % captured_player_id)
+			finish_game(player_id, "nexus_card_lost")
 			log_move_result(move_log_context, game_state.win_condition)
 			broadcast_full_state()
 			return
-		print("King piece captured. King card returned or replacement king remains for player %d." % captured_player_id)
+		print("Nexus piece captured. Nexus card returned or replacement nexus remains for player %d." % captured_player_id)
 
 	if captured_piece != null && piece.attached_card != null:
 		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_CAPTURE, game_state, {
@@ -319,8 +319,8 @@ func handle_move_piece(action: Dictionary):
 	var opponent_base_field: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var entered_opponent_base: bool = to_pos == opponent_base_field
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	if is_king_piece(piece) && piece.color == player_color && entered_opponent_base:
-		print("Opponent base reached by king. Player %d wins." % player_id)
+	if is_nexus_piece(piece) && piece.color == player_color && entered_opponent_base:
+		print("Opponent base reached by nexus. Player %d wins." % player_id)
 		finish_game(player_id, "base_reached")
 		log_move_result(move_log_context, game_state.win_condition)
 		broadcast_full_state()
@@ -402,8 +402,8 @@ func tick_attached_cards() -> void:
 		if expired_card == null:
 			continue
 
-		if MoveRules.is_king_card(expired_card):
-			handle_expired_king_card(player_id, expired_card, piece_pos)
+		if MoveRules.is_nexus_card(expired_card):
+			handle_expired_nexus_card(player_id, expired_card, piece_pos)
 			if game_state.game_over:
 				return
 			continue
@@ -419,11 +419,11 @@ func tick_attached_cards() -> void:
 		if game_state.game_over:
 			return
 
-func handle_expired_king_card(player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
-	CardEffectResolver.clear_king_position_if_needed(game_state, player_id, true)
-	var king_card_returned: bool = return_card_to_player_hand(player_id, expired_card, piece_pos, "expired_king")
-	if !king_card_returned && !player_has_available_king_card(player_id):
-		finish_game(1 - player_id, "king_card_lost")
+func handle_expired_nexus_card(player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
+	CardEffectResolver.clear_nexus_position_if_needed(game_state, player_id, true)
+	var nexus_card_returned: bool = return_card_to_player_hand(player_id, expired_card, piece_pos, "expired_nexus")
+	if !nexus_card_returned && !player_has_available_nexus_card(player_id):
+		finish_game(1 - player_id, "nexus_card_lost")
 
 func should_tick_attached_cards_this_end_turn() -> bool:
 	return game_state.current_turn_player == 1
@@ -530,8 +530,8 @@ func get_hand_cards_with_next_draw(player_id: int) -> Array[Card]:
 		hand_cards.append(next_card)
 	return hand_cards
 
-func is_king_piece(piece: Piece) -> bool:
-	return piece != null && MoveRules.is_king_card(piece.attached_card)
+func is_nexus_piece(piece: Piece) -> bool:
+	return piece != null && MoveRules.is_nexus_card(piece.attached_card)
 
 func get_hand_cards_for_player(player_id: int) -> Array[Card]:
 	var hand_cards: Array[Card] = []
@@ -740,16 +740,16 @@ func return_card_to_player_hand(player_id: int, card: Card, piece_pos: Vector2, 
 	log_card_returned_to_hand(player_id, card, piece_pos, reason)
 	return true
 
-func player_has_available_king_card(player_id: int) -> bool:
-	if game_state.player_hands.has(player_id) && DeckManager.has_king_card(game_state.player_hands[player_id]):
+func player_has_available_nexus_card(player_id: int) -> bool:
+	if game_state.player_hands.has(player_id) && DeckManager.has_nexus_card(game_state.player_hands[player_id]):
 		return true
-	if game_state.player_decks.has(player_id) && DeckManager.has_king_card(game_state.player_decks[player_id]):
+	if game_state.player_decks.has(player_id) && DeckManager.has_nexus_card(game_state.player_decks[player_id]):
 		return true
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && MoveRules.is_king_card(piece.attached_card):
+		if piece != null && piece.color == player_color && MoveRules.is_nexus_card(piece.attached_card):
 			return true
 	return false
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgwp8p11q6hrm"
-path="res://.godot/imported/king_mask.svg-e40fb8f982de9595159883e2be5ecadf.ctex"
+uid="uid://4oew150bl3d0"
+path="res://.godot/imported/shared_mask.svg-8e93a84e5dc20df768e69c2f57297a35.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/king_mask.svg"
-dest_files=["res://.godot/imported/king_mask.svg-e40fb8f982de9595159883e2be5ecadf.ctex"]
+source_file="res://Assets/shared_mask.svg"
+dest_files=["res://.godot/imported/shared_mask.svg-8e93a84e5dc20df768e69c2f57297a35.ctex"]
 
 [params]
 
