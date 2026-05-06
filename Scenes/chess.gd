@@ -24,6 +24,8 @@ const TURN_BLACK = preload("res://Assets/turn-black.png")
 
 const PIECE_MOVE = preload("res://Assets/Piece_move.png")
 const PIECE_EXHAUSTED_SHADER = preload("res://Shaders/piece_exhausted.gdshader")
+const BOARD_TILE_LIGHT = preload("res://Assets/board_tile_light.svg")
+const BOARD_TILE_DARK = preload("res://Assets/board_tile_dark.svg")
 
 const PLAYER_HAND_SIZE = 5
 const CARD_UI_SIZE = Vector2(164, 229)
@@ -49,6 +51,7 @@ const CARD_BURN_SEQUENCE_GAP = 0.08
 @onready var pieces_node = $Pieces
 @onready var dots = $Dots
 @onready var turn = $Turn
+@onready var board_tiles_node = $BoardTiles
 @onready var canvas_layer = $"../CanvasLayer"
 @onready var white_pieces = $"../CanvasLayer/white_pieces"
 @onready var black_pieces = $"../CanvasLayer/black_pieces"
@@ -123,6 +126,8 @@ func set_turn(_turn):
 
 func _ready():
 	randomize()
+	texture = null
+	create_board_tiles()
 	create_board_markers_node()
 	board.append([1, 1, 1, 1, 1])
 	board.append([0, 0, 0, 0, 0])
@@ -140,6 +145,25 @@ func _ready():
 	create_quit_confirmation_ui()
 	create_end_turn_ui()
 	update_player_name_labels()
+
+func create_board_tiles():
+	if board_tiles_node == null:
+		board_tiles_node = Node2D.new()
+		board_tiles_node.name = "BoardTiles"
+		add_child(board_tiles_node)
+		move_child(board_tiles_node, 0)
+
+	board_tiles_node.z_index = 0
+	for child in board_tiles_node.get_children():
+		child.queue_free()
+
+	for row in BOARD_SIZE:
+		for col in BOARD_SIZE:
+			var tile := Sprite2D.new()
+			board_tiles_node.add_child(tile)
+			tile.texture = BOARD_TILE_LIGHT if (row + col) % 2 == 0 else BOARD_TILE_DARK
+			tile.position = get_board_position_local_position(Vector2(row, col))
+			tile.z_index = 0
 
 func create_board_markers_node():
 	board_markers_node = Node2D.new()
@@ -1327,8 +1351,11 @@ func send_move_action(from_pos: Vector2, to_pos: Vector2):
 	set_move(from_pos, to_pos)
 
 func is_mouse_out():
-	if get_rect().has_point(to_local(get_global_mouse_position())): return false
-	return true
+	return !get_board_rect_local().has_point(to_local(get_global_mouse_position()))
+
+func get_board_rect_local() -> Rect2:
+	var board_width: float = BOARD_SIZE * CELL_WIDTH
+	return Rect2(Vector2.ONE * -board_width * 0.5, Vector2.ONE * board_width)
 
 func get_mouse_board_position() -> Vector2:
 	var local_pos: Vector2 = to_local(get_global_mouse_position())

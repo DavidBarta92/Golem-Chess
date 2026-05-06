@@ -10,7 +10,6 @@
 [ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="6_jkdf5"]
 [ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="7_wsu2k"]
 [ext_resource type="Texture2D" uid="uid://c56dxei2cm0ig" path="res://Assets/black_queen.png" id="8_k12tt"]
-[ext_resource type="Texture2D" uid="uid://5ia02q3iu1vp" path="res://Assets/Chess_board_new.png" id="11_d1ilt"]
 [ext_resource type="Script" uid="uid://dqcyoelgvjck5" path="res://Scenes/host_label.gd" id="12_6iyac"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_h1bgf"]
@@ -186,7 +185,6 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
 [node name="board" parent="." unique_id=171164572 instance=ExtResource("1_jjgbg")]
-texture = ExtResource("11_d1ilt")
 
 [node name="host_label" type="Label" parent="." unique_id=261984928]
 offset_left = 136.0
