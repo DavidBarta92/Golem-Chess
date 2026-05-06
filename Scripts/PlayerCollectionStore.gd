@@ -1,10 +1,10 @@
 extends Node
 
-const COLLECTION_SCHEMA_VERSION: int = 1
+const COLLECTION_SCHEMA_VERSION: int = 2
 const COLLECTION_PATH: String = "user://player_collection.json"
 const LOCAL_PROVIDER: String = "local_json"
-const DEFAULT_VARIANT_ID: String = "basic"
-const DEFAULT_VARIANT_NAME: String = "Basic"
+const DEFAULT_VARIANT_ID: String = "standard"
+const DEFAULT_VARIANT_NAME: String = "Standard"
 
 var collection_data: Dictionary = {}
 var is_loaded: bool = false
@@ -15,6 +15,7 @@ func ensure_loaded() -> void:
 
 	if CardLibrary.all_cards.is_empty():
 		CardLibrary.load_all_cards()
+	CardPrintLibrary.ensure_loaded()
 
 	if FileAccess.file_exists(COLLECTION_PATH):
 		var file := FileAccess.open(COLLECTION_PATH, FileAccess.READ)
@@ -23,7 +24,7 @@ func ensure_loaded() -> void:
 			if parsed is Dictionary:
 				collection_data = _normalize_collection(parsed)
 				is_loaded = true
-				_add_missing_default_cards()
+				_add_missing_default_collection_prints()
 				save_collection()
 				return
 
@@ -38,6 +39,15 @@ func list_items() -> Array:
 func owns_card(card: Card) -> bool:
 	return get_owned_count_for_card(card) > 0
 
+func owns_card_code(card_code: String) -> bool:
+	return get_owned_count_for_card_code(card_code) > 0
+
+func owns_print(card_print: CardPrint) -> bool:
+	return card_print != null && get_owned_count_for_print_id(card_print.print_id) > 0
+
+func owns_print_id(print_id: String) -> bool:
+	return get_owned_count_for_print_id(print_id) > 0
+
 func get_owned_count_for_card(card: Card) -> int:
 	if card == null:
 		return 0
@@ -46,8 +56,29 @@ func get_owned_count_for_card(card: Card) -> int:
 	var owned_count: int = 0
 	for item in _get_items():
 		if item is Dictionary && str(item.get("card_code", "")) == card_code:
-			owned_count += 1
+			owned_count += int(item.get("quantity", 0))
 	return owned_count
+
+func get_owned_count_for_card_code(card_code: String) -> int:
+	var normalized_card_code: String = _resolve_card_code(card_code)
+	if normalized_card_code.is_empty():
+		return 0
+
+	var owned_count: int = 0
+	for item in _get_items():
+		if item is Dictionary && _resolve_card_code(str(item.get("card_code", ""))) == normalized_card_code:
+			owned_count += int(item.get("quantity", 0))
+	return owned_count
+
+func get_owned_count_for_print_id(print_id: String) -> int:
+	var normalized_print_id: String = print_id.strip_edges()
+	if normalized_print_id.is_empty():
+		return 0
+
+	for item in _get_items():
+		if item is Dictionary && str(item.get("print_id", "")) == normalized_print_id:
+			return int(item.get("quantity", 0))
+	return 0
 
 func get_first_owned_item_for_card(card: Card) -> Dictionary:
 	if card == null:
@@ -55,35 +86,67 @@ func get_first_owned_item_for_card(card: Card) -> Dictionary:
 
 	var card_code: String = get_card_code(card)
 	for item in _get_items():
-		if item is Dictionary && str(item.get("card_code", "")) == card_code:
+		if item is Dictionary && str(item.get("card_code", "")) == card_code && int(item.get("quantity", 0)) > 0:
 			return item.duplicate(true)
 	return {}
 
-func add_local_card_copy(card_name: String, variant_id: String = DEFAULT_VARIANT_ID, variant_name: String = DEFAULT_VARIANT_NAME) -> Dictionary:
-	ensure_loaded()
+func get_owned_item_for_print(card_print: CardPrint) -> Dictionary:
+	if card_print == null:
+		return {}
+	return get_owned_item_for_print_id(card_print.print_id)
 
+func get_owned_item_for_print_id(print_id: String) -> Dictionary:
+	for item in _get_items():
+		if item is Dictionary && str(item.get("print_id", "")) == print_id && int(item.get("quantity", 0)) > 0:
+			return item.duplicate(true)
+	return {}
+
+func add_local_card_copy(card_name: String, variant_id: String = DEFAULT_VARIANT_ID, _variant_name: String = DEFAULT_VARIANT_NAME) -> Dictionary:
+	ensure_loaded()
 	var card: Card = CardLibrary.get_card(card_name)
 	if card == null:
 		return {}
 
-	var item := _create_collection_item(card, variant_id, variant_name, _generate_local_instance_id(card, variant_id))
-	var items: Array = _get_items()
-	items.append(item)
-	collection_data["items"] = items
-	save_collection()
-	return item.duplicate(true)
+	var card_code: String = get_card_code(card)
+	var print_id: String = CardPrintLibrary.get_print_id(card_code, variant_id)
+	return add_local_print_copy(print_id)
 
-func remove_card_instance(instance_id: String) -> bool:
+func add_local_print_copy(print_id: String, amount: int = 1) -> Dictionary:
 	ensure_loaded()
+	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
+	if card_print == null:
+		return {}
 
 	var items: Array = _get_items()
 	for index in range(items.size()):
 		var item = items[index]
-		if item is Dictionary && str(item.get("instance_id", "")) == instance_id:
-			items.remove_at(index)
+		if item is Dictionary && str(item.get("print_id", "")) == card_print.print_id:
+			item["quantity"] = maxi(0, int(item.get("quantity", 0))) + maxi(1, amount)
+			items[index] = item
 			collection_data["items"] = items
 			save_collection()
-			return true
+			return item.duplicate(true)
+
+	var new_item: Dictionary = _create_collection_item(card_print, maxi(1, amount))
+	items.append(new_item)
+	collection_data["items"] = items
+	save_collection()
+	return new_item.duplicate(true)
+
+func remove_card_instance(instance_id: String) -> bool:
+	ensure_loaded()
+	var items: Array = _get_items()
+	for index in range(items.size()):
+		var item = items[index]
+		if item is Dictionary && str(item.get("instance_id", "")) == instance_id:
+			var quantity: int = maxi(0, int(item.get("quantity", 0)) - 1)
+			if quantity <= 0:
+				items.remove_at(index)
+			else:
+				item["quantity"] = quantity
+				items[index] = item
+			collection_data["items"] = items
+			return save_collection()
 	return false
 
 func save_collection() -> bool:
@@ -104,8 +167,23 @@ func get_card_code(card: Card) -> String:
 	var card_code := card.card_code.strip_edges()
 	return card_code if !card_code.is_empty() else card.card_name.strip_edges()
 
+func _resolve_card_code(card_code_or_name: String) -> String:
+	var normalized_value: String = card_code_or_name.strip_edges()
+	if normalized_value.is_empty():
+		return ""
+
+	var card_by_code: Card = CardLibrary.get_card_by_code(normalized_value)
+	if card_by_code != null:
+		return get_card_code(card_by_code)
+
+	var card_by_name: Card = CardLibrary.get_card(normalized_value)
+	if card_by_name != null:
+		return get_card_code(card_by_name)
+
+	return normalized_value
+
 func get_item_def_key(card_code: String, variant_id: String) -> String:
-	return "%s.%s" % [card_code, variant_id]
+	return CardPrintLibrary.get_print_id(card_code, variant_id)
 
 func _get_items() -> Array:
 	ensure_loaded()
@@ -114,7 +192,7 @@ func _get_items() -> Array:
 
 func _normalize_collection(raw_data: Dictionary) -> Dictionary:
 	var normalized: Dictionary = {
-		"schema_version": int(raw_data.get("schema_version", COLLECTION_SCHEMA_VERSION)),
+		"schema_version": COLLECTION_SCHEMA_VERSION,
 		"provider": str(raw_data.get("provider", LOCAL_PROVIDER)),
 		"items": [],
 	}
@@ -124,54 +202,55 @@ func _normalize_collection(raw_data: Dictionary) -> Dictionary:
 	if raw_items is Array:
 		for raw_item in raw_items:
 			if raw_item is Dictionary:
-				normalized_items.append(_normalize_collection_item(raw_item))
+				_add_or_merge_item(normalized_items, _normalize_collection_item(raw_item))
 
 	normalized["items"] = normalized_items
 	return normalized
 
 func _normalize_collection_item(raw_item: Dictionary) -> Dictionary:
-	var card_name: String = str(raw_item.get("card_name", ""))
+	var print_id: String = str(raw_item.get("print_id", ""))
 	var card_code: String = str(raw_item.get("card_code", ""))
-	var card: Card = CardLibrary.get_card(card_name)
-	if card == null && !card_code.is_empty():
-		card = CardLibrary.get_card_by_code(card_code)
-	if card != null:
-		card_code = get_card_code(card)
-		card_name = card.card_name
+	var card_name: String = str(raw_item.get("card_name", ""))
 
-	var variant_id: String = str(raw_item.get("variant_id", DEFAULT_VARIANT_ID))
-	if variant_id.is_empty():
-		variant_id = DEFAULT_VARIANT_ID
+	if card_code.is_empty() && !card_name.is_empty():
+		var card_by_name: Card = CardLibrary.get_card(card_name)
+		if card_by_name != null:
+			card_code = get_card_code(card_by_name)
+
+	var variant_id: String = CardPrintLibrary.normalize_variant_id(str(raw_item.get("variant_id", DEFAULT_VARIANT_ID)))
+	if print_id.is_empty() && !card_code.is_empty():
+		print_id = CardPrintLibrary.get_print_id(card_code, variant_id)
+
+	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
+	if card_print != null:
+		card_code = card_print.card_code
+		variant_id = card_print.variant_id
+	else:
+		card_print = CardPrint.new()
+		card_print.print_id = print_id
+		card_print.card_code = card_code
+		card_print.variant_id = variant_id
+		card_print.variant_name = CardPrintLibrary.get_variant_name(variant_id)
+
+	var quantity: int = maxi(1, int(raw_item.get("quantity", 1)))
 	var instance_id: String = str(raw_item.get("instance_id", ""))
 	if instance_id.is_empty():
-		instance_id = "local_%s_%s_legacy" % [_sanitize_id(card_code), _sanitize_id(variant_id)]
+		instance_id = _generate_instance_id(card_print)
 
-	return {
-		"instance_id": instance_id,
-		"provider": str(raw_item.get("provider", LOCAL_PROVIDER)),
-		"card_code": card_code,
-		"card_name": card_name,
-		"variant_id": variant_id,
-		"variant_name": str(raw_item.get("variant_name", DEFAULT_VARIANT_NAME)),
-		"item_def_key": str(raw_item.get("item_def_key", get_item_def_key(card_code, variant_id))),
-		"steam_item_instance_id": str(raw_item.get("steam_item_instance_id", "")),
-		"steam_item_def_id": str(raw_item.get("steam_item_def_id", "")),
-		"quantity": 1,
-	}
+	return _create_collection_item(card_print, quantity, instance_id)
 
 func _create_default_collection() -> Dictionary:
 	if CardLibrary.all_cards.is_empty():
 		CardLibrary.load_all_cards()
-
-	var card_names: Array = CardLibrary.get_all_card_names()
-	card_names.sort()
+	CardPrintLibrary.ensure_loaded()
 
 	var items: Array = []
-	for card_name in card_names:
-		var card: Card = CardLibrary.get_card(str(card_name))
-		if card == null:
+	var default_prints: Array = _get_default_collection_prints()
+	for card_print_value in default_prints:
+		var card_print: CardPrint = card_print_value as CardPrint
+		if card_print == null:
 			continue
-		items.append(_create_collection_item(card, DEFAULT_VARIANT_ID, DEFAULT_VARIANT_NAME, _generate_default_instance_id(card)))
+		items.append(_create_collection_item(card_print, _get_default_collection_quantity(card_print)))
 
 	return {
 		"schema_version": COLLECTION_SCHEMA_VERSION,
@@ -179,46 +258,94 @@ func _create_default_collection() -> Dictionary:
 		"items": items,
 	}
 
-func _add_missing_default_cards() -> void:
+func _add_missing_default_collection_prints() -> void:
 	var items: Array = _get_items()
-	var owned_default_card_codes: Dictionary = {}
-	for item in items:
-		if item is Dictionary && str(item.get("variant_id", DEFAULT_VARIANT_ID)) == DEFAULT_VARIANT_ID:
-			owned_default_card_codes[str(item.get("card_code", ""))] = true
+	var item_index_by_print_id: Dictionary = {}
+	for index in range(items.size()):
+		var item = items[index]
+		if item is Dictionary:
+			item_index_by_print_id[str(item.get("print_id", ""))] = index
 
-	var card_names: Array = CardLibrary.get_all_card_names()
-	card_names.sort()
-	for card_name in card_names:
-		var card: Card = CardLibrary.get_card(str(card_name))
-		if card == null:
+	var default_prints: Array = _get_default_collection_prints()
+	for card_print_value in default_prints:
+		var card_print: CardPrint = card_print_value as CardPrint
+		if card_print == null:
 			continue
-		var card_code: String = get_card_code(card)
-		if owned_default_card_codes.has(card_code):
+
+		var default_quantity: int = _get_default_collection_quantity(card_print)
+		if item_index_by_print_id.has(card_print.print_id):
+			var item_index: int = int(item_index_by_print_id[card_print.print_id])
+			var existing_item: Dictionary = items[item_index]
+			if int(existing_item.get("quantity", 0)) < default_quantity:
+				existing_item["quantity"] = default_quantity
+				items[item_index] = existing_item
 			continue
-		items.append(_create_collection_item(card, DEFAULT_VARIANT_ID, DEFAULT_VARIANT_NAME, _generate_default_instance_id(card)))
+
+		items.append(_create_collection_item(card_print, default_quantity))
 
 	collection_data["items"] = items
 
-func _create_collection_item(card: Card, variant_id: String, variant_name: String, instance_id: String) -> Dictionary:
-	var card_code: String = get_card_code(card)
+func _get_default_collection_quantity(card_print: CardPrint) -> int:
+	if card_print == null:
+		return 1
+	return maxi(1, card_print.default_collection_quantity)
+
+func _get_default_collection_prints() -> Array:
+	var default_prints: Array = []
+	var card_codes: Array = CardLibrary.get_all_card_codes()
+	card_codes.sort()
+	for card_code_value in card_codes:
+		var card_code: String = str(card_code_value)
+		var card_print: CardPrint = CardPrintLibrary.get_print(CardPrintLibrary.get_default_print_id_for_card_code(card_code))
+		if card_print != null:
+			default_prints.append(card_print)
+
+	for card_print_value in CardPrintLibrary.get_all_prints():
+		var card_print: CardPrint = card_print_value as CardPrint
+		if card_print == null or !card_print.grant_in_default_collection:
+			continue
+		if !_has_print_id(default_prints, card_print.print_id):
+			default_prints.append(card_print)
+	return default_prints
+
+func _has_print_id(card_prints: Array, print_id: String) -> bool:
+	for card_print_value in card_prints:
+		var card_print: CardPrint = card_print_value as CardPrint
+		if card_print != null && card_print.print_id == print_id:
+			return true
+	return false
+
+func _create_collection_item(card_print: CardPrint, quantity: int = 1, instance_id: String = "") -> Dictionary:
+	var card: Card = CardPrintLibrary.get_card_for_print(card_print)
+	if instance_id.is_empty():
+		instance_id = _generate_instance_id(card_print)
+
 	return {
 		"instance_id": instance_id,
 		"provider": LOCAL_PROVIDER,
-		"card_code": card_code,
-		"card_name": card.card_name,
-		"variant_id": variant_id,
-		"variant_name": variant_name,
-		"item_def_key": get_item_def_key(card_code, variant_id),
+		"print_id": card_print.print_id,
+		"card_code": card_print.card_code,
+		"card_name": card.card_name if card != null else card_print.card_code,
+		"variant_id": card_print.variant_id,
+		"variant_name": card_print.get_display_name(),
+		"item_def_key": card_print.print_id,
 		"steam_item_instance_id": "",
 		"steam_item_def_id": "",
-		"quantity": 1,
+		"quantity": maxi(0, quantity),
 	}
 
-func _generate_default_instance_id(card: Card) -> String:
-	return "local_%s_%s_001" % [_sanitize_id(get_card_code(card)), DEFAULT_VARIANT_ID]
+func _add_or_merge_item(items: Array, new_item: Dictionary) -> void:
+	var print_id: String = str(new_item.get("print_id", ""))
+	for index in range(items.size()):
+		var item = items[index]
+		if item is Dictionary && str(item.get("print_id", "")) == print_id:
+			item["quantity"] = int(item.get("quantity", 0)) + int(new_item.get("quantity", 0))
+			items[index] = item
+			return
+	items.append(new_item)
 
-func _generate_local_instance_id(card: Card, variant_id: String) -> String:
-	return "local_%s_%s_%d" % [_sanitize_id(get_card_code(card)), _sanitize_id(variant_id), Time.get_ticks_usec()]
+func _generate_instance_id(card_print: CardPrint) -> String:
+	return "local_%s_%d" % [_sanitize_id(card_print.print_id), Time.get_ticks_usec()]
 
 func _sanitize_id(value: String) -> String:
-	return value.to_lower().replace(" ", "_").replace("/", "_").replace("\\", "_").replace(":", "_")
+	return value.to_lower().replace(" ", "_").replace("/", "_").replace("\\", "_").replace(":", "_").replace(".", "_")

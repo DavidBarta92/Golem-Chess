@@ -1,6 +1,6 @@
 extends Node
 
-const DECK_SCHEMA_VERSION: int = 1
+const DECK_SCHEMA_VERSION: int = 2
 const DECKS_PATH: String = "user://decks.json"
 const LOCAL_PROVIDER: String = "local_json"
 const MAX_DECK_SIZE: int = 15
@@ -14,6 +14,7 @@ func ensure_loaded() -> void:
 
 	if CardLibrary.all_cards.is_empty():
 		CardLibrary.load_all_cards()
+	CardPrintLibrary.ensure_loaded()
 
 	if FileAccess.file_exists(DECKS_PATH):
 		var file := FileAccess.open(DECKS_PATH, FileAccess.READ)
@@ -46,6 +47,97 @@ func get_first_deck() -> Dictionary:
 			return deck.duplicate(true)
 	return {}
 
+func list_playable_decks() -> Array:
+	ensure_loaded()
+	PlayerCollectionStore.ensure_loaded()
+
+	var playable_decks: Array = []
+	for deck in _get_decks():
+		if deck is Dictionary && is_deck_playable(deck):
+			playable_decks.append(deck.duplicate(true))
+	return playable_decks
+
+func get_first_playable_deck() -> Dictionary:
+	ensure_loaded()
+	var playable_decks: Array = list_playable_decks()
+	if playable_decks.is_empty():
+		return {}
+	return playable_decks[0].duplicate(true)
+
+func is_deck_playable_id(deck_id: String) -> bool:
+	var deck: Dictionary = get_deck(deck_id)
+	return !deck.is_empty() && is_deck_playable(deck)
+
+func is_deck_playable(deck: Dictionary) -> bool:
+	var ownership_info: Dictionary = get_deck_ownership_info(deck)
+	return bool(ownership_info.get("is_playable", false))
+
+func get_deck_ownership_info(deck: Dictionary) -> Dictionary:
+	ensure_loaded()
+	PlayerCollectionStore.ensure_loaded()
+
+	var total_count: int = 0
+	var owned_count: int = 0
+	var duplicate_count: int = 0
+	var missing_card_codes: Array[String] = []
+	var seen_card_codes: Dictionary = {}
+	var cards = deck.get("cards", [])
+	if cards is Array:
+		for deck_card in cards:
+			var card_code: String = _get_deck_card_code(deck_card)
+			if card_code.is_empty():
+				continue
+
+			total_count += 1
+			if seen_card_codes.has(card_code):
+				duplicate_count += 1
+			else:
+				seen_card_codes[card_code] = true
+
+			if PlayerCollectionStore.owns_card_code(card_code):
+				owned_count += 1
+			else:
+				missing_card_codes.append(card_code)
+
+	var missing_count: int = missing_card_codes.size()
+	return {
+		"total_count": total_count,
+		"owned_count": owned_count,
+		"missing_count": missing_count,
+		"duplicate_count": duplicate_count,
+		"missing_card_codes": missing_card_codes,
+		"is_collection_complete": missing_count == 0,
+		"is_playable": total_count == MAX_DECK_SIZE && owned_count == MAX_DECK_SIZE && missing_count == 0 && duplicate_count == 0,
+	}
+
+func get_owned_cards_from_deck(deck: Dictionary) -> Array:
+	ensure_loaded()
+	PlayerCollectionStore.ensure_loaded()
+
+	var owned_cards: Array = []
+	var seen_card_codes: Dictionary = {}
+	var cards = deck.get("cards", [])
+	if !(cards is Array):
+		return owned_cards
+
+	for deck_card in cards:
+		var normalized_card: Dictionary = {}
+		if deck_card is Dictionary:
+			normalized_card = _normalize_deck_card(deck_card, owned_cards.size())
+		else:
+			normalized_card = _create_legacy_deck_card(str(deck_card), owned_cards.size())
+
+		var card_code: String = str(normalized_card.get("card_code", "")).strip_edges()
+		if card_code.is_empty() or seen_card_codes.has(card_code):
+			continue
+		seen_card_codes[card_code] = true
+		if !PlayerCollectionStore.owns_card_code(card_code):
+			continue
+
+		normalized_card["slot"] = owned_cards.size()
+		owned_cards.append(normalized_card)
+	return owned_cards
+
 func get_deck_card_names(deck_id: String) -> Array[String]:
 	var deck: Dictionary = get_deck(deck_id)
 	if deck.is_empty():
@@ -62,7 +154,12 @@ func get_card_names_from_deck(deck: Dictionary) -> Array[String]:
 	for deck_card in cards:
 		var card_name: String = ""
 		if deck_card is Dictionary:
-			card_name = str(deck_card.get("card_name", ""))
+			var card_print: CardPrint = CardPrintLibrary.get_print(str(deck_card.get("print_id", "")))
+			if card_print != null:
+				var card_from_print: Card = CardPrintLibrary.get_card_for_print(card_print)
+				card_name = card_from_print.card_name if card_from_print != null else ""
+			else:
+				card_name = str(deck_card.get("card_name", ""))
 			if card_name.is_empty():
 				var card: Card = CardLibrary.get_card_by_code(str(deck_card.get("card_code", "")))
 				card_name = card.card_name if card != null else ""
@@ -189,24 +286,24 @@ func _normalize_deck_cards(raw_cards) -> Array:
 	if !(raw_cards is Array):
 		return normalized_cards
 
+	var used_card_codes: Dictionary = {}
 	for index in range(raw_cards.size()):
 		var raw_card = raw_cards[index]
+		var normalized_card: Dictionary = {}
 		if raw_card is Dictionary:
-			normalized_cards.append(_normalize_deck_card(raw_card, index))
+			normalized_card = _normalize_deck_card(raw_card, normalized_cards.size())
 		else:
-			var legacy_card_name: String = str(raw_card)
-			var legacy_card_code: String = _get_card_code_for_name(legacy_card_name)
-			normalized_cards.append({
-				"slot": index,
-				"card_code": legacy_card_code,
-				"card_name": legacy_card_name,
-				"variant_id": PlayerCollectionStore.DEFAULT_VARIANT_ID,
-				"variant_name": PlayerCollectionStore.DEFAULT_VARIANT_NAME,
-				"collection_instance_id": "",
-				"item_def_key": PlayerCollectionStore.get_item_def_key(legacy_card_code, PlayerCollectionStore.DEFAULT_VARIANT_ID),
-				"steam_item_instance_id": "",
-				"steam_item_def_id": "",
-			})
+			normalized_card = _create_legacy_deck_card(str(raw_card), normalized_cards.size())
+
+		var card_code: String = str(normalized_card.get("card_code", "")).strip_edges()
+		if card_code.is_empty() or used_card_codes.has(card_code):
+			continue
+
+		used_card_codes[card_code] = true
+		normalized_card["slot"] = normalized_cards.size()
+		normalized_cards.append(normalized_card)
+		if normalized_cards.size() >= MAX_DECK_SIZE:
+			break
 
 	return normalized_cards
 
@@ -215,21 +312,62 @@ func _normalize_deck_card(raw_card: Dictionary, index: int) -> Dictionary:
 	var card_name: String = str(raw_card.get("card_name", card_code))
 	if card_code.is_empty():
 		card_code = _get_card_code_for_name(card_name)
-	var variant_id: String = str(raw_card.get("variant_id", PlayerCollectionStore.DEFAULT_VARIANT_ID))
-	if variant_id.is_empty():
-		variant_id = PlayerCollectionStore.DEFAULT_VARIANT_ID
+	var variant_id: String = CardPrintLibrary.normalize_variant_id(str(raw_card.get("variant_id", PlayerCollectionStore.DEFAULT_VARIANT_ID)))
+	var print_id: String = str(raw_card.get("print_id", ""))
+	if print_id.is_empty():
+		print_id = PlayerCollectionStore.get_item_def_key(card_code, variant_id)
+	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
+	if card_print != null:
+		card_code = card_print.card_code
+		variant_id = card_print.variant_id
+		var card_from_print: Card = CardPrintLibrary.get_card_for_print(card_print)
+		if card_from_print != null:
+			card_name = card_from_print.card_name
 
 	return {
 		"slot": int(raw_card.get("slot", index)),
+		"print_id": print_id,
 		"card_code": card_code,
 		"card_name": card_name,
 		"variant_id": variant_id,
-		"variant_name": str(raw_card.get("variant_name", PlayerCollectionStore.DEFAULT_VARIANT_NAME)),
+		"variant_name": str(raw_card.get("variant_name", CardPrintLibrary.get_variant_name(variant_id))),
 		"collection_instance_id": str(raw_card.get("collection_instance_id", raw_card.get("instance_id", ""))),
-		"item_def_key": str(raw_card.get("item_def_key", PlayerCollectionStore.get_item_def_key(card_code, variant_id))),
+		"item_def_key": str(raw_card.get("item_def_key", print_id)),
 		"steam_item_instance_id": str(raw_card.get("steam_item_instance_id", "")),
 		"steam_item_def_id": str(raw_card.get("steam_item_def_id", "")),
 	}
+
+func _create_legacy_deck_card(card_name: String, index: int) -> Dictionary:
+	var legacy_card_code: String = _get_card_code_for_name(card_name)
+	return {
+		"slot": index,
+		"print_id": PlayerCollectionStore.get_item_def_key(legacy_card_code, PlayerCollectionStore.DEFAULT_VARIANT_ID),
+		"card_code": legacy_card_code,
+		"card_name": card_name,
+		"variant_id": PlayerCollectionStore.DEFAULT_VARIANT_ID,
+		"variant_name": PlayerCollectionStore.DEFAULT_VARIANT_NAME,
+		"collection_instance_id": "",
+		"item_def_key": PlayerCollectionStore.get_item_def_key(legacy_card_code, PlayerCollectionStore.DEFAULT_VARIANT_ID),
+		"steam_item_instance_id": "",
+		"steam_item_def_id": "",
+	}
+
+func _get_deck_card_code(deck_card) -> String:
+	if deck_card is Dictionary:
+		var print_id: String = str(deck_card.get("print_id", "")).strip_edges()
+		if !print_id.is_empty():
+			var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
+			if card_print != null:
+				return card_print.card_code
+
+		var card_code: String = str(deck_card.get("card_code", "")).strip_edges()
+		if !card_code.is_empty():
+			var card_by_code: Card = CardLibrary.get_card_by_code(card_code)
+			return PlayerCollectionStore.get_card_code(card_by_code) if card_by_code != null else card_code
+
+		return _get_card_code_for_name(str(deck_card.get("card_name", "")))
+
+	return _get_card_code_for_name(str(deck_card))
 
 func _generate_deck_id() -> String:
 	return "local_deck_%d" % Time.get_ticks_usec()

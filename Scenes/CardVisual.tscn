@@ -69,7 +69,7 @@ mouse_filter = 2
 texture = ExtResource("3")
 expand_mode = 1
 
-[node name="TypeFrame" type="TextureRect" parent="." unique_id=372516518]
+[node name="CardArt" type="TextureRect" parent="." unique_id=1315429242]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -80,7 +80,7 @@ grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 
-[node name="CardArt" type="TextureRect" parent="." unique_id=1315429242]
+[node name="TypeFrame" type="TextureRect" parent="." unique_id=372516518]
 visible = false
 layout_mode = 1
 anchors_preset = 15

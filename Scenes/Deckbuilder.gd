@@ -16,14 +16,15 @@ const MAX_DECK_SIZE: int = 15
 const REMOVE_BUTTON_VISIBLE_SECONDS: float = 1.0
 const CARD_DESCRIPTION_HEIGHT: int = 76
 
-var all_card_names: Array = []
+var all_card_prints: Array = []
 var current_page: int = 0
 var is_creating_deck: bool = false
 var editing_deck_id: String = ""
 var selected_deck_cards: Array = []
-var dragged_card_name: String = ""
+var dragged_print_id: String = ""
 var hovered_deck_card_index: int = -1
 var hovered_browser_card_name: String = ""
+var editing_deck_has_missing_cards: bool = false
 var current_cards_per_page: int = DESKTOP_CARDS_PER_PAGE
 var current_card_columns: int = DESKTOP_CARD_COLUMNS
 var current_card_slot_size: Vector2 = DESKTOP_CARD_SLOT_SIZE
@@ -260,10 +261,10 @@ func _build_ui() -> void:
 func _load_cards() -> void:
 	if CardLibrary.all_cards.is_empty():
 		CardLibrary.load_all_cards()
+	CardPrintLibrary.ensure_loaded()
 	PlayerCollectionStore.ensure_loaded()
 	PlayerDeckStore.ensure_loaded()
-	all_card_names = CardLibrary.get_all_card_names()
-	all_card_names.sort()
+	all_card_prints = CardPrintLibrary.get_all_prints()
 
 func _show_page(page_index: int) -> void:
 	current_page = clampi(page_index, 0, max(0, _get_page_count() - 1))
@@ -273,25 +274,28 @@ func _show_page(page_index: int) -> void:
 		child.queue_free()
 
 	var start_index: int = current_page * current_cards_per_page
-	var end_index: int = min(start_index + current_cards_per_page, all_card_names.size())
+	var end_index: int = min(start_index + current_cards_per_page, all_card_prints.size())
 	for index in range(start_index, end_index):
-		var card_name: String = str(all_card_names[index])
-		var card: Card = CardLibrary.duplicate_card(card_name)
+		var card_print: CardPrint = all_card_prints[index] as CardPrint
+		if card_print == null:
+			continue
+		var card: Card = CardPrintLibrary.get_card_for_print(card_print)
 		if card == null:
 			continue
 
 		var card_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
-		var card_slot: Control = _create_browser_card_slot(card_visual)
+		var owned_count: int = PlayerCollectionStore.get_owned_count_for_print_id(card_print.print_id)
+		var card_slot: Control = _create_browser_card_slot(card_visual, owned_count)
 		card_grid.add_child(card_slot)
 		card_visual.draggable = is_creating_deck
 		card_visual.set_hover_raise_enabled(false)
-		card_visual.set_card(card)
+		card_visual.set_card_print(card_print)
 		card_visual.set_face_down(false)
-		card_visual.set_collection_owned(PlayerCollectionStore.owns_card(card))
+		card_visual.set_collection_owned(owned_count > 0)
 		card_visual.mouse_entered.connect(_on_browser_card_mouse_entered.bind(card))
 		card_visual.mouse_exited.connect(_on_browser_card_mouse_exited.bind(card.card_name))
-		card_visual.drag_started.connect(_on_card_drag_started.bind(card_name))
-		card_visual.drag_released.connect(_on_card_drag_released.bind(card_name))
+		card_visual.drag_started.connect(_on_card_drag_started.bind(card_print.print_id))
+		card_visual.drag_released.connect(_on_card_drag_released.bind(card_print.print_id))
 
 	page_label.text = "%d / %d" % [current_page + 1, max(1, _get_page_count())]
 	previous_button.disabled = current_page <= 0
@@ -299,14 +303,15 @@ func _show_page(page_index: int) -> void:
 	_update_deck_editor_state()
 
 func _get_page_count() -> int:
-	return int(ceil(float(all_card_names.size()) / float(current_cards_per_page)))
+	return int(ceil(float(all_card_prints.size()) / float(current_cards_per_page)))
 
-func _create_browser_card_slot(card_visual: CardVisual) -> Control:
+func _create_browser_card_slot(card_visual: CardVisual, owned_count: int) -> Control:
 	var card_slot := Control.new()
 	card_slot.custom_minimum_size = current_card_slot_size
 	card_slot.mouse_filter = Control.MOUSE_FILTER_PASS
 	card_slot.clip_contents = false
 	card_slot.add_child(card_visual)
+	card_slot.add_child(_create_print_count_badge(owned_count))
 	card_slot.resized.connect(_on_browser_card_slot_resized.bind(card_slot, card_visual))
 	_configure_browser_card_layout(card_slot, card_visual)
 	return card_slot
@@ -321,6 +326,45 @@ func _configure_browser_card_layout(card_slot: Control, card_visual: CardVisual)
 	if available_size.x <= 0.0 or available_size.y <= 0.0:
 		available_size = current_card_slot_size
 	card_visual.position = (available_size - CARD_VISUAL_SIZE * scale_factor) * 0.5
+	_update_print_count_badge_layout(card_slot, card_visual)
+
+func _create_print_count_badge(owned_count: int) -> Control:
+	var badge := PanelContainer.new()
+	badge.name = "CountBadge"
+	badge.visible = owned_count > 1
+	badge.custom_minimum_size = Vector2(26, 26)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.z_index = 20
+
+	var badge_style := StyleBoxFlat.new()
+	badge_style.bg_color = Color(0.08, 0.08, 0.08, 0.92)
+	badge_style.border_color = Color(1.0, 1.0, 1.0, 0.94)
+	badge_style.border_width_left = 2
+	badge_style.border_width_top = 2
+	badge_style.border_width_right = 2
+	badge_style.border_width_bottom = 2
+	badge_style.corner_radius_top_left = 13
+	badge_style.corner_radius_top_right = 13
+	badge_style.corner_radius_bottom_left = 13
+	badge_style.corner_radius_bottom_right = 13
+	badge.add_theme_stylebox_override("panel", badge_style)
+
+	var label := Label.new()
+	badge.add_child(label)
+	label.text = str(owned_count)
+	label.custom_minimum_size = Vector2(22, 22)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color.WHITE)
+	return badge
+
+func _update_print_count_badge_layout(card_slot: Control, card_visual: CardVisual) -> void:
+	var badge: Control = card_slot.get_node_or_null("CountBadge") as Control
+	if badge == null:
+		return
+	badge.size = badge.custom_minimum_size
+	badge.position = card_visual.position + Vector2(-7, -7)
 
 func _on_browser_card_slot_resized(card_slot: Control, card_visual: CardVisual) -> void:
 	if card_visual != null:
@@ -419,8 +463,9 @@ func _on_next_pressed() -> void:
 func _on_new_deck_pressed() -> void:
 	is_creating_deck = true
 	editing_deck_id = ""
+	editing_deck_has_missing_cards = false
 	selected_deck_cards.clear()
-	dragged_card_name = ""
+	dragged_print_id = ""
 	hovered_deck_card_index = -1
 	deck_name_edit.text = ""
 	_hide_remove_card_button()
@@ -431,8 +476,9 @@ func _on_new_deck_pressed() -> void:
 func _on_deck_editor_back_pressed() -> void:
 	is_creating_deck = false
 	editing_deck_id = ""
+	editing_deck_has_missing_cards = false
 	selected_deck_cards.clear()
-	dragged_card_name = ""
+	dragged_print_id = ""
 	hovered_deck_card_index = -1
 	_hide_remove_card_button()
 	_refresh_selected_deck_cards()
@@ -495,20 +541,20 @@ func _clear_browser_card_description() -> void:
 	if card_description_label != null:
 		card_description_label.text = ""
 
-func _on_card_drag_started(_card_visual: CardVisual, card_name: String) -> void:
-	dragged_card_name = card_name
+func _on_card_drag_started(_card_visual: CardVisual, print_id: String) -> void:
+	dragged_print_id = print_id
 
-func _on_card_drag_released(_card_visual: CardVisual, card_name: String) -> void:
+func _on_card_drag_released(_card_visual: CardVisual, print_id: String) -> void:
 	if !is_creating_deck:
 		return
 
 	var mouse_position := get_viewport().get_mouse_position()
-	if deck_card_scroll.get_global_rect().has_point(mouse_position) && _can_add_card_to_deck(card_name):
-		selected_deck_cards.append(_create_deck_card_entry(card_name, selected_deck_cards.size()))
+	if deck_card_scroll.get_global_rect().has_point(mouse_position) && _can_add_print_to_deck(print_id):
+		selected_deck_cards.append(_create_deck_card_entry(print_id, selected_deck_cards.size()))
 		_refresh_selected_deck_cards()
 		_update_deck_editor_state()
 
-	dragged_card_name = ""
+	dragged_print_id = ""
 	call_deferred("_show_page", current_page)
 
 func _on_done_pressed() -> void:
@@ -521,6 +567,7 @@ func _on_done_pressed() -> void:
 		PlayerDeckStore.save_existing_deck(editing_deck_id, deck_name_edit.text, selected_deck_cards)
 	is_creating_deck = false
 	editing_deck_id = ""
+	editing_deck_has_missing_cards = false
 	selected_deck_cards.clear()
 	deck_name_edit.text = ""
 	hovered_deck_card_index = -1
@@ -550,15 +597,19 @@ func _update_deck_editor_state() -> void:
 	for child in card_grid.get_children():
 		var visual: CardVisual = _get_browser_card_visual(child)
 		if visual != null:
-			visual.draggable = is_creating_deck && visual.collection_owned && !_is_card_already_selected(visual.card) && selected_deck_cards.size() < MAX_DECK_SIZE
+			visual.draggable = is_creating_deck && !editing_deck_has_missing_cards && visual.collection_owned && !_is_card_already_selected(visual.card) && selected_deck_cards.size() < MAX_DECK_SIZE
 			visual.disabled = !visual.collection_owned
 
 func _can_complete_deck() -> bool:
-	return is_creating_deck && !deck_name_edit.text.strip_edges().is_empty() && selected_deck_cards.size() == MAX_DECK_SIZE && _has_selected_nexus_card()
+	return is_creating_deck && !editing_deck_has_missing_cards && !deck_name_edit.text.strip_edges().is_empty() && selected_deck_cards.size() == MAX_DECK_SIZE && _has_selected_nexus_card()
 
-func _can_add_card_to_deck(card_name: String) -> bool:
-	var card: Card = CardLibrary.get_card(card_name)
-	return card != null && PlayerCollectionStore.owns_card(card) && !_is_card_already_selected(card) && selected_deck_cards.size() < MAX_DECK_SIZE
+func _can_add_print_to_deck(print_id: String) -> bool:
+	if editing_deck_has_missing_cards:
+		return false
+
+	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
+	var card: Card = CardPrintLibrary.get_card_for_print(card_print)
+	return card != null && PlayerCollectionStore.owns_print(card_print) && !_is_card_already_selected(card) && selected_deck_cards.size() < MAX_DECK_SIZE
 
 func _refresh_selected_deck_cards() -> void:
 	for child in deck_card_list.get_children():
@@ -569,12 +620,15 @@ func _refresh_selected_deck_cards() -> void:
 		var deck_card = selected_deck_cards[index]
 		if !(deck_card is Dictionary):
 			continue
-		var card: Card = CardLibrary.duplicate_card(str(deck_card.get("card_name", "")))
+		var card_print: CardPrint = _get_print_for_deck_card(deck_card)
+		var card: Card = CardPrintLibrary.get_card_for_print(card_print)
+		if card == null:
+			card = CardLibrary.duplicate_card(str(deck_card.get("card_name", "")))
 		if card == null:
 			continue
-		deck_card_list.add_child(_create_deck_card_row(card, index))
+		deck_card_list.add_child(_create_deck_card_row(card, card_print, index))
 
-func _create_deck_card_row(card: Card, deck_card_index: int) -> Control:
+func _create_deck_card_row(card: Card, card_print: CardPrint, deck_card_index: int) -> Control:
 	var row_frame := PanelContainer.new()
 	row_frame.custom_minimum_size = Vector2(0, 34)
 	row_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -598,7 +652,7 @@ func _create_deck_card_row(card: Card, deck_card_index: int) -> Control:
 	row.add_child(name_label)
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.text = card.card_name
+	name_label.text = _get_deck_card_display_name(card, card_print)
 	name_label.clip_text = true
 
 	if card.has_effect():
@@ -637,8 +691,12 @@ func _populate_saved_decks_list() -> void:
 		deck_list.add_child(_create_saved_deck_row(deck_data))
 
 func _create_saved_deck_row(deck_data: Dictionary) -> Control:
+	var ownership_info: Dictionary = PlayerDeckStore.get_deck_ownership_info(deck_data)
+	var is_playable: bool = bool(ownership_info.get("is_playable", false))
+	var owned_count: int = int(ownership_info.get("owned_count", 0))
+
 	var row_frame := PanelContainer.new()
-	row_frame.custom_minimum_size = Vector2(0, 44)
+	row_frame.custom_minimum_size = Vector2(0, 58 if !is_playable else 44)
 	row_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var row := HBoxContainer.new()
@@ -646,12 +704,26 @@ func _create_saved_deck_row(deck_data: Dictionary) -> Control:
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_theme_constant_override("separation", 8)
 
+	var name_stack := VBoxContainer.new()
+	row.add_child(name_stack)
+	name_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_stack.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	name_stack.add_theme_constant_override("separation", 0)
+
 	var name_label := Label.new()
-	row.add_child(name_label)
+	name_stack.add_child(name_label)
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_label.text = str(deck_data.get("name", "Unnamed deck"))
 	name_label.clip_text = true
+
+	if !is_playable:
+		var status_label := Label.new()
+		name_stack.add_child(status_label)
+		status_label.text = "%d/%d cards" % [owned_count, MAX_DECK_SIZE]
+		status_label.add_theme_font_size_override("font_size", 12)
+		status_label.add_theme_color_override("font_color", Color(0.95, 0.18, 0.18))
+		status_label.clip_text = true
 
 	var edit_button := Button.new()
 	row.add_child(edit_button)
@@ -662,25 +734,48 @@ func _create_saved_deck_row(deck_data: Dictionary) -> Control:
 
 	return row_frame
 
-func _create_deck_card_entry(card_name: String, slot: int) -> Dictionary:
-	var card: Card = CardLibrary.get_card(card_name)
+func _get_print_for_deck_card(deck_card: Dictionary) -> CardPrint:
+	var print_id: String = str(deck_card.get("print_id", ""))
+	if !print_id.is_empty():
+		var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
+		if card_print != null:
+			return card_print
+
+	var card_code: String = str(deck_card.get("card_code", ""))
+	if card_code.is_empty():
+		var card: Card = CardLibrary.get_card(str(deck_card.get("card_name", "")))
+		if card != null:
+			card_code = PlayerCollectionStore.get_card_code(card)
+
+	var variant_id: String = str(deck_card.get("variant_id", PlayerCollectionStore.DEFAULT_VARIANT_ID))
+	return CardPrintLibrary.get_print(CardPrintLibrary.get_print_id(card_code, variant_id))
+
+func _get_deck_card_display_name(card: Card, card_print: CardPrint) -> String:
+	if card_print == null or card_print.variant_id == PlayerCollectionStore.DEFAULT_VARIANT_ID:
+		return card.card_name
+	return "%s - %s" % [card.card_name, card_print.get_display_name()]
+
+func _create_deck_card_entry(print_id: String, slot: int) -> Dictionary:
+	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
+	var card: Card = CardPrintLibrary.get_card_for_print(card_print)
 	if card == null:
 		return {}
 
-	var owned_item: Dictionary = PlayerCollectionStore.get_first_owned_item_for_card(card)
+	var owned_item: Dictionary = PlayerCollectionStore.get_owned_item_for_print(card_print)
 	var card_code: String = PlayerCollectionStore.get_card_code(card)
-	var variant_id: String = str(owned_item.get("variant_id", PlayerCollectionStore.DEFAULT_VARIANT_ID))
+	var variant_id: String = str(owned_item.get("variant_id", card_print.variant_id))
 	if variant_id.is_empty():
 		variant_id = PlayerCollectionStore.DEFAULT_VARIANT_ID
 
 	return {
 		"slot": slot,
+		"print_id": card_print.print_id,
 		"card_code": card_code,
 		"card_name": card.card_name,
 		"variant_id": variant_id,
-		"variant_name": str(owned_item.get("variant_name", PlayerCollectionStore.DEFAULT_VARIANT_NAME)),
+		"variant_name": str(owned_item.get("variant_name", card_print.get_display_name())),
 		"collection_instance_id": str(owned_item.get("instance_id", "")),
-		"item_def_key": str(owned_item.get("item_def_key", PlayerCollectionStore.get_item_def_key(card_code, variant_id))),
+		"item_def_key": str(owned_item.get("item_def_key", card_print.print_id)),
 		"steam_item_instance_id": str(owned_item.get("steam_item_instance_id", "")),
 		"steam_item_def_id": str(owned_item.get("steam_item_def_id", "")),
 	}
@@ -700,6 +795,11 @@ func _has_selected_nexus_card() -> bool:
 		if !(deck_card is Dictionary):
 			continue
 
+		var card_print: CardPrint = _get_print_for_deck_card(deck_card)
+		var print_card: Card = CardPrintLibrary.get_card_for_print(card_print)
+		if MoveRules.is_nexus_card(print_card):
+			return true
+
 		var card: Card = CardLibrary.get_card(str(deck_card.get("card_name", "")))
 		if MoveRules.is_nexus_card(card):
 			return true
@@ -715,17 +815,25 @@ func _on_edit_deck_pressed(deck_data: Dictionary) -> void:
 	editing_deck_id = str(deck_data.get("deck_id", ""))
 	deck_name_edit.text = str(deck_data.get("name", ""))
 	selected_deck_cards.clear()
+	var ownership_info: Dictionary = PlayerDeckStore.get_deck_ownership_info(deck_data)
+	editing_deck_has_missing_cards = int(ownership_info.get("missing_count", 0)) > 0
 
-	var cards = deck_data.get("cards", [])
-	if cards is Array:
-		for index in range(cards.size()):
-			var deck_card = cards[index]
-			if deck_card is Dictionary:
-				var normalized_card: Dictionary = deck_card.duplicate(true)
-				normalized_card["slot"] = index
-				selected_deck_cards.append(normalized_card)
+	var cards: Array = []
+	if editing_deck_has_missing_cards:
+		cards = PlayerDeckStore.get_owned_cards_from_deck(deck_data)
+	else:
+		var deck_cards = deck_data.get("cards", [])
+		if deck_cards is Array:
+			cards = deck_cards
 
-	dragged_card_name = ""
+	for index in range(cards.size()):
+		var deck_card = cards[index]
+		if deck_card is Dictionary:
+			var normalized_card: Dictionary = deck_card.duplicate(true)
+			normalized_card["slot"] = index
+			selected_deck_cards.append(normalized_card)
+
+	dragged_print_id = ""
 	hovered_deck_card_index = -1
 	_hide_remove_card_button()
 	_refresh_selected_deck_cards()
@@ -733,7 +841,7 @@ func _on_edit_deck_pressed(deck_data: Dictionary) -> void:
 	_show_page(current_page)
 
 func _on_deck_card_row_mouse_entered(deck_card_index: int, row_frame: Control) -> void:
-	if !is_creating_deck:
+	if !is_creating_deck or editing_deck_has_missing_cards:
 		return
 
 	hovered_deck_card_index = deck_card_index
@@ -744,6 +852,10 @@ func _on_deck_card_row_mouse_entered(deck_card_index: int, row_frame: Control) -
 	remove_card_timer.start()
 
 func _on_remove_card_pressed() -> void:
+	if editing_deck_has_missing_cards:
+		_hide_remove_card_button()
+		return
+
 	if hovered_deck_card_index < 0 or hovered_deck_card_index >= selected_deck_cards.size():
 		_hide_remove_card_button()
 		return

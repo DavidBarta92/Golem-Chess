@@ -32,9 +32,11 @@ func _populate_deck_options() -> void:
 	deck_option_button.clear()
 	deck_ids.clear()
 
-	var decks: Array = PlayerDeckStore.list_decks()
+	var all_decks: Array = PlayerDeckStore.list_decks()
+	var decks: Array = PlayerDeckStore.list_playable_decks()
 	if decks.is_empty():
-		deck_option_button.add_item("No saved decks")
+		var empty_text: String = "No saved decks" if all_decks.is_empty() else "No complete decks"
+		deck_option_button.add_item(empty_text)
 		deck_option_button.disabled = true
 		host_button.disabled = true
 		join_button.disabled = true

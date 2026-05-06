@@ -22,6 +22,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 CardLibrary="*res://Scripts/CardLibrary.gd"
+CardPrintLibrary="*res://Scripts/CardPrintLibrary.gd"
 PlayerCollectionStore="*res://Scripts/PlayerCollectionStore.gd"
 PlayerDeckStore="*res://Scripts/PlayerDeckStore.gd"
 GameConfig="*res://GameConfig.gd"

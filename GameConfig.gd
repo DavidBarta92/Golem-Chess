@@ -110,12 +110,12 @@ func set_selected_deck_id(deck_id: String) -> void:
 	selected_deck_id = deck_id.strip_edges()
 
 func get_selected_deck_id() -> String:
-	if selected_deck_id.strip_edges().is_empty():
+	if selected_deck_id.strip_edges().is_empty() or !PlayerDeckStore.is_deck_playable_id(selected_deck_id):
 		select_first_available_deck()
 	return selected_deck_id
 
 func select_first_available_deck() -> void:
-	var first_deck: Dictionary = PlayerDeckStore.get_first_deck()
+	var first_deck: Dictionary = PlayerDeckStore.get_first_playable_deck()
 	selected_deck_id = str(first_deck.get("deck_id", ""))
 
 func has_selected_deck() -> bool:
@@ -132,12 +132,12 @@ func set_selected_ai_deck_id(deck_id: String) -> void:
 	selected_ai_deck_id = deck_id.strip_edges()
 
 func get_selected_ai_deck_id() -> String:
-	if selected_ai_deck_id.strip_edges().is_empty():
+	if selected_ai_deck_id.strip_edges().is_empty() or !PlayerDeckStore.is_deck_playable_id(selected_ai_deck_id):
 		select_first_available_ai_deck()
 	return selected_ai_deck_id
 
 func select_first_available_ai_deck() -> void:
-	var first_deck: Dictionary = PlayerDeckStore.get_first_deck()
+	var first_deck: Dictionary = PlayerDeckStore.get_first_playable_deck()
 	selected_ai_deck_id = str(first_deck.get("deck_id", ""))
 
 func get_selected_ai_deck_card_names() -> Array[String]:

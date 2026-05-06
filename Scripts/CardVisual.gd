@@ -41,6 +41,7 @@ signal burn_finished(card_visual: CardVisual)
 @onready var pattern_view: CardPatternView = $PatternView
 
 var card: Card
+var card_print: CardPrint
 var face_material: ShaderMaterial
 var card_art_material: ShaderMaterial
 var shimmer_material: ShaderMaterial
@@ -83,7 +84,7 @@ func _ready() -> void:
 	card_art.material = card_art_material
 	shimmer_material = shimmer.material.duplicate() as ShaderMaterial
 	shimmer.material = shimmer_material
-	shimmer.visible = CARD_SHIMMER_ENABLED
+	shimmer.visible = _is_card_shimmer_enabled() && !face_down
 	last_position = position
 	last_scale = scale
 	last_rotation = rotation
@@ -153,6 +154,13 @@ func _input(event: InputEvent) -> void:
 
 func set_card(value: Card) -> void:
 	card = value
+	card_print = null
+	if is_node_ready():
+		_apply_card()
+
+func set_card_print(value: CardPrint) -> void:
+	card_print = value
+	card = CardPrintLibrary.get_card_for_print(value)
 	if is_node_ready():
 		_apply_card()
 
@@ -327,18 +335,50 @@ func _apply_card() -> void:
 func _apply_art_state() -> void:
 	var type_frame_texture: Texture2D = _get_type_frame_texture()
 	var type_mask_texture: Texture2D = _get_type_mask_texture()
-	var has_card_art: bool = card != null && card.card_art != null
-	var has_card_mask: bool = card != null && card.card_art_mask != null
+	var art_texture: Texture2D = _get_card_art_texture()
+	var card_mask_texture: Texture2D = _get_card_art_mask_texture()
+	var has_card_art: bool = art_texture != null
+	var has_card_mask: bool = card_mask_texture != null
+	var uses_masked_art: bool = _uses_masked_card_art()
 
 	type_frame.texture = type_frame_texture
 	type_frame.visible = !face_down && card != null && type_frame_texture != null
 
-	card_art.texture = card.card_art if has_card_art else null
+	card_art.texture = art_texture if has_card_art else null
 	card_art.visible = !face_down && has_card_art
-	if card_art_material != null:
+	if uses_masked_art && card_art_material != null:
+		card_art.material = card_art_material
 		card_art_material.set_shader_parameter("type_mask_texture", type_mask_texture)
-		card_art_material.set_shader_parameter("card_mask_texture", card.card_art_mask if has_card_mask else type_mask_texture)
+		card_art_material.set_shader_parameter("card_mask_texture", card_mask_texture if has_card_mask else type_mask_texture)
 		card_art_material.set_shader_parameter("has_card_mask", has_card_mask)
+	else:
+		card_art.material = null
+
+func _get_card_art_texture() -> Texture2D:
+	if card_print != null && card_print.card_art != null:
+		return card_print.card_art
+	if card != null:
+		return card.card_art
+	return null
+
+func _get_card_art_mask_texture() -> Texture2D:
+	if card_print != null && card_print.card_art_mask != null:
+		return card_print.card_art_mask
+	if card_print != null && card_print.variant_id == "full_art":
+		return CARD_FRONT_TEXTURE
+	if card != null:
+		return card.card_art_mask
+	return null
+
+func _uses_masked_card_art() -> bool:
+	if card_print != null:
+		return card_print.uses_masked_art()
+	return true
+
+func _is_card_shimmer_enabled() -> bool:
+	if CARD_SHIMMER_ENABLED:
+		return true
+	return card_print != null && card_print.card_shimmer_enabled
 
 func _get_type_frame_texture() -> Texture2D:
 	if card != null && MoveRules.is_nexus_card(card):
@@ -365,7 +405,7 @@ func _apply_face_state() -> void:
 	effect_icon_label.visible = !face_down && has_effect_icon && card.effect_icon == null
 	nexus_icon_label.visible = false
 	pattern_view.visible = !face_down
-	shimmer.visible = CARD_SHIMMER_ENABLED && !face_down
+	shimmer.visible = _is_card_shimmer_enabled() && !face_down
 	_apply_art_state()
 	card_face.texture = CARD_BACK_TEXTURE if face_down else CARD_FRONT_TEXTURE
 	card_face.material = null if face_down else face_material
@@ -377,6 +417,7 @@ func _apply_collection_state() -> void:
 	if collection_owned:
 		card_face.texture = CARD_BACK_TEXTURE if face_down else CARD_FRONT_TEXTURE
 		card_face.material = null if face_down else face_material
+		shimmer.visible = _is_card_shimmer_enabled() && !face_down
 		self_modulate = Color.WHITE
 		disabled = false
 		mouse_filter = Control.MOUSE_FILTER_STOP
