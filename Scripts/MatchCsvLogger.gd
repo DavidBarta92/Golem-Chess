@@ -225,7 +225,7 @@ func create_move_context(game_state: GameStateData, player_id: int, from_pos: Ve
 	var card: Card = piece.attached_card if piece != null else null
 	var opponent_player_id: int = 1 - player_id
 	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, opponent_player_id)
-	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(game_state.pieces, from_pos, player_id, 5, game_state.board_effects)
+	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(game_state.pieces, from_pos, player_id, BoardConfig.BOARD_SIZE, game_state.board_effects)
 	return {
 		"player_id": player_id,
 		"from_pos": from_pos,
@@ -548,14 +548,14 @@ func get_active_cards(game_state: GameStateData, player_id: int) -> Array:
 
 func count_valid_turn_moves(game_state: GameStateData, player_id: int) -> int:
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var can_attach_card: bool = !bool(game_state.attached_card_this_turn.get(player_id, false))
+	var can_attach_card: bool = true
 	var hand_cards: Array[Card] = []
 	var hand_card_names: Array = game_state.player_hands.get(player_id, [])
 	for card_name_value in hand_card_names:
 		var card: Card = CardLibrary.get_card(str(card_name_value))
 		if card != null:
 			hand_cards.append(card)
-	return MoveRules.get_valid_turn_moves(game_state.pieces, player_color, hand_cards, can_attach_card, 5, game_state.board_effects).size()
+	return MoveRules.get_valid_turn_moves(game_state.pieces, player_color, hand_cards, can_attach_card, BoardConfig.BOARD_SIZE, game_state.board_effects).size()
 
 func get_card_name(card: Card, details: Dictionary) -> String:
 	if card != null:

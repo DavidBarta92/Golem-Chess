@@ -2,7 +2,7 @@ extends RefCounted
 class_name HeuristicAIPlayer
 
 const AI_TURN_PLANNER_SCRIPT = preload("res://Scripts/AITurnPlanner.gd")
-const BOARD_SIZE: int = 5
+const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const DRAW_AT_TURN_START_BELOW_HAND_SIZE: int = 3
 
 var player_id: int = 1
@@ -68,7 +68,7 @@ func get_valid_turn_moves(host: NetworkGameHost) -> Array[Dictionary]:
 		return valid_moves
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var can_attach_card: bool = !bool(host.game_state.attached_card_this_turn.get(player_id, false))
+	var can_attach_card: bool = true
 	var hand_cards: Array[Card] = host.get_hand_cards_for_player(player_id)
 	return MoveRules.get_valid_turn_moves(
 		host.game_state.pieces,

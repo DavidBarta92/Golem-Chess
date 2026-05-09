@@ -1,7 +1,7 @@
 extends RefCounted
 class_name MoveRules
 
-const DEFAULT_BOARD_SIZE: int = 5
+const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 
 static func get_piece_at(pieces: Dictionary, pos: Vector2) -> Piece:
 	if !pieces.has(pos):
@@ -41,7 +41,7 @@ static func get_card_moves_for_piece(pieces: Dictionary, piece_position: Vector2
 	var valid_moves: Array[Vector2] = []
 	if card == null:
 		return valid_moves
-	var player_id: int = 0 if piece_color == 1 else 1
+	var player_id: int = BoardConfig.get_player_id_for_color(piece_color)
 	if CardEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
 		return valid_moves
 
@@ -81,7 +81,7 @@ static func get_piece_moves(pieces: Dictionary, piece_position: Vector2, board_s
 	var piece: Piece = get_piece_at(pieces, piece_position)
 	if piece == null || !piece.can_move():
 		return []
-	var owner_player_id: int = 0 if piece.color == 1 else 1
+	var owner_player_id: int = BoardConfig.get_player_id_for_color(piece.color)
 	return get_piece_moves_for_player(pieces, piece_position, owner_player_id, board_size, board_effects)
 
 static func get_piece_moves_for_player(pieces: Dictionary, piece_position: Vector2, player_id: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
@@ -100,7 +100,7 @@ static func get_existing_card_moves(pieces: Dictionary, player_color: int, board
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		var player_id: int = 0 if player_color == 1 else 1
+		var player_id: int = BoardConfig.get_player_id_for_color(player_color)
 		if piece == null || !CardEffectResolver.can_player_control_piece(piece, player_id) || !piece.can_move():
 			continue
 
@@ -159,7 +159,7 @@ static func get_valid_turn_moves(pieces: Dictionary, player_color: int, hand_car
 	return valid_moves
 
 static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
-	var player_id: int = 0 if player_color == 1 else 1
+	var player_id: int = BoardConfig.get_player_id_for_color(player_color)
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
@@ -189,7 +189,7 @@ static func is_valid_move_for_player(pieces: Dictionary, from_pos: Vector2, to_p
 
 static func get_attacked_squares_for_player(pieces: Dictionary, attacking_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
 	var attacked_squares: Array[Vector2] = []
-	var player_id: int = 0 if attacking_color == 1 else 1
+	var player_id: int = BoardConfig.get_player_id_for_color(attacking_color)
 
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value

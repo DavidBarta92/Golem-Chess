@@ -1,10 +1,10 @@
 extends RefCounted
 class_name CardEffectResolver
 
-const DEFAULT_BOARD_SIZE: int = 5
-const DEFAULT_MAX_HAND_SIZE: int = 5
-const DEFAULT_WHITE_BASE_FIELD: Vector2 = Vector2(0, 2)
-const DEFAULT_BLACK_BASE_FIELD: Vector2 = Vector2(4, 2)
+const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
+const DEFAULT_MAX_HAND_SIZE: int = DeckManager.HAND_SIZE
+const DEFAULT_WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
+const DEFAULT_BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
 
 static func resolve_trigger(trigger: String, game_state: GameStateData, context: Dictionary, board_size: int = DEFAULT_BOARD_SIZE) -> bool:
 	if game_state == null or game_state.game_over:
@@ -678,13 +678,13 @@ static func clear_nexus_position_if_needed(game_state: GameStateData, player_id:
 static func get_base_field_for_player(game_state: GameStateData, player_id: int) -> Vector2:
 	if game_state.player_base_fields.has(player_id):
 		return game_state.player_base_fields[player_id]
-	return DEFAULT_WHITE_BASE_FIELD if player_id == 0 else DEFAULT_BLACK_BASE_FIELD
+	return BoardConfig.get_base_field_for_player_id(player_id)
 
 static func get_player_id_for_color(color: int) -> int:
-	return 0 if color == 1 else 1
+	return BoardConfig.get_player_id_for_color(color)
 
 static func get_color_for_player_id(player_id: int) -> int:
-	return 1 if player_id == 0 else -1
+	return BoardConfig.get_color_for_player_id(player_id)
 
 static func as_vector2(value, fallback: Vector2) -> Vector2:
 	if value is Vector2:

@@ -1,6 +1,6 @@
 extends RefCounted
 
-const BOARD_SIZE: int = 5
+const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 
 var player_id: int = 1
 var action_delay: float = 0.35
@@ -20,7 +20,7 @@ func get_valid_turn_moves(host: NetworkGameHost) -> Array[Dictionary]:
 		return valid_moves
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var can_attach_card: bool = !bool(host.game_state.attached_card_this_turn.get(player_id, false))
+	var can_attach_card: bool = true
 	if bool(host.game_state.moved_piece_this_turn.get(player_id, false)):
 		return valid_moves
 	var hand_cards: Array[Card] = host.get_hand_cards_for_player(player_id)

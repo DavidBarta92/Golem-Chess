@@ -1,7 +1,7 @@
 extends RefCounted
 class_name AITurnPlanner
 
-const DEFAULT_BOARD_SIZE: int = 5
+const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const ACTION_ATTACH_CARD: String = "attach_card"
 const ACTION_DRAW_CARD: String = "draw_card"
 const ACTION_MOVE_PIECE: String = "move_piece"
@@ -20,7 +20,7 @@ func create_turn_plans_from_state(game_state: GameStateData, player_id: int, boa
 
 	var can_draw_now: bool = can_draw_card_from_state(game_state, player_id)
 	var can_move_now: bool = !bool(game_state.moved_piece_this_turn.get(player_id, false))
-	var can_attach_now: bool = !bool(game_state.attached_card_this_turn.get(player_id, false))
+	var can_attach_now: bool = true
 	var current_hand_cards: Array[Card] = AIStateSimulator.get_hand_cards_from_state(game_state, player_id)
 	var no_prefix_actions: Array[Dictionary] = []
 

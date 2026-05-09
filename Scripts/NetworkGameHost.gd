@@ -41,8 +41,8 @@ func initialize_game(board_data: Array):
 
 	print("NetworkGameHost: game state initialized")
 
-	var white_first_piece_pos = Vector2(0, 1)
-	var black_first_piece_pos = Vector2(4, 2)
+	var white_first_piece_pos = BoardConfig.WHITE_BASE_FIELD
+	var black_first_piece_pos = BoardConfig.BLACK_BASE_FIELD
 
 	var white_piece = game_state.get_piece(white_first_piece_pos)
 	var black_piece = game_state.get_piece(black_first_piece_pos)
@@ -108,8 +108,6 @@ func handle_attach_card(action: Dictionary):
 		return
 	if game_state.current_turn_player != player_id:
 		return
-	if bool(game_state.attached_card_this_turn.get(player_id, false)):
-		return
 
 	if !game_state.player_hands[player_id].has(card_name):
 		push_warning("Card is not in hand.")
@@ -120,7 +118,7 @@ func handle_attach_card(action: Dictionary):
 		push_warning("No piece at this position.")
 		return
 
-	var expected_color = 1 if player_id == 0 else -1
+	var expected_color: int = BoardConfig.get_color_for_player_id(player_id)
 	if piece.color != expected_color:
 		push_warning("This piece does not belong to the player.")
 		return
@@ -145,7 +143,6 @@ func handle_attach_card(action: Dictionary):
 				game_state.black_nexus_position = piece_pos
 
 		DeckManager.play_card(game_state.player_hands[player_id], card_name, game_state.player_decks[player_id])
-		game_state.attached_card_this_turn[player_id] = true
 		log_card_attached(player_id, card, piece, piece_pos, hand_before, deck_before, deck_top_before, piece_card_before, piece_turns_before)
 		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_ATTACH, game_state, {
 			"player_id": player_id,
@@ -157,7 +154,7 @@ func handle_attach_card(action: Dictionary):
 			log_turn_snapshot("after_attach")
 			broadcast_full_state()
 			return
-		CardEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, card, 5)
+		CardEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, card, BoardConfig.BOARD_SIZE)
 		if game_state.game_over:
 			log_turn_snapshot("after_attach")
 			broadcast_full_state()
@@ -448,8 +445,6 @@ func player_has_remaining_turn_action(player_id: int) -> bool:
 	return false
 
 func can_attach_any_card_for_player(player_id: int) -> bool:
-	if bool(game_state.attached_card_this_turn.get(player_id, false)):
-		return false
 	if !game_state.player_hands.has(player_id):
 		return false
 
@@ -476,7 +471,7 @@ func can_move_any_piece_for_player(player_id: int) -> bool:
 		return false
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	return MoveRules.has_valid_piece_move(game_state.pieces, player_color, 5, game_state.board_effects)
+	return MoveRules.has_valid_piece_move(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects)
 
 func finish_game(winner_player: int, win_condition: String = "unknown"):
 	game_state.game_over = true
@@ -497,15 +492,15 @@ func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 	return true
 
 func player_has_valid_turn_action(player_id: int) -> bool:
-	var player_color: int = 1 if player_id == 0 else -1
-	var can_attach_card: bool = !bool(game_state.attached_card_this_turn.get(player_id, false))
+	var player_color: int = BoardConfig.get_color_for_player_id(player_id)
+	var can_attach_card: bool = true
 	var can_move_piece: bool = !bool(game_state.moved_piece_this_turn.get(player_id, false))
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
-	if can_move_piece && MoveRules.has_valid_turn_action(game_state.pieces, player_color, hand_cards, can_attach_card, 5, game_state.board_effects):
+	if can_move_piece && MoveRules.has_valid_turn_action(game_state.pieces, player_color, hand_cards, can_attach_card, BoardConfig.BOARD_SIZE, game_state.board_effects):
 		return true
 	if can_move_piece && can_draw_card_for_player(player_id):
 		var simulated_hand_cards: Array[Card] = get_hand_cards_with_next_draw(player_id)
-		return MoveRules.has_valid_turn_action(game_state.pieces, player_color, simulated_hand_cards, can_attach_card, 5, game_state.board_effects)
+		return MoveRules.has_valid_turn_action(game_state.pieces, player_color, simulated_hand_cards, can_attach_card, BoardConfig.BOARD_SIZE, game_state.board_effects)
 	return false
 
 func can_draw_card_for_player(player_id: int) -> bool:
@@ -548,11 +543,11 @@ func get_hand_cards_for_player(player_id: int) -> Array[Card]:
 	return hand_cards
 
 func has_any_piece(player_id: int) -> bool:
-	var expected_color: int = 1 if player_id == 0 else -1
+	var expected_color: int = BoardConfig.get_color_for_player_id(player_id)
 	return MoveRules.has_any_piece(game_state.pieces, expected_color)
 
 func is_valid_move(_piece: Piece, from_pos: Vector2, to_pos: Vector2, player_id: int) -> bool:
-	return MoveRules.is_valid_move_for_player(game_state.pieces, from_pos, to_pos, player_id, 5, game_state.board_effects)
+	return MoveRules.is_valid_move_for_player(game_state.pieces, from_pos, to_pos, player_id, BoardConfig.BOARD_SIZE, game_state.board_effects)
 
 func broadcast_full_state():
 	print("Broadcasting full state")
@@ -569,7 +564,8 @@ func broadcast_full_state():
 				"color": piece_data.color,
 				"card_name": piece_data.card_name,
 				"turns_remaining": piece_data.turns_remaining,
-				"exhausted_this_turn": piece_data.exhausted_this_turn
+				"exhausted_this_turn": piece_data.exhausted_this_turn,
+				"skip_next_duration_tick": piece_data.skip_next_duration_tick
 			}
 		multiplayer_node.get_node("board").update_from_server_state(
 			pieces_data,
@@ -631,7 +627,8 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 			"color": piece.color,
 			"card_name": piece.attached_card.card_name if piece.attached_card else "",
 			"turns_remaining": piece.turns_remaining,
-			"exhausted_this_turn": piece.exhausted_this_turn
+			"exhausted_this_turn": piece.exhausted_this_turn,
+			"skip_next_duration_tick": piece.skip_next_duration_tick
 		})
 
 	return data
@@ -672,6 +669,7 @@ func append_hidden_card_data(hidden_cards: Array, piece: Piece) -> void:
 	hidden_cards.append({
 		"card_name": piece.attached_card.card_name,
 		"turns_remaining": piece.turns_remaining,
+		"skip_next_duration_tick": piece.skip_next_duration_tick,
 		"owner_player_id": CardEffectResolver.get_player_id_for_color(piece.color),
 	})
 

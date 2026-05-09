@@ -1,7 +1,7 @@
 ﻿extends Sprite2D
 
-const BOARD_SIZE = 5
-const CELL_WIDTH = 18
+const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
+const CELL_WIDTH: int = BoardConfig.CELL_WIDTH
 
 const TEXTURE_HOLDER = preload("res://Scenes/texture_holder.tscn")
 const CARD_VISUAL = preload("res://Scenes/CardVisual.tscn")
@@ -27,10 +27,13 @@ const PIECE_EXHAUSTED_SHADER = preload("res://Shaders/piece_exhausted.gdshader")
 const BOARD_TILE_LIGHT = preload("res://Assets/board_tile_light.svg")
 const BOARD_TILE_DARK = preload("res://Assets/board_tile_dark.svg")
 
-const PLAYER_HAND_SIZE = 5
+const PLAYER_HAND_SIZE = DeckManager.HAND_SIZE
 const CARD_UI_SIZE = Vector2(164, 229)
-const CARD_UI_GAP = 14
-const CARD_HAND_MARGIN = 18
+const CARD_HAND_SCALE = 0.72
+const DECK_CARD_SCALE = CARD_HAND_SCALE
+const CARD_UI_GAP = 10
+const TOP_CARD_HAND_MARGIN = -28
+const BOTTOM_CARD_HAND_MARGIN = 8
 const HOVER_CARD_MARGIN = 24
 const HOVER_DESCRIPTION_GAP = 14
 const HOVER_DESCRIPTION_SIZE = Vector2(260, 118)
@@ -43,8 +46,8 @@ const DECK_COUNT_LABEL_GAP = 8
 const PLAYER_NAME_LABEL_SIZE = Vector2(180, 28)
 const PLAYER_NAME_LABEL_GAP = 8
 const INVALID_BOARD_POS = Vector2(-1, -1)
-const WHITE_BASE_FIELD = Vector2(0, 2)
-const BLACK_BASE_FIELD = Vector2(4, 2)
+const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
+const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const CARD_BURN_SEQUENCE_GAP = 0.08
 
@@ -129,11 +132,7 @@ func _ready():
 	texture = null
 	create_board_tiles()
 	create_board_markers_node()
-	board.append([1, 1, 1, 1, 1])
-	board.append([0, 0, 0, 0, 0])
-	board.append([0, 0, 0, 0, 0])
-	board.append([0, 0, 0, 0, 0])
-	board.append([-1, -1, -1, -1, -1])
+	board = BoardConfig.create_starting_board()
 
 	create_pieces_from_board()
 	setup_player_card_hands()
@@ -163,6 +162,10 @@ func create_board_tiles():
 			board_tiles_node.add_child(tile)
 			tile.texture = BOARD_TILE_LIGHT if (row + col) % 2 == 0 else BOARD_TILE_DARK
 			tile.position = get_board_position_local_position(Vector2(row, col))
+			if tile.texture != null:
+				var tile_size: Vector2 = tile.texture.get_size()
+				if tile_size.x > 0.0 && tile_size.y > 0.0:
+					tile.scale = Vector2(CELL_WIDTH / tile_size.x, CELL_WIDTH / tile_size.y)
 			tile.z_index = 0
 
 func create_board_markers_node():
@@ -252,7 +255,8 @@ func get_int_from_state_dict(data: Dictionary, player_id: int, default_value: in
 	return default_value
 
 func configure_card_hand_container(hand_node: Control, is_top: bool):
-	var hand_width = CARD_UI_SIZE.x * PLAYER_HAND_SIZE + CARD_UI_GAP * (PLAYER_HAND_SIZE - 1)
+	var scaled_card_size: Vector2 = get_card_hand_layout_size()
+	var hand_width = scaled_card_size.x * PLAYER_HAND_SIZE + CARD_UI_GAP * (PLAYER_HAND_SIZE - 1)
 	hand_node.visible = true
 	hand_node.mouse_filter = Control.MOUSE_FILTER_PASS
 	hand_node.anchor_left = 0.5
@@ -263,13 +267,13 @@ func configure_card_hand_container(hand_node: Control, is_top: bool):
 	if is_top:
 		hand_node.anchor_top = 0.0
 		hand_node.anchor_bottom = 0.0
-		hand_node.offset_top = CARD_HAND_MARGIN
-		hand_node.offset_bottom = CARD_HAND_MARGIN + CARD_UI_SIZE.y
+		hand_node.offset_top = TOP_CARD_HAND_MARGIN
+		hand_node.offset_bottom = TOP_CARD_HAND_MARGIN + scaled_card_size.y
 	else:
 		hand_node.anchor_top = 1.0
 		hand_node.anchor_bottom = 1.0
-		hand_node.offset_top = -CARD_HAND_MARGIN - CARD_UI_SIZE.y
-		hand_node.offset_bottom = -CARD_HAND_MARGIN
+		hand_node.offset_top = -BOTTOM_CARD_HAND_MARGIN - scaled_card_size.y
+		hand_node.offset_bottom = -BOTTOM_CARD_HAND_MARGIN
 
 func populate_card_hand(hand_node: Control, cards: Array[Card], owner_color: int) -> Array[CardVisual]:
 	for child in hand_node.get_children():
@@ -280,6 +284,7 @@ func populate_card_hand(hand_node: Control, cards: Array[Card], owner_color: int
 	for i in cards.size():
 		var card_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
 		hand_node.add_child(card_visual)
+		card_visual.set_rest_scale(Vector2.ONE * CARD_HAND_SCALE)
 		card_visual.set_hand_context(owner_color, i, get_card_home_position(i))
 		card_visual.set_card(cards[i])
 		connect_card_visual_signals(card_visual)
@@ -291,6 +296,8 @@ func connect_card_visual_signals(card_visual: CardVisual):
 	card_visual.drag_started.connect(_on_card_drag_started)
 	card_visual.drag_moved.connect(_on_card_drag_moved)
 	card_visual.drag_released.connect(_on_card_drag_released)
+	card_visual.mouse_entered.connect(_on_hand_card_mouse_entered.bind(card_visual))
+	card_visual.mouse_exited.connect(_on_hand_card_mouse_exited.bind(card_visual))
 
 func setup_deck_visuals():
 	white_deck_visual = create_deck_visual(white_pieces, 1)
@@ -305,7 +312,7 @@ func create_deck_visual(hand_node: Control, owner_color: int) -> CardVisual:
 	deck_visual.draggable = false
 	deck_visual.disabled = true
 	deck_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	deck_visual.scale = Vector2.ONE * 0.96
+	deck_visual.set_rest_scale(Vector2.ONE * DECK_CARD_SCALE)
 	deck_visual.z_index = -1
 	return deck_visual
 
@@ -491,11 +498,17 @@ func create_hidden_card_preview_ui():
 	hidden_card_preview_container.anchor_bottom = 0.5
 	hidden_card_preview_container.z_index = 850
 
+func get_card_hand_layout_size() -> Vector2:
+	return CARD_UI_SIZE * CARD_HAND_SCALE
+
+func get_card_hand_step() -> float:
+	return get_card_hand_layout_size().x + CARD_UI_GAP
+
 func get_card_home_position(index: int) -> Vector2:
-	return Vector2(index * (CARD_UI_SIZE.x + CARD_UI_GAP), 0)
+	return Vector2(index * get_card_hand_step(), 0)
 
 func get_deck_home_position() -> Vector2:
-	return Vector2(-CARD_UI_SIZE.x - (CARD_UI_GAP * 2.0), 0)
+	return Vector2(-(CARD_UI_SIZE.x * DECK_CARD_SCALE) - (CARD_UI_GAP * 2.0), 0)
 
 func get_card_hand(owner_color: int) -> Array[Card]:
 	return white_card_hand if owner_color == 1 else black_card_hand
@@ -672,19 +685,18 @@ func get_own_color() -> int:
 	return 1 if side else -1
 
 func get_player_id_for_color(owner_color: int) -> int:
-	return 0 if owner_color == 1 else 1
+	return BoardConfig.get_player_id_for_color(owner_color)
 
 func get_color_for_player_id(player_id: int) -> int:
-	return 1 if player_id == 0 else -1
+	return BoardConfig.get_color_for_player_id(player_id)
 
 func get_own_player_id() -> int:
 	return get_player_id_for_color(get_own_color())
 
 func has_attached_card_this_turn(owner_color: int) -> bool:
-	return bool(attached_card_this_turn.get(owner_color, false))
+	return false
 
 func mark_card_attached_this_turn(owner_color: int):
-	attached_card_this_turn[owner_color] = true
 	update_card_drag_permissions()
 
 func reset_current_turn_card_attach():
@@ -713,6 +725,7 @@ func mark_card_drawn_this_turn(owner_color: int):
 	drawn_card_this_turn[owner_color] = true
 
 func _on_card_drag_started(card_visual: CardVisual):
+	hide_hover_piece_details()
 	card_visual.set_drop_target_active(false)
 
 func _on_card_drag_moved(card_visual: CardVisual):
@@ -727,8 +740,31 @@ func _on_card_drag_released(card_visual: CardVisual):
 	else:
 		card_visual.fly_home()
 
+func _on_hand_card_mouse_entered(card_visual: CardVisual) -> void:
+	if card_visual == null or !is_instance_valid(card_visual):
+		return
+	if card_visual.card == null or card_visual.face_down or card_visual.is_dragging:
+		return
+
+	show_hover_card_description(card_visual.card)
+
+func _on_hand_card_mouse_exited(_card_visual: CardVisual) -> void:
+	hide_hover_piece_details()
+
+func show_hover_card_description(card: Card) -> void:
+	if card == null:
+		return
+
+	hide_hover_piece_details()
+	var description: String = card.description.strip_edges()
+	if description.is_empty():
+		return
+
+	hover_description_label.text = description
+	hover_description_panel.visible = true
+
 func get_card_drop_piece_position(card_visual: CardVisual) -> Vector2:
-	if !can_control_current_turn() || has_attached_card_this_turn(card_visual.owner_color):
+	if !can_control_current_turn():
 		return INVALID_BOARD_POS
 	if card_visual.owner_color != get_controllable_color():
 		return INVALID_BOARD_POS
@@ -747,9 +783,6 @@ func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector
 		card_visual.fly_home()
 		return
 	var card_name: String = card_visual.card.card_name
-	if has_attached_card_this_turn(card_visual.owner_color):
-		card_visual.fly_home()
-		return
 	if !can_attach_card_to_piece(piece_position, card_name, card_visual.owner_color):
 		card_visual.fly_home()
 		return
@@ -864,6 +897,7 @@ func insert_drawn_card(owner_color: int, hand_index: int, card_name: String):
 
 	var card_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
 	hand_node.add_child(card_visual)
+	card_visual.set_rest_scale(Vector2.ONE * CARD_HAND_SCALE)
 	card_visual.set_hand_context(owner_color, insert_index, get_card_home_position(insert_index))
 	card_visual.set_card(card)
 	card_visual.set_face_down(owner_color != get_local_view_color())
@@ -871,7 +905,7 @@ func insert_drawn_card(owner_color: int, hand_index: int, card_name: String):
 	visuals.insert(insert_index, card_visual)
 
 	card_visual.global_position = get_card_draw_start_position(owner_color)
-	card_visual.scale = Vector2.ONE * 0.72
+	card_visual.scale = Vector2.ONE * CARD_HAND_SCALE
 	arrange_card_visuals(visuals, true)
 	animate_card_draw(owner_color, card_visual)
 
@@ -1250,7 +1284,7 @@ func try_handle_deck_click() -> bool:
 	return true
 
 func can_draw_card_locally(owner_color: int) -> bool:
-	return get_card_deck_count(owner_color) > 0
+	return get_card_deck_count(owner_color) > 0 && get_card_hand(owner_color).size() < DeckManager.HAND_SIZE
 
 func request_card_draw(owner_color: int):
 	if GameController.current_game_host:
@@ -1302,13 +1336,13 @@ func _input(event):
 
 				var var1 = int(adjusted_x / CELL_WIDTH)
 				var var2 = int(adjusted_y / CELL_WIDTH)
+				var clicked_pos: Vector2 = Vector2(var2, var1)
 
-				print("Click: grid=(", var1, ",", var2, ") board[", var2, "][", var1, "]=", board[var2][var1] if var2 < BOARD_SIZE && var1 < BOARD_SIZE else "invalid")
+				print("Click: grid=(", var1, ",", var2, ") board[", var2, "][", var1, "]=", board[var2][var1] if is_valid_position(clicked_pos) else "invalid")
 
-				if var1 < 0 || var1 >= BOARD_SIZE || var2 < 0 || var2 >= BOARD_SIZE:
+				if !is_valid_position(clicked_pos):
 					return
 
-				var clicked_pos: Vector2 = Vector2(var2, var1)
 				if !state && can_player_control_piece_at(clicked_pos, get_own_player_id()):
 					selected_piece = clicked_pos
 					show_options()
@@ -1354,8 +1388,7 @@ func is_mouse_out():
 	return !get_board_rect_local().has_point(to_local(get_global_mouse_position()))
 
 func get_board_rect_local() -> Rect2:
-	var board_width: float = BOARD_SIZE * CELL_WIDTH
-	return Rect2(Vector2.ONE * -board_width * 0.5, Vector2.ONE * board_width)
+	return BoardConfig.get_board_rect_local()
 
 func get_mouse_board_position() -> Vector2:
 	var local_pos: Vector2 = to_local(get_global_mouse_position())
@@ -1435,8 +1468,7 @@ func get_board_position_screen_position(board_pos: Vector2) -> Vector2:
 	return get_global_transform_with_canvas() * get_board_position_local_position(board_pos)
 
 func get_board_position_local_position(board_pos: Vector2) -> Vector2:
-	var offset: float = -(BOARD_SIZE * CELL_WIDTH) / 2.0
-	return Vector2(board_pos.y * CELL_WIDTH + (CELL_WIDTH / 2.0) + offset, -board_pos.x * CELL_WIDTH - (CELL_WIDTH / 2.0) - offset)
+	return BoardConfig.get_cell_center_local(board_pos)
 
 func get_default_piece_texture(piece_value: int) -> Texture2D:
 	match piece_value:
@@ -1496,8 +1528,7 @@ func display_board():
 				holder.global_rotation_degrees = 180
 				$"../Camera2D".global_rotation_degrees = 180
 			pieces_node.add_child(holder)
-			var offset = -(BOARD_SIZE * CELL_WIDTH) / 2.0
-			holder.position = Vector2(j * CELL_WIDTH + (CELL_WIDTH / 2) + offset, -i * CELL_WIDTH - (CELL_WIDTH / 2) - offset)
+			holder.position = get_board_position_local_position(Vector2(i, j))
 			holder.texture = get_piece_texture_for_position(Vector2(i, j), int(board[i][j]))
 			apply_piece_exhausted_material(holder, Vector2(i, j))
 
@@ -1531,8 +1562,7 @@ func show_dots():
 		var holder = TEXTURE_HOLDER.instantiate()
 		dots.add_child(holder)
 		holder.texture = PIECE_MOVE
-		var offset = -(BOARD_SIZE * CELL_WIDTH) / 2.0
-		holder.position = Vector2(i.y * CELL_WIDTH + (CELL_WIDTH / 2) + offset, -i.x * CELL_WIDTH - (CELL_WIDTH / 2) - offset)
+		holder.position = get_board_position_local_position(i)
 
 func delete_dots():
 	for child in dots.get_children():
@@ -1638,7 +1668,7 @@ func current_player_has_valid_turn_action() -> bool:
 	if has_moved_piece_this_turn(current_color):
 		return false
 	var hand_cards: Array[Card] = get_card_hand(current_color)
-	var can_attach_card: bool = !has_attached_card_this_turn(current_color)
+	var can_attach_card: bool = true
 	if MoveRules.has_valid_turn_action(piece_objects, current_color, hand_cards, can_attach_card, BOARD_SIZE, current_board_effects):
 		return true
 	if !has_drawn_card_this_turn(current_color) && get_card_hand(current_color).size() < DeckManager.HAND_SIZE && !get_card_deck(current_color).is_empty():
@@ -1820,9 +1850,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	var previous_white_hand_names: Array[String] = get_card_names_from_hand(white_card_hand)
 	var previous_black_hand_names: Array[String] = get_card_names_from_hand(black_card_hand)
 
-	board.clear()
-	for i in BOARD_SIZE:
-		board.append([0, 0, 0, 0, 0])
+	board = BoardConfig.create_empty_board()
 
 	piece_objects.clear()
 	for pos in pieces_data:
@@ -1837,6 +1865,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 				piece.attach_card(card)
 				piece.turns_remaining = int(data.turns_remaining)
 				piece.exhausted_this_turn = bool(data.get("exhausted_this_turn", false))
+				piece.skip_next_duration_tick = bool(data.get("skip_next_duration_tick", false))
 
 		piece_objects[piece_position] = piece
 		if is_valid_position(piece_position):
@@ -2028,7 +2057,7 @@ func update_board_markers():
 				add_board_square_x_marker(square_pos, Color(0.08, 0.4, 1.0, 0.92), Color(0.0, 0.35, 1.0, 0.18))
 
 	for player_id in [0, 1]:
-		var base_pos: Vector2 = current_player_base_fields.get(player_id, WHITE_BASE_FIELD if player_id == 0 else BLACK_BASE_FIELD)
+		var base_pos: Vector2 = current_player_base_fields.get(player_id, BoardConfig.get_base_field_for_player_id(player_id))
 		if is_valid_position(base_pos):
 			add_board_base_marker(base_pos, player_id)
 

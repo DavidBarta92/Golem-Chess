@@ -16,6 +16,7 @@ static func clone_piece(piece: Piece) -> Piece:
 	cloned_piece.attached_card = piece.attached_card
 	cloned_piece.turns_remaining = piece.turns_remaining
 	cloned_piece.exhausted_this_turn = piece.exhausted_this_turn
+	cloned_piece.skip_next_duration_tick = piece.skip_next_duration_tick
 	return cloned_piece
 
 static func clone_game_state(source_state: GameStateData) -> GameStateData:
@@ -77,7 +78,7 @@ static func duplicate_board_effects(source_effects: Array) -> Array:
 		})
 	return output
 
-static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5) -> GameStateData:
+static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> GameStateData:
 	var simulated_state: GameStateData = clone_game_state(source_state)
 	if simulated_state.game_over:
 		return simulated_state
@@ -121,9 +122,6 @@ static func apply_draw_action(game_state: GameStateData, player_id: int) -> void
 	game_state.drawn_card_this_turn[player_id] = true
 
 static func apply_attach_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> void:
-	if bool(game_state.attached_card_this_turn.get(player_id, false)):
-		return
-
 	var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 	var piece: Piece = game_state.get_piece(piece_pos)
 	if piece == null or piece.attached_card != null:
@@ -142,7 +140,7 @@ static func apply_attach_action(game_state: GameStateData, player_id: int, actio
 	piece.attached_card = card
 	piece.turns_remaining = card.duration
 	piece.exhausted_this_turn = true
-	game_state.attached_card_this_turn[player_id] = true
+	piece.skip_next_duration_tick = true
 	simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_ATTACH, player_id, piece, piece_pos, card, board_size)
 	if game_state.game_over:
 		return
@@ -302,6 +300,7 @@ static func apply_candidate_to_pieces(source_pieces: Dictionary, move: Dictionar
 			moving_piece.attached_card = card
 			moving_piece.turns_remaining = card.duration
 			moving_piece.exhausted_this_turn = true
+			moving_piece.skip_next_duration_tick = true
 
 	simulated_pieces.erase(from_pos)
 	moving_piece.position = to_pos

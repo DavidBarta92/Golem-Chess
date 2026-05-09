@@ -1,7 +1,7 @@
 class_name DeckManager
 
 const DECK_SIZE = 15
-const HAND_SIZE = 5
+const HAND_SIZE = 3
 const STARTING_HAND_SIZE = 3
 const DEFAULT_NEXUS_CARD_NAME = "King"
 const STARTING_DECK: Array[String] = [

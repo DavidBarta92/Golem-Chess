@@ -163,7 +163,7 @@ func apply_difficulty_config(level: int) -> void:
 	randomness = float(config.get("randomness", 8.0))
 	opponent_response_weight = float(config.get("opponent_response_weight", DEFAULT_OPPONENT_RESPONSE_WEIGHT))
 
-func choose_best_move(game_state: GameStateData, player_id: int, valid_moves: Array[Dictionary], board_size: int = 5) -> Dictionary:
+func choose_best_move(game_state: GameStateData, player_id: int, valid_moves: Array[Dictionary], board_size: int = BoardConfig.BOARD_SIZE) -> Dictionary:
 	if game_state == null or valid_moves.is_empty():
 		return {}
 
@@ -180,7 +180,7 @@ func choose_best_move(game_state: GameStateData, player_id: int, valid_moves: Ar
 
 	return best_move
 
-func choose_best_turn_plan(game_state: GameStateData, player_id: int, turn_plans: Array[Dictionary], board_size: int = 5, turn_planner = null) -> Dictionary:
+func choose_best_turn_plan(game_state: GameStateData, player_id: int, turn_plans: Array[Dictionary], board_size: int = BoardConfig.BOARD_SIZE, turn_planner = null) -> Dictionary:
 	if game_state == null or turn_plans.is_empty():
 		last_profile = create_profile(0)
 		return {}
@@ -266,7 +266,7 @@ func choose_best_scored_plan(scored_plans: Array[Dictionary], profile: Dictionar
 	profile["best_plan_type"] = str(best_plan.get("plan_type", ""))
 	return best_plan
 
-func score_turn_plan_with_response(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5, turn_planner = null, profile: Dictionary = {}) -> float:
+func score_turn_plan_with_response(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE, turn_planner = null, profile: Dictionary = {}) -> float:
 	var own_score_start_usec: int = Time.get_ticks_usec()
 	var own_score: float = score_turn_plan(game_state, player_id, plan, board_size)
 	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - own_score_start_usec)
@@ -397,7 +397,7 @@ func increment_profile_count(profile: Dictionary, key: String, amount: int = 1) 
 func usec_to_ms(elapsed_usec: int) -> float:
 	return float(elapsed_usec) / 1000.0
 
-func score_turn_plan_fast(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5) -> float:
+func score_turn_plan_fast(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
 	var score: float = 0.0
 	if bool(plan.get("uses_draw", false)):
 		score += score_draw_action(game_state, player_id, str(plan.get("drawn_card_name", ""))) * 0.85
@@ -440,7 +440,7 @@ func score_attach_setup_fast(game_state: GameStateData, player_id: int, attach_a
 	score += score_card_effect_fast(game_state, player_id, piece, card, piece_pos, piece_pos, null, move, board_size) * 0.65
 	return score
 
-func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = 5) -> float:
+func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
 	var from_pos: Vector2 = AIStateSimulator.get_move_from(move)
 	var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
 	var moving_piece: Piece = game_state.get_piece(from_pos)
@@ -608,11 +608,11 @@ func score_grant_card_effect(game_state: GameStateData, player_id: int, card: Ca
 	var amount: int = max(1, int(card.effect_settings.get("amount", 1)))
 	return 45.0 * min(amount, available_count)
 
-func score_turn_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5) -> float:
+func score_turn_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
 	var breakdown: Dictionary = score_turn_plan_breakdown(game_state, player_id, plan, board_size)
 	return float(breakdown.get("total", 0.0))
 
-func score_turn_plan_breakdown(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = 5) -> Dictionary:
+func score_turn_plan_breakdown(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> Dictionary:
 	var draw_score: float = 0.0
 	var move_score: float = 0.0
 	var setup_score: float = 0.0
@@ -722,7 +722,7 @@ func score_attach_setup(game_state: GameStateData, player_id: int, attach_action
 	score += score_card_effect(game_state, player_id, piece, card, piece_pos, piece_pos, null, setup_move, board_size) * 0.65
 	return score
 
-func score_move(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = 5) -> float:
+func score_move(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
 	var from_pos: Vector2 = AIStateSimulator.get_move_from(move)
 	var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
 	var score: float = 0.0
