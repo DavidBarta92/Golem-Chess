@@ -199,25 +199,23 @@ func handle_exchange_card(action: Dictionary):
 
 	var hand: Array = game_state.player_hands[player_id]
 	var deck: Array = game_state.player_decks[player_id]
-	if hand_index < 0 or hand_index >= hand.size():
-		push_warning("Invalid hand index for card exchange.")
-		return false
 	if deck.is_empty():
 		push_warning("Deck is empty, cannot exchange card.")
 		return false
 
-	var returned_card_name: String = str(hand[hand_index])
-	if !card_name.is_empty() && returned_card_name != card_name:
-		push_warning("Card exchange rejected: hand index does not match card name.")
+	var remove_index: int = get_exchange_card_hand_index(hand, card_name, hand_index)
+	if remove_index == -1:
+		push_warning("Card exchange rejected: card is not in hand.")
 		return false
 
+	var returned_card_name: String = str(hand[remove_index])
 	var hand_before: Array = duplicate_player_card_list(hand)
 	var deck_before: Array = duplicate_player_card_list(deck)
 	var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
-	hand.remove_at(hand_index)
+	hand.remove_at(remove_index)
 	var drawn_card_name: String = draw_exchange_replacement_card(deck, returned_card_name)
 	if drawn_card_name.is_empty():
-		hand.insert(hand_index, returned_card_name)
+		hand.insert(remove_index, returned_card_name)
 		game_state.player_hands[player_id] = hand
 		game_state.player_decks[player_id] = deck
 		return false
@@ -226,7 +224,7 @@ func handle_exchange_card(action: Dictionary):
 	record_exchanged_card_name_this_turn(player_id, returned_card_name)
 	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, returned_card_name, "hand", "deck")
 
-	var insert_index: int = clampi(hand_index, 0, hand.size())
+	var insert_index: int = clampi(remove_index, 0, hand.size())
 	hand.insert(insert_index, drawn_card_name)
 	game_state.player_hands[player_id] = hand
 	game_state.player_decks[player_id] = deck
@@ -243,6 +241,14 @@ func handle_exchange_card(action: Dictionary):
 		return true
 	broadcast_full_state()
 	return true
+
+func get_exchange_card_hand_index(hand: Array, card_name: String, hand_index: int) -> int:
+	if hand_index >= 0 && hand_index < hand.size():
+		if card_name.is_empty() or str(hand[hand_index]) == card_name:
+			return hand_index
+	if !card_name.is_empty():
+		return hand.find(card_name)
+	return -1
 
 func handle_move_piece(action: Dictionary):
 	var player_id: int = int(action.player_id)

@@ -24,6 +24,7 @@ const TURN_BLACK = preload("res://Assets/turn-black.png")
 
 const PIECE_MOVE = preload("res://Assets/Piece_move.png")
 const PIECE_EXHAUSTED_SHADER = preload("res://Shaders/piece_exhausted.gdshader")
+const PIECE_SELECTED_OUTLINE_SHADER = preload("res://Shaders/piece_selected_outline.gdshader")
 const BOARD_TILE_LIGHT = preload("res://Assets/board_tile_light.svg")
 const BOARD_TILE_DARK = preload("res://Assets/board_tile_dark.svg")
 
@@ -41,6 +42,9 @@ const HIDDEN_CARD_MARGIN = 24
 const HIDDEN_CARD_GAP = 10
 const HIDDEN_CARD_SCALE = 0.78
 const BOARD_MARKER_LINE_WIDTH = 1.8
+const SELECTED_PIECE_OUTLINE_NAME = "SelectedPieceOutline"
+const SELECTED_PIECE_OUTLINE_WIDTH = 3.0
+const SELECTED_PIECE_OUTLINE_COLOR = Color(1.0, 0.86, 0.16, 1.0)
 const LAST_MOVE_ARROW_WIDTH = 3.0
 const LAST_MOVE_ARROW_ENDPOINT_INSET = 6.0
 const LAST_MOVE_ARROW_HEAD_LENGTH = 8.0
@@ -53,6 +57,10 @@ const PLAYER_NAME_LABEL_GAP = 8
 const RULES_INFO_BUTTON_SIZE = Vector2(40, 40)
 const RULES_INFO_PANEL_SIZE = Vector2(310, 286)
 const RULES_INFO_PANEL_MARGIN = 24
+const ACTION_STATUS_SIZE = Vector2(118, 98)
+const ACTION_STATUS_MARGIN = 22
+const ACTION_STATUS_ACTIVE_COLOR = Color(1.0, 1.0, 1.0, 1.0)
+const ACTION_STATUS_INACTIVE_COLOR = Color(0.42, 0.42, 0.42, 1.0)
 const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
@@ -118,6 +126,8 @@ var end_turn_button: Button
 var rules_info_button: Button
 var rules_info_panel: PanelContainer
 var rules_info_label: Label
+var action_status_container: VBoxContainer
+var action_status_labels: Dictionary = {}
 var white_deck_count_override: int = -1
 var black_deck_count_override: int = -1
 var hidden_card_preview_container: Control
@@ -135,6 +145,7 @@ var current_player_names: Dictionary = {
 }
 var pending_card_burn_animations: Array = []
 var card_burn_animation_sequence_running: bool = false
+var local_auto_end_turn_pending: bool = false
 
 var side
 
@@ -165,6 +176,7 @@ func _ready():
 	create_quit_confirmation_ui()
 	create_end_turn_ui()
 	create_rules_info_ui()
+	create_action_status_ui()
 	update_player_name_labels()
 
 func create_board_tiles():
@@ -580,6 +592,38 @@ func create_rules_info_ui():
 	arrange_rules_info_panel()
 	update_rules_info_ui()
 
+func create_action_status_ui() -> void:
+	action_status_container = VBoxContainer.new()
+	canvas_layer.add_child(action_status_container)
+	action_status_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	action_status_container.anchor_left = 0.5
+	action_status_container.anchor_right = 0.5
+	action_status_container.anchor_top = 0.5
+	action_status_container.anchor_bottom = 0.5
+	action_status_container.custom_minimum_size = ACTION_STATUS_SIZE
+	action_status_container.z_index = 910
+	action_status_container.add_theme_constant_override("separation", 8)
+
+	var label_settings := LabelSettings.new()
+	label_settings.font_size = 24
+	label_settings.font_color = ACTION_STATUS_ACTIVE_COLOR
+	label_settings.outline_size = 5
+	label_settings.outline_color = Color(0.0, 0.0, 0.0)
+
+	for action_name in ["Switch", "Attach", "Move"]:
+		var action_label := Label.new()
+		action_status_container.add_child(action_label)
+		action_label.text = action_name
+		action_label.custom_minimum_size = Vector2(ACTION_STATUS_SIZE.x, 26)
+		action_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		action_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		action_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		action_label.label_settings = label_settings.duplicate()
+		action_status_labels[action_name] = action_label
+
+	arrange_action_status_ui()
+	update_action_status_ui()
+
 func create_hidden_card_preview_ui():
 	hidden_card_preview_container = Control.new()
 	canvas_layer.add_child(hidden_card_preview_container)
@@ -640,6 +684,7 @@ func update_card_presentation():
 	update_player_name_labels()
 	update_end_turn_button()
 	update_rules_info_ui()
+	update_action_status_ui()
 
 func update_player_name_labels():
 	for owner_color in [1, -1]:
@@ -701,6 +746,82 @@ func update_rules_info_ui():
 	if game_over && rules_info_panel != null:
 		rules_info_panel.visible = false
 
+func update_action_status_ui() -> void:
+	if action_status_container == null:
+		return
+
+	action_status_container.visible = !game_over
+	set_action_status_label("Switch", can_switch_action_now())
+	set_action_status_label("Attach", can_attach_action_now())
+	set_action_status_label("Move", can_move_action_now())
+
+func set_action_status_label(action_name: String, is_available: bool) -> void:
+	var action_label: Label = action_status_labels.get(action_name, null) as Label
+	if action_label == null:
+		return
+
+	var label_settings: LabelSettings = action_label.label_settings
+	if label_settings != null:
+		label_settings.font_color = ACTION_STATUS_ACTIVE_COLOR if is_available else ACTION_STATUS_INACTIVE_COLOR
+
+func can_switch_action_now() -> bool:
+	if !can_control_current_turn():
+		return false
+	return can_exchange_card_locally(get_controllable_color())
+
+func can_attach_action_now() -> bool:
+	if !can_control_current_turn():
+		return false
+
+	var owner_color: int = get_controllable_color()
+	var hand_cards: Array[Card] = get_card_hand(owner_color)
+	if hand_cards.is_empty():
+		return false
+
+	for position_value in piece_objects:
+		var piece: Piece = piece_objects[position_value] as Piece
+		if piece == null or piece.color != owner_color or piece.attached_card != null:
+			continue
+
+		for card: Card in hand_cards:
+			if !MoveRules.card_can_be_used(card):
+				continue
+			if MoveRules.can_attach_card_for_turn(piece_objects, owner_color, card):
+				return true
+
+	return false
+
+func can_move_action_now() -> bool:
+	if !can_control_current_turn():
+		return false
+
+	var owner_color: int = get_controllable_color()
+	if has_moved_piece_this_turn(owner_color):
+		return false
+	return MoveRules.has_valid_piece_move(piece_objects, owner_color, BOARD_SIZE, current_board_effects)
+
+func has_remaining_turn_action_now() -> bool:
+	return can_switch_action_now() or can_attach_action_now() or can_move_action_now()
+
+func maybe_auto_end_turn_locally() -> void:
+	if GameController.current_game_host:
+		return
+	if local_auto_end_turn_pending or game_over or !can_control_current_turn():
+		return
+	if has_remaining_turn_action_now():
+		return
+
+	local_auto_end_turn_pending = true
+	call_deferred("_auto_end_turn_locally_if_still_needed")
+
+func _auto_end_turn_locally_if_still_needed() -> void:
+	local_auto_end_turn_pending = false
+	if GameController.current_game_host or game_over or !can_control_current_turn():
+		return
+	if has_remaining_turn_action_now():
+		return
+	end_current_turn_locally()
+
 func _on_rules_info_pressed():
 	if rules_info_panel == null:
 		return
@@ -723,6 +844,7 @@ func _on_end_turn_pressed():
 	end_current_turn_locally()
 
 func end_current_turn_locally():
+	local_auto_end_turn_pending = false
 	var ending_color: int = get_current_turn_color()
 	refill_played_cards_locally(ending_color)
 	clear_exchanged_card_names_this_turn(ending_color)
@@ -808,6 +930,7 @@ func has_attached_card_this_turn(owner_color: int) -> bool:
 
 func mark_card_attached_this_turn(owner_color: int):
 	update_card_drag_permissions()
+	update_action_status_ui()
 
 func reset_current_turn_card_attach():
 	var current_color: int = get_current_turn_color()
@@ -816,6 +939,7 @@ func reset_current_turn_card_attach():
 	drawn_card_this_turn[current_color] = false
 	played_card_hand_slots_this_turn[current_color] = []
 	exchanged_card_names_this_turn[current_color] = []
+	update_action_status_ui()
 
 func clear_piece_exhaustion_for_color(owner_color: int) -> void:
 	for position_value in piece_objects:
@@ -829,12 +953,14 @@ func has_moved_piece_this_turn(owner_color: int) -> bool:
 func mark_piece_moved_this_turn(owner_color: int):
 	moved_piece_this_turn[owner_color] = true
 	update_end_turn_button()
+	update_action_status_ui()
 
 func has_drawn_card_this_turn(owner_color: int) -> bool:
 	return bool(drawn_card_this_turn.get(owner_color, false))
 
 func mark_card_drawn_this_turn(owner_color: int):
 	drawn_card_this_turn[owner_color] = true
+	update_action_status_ui()
 
 func _on_card_drag_started(card_visual: CardVisual):
 	hide_hover_piece_details()
@@ -1445,8 +1571,11 @@ func arrange_card_visuals(visuals: Array[CardVisual], animate: bool):
 func _process(_delta):
 	update_hovered_piece()
 	update_deck_count_hover()
+	update_action_status_ui()
+	arrange_action_status_ui()
 	if rules_info_panel != null && rules_info_panel.visible:
 		arrange_rules_info_panel()
+	maybe_auto_end_turn_locally()
 
 func update_deck_count_hover():
 	if deck_count_label == null:
@@ -1553,14 +1682,15 @@ func _input(event):
 
 				if !state && can_player_control_piece_at(clicked_pos, get_own_player_id()):
 					selected_piece = clicked_pos
-					show_options()
 					state = true
+					show_options()
 				elif state:
 					if moves.has(clicked_pos):
 						send_move_action(selected_piece, clicked_pos)
 
 					delete_dots()
 					state = false
+					update_selected_piece_outline()
 					hovered_piece = Vector2(-1, -1)
 					hide_hover_piece_details()
 
@@ -1737,11 +1867,56 @@ func display_board():
 				$"../Camera2D".global_rotation_degrees = 180
 			pieces_node.add_child(holder)
 			holder.position = get_board_position_local_position(Vector2(i, j))
+			holder.set_meta("board_pos", Vector2(i, j))
 			holder.texture = get_piece_texture_for_position(Vector2(i, j), int(board[i][j]))
 			apply_piece_exhausted_material(holder, Vector2(i, j))
+			apply_selected_piece_outline(holder, Vector2(i, j))
 
 	if white: turn.texture = TURN_WHITE
 	else: turn.texture = TURN_BLACK
+
+func apply_selected_piece_outline(holder: Sprite2D, board_pos: Vector2) -> void:
+	remove_selected_piece_outline(holder)
+	if !state or board_pos != selected_piece or holder.texture == null:
+		return
+	if !piece_objects.has(board_pos):
+		return
+
+	var outline := Sprite2D.new()
+	outline.name = SELECTED_PIECE_OUTLINE_NAME
+	outline.texture = holder.texture
+	outline.centered = holder.centered
+	outline.offset = holder.offset
+	outline.flip_h = holder.flip_h
+	outline.flip_v = holder.flip_v
+	outline.region_enabled = holder.region_enabled
+	outline.region_rect = holder.region_rect
+	outline.z_index = -1
+	outline.show_behind_parent = true
+
+	var material := ShaderMaterial.new()
+	material.shader = PIECE_SELECTED_OUTLINE_SHADER
+	material.set_shader_parameter("outline_color", SELECTED_PIECE_OUTLINE_COLOR)
+	material.set_shader_parameter("outline_size", SELECTED_PIECE_OUTLINE_WIDTH)
+	outline.material = material
+	holder.add_child(outline)
+
+func remove_selected_piece_outline(holder: Sprite2D) -> void:
+	var existing_outline: Node = holder.get_node_or_null(SELECTED_PIECE_OUTLINE_NAME)
+	if existing_outline != null:
+		existing_outline.free()
+
+func update_selected_piece_outline() -> void:
+	if pieces_node == null:
+		return
+
+	for child in pieces_node.get_children():
+		var holder: Sprite2D = child as Sprite2D
+		if holder == null:
+			continue
+
+		var board_pos: Vector2 = value_to_vector2(holder.get_meta("board_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		apply_selected_piece_outline(holder, board_pos)
 
 func apply_piece_exhausted_material(holder: Sprite2D, board_pos: Vector2) -> void:
 	holder.material = null
@@ -1760,9 +1935,11 @@ func show_options():
 	moves = get_moves(selected_piece)
 	if moves == []:
 		state = false
+		update_selected_piece_outline()
 		return
 	delete_dots()
 	show_dots()
+	update_selected_piece_outline()
 	show_hover_piece_details(selected_piece)
 
 func show_dots():
@@ -2003,6 +2180,7 @@ func finish_game(winner_color: int):
 	hide_hover_piece_details()
 	update_card_drag_permissions()
 	update_end_turn_button()
+	award_win_points_if_applicable(winner_color)
 	show_result_message(winner_color)
 
 	await get_tree().create_timer(8.0).timeout
@@ -2029,6 +2207,24 @@ func get_next_scene_after_game(winner_color: int) -> String:
 		GameConfig.stop_ai_vs_ai_batch()
 
 	return MAIN_MENU_SCENE
+
+func award_win_points_if_applicable(winner_color: int) -> void:
+	if !should_award_win_points(winner_color):
+		return
+
+	PlayerProgressStore.add_points(PlayerProgressStore.WIN_POINTS_PER_WIN)
+
+func should_award_win_points(winner_color: int) -> bool:
+	if GameConfig.is_ai_vs_ai_batch:
+		return false
+
+	if side == null:
+		if GameConfig.is_singleplayer:
+			var winner_player_id: int = get_player_id_for_color(winner_color)
+			return GameConfig.get_player_controller(winner_player_id) == GameConfig.CONTROLLER_HUMAN
+		return true
+
+	return winner_color == get_own_color()
 
 func show_result_message(winner_color: int):
 	if result_label == null or result_overlay == null:
@@ -2293,6 +2489,24 @@ func arrange_rules_info_panel():
 	rules_info_panel.offset_right = left_offset + RULES_INFO_PANEL_SIZE.x
 	rules_info_panel.offset_top = top_offset
 	rules_info_panel.offset_bottom = top_offset + RULES_INFO_PANEL_SIZE.y
+
+func arrange_action_status_ui() -> void:
+	if action_status_container == null:
+		return
+
+	var board_screen_size: float = BOARD_SIZE * CELL_WIDTH * get_board_screen_scale()
+	var left_offset: float = board_screen_size * 0.5 + ACTION_STATUS_MARGIN
+	var top_offset: float = -ACTION_STATUS_SIZE.y * 0.5
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var max_left_offset: float = viewport_size.x * 0.5 - ACTION_STATUS_SIZE.x - ACTION_STATUS_MARGIN
+	if left_offset > max_left_offset:
+		left_offset = -board_screen_size * 0.5 - ACTION_STATUS_MARGIN - ACTION_STATUS_SIZE.x
+	var min_left_offset: float = -viewport_size.x * 0.5 + ACTION_STATUS_MARGIN
+	left_offset = max(left_offset, min_left_offset)
+	action_status_container.offset_left = left_offset
+	action_status_container.offset_right = left_offset + ACTION_STATUS_SIZE.x
+	action_status_container.offset_top = top_offset
+	action_status_container.offset_bottom = top_offset + ACTION_STATUS_SIZE.y
 
 func get_board_screen_scale() -> float:
 	var camera: Camera2D = $"../Camera2D"
