@@ -1,17 +1,17 @@
 [gd_resource type="Resource" script_class="Card" format=3 uid="uid://crudyfi4w5lpc"]
 
-[ext_resource type="Texture2D" uid="uid://bh2jylbtvodfh" path="res://Assets/black_king.png" id="1_qnl8q"]
+[ext_resource type="Texture2D" uid="uid://curtox7nsux5t" path="res://Assets/2b.png" id="1_ktlwe"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_l0wl3"]
-[ext_resource type="Texture2D" uid="uid://wixkaesiefxb" path="res://Assets/white_king.png" id="3_veuos"]
+[ext_resource type="Texture2D" uid="uid://ohil58qxh275" path="res://Assets/2w.png" id="3_4ur4y"]
 
 [resource]
 script = ExtResource("2_l0wl3")
 card_name = "Rajah"
 card_code = "rajah"
-duration = 6
-white_piece_texture = ExtResource("3_veuos")
-black_piece_texture = ExtResource("1_qnl8q")
-description = "A Nexus card. Keep at least one Nexus available to stay in the game."
 role = 1
+duration = 6
+white_piece_texture = ExtResource("3_4ur4y")
+black_piece_texture = ExtResource("1_ktlwe")
+description = "A Nexus card. Keep at least one Nexus available to stay in the game."
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

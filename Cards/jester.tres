@@ -1,17 +1,17 @@
 [gd_resource type="Resource" script_class="Card" format=3 uid="uid://cp1rxuopu5hdw"]
 
-[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_xnrh2"]
+[ext_resource type="Texture2D" uid="uid://c7cbd36k1jkwi" path="res://Assets/11b.png" id="1_xnrh2"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_50y3g"]
-[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_0w2lt"]
+[ext_resource type="Texture2D" uid="uid://cam0g3thk7alo" path="res://Assets/11w.png" id="3_50y3g"]
 
 [resource]
 script = ExtResource("2_50y3g")
 card_name = "Jester"
 card_code = "jester"
 duration = 5
-description = "When the linked piece is captured, move your base field to the lower-right target square."
-white_piece_texture = ExtResource("3_0w2lt")
+white_piece_texture = ExtResource("3_50y3g")
 black_piece_texture = ExtResource("1_xnrh2")
+description = "When the linked piece is captured, move your base field to the lower-right target square."
 effect_type = "move_base"
 effect_trigger = "on_captured"
 effect_params = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 1]])

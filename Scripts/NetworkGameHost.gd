@@ -88,6 +88,8 @@ func on_player_action(action: Dictionary):
 	match action.type:
 		"attach_card":
 			handle_attach_card(action)
+		"exchange_card":
+			return handle_exchange_card(action)
 		"draw_card":
 			handle_draw_card(action)
 		"move_piece":
@@ -96,6 +98,9 @@ func on_player_action(action: Dictionary):
 			handle_end_turn(action)
 		_:
 			push_warning("Unknown action type: ", action.type)
+			return false
+
+	return true
 
 func handle_attach_card(action: Dictionary):
 	var player_id: int = int(action.player_id)
@@ -175,6 +180,70 @@ func handle_draw_card(action: Dictionary):
 	push_warning("Manual card draw is disabled. Cards refill at end of turn.")
 	return
 
+func handle_exchange_card(action: Dictionary):
+	var player_id: int = int(action.player_id)
+	var card_name: String = str(action.get("card_name", ""))
+	var hand_index: int = int(action.get("hand_index", -1))
+
+	print("Exchange card: player=%s, card=%s, hand_index=%s" % [player_id, card_name, hand_index])
+
+	if game_state.game_over:
+		return false
+	if game_state.current_turn_player != player_id:
+		return false
+	if !can_exchange_card_for_player(player_id):
+		push_warning("This player cannot exchange a card now.")
+		return false
+	if !game_state.player_hands.has(player_id) or !game_state.player_decks.has(player_id):
+		return false
+
+	var hand: Array = game_state.player_hands[player_id]
+	var deck: Array = game_state.player_decks[player_id]
+	if hand_index < 0 or hand_index >= hand.size():
+		push_warning("Invalid hand index for card exchange.")
+		return false
+	if deck.is_empty():
+		push_warning("Deck is empty, cannot exchange card.")
+		return false
+
+	var returned_card_name: String = str(hand[hand_index])
+	if !card_name.is_empty() && returned_card_name != card_name:
+		push_warning("Card exchange rejected: hand index does not match card name.")
+		return false
+
+	var hand_before: Array = duplicate_player_card_list(hand)
+	var deck_before: Array = duplicate_player_card_list(deck)
+	var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
+	hand.remove_at(hand_index)
+	var drawn_card_name: String = draw_exchange_replacement_card(deck, returned_card_name)
+	if drawn_card_name.is_empty():
+		hand.insert(hand_index, returned_card_name)
+		game_state.player_hands[player_id] = hand
+		game_state.player_decks[player_id] = deck
+		return false
+
+	DeckManager.return_card_to_deck(deck, returned_card_name)
+	record_exchanged_card_name_this_turn(player_id, returned_card_name)
+	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, returned_card_name, "hand", "deck")
+
+	var insert_index: int = clampi(hand_index, 0, hand.size())
+	hand.insert(insert_index, drawn_card_name)
+	game_state.player_hands[player_id] = hand
+	game_state.player_decks[player_id] = deck
+	game_state.drawn_card_this_turn[player_id] = true
+	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", "hand")
+
+	var returned_card: Card = CardLibrary.get_card(returned_card_name)
+	if returned_card != null:
+		log_card_returned_to_deck(player_id, returned_card, Vector2(-1, -1), "hand_exchange")
+	log_card_drawn(player_id, drawn_card_name, hand_before, deck_before, deck_top_before, "hand", "hand_exchange")
+	log_turn_snapshot("after_exchange")
+
+	if maybe_auto_end_turn(player_id):
+		return true
+	broadcast_full_state()
+	return true
+
 func handle_move_piece(action: Dictionary):
 	var player_id: int = int(action.player_id)
 	var from_pos: Vector2 = CardEffectResolver.as_vector2(action.from, Vector2(-1, -1))
@@ -213,6 +282,7 @@ func handle_move_piece(action: Dictionary):
 	var captured_nexus: bool = is_nexus_piece(captured_piece)
 	var captured_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
 	var move_log_context: Dictionary = create_move_log_context(player_id, from_pos, to_pos, piece, captured_piece)
+	var moving_piece_visible_to_enemy: bool = !CardEffectResolver.piece_has_attached_effect(piece, CardEffect.TYPE_INVISIBLE_TO_ENEMY)
 
 	if captured_piece != null:
 		print("Piece captured at: ", to_pos)
@@ -246,6 +316,7 @@ func handle_move_piece(action: Dictionary):
 	game_state.remove_piece(from_pos)
 	piece.position = to_pos
 	game_state.set_piece(to_pos, piece)
+	record_last_move(player_id, from_pos, to_pos, moving_piece_visible_to_enemy)
 
 	if MoveRules.is_nexus_card(piece.attached_card):
 		var moved_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(piece.color)
@@ -453,6 +524,8 @@ func player_has_remaining_turn_action(player_id: int) -> bool:
 		return true
 	if can_move_any_piece_for_player(player_id):
 		return true
+	if should_hold_turn_for_optional_exchange(player_id):
+		return true
 	return false
 
 func can_attach_any_card_for_player(player_id: int) -> bool:
@@ -509,10 +582,61 @@ func player_has_valid_turn_action(player_id: int) -> bool:
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
 	if can_move_piece && MoveRules.has_valid_turn_action(game_state.pieces, player_color, hand_cards, can_attach_card, BoardConfig.BOARD_SIZE, game_state.board_effects):
 		return true
+	if should_hold_turn_for_optional_exchange(player_id):
+		return true
 	return false
 
 func can_draw_card_for_player(player_id: int) -> bool:
 	return false
+
+func can_exchange_card_for_player(player_id: int) -> bool:
+	if bool(game_state.drawn_card_this_turn.get(player_id, false)):
+		return false
+	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
+		return false
+
+	var player_deck: Array = game_state.player_decks[player_id]
+	var player_hand: Array = game_state.player_hands[player_id]
+	return !player_deck.is_empty() && !player_hand.is_empty()
+
+func draw_exchange_replacement_card(deck: Array, returned_card_name: String) -> String:
+	return draw_card_from_deck_avoiding_names(deck, [returned_card_name])
+
+func draw_refill_card_for_player(player_id: int, deck: Array) -> String:
+	var protected_names: Array = game_state.exchanged_card_names_this_turn.get(player_id, [])
+	return draw_card_from_deck_avoiding_names(deck, protected_names)
+
+func draw_card_from_deck_avoiding_names(deck: Array, avoided_card_names: Array) -> String:
+	if deck.is_empty():
+		return ""
+
+	var draw_index: int = -1
+	for i in deck.size():
+		var candidate_name: String = str(deck[i])
+		if !avoided_card_names.has(candidate_name):
+			draw_index = i
+			break
+	if draw_index == -1:
+		draw_index = 0
+
+	var drawn_card_name: String = str(deck[draw_index])
+	deck.remove_at(draw_index)
+	return drawn_card_name
+
+func record_exchanged_card_name_this_turn(player_id: int, card_name: String) -> void:
+	var exchanged_names: Array = game_state.exchanged_card_names_this_turn.get(player_id, [])
+	exchanged_names.append(card_name)
+	game_state.exchanged_card_names_this_turn[player_id] = exchanged_names
+
+func clear_exchanged_card_names_this_turn(player_id: int) -> void:
+	game_state.exchanged_card_names_this_turn[player_id] = []
+
+func should_hold_turn_for_optional_exchange(player_id: int) -> bool:
+	if !can_exchange_card_for_player(player_id):
+		return false
+	if GameConfig.is_singleplayer && GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
+		return false
+	return true
 
 func get_hand_cards_with_next_draw(player_id: int) -> Array[Card]:
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
@@ -581,7 +705,8 @@ func broadcast_full_state():
 			local_state_data.board_effects,
 			local_state_data.player_names,
 			local_state_data.recent_card_transfers,
-			local_state_data.recent_card_expirations
+			local_state_data.recent_card_expirations,
+			local_state_data.last_move
 		)
 
 	for peer_id in multiplayer_node.connected_peer_ids:
@@ -617,6 +742,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"player_names": get_serialized_player_names(),
 		"recent_card_transfers": serialize_recent_card_transfers(viewer_player_id),
 		"recent_card_expirations": serialize_recent_card_expirations(),
+		"last_move": serialize_last_move_for_player(viewer_player_id),
 	}
 
 	for pos in game_state.pieces:
@@ -663,6 +789,35 @@ func serialize_recent_card_expirations() -> Array:
 		})
 
 	return serialized_expirations
+
+func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
+	if game_state.last_move.is_empty():
+		return {}
+
+	var mover_player_id: int = int(game_state.last_move.get("player_id", -1))
+	if viewer_player_id != -1 && mover_player_id == viewer_player_id:
+		return {}
+	if viewer_player_id != -1 && !bool(game_state.last_move.get("visible_to_enemy", true)):
+		return {}
+
+	var from_pos: Vector2 = CardEffectResolver.as_vector2(game_state.last_move.get("from", Vector2(-1, -1)), Vector2(-1, -1))
+	var to_pos: Vector2 = CardEffectResolver.as_vector2(game_state.last_move.get("to", Vector2(-1, -1)), Vector2(-1, -1))
+	if from_pos == Vector2(-1, -1) or to_pos == Vector2(-1, -1) or from_pos == to_pos:
+		return {}
+
+	var moving_piece: Piece = game_state.get_piece(to_pos)
+	if moving_piece == null:
+		return {}
+	if viewer_player_id != -1 && !CardEffectResolver.is_piece_visible_to_player(moving_piece, viewer_player_id):
+		return {}
+
+	return {
+		"from": vector2_to_array(from_pos),
+		"to": vector2_to_array(to_pos),
+		"player_id": mover_player_id,
+		"piece_color": int(game_state.last_move.get("piece_color", CardEffectResolver.get_color_for_player_id(mover_player_id))),
+		"visible_to_enemy": bool(game_state.last_move.get("visible_to_enemy", true)),
+	}
 
 func append_hidden_card_data(hidden_cards: Array, piece: Piece) -> void:
 	if piece == null or piece.attached_card == null:
@@ -724,6 +879,19 @@ func duplicate_player_card_list(source) -> Array:
 			output.append(str(card_name_value))
 	return output
 
+func record_last_move(player_id: int, from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool) -> void:
+	if from_pos == to_pos:
+		game_state.last_move = {}
+		return
+
+	game_state.last_move = {
+		"from": from_pos,
+		"to": to_pos,
+		"player_id": player_id,
+		"piece_color": CardEffectResolver.get_color_for_player_id(player_id),
+		"visible_to_enemy": visible_to_enemy,
+	}
+
 func play_card_from_player_hand(player_id: int, card_name: String, hand_index: int) -> bool:
 	if !game_state.player_hands.has(player_id):
 		return false
@@ -764,9 +932,11 @@ func record_played_card_hand_slot(player_id: int, hand_slot: int) -> void:
 func refill_played_cards_for_player(player_id: int) -> void:
 	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
 	if played_slots.is_empty():
+		clear_exchanged_card_names_this_turn(player_id)
 		return
 	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
 		game_state.played_card_hand_slots_this_turn[player_id] = []
+		clear_exchanged_card_names_this_turn(player_id)
 		return
 
 	played_slots.sort()
@@ -779,7 +949,9 @@ func refill_played_cards_for_player(player_id: int) -> void:
 		var hand_before: Array = duplicate_player_card_list(hand)
 		var deck_before: Array = duplicate_player_card_list(deck)
 		var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
-		var drawn_card_name: String = str(deck.pop_front())
+		var drawn_card_name: String = draw_refill_card_for_player(player_id, deck)
+		if drawn_card_name.is_empty():
+			break
 		var insert_index: int = clampi(int(slot_value), 0, hand.size())
 		hand.insert(insert_index, drawn_card_name)
 		CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", "hand")
@@ -788,6 +960,7 @@ func refill_played_cards_for_player(player_id: int) -> void:
 	game_state.player_decks[player_id] = deck
 	game_state.player_hands[player_id] = hand
 	game_state.played_card_hand_slots_this_turn[player_id] = []
+	clear_exchanged_card_names_this_turn(player_id)
 
 func return_card_to_player_deck(player_id: int, card: Card, reason: String, piece_pos: Vector2 = Vector2(-1, -1)) -> void:
 	if card == null:

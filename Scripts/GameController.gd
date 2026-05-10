@@ -12,9 +12,10 @@ func set_game_host(host):
 
 func send_action(action: Dictionary):
 	if current_game_host:
-		current_game_host.on_player_action(action)
-	else:
-		push_error("No game host is set.")
+		return current_game_host.on_player_action(action)
+
+	push_error("No game host is set.")
+	return false
 
 func broadcast_state(game_state: GameStateData):
 	state_updated.emit(game_state)

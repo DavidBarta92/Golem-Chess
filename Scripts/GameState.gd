@@ -15,6 +15,7 @@ var player_base_fields: Dictionary = {
 var board_effects: Array = []
 var recent_card_transfers: Array = []
 var recent_card_expirations: Array = []
+var last_move: Dictionary = {}
 var attached_card_this_turn: Dictionary = {
 	0: false,
 	1: false,
@@ -28,6 +29,10 @@ var drawn_card_this_turn: Dictionary = {
 	1: false,
 }
 var played_card_hand_slots_this_turn: Dictionary = {
+	0: [],
+	1: [],
+}
+var exchanged_card_names_this_turn: Dictionary = {
 	0: [],
 	1: [],
 }
@@ -57,3 +62,4 @@ func switch_turn():
 	moved_piece_this_turn[current_turn_player] = false
 	drawn_card_this_turn[current_turn_player] = false
 	played_card_hand_slots_this_turn[current_turn_player] = []
+	exchanged_card_names_this_turn[current_turn_player] = []

@@ -41,6 +41,11 @@ const HIDDEN_CARD_MARGIN = 24
 const HIDDEN_CARD_GAP = 10
 const HIDDEN_CARD_SCALE = 0.78
 const BOARD_MARKER_LINE_WIDTH = 1.8
+const LAST_MOVE_ARROW_WIDTH = 3.0
+const LAST_MOVE_ARROW_ENDPOINT_INSET = 6.0
+const LAST_MOVE_ARROW_HEAD_LENGTH = 8.0
+const LAST_MOVE_ARROW_HEAD_HALF_WIDTH = 5.0
+const LAST_MOVE_ARROW_COLOR = Color(1.0, 0.88, 0.18, 1.0)
 const DECK_COUNT_LABEL_SIZE = Vector2(88, 28)
 const DECK_COUNT_LABEL_GAP = 8
 const PLAYER_NAME_LABEL_SIZE = Vector2(180, 28)
@@ -53,7 +58,7 @@ const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const CARD_BURN_SEQUENCE_GAP = 0.08
-const RULES_INFO_TEXT: String = "Goal: attach a Nexus card to one of your pieces, then move that Nexus onto the opponent's base square.\n\nTurn flow:\n1. Play any number of cards from your hand onto your empty pieces.\n2. Move one ready piece using its attached card pattern.\n3. End your turn. Each card you played is replaced from your deck.\n\nCards:\n- Your hand holds up to 3 cards.\n- Duration only drops when that piece moves.\n\nCaptures:\n- Captured pieces respawn on an empty home-row square.\n- Their attached card is removed. Nexus cards return to their owner's deck."
+const RULES_INFO_TEXT: String = "Goal: attach a Nexus card to one of your pieces, then move that Nexus onto the opponent's base square.\n\nTurn flow:\n1. Play any number of cards from your hand onto your empty pieces.\n2. Move one ready piece using its attached card pattern.\n3. End your turn. Each card you played is replaced from your deck.\n\nCards:\n- Your hand holds up to 3 cards.\n- Once per turn, drag a hand card onto your deck to replace it.\n- Duration only drops when that piece moves.\n\nCaptures:\n- Captured pieces respawn on an empty home-row square.\n- Their attached card is removed. Nexus cards return to their owner's deck."
 
 @onready var pieces_node = $Pieces
 @onready var dots = $Dots
@@ -94,6 +99,10 @@ var played_card_hand_slots_this_turn: Dictionary = {
 	1: [],
 	-1: [],
 }
+var exchanged_card_names_this_turn: Dictionary = {
+	1: [],
+	-1: [],
+}
 var game_over: bool = false
 var hover_card_preview: CardVisual
 var hover_duration_label: Label
@@ -114,6 +123,7 @@ var black_deck_count_override: int = -1
 var hidden_card_preview_container: Control
 var hidden_card_previews: Array[CardVisual] = []
 var board_markers_node: Node2D
+var current_last_move: Dictionary = {}
 var current_board_effects: Array = []
 var current_player_base_fields: Dictionary = {
 	0: WHITE_BASE_FIELD,
@@ -715,6 +725,7 @@ func _on_end_turn_pressed():
 func end_current_turn_locally():
 	var ending_color: int = get_current_turn_color()
 	refill_played_cards_locally(ending_color)
+	clear_exchanged_card_names_this_turn(ending_color)
 	clear_piece_exhaustion_for_color(ending_color)
 	white = !white
 	reset_current_turn_card_attach()
@@ -804,6 +815,7 @@ func reset_current_turn_card_attach():
 	moved_piece_this_turn[current_color] = false
 	drawn_card_this_turn[current_color] = false
 	played_card_hand_slots_this_turn[current_color] = []
+	exchanged_card_names_this_turn[current_color] = []
 
 func clear_piece_exhaustion_for_color(owner_color: int) -> void:
 	for position_value in piece_objects:
@@ -830,13 +842,16 @@ func _on_card_drag_started(card_visual: CardVisual):
 
 func _on_card_drag_moved(card_visual: CardVisual):
 	var target_pos: Vector2 = get_card_drop_piece_position(card_visual)
-	card_visual.set_drop_target_active(target_pos != INVALID_BOARD_POS)
+	var can_drop_on_deck: bool = can_drop_card_on_deck(card_visual)
+	card_visual.set_drop_target_active(target_pos != INVALID_BOARD_POS or can_drop_on_deck)
 	handle_card_reorder(card_visual)
 
 func _on_card_drag_released(card_visual: CardVisual):
 	var target_pos: Vector2 = get_card_drop_piece_position(card_visual)
 	if target_pos != INVALID_BOARD_POS:
 		attach_card_visual_to_piece(card_visual, target_pos)
+	elif can_drop_card_on_deck(card_visual):
+		exchange_card_visual_with_deck(card_visual)
 	else:
 		card_visual.fly_home()
 
@@ -877,6 +892,104 @@ func get_card_drop_piece_position(card_visual: CardVisual) -> Vector2:
 		return board_pos
 
 	return INVALID_BOARD_POS
+
+func can_drop_card_on_deck(card_visual: CardVisual) -> bool:
+	if card_visual == null or !is_instance_valid(card_visual):
+		return false
+	if card_visual.card == null:
+		return false
+	if !can_exchange_card_locally(card_visual.owner_color):
+		return false
+	return is_mouse_over_deck(card_visual.owner_color)
+
+func can_exchange_card_locally(owner_color: int) -> bool:
+	if !can_control_current_turn():
+		return false
+	if owner_color != get_controllable_color():
+		return false
+	if has_drawn_card_this_turn(owner_color):
+		return false
+	if get_card_hand(owner_color).is_empty():
+		return false
+	return get_card_deck_count(owner_color) > 0
+
+func exchange_card_visual_with_deck(card_visual: CardVisual) -> void:
+	if card_visual == null or !is_instance_valid(card_visual) or card_visual.card == null:
+		return
+
+	var owner_color: int = card_visual.owner_color
+	if !can_exchange_card_locally(owner_color):
+		card_visual.fly_home()
+		return
+
+	var hand_index: int = get_card_visual_index(card_visual)
+	if hand_index < 0:
+		card_visual.fly_home()
+		return
+
+	var card_name: String = card_visual.card.card_name
+	if GameController.current_game_host:
+		if send_card_exchange_action(owner_color, card_name, hand_index):
+			mark_card_drawn_this_turn(owner_color)
+		if is_instance_valid(card_visual):
+			card_visual.fly_home()
+		return
+
+	var deck: Array[String] = get_card_deck(owner_color)
+	if deck.is_empty():
+		card_visual.fly_home()
+		return
+
+	var replacement_card_name: String = draw_exchange_replacement_card_name(deck, card_name)
+	if replacement_card_name.is_empty():
+		card_visual.fly_home()
+		return
+
+	remove_card_from_hand_index(owner_color, hand_index, true, replacement_card_name)
+	DeckManager.return_card_to_deck(deck, card_name)
+	record_exchanged_card_name_this_turn(owner_color, card_name)
+	mark_card_drawn_this_turn(owner_color)
+
+func send_card_exchange_action(owner_color: int, card_name: String, hand_index: int) -> bool:
+	return bool(GameController.send_action({
+		"type": "exchange_card",
+		"player_id": get_player_id_for_color(owner_color),
+		"card_name": card_name,
+		"hand_index": hand_index,
+	}))
+
+func draw_exchange_replacement_card_name(deck: Array, returned_card_name: String) -> String:
+	return draw_card_from_deck_avoiding_names(deck, [returned_card_name])
+
+func draw_refill_card_name(owner_color: int) -> String:
+	var deck: Array[String] = get_card_deck(owner_color)
+	var protected_names: Array = exchanged_card_names_this_turn.get(owner_color, [])
+	return draw_card_from_deck_avoiding_names(deck, protected_names)
+
+func draw_card_from_deck_avoiding_names(deck: Array, avoided_card_names: Array) -> String:
+	if deck.is_empty():
+		return ""
+
+	var draw_index: int = -1
+	for i in deck.size():
+		var candidate_name: String = str(deck[i])
+		if !avoided_card_names.has(candidate_name):
+			draw_index = i
+			break
+	if draw_index == -1:
+		draw_index = 0
+
+	var drawn_card_name: String = str(deck[draw_index])
+	deck.remove_at(draw_index)
+	return drawn_card_name
+
+func record_exchanged_card_name_this_turn(owner_color: int, card_name: String) -> void:
+	var exchanged_names: Array = exchanged_card_names_this_turn.get(owner_color, [])
+	exchanged_names.append(card_name)
+	exchanged_card_names_this_turn[owner_color] = exchanged_names
+
+func clear_exchanged_card_names_this_turn(owner_color: int) -> void:
+	exchanged_card_names_this_turn[owner_color] = []
 
 func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector2):
 	if not piece_objects.has(piece_position) or card_visual.card == null:
@@ -1671,9 +1784,11 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	var moving_color: int = 1 if board[start_pos.x][start_pos.y] > 0 else -1
 	var captured_piece: Piece = piece_objects[end_pos] as Piece if piece_objects.has(end_pos) else null
 	var captured_nexus: bool = is_nexus_piece(captured_piece)
+	var moving_piece_visible_to_enemy: bool = true
 
 	if piece_objects.has(start_pos):
 		var piece: Piece = piece_objects[start_pos] as Piece
+		moving_piece_visible_to_enemy = !CardEffectResolver.piece_has_attached_effect(piece, CardEffect.TYPE_INVISIBLE_TO_ENEMY)
 		piece.position = end_pos
 		piece_objects.erase(start_pos)
 		piece_objects[end_pos] = piece
@@ -1690,6 +1805,8 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 		DeckManager.return_card_to_deck(get_card_deck(captured_piece.color), captured_piece.attached_card.card_name)
 	if captured_piece != null:
 		captured_piece.detach_card()
+
+	record_last_move_locally(moving_color, start_pos, end_pos, moving_piece_visible_to_enemy)
 
 	var winner_color: int = get_winner_after_move(moving_color, end_pos)
 	if winner_color != 0:
@@ -1721,6 +1838,19 @@ func return_captured_nexus_card_to_deck(captured_piece: Piece) -> void:
 	if captured_piece == null or captured_piece.attached_card == null:
 		return
 	DeckManager.return_card_to_deck(get_card_deck(captured_piece.color), captured_piece.attached_card.card_name)
+
+func record_last_move_locally(moving_color: int, from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool) -> void:
+	if from_pos == to_pos:
+		current_last_move = {}
+		return
+
+	current_last_move = {
+		"from": from_pos,
+		"to": to_pos,
+		"player_id": get_player_id_for_color(moving_color),
+		"piece_color": moving_color,
+		"visible_to_enemy": visible_to_enemy,
+	}
 
 func record_played_card_hand_slot(owner_color: int, current_hand_index: int) -> void:
 	if current_hand_index < 0:
@@ -1754,7 +1884,7 @@ func refill_played_cards_locally(owner_color: int) -> void:
 		if hand.size() >= DeckManager.HAND_SIZE:
 			break
 
-		var card_name: String = draw_card_name(owner_color)
+		var card_name: String = draw_refill_card_name(owner_color)
 		if card_name.is_empty():
 			break
 		insert_drawn_card(owner_color, int(slot_value), card_name)
@@ -1841,10 +1971,12 @@ func is_nexus_piece_at(piece_position: Vector2) -> bool:
 func current_player_has_valid_turn_action() -> bool:
 	var current_color: int = get_current_turn_color()
 	if has_moved_piece_this_turn(current_color):
-		return false
+		return can_exchange_card_locally(current_color)
 	var hand_cards: Array[Card] = get_card_hand(current_color)
 	var can_attach_card: bool = true
 	if MoveRules.has_valid_turn_action(piece_objects, current_color, hand_cards, can_attach_card, BOARD_SIZE, current_board_effects):
+		return true
+	if can_exchange_card_locally(current_color):
 		return true
 	return false
 
@@ -2015,7 +2147,7 @@ func is_in_check(king_pos: Vector2):
 func is_stalemate():
 	return !current_player_has_valid_turn_action()
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = []):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], last_move: Dictionary = {}):
 	var previous_white_hand_names: Array[String] = get_card_names_from_hand(white_card_hand)
 	var previous_black_hand_names: Array[String] = get_card_names_from_hand(black_card_hand)
 
@@ -2053,6 +2185,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	current_player_base_fields = parse_player_base_fields(player_base_fields)
 	current_board_effects = parse_board_effects(board_effects)
 	current_player_names = parse_player_names(player_names)
+	current_last_move = parse_last_move(last_move)
 	white_card_hand = create_card_hand_from_names(current_white_hand_names)
 	black_card_hand = create_card_hand_from_names(current_black_hand_names)
 	white_card_visuals = populate_card_hand(white_pieces, white_card_hand, 1)
@@ -2204,6 +2337,23 @@ func parse_board_effects(board_effects: Array) -> Array:
 
 	return parsed_effects
 
+func parse_last_move(last_move: Dictionary) -> Dictionary:
+	if last_move.is_empty():
+		return {}
+
+	var from_pos: Vector2 = value_to_vector2(last_move.get("from", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	var to_pos: Vector2 = value_to_vector2(last_move.get("to", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	if !is_valid_position(from_pos) or !is_valid_position(to_pos) or from_pos == to_pos:
+		return {}
+
+	return {
+		"from": from_pos,
+		"to": to_pos,
+		"player_id": int(last_move.get("player_id", -1)),
+		"piece_color": int(last_move.get("piece_color", 0)),
+		"visible_to_enemy": bool(last_move.get("visible_to_enemy", true)),
+	}
+
 func value_to_vector2(value, fallback: Vector2) -> Vector2:
 	if value is Vector2:
 		return value
@@ -2228,6 +2378,7 @@ func update_board_markers():
 		child.queue_free()
 
 	add_enemy_attack_markers()
+	add_last_move_arrow_marker()
 
 	for effect_value in current_board_effects:
 		var effect: Dictionary = effect_value
@@ -2252,6 +2403,23 @@ func add_enemy_attack_markers():
 	var attacked_squares: Array[Vector2] = MoveRules.get_attacked_squares_for_player(piece_objects, enemy_color, BOARD_SIZE, current_board_effects)
 	for square_pos: Vector2 in attacked_squares:
 		add_board_square_fill(square_pos, Color(1.0, 0.05, 0.03, 0.105))
+
+func add_last_move_arrow_marker():
+	if current_last_move.is_empty() or !bool(current_last_move.get("visible_to_enemy", true)):
+		return
+
+	var mover_color: int = int(current_last_move.get("piece_color", 0))
+	if mover_color == 0 or mover_color == get_local_view_color():
+		return
+
+	var from_pos: Vector2 = value_to_vector2(current_last_move.get("from", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	var to_pos: Vector2 = value_to_vector2(current_last_move.get("to", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	if !is_valid_position(from_pos) or !is_valid_position(to_pos) or from_pos == to_pos:
+		return
+	if !piece_objects.has(to_pos):
+		return
+
+	add_board_arrow(from_pos, to_pos, LAST_MOVE_ARROW_COLOR, LAST_MOVE_ARROW_WIDTH)
 
 func add_board_square_fill(board_pos: Vector2, marker_color: Color):
 	var rect: Rect2 = get_board_cell_rect_local(board_pos)
@@ -2295,6 +2463,29 @@ func add_board_line(points: Array, line_color: Color, line_width: float):
 	for point_value in points:
 		line.add_point(point_value)
 	board_markers_node.add_child(line)
+
+func add_board_arrow(from_pos: Vector2, to_pos: Vector2, arrow_color: Color, line_width: float):
+	var start_point: Vector2 = get_board_position_local_position(from_pos)
+	var end_point: Vector2 = get_board_position_local_position(to_pos)
+	var direction: Vector2 = end_point - start_point
+	if direction.length() <= 0.0:
+		return
+
+	var normalized_direction: Vector2 = direction.normalized()
+	var perpendicular: Vector2 = Vector2(-normalized_direction.y, normalized_direction.x)
+	start_point += normalized_direction * LAST_MOVE_ARROW_ENDPOINT_INSET
+	end_point -= normalized_direction * LAST_MOVE_ARROW_ENDPOINT_INSET
+
+	var arrow_head := Polygon2D.new()
+	var head_base: Vector2 = end_point - normalized_direction * LAST_MOVE_ARROW_HEAD_LENGTH
+	add_board_line([start_point, head_base], arrow_color, line_width)
+	arrow_head.color = arrow_color
+	arrow_head.polygon = PackedVector2Array([
+		end_point,
+		head_base + perpendicular * LAST_MOVE_ARROW_HEAD_HALF_WIDTH,
+		head_base - perpendicular * LAST_MOVE_ARROW_HEAD_HALF_WIDTH,
+	])
+	board_markers_node.add_child(arrow_head)
 
 func get_board_cell_rect_local(board_pos: Vector2) -> Rect2:
 	var center: Vector2 = get_board_position_local_position(board_pos)

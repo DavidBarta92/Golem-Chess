@@ -1,14 +1,14 @@
 [gd_resource type="Resource" script_class="Card" format=3 uid="uid://726segua6wat"]
 
-[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_fr16u"]
+[ext_resource type="Texture2D" uid="uid://cu2ali7umjgo3" path="res://Assets/8b.png" id="1_fr16u"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_vqbu2"]
-[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_5j7x2"]
+[ext_resource type="Texture2D" uid="uid://b0d5umtb1h1c5" path="res://Assets/8w.png" id="3_vqbu2"]
 
 [resource]
 script = ExtResource("2_vqbu2")
 card_name = "Numero_5"
 card_code = "numero_5"
-white_piece_texture = ExtResource("3_5j7x2")
+white_piece_texture = ExtResource("3_vqbu2")
 black_piece_texture = ExtResource("1_fr16u")
 description = "No special effect."
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [3, 3, 1, 3, 3], [0, 0, 0, 0, 0], [0, 0, 2, 0, 0], [0, 0, 0, 0, 0]])

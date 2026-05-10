@@ -26,6 +26,7 @@ signal burn_finished(card_visual: CardVisual)
 @export var hover_scale: float = 1.11
 @export var drag_scale: float = 1.05
 @export var drop_target_scale: float = 0.5
+@export var drop_target_drag_offset_factor: float = 0.45
 
 @onready var shadow: TextureRect = $Shadow
 @onready var card_face: TextureRect = $CardFace
@@ -68,6 +69,7 @@ var is_assigned: bool = false
 var is_hovered: bool = false
 var drop_target_active: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
+var normal_drag_offset: Vector2 = Vector2.ZERO
 var collection_owned: bool = true
 var hover_raise_enabled: bool = true
 var rest_scale: Vector2 = Vector2.ONE
@@ -216,6 +218,9 @@ func set_drop_target_active(active: bool) -> void:
 
 	drop_target_active = active
 	var target_scale: Vector2 = rest_scale * (drop_target_scale if active else drag_scale)
+	if is_dragging:
+		drag_offset = normal_drag_offset * (drop_target_drag_offset_factor if active else 1.0)
+		global_position = get_global_mouse_position() - drag_offset
 	_tween_scale(target_scale, 0.12)
 
 func fly_home() -> void:
@@ -463,6 +468,7 @@ func start_drag() -> void:
 	move_to_front()
 	z_index = 100
 	drag_offset = get_global_mouse_position() - global_position
+	normal_drag_offset = drag_offset
 	scale = rest_scale * drag_scale
 	drag_started.emit(self)
 

@@ -228,6 +228,7 @@ func _try_start_multiplayer_game() -> void:
 
 func on_player_action(action: Dictionary):
 	send_player_action.rpc_id(1, multiplayer.get_unique_id(), action)
+	return true
 
 @rpc("any_peer", "call_local", "reliable")
 func send_player_action(peer_id: int, action: Dictionary):
@@ -301,7 +302,8 @@ func apply_game_state(state_data: Dictionary):
 		state_data.get("board_effects", []),
 		state_data.get("player_names", {}),
 		state_data.get("recent_card_transfers", []),
-		state_data.get("recent_card_expirations", [])
+		state_data.get("recent_card_expirations", []),
+		state_data.get("last_move", {})
 	)
 
 	print("apply_game_state() end")

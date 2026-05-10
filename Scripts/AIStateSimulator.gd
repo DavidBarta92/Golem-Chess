@@ -35,10 +35,12 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.board_effects = duplicate_board_effects(source_state.board_effects)
 	cloned_state.recent_card_transfers = []
 	cloned_state.recent_card_expirations = []
+	cloned_state.last_move = source_state.last_move.duplicate(true)
 	cloned_state.attached_card_this_turn = source_state.attached_card_this_turn.duplicate()
 	cloned_state.moved_piece_this_turn = source_state.moved_piece_this_turn.duplicate()
 	cloned_state.drawn_card_this_turn = source_state.drawn_card_this_turn.duplicate()
 	cloned_state.played_card_hand_slots_this_turn = duplicate_int_list_dictionary(source_state.played_card_hand_slots_this_turn)
+	cloned_state.exchanged_card_names_this_turn = duplicate_card_list_dictionary(source_state.exchanged_card_names_this_turn)
 	cloned_state.game_over = source_state.game_over
 	cloned_state.winner_player = source_state.winner_player
 	cloned_state.win_condition = source_state.win_condition
