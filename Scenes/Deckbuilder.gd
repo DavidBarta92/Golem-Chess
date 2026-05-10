@@ -265,11 +265,7 @@ func _load_cards() -> void:
 	CardPrintLibrary.ensure_loaded()
 	PlayerCollectionStore.ensure_loaded()
 	PlayerDeckStore.ensure_loaded()
-	all_card_prints = []
-	for card_print_value in CardPrintLibrary.get_all_prints():
-		var card_print: CardPrint = card_print_value as CardPrint
-		if card_print != null && PlayerCollectionStore.owns_print(card_print):
-			all_card_prints.append(card_print)
+	all_card_prints = CardPrintLibrary.get_all_prints()
 
 func _show_page(page_index: int) -> void:
 	current_page = clampi(page_index, 0, max(0, _get_page_count() - 1))
