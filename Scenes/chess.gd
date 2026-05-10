@@ -45,11 +45,15 @@ const DECK_COUNT_LABEL_SIZE = Vector2(88, 28)
 const DECK_COUNT_LABEL_GAP = 8
 const PLAYER_NAME_LABEL_SIZE = Vector2(180, 28)
 const PLAYER_NAME_LABEL_GAP = 8
+const RULES_INFO_BUTTON_SIZE = Vector2(40, 40)
+const RULES_INFO_PANEL_SIZE = Vector2(310, 286)
+const RULES_INFO_PANEL_MARGIN = 24
 const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const CARD_BURN_SEQUENCE_GAP = 0.08
+const RULES_INFO_TEXT: String = "Goal: attach a Nexus card to one of your pieces, then move that Nexus onto the opponent's base square.\n\nTurn flow:\n1. Play any number of cards from your hand onto your empty pieces.\n2. Move one ready piece using its attached card pattern.\n3. End your turn. Each card you played is replaced from your deck.\n\nCards:\n- Your hand holds up to 3 cards.\n- Duration only drops when that piece moves.\n\nCaptures:\n- Captured pieces respawn on an empty home-row square.\n- Their attached card is removed. Nexus cards return to their owner's deck."
 
 @onready var pieces_node = $Pieces
 @onready var dots = $Dots
@@ -86,6 +90,10 @@ var drawn_card_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
+var played_card_hand_slots_this_turn: Dictionary = {
+	1: [],
+	-1: [],
+}
 var game_over: bool = false
 var hover_card_preview: CardVisual
 var hover_duration_label: Label
@@ -98,6 +106,9 @@ var deck_count_label: Label
 var player_name_labels: Dictionary = {}
 var quit_confirmation_dialog: ConfirmationDialog
 var end_turn_button: Button
+var rules_info_button: Button
+var rules_info_panel: PanelContainer
+var rules_info_label: Label
 var white_deck_count_override: int = -1
 var black_deck_count_override: int = -1
 var hidden_card_preview_container: Control
@@ -143,6 +154,7 @@ func _ready():
 	create_player_name_ui()
 	create_quit_confirmation_ui()
 	create_end_turn_ui()
+	create_rules_info_ui()
 	update_player_name_labels()
 
 func create_board_tiles():
@@ -487,6 +499,77 @@ func create_end_turn_ui():
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	update_end_turn_button()
 
+func create_rules_info_ui():
+	rules_info_button = Button.new()
+	canvas_layer.add_child(rules_info_button)
+	rules_info_button.text = "i"
+	rules_info_button.tooltip_text = "Rules"
+	rules_info_button.anchor_left = 1.0
+	rules_info_button.anchor_right = 1.0
+	rules_info_button.anchor_top = 1.0
+	rules_info_button.anchor_bottom = 1.0
+	var button_right_offset: float = end_turn_button.offset_left - 8.0
+	rules_info_button.offset_left = button_right_offset - RULES_INFO_BUTTON_SIZE.x
+	rules_info_button.offset_right = button_right_offset
+	rules_info_button.offset_top = end_turn_button.offset_top
+	rules_info_button.offset_bottom = end_turn_button.offset_bottom
+	rules_info_button.z_index = 960
+	rules_info_button.focus_mode = Control.FOCUS_NONE
+	rules_info_button.pressed.connect(_on_rules_info_pressed)
+
+	rules_info_panel = PanelContainer.new()
+	canvas_layer.add_child(rules_info_panel)
+	rules_info_panel.visible = false
+	rules_info_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	rules_info_panel.anchor_left = 0.5
+	rules_info_panel.anchor_right = 0.5
+	rules_info_panel.anchor_top = 0.5
+	rules_info_panel.anchor_bottom = 0.5
+	rules_info_panel.z_index = 970
+
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.05, 0.055, 0.065, 0.92)
+	panel_style.border_color = Color(1.0, 1.0, 1.0, 0.18)
+	panel_style.border_width_left = 1
+	panel_style.border_width_top = 1
+	panel_style.border_width_right = 1
+	panel_style.border_width_bottom = 1
+	panel_style.corner_radius_top_left = 6
+	panel_style.corner_radius_top_right = 6
+	panel_style.corner_radius_bottom_left = 6
+	panel_style.corner_radius_bottom_right = 6
+	panel_style.content_margin_left = 14
+	panel_style.content_margin_top = 12
+	panel_style.content_margin_right = 14
+	panel_style.content_margin_bottom = 12
+	rules_info_panel.add_theme_stylebox_override("panel", panel_style)
+
+	var panel_layout: VBoxContainer = VBoxContainer.new()
+	rules_info_panel.add_child(panel_layout)
+	panel_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel_layout.add_theme_constant_override("separation", 8)
+
+	var title_label: Label = Label.new()
+	panel_layout.add_child(title_label)
+	title_label.text = "How to Play"
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	title_label.add_theme_font_size_override("font_size", 17)
+	title_label.add_theme_color_override("font_color", Color(1.0, 0.96, 0.82))
+
+	rules_info_label = Label.new()
+	panel_layout.add_child(rules_info_label)
+	rules_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rules_info_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	rules_info_label.text = RULES_INFO_TEXT
+	rules_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rules_info_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	rules_info_label.add_theme_font_size_override("font_size", 13)
+	rules_info_label.add_theme_color_override("font_color", Color(0.94, 0.94, 0.9))
+
+	arrange_rules_info_panel()
+	update_rules_info_ui()
+
 func create_hidden_card_preview_ui():
 	hidden_card_preview_container = Control.new()
 	canvas_layer.add_child(hidden_card_preview_container)
@@ -546,6 +629,7 @@ func update_card_presentation():
 	update_card_drag_permissions()
 	update_player_name_labels()
 	update_end_turn_button()
+	update_rules_info_ui()
 
 func update_player_name_labels():
 	for owner_color in [1, -1]:
@@ -599,6 +683,22 @@ func update_end_turn_button():
 	end_turn_button.visible = !game_over
 	end_turn_button.disabled = !can_control_current_turn()
 
+func update_rules_info_ui():
+	if rules_info_button == null:
+		return
+
+	rules_info_button.visible = !game_over
+	if game_over && rules_info_panel != null:
+		rules_info_panel.visible = false
+
+func _on_rules_info_pressed():
+	if rules_info_panel == null:
+		return
+
+	rules_info_panel.visible = !rules_info_panel.visible
+	if rules_info_panel.visible:
+		arrange_rules_info_panel()
+
 func _on_end_turn_pressed():
 	if !can_control_current_turn():
 		return
@@ -614,8 +714,7 @@ func _on_end_turn_pressed():
 
 func end_current_turn_locally():
 	var ending_color: int = get_current_turn_color()
-	if should_tick_attached_cards_this_end_turn_locally():
-		tick_attached_cards_locally()
+	refill_played_cards_locally(ending_color)
 	clear_piece_exhaustion_for_color(ending_color)
 	white = !white
 	reset_current_turn_card_attach()
@@ -658,7 +757,7 @@ func handle_expired_nexus_card_locally(owner_color: int, expired_card: Card) -> 
 		hand.append(returned_card)
 
 func should_tick_attached_cards_this_end_turn_locally() -> bool:
-	return !white
+	return false
 
 func update_card_face_visibility(local_color: int):
 	for card_visual in white_card_visuals:
@@ -704,6 +803,7 @@ func reset_current_turn_card_attach():
 	attached_card_this_turn[current_color] = false
 	moved_piece_this_turn[current_color] = false
 	drawn_card_this_turn[current_color] = false
+	played_card_hand_slots_this_turn[current_color] = []
 
 func clear_piece_exhaustion_for_color(owner_color: int) -> void:
 	for position_value in piece_objects:
@@ -789,6 +889,7 @@ func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector
 
 	var hand_index: int = get_card_visual_index(card_visual)
 	if GameController.current_game_host:
+		record_played_card_hand_slot(card_visual.owner_color, hand_index)
 		send_card_attach_action(card_visual.owner_color, card_name, piece_position, hand_index)
 		card_visual.assign_and_hide()
 		mark_card_attached_this_turn(card_visual.owner_color)
@@ -798,6 +899,7 @@ func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector
 		card_visual.fly_home()
 		return
 
+	record_played_card_hand_slot(card_visual.owner_color, hand_index)
 	remove_card_from_hand(card_visual)
 	mark_card_attached_this_turn(card_visual.owner_color)
 
@@ -1230,6 +1332,8 @@ func arrange_card_visuals(visuals: Array[CardVisual], animate: bool):
 func _process(_delta):
 	update_hovered_piece()
 	update_deck_count_hover()
+	if rules_info_panel != null && rules_info_panel.visible:
+		arrange_rules_info_panel()
 
 func update_deck_count_hover():
 	if deck_count_label == null:
@@ -1272,19 +1376,10 @@ func is_mouse_over_deck(owner_color: int) -> bool:
 	return deck_visual.get_global_rect().has_point(get_viewport().get_mouse_position())
 
 func try_handle_deck_click() -> bool:
-	var active_color: int = get_controllable_color()
-	if !can_control_current_turn() or has_drawn_card_this_turn(active_color):
-		return false
-	if !is_mouse_over_deck(active_color):
-		return false
-	if !can_draw_card_locally(active_color):
-		return true
-
-	request_card_draw(active_color)
-	return true
+	return false
 
 func can_draw_card_locally(owner_color: int) -> bool:
-	return get_card_deck_count(owner_color) > 0 && get_card_hand(owner_color).size() < DeckManager.HAND_SIZE
+	return false
 
 func request_card_draw(owner_color: int):
 	if GameController.current_game_host:
@@ -1576,8 +1671,6 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	var moving_color: int = 1 if board[start_pos.x][start_pos.y] > 0 else -1
 	var captured_piece: Piece = piece_objects[end_pos] as Piece if piece_objects.has(end_pos) else null
 	var captured_nexus: bool = is_nexus_piece(captured_piece)
-	var captured_nexus_owner_color: int = captured_piece.color if captured_piece != null else 0
-	var captured_nexus_card_returned: bool = true
 
 	if piece_objects.has(start_pos):
 		var piece: Piece = piece_objects[start_pos] as Piece
@@ -1592,18 +1685,26 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	board[start_pos.x][start_pos.y] = 0
 
 	if captured_nexus:
-		captured_nexus_card_returned = return_captured_nexus_card_to_hand(captured_piece)
-
-	if captured_nexus && !captured_nexus_card_returned && !player_has_available_nexus_card(captured_nexus_owner_color):
-		display_board()
-		finish_game(-captured_nexus_owner_color)
-		return
+		return_captured_nexus_card_to_deck(captured_piece)
+	elif captured_piece != null && captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
+		DeckManager.return_card_to_deck(get_card_deck(captured_piece.color), captured_piece.attached_card.card_name)
+	if captured_piece != null:
+		captured_piece.detach_card()
 
 	var winner_color: int = get_winner_after_move(moving_color, end_pos)
 	if winner_color != 0:
 		display_board()
 		finish_game(winner_color)
 		return
+
+	var moving_piece: Piece = piece_objects[end_pos] as Piece if piece_objects.has(end_pos) else null
+	consume_moved_piece_duration_locally(moving_piece, end_pos)
+	if game_over:
+		display_board()
+		return
+
+	if captured_piece != null:
+		respawn_captured_piece_locally(captured_piece)
 
 	mark_piece_moved_this_turn(moving_color)
 	update_card_presentation()
@@ -1616,19 +1717,93 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 		show_options()
 		state = true
 
-func return_captured_nexus_card_to_hand(captured_piece: Piece) -> bool:
+func return_captured_nexus_card_to_deck(captured_piece: Piece) -> void:
 	if captured_piece == null or captured_piece.attached_card == null:
+		return
+	DeckManager.return_card_to_deck(get_card_deck(captured_piece.color), captured_piece.attached_card.card_name)
+
+func record_played_card_hand_slot(owner_color: int, current_hand_index: int) -> void:
+	if current_hand_index < 0:
+		return
+	var played_slots: Array = played_card_hand_slots_this_turn.get(owner_color, [])
+	played_slots.append(get_original_hand_slot_for_play(owner_color, current_hand_index))
+	played_card_hand_slots_this_turn[owner_color] = played_slots
+
+func get_original_hand_slot_for_play(owner_color: int, current_hand_index: int) -> int:
+	var played_slots: Array = played_card_hand_slots_this_turn.get(owner_color, [])
+	for candidate in range(current_hand_index, DeckManager.HAND_SIZE):
+		if played_slots.has(candidate):
+			continue
+
+		var previous_slots_before_candidate: int = 0
+		for slot_value in played_slots:
+			if int(slot_value) < candidate:
+				previous_slots_before_candidate += 1
+		if candidate - previous_slots_before_candidate == current_hand_index:
+			return candidate
+	return clampi(current_hand_index, 0, DeckManager.HAND_SIZE - 1)
+
+func refill_played_cards_locally(owner_color: int) -> void:
+	var played_slots: Array = played_card_hand_slots_this_turn.get(owner_color, [])
+	if played_slots.is_empty():
+		return
+
+	played_slots.sort()
+	for slot_value in played_slots:
+		var hand: Array[Card] = get_card_hand(owner_color)
+		if hand.size() >= DeckManager.HAND_SIZE:
+			break
+
+		var card_name: String = draw_card_name(owner_color)
+		if card_name.is_empty():
+			break
+		insert_drawn_card(owner_color, int(slot_value), card_name)
+
+	played_card_hand_slots_this_turn[owner_color] = []
+
+func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> void:
+	if piece == null or piece.attached_card == null:
+		return
+
+	var owner_color: int = piece.color
+	var expired_card: Card = piece.use_turn()
+	if expired_card == null:
+		return
+
+	if MoveRules.is_nexus_card(expired_card):
+		handle_expired_nexus_card_locally(owner_color, expired_card)
+		return
+
+	queue_card_expire_animation(piece_pos, expired_card)
+
+func respawn_captured_piece_locally(captured_piece: Piece) -> bool:
+	if captured_piece == null:
 		return false
-	var owner_color: int = captured_piece.color
-	var hand: Array[Card] = get_card_hand(owner_color)
-	if hand.size() >= DeckManager.HAND_SIZE:
-		print("Nexus card deleted because the hand is full.")
+
+	var respawn_pos: Vector2 = get_random_empty_home_position_locally(captured_piece.color)
+	if respawn_pos == INVALID_BOARD_POS:
+		push_warning("No empty home row square for captured piece respawn.")
 		return false
-	var returned_card: Card = captured_piece.attached_card.duplicate() as Card
-	if returned_card != null:
-		hand.append(returned_card)
-		return true
-	return false
+
+	captured_piece.position = respawn_pos
+	captured_piece.exhausted_this_turn = false
+	piece_objects[respawn_pos] = captured_piece
+	board[respawn_pos.x][respawn_pos.y] = captured_piece.color
+	return true
+
+func get_random_empty_home_position_locally(owner_color: int) -> Vector2:
+	var player_id: int = get_player_id_for_color(owner_color)
+	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
+	var empty_positions: Array[Vector2] = []
+	for col in BoardConfig.BOARD_SIZE:
+		var pos: Vector2 = Vector2(home_row, col)
+		if !piece_objects.has(pos):
+			empty_positions.append(pos)
+
+	if empty_positions.is_empty():
+		return INVALID_BOARD_POS
+
+	return empty_positions[randi() % empty_positions.size()]
 
 func player_has_available_nexus_card(owner_color: int) -> bool:
 	for card: Card in get_card_hand(owner_color):
@@ -1671,12 +1846,6 @@ func current_player_has_valid_turn_action() -> bool:
 	var can_attach_card: bool = true
 	if MoveRules.has_valid_turn_action(piece_objects, current_color, hand_cards, can_attach_card, BOARD_SIZE, current_board_effects):
 		return true
-	if !has_drawn_card_this_turn(current_color) && get_card_hand(current_color).size() < DeckManager.HAND_SIZE && !get_card_deck(current_color).is_empty():
-		var simulated_hand: Array[Card] = hand_cards.duplicate()
-		var next_card: Card = CardLibrary.duplicate_card(get_card_deck(current_color)[0])
-		if next_card != null:
-			simulated_hand.append(next_card)
-			return MoveRules.has_valid_turn_action(piece_objects, current_color, simulated_hand, can_attach_card, BOARD_SIZE, current_board_effects)
 	return false
 
 func finish_if_current_player_has_no_valid_turn() -> bool:
@@ -1974,6 +2143,23 @@ func arrange_hidden_card_preview_container(card_count: int):
 	hidden_card_preview_container.offset_right = left_offset + scaled_card_size.x
 	hidden_card_preview_container.offset_top = -total_height * 0.5
 	hidden_card_preview_container.offset_bottom = total_height * 0.5
+
+func arrange_rules_info_panel():
+	if rules_info_panel == null:
+		return
+
+	var board_screen_size: float = BOARD_SIZE * CELL_WIDTH * get_board_screen_scale()
+	var left_offset: float = -board_screen_size * 0.5 - RULES_INFO_PANEL_MARGIN - RULES_INFO_PANEL_SIZE.x
+	var top_offset: float = -board_screen_size * 0.5
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var min_top_offset: float = -viewport_size.y * 0.5 + RULES_INFO_PANEL_MARGIN
+	var max_top_offset: float = viewport_size.y * 0.5 - RULES_INFO_PANEL_SIZE.y - RULES_INFO_PANEL_MARGIN
+	left_offset = max(left_offset, -viewport_size.x * 0.5 + RULES_INFO_PANEL_MARGIN)
+	top_offset = min_top_offset if max_top_offset < min_top_offset else clampf(top_offset, min_top_offset, max_top_offset)
+	rules_info_panel.offset_left = left_offset
+	rules_info_panel.offset_right = left_offset + RULES_INFO_PANEL_SIZE.x
+	rules_info_panel.offset_top = top_offset
+	rules_info_panel.offset_bottom = top_offset + RULES_INFO_PANEL_SIZE.y
 
 func get_board_screen_scale() -> float:
 	var camera: Camera2D = $"../Camera2D"

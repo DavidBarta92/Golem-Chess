@@ -510,35 +510,55 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 	var target_player_id: int = get_player_id_for_color(target_piece.color)
 	var target_card: Card = target_piece.attached_card
 	var target_was_nexus: bool = is_nexus_piece(target_piece)
-	var nexus_card_returned: bool = true
 
 	if target_card != null:
 		if target_was_nexus:
-			nexus_card_returned = return_card_to_owner_hand(game_state, target_player_id, target_card.card_name, target_pos)
+			return_card_to_owner_deck(game_state, target_player_id, target_card.card_name, target_pos)
 		elif target_piece.turns_remaining > 0:
-			return_card_to_owner_deck(game_state, target_player_id, target_card.card_name)
+			return_card_to_owner_deck(game_state, target_player_id, target_card.card_name, target_pos)
 
+	target_piece.detach_card()
 	game_state.remove_piece(target_pos)
+	respawn_captured_piece(game_state, target_piece, target_player_id)
 	clear_nexus_position_if_needed(game_state, target_player_id, target_was_nexus)
 
 	if target_was_nexus:
-		if !nexus_card_returned && !player_has_available_nexus_card(game_state, target_player_id):
-			var winner_player_id: int = 1 - target_player_id
-			game_state.game_over = true
-			game_state.winner_player = winner_player_id
-			game_state.win_condition = "nexus_card_lost"
-			if game_state.match_logger != null:
-				game_state.match_logger.log_match_end(game_state, game_state.win_condition)
-			print("Nexus card deleted by effect capture and player=%d has no available nexus cards. Winner=%d" % [target_player_id, winner_player_id])
-			return
-		print("Nexus removed by effect. Nexus card returned to player=%d hand. Effect owner=%d" % [target_player_id, effect_owner_player_id])
+		print("Nexus removed by effect. Nexus card returned to player=%d deck. Effect owner=%d" % [target_player_id, effect_owner_player_id])
 
-static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id: int, card_name: String) -> void:
-	if !game_state.player_decks.has(owner_player_id):
-		game_state.player_decks[owner_player_id] = []
-	var deck: Array = game_state.player_decks[owner_player_id]
+static func respawn_captured_piece(game_state: GameStateData, captured_piece: Piece, player_id: int) -> bool:
+	if captured_piece == null or player_id < 0:
+		return false
+
+	var respawn_pos: Vector2 = get_random_empty_home_position(game_state, player_id)
+	if respawn_pos == Vector2(-1, -1):
+		push_warning("No empty home row square for captured piece respawn.")
+		return false
+
+	captured_piece.position = respawn_pos
+	captured_piece.exhausted_this_turn = false
+	game_state.set_piece(respawn_pos, captured_piece)
+	return true
+
+static func get_random_empty_home_position(game_state: GameStateData, player_id: int) -> Vector2:
+	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
+	var empty_positions: Array[Vector2] = []
+	for col in BoardConfig.BOARD_SIZE:
+		var pos: Vector2 = Vector2(home_row, col)
+		if !game_state.pieces.has(pos):
+			empty_positions.append(pos)
+
+	if empty_positions.is_empty():
+		return Vector2(-1, -1)
+
+	return empty_positions[randi() % empty_positions.size()]
+
+static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id: int, card_name: String, source_pos: Vector2 = Vector2(-1, -1)) -> void:
+	var deck: Array[String] = []
+	if game_state.player_decks.has(owner_player_id):
+		deck.assign(game_state.player_decks[owner_player_id])
 	DeckManager.return_card_to_deck(deck, card_name)
 	game_state.player_decks[owner_player_id] = deck
+	register_card_transfer(game_state, owner_player_id, owner_player_id, card_name, "piece", "deck", source_pos)
 	if game_state.match_logger != null:
 		game_state.match_logger.log_card_event(game_state, "return_to_deck", {
 			"player_id": owner_player_id,

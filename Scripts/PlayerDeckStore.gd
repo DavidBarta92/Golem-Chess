@@ -4,6 +4,9 @@ const DECK_SCHEMA_VERSION: int = 2
 const DECKS_PATH: String = "user://decks.json"
 const LOCAL_PROVIDER: String = "local_json"
 const MAX_DECK_SIZE: int = 15
+const MAX_COPIES_PER_CARD: int = 2
+const DEFAULT_DECK_ID: String = "default_new"
+const DEFAULT_DECK_NAME: String = "New"
 
 var deck_data: Dictionary = {}
 var is_loaded: bool = false
@@ -22,10 +25,13 @@ func ensure_loaded() -> void:
 			var parsed = JSON.parse_string(file.get_as_text())
 			deck_data = _normalize_deck_data(parsed)
 			is_loaded = true
+			if _ensure_default_deck_exists():
+				save_decks()
 			return
 
 	deck_data = _create_empty_deck_data()
 	is_loaded = true
+	_ensure_default_deck_exists()
 	save_decks()
 
 func list_decks() -> Array:
@@ -64,6 +70,21 @@ func get_first_playable_deck() -> Dictionary:
 		return {}
 	return playable_decks[0].duplicate(true)
 
+func get_default_deck() -> Dictionary:
+	ensure_loaded()
+	var default_deck: Dictionary = _find_default_deck()
+	return default_deck.duplicate(true) if !default_deck.is_empty() else {}
+
+func get_default_playable_deck() -> Dictionary:
+	var default_deck: Dictionary = get_default_deck()
+	if !default_deck.is_empty() && is_deck_playable(default_deck):
+		return default_deck
+	return get_first_playable_deck()
+
+func get_default_playable_deck_id() -> String:
+	var default_deck: Dictionary = get_default_playable_deck()
+	return str(default_deck.get("deck_id", ""))
+
 func is_deck_playable_id(deck_id: String) -> bool:
 	var deck: Dictionary = get_deck(deck_id)
 	return !deck.is_empty() && is_deck_playable(deck)
@@ -78,9 +99,9 @@ func get_deck_ownership_info(deck: Dictionary) -> Dictionary:
 
 	var total_count: int = 0
 	var owned_count: int = 0
-	var duplicate_count: int = 0
+	var over_copy_limit_count: int = 0
 	var missing_card_codes: Array[String] = []
-	var seen_card_codes: Dictionary = {}
+	var card_counts: Dictionary = {}
 	var cards = deck.get("cards", [])
 	if cards is Array:
 		for deck_card in cards:
@@ -89,10 +110,10 @@ func get_deck_ownership_info(deck: Dictionary) -> Dictionary:
 				continue
 
 			total_count += 1
-			if seen_card_codes.has(card_code):
-				duplicate_count += 1
-			else:
-				seen_card_codes[card_code] = true
+			var next_count: int = int(card_counts.get(card_code, 0)) + 1
+			card_counts[card_code] = next_count
+			if next_count > MAX_COPIES_PER_CARD:
+				over_copy_limit_count += 1
 
 			if PlayerCollectionStore.owns_card_code(card_code):
 				owned_count += 1
@@ -104,10 +125,11 @@ func get_deck_ownership_info(deck: Dictionary) -> Dictionary:
 		"total_count": total_count,
 		"owned_count": owned_count,
 		"missing_count": missing_count,
-		"duplicate_count": duplicate_count,
+		"duplicate_count": over_copy_limit_count,
+		"over_copy_limit_count": over_copy_limit_count,
 		"missing_card_codes": missing_card_codes,
 		"is_collection_complete": missing_count == 0,
-		"is_playable": total_count == MAX_DECK_SIZE && owned_count == MAX_DECK_SIZE && missing_count == 0 && duplicate_count == 0,
+		"is_playable": total_count == MAX_DECK_SIZE && owned_count == MAX_DECK_SIZE && missing_count == 0 && over_copy_limit_count == 0,
 	}
 
 func get_owned_cards_from_deck(deck: Dictionary) -> Array:
@@ -115,7 +137,7 @@ func get_owned_cards_from_deck(deck: Dictionary) -> Array:
 	PlayerCollectionStore.ensure_loaded()
 
 	var owned_cards: Array = []
-	var seen_card_codes: Dictionary = {}
+	var card_counts: Dictionary = {}
 	var cards = deck.get("cards", [])
 	if !(cards is Array):
 		return owned_cards
@@ -128,9 +150,12 @@ func get_owned_cards_from_deck(deck: Dictionary) -> Array:
 			normalized_card = _create_legacy_deck_card(str(deck_card), owned_cards.size())
 
 		var card_code: String = str(normalized_card.get("card_code", "")).strip_edges()
-		if card_code.is_empty() or seen_card_codes.has(card_code):
+		if card_code.is_empty():
 			continue
-		seen_card_codes[card_code] = true
+		var next_count: int = int(card_counts.get(card_code, 0)) + 1
+		if next_count > MAX_COPIES_PER_CARD:
+			continue
+		card_counts[card_code] = next_count
 		if !PlayerCollectionStore.owns_card_code(card_code):
 			continue
 
@@ -240,6 +265,42 @@ func _create_empty_deck_data() -> Dictionary:
 		"decks": [],
 	}
 
+func _ensure_default_deck_exists() -> bool:
+	var decks: Array = _get_decks()
+	for deck in decks:
+		if !(deck is Dictionary):
+			continue
+		if str(deck.get("deck_id", "")) == DEFAULT_DECK_ID:
+			return false
+		if str(deck.get("name", "")).strip_edges() == DEFAULT_DECK_NAME:
+			return false
+
+	decks.insert(0, _create_default_deck())
+	deck_data["decks"] = decks
+	return true
+
+func _find_default_deck() -> Dictionary:
+	for deck in _get_decks():
+		if deck is Dictionary && str(deck.get("deck_id", "")) == DEFAULT_DECK_ID:
+			return deck
+
+	for deck in _get_decks():
+		if deck is Dictionary && str(deck.get("name", "")).strip_edges() == DEFAULT_DECK_NAME:
+			return deck
+
+	return {}
+
+func _create_default_deck() -> Dictionary:
+	var now := Time.get_datetime_string_from_system(true)
+	return {
+		"deck_id": DEFAULT_DECK_ID,
+		"provider": LOCAL_PROVIDER,
+		"name": DEFAULT_DECK_NAME,
+		"cards": _normalize_deck_cards(DeckManager.STARTING_DECK),
+		"created_at": now,
+		"updated_at": now,
+	}
+
 func _normalize_deck_data(raw_data) -> Dictionary:
 	if raw_data is Array:
 		return _migrate_legacy_deck_array(raw_data)
@@ -286,7 +347,7 @@ func _normalize_deck_cards(raw_cards) -> Array:
 	if !(raw_cards is Array):
 		return normalized_cards
 
-	var used_card_codes: Dictionary = {}
+	var card_counts: Dictionary = {}
 	for index in range(raw_cards.size()):
 		var raw_card = raw_cards[index]
 		var normalized_card: Dictionary = {}
@@ -296,10 +357,13 @@ func _normalize_deck_cards(raw_cards) -> Array:
 			normalized_card = _create_legacy_deck_card(str(raw_card), normalized_cards.size())
 
 		var card_code: String = str(normalized_card.get("card_code", "")).strip_edges()
-		if card_code.is_empty() or used_card_codes.has(card_code):
+		if card_code.is_empty():
 			continue
 
-		used_card_codes[card_code] = true
+		var next_count: int = int(card_counts.get(card_code, 0)) + 1
+		if next_count > MAX_COPIES_PER_CARD:
+			continue
+		card_counts[card_code] = next_count
 		normalized_card["slot"] = normalized_cards.size()
 		normalized_cards.append(normalized_card)
 		if normalized_cards.size() >= MAX_DECK_SIZE:

@@ -70,14 +70,7 @@ func create_turn_plans_from_state(game_state: GameStateData, player_id: int, boa
 	return plans
 
 func can_draw_card_from_state(game_state: GameStateData, player_id: int) -> bool:
-	if game_state == null or bool(game_state.drawn_card_this_turn.get(player_id, false)):
-		return false
-	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
-		return false
-
-	var player_deck: Array = game_state.player_decks[player_id]
-	var player_hand: Array = game_state.player_hands[player_id]
-	return !player_deck.is_empty() && player_hand.size() < DeckManager.HAND_SIZE
+	return false
 
 func add_branch_plans(
 	plans: Array[Dictionary],

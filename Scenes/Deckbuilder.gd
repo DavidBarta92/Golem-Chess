@@ -13,6 +13,7 @@ const COMPACT_CARDS_PER_PAGE: int = 4
 const COMPACT_CARD_COLUMNS: int = 2
 const COMPACT_CARD_SLOT_SIZE: Vector2 = Vector2(120, 168)
 const MAX_DECK_SIZE: int = 15
+const MAX_COPIES_PER_CARD: int = PlayerDeckStore.MAX_COPIES_PER_CARD
 const REMOVE_BUTTON_VISIBLE_SECONDS: float = 1.0
 const CARD_DESCRIPTION_HEIGHT: int = 76
 
@@ -264,7 +265,11 @@ func _load_cards() -> void:
 	CardPrintLibrary.ensure_loaded()
 	PlayerCollectionStore.ensure_loaded()
 	PlayerDeckStore.ensure_loaded()
-	all_card_prints = CardPrintLibrary.get_all_prints()
+	all_card_prints = []
+	for card_print_value in CardPrintLibrary.get_all_prints():
+		var card_print: CardPrint = card_print_value as CardPrint
+		if card_print != null && PlayerCollectionStore.owns_print(card_print):
+			all_card_prints.append(card_print)
 
 func _show_page(page_index: int) -> void:
 	current_page = clampi(page_index, 0, max(0, _get_page_count() - 1))
@@ -597,11 +602,11 @@ func _update_deck_editor_state() -> void:
 	for child in card_grid.get_children():
 		var visual: CardVisual = _get_browser_card_visual(child)
 		if visual != null:
-			visual.draggable = is_creating_deck && !editing_deck_has_missing_cards && visual.collection_owned && !_is_card_already_selected(visual.card) && selected_deck_cards.size() < MAX_DECK_SIZE
+			visual.draggable = is_creating_deck && !editing_deck_has_missing_cards && visual.collection_owned && _can_add_card_to_deck(visual.card) && selected_deck_cards.size() < MAX_DECK_SIZE
 			visual.disabled = !visual.collection_owned
 
 func _can_complete_deck() -> bool:
-	return is_creating_deck && !editing_deck_has_missing_cards && !deck_name_edit.text.strip_edges().is_empty() && selected_deck_cards.size() == MAX_DECK_SIZE && _has_selected_nexus_card()
+	return is_creating_deck && !editing_deck_has_missing_cards && !deck_name_edit.text.strip_edges().is_empty() && selected_deck_cards.size() == MAX_DECK_SIZE && _has_selected_nexus_card() && !_has_too_many_card_copies()
 
 func _can_add_print_to_deck(print_id: String) -> bool:
 	if editing_deck_has_missing_cards:
@@ -609,7 +614,7 @@ func _can_add_print_to_deck(print_id: String) -> bool:
 
 	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
 	var card: Card = CardPrintLibrary.get_card_for_print(card_print)
-	return card != null && PlayerCollectionStore.owns_print(card_print) && !_is_card_already_selected(card) && selected_deck_cards.size() < MAX_DECK_SIZE
+	return card != null && PlayerCollectionStore.owns_print(card_print) && _can_add_card_to_deck(card) && selected_deck_cards.size() < MAX_DECK_SIZE
 
 func _refresh_selected_deck_cards() -> void:
 	for child in deck_card_list.get_children():
@@ -780,14 +785,37 @@ func _create_deck_card_entry(print_id: String, slot: int) -> Dictionary:
 		"steam_item_def_id": str(owned_item.get("steam_item_def_id", "")),
 	}
 
-func _is_card_already_selected(card: Card) -> bool:
+func _can_add_card_to_deck(card: Card) -> bool:
 	if card == null:
 		return false
 
+	return _get_selected_card_count(card) < MAX_COPIES_PER_CARD
+
+func _get_selected_card_count(card: Card) -> int:
+	if card == null:
+		return 0
+
 	var card_code: String = PlayerCollectionStore.get_card_code(card)
+	var count: int = 0
 	for deck_card in selected_deck_cards:
 		if deck_card is Dictionary && str(deck_card.get("card_code", "")) == card_code:
+			count += 1
+	return count
+
+func _has_too_many_card_copies() -> bool:
+	var card_counts: Dictionary = {}
+	for deck_card in selected_deck_cards:
+		if !(deck_card is Dictionary):
+			continue
+
+		var card_code: String = str(deck_card.get("card_code", "")).strip_edges()
+		if card_code.is_empty():
+			continue
+
+		var next_count: int = int(card_counts.get(card_code, 0)) + 1
+		if next_count > MAX_COPIES_PER_CARD:
 			return true
+		card_counts[card_code] = next_count
 	return false
 
 func _has_selected_nexus_card() -> bool:

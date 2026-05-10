@@ -92,6 +92,7 @@ func start_ai_vs_ai_batch(match_count: int) -> void:
 		1: 0,
 	}
 	set_singleplayer_controllers(CONTROLLER_AI, CONTROLLER_AI)
+	select_default_decks()
 
 func set_ai_vs_ai_csv_log_dir(log_dir: String) -> void:
 	var cleaned_log_dir: String = log_dir.strip_edges()
@@ -115,7 +116,7 @@ func get_selected_deck_id() -> String:
 	return selected_deck_id
 
 func select_first_available_deck() -> void:
-	var first_deck: Dictionary = PlayerDeckStore.get_first_playable_deck()
+	var first_deck: Dictionary = PlayerDeckStore.get_default_playable_deck()
 	selected_deck_id = str(first_deck.get("deck_id", ""))
 
 func has_selected_deck() -> bool:
@@ -137,8 +138,13 @@ func get_selected_ai_deck_id() -> String:
 	return selected_ai_deck_id
 
 func select_first_available_ai_deck() -> void:
-	var first_deck: Dictionary = PlayerDeckStore.get_first_playable_deck()
+	var first_deck: Dictionary = PlayerDeckStore.get_default_playable_deck()
 	selected_ai_deck_id = str(first_deck.get("deck_id", ""))
+
+func select_default_decks() -> void:
+	var default_deck_id: String = PlayerDeckStore.get_default_playable_deck_id()
+	selected_deck_id = default_deck_id
+	selected_ai_deck_id = default_deck_id
 
 func get_selected_ai_deck_card_names() -> Array[String]:
 	var deck_id: String = get_selected_ai_deck_id()

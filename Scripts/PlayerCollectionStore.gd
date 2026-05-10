@@ -1,10 +1,23 @@
 extends Node
 
-const COLLECTION_SCHEMA_VERSION: int = 2
+const COLLECTION_SCHEMA_VERSION: int = 4
 const COLLECTION_PATH: String = "user://player_collection.json"
 const LOCAL_PROVIDER: String = "local_json"
 const DEFAULT_VARIANT_ID: String = "standard"
 const DEFAULT_VARIANT_NAME: String = "Standard"
+const DEFAULT_COLLECTION_CARD_NAMES: Array[String] = [
+	"Numero_1",
+	"Numero_2",
+	"Numero_3",
+	"Numero_4",
+	"Numero_5",
+	"Numero_6",
+	"Numero_7",
+	"Prince",
+	"Rajah",
+	"Khan",
+	"Jester",
+]
 
 var collection_data: Dictionary = {}
 var is_loaded: bool = false
@@ -22,9 +35,13 @@ func ensure_loaded() -> void:
 		if file != null:
 			var parsed = JSON.parse_string(file.get_as_text())
 			if parsed is Dictionary:
+				var previous_schema_version: int = int(parsed.get("schema_version", 1))
 				collection_data = _normalize_collection(parsed)
 				is_loaded = true
-				_add_missing_default_collection_prints()
+				if _should_reset_outdated_local_collection(previous_schema_version, collection_data):
+					collection_data = _create_default_collection()
+				else:
+					_add_missing_default_collection_prints()
 				save_collection()
 				return
 
@@ -288,11 +305,12 @@ func _add_missing_default_collection_prints() -> void:
 func _get_default_collection_quantity(card_print: CardPrint) -> int:
 	if card_print == null:
 		return 1
-	return maxi(1, card_print.default_collection_quantity)
+	var default_quantities: Dictionary = _get_default_collection_card_code_quantities()
+	return maxi(1, int(default_quantities.get(card_print.card_code, 1)))
 
 func _get_default_collection_prints() -> Array:
 	var default_prints: Array = []
-	var card_codes: Array = CardLibrary.get_all_card_codes()
+	var card_codes: Array = _get_default_collection_card_code_quantities().keys()
 	card_codes.sort()
 	for card_code_value in card_codes:
 		var card_code: String = str(card_code_value)
@@ -300,20 +318,29 @@ func _get_default_collection_prints() -> Array:
 		if card_print != null:
 			default_prints.append(card_print)
 
-	for card_print_value in CardPrintLibrary.get_all_prints():
-		var card_print: CardPrint = card_print_value as CardPrint
-		if card_print == null or !card_print.grant_in_default_collection:
-			continue
-		if !_has_print_id(default_prints, card_print.print_id):
-			default_prints.append(card_print)
 	return default_prints
 
-func _has_print_id(card_prints: Array, print_id: String) -> bool:
-	for card_print_value in card_prints:
-		var card_print: CardPrint = card_print_value as CardPrint
-		if card_print != null && card_print.print_id == print_id:
-			return true
-	return false
+func _get_default_collection_card_code_quantities() -> Dictionary:
+	var quantities: Dictionary = {}
+	for card_name_value in DEFAULT_COLLECTION_CARD_NAMES:
+		var card_code: String = _get_card_code_for_name(str(card_name_value))
+		if card_code.is_empty():
+			continue
+		quantities[card_code] = 1
+
+	return quantities
+
+func _get_card_code_for_name(card_name: String) -> String:
+	var card: Card = CardLibrary.get_card(card_name)
+	if card == null:
+		push_warning("Default collection card not found: %s" % card_name)
+		return ""
+	return get_card_code(card)
+
+func _should_reset_outdated_local_collection(previous_schema_version: int, normalized_collection: Dictionary) -> bool:
+	if previous_schema_version >= COLLECTION_SCHEMA_VERSION:
+		return false
+	return str(normalized_collection.get("provider", LOCAL_PROVIDER)) == LOCAL_PROVIDER
 
 func _create_collection_item(card_print: CardPrint, quantity: int = 1, instance_id: String = "") -> Dictionary:
 	var card: Card = CardPrintLibrary.get_card_for_print(card_print)

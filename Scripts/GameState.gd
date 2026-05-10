@@ -27,6 +27,10 @@ var drawn_card_this_turn: Dictionary = {
 	0: false,
 	1: false,
 }
+var played_card_hand_slots_this_turn: Dictionary = {
+	0: [],
+	1: [],
+}
 var game_over: bool = false
 var winner_player: int = -1
 var win_condition: String = ""
@@ -52,3 +56,4 @@ func switch_turn():
 	attached_card_this_turn[current_turn_player] = false
 	moved_piece_this_turn[current_turn_player] = false
 	drawn_card_this_turn[current_turn_player] = false
+	played_card_hand_slots_this_turn[current_turn_player] = []

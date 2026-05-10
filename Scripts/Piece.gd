@@ -16,7 +16,7 @@ func attach_card(card: Card, exhaust_for_turn: bool = true):
 	attached_card = card
 	turns_remaining = card.duration
 	exhausted_this_turn = exhaust_for_turn
-	skip_next_duration_tick = true
+	skip_next_duration_tick = false
 	print("Card attached: %s to %s piece (position: %s, turns: %d)" % [card.card_name, "white" if color > 0 else "black", position, turns_remaining])
 
 func detach_card() -> Card:
@@ -38,9 +38,7 @@ func get_movement_directions() -> Array:
 	return []
 
 func use_turn() -> Card:
-	if skip_next_duration_tick:
-		skip_next_duration_tick = false
-		print("Card duration tick skipped: %s" % attached_card.card_name)
+	if attached_card == null:
 		return null
 
 	if turns_remaining == -1:

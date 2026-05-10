@@ -9,7 +9,8 @@ const WHITE_COLOR: int = 1
 const BLACK_COLOR: int = -1
 const EMPTY_CELL: int = 0
 const STARTING_PIECE_VALUE: int = 1
-const STARTING_PIECE_COUNT: int = 5
+const STARTING_PIECE_COUNT: int = 6
+const STARTING_PIECE_COLUMNS: Array[int] = [0, 1, 2, 4, 5, 6]
 const CENTER_INDEX: int = int(BOARD_SIZE / 2)
 const WHITE_HOME_ROW: int = 0
 const BLACK_HOME_ROW: int = BOARD_SIZE - 1
@@ -39,13 +40,15 @@ static func create_empty_board() -> Array:
 
 static func create_starting_board() -> Array:
 	var output: Array = create_empty_board()
-	var piece_count: int = mini(STARTING_PIECE_COUNT, BOARD_SIZE)
-	var start_col: int = int((BOARD_SIZE - piece_count) / 2)
-	for offset in piece_count:
-		var col: int = start_col + offset
+	for col in STARTING_PIECE_COLUMNS:
+		if col < 0 or col >= BOARD_SIZE:
+			continue
 		output[WHITE_HOME_ROW][col] = STARTING_PIECE_VALUE
 		output[BLACK_HOME_ROW][col] = -STARTING_PIECE_VALUE
 	return output
+
+static func get_home_row_for_player_id(player_id: int) -> int:
+	return WHITE_HOME_ROW if player_id == WHITE_PLAYER_ID else BLACK_HOME_ROW
 
 static func get_board_pixel_size() -> float:
 	return float(BOARD_SIZE * CELL_WIDTH)

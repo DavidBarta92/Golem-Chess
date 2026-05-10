@@ -101,6 +101,7 @@ func handle_attach_card(action: Dictionary):
 	var player_id: int = int(action.player_id)
 	var card_name: String = str(action.card_name)
 	var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.piece_pos, Vector2(-1, -1))
+	var hand_index: int = int(action.get("hand_index", -1))
 
 	print("Attach card: player=%s, card=%s, position=%s" % [player_id, card_name, piece_pos])
 
@@ -136,13 +137,15 @@ func handle_attach_card(action: Dictionary):
 		var piece_turns_before: int = piece.turns_remaining
 		piece.attach_card(card)
 
+		if !play_card_from_player_hand(player_id, card_name, hand_index):
+			piece.detach_card()
+			push_warning("Card could not be removed from hand.")
+			return
 		if MoveRules.is_nexus_card(card):
 			if player_id == 0:
 				game_state.white_nexus_position = piece_pos
 			else:
 				game_state.black_nexus_position = piece_pos
-
-		DeckManager.play_card(game_state.player_hands[player_id], card_name, game_state.player_decks[player_id])
 		log_card_attached(player_id, card, piece, piece_pos, hand_before, deck_before, deck_top_before, piece_card_before, piece_turns_before)
 		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_ATTACH, game_state, {
 			"player_id": player_id,
@@ -169,44 +172,8 @@ func handle_attach_card(action: Dictionary):
 func handle_draw_card(action: Dictionary):
 	var player_id: int = int(action.player_id)
 	print("Draw card: player=%s" % player_id)
-
-	if game_state.game_over:
-		return
-	if game_state.current_turn_player != player_id:
-		return
-	if bool(game_state.drawn_card_this_turn.get(player_id, false)):
-		push_warning("This player has already drawn this turn.")
-		return
-	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
-		return
-
-	var player_deck: Array = game_state.player_decks[player_id]
-	var player_hand: Array = game_state.player_hands[player_id]
-	if player_deck.is_empty():
-		push_warning("Deck is empty.")
-		return
-	if player_hand.size() >= DeckManager.HAND_SIZE:
-		push_warning("Hand is full.")
-		return
-
-	var hand_before: Array = duplicate_player_card_list(player_hand)
-	var deck_before: Array = duplicate_player_card_list(player_deck)
-	var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
-	var drawn_card_name: String = str(player_deck.pop_front())
-	var target_zone: String = "deleted"
-	if player_hand.size() < DeckManager.HAND_SIZE:
-		player_hand.append(drawn_card_name)
-		target_zone = "hand"
-	game_state.player_decks[player_id] = player_deck
-	game_state.player_hands[player_id] = player_hand
-	game_state.drawn_card_this_turn[player_id] = true
-	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", target_zone)
-	log_card_drawn(player_id, drawn_card_name, hand_before, deck_before, deck_top_before, target_zone)
-	log_turn_snapshot("after_draw")
-	print("Card drawn manually: player=%d, card=%s" % [player_id, drawn_card_name])
-	if maybe_auto_end_turn(player_id):
-		return
-	broadcast_full_state()
+	push_warning("Manual card draw is disabled. Cards refill at end of turn.")
+	return
 
 func handle_move_piece(action: Dictionary):
 	var player_id: int = int(action.player_id)
@@ -244,7 +211,6 @@ func handle_move_piece(action: Dictionary):
 
 	var captured_piece = game_state.get_piece(to_pos)
 	var captured_nexus: bool = is_nexus_piece(captured_piece)
-	var captured_nexus_card_returned: bool = true
 	var captured_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
 	var move_log_context: Dictionary = create_move_log_context(player_id, from_pos, to_pos, piece, captured_piece)
 
@@ -271,7 +237,7 @@ func handle_move_piece(action: Dictionary):
 				return
 
 		if captured_nexus && captured_piece.attached_card != null:
-			captured_nexus_card_returned = return_card_to_player_hand(captured_piece_owner_player_id, captured_piece.attached_card, to_pos, "captured_nexus")
+			return_card_to_player_deck(captured_piece_owner_player_id, captured_piece.attached_card, "captured_nexus", to_pos)
 		elif captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
 			var enemy_player = captured_piece_owner_player_id
 			DeckManager.return_card_to_deck(game_state.player_decks[enemy_player], captured_piece.attached_card.card_name)
@@ -291,13 +257,7 @@ func handle_move_piece(action: Dictionary):
 	if captured_nexus:
 		var captured_player_id: int = captured_piece_owner_player_id
 		CardEffectResolver.clear_nexus_position_if_needed(game_state, captured_player_id, true)
-		if !captured_nexus_card_returned && !player_has_available_nexus_card(captured_player_id):
-			print("Nexus card deleted and player %d has no available nexus cards." % captured_player_id)
-			finish_game(player_id, "nexus_card_lost")
-			log_move_result(move_log_context, game_state.win_condition)
-			broadcast_full_state()
-			return
-		print("Nexus piece captured. Nexus card returned or replacement nexus remains for player %d." % captured_player_id)
+		print("Nexus piece captured. Nexus card returned to player %d deck." % captured_player_id)
 
 	if captured_piece != null && piece.attached_card != null:
 		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_CAPTURE, game_state, {
@@ -312,6 +272,10 @@ func handle_move_piece(action: Dictionary):
 			log_move_result(move_log_context, game_state.win_condition)
 			broadcast_full_state()
 			return
+
+	if captured_piece != null:
+		captured_piece.detach_card()
+		respawn_captured_piece(captured_piece, captured_piece_owner_player_id)
 
 	var opponent_base_field: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var entered_opponent_base: bool = to_pos == opponent_base_field
@@ -336,6 +300,12 @@ func handle_move_piece(action: Dictionary):
 			log_move_result(move_log_context, game_state.win_condition)
 			broadcast_full_state()
 			return
+
+	consume_moved_piece_duration(player_id, piece, to_pos)
+	if game_state.game_over:
+		log_move_result(move_log_context, game_state.win_condition)
+		broadcast_full_state()
+		return
 
 	log_move_result(move_log_context, "")
 	game_state.moved_piece_this_turn[player_id] = true
@@ -364,12 +334,7 @@ func end_current_turn():
 		return
 
 	var ending_player_id: int = game_state.current_turn_player
-	if should_tick_attached_cards_this_end_turn():
-		tick_attached_cards()
-		if game_state.game_over:
-			broadcast_full_state()
-			return
-
+	refill_played_cards_for_player(ending_player_id)
 	clear_piece_exhaustion_for_player(ending_player_id)
 	game_state.switch_turn()
 	advance_logged_turn()
@@ -422,8 +387,56 @@ func handle_expired_nexus_card(player_id: int, expired_card: Card, piece_pos: Ve
 	if !nexus_card_returned && !player_has_available_nexus_card(player_id):
 		finish_game(1 - player_id, "nexus_card_lost")
 
+func consume_moved_piece_duration(player_id: int, piece: Piece, piece_pos: Vector2) -> void:
+	if piece == null or piece.attached_card == null:
+		return
+
+	var expired_card: Card = piece.use_turn()
+	if expired_card == null:
+		return
+
+	if MoveRules.is_nexus_card(expired_card):
+		handle_expired_nexus_card(player_id, expired_card, piece_pos)
+		return
+
+	register_card_expiration(player_id, expired_card, piece_pos)
+	log_card_expired(player_id, expired_card, piece, piece_pos)
+	CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_EXPIRE, game_state, {
+		"player_id": player_id,
+		"piece": piece,
+		"piece_pos": piece_pos,
+		"card": expired_card,
+	})
+
+func respawn_captured_piece(captured_piece: Piece, player_id: int) -> bool:
+	if captured_piece == null or player_id < 0:
+		return false
+
+	var respawn_pos: Vector2 = get_random_empty_home_position(player_id)
+	if respawn_pos == Vector2(-1, -1):
+		push_warning("No empty home row square for captured piece respawn.")
+		return false
+
+	captured_piece.position = respawn_pos
+	captured_piece.exhausted_this_turn = false
+	game_state.set_piece(respawn_pos, captured_piece)
+	return true
+
+func get_random_empty_home_position(player_id: int) -> Vector2:
+	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
+	var empty_positions: Array[Vector2] = []
+	for col in BoardConfig.BOARD_SIZE:
+		var pos: Vector2 = Vector2(home_row, col)
+		if !game_state.pieces.has(pos):
+			empty_positions.append(pos)
+
+	if empty_positions.is_empty():
+		return Vector2(-1, -1)
+
+	return empty_positions[randi() % empty_positions.size()]
+
 func should_tick_attached_cards_this_end_turn() -> bool:
-	return game_state.current_turn_player == 1
+	return false
 
 func maybe_auto_end_turn(player_id: int) -> bool:
 	if game_state.game_over or game_state.current_turn_player != player_id:
@@ -436,8 +449,6 @@ func maybe_auto_end_turn(player_id: int) -> bool:
 	return true
 
 func player_has_remaining_turn_action(player_id: int) -> bool:
-	if can_draw_card_for_player(player_id):
-		return true
 	if can_attach_any_card_for_player(player_id):
 		return true
 	if can_move_any_piece_for_player(player_id):
@@ -498,19 +509,10 @@ func player_has_valid_turn_action(player_id: int) -> bool:
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
 	if can_move_piece && MoveRules.has_valid_turn_action(game_state.pieces, player_color, hand_cards, can_attach_card, BoardConfig.BOARD_SIZE, game_state.board_effects):
 		return true
-	if can_move_piece && can_draw_card_for_player(player_id):
-		var simulated_hand_cards: Array[Card] = get_hand_cards_with_next_draw(player_id)
-		return MoveRules.has_valid_turn_action(game_state.pieces, player_color, simulated_hand_cards, can_attach_card, BoardConfig.BOARD_SIZE, game_state.board_effects)
 	return false
 
 func can_draw_card_for_player(player_id: int) -> bool:
-	if bool(game_state.drawn_card_this_turn.get(player_id, false)):
-		return false
-	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
-		return false
-	var player_deck: Array = game_state.player_decks[player_id]
-	var player_hand: Array = game_state.player_hands[player_id]
-	return !player_deck.is_empty() && player_hand.size() < DeckManager.HAND_SIZE
+	return false
 
 func get_hand_cards_with_next_draw(player_id: int) -> Array[Card]:
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
@@ -722,6 +724,83 @@ func duplicate_player_card_list(source) -> Array:
 			output.append(str(card_name_value))
 	return output
 
+func play_card_from_player_hand(player_id: int, card_name: String, hand_index: int) -> bool:
+	if !game_state.player_hands.has(player_id):
+		return false
+
+	var hand: Array = game_state.player_hands[player_id]
+	var remove_index: int = hand.find(card_name)
+	if hand_index >= 0 && hand_index < hand.size() && str(hand[hand_index]) == card_name:
+		remove_index = hand_index
+	if remove_index == -1:
+		return false
+
+	var original_slot: int = get_original_hand_slot_for_play(player_id, remove_index)
+	hand.remove_at(remove_index)
+	game_state.player_hands[player_id] = hand
+	record_played_card_hand_slot(player_id, original_slot)
+	print("Card played: %s" % card_name)
+	return true
+
+func get_original_hand_slot_for_play(player_id: int, current_hand_index: int) -> int:
+	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
+	for candidate in range(current_hand_index, DeckManager.HAND_SIZE):
+		if played_slots.has(candidate):
+			continue
+
+		var previous_slots_before_candidate: int = 0
+		for slot_value in played_slots:
+			if int(slot_value) < candidate:
+				previous_slots_before_candidate += 1
+		if candidate - previous_slots_before_candidate == current_hand_index:
+			return candidate
+	return clampi(current_hand_index, 0, DeckManager.HAND_SIZE - 1)
+
+func record_played_card_hand_slot(player_id: int, hand_slot: int) -> void:
+	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
+	played_slots.append(clampi(hand_slot, 0, DeckManager.HAND_SIZE - 1))
+	game_state.played_card_hand_slots_this_turn[player_id] = played_slots
+
+func refill_played_cards_for_player(player_id: int) -> void:
+	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
+	if played_slots.is_empty():
+		return
+	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
+		game_state.played_card_hand_slots_this_turn[player_id] = []
+		return
+
+	played_slots.sort()
+	var deck: Array = game_state.player_decks[player_id]
+	var hand: Array = game_state.player_hands[player_id]
+	for slot_value in played_slots:
+		if deck.is_empty() or hand.size() >= DeckManager.HAND_SIZE:
+			break
+
+		var hand_before: Array = duplicate_player_card_list(hand)
+		var deck_before: Array = duplicate_player_card_list(deck)
+		var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
+		var drawn_card_name: String = str(deck.pop_front())
+		var insert_index: int = clampi(int(slot_value), 0, hand.size())
+		hand.insert(insert_index, drawn_card_name)
+		CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", "hand")
+		log_card_drawn(player_id, drawn_card_name, hand_before, deck_before, deck_top_before, "hand", "turn_end_refill")
+
+	game_state.player_decks[player_id] = deck
+	game_state.player_hands[player_id] = hand
+	game_state.played_card_hand_slots_this_turn[player_id] = []
+
+func return_card_to_player_deck(player_id: int, card: Card, reason: String, piece_pos: Vector2 = Vector2(-1, -1)) -> void:
+	if card == null:
+		return
+	if !game_state.player_decks.has(player_id):
+		game_state.player_decks[player_id] = []
+
+	var deck: Array = game_state.player_decks[player_id]
+	DeckManager.return_card_to_deck(deck, card.card_name)
+	game_state.player_decks[player_id] = deck
+	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, card.card_name, "piece", "deck", piece_pos)
+	log_card_returned_to_deck(player_id, card, piece_pos, reason)
+
 func return_card_to_player_hand(player_id: int, card: Card, piece_pos: Vector2, reason: String) -> bool:
 	if card == null:
 		return false
@@ -814,7 +893,7 @@ func log_card_deleted(player_id: int, card: Card, piece_pos: Vector2, reason: St
 		"reason": reason,
 	})
 
-func log_card_drawn(player_id: int, drawn_card_name: String, hand_before: Array, deck_before: Array, deck_top_before: String, target_zone: String = "hand") -> void:
+func log_card_drawn(player_id: int, drawn_card_name: String, hand_before: Array, deck_before: Array, deck_top_before: String, target_zone: String = "hand", reason: String = "turn_end_refill") -> void:
 	if game_state.match_logger == null:
 		return
 
@@ -829,7 +908,7 @@ func log_card_drawn(player_id: int, drawn_card_name: String, hand_before: Array,
 		"drawn_card": drawn_card_name,
 		"source_zone": "deck",
 		"target_zone": target_zone,
-		"reason": "manual_draw",
+		"reason": reason,
 	})
 
 func log_card_expired(player_id: int, card: Card, piece: Piece, piece_pos: Vector2) -> void:

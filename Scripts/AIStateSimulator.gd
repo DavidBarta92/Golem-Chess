@@ -38,6 +38,7 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.attached_card_this_turn = source_state.attached_card_this_turn.duplicate()
 	cloned_state.moved_piece_this_turn = source_state.moved_piece_this_turn.duplicate()
 	cloned_state.drawn_card_this_turn = source_state.drawn_card_this_turn.duplicate()
+	cloned_state.played_card_hand_slots_this_turn = duplicate_int_list_dictionary(source_state.played_card_hand_slots_this_turn)
 	cloned_state.game_over = source_state.game_over
 	cloned_state.winner_player = source_state.winner_player
 	cloned_state.win_condition = source_state.win_condition
@@ -51,6 +52,16 @@ static func duplicate_card_list_dictionary(source: Dictionary) -> Dictionary:
 		var duplicated_list: Array = []
 		for card_name_value in source_list:
 			duplicated_list.append(str(card_name_value))
+		output[key] = duplicated_list
+	return output
+
+static func duplicate_int_list_dictionary(source: Dictionary) -> Dictionary:
+	var output: Dictionary = {}
+	for key in source:
+		var source_list: Array = source[key]
+		var duplicated_list: Array = []
+		for value in source_list:
+			duplicated_list.append(int(value))
 		output[key] = duplicated_list
 	return output
 
@@ -104,22 +115,8 @@ static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: D
 	return simulated_state
 
 static func apply_draw_action(game_state: GameStateData, player_id: int) -> void:
-	if bool(game_state.drawn_card_this_turn.get(player_id, false)):
-		return
-	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
-		return
-
-	var deck: Array = game_state.player_decks[player_id]
-	var hand: Array = game_state.player_hands[player_id]
-	if deck.is_empty():
-		return
-
-	var drawn_card_name: String = str(deck.pop_front())
-	if hand.size() < DeckManager.HAND_SIZE:
-		hand.append(drawn_card_name)
-	game_state.player_decks[player_id] = deck
-	game_state.player_hands[player_id] = hand
-	game_state.drawn_card_this_turn[player_id] = true
+	# Manual drawing is disabled; played cards are refilled at end of turn.
+	return
 
 static func apply_attach_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> void:
 	var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
@@ -136,11 +133,14 @@ static func apply_attach_action(game_state: GameStateData, player_id: int, actio
 	if piece.color != player_color or !MoveRules.can_attach_card_for_turn(game_state.pieces, player_color, card):
 		return
 
-	remove_card_name_from_hand(game_state, player_id, card_name)
+	var removed_hand_index: int = remove_card_name_from_hand(game_state, player_id, card_name)
+	if removed_hand_index == -1:
+		return
+	record_played_card_hand_slot(game_state, player_id, removed_hand_index)
 	piece.attached_card = card
 	piece.turns_remaining = card.duration
 	piece.exhausted_this_turn = true
-	piece.skip_next_duration_tick = true
+	piece.skip_next_duration_tick = false
 	simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_ATTACH, player_id, piece, piece_pos, card, board_size)
 	if game_state.game_over:
 		return
@@ -158,10 +158,17 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 		return
 
 	var captured_piece: Piece = game_state.get_piece(to_pos)
+	var captured_player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
+	if captured_piece != null:
+		handle_captured_piece_card(game_state, captured_piece, captured_player_id, to_pos)
+		if game_state.game_over:
+			return
 	game_state.remove_piece(from_pos)
 	moving_piece.position = to_pos
 	game_state.set_piece(to_pos, moving_piece)
 	game_state.moved_piece_this_turn[player_id] = true
+	if captured_piece != null:
+		respawn_captured_piece(game_state, captured_piece, captured_player_id)
 
 	if MoveRules.is_nexus_card(moving_piece.attached_card):
 		if player_id == 0:
@@ -177,7 +184,6 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 		return
 
 	if captured_piece != null && CardEffectResolver.is_nexus_piece(captured_piece):
-		var captured_player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color)
 		CardEffectResolver.clear_nexus_position_if_needed(game_state, captured_player_id, true)
 
 	if moving_piece.attached_card != null:
@@ -196,6 +202,10 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 		})
 		if game_state.game_over:
 			return
+
+	consume_moved_piece_duration(game_state, player_id, moving_piece, to_pos, board_size)
+	if game_state.game_over:
+		return
 
 	_refresh_nexus_positions(game_state)
 
@@ -224,27 +234,67 @@ static func simulate_trigger_effect(
 	CardEffectResolver.resolve_trigger(trigger, game_state, context, board_size)
 	_refresh_nexus_positions(game_state)
 
-static func remove_card_name_from_hand(game_state: GameStateData, player_id: int, card_name: String) -> void:
+static func remove_card_name_from_hand(game_state: GameStateData, player_id: int, card_name: String) -> int:
 	if !game_state.player_hands.has(player_id):
-		return
+		return -1
 
 	var hand: Array = game_state.player_hands[player_id]
 	var card_index: int = hand.find(card_name)
 	if card_index != -1:
 		hand.remove_at(card_index)
 	game_state.player_hands[player_id] = hand
+	return card_index
 
 static func end_simulated_turn(game_state: GameStateData, player_id: int, board_size: int) -> void:
 	if game_state.game_over:
 		return
 
 	game_state.current_turn_player = player_id
-	if should_tick_attached_cards_this_end_turn(game_state):
-		tick_attached_cards(game_state, board_size)
-		if game_state.game_over:
-			return
+	refill_played_cards_for_player(game_state, player_id)
 	game_state.switch_turn()
 	CardEffectResolver.tick_board_effects(game_state)
+
+static func record_played_card_hand_slot(game_state: GameStateData, player_id: int, current_hand_index: int) -> void:
+	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
+	played_slots.append(get_original_hand_slot_for_play(game_state, player_id, current_hand_index))
+	game_state.played_card_hand_slots_this_turn[player_id] = played_slots
+
+static func get_original_hand_slot_for_play(game_state: GameStateData, player_id: int, current_hand_index: int) -> int:
+	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
+	for candidate in range(current_hand_index, DeckManager.HAND_SIZE):
+		if played_slots.has(candidate):
+			continue
+
+		var previous_slots_before_candidate: int = 0
+		for slot_value in played_slots:
+			if int(slot_value) < candidate:
+				previous_slots_before_candidate += 1
+		if candidate - previous_slots_before_candidate == current_hand_index:
+			return candidate
+	return clampi(current_hand_index, 0, DeckManager.HAND_SIZE - 1)
+
+static func refill_played_cards_for_player(game_state: GameStateData, player_id: int) -> void:
+	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
+	if played_slots.is_empty():
+		return
+	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
+		game_state.played_card_hand_slots_this_turn[player_id] = []
+		return
+
+	played_slots.sort()
+	var deck: Array = game_state.player_decks[player_id]
+	var hand: Array = game_state.player_hands[player_id]
+	for slot_value in played_slots:
+		if deck.is_empty() or hand.size() >= DeckManager.HAND_SIZE:
+			break
+
+		var drawn_card_name: String = str(deck.pop_front())
+		var insert_index: int = clampi(int(slot_value), 0, hand.size())
+		hand.insert(insert_index, drawn_card_name)
+
+	game_state.player_decks[player_id] = deck
+	game_state.player_hands[player_id] = hand
+	game_state.played_card_hand_slots_this_turn[player_id] = []
 
 static func tick_attached_cards(game_state: GameStateData, board_size: int) -> void:
 	var positions: Array = game_state.pieces.keys()
@@ -280,7 +330,62 @@ static func handle_expired_nexus_card(game_state: GameStateData, player_id: int,
 		game_state.win_condition = "nexus_card_lost"
 
 static func should_tick_attached_cards_this_end_turn(game_state: GameStateData) -> bool:
-	return game_state.current_turn_player == 1
+	return false
+
+static func handle_captured_piece_card(game_state: GameStateData, captured_piece: Piece, captured_player_id: int, piece_pos: Vector2) -> void:
+	if captured_piece == null or captured_piece.attached_card == null:
+		return
+
+	var captured_card: Card = captured_piece.attached_card
+	var captured_was_nexus: bool = CardEffectResolver.is_nexus_piece(captured_piece)
+	if captured_was_nexus:
+		CardEffectResolver.return_card_to_owner_deck(game_state, captured_player_id, captured_card.card_name, piece_pos)
+	elif captured_piece.turns_remaining > 0:
+		CardEffectResolver.return_card_to_owner_deck(game_state, captured_player_id, captured_card.card_name, piece_pos)
+
+	captured_piece.detach_card()
+	if captured_was_nexus:
+		CardEffectResolver.clear_nexus_position_if_needed(game_state, captured_player_id, true)
+
+static func respawn_captured_piece(game_state: GameStateData, captured_piece: Piece, captured_player_id: int) -> bool:
+	if captured_piece == null or captured_player_id < 0:
+		return false
+
+	var respawn_pos: Vector2 = get_random_empty_home_position(game_state, captured_player_id)
+	if respawn_pos == Vector2(-1, -1):
+		return false
+
+	captured_piece.position = respawn_pos
+	captured_piece.exhausted_this_turn = false
+	game_state.set_piece(respawn_pos, captured_piece)
+	return true
+
+static func get_random_empty_home_position(game_state: GameStateData, player_id: int) -> Vector2:
+	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
+	var empty_positions: Array[Vector2] = []
+	for col in BoardConfig.BOARD_SIZE:
+		var pos: Vector2 = Vector2(home_row, col)
+		if !game_state.pieces.has(pos):
+			empty_positions.append(pos)
+
+	if empty_positions.is_empty():
+		return Vector2(-1, -1)
+
+	return empty_positions[randi() % empty_positions.size()]
+
+static func consume_moved_piece_duration(game_state: GameStateData, player_id: int, piece: Piece, piece_pos: Vector2, board_size: int) -> void:
+	if piece == null or piece.attached_card == null:
+		return
+
+	var expired_card: Card = piece.use_turn()
+	if expired_card == null:
+		return
+
+	if MoveRules.is_nexus_card(expired_card):
+		handle_expired_nexus_card(game_state, player_id, expired_card, piece_pos)
+		return
+
+	simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_EXPIRE, player_id, piece, piece_pos, expired_card, board_size)
 
 static func _refresh_nexus_positions(game_state: GameStateData) -> void:
 	game_state.white_nexus_position = find_nexus_position(game_state.pieces, 0)
@@ -300,12 +405,38 @@ static func apply_candidate_to_pieces(source_pieces: Dictionary, move: Dictionar
 			moving_piece.attached_card = card
 			moving_piece.turns_remaining = card.duration
 			moving_piece.exhausted_this_turn = true
-			moving_piece.skip_next_duration_tick = true
+			moving_piece.skip_next_duration_tick = false
 
+	var captured_piece: Piece = simulated_pieces.get(to_pos, null) as Piece
 	simulated_pieces.erase(from_pos)
 	moving_piece.position = to_pos
 	simulated_pieces[to_pos] = moving_piece
+	moving_piece.use_turn()
+	if captured_piece != null:
+		captured_piece.detach_card()
+		respawn_captured_piece_in_pieces(simulated_pieces, captured_piece)
 	return simulated_pieces
+
+static func respawn_captured_piece_in_pieces(pieces: Dictionary, captured_piece: Piece) -> bool:
+	if captured_piece == null:
+		return false
+
+	var player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color)
+	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
+	var empty_positions: Array[Vector2] = []
+	for col in BoardConfig.BOARD_SIZE:
+		var pos: Vector2 = Vector2(home_row, col)
+		if !pieces.has(pos):
+			empty_positions.append(pos)
+
+	if empty_positions.is_empty():
+		return false
+
+	var respawn_pos: Vector2 = empty_positions[randi() % empty_positions.size()]
+	captured_piece.position = respawn_pos
+	captured_piece.exhausted_this_turn = false
+	pieces[respawn_pos] = captured_piece
+	return true
 
 static func get_move_from(move: Dictionary) -> Vector2:
 	return CardEffectResolver.as_vector2(move.get("from", Vector2(-1, -1)), Vector2(-1, -1))
