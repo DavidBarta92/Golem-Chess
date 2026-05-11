@@ -7,7 +7,7 @@ func _on_connect_button_pressed():
 	if ip == "":
 		ip = "127.0.0.1"
 
-	print("Joining IP: ", ip)
+	DebugLog.info("Joining IP: %s" % ip)
 
 	GameConfig.is_hosting = false
 	GameConfig.server_ip = ip

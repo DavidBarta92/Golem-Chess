@@ -8,7 +8,7 @@ var current_game_host = null  # LocalGameHost or NetworkGameHost
 
 func set_game_host(host):
 	current_game_host = host
-	print("GameController: host set: ", host)
+	DebugLog.info("GameController: host set: %s" % [host])
 
 func send_action(action: Dictionary):
 	if current_game_host:

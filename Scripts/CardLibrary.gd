@@ -4,7 +4,7 @@ var all_cards: Dictionary = {}  # card_code -> Card resource
 
 func _ready():
 	load_all_cards()
-	print("CardLibrary loaded: %d cards" % all_cards.size())
+	DebugLog.info("CardLibrary loaded: %d cards" % all_cards.size())
 
 func load_all_cards():
 	all_cards.clear()
@@ -26,7 +26,7 @@ func load_all_cards():
 				var card: Card = load(card_path) as Card
 				if card:
 					all_cards[card.card_name] = card
-					print("  Loaded: %s (duration: %d)" % [card.card_name, card.duration])
+					DebugLog.info("  Loaded: %s (duration: %d)" % [card.card_name, card.duration])
 		file_name = dir.get_next()
 
 	dir.list_dir_end()

@@ -26,21 +26,21 @@ static func create_starting_deck() -> Array[String]:
 	var deck: Array[String] = []
 	deck.assign(STARTING_DECK)
 	deck.shuffle()
-	print("Deck created: ", deck)
+	DebugLog.info("Deck created: %s" % [deck])
 	return deck
 
 static func draw_card(deck: Array, hand: Array) -> bool:
 	if deck.is_empty():
-		print("Deck is empty, cannot draw.")
+		DebugLog.info("Deck is empty, cannot draw.")
 		return false
 
 	if hand.size() >= HAND_SIZE:
-		print("Hand is full.")
+		DebugLog.info("Hand is full.")
 		return false
 
 	var drawn_card: String = deck.pop_front()
 	hand.append(drawn_card)
-	print("Card drawn: %s (deck: %d, hand: %d)" % [drawn_card, deck.size(), hand.size()])
+	DebugLog.info("Card drawn: %s (deck: %d, hand: %d)" % [drawn_card, deck.size(), hand.size()])
 	return true
 
 static func draw_starting_hand(deck: Array, hand: Array):
@@ -51,16 +51,16 @@ static func draw_starting_hand(deck: Array, hand: Array):
 static func play_card(hand: Array, card_name: String, _deck: Array) -> bool:
 	var index: int = hand.find(card_name)
 	if index == -1:
-		print("Card is not in hand: %s" % card_name)
+		DebugLog.info("Card is not in hand: %s" % card_name)
 		return false
 
 	hand.remove_at(index)
-	print("Card played: %s" % card_name)
+	DebugLog.info("Card played: %s" % card_name)
 	return true
 
 static func return_card_to_deck(deck: Array, card_name: String):
 	deck.append(card_name)
-	print("Card returned to deck: %s" % card_name)
+	DebugLog.info("Card returned to deck: %s" % card_name)
 
 static func find_nexus_card_index(deck: Array) -> int:
 	for i in deck.size():

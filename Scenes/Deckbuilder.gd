@@ -1,7 +1,7 @@
 extends Control
 
 const CARD_VISUAL = preload("res://Scenes/CardVisual.tscn")
-const CARD_BACK_TEXTURE = preload("res://Assets/card_back_1.svg")
+const PACK_CONTROLLER_SCRIPT = preload("res://Scenes/DeckbuilderPackController.gd")
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const CARD_VISUAL_SIZE: Vector2 = Vector2(164, 229)
 const TOP_BAR_HEIGHT: int = 60
@@ -25,9 +25,6 @@ const MAX_DECK_SIZE: int = 15
 const MAX_COPIES_PER_CARD: int = PlayerDeckStore.MAX_COPIES_PER_CARD
 const REMOVE_BUTTON_VISIBLE_SECONDS: float = 1.0
 const CARD_DESCRIPTION_HEIGHT: int = 76
-const PACK_REWARD_CARD_COUNT: int = 3
-const PACK_ICON_SIZE: Vector2 = Vector2(72, 100)
-const MAX_VISIBLE_PACK_ICONS: int = 4
 
 var all_card_prints: Array = []
 var filtered_card_prints: Array = []
@@ -83,14 +80,16 @@ var pack_inventory: Control
 var pack_inventory_label: Label
 var pack_result_dialog: AcceptDialog
 var pack_result_label: Label
+var pack_controller: DeckbuilderPackController
 
 func _ready() -> void:
 	randomize()
-	PlayerProgressStore.ensure_loaded()
 	_bind_scene_ui()
+	_setup_pack_controller()
 	_connect_viewport_resize()
 	_apply_responsive_layout(false)
 	_load_cards()
+	_populate_saved_decks_list()
 	_show_page(0)
 
 func _process(_delta: float) -> void:
@@ -105,8 +104,22 @@ func _connect_once(signal_value: Signal, callable: Callable) -> void:
 	if !signal_value.is_connected(callable):
 		signal_value.connect(callable)
 
-func _mark_generated_ui(_node: Node) -> void:
-	pass
+func _setup_pack_controller() -> void:
+	pack_controller = PACK_CONTROLLER_SCRIPT.new()
+	var buy_packs_cancel_button := get_node_or_null("BuyPacksPanel/BuyPacksRoot/ButtonRow/CancelButton") as Button
+	pack_controller.bind({
+		"buy_packs_button": buy_packs_button,
+		"points_label": points_label,
+		"buy_packs_panel": buy_packs_panel,
+		"pack_count_spin_box": pack_count_spin_box,
+		"buy_packs_info_label": buy_packs_info_label,
+		"buy_packs_confirm_button": buy_packs_confirm_button,
+		"buy_packs_cancel_button": buy_packs_cancel_button,
+		"pack_inventory": pack_inventory,
+		"pack_inventory_label": pack_inventory_label,
+		"pack_result_dialog": pack_result_dialog,
+		"pack_result_label": pack_result_label,
+	}, Callable(self, "_on_pack_opened"))
 
 func _bind_scene_ui() -> void:
 	root_margin = $RootMargin
@@ -163,7 +176,6 @@ func _bind_scene_ui() -> void:
 	preview_card_visual.visible = false
 
 	_connect_once($TopBar/BackButton.pressed, Callable(self, "_on_back_pressed"))
-	_connect_once(buy_packs_button.pressed, Callable(self, "_on_buy_packs_pressed"))
 	_connect_once(owned_only_check.toggled, Callable(self, "_on_owned_only_toggled"))
 	_connect_once(search_field.text_changed, Callable(self, "_on_search_text_changed"))
 	_connect_once(previous_button.pressed, Callable(self, "_on_previous_pressed"))
@@ -175,10 +187,6 @@ func _bind_scene_ui() -> void:
 	_connect_once(remove_card_button.pressed, Callable(self, "_on_remove_card_pressed"))
 	_connect_once(remove_card_timer.timeout, Callable(self, "_hide_remove_card_button"))
 	_connect_once(preview_card_holder.resized, Callable(self, "_layout_preview_card"))
-	_connect_once(pack_inventory.resized, Callable(self, "_refresh_pack_inventory_ui"))
-	_connect_once(pack_count_spin_box.value_changed, Callable(self, "_on_pack_count_spin_value_changed"))
-	_connect_once($BuyPacksPanel/BuyPacksRoot/ButtonRow/CancelButton.pressed, Callable(self, "_on_buy_packs_canceled"))
-	_connect_once(buy_packs_confirm_button.pressed, Callable(self, "_on_buy_packs_confirmed"))
 
 	buy_packs_panel.visible = false
 	deck_card_scroll.visible = false
@@ -196,7 +204,6 @@ func _build_ui() -> void:
 
 	root_margin = MarginContainer.new()
 	add_child(root_margin)
-	_mark_generated_ui(root_margin)
 	root_margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root_margin.add_theme_constant_override("margin_left", 0)
 	root_margin.add_theme_constant_override("margin_top", TOP_BAR_HEIGHT + 28)
@@ -451,7 +458,6 @@ func _build_ui() -> void:
 
 	remove_card_button = Button.new()
 	add_child(remove_card_button)
-	_mark_generated_ui(remove_card_button)
 	remove_card_button.text = "X"
 	remove_card_button.tooltip_text = "Remove card"
 	remove_card_button.custom_minimum_size = Vector2(30, 30)
@@ -462,7 +468,6 @@ func _build_ui() -> void:
 
 	remove_card_timer = Timer.new()
 	add_child(remove_card_timer)
-	_mark_generated_ui(remove_card_timer)
 	remove_card_timer.one_shot = true
 	remove_card_timer.wait_time = REMOVE_BUTTON_VISIBLE_SECONDS
 	remove_card_timer.timeout.connect(_hide_remove_card_button)
@@ -529,9 +534,8 @@ func _populate_editor_preview_content() -> void:
 	_refresh_progress_ui()
 	if card_description_label != null:
 		card_description_label.text = "Card descriptions appear here when the mouse is over a card."
-	if pack_inventory_label != null:
-		pack_inventory_label.text = "3 unopened"
-	_populate_editor_pack_preview()
+	if pack_controller != null:
+		pack_controller.populate_editor_pack_preview()
 	_populate_editor_card_grid_preview()
 	_populate_editor_deck_preview()
 	if page_label != null:
@@ -541,22 +545,6 @@ func _populate_editor_preview_content() -> void:
 	if next_button != null:
 		next_button.disabled = false
 	_update_deck_editor_state()
-
-func _populate_editor_pack_preview() -> void:
-	if pack_inventory == null:
-		return
-	for child in pack_inventory.get_children():
-		pack_inventory.remove_child(child)
-		child.queue_free()
-	for i in range(3):
-		var pack_card := TextureRect.new()
-		pack_inventory.add_child(pack_card)
-		pack_card.texture = CARD_BACK_TEXTURE
-		pack_card.custom_minimum_size = PACK_ICON_SIZE
-		pack_card.size = PACK_ICON_SIZE
-		pack_card.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		pack_card.position = Vector2(58.0 + float(i) * 32.0, 8.0 + float(i) * 7.0)
-		pack_card.rotation = deg_to_rad(-7.0 + float(i) * 4.0)
 
 func _populate_editor_card_grid_preview() -> void:
 	if card_grid == null:
@@ -638,7 +626,6 @@ func _create_editor_deck_row(deck_name: String) -> Control:
 func create_top_progress_ui() -> void:
 	var top_background := ColorRect.new()
 	add_child(top_background)
-	_mark_generated_ui(top_background)
 	top_background.anchor_left = 0.0
 	top_background.anchor_right = 1.0
 	top_background.anchor_top = 0.0
@@ -651,7 +638,6 @@ func create_top_progress_ui() -> void:
 
 	top_bar = HBoxContainer.new()
 	add_child(top_bar)
-	_mark_generated_ui(top_bar)
 	top_bar.anchor_left = 0.0
 	top_bar.anchor_right = 1.0
 	top_bar.anchor_top = 0.0
@@ -753,7 +739,6 @@ func create_pack_inventory_ui() -> void:
 func create_buy_packs_dialog() -> void:
 	buy_packs_panel = PanelContainer.new()
 	add_child(buy_packs_panel)
-	_mark_generated_ui(buy_packs_panel)
 	buy_packs_panel.visible = false
 	buy_packs_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	buy_packs_panel.z_index = 100
@@ -829,7 +814,6 @@ func create_buy_packs_dialog() -> void:
 func create_pack_result_dialog() -> void:
 	pack_result_dialog = AcceptDialog.new()
 	add_child(pack_result_dialog)
-	_mark_generated_ui(pack_result_dialog)
 	pack_result_dialog.title = "Pack Opened"
 	pack_result_dialog.exclusive = true
 	pack_result_dialog.min_size = Vector2i(360, 220)
@@ -841,57 +825,12 @@ func create_pack_result_dialog() -> void:
 	pack_result_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 func _refresh_progress_ui() -> void:
-	if points_label != null:
-		if Engine.is_editor_hint():
-			points_label.text = "0"
-			return
-		points_label.text = str(PlayerProgressStore.get_points())
+	if pack_controller != null:
+		pack_controller.refresh_progress_ui()
 
 func _refresh_pack_inventory_ui() -> void:
-	if Engine.is_editor_hint():
-		return
-	if pack_inventory == null:
-		return
-
-	for child in pack_inventory.get_children():
-		pack_inventory.remove_child(child)
-		child.queue_free()
-
-	var pack_count: int = PlayerProgressStore.get_unopened_pack_count()
-	if pack_inventory_label != null:
-		pack_inventory_label.text = "%d unopened" % pack_count if pack_count > 0 else "No unopened packs"
-	pack_inventory.visible = pack_count > 0
-	if pack_count <= 0:
-		return
-
-	var visible_count: int = mini(pack_count, MAX_VISIBLE_PACK_ICONS)
-	var start_x: float = maxf(18.0, (pack_inventory.size.x - PACK_ICON_SIZE.x - float(visible_count - 1) * 32.0) * 0.5)
-	for i in range(visible_count):
-		var pack_button := _create_pack_button()
-		pack_inventory.add_child(pack_button)
-		pack_button.size = PACK_ICON_SIZE
-		pack_button.position = Vector2(start_x + float(i) * 32.0, 8.0 + float(i) * 7.0)
-		pack_button.rotation = deg_to_rad(-7.0 + float(i) * 4.0)
-
-func _create_pack_button() -> Button:
-	var pack_button := Button.new()
-	pack_button.custom_minimum_size = PACK_ICON_SIZE
-	pack_button.size = PACK_ICON_SIZE
-	pack_button.tooltip_text = "Open pack"
-	pack_button.focus_mode = Control.FOCUS_NONE
-	pack_button.pressed.connect(_on_pack_pressed)
-
-	var pack_art := TextureRect.new()
-	pack_button.add_child(pack_art)
-	pack_art.set_anchors_preset(Control.PRESET_FULL_RECT)
-	pack_art.offset_left = 4.0
-	pack_art.offset_top = 4.0
-	pack_art.offset_right = -4.0
-	pack_art.offset_bottom = -4.0
-	pack_art.texture = CARD_BACK_TEXTURE
-	pack_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pack_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return pack_button
+	if pack_controller != null:
+		pack_controller.refresh_pack_inventory_ui()
 
 func _load_cards() -> void:
 	if CardLibrary.all_cards.is_empty():
@@ -903,103 +842,33 @@ func _load_cards() -> void:
 	_refresh_card_filter(false)
 
 func _on_buy_packs_pressed() -> void:
-	if buy_packs_panel == null or pack_count_spin_box == null:
-		return
-
-	var max_pack_count: int = PlayerProgressStore.get_max_affordable_pack_count()
-	pack_count_spin_box.min_value = 0 if max_pack_count <= 0 else 1
-	pack_count_spin_box.max_value = max_pack_count
-	pack_count_spin_box.value = 0 if max_pack_count <= 0 else 1
-	pack_count_spin_box.editable = max_pack_count > 0
-	_update_buy_packs_info()
-	if buy_packs_confirm_button != null:
-		buy_packs_confirm_button.disabled = max_pack_count <= 0
-	buy_packs_panel.visible = true
-	buy_packs_panel.move_to_front()
+	if pack_controller != null:
+		pack_controller.show_buy_packs()
 
 func _on_pack_count_spin_value_changed(_value: float) -> void:
-	_update_buy_packs_info()
+	if pack_controller != null:
+		pack_controller.on_pack_count_spin_value_changed(_value)
 
 func _update_buy_packs_info() -> void:
-	if buy_packs_info_label == null or pack_count_spin_box == null:
-		return
-
-	var max_pack_count: int = PlayerProgressStore.get_max_affordable_pack_count()
-	if max_pack_count <= 0:
-		buy_packs_info_label.text = "Pack: %d points\nNot enough points." % PlayerProgressStore.PACK_COST
-		return
-
-	var pack_count: int = int(pack_count_spin_box.value)
-	var total_cost: int = pack_count * PlayerProgressStore.PACK_COST
-	buy_packs_info_label.text = "%d points each | Max: %d\nCost: %d points" % [
-		PlayerProgressStore.PACK_COST,
-		max_pack_count,
-		total_cost,
-	]
+	if pack_controller != null:
+		pack_controller.update_buy_packs_info()
 
 func _on_buy_packs_confirmed() -> void:
-	var pack_count: int = int(pack_count_spin_box.value) if pack_count_spin_box != null else 0
-	if !PlayerProgressStore.purchase_packs(pack_count):
-		return
-
-	if buy_packs_panel != null:
-		buy_packs_panel.visible = false
-	_refresh_progress_ui()
-	_refresh_pack_inventory_ui()
+	if pack_controller != null:
+		pack_controller.confirm_buy_packs()
 
 func _on_buy_packs_canceled() -> void:
-	if buy_packs_panel != null:
-		buy_packs_panel.visible = false
+	if pack_controller != null:
+		pack_controller.cancel_buy_packs()
 
 func _on_pack_pressed() -> void:
-	if PlayerProgressStore.get_unopened_pack_count() <= 0:
-		return
+	if pack_controller != null:
+		pack_controller.open_pack()
 
-	var rewards: Array[CardPrint] = _roll_pack_rewards()
-	if rewards.is_empty():
-		return
-	if !PlayerProgressStore.open_pack():
-		return
-
-	for card_print: CardPrint in rewards:
-		PlayerCollectionStore.add_local_print_copy(card_print.print_id)
-
-	_show_pack_result(rewards)
-	_refresh_progress_ui()
-	_refresh_pack_inventory_ui()
+func _on_pack_opened(_rewards: Array[CardPrint]) -> void:
 	_populate_saved_decks_list()
 	_update_deck_editor_state()
 	_refresh_card_filter(false)
-
-func _roll_pack_rewards() -> Array[CardPrint]:
-	var available_prints: Array[CardPrint] = []
-	for card_print_value in CardPrintLibrary.get_all_prints():
-		var card_print: CardPrint = card_print_value as CardPrint
-		if card_print != null && CardPrintLibrary.get_card_for_print(card_print) != null:
-			available_prints.append(card_print)
-
-	var rewards: Array[CardPrint] = []
-	if available_prints.is_empty():
-		return rewards
-
-	for i in range(PACK_REWARD_CARD_COUNT):
-		rewards.append(available_prints[randi() % available_prints.size()])
-	return rewards
-
-func _show_pack_result(rewards: Array[CardPrint]) -> void:
-	if pack_result_dialog == null or pack_result_label == null:
-		return
-
-	var lines: Array[String] = ["You opened:"]
-	for card_print: CardPrint in rewards:
-		var card: Card = CardPrintLibrary.get_card_for_print(card_print)
-		var card_name: String = card.card_name if card != null else card_print.card_code
-		if card_print.variant_id != PlayerCollectionStore.DEFAULT_VARIANT_ID:
-			card_name = "%s - %s" % [card_name, card_print.get_display_name()]
-		lines.append("- %s" % card_name)
-
-	pack_result_label.text = "\n".join(lines)
-	pack_result_dialog.popup_centered(Vector2i(360, 220))
 
 func _show_page(page_index: int) -> void:
 	current_page = clampi(page_index, 0, max(0, _get_page_count() - 1))
@@ -1759,50 +1628,6 @@ func _on_delete_deck_pressed(deck_id: String) -> void:
 	if editing_deck_id == deck_id:
 		_on_deck_editor_back_pressed()
 	_populate_saved_decks_list()
-
-func _create_saved_deck_row_old(deck_data: Dictionary) -> Control:
-	var ownership_info: Dictionary = PlayerDeckStore.get_deck_ownership_info(deck_data)
-	var is_playable: bool = bool(ownership_info.get("is_playable", false))
-	var owned_count: int = int(ownership_info.get("owned_count", 0))
-
-	var row_frame := PanelContainer.new()
-	row_frame.custom_minimum_size = Vector2(0, 58 if !is_playable else 44)
-	row_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var row := HBoxContainer.new()
-	row_frame.add_child(row)
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_theme_constant_override("separation", 8)
-
-	var name_stack := VBoxContainer.new()
-	row.add_child(name_stack)
-	name_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_stack.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	name_stack.add_theme_constant_override("separation", 0)
-
-	var name_label := Label.new()
-	name_stack.add_child(name_label)
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.text = str(deck_data.get("name", "Unnamed deck"))
-	name_label.clip_text = true
-
-	if !is_playable:
-		var status_label := Label.new()
-		name_stack.add_child(status_label)
-		status_label.text = "%d/%d cards" % [owned_count, MAX_DECK_SIZE]
-		status_label.add_theme_font_size_override("font_size", 12)
-		status_label.add_theme_color_override("font_color", Color(0.95, 0.18, 0.18))
-		status_label.clip_text = true
-
-	var edit_button := Button.new()
-	row.add_child(edit_button)
-	edit_button.text = "✎"
-	edit_button.tooltip_text = "Edit deck"
-	edit_button.custom_minimum_size = Vector2(34, 34)
-	edit_button.pressed.connect(_on_edit_deck_pressed.bind(deck_data.duplicate(true)))
-
-	return row_frame
 
 func _get_print_for_deck_card(deck_card: Dictionary) -> CardPrint:
 	var print_id: String = str(deck_card.get("print_id", ""))

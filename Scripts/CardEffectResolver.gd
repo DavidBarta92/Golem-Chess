@@ -145,7 +145,7 @@ static func resolve_steal_card(game_state: GameStateData, player_id: int, card: 
 				"target_zone": target_zone,
 				"reason": card.card_name,
 			})
-		print("Card stolen: player=%d stole %s from player=%d" % [player_id, stolen_card_name, source_player_id])
+		DebugLog.info("Card stolen: player=%d stole %s from player=%d" % [player_id, stolen_card_name, source_player_id])
 	return build_card_transfer_result(source_player_id, player_id, source, "hand_or_deleted", stolen_cards)
 
 static func resolve_grant_card(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2 = Vector2(-1, -1)) -> Dictionary:
@@ -160,7 +160,7 @@ static func resolve_grant_card(game_state: GameStateData, player_id: int, card: 
 	var granted_cards: Array = []
 	for grant_index in range(amount):
 		if !take_named_card_from_player_deck(game_state, target_player_id, granted_card_name):
-			print("Card grant ignored: %s is not in player=%d deck" % [granted_card_name, target_player_id])
+			DebugLog.info("Card grant ignored: %s is not in player=%d deck" % [granted_card_name, target_player_id])
 			return build_card_transfer_result(target_player_id, target_player_id, "deck", "hand_or_deleted", granted_cards)
 
 		var target_zone: String = give_card_to_player(game_state, target_player_id, granted_card_name, max_hand_size)
@@ -177,7 +177,7 @@ static func resolve_grant_card(game_state: GameStateData, player_id: int, card: 
 				"reason": card.card_name,
 			})
 
-	print("Card granted: %s x%d to player=%d" % [granted_card_name, amount, target_player_id])
+	DebugLog.info("Card granted: %s x%d to player=%d" % [granted_card_name, amount, target_player_id])
 	return build_card_transfer_result(target_player_id, target_player_id, "deck", "hand_or_deleted", granted_cards)
 
 static func resolve_give_card(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2 = Vector2(-1, -1)) -> Dictionary:
@@ -206,7 +206,7 @@ static func resolve_give_card(game_state: GameStateData, player_id: int, card: C
 				"target_zone": target_zone,
 				"reason": card.card_name,
 			})
-		print("Card given: player=%d gave %s to player=%d" % [player_id, given_card_name, target_player_id])
+		DebugLog.info("Card given: player=%d gave %s to player=%d" % [player_id, given_card_name, target_player_id])
 
 	return build_card_transfer_result(player_id, target_player_id, "hand", "hand_or_deleted", given_cards)
 
@@ -283,7 +283,7 @@ static func resolve_move_base(game_state: GameStateData, player_id: int, card: C
 
 	var target_pos: Vector2 = raw_target_squares[0]
 	if !MoveRules.is_valid_position(target_pos, board_size):
-		print("Move base ignored: target outside board: %s" % target_pos)
+		DebugLog.info("Move base ignored: target outside board: %s" % target_pos)
 		return {
 			"squares": [],
 			"base_player_id": player_id,
@@ -298,7 +298,7 @@ static func resolve_move_base(game_state: GameStateData, player_id: int, card: C
 
 	var base_before: Vector2 = get_base_field_for_player(game_state, player_id)
 	game_state.player_base_fields[player_id] = target_pos
-	print("Base moved: player=%d, new_base=%s" % [player_id, target_pos])
+	DebugLog.info("Base moved: player=%d, new_base=%s" % [player_id, target_pos])
 	return {
 		"squares": target_squares,
 		"base_player_id": player_id,
@@ -325,7 +325,7 @@ static func resolve_board_zone_effect(game_state: GameStateData, player_id: int,
 		"squares": squares,
 		"turns_remaining": turns_remaining,
 	})
-	print("Board effect added: type=%s, squares=%d" % [card.effect_type, squares.size()])
+	DebugLog.info("Board effect added: type=%s, squares=%d" % [card.effect_type, squares.size()])
 	return {
 		"target_player_id": target_player_id,
 		"squares": squares,
@@ -382,7 +382,7 @@ static func resolve_bomb(game_state: GameStateData, player_id: int, card: Card, 
 		if game_state.game_over:
 			break
 
-	print("Bomb resolved: player=%d, source=%s, removed=%d" % [player_id, source_pos, positions_to_remove.size()])
+	DebugLog.info("Bomb resolved: player=%d, source=%s, removed=%d" % [player_id, source_pos, positions_to_remove.size()])
 	return {
 		"squares": get_effect_squares(card, source_pos, board_size, effect_color),
 		"affected_positions": positions_to_remove,
@@ -523,7 +523,7 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 	clear_nexus_position_if_needed(game_state, target_player_id, target_was_nexus)
 
 	if target_was_nexus:
-		print("Nexus removed by effect. Nexus card returned to player=%d deck. Effect owner=%d" % [target_player_id, effect_owner_player_id])
+		DebugLog.info("Nexus removed by effect. Nexus card returned to player=%d deck. Effect owner=%d" % [target_player_id, effect_owner_player_id])
 
 static func respawn_captured_piece(game_state: GameStateData, captured_piece: Piece, player_id: int) -> bool:
 	if captured_piece == null or player_id < 0:
@@ -574,7 +574,7 @@ static func return_card_to_owner_hand(game_state: GameStateData, owner_player_id
 	var hand: Array = game_state.player_hands[owner_player_id]
 	if hand.size() >= DeckManager.HAND_SIZE:
 		log_deleted_card(game_state, owner_player_id, card_name, "effect_capture_nexus_hand_full")
-		print("Card deleted instead of returning to hand: player=%d, card=%s" % [owner_player_id, card_name])
+		DebugLog.info("Card deleted instead of returning to hand: player=%d, card=%s" % [owner_player_id, card_name])
 		return false
 	hand.append(card_name)
 	game_state.player_hands[owner_player_id] = hand

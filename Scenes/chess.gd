@@ -222,9 +222,9 @@ func create_pieces_from_board():
 				var color: int = 1 if value > 0 else -1
 				var piece = Piece.new(pos, color)
 				piece_objects[pos] = piece
-				print("Piece created: pos=%s, color=%s" % [pos, "white" if color > 0 else "black"])
+				DebugLog.info("Piece created: pos=%s, color=%s" % [pos, "white" if color > 0 else "black"])
 
-	print("Pieces initialized without starting cards.")
+	DebugLog.info("Pieces initialized without starting cards.")
 
 func setup_player_card_hands():
 	white_card_deck = DeckManager.create_starting_deck()
@@ -880,7 +880,7 @@ func tick_attached_cards_locally() -> void:
 func handle_expired_nexus_card_locally(owner_color: int, expired_card: Card) -> void:
 	var hand: Array[Card] = get_card_hand(owner_color)
 	if hand.size() >= DeckManager.HAND_SIZE:
-		print("Nexus card deleted because the hand is full.")
+		DebugLog.info("Nexus card deleted because the hand is full.")
 		if !player_has_available_nexus_card(owner_color):
 			finish_game(-owner_color)
 		return
@@ -1675,7 +1675,7 @@ func _input(event):
 				var var2 = int(adjusted_y / CELL_WIDTH)
 				var clicked_pos: Vector2 = Vector2(var2, var1)
 
-				print("Click: grid=(", var1, ",", var2, ") board[", var2, "][", var1, "]=", board[var2][var1] if is_valid_position(clicked_pos) else "invalid")
+				DebugLog.info("Click: grid=(%s,%s) board[%s][%s]=%s" % [var1, var2, var2, var1, board[var2][var1] if is_valid_position(clicked_pos) else "invalid"])
 
 				if !is_valid_position(clicked_pos):
 					return
@@ -1854,7 +1854,7 @@ func get_piece_texture_for_position(board_pos: Vector2, piece_value: int) -> Tex
 	return get_default_piece_texture(piece_value)
 
 func display_board():
-	print("display_board() called: white=", white, " side=", side)
+	DebugLog.info("display_board() called: white=%s side=%s" % [white, side])
 	update_board_markers()
 	for child in pieces_node.get_children():
 		child.queue_free()
@@ -1957,7 +1957,7 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	if game_over:
 		return
 
-	print("set_move() start: white=", white, " start=", start_pos, " end=", end_pos, " piece=", board[start_pos.x][start_pos.y])
+	DebugLog.info("set_move() start: white=%s start=%s end=%s piece=%s" % [white, start_pos, end_pos, board[start_pos.x][start_pos.y]])
 	var moving_color: int = 1 if board[start_pos.x][start_pos.y] > 0 else -1
 	var captured_piece: Piece = piece_objects[end_pos] as Piece if piece_objects.has(end_pos) else null
 	var captured_nexus: bool = is_nexus_piece(captured_piece)
@@ -1969,7 +1969,7 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 		piece.position = end_pos
 		piece_objects.erase(start_pos)
 		piece_objects[end_pos] = piece
-		print("  Piece moved: %s -> %s" % [start_pos, end_pos])
+		DebugLog.info("  Piece moved: %s -> %s" % [start_pos, end_pos])
 
 	var just_now = false
 
@@ -2002,7 +2002,7 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 
 	mark_piece_moved_this_turn(moving_color)
 	update_card_presentation()
-	print("set_move() end: waiting for END TURN")
+	DebugLog.info("set_move() end: waiting for END TURN")
 
 	display_board()
 
@@ -2165,7 +2165,7 @@ func finish_if_current_player_has_no_valid_turn() -> bool:
 
 	var losing_color: int = get_current_turn_color()
 	var winner_color: int = -losing_color
-	print("No valid moves for player: ", losing_color, ". Winner: ", winner_color)
+	DebugLog.info("No valid moves for player: %s. Winner: %s" % [losing_color, winner_color])
 	finish_game(winner_color)
 	return true
 
@@ -2194,7 +2194,7 @@ func get_next_scene_after_game(winner_color: int) -> String:
 	if GameConfig.is_ai_vs_ai_batch:
 		var winner_player_id: int = get_player_id_for_color(winner_color)
 		GameConfig.record_ai_vs_ai_result(winner_player_id)
-		print("AI vs AI match %d/%d finished. White wins: %d, Black wins: %d" % [
+		DebugLog.info("AI vs AI match %d/%d finished. White wins: %d, Black wins: %d" % [
 			GameConfig.ai_vs_ai_matches_played,
 			GameConfig.ai_vs_ai_match_count,
 			int(GameConfig.ai_vs_ai_results.get(0, 0)),
@@ -2246,10 +2246,10 @@ func get_moves(selected : Vector2):
 	if piece_objects.has(selected):
 		var piece: Piece = piece_objects[selected] as Piece
 		if piece.can_move():
-			print("Using card movement: %s" % piece.get_info())
+			DebugLog.info("Using card movement: %s" % piece.get_info())
 			return get_card_based_moves(selected, piece, get_move_preview_player_id(selected, piece))
 		else:
-			print("No usable card on this piece.")
+			DebugLog.info("No usable card on this piece.")
 			return []
 
 	return []
@@ -2262,7 +2262,7 @@ func get_move_preview_player_id(piece_position: Vector2, piece: Piece) -> int:
 
 func get_card_based_moves(piece_position: Vector2, piece: Piece, player_id: int) -> Array:
 	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(piece_objects, piece_position, player_id, BOARD_SIZE, current_board_effects)
-	print("  Valid moves: ", valid_moves)
+	DebugLog.info("  Valid moves: %s" % [valid_moves])
 	return valid_moves
 
 func is_valid_position(pos : Vector2):

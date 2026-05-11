@@ -25,7 +25,7 @@ func load_all_prints() -> void:
 	_create_implicit_standard_prints()
 	_load_explicit_prints()
 	is_loaded = true
-	print("CardPrintLibrary loaded: %d prints" % all_prints.size())
+	DebugLog.info("CardPrintLibrary loaded: %d prints" % all_prints.size())
 
 func get_print(print_id: String) -> CardPrint:
 	ensure_loaded()

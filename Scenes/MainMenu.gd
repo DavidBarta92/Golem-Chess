@@ -33,9 +33,6 @@ func _connect_once(signal_value: Signal, callable: Callable) -> void:
 	if !signal_value.is_connected(callable):
 		signal_value.connect(callable)
 
-func _mark_generated_ui(_node: Node) -> void:
-	pass
-
 func _bind_top_bar() -> void:
 	top_bar = $TopBar
 	settings_button = $TopBar/SettingsButton
@@ -61,7 +58,6 @@ func hide_legacy_exit_button() -> void:
 func create_top_bar() -> void:
 	var top_background := ColorRect.new()
 	add_child(top_background)
-	_mark_generated_ui(top_background)
 	top_background.anchor_left = 0.0
 	top_background.anchor_right = 1.0
 	top_background.anchor_top = 0.0
@@ -74,7 +70,6 @@ func create_top_bar() -> void:
 
 	top_bar = HBoxContainer.new()
 	add_child(top_bar)
-	_mark_generated_ui(top_bar)
 	top_bar.anchor_left = 0.0
 	top_bar.anchor_right = 1.0
 	top_bar.anchor_top = 0.0
@@ -151,7 +146,6 @@ func update_points_hud() -> void:
 func create_settings_dialog() -> void:
 	settings_dialog = AcceptDialog.new()
 	add_child(settings_dialog)
-	_mark_generated_ui(settings_dialog)
 	settings_dialog.title = "Settings"
 	settings_dialog.dialog_text = ""
 	settings_dialog.exclusive = true

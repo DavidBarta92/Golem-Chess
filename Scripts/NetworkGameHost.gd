@@ -39,29 +39,7 @@ func initialize_game(board_data: Array):
 	game_state.player_hands[1] = black_hand
 	setup_match_logging()
 
-	print("NetworkGameHost: game state initialized")
-
-	var white_first_piece_pos = BoardConfig.WHITE_BASE_FIELD
-	var black_first_piece_pos = BoardConfig.BLACK_BASE_FIELD
-
-	var white_piece = game_state.get_piece(white_first_piece_pos)
-	var black_piece = game_state.get_piece(black_first_piece_pos)
-
-	if false && white_piece:
-		var nexus_card = CardLibrary.get_card("King")
-		if nexus_card:
-			white_piece.attach_card(nexus_card)
-			white_piece.turns_remaining = -1
-			game_state.white_nexus_position = white_first_piece_pos
-			print("White nexus added: ", white_first_piece_pos)
-
-	if false && black_piece:
-		var nexus_card = CardLibrary.get_card("King")
-		if nexus_card:
-			black_piece.attach_card(nexus_card)
-			black_piece.turns_remaining = -1
-			game_state.black_nexus_position = black_first_piece_pos
-			print("Black nexus added: ", black_first_piece_pos)
+	DebugLog.info("NetworkGameHost: game state initialized")
 
 	broadcast_full_state()
 
@@ -70,7 +48,7 @@ func create_starting_deck_for_player_id(player_id: int) -> Array[String]:
 		var selected_deck: Array[String] = multiplayer_node.get_starting_deck_for_player_id(player_id)
 		if !selected_deck.is_empty():
 			selected_deck.shuffle()
-			print("Player %d selected deck: %s" % [player_id, selected_deck])
+			DebugLog.info("Player %d selected deck: %s" % [player_id, selected_deck])
 			return selected_deck
 
 	return DeckManager.create_starting_deck()
@@ -83,7 +61,7 @@ func setup_match_logging() -> void:
 	game_state.match_logger.start_match(game_state)
 
 func on_player_action(action: Dictionary):
-	print("Action received: ", action)
+	DebugLog.info("Action received: %s" % [action])
 
 	match action.type:
 		"attach_card":
@@ -108,7 +86,7 @@ func handle_attach_card(action: Dictionary):
 	var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.piece_pos, Vector2(-1, -1))
 	var hand_index: int = int(action.get("hand_index", -1))
 
-	print("Attach card: player=%s, card=%s, position=%s" % [player_id, card_name, piece_pos])
+	DebugLog.info("Attach card: player=%s, card=%s, position=%s" % [player_id, card_name, piece_pos])
 
 	if game_state.game_over:
 		return
@@ -169,14 +147,14 @@ func handle_attach_card(action: Dictionary):
 			return
 		log_turn_snapshot("after_attach")
 
-		print("Card attached successfully")
+		DebugLog.info("Card attached successfully")
 		if maybe_auto_end_turn(player_id):
 			return
 		broadcast_full_state()
 
 func handle_draw_card(action: Dictionary):
 	var player_id: int = int(action.player_id)
-	print("Draw card: player=%s" % player_id)
+	DebugLog.info("Draw card: player=%s" % player_id)
 	push_warning("Manual card draw is disabled. Cards refill at end of turn.")
 	return
 
@@ -185,7 +163,7 @@ func handle_exchange_card(action: Dictionary):
 	var card_name: String = str(action.get("card_name", ""))
 	var hand_index: int = int(action.get("hand_index", -1))
 
-	print("Exchange card: player=%s, card=%s, hand_index=%s" % [player_id, card_name, hand_index])
+	DebugLog.info("Exchange card: player=%s, card=%s, hand_index=%s" % [player_id, card_name, hand_index])
 
 	if game_state.game_over:
 		return false
@@ -255,7 +233,7 @@ func handle_move_piece(action: Dictionary):
 	var from_pos: Vector2 = CardEffectResolver.as_vector2(action.from, Vector2(-1, -1))
 	var to_pos: Vector2 = CardEffectResolver.as_vector2(action.to, Vector2(-1, -1))
 
-	print("Move: player=%s, %s -> %s" % [player_id, from_pos, to_pos])
+	DebugLog.info("Move: player=%s, %s -> %s" % [player_id, from_pos, to_pos])
 
 	if game_state.game_over:
 		return
@@ -291,7 +269,7 @@ func handle_move_piece(action: Dictionary):
 	var moving_piece_visible_to_enemy: bool = !CardEffectResolver.piece_has_attached_effect(piece, CardEffect.TYPE_INVISIBLE_TO_ENEMY)
 
 	if captured_piece != null:
-		print("Piece captured at: ", to_pos)
+		DebugLog.info("Piece captured at: %s" % to_pos)
 		if captured_piece.attached_card != null:
 			CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_CAPTURED, game_state, {
 				"player_id": 1 - player_id,
@@ -334,7 +312,7 @@ func handle_move_piece(action: Dictionary):
 	if captured_nexus:
 		var captured_player_id: int = captured_piece_owner_player_id
 		CardEffectResolver.clear_nexus_position_if_needed(game_state, captured_player_id, true)
-		print("Nexus piece captured. Nexus card returned to player %d deck." % captured_player_id)
+		DebugLog.info("Nexus piece captured. Nexus card returned to player %d deck." % captured_player_id)
 
 	if captured_piece != null && piece.attached_card != null:
 		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_CAPTURE, game_state, {
@@ -358,7 +336,7 @@ func handle_move_piece(action: Dictionary):
 	var entered_opponent_base: bool = to_pos == opponent_base_field
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	if is_nexus_piece(piece) && piece.color == player_color && entered_opponent_base:
-		print("Opponent base reached by nexus. Player %d wins." % player_id)
+		DebugLog.info("Opponent base reached by nexus. Player %d wins." % player_id)
 		finish_game(player_id, "base_reached")
 		log_move_result(move_log_context, game_state.win_condition)
 		broadcast_full_state()
@@ -388,7 +366,7 @@ func handle_move_piece(action: Dictionary):
 	game_state.moved_piece_this_turn[player_id] = true
 	log_turn_snapshot("after_move")
 
-	print("Move complete. Waiting for END TURN from player: ", game_state.current_turn_player)
+	DebugLog.info("Move complete. Waiting for END TURN from player: %s" % game_state.current_turn_player)
 
 	if maybe_auto_end_turn(player_id):
 		return
@@ -396,7 +374,7 @@ func handle_move_piece(action: Dictionary):
 
 func handle_end_turn(action: Dictionary):
 	var player_id: int = int(action.player_id)
-	print("End turn: player=%s" % player_id)
+	DebugLog.info("End turn: player=%s" % player_id)
 
 	if game_state.game_over:
 		return
@@ -418,7 +396,7 @@ func end_current_turn():
 	CardEffectResolver.tick_board_effects(game_state)
 	finish_if_player_has_no_valid_turn(game_state.current_turn_player)
 	log_turn_snapshot("turn_end")
-	print("Turn ended. Next player: ", game_state.current_turn_player)
+	DebugLog.info("Turn ended. Next player: %s" % game_state.current_turn_player)
 	broadcast_full_state()
 
 func clear_piece_exhaustion_for_player(player_id: int) -> void:
@@ -521,7 +499,7 @@ func maybe_auto_end_turn(player_id: int) -> bool:
 	if player_has_remaining_turn_action(player_id):
 		return false
 
-	print("All available turn actions are complete. Auto-ending turn for player: ", player_id)
+	DebugLog.info("All available turn actions are complete. Auto-ending turn for player: %s" % player_id)
 	end_current_turn()
 	return true
 
@@ -577,7 +555,7 @@ func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 		return false
 
 	var winner_player: int = 1 - player_id
-	print("No valid moves: losing player=%d, winning player=%d" % [player_id, winner_player])
+	DebugLog.info("No valid moves: losing player=%d, winning player=%d" % [player_id, winner_player])
 	finish_game(winner_player, "no_valid_move")
 	return true
 
@@ -682,7 +660,7 @@ func is_valid_move(_piece: Piece, from_pos: Vector2, to_pos: Vector2, player_id:
 	return MoveRules.is_valid_move_for_player(game_state.pieces, from_pos, to_pos, player_id, BoardConfig.BOARD_SIZE, game_state.board_effects)
 
 func broadcast_full_state():
-	print("Broadcasting full state")
+	DebugLog.info("Broadcasting full state")
 
 	var local_viewer_player_id: int = get_viewer_player_id_for_peer(1)
 	var local_state_data: Dictionary = serialize_state_for_player(local_viewer_player_id)
@@ -726,7 +704,7 @@ func broadcast_full_state():
 
 	game_state.recent_card_transfers.clear()
 	game_state.recent_card_expirations.clear()
-	print("State broadcast complete")
+	DebugLog.info("State broadcast complete")
 
 func serialize_state() -> Dictionary:
 	return serialize_state_for_player(-1)
@@ -913,7 +891,7 @@ func play_card_from_player_hand(player_id: int, card_name: String, hand_index: i
 	hand.remove_at(remove_index)
 	game_state.player_hands[player_id] = hand
 	record_played_card_hand_slot(player_id, original_slot)
-	print("Card played: %s" % card_name)
+	DebugLog.info("Card played: %s" % card_name)
 	return true
 
 func get_original_hand_slot_for_play(player_id: int, current_hand_index: int) -> int:
@@ -988,7 +966,7 @@ func return_card_to_player_hand(player_id: int, card: Card, piece_pos: Vector2, 
 	var hand: Array = game_state.player_hands[player_id]
 	if hand.size() >= DeckManager.HAND_SIZE:
 		log_card_deleted(player_id, card, piece_pos, reason + "_hand_full")
-		print("Card deleted instead of returning to hand: player=%d, card=%s" % [player_id, card.card_name])
+		DebugLog.info("Card deleted instead of returning to hand: player=%d, card=%s" % [player_id, card.card_name])
 		return false
 	hand.append(card.card_name)
 	game_state.player_hands[player_id] = hand

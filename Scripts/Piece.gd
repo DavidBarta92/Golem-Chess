@@ -17,7 +17,7 @@ func attach_card(card: Card, exhaust_for_turn: bool = true):
 	turns_remaining = card.duration
 	exhausted_this_turn = exhaust_for_turn
 	skip_next_duration_tick = false
-	print("Card attached: %s to %s piece (position: %s, turns: %d)" % [card.card_name, "white" if color > 0 else "black", position, turns_remaining])
+	DebugLog.info("Card attached: %s to %s piece (position: %s, turns: %d)" % [card.card_name, "white" if color > 0 else "black", position, turns_remaining])
 
 func detach_card() -> Card:
 	var old_card = attached_card
@@ -25,7 +25,7 @@ func detach_card() -> Card:
 	turns_remaining = 0
 	exhausted_this_turn = false
 	skip_next_duration_tick = false
-	print("Card detached: %s" % old_card.card_name if old_card else "")
+	DebugLog.info("Card detached: %s" % old_card.card_name if old_card else "")
 	return old_card
 
 func can_move() -> bool:
@@ -42,12 +42,12 @@ func use_turn() -> Card:
 		return null
 
 	if turns_remaining == -1:
-		print("Infinite card used: %s" % attached_card.card_name)
+		DebugLog.info("Infinite card used: %s" % attached_card.card_name)
 		return null
 
 	if turns_remaining > 0:
 		turns_remaining -= 1
-		print("Card used: %s - turns remaining: %d" % [attached_card.card_name, turns_remaining])
+		DebugLog.info("Card used: %s - turns remaining: %d" % [attached_card.card_name, turns_remaining])
 		if turns_remaining == 0:
 			return detach_card()
 
