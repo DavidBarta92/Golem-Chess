@@ -1,6 +1,6 @@
 extends Node
 
-const SETTINGS_SCHEMA_VERSION: int = 1
+const SETTINGS_SCHEMA_VERSION: int = 2
 const SETTINGS_PATH: String = "user://settings.json"
 const TARGET_WIDTH: int = 1280
 const TARGET_HEIGHT: int = 720
@@ -53,6 +53,24 @@ func set_fullscreen_enabled(enabled: bool) -> void:
 	apply_window_mode()
 	save_settings()
 
+func is_last_move_arrow_enabled() -> bool:
+	ensure_loaded()
+	return bool(settings_data.get("show_last_move_arrow", true))
+
+func set_last_move_arrow_enabled(enabled: bool) -> void:
+	ensure_loaded()
+	settings_data["show_last_move_arrow"] = enabled
+	save_settings()
+
+func is_enemy_attack_markers_enabled() -> bool:
+	ensure_loaded()
+	return bool(settings_data.get("show_enemy_attack_markers", true))
+
+func set_enemy_attack_markers_enabled(enabled: bool) -> void:
+	ensure_loaded()
+	settings_data["show_enemy_attack_markers"] = enabled
+	save_settings()
+
 func apply_runtime_settings() -> void:
 	apply_window_settings()
 	_sync_game_config()
@@ -101,6 +119,8 @@ func _create_default_settings() -> Dictionary:
 		"fullscreen": false,
 		"language": "en",
 		"master_volume": 1.0,
+		"show_last_move_arrow": true,
+		"show_enemy_attack_markers": true,
 	}
 
 func _normalize_settings(raw_data) -> Dictionary:
@@ -108,9 +128,11 @@ func _normalize_settings(raw_data) -> Dictionary:
 	if !(raw_data is Dictionary):
 		return normalized
 
-	normalized["schema_version"] = int(raw_data.get("schema_version", SETTINGS_SCHEMA_VERSION))
+	normalized["schema_version"] = SETTINGS_SCHEMA_VERSION
 	normalized["player_name"] = GameConfig.sanitize_player_name(str(raw_data.get("player_name", GameConfig.DEFAULT_PLAYER_NAME)))
 	normalized["fullscreen"] = bool(raw_data.get("fullscreen", false))
 	normalized["language"] = str(raw_data.get("language", "en"))
 	normalized["master_volume"] = clampf(float(raw_data.get("master_volume", 1.0)), 0.0, 1.0)
+	normalized["show_last_move_arrow"] = bool(raw_data.get("show_last_move_arrow", true))
+	normalized["show_enemy_attack_markers"] = bool(raw_data.get("show_enemy_attack_markers", true))
 	return normalized

@@ -2591,8 +2591,10 @@ func update_board_markers():
 	for child in board_markers_node.get_children():
 		child.queue_free()
 
-	add_enemy_attack_markers()
-	add_last_move_arrow_marker()
+	if PlayerSettingsStore.is_enemy_attack_markers_enabled():
+		add_enemy_attack_markers()
+	if PlayerSettingsStore.is_last_move_arrow_enabled():
+		add_last_move_arrow_marker()
 
 	for effect_value in current_board_effects:
 		var effect: Dictionary = effect_value

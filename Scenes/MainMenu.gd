@@ -15,6 +15,8 @@ var settings_button: Button
 var settings_dialog: AcceptDialog
 var player_name_field: LineEdit
 var fullscreen_check: CheckBox
+var last_move_arrow_check: CheckBox
+var enemy_attack_markers_check: CheckBox
 var points_hud: HBoxContainer
 var points_label: Label
 
@@ -182,6 +184,19 @@ func create_settings_dialog() -> void:
 	general_tab.add_child(fullscreen_check)
 	fullscreen_check.text = "Fullscreen"
 
+	var ui_tab := VBoxContainer.new()
+	tabs.add_child(ui_tab)
+	ui_tab.name = "UI"
+	ui_tab.add_theme_constant_override("separation", 12)
+
+	last_move_arrow_check = CheckBox.new()
+	ui_tab.add_child(last_move_arrow_check)
+	last_move_arrow_check.text = "Show last move arrow"
+
+	enemy_attack_markers_check = CheckBox.new()
+	ui_tab.add_child(enemy_attack_markers_check)
+	enemy_attack_markers_check.text = "Show enemy attack highlights"
+
 	var language_tab := VBoxContainer.new()
 	tabs.add_child(language_tab)
 	language_tab.name = "Language"
@@ -246,12 +261,18 @@ func _on_exit_button_pressed():
 func _on_settings_button_pressed() -> void:
 	player_name_field.text = PlayerSettingsStore.get_player_name()
 	fullscreen_check.button_pressed = PlayerSettingsStore.is_fullscreen_enabled()
+	last_move_arrow_check.button_pressed = PlayerSettingsStore.is_last_move_arrow_enabled()
+	enemy_attack_markers_check.button_pressed = PlayerSettingsStore.is_enemy_attack_markers_enabled()
 	settings_dialog.popup_centered(Vector2i(440, 320))
 
 func _on_settings_confirmed() -> void:
 	PlayerSettingsStore.set_player_name(player_name_field.text)
 	PlayerSettingsStore.set_fullscreen_enabled(fullscreen_check.button_pressed)
+	PlayerSettingsStore.set_last_move_arrow_enabled(last_move_arrow_check.button_pressed)
+	PlayerSettingsStore.set_enemy_attack_markers_enabled(enemy_attack_markers_check.button_pressed)
 
 func _on_settings_canceled() -> void:
 	player_name_field.text = PlayerSettingsStore.get_player_name()
 	fullscreen_check.button_pressed = PlayerSettingsStore.is_fullscreen_enabled()
+	last_move_arrow_check.button_pressed = PlayerSettingsStore.is_last_move_arrow_enabled()
+	enemy_attack_markers_check.button_pressed = PlayerSettingsStore.is_enemy_attack_markers_enabled()
