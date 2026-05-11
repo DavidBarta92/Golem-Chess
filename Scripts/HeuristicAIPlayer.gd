@@ -104,7 +104,7 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 
 		if host.game_state.game_over:
 			return true
-		if tree != null:
+		if tree != null and action_delay > 0.0:
 			await tree.create_timer(action_delay).timeout
 
 	host.on_player_action({
@@ -115,7 +115,7 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 	})
 	if host.game_state.game_over:
 		return true
-	if tree != null:
+	if tree != null and action_delay > 0.0:
 		await tree.create_timer(action_delay).timeout
 	end_turn(host)
 	return true
@@ -128,7 +128,7 @@ func try_draw_card(host: NetworkGameHost, tree: SceneTree) -> bool:
 		"type": "draw_card",
 		"player_id": player_id,
 	})
-	if tree != null:
+	if tree != null and action_delay > 0.0:
 		await tree.create_timer(action_delay).timeout
 	return true
 

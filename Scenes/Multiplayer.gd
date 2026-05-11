@@ -17,7 +17,8 @@ var ai_players: Dictionary = {}
 var ai_turn_in_progress: bool = false
 
 func _ready():
-	await get_tree().create_timer(0.1).timeout
+	if !GameConfig.should_skip_ai_vs_ai_delays():
+		await get_tree().create_timer(0.1).timeout
 
 	if GameConfig.is_singleplayer:
 		DebugLog.info("Starting in singleplayer mode")
@@ -60,7 +61,10 @@ func setup_singleplayer_ai_controllers():
 	for player_id in [0, 1]:
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
 			var ai_difficulty_level: int = GameConfig.get_player_ai_difficulty_level(player_id)
-			ai_players[player_id] = HEURISTIC_AI_PLAYER_SCRIPT.new(player_id, ai_difficulty_level)
+			var ai_player = HEURISTIC_AI_PLAYER_SCRIPT.new(player_id, ai_difficulty_level)
+			if GameConfig.should_skip_ai_vs_ai_delays():
+				ai_player.action_delay = 0.0
+			ai_players[player_id] = ai_player
 
 func setup_singleplayer_player_names() -> void:
 	for player_id in [0, 1]:
@@ -97,7 +101,8 @@ func maybe_play_singleplayer_ai_turn():
 	call_deferred("_play_singleplayer_ai_turn", current_player_id)
 
 func _play_singleplayer_ai_turn(player_id: int):
-	await get_tree().create_timer(0.45).timeout
+	if !GameConfig.should_skip_ai_vs_ai_delays():
+		await get_tree().create_timer(0.45).timeout
 	var ai_player = ai_players.get(player_id, null)
 	if ai_player != null and game_host != null and !game_host.game_state.game_over and game_host.game_state.current_turn_player == player_id:
 		await ai_player.play_turn(game_host, get_tree())

@@ -2619,7 +2619,8 @@ func finish_game(winner_color: int):
 	award_win_points_if_applicable(winner_color)
 	show_result_message(winner_color)
 
-	await get_tree().create_timer(8.0).timeout
+	var result_wait_seconds: float = 0.05 if should_skip_visual_animations() else 8.0
+	await get_tree().create_timer(result_wait_seconds).timeout
 	var next_scene: String = get_next_scene_after_game(winner_color)
 	if get_parent().has_method("close_game_connection"):
 		get_parent().close_game_connection()
@@ -2851,7 +2852,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	update_hidden_card_previews(hidden_cards)
 	update_card_presentation()
 	display_board()
-	if has_received_server_state:
+	if has_received_server_state && !should_skip_visual_animations():
 		if recent_card_transfers.is_empty():
 			animate_state_draw_if_needed(1, previous_white_hand_names, current_white_hand_names)
 			animate_state_draw_if_needed(-1, previous_black_hand_names, current_black_hand_names)
@@ -2864,6 +2865,9 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 
 	if server_game_over && winner_player != -1:
 		finish_game(get_color_for_player_id(winner_player))
+
+func should_skip_visual_animations() -> bool:
+	return GameConfig.should_skip_ai_vs_ai_delays()
 
 func parse_player_names(player_names: Dictionary) -> Dictionary:
 	var parsed_names: Dictionary = current_player_names.duplicate()

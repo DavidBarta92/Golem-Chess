@@ -19,6 +19,7 @@ var ai_vs_ai_match_count: int = 1
 var ai_vs_ai_matches_played: int = 0
 var ai_vs_ai_log_session_id: String = ""
 var ai_vs_ai_csv_log_dir: String = DEFAULT_AI_VS_AI_CSV_LOG_DIR
+var ai_vs_ai_fast_mode: bool = false
 var selected_deck_id: String = ""
 var selected_ai_deck_id: String = ""
 var ai_vs_ai_results: Dictionary = {
@@ -93,6 +94,12 @@ func start_ai_vs_ai_batch(match_count: int) -> void:
 	}
 	set_singleplayer_controllers(CONTROLLER_AI, CONTROLLER_AI)
 	select_default_decks()
+
+func set_ai_vs_ai_fast_mode(enabled: bool) -> void:
+	ai_vs_ai_fast_mode = enabled
+
+func should_skip_ai_vs_ai_delays() -> bool:
+	return is_ai_vs_ai_batch && ai_vs_ai_fast_mode
 
 func set_ai_vs_ai_csv_log_dir(log_dir: String) -> void:
 	var cleaned_log_dir: String = log_dir.strip_edges()

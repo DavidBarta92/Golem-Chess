@@ -8,6 +8,7 @@ const TOP_BAR_HEIGHT: int = 60
 @onready var ai_vs_ai_controls: Control = $AIVsAIControls
 @onready var ai_match_count_field: LineEdit = $AIVsAIControls/MatchCountField
 @onready var ai_csv_log_dir_field: LineEdit = $AIVsAIControls/CsvLogDirField
+@onready var ai_fast_mode_check: CheckBox = $AIVsAIControls/FastModeCheck
 
 var ai_vs_ai_unlock_presses: int = 0
 var top_bar: HBoxContainer
@@ -30,6 +31,7 @@ func _ready():
 	create_settings_dialog()
 	ai_match_count_field.text = str(GameConfig.ai_vs_ai_match_count)
 	ai_csv_log_dir_field.text = GameConfig.get_ai_vs_ai_csv_log_dir()
+	ai_fast_mode_check.button_pressed = GameConfig.ai_vs_ai_fast_mode
 
 func _connect_once(signal_value: Signal, callable: Callable) -> void:
 	if !signal_value.is_connected(callable):
@@ -237,6 +239,7 @@ func _on_ai_vs_ai_button_pressed():
 	GameConfig.is_hosting = true
 	GameConfig.server_ip = ""
 	GameConfig.set_ai_vs_ai_csv_log_dir(ai_csv_log_dir_field.text)
+	GameConfig.set_ai_vs_ai_fast_mode(ai_fast_mode_check.button_pressed)
 	GameConfig.start_ai_vs_ai_batch(match_count)
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 

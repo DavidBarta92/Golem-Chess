@@ -182,7 +182,7 @@ func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, p
 
 		if host.game_state.game_over or host.game_state.current_turn_player != player_id:
 			return true
-		if tree != null:
+		if tree != null and action_delay > 0.0:
 			await tree.create_timer(action_delay).timeout
 
 	if host.game_state.current_turn_player == player_id && !host.player_has_remaining_turn_action(player_id):
