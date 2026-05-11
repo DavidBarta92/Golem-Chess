@@ -1,0 +1,446 @@
+extends Node
+
+const PLAYER_COLOR: int = 1
+const MENTOR_NAME: String = "Mentor"
+const INVALID_BOARD_POS: Vector2 = Vector2(-1, -1)
+
+@export var board_path: NodePath = NodePath("../board")
+@export var dialogue_panel_path: NodePath = NodePath("../CanvasLayer/DialoguePanel")
+
+var board
+var dialogue_panel
+var steps: Array[Dictionary] = []
+var current_step_index: int = -1
+var last_attached_piece: Vector2 = INVALID_BOARD_POS
+var attached_this_step: int = 0
+var moved_this_step: int = 0
+var waiting_for_continue_after_completion: bool = false
+
+func _ready() -> void:
+	call_deferred("begin_tutorial")
+
+func begin_tutorial() -> void:
+	board = get_node_or_null(board_path)
+	dialogue_panel = get_node_or_null(dialogue_panel_path)
+	if board == null or dialogue_panel == null:
+		push_error("TutorialController could not find the board or dialogue panel.")
+		return
+
+	GameController.set_game_host(null)
+	if board.has_method("set_tutorial_mode_active"):
+		board.set_tutorial_mode_active(true)
+	connect_board_signals()
+	connect_dialogue_signals()
+	build_steps()
+	start_step(0)
+
+func connect_board_signals() -> void:
+	board.card_attached.connect(_on_card_attached)
+	board.card_exchanged.connect(_on_card_exchanged)
+	board.piece_moved.connect(_on_piece_moved)
+	board.turn_ended.connect(_on_turn_ended)
+	board.tutorial_action_rejected.connect(_on_tutorial_action_rejected)
+
+func connect_dialogue_signals() -> void:
+	dialogue_panel.continue_requested.connect(_on_dialogue_continue_requested)
+
+func build_steps() -> void:
+	steps = [
+		{
+			"speaker": MENTOR_NAME,
+			"text": "Welcome. We will play a guided version of the game: one rule, one action, then the next rule.",
+			"completion": "dialogue",
+			"constraints": no_actions(),
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "Cards give pieces their movement. Drag Numero_1 from your hand onto one of your pieces.",
+			"completion": "card_attached",
+			"expected_card_name": "Numero_1",
+			"remember_attached_piece": true,
+			"ready_attached_piece_for_move": true,
+			"setup": {
+				"board": starting_board(),
+				"white_hand": ["Numero_1"],
+				"white_deck": ["Numero_2", "Numero_3", "Numero_4"],
+				"black_hand": [],
+				"black_deck": [],
+				"turn_color": PLAYER_COLOR,
+			},
+			"constraints": {
+				"allowed_actions": ["attach_card"],
+				"allowed_attach_card_names": ["Numero_1"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "The piece is ready. Select that same piece, then move it to one of the highlighted squares.",
+			"completion": "piece_moved",
+			"use_last_attached_piece_as_move_source": true,
+			"constraints": {
+				"allowed_actions": ["select_piece", "move_piece"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "After a piece moves, its card loses one duration. Cards do not tick down just because the turn ends.",
+			"completion": "dialogue",
+			"constraints": no_actions(),
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "You can attach more than one card in a turn. Put both cards from your hand onto two empty pieces.",
+			"completion": "card_attached",
+			"required_count": 2,
+			"setup": {
+				"board": starting_board(),
+				"white_hand": ["Numero_2", "Numero_3"],
+				"white_deck": ["Numero_4", "Numero_5", "Numero_6"],
+				"black_hand": [],
+				"black_deck": [],
+				"turn_color": PLAYER_COLOR,
+			},
+			"constraints": {
+				"allowed_actions": ["attach_card"],
+				"allowed_attach_card_names": ["Numero_2", "Numero_3"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "Good. Even with several cards attached, you still move only one piece during your turn.",
+			"completion": "dialogue",
+			"constraints": no_actions(),
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "End your turn now. The cards you played will be refilled from your deck.",
+			"completion": "turn_ended",
+			"constraints": {
+				"allowed_actions": ["end_turn"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "Once per turn, you may switch a hand card. Drag a card from your hand onto your deck to replace it.",
+			"completion": "card_exchanged",
+			"continue_after_completion": true,
+			"post_completion_text": "The switched card returned to the deck, and a replacement card flew into your hand. Press Continue when you are ready.",
+			"setup": {
+				"board": starting_board(),
+				"white_hand": ["Numero_4", "Numero_5", "Numero_6"],
+				"white_deck": ["Training Seal", "Crown", "Numero_1"],
+				"black_hand": [],
+				"black_deck": [],
+				"turn_color": PLAYER_COLOR,
+			},
+			"constraints": {
+				"allowed_actions": ["exchange_card"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "Some cards have effects. Drag Training Seal onto a piece; its effect will mark frozen squares around it.",
+			"completion": "card_attached",
+			"expected_card_name": "Training Seal",
+			"setup": {
+				"board": starting_board(),
+				"white_hand": ["Training Seal"],
+				"white_deck": ["Numero_1", "Numero_2", "Numero_3"],
+				"black_hand": [],
+				"black_deck": [],
+				"turn_color": PLAYER_COLOR,
+			},
+			"constraints": {
+				"allowed_actions": ["attach_card"],
+				"allowed_attach_card_names": ["Training Seal"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "Those blue marks are board effects. Effects can change what pieces may do, separate from the card's movement pattern.",
+			"completion": "dialogue",
+			"constraints": no_actions(),
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "Now capture the enemy piece. Captured pieces return to an empty square on their starting row and lose their card.",
+			"completion": "piece_moved",
+			"continue_after_completion": true,
+			"post_completion_text": "The captured piece returned to its home row. Its attached card is gone. Press Continue when you are ready.",
+			"expected_from": Vector2(3, 2),
+			"expected_to": Vector2(3, 3),
+			"setup": {
+				"board": capture_board(),
+				"attached_cards": [
+					{
+						"pos": Vector2(3, 2),
+						"card_name": "Training Seal",
+						"turns_remaining": 3,
+						"exhausted": false,
+					},
+				],
+				"white_hand": [],
+				"white_deck": ["Numero_1", "Numero_2", "Numero_3"],
+				"black_hand": [],
+				"black_deck": [],
+				"turn_color": PLAYER_COLOR,
+			},
+			"constraints": {
+				"allowed_actions": ["select_piece", "move_piece"],
+				"allowed_move_sources": [Vector2(3, 2)],
+				"allowed_move_targets": [Vector2(3, 3)],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "Nexus cards are special. Attach Crown to a piece. If a Nexus is captured, it returns to its owner's deck.",
+			"completion": "card_attached",
+			"expected_card_name": "Crown",
+			"setup": {
+				"board": starting_board(),
+				"white_hand": ["Crown"],
+				"white_deck": ["Numero_1", "Numero_2", "Numero_3"],
+				"black_hand": [],
+				"black_deck": [],
+				"turn_color": PLAYER_COLOR,
+			},
+			"constraints": {
+				"allowed_actions": ["attach_card"],
+				"allowed_attach_card_names": ["Crown"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "To win, a piece with a Nexus must move onto the opponent's base. Make the winning move.",
+			"completion": "piece_moved",
+			"expected_from": Vector2(5, 3),
+			"expected_to": Vector2(6, 3),
+			"setup": {
+				"board": win_board(),
+				"attached_cards": [
+					{
+						"pos": Vector2(5, 3),
+						"card_name": "Crown",
+						"turns_remaining": 5,
+						"exhausted": false,
+					},
+				],
+				"white_hand": [],
+				"white_deck": ["Numero_1", "Numero_2", "Numero_3"],
+				"black_hand": [],
+				"black_deck": [],
+				"turn_color": PLAYER_COLOR,
+			},
+			"constraints": {
+				"allowed_actions": ["select_piece", "move_piece"],
+				"allowed_move_sources": [Vector2(5, 3)],
+				"allowed_move_targets": [Vector2(6, 3)],
+				"allow_auto_end_turn": false,
+			},
+			"finish_after_completion": true,
+		},
+	]
+
+func no_actions() -> Dictionary:
+	return {
+		"allowed_actions": [],
+		"allow_auto_end_turn": false,
+	}
+
+func starting_board() -> Array:
+	return [
+		[1, 1, 1, 0, 1, 1, 1],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[-1, -1, -1, 0, -1, -1, -1],
+	]
+
+func capture_board() -> Array:
+	return [
+		[1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, -1, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, -1],
+	]
+
+func win_board() -> Array:
+	return [
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 1, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0],
+	]
+
+func start_step(step_index: int) -> void:
+	if step_index < 0 or step_index >= steps.size():
+		finish_tutorial()
+		return
+
+	current_step_index = step_index
+	attached_this_step = 0
+	moved_this_step = 0
+	waiting_for_continue_after_completion = false
+
+	var step: Dictionary = steps[current_step_index]
+	if step.has("setup") and board.has_method("apply_tutorial_setup"):
+		board.apply_tutorial_setup(step.get("setup", {}))
+
+	var constraints: Dictionary = step.get("constraints", {}).duplicate(true)
+	if bool(step.get("use_last_attached_piece_as_move_source", false)) and last_attached_piece != INVALID_BOARD_POS:
+		constraints["allowed_move_sources"] = [last_attached_piece]
+	if board.has_method("set_tutorial_constraints"):
+		board.set_tutorial_constraints(constraints)
+
+	dialogue_panel.show_line(str(step.get("speaker", MENTOR_NAME)), str(step.get("text", "")))
+
+func finish_tutorial() -> void:
+	if board != null and board.has_method("clear_tutorial_constraints"):
+		board.clear_tutorial_constraints()
+	if board != null and board.has_method("set_tutorial_mode_active"):
+		board.set_tutorial_mode_active(false)
+	current_step_index = -1
+	dialogue_panel.show_line(MENTOR_NAME, "Tutorial complete. Good work.")
+
+func _on_dialogue_continue_requested() -> void:
+	if waiting_for_continue_after_completion:
+		waiting_for_continue_after_completion = false
+		advance_current_step()
+		return
+
+	if !is_current_completion("dialogue"):
+		return
+	advance_current_step()
+
+func _on_card_attached(piece_pos: Vector2, card_name: String, owner_color: int, _hand_index: int) -> void:
+	if !is_current_completion("card_attached"):
+		return
+
+	var step: Dictionary = get_current_step()
+	if owner_color != PLAYER_COLOR:
+		return
+	var expected_card_name: String = str(step.get("expected_card_name", ""))
+	if !expected_card_name.is_empty() and card_name != expected_card_name:
+		return
+
+	if bool(step.get("remember_attached_piece", false)):
+		last_attached_piece = piece_pos
+	if bool(step.get("ready_attached_piece_for_move", false)):
+		ready_piece_for_tutorial_move(owner_color)
+
+	attached_this_step += 1
+	if attached_this_step >= int(step.get("required_count", 1)):
+		complete_current_action_step()
+
+func _on_card_exchanged(card_name: String, owner_color: int, _hand_index: int) -> void:
+	if !is_current_completion("card_exchanged"):
+		return
+
+	var step: Dictionary = get_current_step()
+	if owner_color != PLAYER_COLOR:
+		return
+	var expected_card_name: String = str(step.get("expected_card_name", ""))
+	if !expected_card_name.is_empty() and card_name != expected_card_name:
+		return
+
+	complete_current_action_step()
+
+func _on_piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int) -> void:
+	if !is_current_completion("piece_moved"):
+		return
+
+	var step: Dictionary = get_current_step()
+	if owner_color != PLAYER_COLOR:
+		return
+	if bool(step.get("use_last_attached_piece_as_move_source", false)) and last_attached_piece != INVALID_BOARD_POS and from_pos != last_attached_piece:
+		return
+
+	var expected_from: Vector2 = value_to_vector2(step.get("expected_from", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	if expected_from != INVALID_BOARD_POS and from_pos != expected_from:
+		return
+
+	var expected_to: Vector2 = value_to_vector2(step.get("expected_to", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	if expected_to != INVALID_BOARD_POS and to_pos != expected_to:
+		return
+
+	moved_this_step += 1
+	if moved_this_step < int(step.get("required_count", 1)):
+		return
+
+	if bool(step.get("finish_after_completion", false)):
+		current_step_index = -1
+		return
+
+	complete_current_action_step()
+
+func _on_turn_ended(ending_color: int, _next_color: int) -> void:
+	if !is_current_completion("turn_ended"):
+		return
+	if ending_color != PLAYER_COLOR:
+		return
+	complete_current_action_step()
+
+func _on_tutorial_action_rejected(_action_name: String, _context: Dictionary) -> void:
+	if current_step_index < 0 or current_step_index >= steps.size():
+		return
+
+	var step: Dictionary = steps[current_step_index]
+	dialogue_panel.show_line(str(step.get("speaker", MENTOR_NAME)), str(step.get("rejection_text", step.get("text", ""))))
+
+func advance_current_step() -> void:
+	start_step(current_step_index + 1)
+
+func complete_current_action_step() -> void:
+	var step: Dictionary = get_current_step()
+	if bool(step.get("continue_after_completion", false)):
+		waiting_for_continue_after_completion = true
+		if board != null and board.has_method("set_tutorial_constraints"):
+			board.set_tutorial_constraints(no_actions())
+		dialogue_panel.show_line(str(step.get("speaker", MENTOR_NAME)), str(step.get("post_completion_text", step.get("text", ""))))
+		return
+
+	advance_current_step()
+
+func get_current_step() -> Dictionary:
+	if current_step_index < 0 or current_step_index >= steps.size():
+		return {}
+	return steps[current_step_index]
+
+func is_current_completion(completion_name: String) -> bool:
+	return str(get_current_step().get("completion", "")) == completion_name
+
+func ready_piece_for_tutorial_move(owner_color: int) -> void:
+	if board == null:
+		return
+	if board.has_method("clear_piece_exhaustion_for_color"):
+		board.clear_piece_exhaustion_for_color(owner_color)
+	if board.has_method("display_board"):
+		board.display_board()
+
+func value_to_vector2(value, fallback: Vector2) -> Vector2:
+	if value is Vector2:
+		return value
+	if value is Vector2i:
+		var vector_value: Vector2i = value
+		return Vector2(vector_value.x, vector_value.y)
+	if value is Array:
+		var array_value: Array = value
+		if array_value.size() >= 2:
+			return Vector2(float(array_value[0]), float(array_value[1]))
+	return fallback

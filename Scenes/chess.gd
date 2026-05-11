@@ -158,6 +158,7 @@ var current_player_names: Dictionary = {
 var pending_card_burn_animations: Array = []
 var card_burn_animation_sequence_running: bool = false
 var local_auto_end_turn_pending: bool = false
+var tutorial_mode_active: bool = false
 var tutorial_constraints_enabled: bool = false
 var tutorial_constraints: Dictionary = {}
 
@@ -198,6 +199,9 @@ func set_tutorial_constraints(constraints: Dictionary) -> void:
 	tutorial_constraints_enabled = !tutorial_constraints.is_empty() && bool(tutorial_constraints.get("enabled", true))
 	refresh_tutorial_dependent_ui()
 
+func set_tutorial_mode_active(active: bool) -> void:
+	tutorial_mode_active = active
+
 func clear_tutorial_constraints() -> void:
 	tutorial_constraints.clear()
 	tutorial_constraints_enabled = false
@@ -220,7 +224,7 @@ func is_tutorial_action_allowed(action_name: String, context: Dictionary = {}, e
 	match action_name:
 		TUTORIAL_ACTION_SELECT_PIECE:
 			if context.has("piece_pos"):
-				allowed = tutorial_vector_allowed(["allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
+				allowed = tutorial_vector_allowed(["allowed_select_piece_positions", "allowed_move_sources", "allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
 		TUTORIAL_ACTION_ATTACH_CARD:
 			if context.has("piece_pos"):
 				allowed = allowed && tutorial_vector_allowed(["allowed_attach_piece_positions", "allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
@@ -240,9 +244,9 @@ func is_tutorial_action_allowed(action_name: String, context: Dictionary = {}, e
 	return true
 
 func is_tutorial_action_name_allowed(action_name: String) -> bool:
-	var allowed_actions: Array = tutorial_constraint_array(["allowed_actions"])
-	if allowed_actions.is_empty():
+	if !tutorial_constraints.has("allowed_actions"):
 		return true
+	var allowed_actions: Array = tutorial_constraint_array(["allowed_actions"])
 	return allowed_actions.has(action_name)
 
 func reject_tutorial_action(action_name: String, context: Dictionary, emit_rejection: bool) -> bool:
@@ -251,18 +255,18 @@ func reject_tutorial_action(action_name: String, context: Dictionary, emit_rejec
 	return false
 
 func tutorial_string_allowed(keys: Array, candidate: String) -> bool:
-	var allowed_values: Array = tutorial_constraint_array(keys)
-	if allowed_values.is_empty():
+	if !has_tutorial_constraint(keys):
 		return true
+	var allowed_values: Array = tutorial_constraint_array(keys)
 	for value in allowed_values:
 		if str(value) == candidate:
 			return true
 	return false
 
 func tutorial_vector_allowed(keys: Array, candidate) -> bool:
-	var allowed_values: Array = tutorial_constraint_array(keys)
-	if allowed_values.is_empty():
+	if !has_tutorial_constraint(keys):
 		return true
+	var allowed_values: Array = tutorial_constraint_array(keys)
 
 	var candidate_pos: Vector2 = value_to_vector2(candidate, INVALID_BOARD_POS)
 	if candidate_pos == INVALID_BOARD_POS:
@@ -282,6 +286,12 @@ func tutorial_constraint_array(keys: Array) -> Array:
 			return value
 	return []
 
+func has_tutorial_constraint(keys: Array) -> bool:
+	for key_value in keys:
+		if tutorial_constraints.has(str(key_value)):
+			return true
+	return false
+
 func can_auto_end_turn_now() -> bool:
 	if !tutorial_constraints_enabled:
 		return true
@@ -290,6 +300,8 @@ func can_auto_end_turn_now() -> bool:
 func apply_tutorial_setup(setup: Dictionary) -> void:
 	if setup.has("board"):
 		set_tutorial_board_from_array(setup.get("board", []))
+	if setup.has("attached_cards"):
+		set_tutorial_attached_cards(setup.get("attached_cards", []))
 	if setup.has("white_hand"):
 		set_tutorial_card_hand(1, setup.get("white_hand", []))
 	if setup.has("black_hand"):
@@ -300,6 +312,8 @@ func apply_tutorial_setup(setup: Dictionary) -> void:
 		set_tutorial_card_deck(-1, setup.get("black_deck", []))
 	if setup.has("turn_color"):
 		set_tutorial_turn(int(setup.get("turn_color", 1)))
+	if bool(setup.get("reset_turn_state", true)):
+		reset_tutorial_turn_state()
 
 	update_card_presentation()
 	display_board()
@@ -316,6 +330,41 @@ func set_tutorial_board_from_array(board_data: Array) -> void:
 
 	piece_objects.clear()
 	create_pieces_from_board()
+	current_board_effects.clear()
+	current_last_move.clear()
+	state = false
+	delete_dots()
+
+func set_tutorial_attached_cards(attached_cards: Array) -> void:
+	for entry_value in attached_cards:
+		if !(entry_value is Dictionary):
+			continue
+
+		var entry: Dictionary = entry_value
+		var piece_pos: Vector2 = value_to_vector2(entry.get("pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		if !piece_objects.has(piece_pos):
+			continue
+
+		var card_name: String = str(entry.get("card_name", ""))
+		var card: Card = CardLibrary.duplicate_card(card_name)
+		if card == null:
+			push_warning("Tutorial attached card not found: %s" % card_name)
+			continue
+
+		var piece: Piece = piece_objects[piece_pos] as Piece
+		piece.attach_card(card, bool(entry.get("exhausted", false)))
+		piece.turns_remaining = int(entry.get("turns_remaining", card.duration))
+
+func reset_tutorial_turn_state() -> void:
+	for owner_color in [1, -1]:
+		attached_card_this_turn[owner_color] = false
+		moved_piece_this_turn[owner_color] = false
+		drawn_card_this_turn[owner_color] = false
+		played_card_hand_slots_this_turn[owner_color] = []
+		exchanged_card_names_this_turn[owner_color] = []
+	local_auto_end_turn_pending = false
+	state = false
+	delete_dots()
 
 func set_tutorial_card_hand(owner_color: int, card_names: Array) -> void:
 	var cards: Array[Card] = create_card_hand_from_names(card_names)
@@ -1092,6 +1141,7 @@ func end_current_turn_locally():
 	var ending_color: int = get_current_turn_color()
 	refill_played_cards_locally(ending_color)
 	clear_exchanged_card_names_this_turn(ending_color)
+	tick_board_effects_locally()
 	clear_piece_exhaustion_for_color(ending_color)
 	white = !white
 	reset_current_turn_card_attach()
@@ -1102,6 +1152,27 @@ func end_current_turn_locally():
 	display_board()
 	turn_ended.emit(ending_color, get_current_turn_color())
 	finish_if_current_player_has_no_valid_turn()
+
+func tick_board_effects_locally() -> void:
+	var remaining_effects: Array = []
+	for effect_value in current_board_effects:
+		if !(effect_value is Dictionary):
+			continue
+
+		var effect: Dictionary = effect_value
+		var turns_remaining: int = int(effect.get("turns_remaining", -1))
+		if turns_remaining == -1:
+			remaining_effects.append(effect)
+			continue
+
+		turns_remaining -= 1
+		if turns_remaining <= 0:
+			continue
+
+		effect["turns_remaining"] = turns_remaining
+		remaining_effects.append(effect)
+
+	current_board_effects = remaining_effects
 
 func tick_attached_cards_locally() -> void:
 	var positions: Array = piece_objects.keys()
@@ -1457,8 +1528,50 @@ func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 		return false
 
 	piece.attach_card(card)
+	apply_local_card_effect_trigger(CardEffect.TRIGGER_ON_ATTACH, piece_position, piece, card)
 	display_board()
 	return true
+
+func apply_local_card_effect_trigger(trigger: String, source_pos: Vector2, piece: Piece, card: Card) -> void:
+	if GameController.current_game_host:
+		return
+	if piece == null or card == null or !card.has_effect() or card.effect_trigger != trigger:
+		return
+
+	match card.effect_type:
+		CardEffect.TYPE_INVALID_SQUARES, CardEffect.TYPE_FROZEN_SQUARES:
+			add_local_board_zone_effect(source_pos, piece, card)
+
+func add_local_board_zone_effect(source_pos: Vector2, piece: Piece, card: Card) -> void:
+	var squares: Array[Vector2] = CardEffectResolver.get_effect_squares(card, source_pos, BOARD_SIZE, piece.color)
+	if card.effect_type == CardEffect.TYPE_INVALID_SQUARES:
+		squares = filter_base_fields_from_local_effect_squares(squares)
+	if squares.is_empty():
+		return
+
+	var turns_remaining: int = int(card.effect_settings.get("turns_remaining", card.duration))
+	if turns_remaining == 0:
+		turns_remaining = 1
+
+	current_board_effects.append({
+		"effect_type": card.effect_type,
+		"owner_player_id": get_player_id_for_color(piece.color),
+		"target_player_id": int(card.effect_settings.get("target_player_id", -1)),
+		"squares": squares,
+		"turns_remaining": turns_remaining,
+	})
+
+func filter_base_fields_from_local_effect_squares(squares: Array[Vector2]) -> Array[Vector2]:
+	var filtered_squares: Array[Vector2] = []
+	for square_pos: Vector2 in squares:
+		var is_base_field: bool = false
+		for player_id in [0, 1]:
+			if square_pos == current_player_base_fields.get(player_id, BoardConfig.get_base_field_for_player_id(player_id)):
+				is_base_field = true
+				break
+		if !is_base_field:
+			filtered_squares.append(square_pos)
+	return filtered_squares
 
 func apply_remote_card_attach(piece_position: Vector2, card_name: String, owner_color: int, hand_index: int, _replacement_card_name: String = ""):
 	if apply_card_to_piece(piece_position, card_name):
@@ -2313,6 +2426,8 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 		return
 
 	var moving_piece: Piece = piece_objects[end_pos] as Piece if piece_objects.has(end_pos) else null
+	if moving_piece != null:
+		apply_local_card_effect_trigger(CardEffect.TRIGGER_ON_MOVE, end_pos, moving_piece, moving_piece.attached_card)
 	consume_moved_piece_duration_locally(moving_piece, end_pos)
 	if game_over:
 		display_board()
@@ -2536,6 +2651,8 @@ func award_win_points_if_applicable(winner_color: int) -> void:
 	PlayerProgressStore.add_points(PlayerProgressStore.WIN_POINTS_PER_WIN)
 
 func should_award_win_points(winner_color: int) -> bool:
+	if tutorial_mode_active:
+		return false
 	if GameConfig.is_ai_vs_ai_batch:
 		return false
 

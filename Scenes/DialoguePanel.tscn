@@ -1,0 +1,130 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://Scenes/DialoguePanel.gd" id="1_dialogue_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogue_panel"]
+content_margin_left = 14.0
+content_margin_top = 14.0
+content_margin_right = 14.0
+content_margin_bottom = 14.0
+bg_color = Color(0.05, 0.05, 0.06, 0.93)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.86, 0.24, 0.78)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_portrait"]
+bg_color = Color(0.18, 0.15, 0.12, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.86, 0.24, 0.72)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_text_panel"]
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 0.36)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="LabelSettings" id="LabelSettings_portrait_initial"]
+font_size = 52
+font_color = Color(1, 0.9, 0.45, 1)
+outline_size = 4
+outline_color = Color(0, 0, 0, 1)
+
+[node name="DialoguePanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_dialogue_script")
+
+[node name="DialogueRoot" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 24.0
+offset_top = -176.0
+offset_right = 380.0
+offset_bottom = 176.0
+grow_vertical = 2
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue_panel")
+
+[node name="DialogueLayout" type="VBoxContainer" parent="DialogueRoot"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PortraitFrame" type="PanelContainer" parent="DialogueRoot/DialogueLayout"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_portrait")
+
+[node name="PortraitInitial" type="Label" parent="DialogueRoot/DialogueLayout/PortraitFrame"]
+layout_mode = 2
+label_settings = SubResource("LabelSettings_portrait_initial")
+text = "M"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PortraitTexture" type="TextureRect" parent="DialogueRoot/DialogueLayout/PortraitFrame"]
+visible = false
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextColumn" type="VBoxContainer" parent="DialogueRoot/DialogueLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="SpeakerLabel" type="Label" parent="DialogueRoot/DialogueLayout/TextColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.24, 1)
+theme_override_font_sizes/font_size = 20
+text = "Mentor"
+
+[node name="TextPanel" type="PanelContainer" parent="DialogueRoot/DialogueLayout/TextColumn"]
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_text_panel")
+
+[node name="DialogueText" type="RichTextLabel" parent="DialogueRoot/DialogueLayout/TextColumn/TextPanel"]
+layout_mode = 2
+theme_override_colors/default_color = Color(0.94, 0.92, 0.86, 1)
+theme_override_font_sizes/normal_font_size = 17
+bbcode_enabled = true
+text = "Dialogue text appears here."
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
+
+[node name="ButtonRow" type="HBoxContainer" parent="DialogueRoot/DialogueLayout/TextColumn"]
+layout_mode = 2
+alignment = 2
+
+[node name="ContinueButton" type="Button" parent="DialogueRoot/DialogueLayout/TextColumn/ButtonRow"]
+custom_minimum_size = Vector2(112, 34)
+layout_mode = 2
+focus_mode = 0
+text = "Continue"

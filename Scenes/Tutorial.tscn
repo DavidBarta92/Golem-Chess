@@ -1,0 +1,51 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/board.tscn" id="1_board"]
+[ext_resource type="PackedScene" path="res://Scenes/DialoguePanel.tscn" id="2_dialogue"]
+[ext_resource type="Script" path="res://Scenes/TutorialController.gd" id="3_controller"]
+
+[node name="Tutorial" type="Node2D"]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(72, -72)
+ignore_rotation = false
+zoom = Vector2(3, 3)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="white_pieces" type="Control" parent="CanvasLayer"]
+visible = false
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -50.0
+offset_right = 200.0
+offset_bottom = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="black_pieces" type="Control" parent="CanvasLayer"]
+visible = false
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -50.0
+offset_right = 200.0
+offset_bottom = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DialoguePanel" parent="CanvasLayer" instance=ExtResource("2_dialogue")]
+
+[node name="board" parent="." instance=ExtResource("1_board")]
+
+[node name="TutorialController" type="Node" parent="."]
+script = ExtResource("3_controller")

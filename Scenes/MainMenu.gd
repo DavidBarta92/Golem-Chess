@@ -226,6 +226,10 @@ func _on_singleplayer_button_pressed():
 	save_player_name()
 	get_tree().change_scene_to_file("res://Scenes/SingleplayerMenu.tscn")
 
+func _on_tutorial_button_pressed():
+	save_player_name()
+	get_tree().change_scene_to_file("res://Scenes/Tutorial.tscn")
+
 func _on_ai_vs_ai_button_pressed():
 	save_player_name()
 	var match_count: int = get_ai_vs_ai_match_count()
