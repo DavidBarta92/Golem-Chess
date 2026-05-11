@@ -1,5 +1,12 @@
 ﻿extends Sprite2D
 
+signal piece_selected(piece_pos: Vector2, player_id: int)
+signal card_attached(piece_pos: Vector2, card_name: String, owner_color: int, hand_index: int)
+signal piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int)
+signal card_exchanged(card_name: String, owner_color: int, hand_index: int)
+signal turn_ended(ending_color: int, next_color: int)
+signal tutorial_action_rejected(action_name: String, context: Dictionary)
+
 const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const CELL_WIDTH: int = BoardConfig.CELL_WIDTH
 
@@ -66,6 +73,11 @@ const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const CARD_BURN_SEQUENCE_GAP = 0.08
+const TUTORIAL_ACTION_SELECT_PIECE = "select_piece"
+const TUTORIAL_ACTION_ATTACH_CARD = "attach_card"
+const TUTORIAL_ACTION_MOVE_PIECE = "move_piece"
+const TUTORIAL_ACTION_EXCHANGE_CARD = "exchange_card"
+const TUTORIAL_ACTION_END_TURN = "end_turn"
 const RULES_INFO_TEXT: String = "Goal: attach a Nexus card to one of your pieces, then move that Nexus onto the opponent's base square.\n\nTurn flow:\n1. Play any number of cards from your hand onto your empty pieces.\n2. Move one ready piece using its attached card pattern.\n3. End your turn. Each card you played is replaced from your deck.\n\nCards:\n- Your hand holds up to 3 cards.\n- Once per turn, drag a hand card onto your deck to replace it.\n- Duration only drops when that piece moves.\n\nCaptures:\n- Captured pieces respawn on an empty home-row square.\n- Their attached card is removed. Nexus cards return to their owner's deck."
 
 @onready var pieces_node = $Pieces
@@ -146,6 +158,8 @@ var current_player_names: Dictionary = {
 var pending_card_burn_animations: Array = []
 var card_burn_animation_sequence_running: bool = false
 var local_auto_end_turn_pending: bool = false
+var tutorial_constraints_enabled: bool = false
+var tutorial_constraints: Dictionary = {}
 
 var side
 
@@ -178,6 +192,159 @@ func _ready():
 	create_rules_info_ui()
 	create_action_status_ui()
 	update_player_name_labels()
+
+func set_tutorial_constraints(constraints: Dictionary) -> void:
+	tutorial_constraints = constraints.duplicate(true)
+	tutorial_constraints_enabled = !tutorial_constraints.is_empty() && bool(tutorial_constraints.get("enabled", true))
+	refresh_tutorial_dependent_ui()
+
+func clear_tutorial_constraints() -> void:
+	tutorial_constraints.clear()
+	tutorial_constraints_enabled = false
+	refresh_tutorial_dependent_ui()
+
+func refresh_tutorial_dependent_ui() -> void:
+	update_card_drag_permissions()
+	update_end_turn_button()
+	update_action_status_ui()
+	if state:
+		show_options()
+
+func is_tutorial_action_allowed(action_name: String, context: Dictionary = {}, emit_rejection: bool = false) -> bool:
+	if !tutorial_constraints_enabled:
+		return true
+	if !is_tutorial_action_name_allowed(action_name):
+		return reject_tutorial_action(action_name, context, emit_rejection)
+
+	var allowed: bool = true
+	match action_name:
+		TUTORIAL_ACTION_SELECT_PIECE:
+			if context.has("piece_pos"):
+				allowed = tutorial_vector_allowed(["allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
+		TUTORIAL_ACTION_ATTACH_CARD:
+			if context.has("piece_pos"):
+				allowed = allowed && tutorial_vector_allowed(["allowed_attach_piece_positions", "allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
+			if context.has("card_name"):
+				allowed = allowed && tutorial_string_allowed(["allowed_attach_card_names", "allowed_card_names", "allowed_cards"], str(context.get("card_name", "")))
+		TUTORIAL_ACTION_MOVE_PIECE:
+			if context.has("from_pos"):
+				allowed = allowed && tutorial_vector_allowed(["allowed_move_sources", "allowed_piece_positions", "allowed_pieces"], context.get("from_pos"))
+			if context.has("to_pos"):
+				allowed = allowed && tutorial_vector_allowed(["allowed_move_targets"], context.get("to_pos"))
+		TUTORIAL_ACTION_EXCHANGE_CARD:
+			if context.has("card_name"):
+				allowed = allowed && tutorial_string_allowed(["allowed_exchange_card_names", "allowed_card_names", "allowed_cards"], str(context.get("card_name", "")))
+
+	if !allowed:
+		return reject_tutorial_action(action_name, context, emit_rejection)
+	return true
+
+func is_tutorial_action_name_allowed(action_name: String) -> bool:
+	var allowed_actions: Array = tutorial_constraint_array(["allowed_actions"])
+	if allowed_actions.is_empty():
+		return true
+	return allowed_actions.has(action_name)
+
+func reject_tutorial_action(action_name: String, context: Dictionary, emit_rejection: bool) -> bool:
+	if emit_rejection:
+		tutorial_action_rejected.emit(action_name, context.duplicate(true))
+	return false
+
+func tutorial_string_allowed(keys: Array, candidate: String) -> bool:
+	var allowed_values: Array = tutorial_constraint_array(keys)
+	if allowed_values.is_empty():
+		return true
+	for value in allowed_values:
+		if str(value) == candidate:
+			return true
+	return false
+
+func tutorial_vector_allowed(keys: Array, candidate) -> bool:
+	var allowed_values: Array = tutorial_constraint_array(keys)
+	if allowed_values.is_empty():
+		return true
+
+	var candidate_pos: Vector2 = value_to_vector2(candidate, INVALID_BOARD_POS)
+	if candidate_pos == INVALID_BOARD_POS:
+		return false
+	for value in allowed_values:
+		if value_to_vector2(value, INVALID_BOARD_POS) == candidate_pos:
+			return true
+	return false
+
+func tutorial_constraint_array(keys: Array) -> Array:
+	for key_value in keys:
+		var key: String = str(key_value)
+		if !tutorial_constraints.has(key):
+			continue
+		var value = tutorial_constraints[key]
+		if value is Array:
+			return value
+	return []
+
+func can_auto_end_turn_now() -> bool:
+	if !tutorial_constraints_enabled:
+		return true
+	return bool(tutorial_constraints.get("allow_auto_end_turn", false))
+
+func apply_tutorial_setup(setup: Dictionary) -> void:
+	if setup.has("board"):
+		set_tutorial_board_from_array(setup.get("board", []))
+	if setup.has("white_hand"):
+		set_tutorial_card_hand(1, setup.get("white_hand", []))
+	if setup.has("black_hand"):
+		set_tutorial_card_hand(-1, setup.get("black_hand", []))
+	if setup.has("white_deck"):
+		set_tutorial_card_deck(1, setup.get("white_deck", []))
+	if setup.has("black_deck"):
+		set_tutorial_card_deck(-1, setup.get("black_deck", []))
+	if setup.has("turn_color"):
+		set_tutorial_turn(int(setup.get("turn_color", 1)))
+
+	update_card_presentation()
+	display_board()
+
+func set_tutorial_board_from_array(board_data: Array) -> void:
+	if board_data.is_empty():
+		return
+
+	board = BoardConfig.create_empty_board()
+	for row in range(mini(board_data.size(), BOARD_SIZE)):
+		var row_data: Array = board_data[row] if board_data[row] is Array else []
+		for col in range(mini(row_data.size(), BOARD_SIZE)):
+			board[row][col] = int(row_data[col])
+
+	piece_objects.clear()
+	create_pieces_from_board()
+
+func set_tutorial_card_hand(owner_color: int, card_names: Array) -> void:
+	var cards: Array[Card] = create_card_hand_from_names(card_names)
+	if owner_color == 1:
+		white_card_hand = cards
+		white_card_visuals = populate_card_hand(white_pieces, white_card_hand, 1)
+	else:
+		black_card_hand = cards
+		black_card_visuals = populate_card_hand(black_pieces, black_card_hand, -1)
+	setup_deck_visuals()
+
+func set_tutorial_card_deck(owner_color: int, card_names: Array) -> void:
+	var deck_names: Array[String] = []
+	for card_name_value in card_names:
+		deck_names.append(str(card_name_value))
+
+	if owner_color == 1:
+		white_card_deck = deck_names
+		white_deck_count_override = -1
+	else:
+		black_card_deck = deck_names
+		black_deck_count_override = -1
+	setup_deck_visuals()
+
+func set_tutorial_turn(owner_color: int) -> void:
+	var was_white_turn: bool = white
+	white = owner_color == 1
+	if was_white_turn != white:
+		reset_current_turn_card_attach()
 
 func create_board_tiles():
 	if board_tiles_node == null:
@@ -334,8 +501,17 @@ func connect_card_visual_signals(card_visual: CardVisual):
 	card_visual.mouse_exited.connect(_on_hand_card_mouse_exited.bind(card_visual))
 
 func setup_deck_visuals():
+	free_existing_deck_visual(white_deck_visual)
+	free_existing_deck_visual(black_deck_visual)
 	white_deck_visual = create_deck_visual(white_pieces, 1)
 	black_deck_visual = create_deck_visual(black_pieces, -1)
+
+func free_existing_deck_visual(deck_visual: CardVisual) -> void:
+	if deck_visual != null and is_instance_valid(deck_visual) and !deck_visual.is_queued_for_deletion():
+		var parent_node: Node = deck_visual.get_parent()
+		if parent_node != null:
+			parent_node.remove_child(deck_visual)
+		deck_visual.queue_free()
 
 func create_deck_visual(hand_node: Control, owner_color: int) -> CardVisual:
 	var deck_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
@@ -728,15 +904,30 @@ func update_card_drag_permissions():
 	var active_color: int = get_controllable_color()
 	var can_drag: bool = can_control_current_turn()
 	for card_visual in white_card_visuals:
-		card_visual.draggable = can_drag && card_visual.owner_color == active_color
+		card_visual.draggable = can_drag_card_visual_now(card_visual, active_color, can_drag)
 	for card_visual in black_card_visuals:
-		card_visual.draggable = can_drag && card_visual.owner_color == active_color
+		card_visual.draggable = can_drag_card_visual_now(card_visual, active_color, can_drag)
+
+func can_drag_card_visual_now(card_visual: CardVisual, active_color: int, can_drag: bool) -> bool:
+	if !can_drag or card_visual == null or card_visual.owner_color != active_color:
+		return false
+	if card_visual.card == null:
+		return false
+	if !tutorial_constraints_enabled:
+		return true
+
+	var context: Dictionary = {
+		"owner_color": card_visual.owner_color,
+		"card_name": card_visual.card.card_name,
+		"hand_index": get_card_visual_index(card_visual),
+	}
+	return is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD, context) or is_tutorial_action_allowed(TUTORIAL_ACTION_EXCHANGE_CARD, context)
 
 func update_end_turn_button():
 	if end_turn_button == null:
 		return
 	end_turn_button.visible = !game_over
-	end_turn_button.disabled = !can_control_current_turn()
+	end_turn_button.disabled = !can_control_current_turn() or !is_tutorial_action_allowed(TUTORIAL_ACTION_END_TURN)
 
 func update_rules_info_ui():
 	if rules_info_button == null:
@@ -767,10 +958,30 @@ func set_action_status_label(action_name: String, is_available: bool) -> void:
 func can_switch_action_now() -> bool:
 	if !can_control_current_turn():
 		return false
-	return can_exchange_card_locally(get_controllable_color())
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_EXCHANGE_CARD):
+		return false
+	var owner_color: int = get_controllable_color()
+	return can_exchange_card_locally(owner_color) && has_tutorial_allowed_exchange_card(owner_color)
+
+func has_tutorial_allowed_exchange_card(owner_color: int) -> bool:
+	if !tutorial_constraints_enabled:
+		return true
+
+	var hand_cards: Array[Card] = get_card_hand(owner_color)
+	for card: Card in hand_cards:
+		if card == null:
+			continue
+		if is_tutorial_action_allowed(TUTORIAL_ACTION_EXCHANGE_CARD, {
+			"owner_color": owner_color,
+			"card_name": card.card_name,
+		}):
+			return true
+	return false
 
 func can_attach_action_now() -> bool:
 	if !can_control_current_turn():
+		return false
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD):
 		return false
 
 	var owner_color: int = get_controllable_color()
@@ -786,6 +997,12 @@ func can_attach_action_now() -> bool:
 		for card: Card in hand_cards:
 			if !MoveRules.card_can_be_used(card):
 				continue
+			if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD, {
+				"owner_color": owner_color,
+				"piece_pos": position_value,
+				"card_name": card.card_name,
+			}):
+				continue
 			if MoveRules.can_attach_card_for_turn(piece_objects, owner_color, card):
 				return true
 
@@ -794,17 +1011,39 @@ func can_attach_action_now() -> bool:
 func can_move_action_now() -> bool:
 	if !can_control_current_turn():
 		return false
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_MOVE_PIECE):
+		return false
 
 	var owner_color: int = get_controllable_color()
 	if has_moved_piece_this_turn(owner_color):
 		return false
-	return MoveRules.has_valid_piece_move(piece_objects, owner_color, BOARD_SIZE, current_board_effects)
+	return has_tutorial_allowed_piece_move(owner_color)
+
+func has_tutorial_allowed_piece_move(owner_color: int) -> bool:
+	for position_value in piece_objects:
+		var piece_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
+		var piece: Piece = piece_objects[position_value] as Piece
+		if piece == null or piece.color != owner_color or !piece.can_move():
+			continue
+
+		var player_id: int = get_player_id_for_color(owner_color)
+		var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(piece_objects, piece_pos, player_id, BOARD_SIZE, current_board_effects)
+		for target_pos: Vector2 in valid_moves:
+			if is_tutorial_action_allowed(TUTORIAL_ACTION_MOVE_PIECE, {
+				"owner_color": owner_color,
+				"from_pos": piece_pos,
+				"to_pos": target_pos,
+			}):
+				return true
+	return false
 
 func has_remaining_turn_action_now() -> bool:
 	return can_switch_action_now() or can_attach_action_now() or can_move_action_now()
 
 func maybe_auto_end_turn_locally() -> void:
 	if GameController.current_game_host:
+		return
+	if !can_auto_end_turn_now():
 		return
 	if local_auto_end_turn_pending or game_over or !can_control_current_turn():
 		return
@@ -833,6 +1072,11 @@ func _on_rules_info_pressed():
 func _on_end_turn_pressed():
 	if !can_control_current_turn():
 		return
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_END_TURN, {
+		"owner_color": get_controllable_color(),
+		"player_id": get_own_player_id(),
+	}, true):
+		return
 
 	if GameController.current_game_host:
 		GameController.send_action({
@@ -856,6 +1100,7 @@ func end_current_turn_locally():
 	hide_hover_piece_details()
 	update_card_presentation()
 	display_board()
+	turn_ended.emit(ending_color, get_current_turn_color())
 	finish_if_current_player_has_no_valid_turn()
 
 func tick_attached_cards_locally() -> void:
@@ -1026,12 +1271,21 @@ func can_drop_card_on_deck(card_visual: CardVisual) -> bool:
 		return false
 	if !can_exchange_card_locally(card_visual.owner_color):
 		return false
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_EXCHANGE_CARD, {
+		"owner_color": card_visual.owner_color,
+		"card_name": card_visual.card.card_name,
+	}):
+		return false
 	return is_mouse_over_deck(card_visual.owner_color)
 
 func can_exchange_card_locally(owner_color: int) -> bool:
 	if !can_control_current_turn():
 		return false
 	if owner_color != get_controllable_color():
+		return false
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_EXCHANGE_CARD, {
+		"owner_color": owner_color,
+	}):
 		return false
 	if has_drawn_card_this_turn(owner_color):
 		return false
@@ -1054,9 +1308,18 @@ func exchange_card_visual_with_deck(card_visual: CardVisual) -> void:
 		return
 
 	var card_name: String = card_visual.card.card_name
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_EXCHANGE_CARD, {
+		"owner_color": owner_color,
+		"card_name": card_name,
+		"hand_index": hand_index,
+	}, true):
+		card_visual.fly_home()
+		return
+
 	if GameController.current_game_host:
 		if send_card_exchange_action(owner_color, card_name, hand_index):
 			mark_card_drawn_this_turn(owner_color)
+			card_exchanged.emit(card_name, owner_color, hand_index)
 		if is_instance_valid(card_visual):
 			card_visual.fly_home()
 		return
@@ -1075,6 +1338,7 @@ func exchange_card_visual_with_deck(card_visual: CardVisual) -> void:
 	DeckManager.return_card_to_deck(deck, card_name)
 	record_exchanged_card_name_this_turn(owner_color, card_name)
 	mark_card_drawn_this_turn(owner_color)
+	card_exchanged.emit(card_name, owner_color, hand_index)
 
 func send_card_exchange_action(owner_color: int, card_name: String, hand_index: int) -> bool:
 	return bool(GameController.send_action({
@@ -1122,16 +1386,25 @@ func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector
 		card_visual.fly_home()
 		return
 	var card_name: String = card_visual.card.card_name
+	var hand_index: int = get_card_visual_index(card_visual)
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD, {
+		"owner_color": card_visual.owner_color,
+		"piece_pos": piece_position,
+		"card_name": card_name,
+		"hand_index": hand_index,
+	}, true):
+		card_visual.fly_home()
+		return
 	if !can_attach_card_to_piece(piece_position, card_name, card_visual.owner_color):
 		card_visual.fly_home()
 		return
 
-	var hand_index: int = get_card_visual_index(card_visual)
 	if GameController.current_game_host:
 		record_played_card_hand_slot(card_visual.owner_color, hand_index)
 		send_card_attach_action(card_visual.owner_color, card_name, piece_position, hand_index)
 		card_visual.assign_and_hide()
 		mark_card_attached_this_turn(card_visual.owner_color)
+		card_attached.emit(piece_position, card_name, card_visual.owner_color, hand_index)
 		return
 
 	if !apply_card_to_piece(piece_position, card_name):
@@ -1141,6 +1414,7 @@ func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector
 	record_played_card_hand_slot(card_visual.owner_color, hand_index)
 	remove_card_from_hand(card_visual)
 	mark_card_attached_this_turn(card_visual.owner_color)
+	card_attached.emit(piece_position, card_name, card_visual.owner_color, hand_index)
 
 	if get_parent().has_method("send_card_attach"):
 		get_parent().send_card_attach(piece_position, card_name, card_visual.owner_color, hand_index, "")
@@ -1157,6 +1431,12 @@ func send_card_attach_action(owner_color: int, card_name: String, piece_position
 
 func can_attach_card_to_piece(piece_position: Vector2, card_name: String = "", owner_color: int = 0) -> bool:
 	if not piece_objects.has(piece_position):
+		return false
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD, {
+		"owner_color": owner_color,
+		"piece_pos": piece_position,
+		"card_name": card_name,
+	}):
 		return false
 
 	var piece: Piece = piece_objects[piece_position] as Piece
@@ -1648,6 +1928,44 @@ func request_card_draw(owner_color: int):
 	insert_drawn_card(owner_color, get_card_hand(owner_color).size(), card_name)
 	mark_card_drawn_this_turn(owner_color)
 
+func select_piece_for_action(piece_pos: Vector2) -> bool:
+	var player_id: int = get_own_player_id()
+	if !can_player_control_piece_at(piece_pos, player_id):
+		return false
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_SELECT_PIECE, {
+		"owner_color": get_controllable_color(),
+		"player_id": player_id,
+		"piece_pos": piece_pos,
+	}, true):
+		return false
+
+	selected_piece = piece_pos
+	state = true
+	piece_selected.emit(piece_pos, player_id)
+	show_options()
+	return state
+
+func try_move_selected_piece(target_pos: Vector2) -> bool:
+	if !state or !moves.has(target_pos):
+		return false
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_MOVE_PIECE, {
+		"owner_color": get_controllable_color(),
+		"player_id": get_own_player_id(),
+		"from_pos": selected_piece,
+		"to_pos": target_pos,
+	}, true):
+		return false
+
+	send_move_action(selected_piece, target_pos)
+	return true
+
+func clear_piece_selection() -> void:
+	delete_dots()
+	state = false
+	update_selected_piece_outline()
+	hovered_piece = Vector2(-1, -1)
+	hide_hover_piece_details()
+
 func _input(event):
 	if event is InputEventKey:
 		var key_event: InputEventKey = event as InputEventKey
@@ -1681,18 +1999,11 @@ func _input(event):
 					return
 
 				if !state && can_player_control_piece_at(clicked_pos, get_own_player_id()):
-					selected_piece = clicked_pos
-					state = true
-					show_options()
+					select_piece_for_action(clicked_pos)
 				elif state:
 					if moves.has(clicked_pos):
-						send_move_action(selected_piece, clicked_pos)
-
-					delete_dots()
-					state = false
-					update_selected_piece_outline()
-					hovered_piece = Vector2(-1, -1)
-					hide_hover_piece_details()
+						try_move_selected_piece(clicked_pos)
+					clear_piece_selection()
 
 func show_quit_confirmation():
 	if quit_confirmation_dialog == null:
@@ -1707,6 +2018,14 @@ func _on_quit_confirmed():
 		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 
 func send_move_action(from_pos: Vector2, to_pos: Vector2):
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_MOVE_PIECE, {
+		"owner_color": get_controllable_color(),
+		"player_id": get_own_player_id(),
+		"from_pos": from_pos,
+		"to_pos": to_pos,
+	}, true):
+		return
+
 	if GameController.current_game_host:
 		var action: Dictionary = {
 			"type": "move_piece",
@@ -1716,6 +2035,7 @@ func send_move_action(from_pos: Vector2, to_pos: Vector2):
 		}
 		GameController.send_action(action)
 		mark_piece_moved_this_turn(get_controllable_color())
+		piece_moved.emit(from_pos, to_pos, get_controllable_color())
 		return
 
 	if get_parent().has_method("send_move"):
@@ -1984,6 +2304,7 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 		captured_piece.detach_card()
 
 	record_last_move_locally(moving_color, start_pos, end_pos, moving_piece_visible_to_enemy)
+	piece_moved.emit(start_pos, end_pos, moving_color)
 
 	var winner_color: int = get_winner_after_move(moving_color, end_pos)
 	if winner_color != 0:
@@ -2262,8 +2583,23 @@ func get_move_preview_player_id(piece_position: Vector2, piece: Piece) -> int:
 
 func get_card_based_moves(piece_position: Vector2, piece: Piece, player_id: int) -> Array:
 	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(piece_objects, piece_position, player_id, BOARD_SIZE, current_board_effects)
+	valid_moves = filter_tutorial_move_targets(piece_position, valid_moves, piece.color)
 	DebugLog.info("  Valid moves: %s" % [valid_moves])
 	return valid_moves
+
+func filter_tutorial_move_targets(from_pos: Vector2, candidate_moves: Array[Vector2], owner_color: int) -> Array[Vector2]:
+	if !tutorial_constraints_enabled:
+		return candidate_moves
+
+	var filtered_moves: Array[Vector2] = []
+	for to_pos: Vector2 in candidate_moves:
+		if is_tutorial_action_allowed(TUTORIAL_ACTION_MOVE_PIECE, {
+			"owner_color": owner_color,
+			"from_pos": from_pos,
+			"to_pos": to_pos,
+		}):
+			filtered_moves.append(to_pos)
+	return filtered_moves
 
 func is_valid_position(pos : Vector2):
 	if pos.x >= 0 && pos.x < BOARD_SIZE && pos.y >= 0 && pos.y < BOARD_SIZE: return true
@@ -2370,8 +2706,13 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 
 	var was_white_turn: bool = white
 	white = current_turn == 0
+	var should_emit_turn_ended: bool = false
+	var server_ending_color: int = 0
 	if was_white_turn != white:
 		reset_current_turn_card_attach()
+		if has_received_server_state:
+			should_emit_turn_ended = true
+			server_ending_color = 1 if was_white_turn else -1
 
 	var current_white_hand_names: Array = get_hand_names_from_state(player_hands, 0)
 	var current_black_hand_names: Array = get_hand_names_from_state(player_hands, 1)
@@ -2400,6 +2741,8 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 		else:
 			animate_recent_card_transfers(recent_card_transfers, previous_white_hand_names, current_white_hand_names, previous_black_hand_names, current_black_hand_names)
 		animate_recent_card_expirations(recent_card_expirations)
+	if should_emit_turn_ended:
+		turn_ended.emit(server_ending_color, get_current_turn_color())
 	has_received_server_state = true
 
 	if server_game_over && winner_player != -1:
