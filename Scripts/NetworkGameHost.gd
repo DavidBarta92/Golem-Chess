@@ -68,8 +68,6 @@ func on_player_action(action: Dictionary):
 			handle_attach_card(action)
 		"exchange_card":
 			return handle_exchange_card(action)
-		"draw_card":
-			handle_draw_card(action)
 		"move_piece":
 			handle_move_piece(action)
 		"end_turn":
@@ -152,12 +150,6 @@ func handle_attach_card(action: Dictionary):
 			return
 		broadcast_full_state()
 
-func handle_draw_card(action: Dictionary):
-	var player_id: int = int(action.player_id)
-	DebugLog.info("Draw card: player=%s" % player_id)
-	push_warning("Manual card draw is disabled. Cards refill at end of turn.")
-	return
-
 func handle_exchange_card(action: Dictionary):
 	var player_id: int = int(action.player_id)
 	var card_name: String = str(action.get("card_name", ""))
@@ -206,7 +198,7 @@ func handle_exchange_card(action: Dictionary):
 	hand.insert(insert_index, drawn_card_name)
 	game_state.player_hands[player_id] = hand
 	game_state.player_decks[player_id] = deck
-	game_state.drawn_card_this_turn[player_id] = true
+	game_state.exchanged_card_this_turn[player_id] = true
 	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", "hand")
 
 	var returned_card: Card = CardLibrary.get_card(returned_card_name)
@@ -292,10 +284,6 @@ func handle_move_piece(action: Dictionary):
 
 		if captured_nexus && captured_piece.attached_card != null:
 			return_card_to_player_deck(captured_piece_owner_player_id, captured_piece.attached_card, "captured_nexus", to_pos)
-		elif captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
-			var enemy_player = captured_piece_owner_player_id
-			DeckManager.return_card_to_deck(game_state.player_decks[enemy_player], captured_piece.attached_card.card_name)
-			log_card_returned_to_deck(enemy_player, captured_piece.attached_card, to_pos, "captured_piece")
 
 	game_state.remove_piece(from_pos)
 	piece.position = to_pos
@@ -406,41 +394,9 @@ func clear_piece_exhaustion_for_player(player_id: int) -> void:
 		if piece != null && piece.color == player_color:
 			piece.exhausted_this_turn = false
 
-func tick_attached_cards() -> void:
-	var positions: Array = game_state.pieces.keys()
-	for position_value in positions:
-		var piece_pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
-		var piece: Piece = game_state.get_piece(piece_pos)
-		if piece == null or piece.attached_card == null:
-			continue
-
-		var player_id: int = CardEffectResolver.get_player_id_for_color(piece.color)
-		var expired_card: Card = piece.use_turn()
-		if expired_card == null:
-			continue
-
-		if MoveRules.is_nexus_card(expired_card):
-			handle_expired_nexus_card(player_id, expired_card, piece_pos)
-			if game_state.game_over:
-				return
-			continue
-
-		register_card_expiration(player_id, expired_card, piece_pos)
-		log_card_expired(player_id, expired_card, piece, piece_pos)
-		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_EXPIRE, game_state, {
-			"player_id": player_id,
-			"piece": piece,
-			"piece_pos": piece_pos,
-			"card": expired_card,
-		})
-		if game_state.game_over:
-			return
-
 func handle_expired_nexus_card(player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
 	CardEffectResolver.clear_nexus_position_if_needed(game_state, player_id, true)
-	var nexus_card_returned: bool = return_card_to_player_hand(player_id, expired_card, piece_pos, "expired_nexus")
-	if !nexus_card_returned && !player_has_available_nexus_card(player_id):
-		finish_game(1 - player_id, "nexus_card_lost")
+	return_card_to_player_deck(player_id, expired_card, "expired_nexus", piece_pos)
 
 func consume_moved_piece_duration(player_id: int, piece: Piece, piece_pos: Vector2) -> void:
 	if piece == null or piece.attached_card == null:
@@ -489,9 +445,6 @@ func get_random_empty_home_position(player_id: int) -> Vector2:
 		return Vector2(-1, -1)
 
 	return empty_positions[randi() % empty_positions.size()]
-
-func should_tick_attached_cards_this_end_turn() -> bool:
-	return false
 
 func maybe_auto_end_turn(player_id: int) -> bool:
 	if game_state.game_over or game_state.current_turn_player != player_id:
@@ -570,11 +523,8 @@ func player_has_valid_turn_action(player_id: int) -> bool:
 		return true
 	return false
 
-func can_draw_card_for_player(player_id: int) -> bool:
-	return false
-
 func can_exchange_card_for_player(player_id: int) -> bool:
-	if bool(game_state.drawn_card_this_turn.get(player_id, false)):
+	if bool(game_state.exchanged_card_this_turn.get(player_id, false)):
 		return false
 	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
 		return false
@@ -622,19 +572,6 @@ func should_hold_turn_for_optional_exchange(player_id: int) -> bool:
 		return false
 	return true
 
-func get_hand_cards_with_next_draw(player_id: int) -> Array[Card]:
-	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
-	if !can_draw_card_for_player(player_id):
-		return hand_cards
-	if hand_cards.size() >= DeckManager.HAND_SIZE:
-		return hand_cards
-	var player_deck: Array = game_state.player_decks[player_id]
-	var next_card_name: String = str(player_deck[0])
-	var next_card: Card = CardLibrary.get_card(next_card_name)
-	if next_card != null:
-		hand_cards.append(next_card)
-	return hand_cards
-
 func is_nexus_piece(piece: Piece) -> bool:
 	return piece != null && MoveRules.is_nexus_card(piece.attached_card)
 
@@ -674,8 +611,7 @@ func broadcast_full_state():
 				"color": piece_data.color,
 				"card_name": piece_data.card_name,
 				"turns_remaining": piece_data.turns_remaining,
-				"exhausted_this_turn": piece_data.exhausted_this_turn,
-				"skip_next_duration_tick": piece_data.skip_next_duration_tick
+				"exhausted_this_turn": piece_data.exhausted_this_turn
 			}
 		multiplayer_node.get_node("board").update_from_server_state(
 			pieces_data,
@@ -739,8 +675,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 			"color": piece.color,
 			"card_name": piece.attached_card.card_name if piece.attached_card else "",
 			"turns_remaining": piece.turns_remaining,
-			"exhausted_this_turn": piece.exhausted_this_turn,
-			"skip_next_duration_tick": piece.skip_next_duration_tick
+			"exhausted_this_turn": piece.exhausted_this_turn
 		})
 
 	return data
@@ -810,7 +745,6 @@ func append_hidden_card_data(hidden_cards: Array, piece: Piece) -> void:
 	hidden_cards.append({
 		"card_name": piece.attached_card.card_name,
 		"turns_remaining": piece.turns_remaining,
-		"skip_next_duration_tick": piece.skip_next_duration_tick,
 		"owner_player_id": CardEffectResolver.get_player_id_for_color(piece.color),
 	})
 
@@ -958,22 +892,6 @@ func return_card_to_player_deck(player_id: int, card: Card, reason: String, piec
 	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, card.card_name, "piece", "deck", piece_pos)
 	log_card_returned_to_deck(player_id, card, piece_pos, reason)
 
-func return_card_to_player_hand(player_id: int, card: Card, piece_pos: Vector2, reason: String) -> bool:
-	if card == null:
-		return false
-	if !game_state.player_hands.has(player_id):
-		game_state.player_hands[player_id] = []
-	var hand: Array = game_state.player_hands[player_id]
-	if hand.size() >= DeckManager.HAND_SIZE:
-		log_card_deleted(player_id, card, piece_pos, reason + "_hand_full")
-		DebugLog.info("Card deleted instead of returning to hand: player=%d, card=%s" % [player_id, card.card_name])
-		return false
-	hand.append(card.card_name)
-	game_state.player_hands[player_id] = hand
-	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, card.card_name, "piece", "hand", piece_pos)
-	log_card_returned_to_hand(player_id, card, piece_pos, reason)
-	return true
-
 func player_has_available_nexus_card(player_id: int) -> bool:
 	if game_state.player_hands.has(player_id) && DeckManager.has_nexus_card(game_state.player_hands[player_id]):
 		return true
@@ -1021,32 +939,6 @@ func log_card_returned_to_deck(player_id: int, card: Card, piece_pos: Vector2, r
 		"piece_pos": piece_pos,
 		"returned_card": card.card_name if card != null else "",
 		"target_zone": "deck",
-		"reason": reason,
-	})
-
-func log_card_returned_to_hand(player_id: int, card: Card, piece_pos: Vector2, reason: String) -> void:
-	if game_state.match_logger == null:
-		return
-
-	game_state.match_logger.log_card_event(game_state, "return_to_hand", {
-		"player_id": player_id,
-		"card": card,
-		"piece_pos": piece_pos,
-		"returned_card": card.card_name if card != null else "",
-		"target_zone": "hand",
-		"reason": reason,
-	})
-
-func log_card_deleted(player_id: int, card: Card, piece_pos: Vector2, reason: String) -> void:
-	if game_state.match_logger == null:
-		return
-
-	game_state.match_logger.log_card_event(game_state, "delete_card", {
-		"player_id": player_id,
-		"card": card,
-		"piece_pos": piece_pos,
-		"returned_card": card.card_name if card != null else "",
-		"target_zone": "deleted",
 		"reason": reason,
 	})
 

@@ -42,8 +42,6 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 		return false
 
 	if selected_move.is_empty():
-		if try_draw_card(host, tree):
-			return true
 		end_turn(host)
 		return false
 
@@ -78,18 +76,6 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 	if tree != null and action_delay > 0.0:
 		await tree.create_timer(action_delay).timeout
 	end_turn(host)
-	return true
-
-func try_draw_card(host: NetworkGameHost, tree: SceneTree) -> bool:
-	if host == null or host.game_state == null or !host.can_draw_card_for_player(player_id):
-		return false
-
-	host.on_player_action({
-		"type": "draw_card",
-		"player_id": player_id,
-	})
-	if tree != null and action_delay > 0.0:
-		await tree.create_timer(action_delay).timeout
 	return true
 
 func end_turn(host: NetworkGameHost) -> void:

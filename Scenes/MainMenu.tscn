@@ -122,38 +122,19 @@ visible = false
 layout_mode = 2
 text = "Exit"
 
-[node name="AIVsAIControls" type="HBoxContainer" parent="." unique_id=155862287]
+[node name="AIVsAIControls" type="Control" parent="." unique_id=155862287]
 visible = false
 layout_mode = 1
 anchors_preset = 2
+anchor_right = 1.0
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
 offset_top = -56.0
-offset_right = 900.0
+offset_right = -16.0
 offset_bottom = -16.0
+grow_horizontal = 2
 grow_vertical = 0
-
-[node name="MatchCountField" type="LineEdit" parent="AIVsAIControls" unique_id=1242614590]
-custom_minimum_size = Vector2(96, 0)
-layout_mode = 2
-text = "1"
-placeholder_text = "Matches"
-
-[node name="CsvLogDirField" type="LineEdit" parent="AIVsAIControls" unique_id=1869860804]
-custom_minimum_size = Vector2(460, 0)
-layout_mode = 2
-text = "user://ai_match_logs"
-placeholder_text = "CSV folder"
-
-[node name="FastModeCheck" type="CheckBox" parent="AIVsAIControls"]
-custom_minimum_size = Vector2(104, 0)
-layout_mode = 2
-text = "Fast"
-
-[node name="AIVsAIButton" type="Button" parent="AIVsAIControls" unique_id=991887199]
-layout_mode = 2
-text = "AI vs AI"
 
 [node name="Label" type="Label" parent="." unique_id=1540343529]
 layout_mode = 0
@@ -161,9 +142,111 @@ offset_right = 40.0
 offset_bottom = 23.0
 text = "Golem v0.0.6 alpha"
 
+[node name="DevToolsWindow" type="Window" parent="."]
+title = "Developer Tools"
+position = Vector2i(260, 145)
+size = Vector2i(760, 430)
+visible = false
+
+[node name="DevToolsRoot" type="VBoxContainer" parent="DevToolsWindow"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = -18.0
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="DevToolsWindow/DevToolsRoot"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Developer Tools"
+
+[node name="AIVsAISection" type="VBoxContainer" parent="DevToolsWindow/DevToolsRoot"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AIVsAILabel" type="Label" parent="DevToolsWindow/DevToolsRoot/AIVsAISection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "AI vs AI"
+
+[node name="AIVsAIControls" type="HBoxContainer" parent="DevToolsWindow/DevToolsRoot/AIVsAISection"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MatchCountField" type="LineEdit" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls"]
+custom_minimum_size = Vector2(96, 36)
+layout_mode = 2
+text = "1"
+placeholder_text = "Matches"
+
+[node name="FastModeCheck" type="CheckBox" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls"]
+custom_minimum_size = Vector2(104, 36)
+layout_mode = 2
+text = "Fast"
+
+[node name="RandomDeckCheck" type="CheckBox" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls"]
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Random decks"
+
+[node name="AIVsAIButton" type="Button" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls"]
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+text = "Run AI Matches"
+
+[node name="CsvLogDirField" type="LineEdit" parent="DevToolsWindow/DevToolsRoot/AIVsAISection"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+text = "user://ai_match_logs"
+placeholder_text = "CSV/log folder"
+
+[node name="AIDeckOptionButton" type="OptionButton" parent="DevToolsWindow/DevToolsRoot/AIVsAISection"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+tooltip_text = "Both AI players use this saved deck."
+
+[node name="Separator" type="HSeparator" parent="DevToolsWindow/DevToolsRoot"]
+layout_mode = 2
+
+[node name="BalanceSection" type="VBoxContainer" parent="DevToolsWindow/DevToolsRoot"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BalanceLabel" type="Label" parent="DevToolsWindow/DevToolsRoot/BalanceSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Card Balance"
+
+[node name="BalanceButtons" type="HBoxContainer" parent="DevToolsWindow/DevToolsRoot/BalanceSection"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PromoteCardValuesButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons"]
+custom_minimum_size = Vector2(180, 36)
+layout_mode = 2
+text = "Promote Card Values"
+
+[node name="OpenLogsButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons"]
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+text = "Open Logs"
+
+[node name="ResetSessionsButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons"]
+custom_minimum_size = Vector2(170, 36)
+layout_mode = 2
+text = "Reset Sessions"
+
+[node name="BalanceStatusLabel" type="Label" parent="DevToolsWindow/DevToolsRoot/BalanceSection"]
+layout_mode = 2
+text = "Balance sessions are saved during AI vs AI runs."
+autowrap_mode = 2
+
 [connection signal="pressed" from="VBoxContainer/SingleplayerButton" to="." method="_on_singleplayer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/TutorialButton" to="." method="_on_tutorial_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MultiplayerButton" to="." method="_on_multiplayer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/DeckbuilderButton" to="." method="_on_deckbuilder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ExitButton" to="." method="_on_exit_button_pressed"]
-[connection signal="pressed" from="AIVsAIControls/AIVsAIButton" to="." method="_on_ai_vs_ai_button_pressed"]

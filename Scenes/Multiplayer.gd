@@ -331,6 +331,10 @@ func get_player_names_by_id() -> Dictionary:
 
 func get_starting_deck_for_player_id(player_id: int) -> Array[String]:
 	if GameConfig.is_singleplayer:
+		if GameConfig.should_ai_vs_ai_use_random_database_decks():
+			return DeckManager.create_random_database_deck()
+		if GameConfig.is_ai_vs_ai_batch:
+			return GameConfig.get_selected_ai_deck_card_names()
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
 			return GameConfig.get_selected_deck_card_names()
 		return GameConfig.get_selected_ai_deck_card_names()

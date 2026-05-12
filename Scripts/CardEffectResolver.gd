@@ -474,13 +474,7 @@ static func expire_piece_card_due_to_duration_adjustment(game_state: GameStateDa
 
 	if MoveRules.is_nexus_card(expired_card):
 		clear_nexus_position_if_needed(game_state, piece_owner_player_id, true)
-		var nexus_card_returned: bool = return_card_to_owner_hand(game_state, piece_owner_player_id, expired_card.card_name, piece_pos)
-		if !nexus_card_returned && !player_has_available_nexus_card(game_state, piece_owner_player_id):
-			game_state.game_over = true
-			game_state.winner_player = 1 - piece_owner_player_id
-			game_state.win_condition = "nexus_card_lost"
-			if game_state.match_logger != null:
-				game_state.match_logger.log_match_end(game_state, game_state.win_condition)
+		return_card_to_owner_deck(game_state, piece_owner_player_id, expired_card.card_name, piece_pos, "expired_nexus")
 		return
 
 	register_card_expiration(game_state, piece_owner_player_id, expired_card.card_name, piece_pos)
@@ -513,8 +507,6 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 
 	if target_card != null:
 		if target_was_nexus:
-			return_card_to_owner_deck(game_state, target_player_id, target_card.card_name, target_pos)
-		elif target_piece.turns_remaining > 0:
 			return_card_to_owner_deck(game_state, target_player_id, target_card.card_name, target_pos)
 
 	target_piece.detach_card()
@@ -552,7 +544,7 @@ static func get_random_empty_home_position(game_state: GameStateData, player_id:
 
 	return empty_positions[randi() % empty_positions.size()]
 
-static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id: int, card_name: String, source_pos: Vector2 = Vector2(-1, -1)) -> void:
+static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id: int, card_name: String, source_pos: Vector2 = Vector2(-1, -1), reason: String = "effect_capture") -> void:
 	var deck: Array[String] = []
 	if game_state.player_decks.has(owner_player_id):
 		deck.assign(game_state.player_decks[owner_player_id])
@@ -565,40 +557,8 @@ static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id
 			"card_name": card_name,
 			"returned_card": card_name,
 			"target_zone": "deck",
-			"reason": "effect_capture",
+			"reason": reason,
 		})
-
-static func return_card_to_owner_hand(game_state: GameStateData, owner_player_id: int, card_name: String, source_pos: Vector2 = Vector2(-1, -1)) -> bool:
-	if !game_state.player_hands.has(owner_player_id):
-		game_state.player_hands[owner_player_id] = []
-	var hand: Array = game_state.player_hands[owner_player_id]
-	if hand.size() >= DeckManager.HAND_SIZE:
-		log_deleted_card(game_state, owner_player_id, card_name, "effect_capture_nexus_hand_full")
-		DebugLog.info("Card deleted instead of returning to hand: player=%d, card=%s" % [owner_player_id, card_name])
-		return false
-	hand.append(card_name)
-	game_state.player_hands[owner_player_id] = hand
-	register_card_transfer(game_state, owner_player_id, owner_player_id, card_name, "piece", "hand", source_pos)
-	if game_state.match_logger != null:
-		game_state.match_logger.log_card_event(game_state, "return_to_hand", {
-			"player_id": owner_player_id,
-			"card_name": card_name,
-			"returned_card": card_name,
-			"target_zone": "hand",
-			"reason": "effect_capture_nexus",
-		})
-	return true
-
-static func log_deleted_card(game_state: GameStateData, owner_player_id: int, card_name: String, reason: String) -> void:
-	if game_state.match_logger == null:
-		return
-	game_state.match_logger.log_card_event(game_state, "delete_card", {
-		"player_id": owner_player_id,
-		"card_name": card_name,
-		"returned_card": card_name,
-		"target_zone": "deleted",
-		"reason": reason,
-	})
 
 static func player_has_available_nexus_card(game_state: GameStateData, player_id: int) -> bool:
 	if game_state.player_hands.has(player_id) && DeckManager.has_nexus_card(game_state.player_hands[player_id]):

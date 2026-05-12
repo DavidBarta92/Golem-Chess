@@ -6,11 +6,20 @@ const MAX_AI_VS_AI_MATCH_COUNT: int = 9999
 const TOP_BAR_HEIGHT: int = 60
 
 @onready var ai_vs_ai_controls: Control = $AIVsAIControls
-@onready var ai_match_count_field: LineEdit = $AIVsAIControls/MatchCountField
-@onready var ai_csv_log_dir_field: LineEdit = $AIVsAIControls/CsvLogDirField
-@onready var ai_fast_mode_check: CheckBox = $AIVsAIControls/FastModeCheck
+@onready var dev_tools_window: Window = $DevToolsWindow
+@onready var ai_match_count_field: LineEdit = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/MatchCountField
+@onready var ai_csv_log_dir_field: LineEdit = $DevToolsWindow/DevToolsRoot/AIVsAISection/CsvLogDirField
+@onready var ai_fast_mode_check: CheckBox = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/FastModeCheck
+@onready var ai_random_deck_check: CheckBox = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/RandomDeckCheck
+@onready var ai_vs_ai_button: Button = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/AIVsAIButton
+@onready var ai_deck_option_button: OptionButton = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIDeckOptionButton
+@onready var promote_card_values_button: Button = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons/PromoteCardValuesButton
+@onready var open_ai_logs_button: Button = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons/OpenLogsButton
+@onready var reset_balance_sessions_button: Button = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons/ResetSessionsButton
+@onready var balance_status_label: Label = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceStatusLabel
 
 var ai_vs_ai_unlock_presses: int = 0
+var ai_deck_ids: Array[String] = []
 var top_bar: HBoxContainer
 var settings_button: Button
 var settings_dialog: AcceptDialog
@@ -25,13 +34,21 @@ func _ready():
 	PlayerSettingsStore.ensure_loaded()
 	PlayerProgressStore.ensure_loaded()
 	ai_vs_ai_controls.visible = false
+	dev_tools_window.visible = false
+	_connect_once(dev_tools_window.close_requested, Callable(self, "_on_dev_tools_window_close_requested"))
 	hide_legacy_player_name_controls()
 	hide_legacy_exit_button()
 	_bind_top_bar()
 	create_settings_dialog()
-	ai_match_count_field.text = str(GameConfig.ai_vs_ai_match_count)
-	ai_csv_log_dir_field.text = GameConfig.get_ai_vs_ai_csv_log_dir()
-	ai_fast_mode_check.button_pressed = GameConfig.ai_vs_ai_fast_mode
+	sync_dev_tools_from_config()
+	_populate_ai_vs_ai_deck_options()
+	_connect_once(ai_random_deck_check.toggled, Callable(self, "_on_ai_random_deck_toggled"))
+	_connect_once(ai_deck_option_button.item_selected, Callable(self, "_on_ai_deck_option_selected"))
+	_connect_once(ai_vs_ai_button.pressed, Callable(self, "_on_ai_vs_ai_button_pressed"))
+	_connect_once(promote_card_values_button.pressed, Callable(self, "_on_promote_card_values_button_pressed"))
+	_connect_once(open_ai_logs_button.pressed, Callable(self, "_on_open_ai_logs_button_pressed"))
+	_connect_once(reset_balance_sessions_button.pressed, Callable(self, "_on_reset_balance_sessions_button_pressed"))
+	_update_ai_vs_ai_deck_controls()
 
 func _connect_once(signal_value: Signal, callable: Callable) -> void:
 	if !signal_value.is_connected(callable):
@@ -208,7 +225,9 @@ func create_settings_dialog() -> void:
 	audio_tab.name = "Audio"
 
 func _input(event):
-	if ai_vs_ai_controls.visible:
+	if !is_dev_tools_available():
+		return
+	if dev_tools_window.visible:
 		return
 	if get_viewport().gui_get_focus_owner() is LineEdit:
 		return
@@ -220,9 +239,39 @@ func _input(event):
 	if key_event.keycode == AI_VS_AI_UNLOCK_KEY:
 		ai_vs_ai_unlock_presses += 1
 		if ai_vs_ai_unlock_presses >= AI_VS_AI_UNLOCK_PRESS_COUNT:
-			ai_vs_ai_controls.visible = true
+			show_dev_tools_window()
 	else:
 		ai_vs_ai_unlock_presses = 0
+
+func is_dev_tools_available() -> bool:
+	return OS.is_debug_build()
+
+func show_dev_tools_window() -> void:
+	sync_dev_tools_from_config()
+	_populate_ai_vs_ai_deck_options()
+	_update_ai_vs_ai_deck_controls()
+	ai_vs_ai_unlock_presses = 0
+	var target_size := Vector2i(760, 430)
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	dev_tools_window.size = target_size
+	dev_tools_window.position = Vector2i(
+		maxi(0, int((viewport_size.x - float(target_size.x)) * 0.5)),
+		maxi(0, int((viewport_size.y - float(target_size.y)) * 0.5))
+	)
+	dev_tools_window.visible = true
+	ai_match_count_field.grab_focus()
+
+func sync_dev_tools_from_config() -> void:
+	ai_match_count_field.text = str(GameConfig.ai_vs_ai_match_count)
+	ai_csv_log_dir_field.text = GameConfig.get_ai_vs_ai_csv_log_dir()
+	ai_fast_mode_check.button_pressed = GameConfig.ai_vs_ai_fast_mode
+	ai_random_deck_check.button_pressed = GameConfig.ai_vs_ai_use_random_database_decks
+	if balance_status_label != null:
+		balance_status_label.text = "Balance sessions are saved during AI vs AI runs."
+
+func _on_dev_tools_window_close_requested() -> void:
+	dev_tools_window.hide()
+	ai_vs_ai_unlock_presses = 0
 
 func _on_singleplayer_button_pressed():
 	save_player_name()
@@ -233,6 +282,8 @@ func _on_tutorial_button_pressed():
 	get_tree().change_scene_to_file("res://Scenes/Tutorial.tscn")
 
 func _on_ai_vs_ai_button_pressed():
+	if !is_dev_tools_available():
+		return
 	save_player_name()
 	var match_count: int = get_ai_vs_ai_match_count()
 	GameConfig.is_singleplayer = true
@@ -240,8 +291,49 @@ func _on_ai_vs_ai_button_pressed():
 	GameConfig.server_ip = ""
 	GameConfig.set_ai_vs_ai_csv_log_dir(ai_csv_log_dir_field.text)
 	GameConfig.set_ai_vs_ai_fast_mode(ai_fast_mode_check.button_pressed)
+	GameConfig.set_ai_vs_ai_use_random_database_decks(ai_random_deck_check.button_pressed)
+	if !ai_random_deck_check.button_pressed:
+		var selected_deck_id: String = get_selected_ai_vs_ai_deck_id()
+		if !selected_deck_id.is_empty():
+			GameConfig.select_deck_for_both_players(selected_deck_id)
 	GameConfig.start_ai_vs_ai_batch(match_count)
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
+
+func _on_promote_card_values_button_pressed() -> void:
+	if !is_dev_tools_available():
+		return
+
+	GameConfig.set_ai_vs_ai_csv_log_dir(ai_csv_log_dir_field.text)
+	var result: Dictionary = CardBalanceStore.promote_unpromoted_sessions(GameConfig.get_ai_vs_ai_csv_log_dir())
+	var merged_sessions: Array = result.get("merged_sessions", [])
+	var skipped_sessions: Array = result.get("skipped_sessions", [])
+	var failed_sessions: Array = result.get("failed_sessions", [])
+	if bool(result.get("ok", false)):
+		balance_status_label.text = "Promoted %d session(s). Skipped %d, failed %d." % [
+			merged_sessions.size(),
+			skipped_sessions.size(),
+			failed_sessions.size(),
+		]
+	else:
+		balance_status_label.text = "Could not save promoted card values."
+
+func _on_open_ai_logs_button_pressed() -> void:
+	if !is_dev_tools_available():
+		return
+
+	GameConfig.set_ai_vs_ai_csv_log_dir(ai_csv_log_dir_field.text)
+	var absolute_path: String = CardBalanceStore.globalize_path(GameConfig.get_ai_vs_ai_csv_log_dir())
+	DirAccess.make_dir_recursive_absolute(absolute_path)
+	OS.shell_open(absolute_path)
+	balance_status_label.text = "Opened AI log folder."
+
+func _on_reset_balance_sessions_button_pressed() -> void:
+	if !is_dev_tools_available():
+		return
+
+	GameConfig.set_ai_vs_ai_csv_log_dir(ai_csv_log_dir_field.text)
+	var deleted_count: int = CardBalanceStore.delete_session_files(GameConfig.get_ai_vs_ai_csv_log_dir())
+	balance_status_label.text = "Deleted %d balance session file(s). CSV logs were kept." % deleted_count
 
 func get_ai_vs_ai_match_count() -> int:
 	var match_count: int = int(ai_match_count_field.text.strip_edges())
@@ -250,6 +342,61 @@ func get_ai_vs_ai_match_count() -> int:
 	if match_count > MAX_AI_VS_AI_MATCH_COUNT:
 		return MAX_AI_VS_AI_MATCH_COUNT
 	return match_count
+
+func _populate_ai_vs_ai_deck_options() -> void:
+	if ai_deck_option_button == null:
+		return
+
+	ai_deck_option_button.clear()
+	ai_deck_ids.clear()
+
+	var all_decks: Array = PlayerDeckStore.list_decks()
+	var playable_decks: Array = PlayerDeckStore.list_playable_decks()
+	if playable_decks.is_empty():
+		var empty_text: String = "No saved decks" if all_decks.is_empty() else "No complete decks"
+		ai_deck_option_button.add_item(empty_text)
+		ai_deck_option_button.disabled = true
+		return
+
+	var selected_index: int = 0
+	var current_deck_id: String = GameConfig.get_selected_ai_deck_id()
+	for deck in playable_decks:
+		if !(deck is Dictionary):
+			continue
+		var deck_id: String = str(deck.get("deck_id", ""))
+		if deck_id.is_empty():
+			continue
+		ai_deck_ids.append(deck_id)
+		ai_deck_option_button.add_item(str(deck.get("name", "Unnamed deck")))
+		if deck_id == current_deck_id:
+			selected_index = ai_deck_ids.size() - 1
+
+	if !ai_deck_ids.is_empty():
+		ai_deck_option_button.select(selected_index)
+
+func get_selected_ai_vs_ai_deck_id() -> String:
+	var selected_index: int = ai_deck_option_button.selected
+	if selected_index < 0 or selected_index >= ai_deck_ids.size():
+		return ""
+	return ai_deck_ids[selected_index]
+
+func _on_ai_deck_option_selected(_index: int) -> void:
+	var selected_deck_id: String = get_selected_ai_vs_ai_deck_id()
+	if !selected_deck_id.is_empty():
+		GameConfig.set_selected_ai_deck_id(selected_deck_id)
+
+func _on_ai_random_deck_toggled(enabled: bool) -> void:
+	GameConfig.set_ai_vs_ai_use_random_database_decks(enabled)
+	_update_ai_vs_ai_deck_controls()
+
+func _update_ai_vs_ai_deck_controls() -> void:
+	if ai_deck_option_button == null:
+		return
+	ai_deck_option_button.disabled = ai_random_deck_check.button_pressed or ai_deck_ids.is_empty()
+	if ai_random_deck_check.button_pressed:
+		ai_deck_option_button.tooltip_text = "Random database decks are enabled."
+	else:
+		ai_deck_option_button.tooltip_text = "Both AI players use this saved deck."
 
 func save_player_name() -> void:
 	PlayerSettingsStore.set_player_name(PlayerSettingsStore.get_player_name())

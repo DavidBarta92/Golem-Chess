@@ -2,3 +2,7 @@
 .godot/
 /android/
 *.tmp
+
+# Generated when Godot sees the local CSV balance report as translation data.
+analysis_outputs/card_balance_report.csv.import
+analysis_outputs/card_balance_report*.translation

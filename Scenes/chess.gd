@@ -111,7 +111,7 @@ var moved_piece_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
-var drawn_card_this_turn: Dictionary = {
+var exchanged_card_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
@@ -359,7 +359,7 @@ func reset_tutorial_turn_state() -> void:
 	for owner_color in [1, -1]:
 		attached_card_this_turn[owner_color] = false
 		moved_piece_this_turn[owner_color] = false
-		drawn_card_this_turn[owner_color] = false
+		exchanged_card_this_turn[owner_color] = false
 		played_card_hand_slots_this_turn[owner_color] = []
 		exchanged_card_names_this_turn[owner_color] = []
 	local_auto_end_turn_pending = false
@@ -458,26 +458,6 @@ func draw_starting_cards_from_deck(owner_color: int) -> Array[Card]:
 	var deck: Array[String] = get_card_deck(owner_color)
 	DeckManager.draw_starting_hand(deck, hand_names)
 	return create_card_hand_from_names(hand_names)
-
-func draw_cards_from_deck(owner_color: int, amount: int) -> Array[Card]:
-	var hand: Array[Card] = []
-	for i in amount:
-		var card_name: String = draw_card_name(owner_color)
-		if card_name.is_empty():
-			continue
-
-		var card: Card = CardLibrary.duplicate_card(card_name)
-		if card:
-			hand.append(card)
-
-	return hand
-
-func draw_card_name(owner_color: int) -> String:
-	var deck: Array[String] = get_card_deck(owner_color)
-	if deck.is_empty():
-		return ""
-
-	return deck.pop_front()
 
 func create_card_hand_from_names(card_names: Array) -> Array[Card]:
 	var hand: Array[Card] = []
@@ -1174,39 +1154,8 @@ func tick_board_effects_locally() -> void:
 
 	current_board_effects = remaining_effects
 
-func tick_attached_cards_locally() -> void:
-	var positions: Array = piece_objects.keys()
-	for position_value in positions:
-		var piece_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
-		if !piece_objects.has(piece_pos):
-			continue
-
-		var piece: Piece = piece_objects[piece_pos] as Piece
-		if piece == null or piece.attached_card == null:
-			continue
-
-		var expired_card: Card = piece.use_turn()
-		if expired_card == null:
-			continue
-		if MoveRules.is_nexus_card(expired_card):
-			handle_expired_nexus_card_locally(piece.color, expired_card)
-			continue
-		queue_card_expire_animation(piece_pos, expired_card)
-
 func handle_expired_nexus_card_locally(owner_color: int, expired_card: Card) -> void:
-	var hand: Array[Card] = get_card_hand(owner_color)
-	if hand.size() >= DeckManager.HAND_SIZE:
-		DebugLog.info("Nexus card deleted because the hand is full.")
-		if !player_has_available_nexus_card(owner_color):
-			finish_game(-owner_color)
-		return
-
-	var returned_card: Card = expired_card.duplicate() as Card
-	if returned_card != null:
-		hand.append(returned_card)
-
-func should_tick_attached_cards_this_end_turn_locally() -> bool:
-	return false
+	DeckManager.return_card_to_deck(get_card_deck(owner_color), expired_card.card_name)
 
 func update_card_face_visibility(local_color: int):
 	for card_visual in white_card_visuals:
@@ -1252,7 +1201,7 @@ func reset_current_turn_card_attach():
 	var current_color: int = get_current_turn_color()
 	attached_card_this_turn[current_color] = false
 	moved_piece_this_turn[current_color] = false
-	drawn_card_this_turn[current_color] = false
+	exchanged_card_this_turn[current_color] = false
 	played_card_hand_slots_this_turn[current_color] = []
 	exchanged_card_names_this_turn[current_color] = []
 	update_action_status_ui()
@@ -1271,11 +1220,11 @@ func mark_piece_moved_this_turn(owner_color: int):
 	update_end_turn_button()
 	update_action_status_ui()
 
-func has_drawn_card_this_turn(owner_color: int) -> bool:
-	return bool(drawn_card_this_turn.get(owner_color, false))
+func has_exchanged_card_this_turn(owner_color: int) -> bool:
+	return bool(exchanged_card_this_turn.get(owner_color, false))
 
-func mark_card_drawn_this_turn(owner_color: int):
-	drawn_card_this_turn[owner_color] = true
+func mark_card_exchanged_this_turn(owner_color: int):
+	exchanged_card_this_turn[owner_color] = true
 	update_action_status_ui()
 
 func _on_card_drag_started(card_visual: CardVisual):
@@ -1358,7 +1307,7 @@ func can_exchange_card_locally(owner_color: int) -> bool:
 		"owner_color": owner_color,
 	}):
 		return false
-	if has_drawn_card_this_turn(owner_color):
+	if has_exchanged_card_this_turn(owner_color):
 		return false
 	if get_card_hand(owner_color).is_empty():
 		return false
@@ -1389,7 +1338,7 @@ func exchange_card_visual_with_deck(card_visual: CardVisual) -> void:
 
 	if GameController.current_game_host:
 		if send_card_exchange_action(owner_color, card_name, hand_index):
-			mark_card_drawn_this_turn(owner_color)
+			mark_card_exchanged_this_turn(owner_color)
 			card_exchanged.emit(card_name, owner_color, hand_index)
 		if is_instance_valid(card_visual):
 			card_visual.fly_home()
@@ -1408,7 +1357,7 @@ func exchange_card_visual_with_deck(card_visual: CardVisual) -> void:
 	remove_card_from_hand_index(owner_color, hand_index, true, replacement_card_name)
 	DeckManager.return_card_to_deck(deck, card_name)
 	record_exchanged_card_name_this_turn(owner_color, card_name)
-	mark_card_drawn_this_turn(owner_color)
+	mark_card_exchanged_this_turn(owner_color)
 	card_exchanged.emit(card_name, owner_color, hand_index)
 
 func send_card_exchange_action(owner_color: int, card_name: String, hand_index: int) -> bool:
@@ -1605,8 +1554,6 @@ func remove_card_from_hand_index(owner_color: int, hand_index: int, should_draw_
 	var drawn_card_name: String = ""
 	if should_draw_replacement:
 		drawn_card_name = replacement_card_name
-		if drawn_card_name.is_empty():
-			drawn_card_name = draw_card_name(owner_color)
 		if !drawn_card_name.is_empty():
 			insert_drawn_card(owner_color, hand_index, drawn_card_name)
 		else:
@@ -2010,37 +1957,6 @@ func is_mouse_over_deck(owner_color: int) -> bool:
 
 	return deck_visual.get_global_rect().has_point(get_viewport().get_mouse_position())
 
-func try_handle_deck_click() -> bool:
-	return false
-
-func can_draw_card_locally(owner_color: int) -> bool:
-	return false
-
-func request_card_draw(owner_color: int):
-	if GameController.current_game_host:
-		GameController.send_action({
-			"type": "draw_card",
-			"player_id": get_player_id_for_color(owner_color),
-		})
-		mark_card_drawn_this_turn(owner_color)
-		return
-
-	var card_name: String = draw_card_name(owner_color)
-	if card_name.is_empty():
-		return
-	if get_card_hand(owner_color).size() >= DeckManager.HAND_SIZE:
-		queue_card_transfer_burn_animation({
-			"source_player_id": get_player_id_for_color(owner_color),
-			"target_player_id": get_player_id_for_color(owner_color),
-			"card_name": card_name,
-			"source_zone": "deck",
-			"target_zone": "deleted",
-		})
-		mark_card_drawn_this_turn(owner_color)
-		return
-	insert_drawn_card(owner_color, get_card_hand(owner_color).size(), card_name)
-	mark_card_drawn_this_turn(owner_color)
-
 func select_piece_for_action(piece_pos: Vector2) -> bool:
 	var player_id: int = get_own_player_id()
 	if !can_player_control_piece_at(piece_pos, player_id):
@@ -2090,9 +2006,6 @@ func _input(event):
 	if can_control_current_turn():
 		if event is InputEventMouseButton && event.pressed:
 			if event.button_index == MOUSE_BUTTON_LEFT:
-				if try_handle_deck_click():
-					get_viewport().set_input_as_handled()
-					return
 				if is_mouse_out(): return
 				if has_moved_piece_this_turn(get_controllable_color()):
 					return
@@ -2411,8 +2324,6 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 
 	if captured_nexus:
 		return_captured_nexus_card_to_deck(captured_piece)
-	elif captured_piece != null && captured_piece.attached_card != null && captured_piece.turns_remaining > 0:
-		DeckManager.return_card_to_deck(get_card_deck(captured_piece.color), captured_piece.attached_card.card_name)
 	if captured_piece != null:
 		captured_piece.detach_card()
 
@@ -2816,7 +2727,6 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 				piece.attach_card(card)
 				piece.turns_remaining = int(data.turns_remaining)
 				piece.exhausted_this_turn = bool(data.get("exhausted_this_turn", false))
-				piece.skip_next_duration_tick = bool(data.get("skip_next_duration_tick", false))
 
 		piece_objects[piece_position] = piece
 		if is_valid_position(piece_position):

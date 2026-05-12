@@ -24,7 +24,7 @@ var moved_piece_this_turn: Dictionary = {
 	0: false,
 	1: false,
 }
-var drawn_card_this_turn: Dictionary = {
+var exchanged_card_this_turn: Dictionary = {
 	0: false,
 	1: false,
 }
@@ -60,6 +60,6 @@ func switch_turn():
 	current_turn_player = 1 - current_turn_player
 	attached_card_this_turn[current_turn_player] = false
 	moved_piece_this_turn[current_turn_player] = false
-	drawn_card_this_turn[current_turn_player] = false
+	exchanged_card_this_turn[current_turn_player] = false
 	played_card_hand_slots_this_turn[current_turn_player] = []
 	exchanged_card_names_this_turn[current_turn_player] = []

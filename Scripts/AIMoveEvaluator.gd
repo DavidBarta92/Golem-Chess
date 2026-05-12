@@ -102,11 +102,6 @@ const SCORE_NEXUS_BASE_PROGRESS: float = 35.0
 const SCORE_ATTACH_CARD: float = 10.0
 const SCORE_CENTER: float = 4.0
 const SCORE_USE_EXISTING_CARD: float = 4.0
-const SCORE_DRAW_HAND_LOW: float = 42.0
-const SCORE_DRAW_HAND_TWO: float = 24.0
-const SCORE_DRAW_HAND_THREE: float = 5.0
-const PENALTY_DRAW_HAND_FOUR: float = 14.0
-const PENALTY_DRAW_FULL_HAND: float = 120.0
 const SCORE_ATTACH_SETUP_MOBILITY: float = 5.0
 const PENALTY_ATTACH_SETUP_NO_MOVE: float = 8.0
 const PENALTY_GIVE_CARD: float = 35.0
@@ -123,6 +118,10 @@ const PENALTY_MOVE_BASE_NOOP: float = 20.0
 const PENALTY_NEXUS_THREATENED: float = 1400.0
 const PENALTY_PIECE_THREATENED: float = 35.0
 const DEFAULT_OPPONENT_RESPONSE_WEIGHT: float = 0.62
+const CARD_VALUE_ATTACH_PLAY_WEIGHT: float = 0.5
+const CARD_VALUE_ATTACH_EXCHANGE_WEIGHT: float = 0.6
+const CARD_VALUE_CAPTURE_WEIGHT: float = 1.2
+const CARD_VALUE_DANGER_WEIGHT: float = 1.2
 
 var difficulty_level: int = DEFAULT_DIFFICULTY_LEVEL
 var search_depth: int = 1
@@ -399,8 +398,6 @@ func usec_to_ms(elapsed_usec: int) -> float:
 
 func score_turn_plan_fast(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
 	var score: float = 0.0
-	if bool(plan.get("uses_draw", false)):
-		score += score_draw_action(game_state, player_id, str(plan.get("drawn_card_name", ""))) * 0.85
 
 	var setup_attach_actions: Array = plan.get("setup_attach_actions", [])
 	for attach_action_value in setup_attach_actions:
@@ -437,6 +434,7 @@ func score_attach_setup_fast(game_state: GameStateData, player_id: int, attach_a
 	if MoveRules.is_nexus_card(card):
 		score += SCORE_ATTACH_NEXUS * 0.85
 	score += float(card.get_directions().size()) * 2.5
+	score += get_card_balance_value(card) * CARD_VALUE_ATTACH_PLAY_WEIGHT
 	score += score_card_effect_fast(game_state, player_id, piece, card, piece_pos, piece_pos, null, move, board_size) * 0.65
 	return score
 
@@ -457,6 +455,7 @@ func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary
 			score += SCORE_ATTACH_CARD + max(0, card.duration) * 2.0
 			if MoveRules.is_nexus_card(card):
 				score += SCORE_ATTACH_NEXUS * 0.85
+			score += get_card_balance_value(card) * CARD_VALUE_ATTACH_PLAY_WEIGHT
 	else:
 		score += SCORE_USE_EXISTING_CARD
 
@@ -613,13 +612,9 @@ func score_turn_plan(game_state: GameStateData, player_id: int, plan: Dictionary
 	return float(breakdown.get("total", 0.0))
 
 func score_turn_plan_breakdown(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> Dictionary:
-	var draw_score: float = 0.0
 	var move_score: float = 0.0
 	var setup_score: float = 0.0
 	var action_score: float = 0.0
-
-	if bool(plan.get("uses_draw", false)):
-		draw_score = score_draw_action(game_state, player_id, str(plan.get("drawn_card_name", "")))
 
 	var move: Dictionary = plan.get("move", {})
 	if !move.is_empty():
@@ -632,59 +627,27 @@ func score_turn_plan_breakdown(game_state: GameStateData, player_id: int, plan: 
 
 	var actions: Array = plan.get("actions", [])
 	action_score = -float(maxi(0, actions.size() - 1)) * 0.8
-	var total_score: float = draw_score + move_score + setup_score + action_score
+	var total_score: float = move_score + setup_score + action_score
 	return {
-		"draw": draw_score,
 		"move": move_score,
 		"setup": setup_score,
 		"action_count": action_score,
 		"total": total_score,
 	}
 
-func score_draw_action(game_state: GameStateData, player_id: int, drawn_card_name: String) -> float:
-	var hand_size: int = 0
-	if game_state.player_hands.has(player_id):
-		var hand: Array = game_state.player_hands[player_id]
-		hand_size = hand.size()
-
-	var score: float = get_draw_hand_size_score(hand_size)
-	if hand_size >= DeckManager.HAND_SIZE:
-		return score
-
-	var drawn_card: Card = CardLibrary.get_card(drawn_card_name)
-	if drawn_card != null:
-		var card_quality_score: float = max(0, drawn_card.duration) * 1.25
-		if MoveRules.is_nexus_card(drawn_card):
-			card_quality_score += SCORE_ATTACH_NEXUS * 0.15
-		if drawn_card.has_effect():
-			card_quality_score += 4.0
-		score += card_quality_score * get_draw_card_quality_multiplier(hand_size)
-
-	return score
-
-func get_draw_hand_size_score(hand_size: int) -> float:
-	if hand_size <= 1:
-		return SCORE_DRAW_HAND_LOW
-	if hand_size == 2:
-		return SCORE_DRAW_HAND_TWO
-	if hand_size == 3:
-		return SCORE_DRAW_HAND_THREE
-	if hand_size == 4:
-		return -PENALTY_DRAW_HAND_FOUR
-	return -PENALTY_DRAW_FULL_HAND
-
-func get_draw_card_quality_multiplier(hand_size: int) -> float:
-	if hand_size <= 1:
-		return 0.85
-	if hand_size == 2:
-		return 0.60
-	if hand_size == 3:
-		return 0.30
-	if hand_size == 4:
-		return 0.10
-	return 0.0
-
 func score_attach_setup(game_state: GameStateData, player_id: int, attach_action: Dictionary, board_size: int) -> float:
+	return score_attach_setup_with_card_value_weight(game_state, player_id, attach_action, board_size, CARD_VALUE_ATTACH_PLAY_WEIGHT)
+
+func score_attach_setup_for_exchange(game_state: GameStateData, player_id: int, attach_action: Dictionary, board_size: int) -> float:
+	return score_attach_setup_with_card_value_weight(game_state, player_id, attach_action, board_size, CARD_VALUE_ATTACH_EXCHANGE_WEIGHT)
+
+func score_attach_setup_with_card_value_weight(
+	game_state: GameStateData,
+	player_id: int,
+	attach_action: Dictionary,
+	board_size: int,
+	card_value_weight: float
+) -> float:
 	var piece_pos: Vector2 = CardEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 	var piece: Piece = game_state.get_piece(piece_pos)
 	if piece == null:
@@ -712,6 +675,7 @@ func score_attach_setup(game_state: GameStateData, player_id: int, attach_action
 	score += float(setup_moves.size()) * SCORE_ATTACH_SETUP_MOBILITY
 	if setup_moves.is_empty():
 		score -= PENALTY_ATTACH_SETUP_NO_MOVE
+	score += get_card_balance_value(card) * card_value_weight
 
 	var setup_move: Dictionary = {
 		"from": piece_pos,
@@ -774,10 +738,13 @@ func score_attached_card(
 		score += SCORE_ATTACH_NEXUS
 
 	score += max(0, card.duration) * 3.0
+	score += get_card_balance_value(card) * CARD_VALUE_ATTACH_PLAY_WEIGHT
 	score += score_card_effect(game_state, player_id, moving_piece, card, from_pos, to_pos, captured_piece, move, board_size)
 	return score
 
 func score_capture(captured_piece: Piece) -> float:
+	if captured_piece == null:
+		return 0.0
 	if CardEffectResolver.is_nexus_piece(captured_piece):
 		return SCORE_CAPTURE_NEXUS
 
@@ -785,6 +752,7 @@ func score_capture(captured_piece: Piece) -> float:
 	if captured_piece.attached_card != null:
 		score += SCORE_CAPTURE_CARD
 		score += max(0, captured_piece.turns_remaining) * 8.0
+		score += get_card_balance_value(captured_piece.attached_card) * CARD_VALUE_CAPTURE_WEIGHT
 	return score
 
 func score_nexus_base_progress(game_state: GameStateData, player_id: int, from_pos: Vector2, to_pos: Vector2) -> float:
@@ -834,7 +802,12 @@ func score_danger_after_move(game_state: GameStateData, player_id: int, move: Di
 
 	if AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
 		return PENALTY_NEXUS_THREATENED
-	return PENALTY_PIECE_THREATENED
+
+	var threatened_piece: Piece = simulated_pieces.get(to_pos, null) as Piece
+	var danger_score: float = PENALTY_PIECE_THREATENED
+	if threatened_piece != null and threatened_piece.attached_card != null:
+		danger_score += get_card_balance_value(threatened_piece.attached_card) * CARD_VALUE_DANGER_WEIGHT
+	return maxf(0.0, danger_score)
 
 func score_card_effect(
 	game_state: GameStateData,
@@ -1170,13 +1143,9 @@ func simulate_piece_move(source_pieces: Dictionary, from_pos: Vector2, to_pos: V
 	return simulated_pieces
 
 func get_piece_target_score(piece: Piece) -> float:
-	if piece == null:
-		return 0.0
-	if CardEffectResolver.is_nexus_piece(piece):
-		return SCORE_CAPTURE_NEXUS
+	return score_capture(piece)
 
-	var score: float = SCORE_CAPTURE_PIECE
-	if piece.attached_card != null:
-		score += SCORE_CAPTURE_CARD
-		score += max(0, piece.turns_remaining) * 8.0
-	return score
+func get_card_balance_value(card: Card) -> float:
+	if card == null:
+		return 0.0
+	return CardBalanceStore.get_card_value(card.card_name, 0.0)

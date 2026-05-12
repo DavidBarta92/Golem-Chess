@@ -20,6 +20,7 @@ var ai_vs_ai_matches_played: int = 0
 var ai_vs_ai_log_session_id: String = ""
 var ai_vs_ai_csv_log_dir: String = DEFAULT_AI_VS_AI_CSV_LOG_DIR
 var ai_vs_ai_fast_mode: bool = false
+var ai_vs_ai_use_random_database_decks: bool = false
 var selected_deck_id: String = ""
 var selected_ai_deck_id: String = ""
 var ai_vs_ai_results: Dictionary = {
@@ -93,13 +94,19 @@ func start_ai_vs_ai_batch(match_count: int) -> void:
 		1: 0,
 	}
 	set_singleplayer_controllers(CONTROLLER_AI, CONTROLLER_AI)
-	select_default_decks()
+	ensure_selected_decks()
 
 func set_ai_vs_ai_fast_mode(enabled: bool) -> void:
 	ai_vs_ai_fast_mode = enabled
 
 func should_skip_ai_vs_ai_delays() -> bool:
 	return is_ai_vs_ai_batch && ai_vs_ai_fast_mode
+
+func set_ai_vs_ai_use_random_database_decks(enabled: bool) -> void:
+	ai_vs_ai_use_random_database_decks = enabled
+
+func should_ai_vs_ai_use_random_database_decks() -> bool:
+	return is_ai_vs_ai_batch && ai_vs_ai_use_random_database_decks
 
 func set_ai_vs_ai_csv_log_dir(log_dir: String) -> void:
 	var cleaned_log_dir: String = log_dir.strip_edges()
@@ -152,6 +159,19 @@ func select_default_decks() -> void:
 	var default_deck_id: String = PlayerDeckStore.get_default_playable_deck_id()
 	selected_deck_id = default_deck_id
 	selected_ai_deck_id = default_deck_id
+
+func select_deck_for_both_players(deck_id: String) -> void:
+	var cleaned_deck_id: String = deck_id.strip_edges()
+	selected_deck_id = cleaned_deck_id
+	selected_ai_deck_id = cleaned_deck_id
+
+func ensure_selected_decks() -> void:
+	if selected_deck_id.strip_edges().is_empty() or !PlayerDeckStore.is_deck_playable_id(selected_deck_id):
+		select_first_available_deck()
+	if selected_ai_deck_id.strip_edges().is_empty() or !PlayerDeckStore.is_deck_playable_id(selected_ai_deck_id):
+		selected_ai_deck_id = selected_deck_id
+		if selected_ai_deck_id.strip_edges().is_empty() or !PlayerDeckStore.is_deck_playable_id(selected_ai_deck_id):
+			select_first_available_ai_deck()
 
 func get_selected_ai_deck_card_names() -> Array[String]:
 	var deck_id: String = get_selected_ai_deck_id()

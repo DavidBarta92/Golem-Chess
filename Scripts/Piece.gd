@@ -6,7 +6,6 @@ var color: int  # 1 = white, -1 = black
 var attached_card: Card = null
 var turns_remaining: int = 0
 var exhausted_this_turn: bool = false
-var skip_next_duration_tick: bool = false
 
 func _init(pos: Vector2, col: int):
 	position = pos
@@ -16,7 +15,6 @@ func attach_card(card: Card, exhaust_for_turn: bool = true):
 	attached_card = card
 	turns_remaining = card.duration
 	exhausted_this_turn = exhaust_for_turn
-	skip_next_duration_tick = false
 	DebugLog.info("Card attached: %s to %s piece (position: %s, turns: %d)" % [card.card_name, "white" if color > 0 else "black", position, turns_remaining])
 
 func detach_card() -> Card:
@@ -24,7 +22,6 @@ func detach_card() -> Card:
 	attached_card = null
 	turns_remaining = 0
 	exhausted_this_turn = false
-	skip_next_duration_tick = false
 	DebugLog.info("Card detached: %s" % old_card.card_name if old_card else "")
 	return old_card
 

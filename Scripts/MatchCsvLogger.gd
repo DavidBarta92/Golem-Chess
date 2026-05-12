@@ -136,6 +136,7 @@ func log_match_end(game_state: GameStateData, win_condition: String) -> void:
 	}
 	append_row("matches.csv", MATCH_HEADERS, row)
 	log_turn_snapshot(game_state, "match_end")
+	refresh_card_balance_report()
 
 func log_turn_snapshot(game_state: GameStateData, event_type: String) -> void:
 	if !enabled or game_state == null or match_id.is_empty():
@@ -575,3 +576,13 @@ func get_batch_wins_including_current(game_state: GameStateData, player_id: int)
 	if game_state != null && game_state.winner_player == player_id:
 		wins += 1
 	return wins
+
+func refresh_card_balance_report() -> void:
+	if !GameConfig.is_ai_vs_ai_batch:
+		return
+
+	var generator := CardBalanceReportGenerator.new()
+	if !generator.refresh_report(get_log_dir()):
+		push_warning("Card balance report could not be refreshed.")
+	if !generator.refresh_session_balance(get_log_dir(), GameConfig.ai_vs_ai_log_session_id):
+		push_warning("Card balance session data could not be refreshed.")

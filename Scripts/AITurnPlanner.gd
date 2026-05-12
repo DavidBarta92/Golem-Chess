@@ -3,9 +3,239 @@ class_name AITurnPlanner
 
 const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const ACTION_ATTACH_CARD: String = "attach_card"
-const ACTION_DRAW_CARD: String = "draw_card"
+const ACTION_EXCHANGE_CARD: String = "exchange_card"
 const ACTION_MOVE_PIECE: String = "move_piece"
 const ACTION_END_TURN: String = "end_turn"
+const MAX_SEQUENTIAL_ATTACH_ACTIONS: int = DeckManager.HAND_SIZE
+
+func execute_sequential_turn(
+	host: NetworkGameHost,
+	tree: SceneTree,
+	player_id: int,
+	evaluator: AIMoveEvaluator,
+	action_delay: float,
+	board_size: int = DEFAULT_BOARD_SIZE
+) -> Dictionary:
+	var selected_actions: Array[Dictionary] = []
+	var setup_attach_actions: Array[Dictionary] = []
+	var selected_move: Dictionary = {}
+	var profile: Dictionary = evaluator.create_profile(0) if evaluator != null else {}
+	var exchanged_card: bool = false
+	var attach_actions_played: int = 0
+	var best_score_seen: float = -INF
+
+	if host == null or host.game_state == null or host.game_state.game_over or evaluator == null:
+		return create_sequential_plan(selected_actions, selected_move, setup_attach_actions, best_score_seen, profile)
+
+	while can_continue_sequential_turn(host, player_id) and attach_actions_played < MAX_SEQUENTIAL_ATTACH_ACTIONS:
+		var best_attach: Dictionary = find_best_attach_setup(host.game_state, player_id, evaluator, board_size, profile)
+		var attach_threshold: float = get_attach_setup_threshold(host.game_state, player_id)
+		best_score_seen = max(best_score_seen, float(best_attach.get("score", -INF)))
+		if float(best_attach.get("score", -INF)) >= attach_threshold:
+			var attach_action: Dictionary = best_attach.get("action", {})
+			if attach_action.is_empty():
+				break
+
+			setup_attach_actions.append(attach_action)
+			await execute_ai_action(host, tree, attach_action, action_delay, selected_actions)
+			attach_actions_played += 1
+			continue
+
+		if !exchanged_card and host.can_exchange_card_for_player(player_id) and has_free_attach_piece(host.game_state, player_id):
+			var exchange_action: Dictionary = find_exchange_action_for_worst_card(host.game_state, player_id, evaluator, board_size, profile)
+			if !exchange_action.is_empty():
+				await execute_ai_action(host, tree, exchange_action, action_delay, selected_actions)
+				exchanged_card = true
+				continue
+
+		break
+
+	if can_continue_sequential_turn(host, player_id):
+		selected_move = find_best_existing_move(host.game_state, player_id, evaluator, board_size, profile)
+		if !selected_move.is_empty():
+			await execute_ai_action(host, tree, make_move_action(player_id, selected_move), action_delay, selected_actions)
+
+	if can_continue_sequential_turn(host, player_id):
+		await execute_ai_action(host, tree, make_end_turn_action(player_id), action_delay, selected_actions)
+
+	return create_sequential_plan(selected_actions, selected_move, setup_attach_actions, best_score_seen, profile)
+
+func can_continue_sequential_turn(host: NetworkGameHost, player_id: int) -> bool:
+	return host != null \
+		&& host.game_state != null \
+		&& !host.game_state.game_over \
+		&& host.game_state.current_turn_player == player_id
+
+func execute_ai_action(
+	host: NetworkGameHost,
+	tree: SceneTree,
+	action: Dictionary,
+	action_delay: float,
+	selected_actions: Array[Dictionary]
+) -> void:
+	host.on_player_action(make_executable_action(action))
+	selected_actions.append(action.duplicate())
+	if tree != null and action_delay > 0.0:
+		await tree.create_timer(action_delay).timeout
+
+func create_sequential_plan(
+	actions: Array[Dictionary],
+	move: Dictionary,
+	setup_attach_actions: Array[Dictionary],
+	best_score: float,
+	profile: Dictionary
+) -> Dictionary:
+	if !profile.is_empty():
+		profile["best_plan_score"] = best_score if best_score != -INF else 0.0
+		profile["best_plan_type"] = "sequential"
+	return {
+		"actions": actions,
+		"move": move,
+		"setup_attach_actions": setup_attach_actions,
+		"plan_type": "sequential",
+		"profile": profile,
+	}
+
+func find_best_attach_setup(
+	game_state: GameStateData,
+	player_id: int,
+	evaluator: AIMoveEvaluator,
+	board_size: int,
+	profile: Dictionary = {}
+) -> Dictionary:
+	var best_action: Dictionary = {}
+	var best_score: float = -INF
+	var hand_names: Array = game_state.player_hands.get(player_id, [])
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+
+	for hand_index in range(hand_names.size()):
+		var card_name: String = str(hand_names[hand_index])
+		var card: Card = CardLibrary.get_card(card_name)
+		if card == null or !MoveRules.card_can_be_used(card):
+			continue
+
+		for position_value in game_state.pieces:
+			var piece_pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+			var piece: Piece = game_state.pieces[position_value] as Piece
+			if piece == null or piece.color != player_color or piece.attached_card != null:
+				continue
+			if !MoveRules.can_attach_card_for_turn(game_state.pieces, player_color, card):
+				continue
+
+			var attach_action: Dictionary = make_attach_action(player_id, card, piece_pos, hand_index)
+			var attach_score: float = evaluator.score_attach_setup(game_state, player_id, attach_action, board_size)
+			increment_profile_count(profile, "evaluated_own_plans")
+			if best_action.is_empty() or attach_score > best_score:
+				best_action = attach_action
+				best_score = attach_score
+
+	return {
+		"action": best_action,
+		"score": best_score,
+	}
+
+func find_exchange_action_for_worst_card(
+	game_state: GameStateData,
+	player_id: int,
+	evaluator: AIMoveEvaluator,
+	board_size: int,
+	profile: Dictionary = {}
+) -> Dictionary:
+	var hand_names: Array = game_state.player_hands.get(player_id, [])
+	var worst_hand_index: int = -1
+	var worst_card_name: String = ""
+	var worst_score: float = INF
+
+	for hand_index in range(hand_names.size()):
+		var card_name: String = str(hand_names[hand_index])
+		var card_score: float = score_best_fit_for_card(game_state, player_id, card_name, hand_index, evaluator, board_size, profile)
+		if worst_hand_index == -1 or card_score < worst_score:
+			worst_hand_index = hand_index
+			worst_card_name = card_name
+			worst_score = card_score
+
+	if worst_hand_index == -1:
+		return {}
+
+	return make_exchange_action(player_id, worst_card_name, worst_hand_index)
+
+func score_best_fit_for_card(
+	game_state: GameStateData,
+	player_id: int,
+	card_name: String,
+	hand_index: int,
+	evaluator: AIMoveEvaluator,
+	board_size: int,
+	profile: Dictionary = {}
+) -> float:
+	var card: Card = CardLibrary.get_card(card_name)
+	if card == null or !MoveRules.card_can_be_used(card):
+		return -INF
+
+	var best_score: float = -INF
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	for position_value in game_state.pieces:
+		var piece_pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece == null or piece.color != player_color or piece.attached_card != null:
+			continue
+
+		var attach_action: Dictionary = make_attach_action(player_id, card, piece_pos, hand_index)
+		var attach_score: float = evaluator.score_attach_setup_for_exchange(game_state, player_id, attach_action, board_size)
+		increment_profile_count(profile, "evaluated_own_plans")
+		best_score = max(best_score, attach_score)
+
+	return best_score
+
+func get_attach_setup_threshold(game_state: GameStateData, player_id: int) -> float:
+	var free_piece_count: int = count_free_attach_pieces(game_state, player_id)
+	if free_piece_count >= 6:
+		return 7.0
+	if free_piece_count == 5:
+		return 8.0
+	if free_piece_count == 4:
+		return 10.0
+	if free_piece_count == 3:
+		return 12.0
+	if free_piece_count == 2:
+		return 14.0
+	return 16.0
+
+func has_free_attach_piece(game_state: GameStateData, player_id: int) -> bool:
+	return count_free_attach_pieces(game_state, player_id) > 0
+
+func count_free_attach_pieces(game_state: GameStateData, player_id: int) -> int:
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var count: int = 0
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null and piece.color == player_color and piece.attached_card == null:
+			count += 1
+	return count
+
+func find_best_existing_move(
+	game_state: GameStateData,
+	player_id: int,
+	evaluator: AIMoveEvaluator,
+	board_size: int,
+	profile: Dictionary = {}
+) -> Dictionary:
+	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
+		return {}
+
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
+		game_state.pieces,
+		player_color,
+		board_size,
+		game_state.board_effects
+	)
+	if valid_moves.is_empty():
+		return {}
+
+	increment_profile_count(profile, "own_turn_plan_count", valid_moves.size())
+	increment_profile_count(profile, "evaluated_own_plans", valid_moves.size())
+	return evaluator.choose_best_move(game_state, player_id, valid_moves, board_size)
 
 func create_turn_plans(host: NetworkGameHost, player_id: int, board_size: int = DEFAULT_BOARD_SIZE) -> Array[Dictionary]:
 	if host == null or host.game_state == null or host.game_state.game_over:
@@ -18,7 +248,6 @@ func create_turn_plans_from_state(game_state: GameStateData, player_id: int, boa
 	if game_state == null or game_state.game_over:
 		return plans
 
-	var can_draw_now: bool = can_draw_card_from_state(game_state, player_id)
 	var can_move_now: bool = !bool(game_state.moved_piece_this_turn.get(player_id, false))
 	var can_attach_now: bool = true
 	var current_hand_cards: Array[Card] = AIStateSimulator.get_hand_cards_from_state(game_state, player_id)
@@ -31,46 +260,16 @@ func create_turn_plans_from_state(game_state: GameStateData, player_id: int, boa
 		game_state.pieces,
 		current_hand_cards,
 		no_prefix_actions,
-		false,
-		"",
 		can_move_now,
 		can_attach_now,
 		board_size
 	)
 
-	if can_draw_now:
-		var drawn_card_name: String = get_next_draw_card_name(game_state, player_id)
-		var draw_action: Dictionary = make_draw_action(player_id)
-		var draw_actions: Array[Dictionary] = [draw_action]
-		plans.append(create_plan(draw_actions, {}, [], true, drawn_card_name, "draw_only"))
-
-		var hand_after_draw: Array[Card] = duplicate_card_array(current_hand_cards)
-		var drawn_card: Card = CardLibrary.get_card(drawn_card_name)
-		if drawn_card != null && hand_after_draw.size() < DeckManager.HAND_SIZE:
-			hand_after_draw.append(drawn_card)
-
-		add_branch_plans(
-			plans,
-			game_state,
-			player_id,
-			game_state.pieces,
-			hand_after_draw,
-			draw_actions,
-			true,
-			drawn_card_name,
-			can_move_now,
-			can_attach_now,
-			board_size
-		)
-
 	if plans.is_empty():
 		var end_actions: Array[Dictionary] = [make_end_turn_action(player_id)]
-		plans.append(create_plan(end_actions, {}, [], false, "", "end_turn"))
+		plans.append(create_plan(end_actions, {}, [], "end_turn"))
 
 	return plans
-
-func can_draw_card_from_state(game_state: GameStateData, player_id: int) -> bool:
-	return false
 
 func add_branch_plans(
 	plans: Array[Dictionary],
@@ -79,8 +278,6 @@ func add_branch_plans(
 	pieces: Dictionary,
 	hand_cards: Array[Card],
 	prefix_actions: Array[Dictionary],
-	uses_draw: bool,
-	drawn_card_name: String,
 	can_move: bool,
 	can_attach: bool,
 	board_size: int
@@ -90,7 +287,7 @@ func add_branch_plans(
 		for attach_action: Dictionary in attach_actions:
 			var attach_only_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 			attach_only_actions.append(attach_action)
-			plans.append(create_plan(attach_only_actions, {}, [attach_action], uses_draw, drawn_card_name, get_branch_name("attach_only", uses_draw)))
+			plans.append(create_plan(attach_only_actions, {}, [attach_action], "attach_only"))
 
 	if !can_move:
 		return
@@ -112,7 +309,7 @@ func add_branch_plans(
 			move_actions.append(move_attach_action)
 
 		move_actions.append(make_move_action(player_id, move))
-		plans.append(create_plan(move_actions, move, [], uses_draw, drawn_card_name, get_branch_name("move", uses_draw)))
+		plans.append(create_plan(move_actions, move, [], "move"))
 
 		if can_attach && !bool(move.get("requires_attach", false)):
 			add_move_then_attach_plans(
@@ -122,8 +319,6 @@ func add_branch_plans(
 				hand_cards,
 				prefix_actions,
 				move,
-				uses_draw,
-				drawn_card_name,
 				board_size
 			)
 
@@ -134,8 +329,6 @@ func add_move_then_attach_plans(
 	hand_cards: Array[Card],
 	prefix_actions: Array[Dictionary],
 	move: Dictionary,
-	uses_draw: bool,
-	drawn_card_name: String,
 	_board_size: int
 ) -> void:
 	var simulated_pieces: Dictionary = AIStateSimulator.apply_candidate_to_pieces(game_state.pieces, move)
@@ -144,7 +337,7 @@ func add_move_then_attach_plans(
 		var actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 		actions.append(make_move_action(player_id, move))
 		actions.append(attach_action)
-		plans.append(create_plan(actions, move, [attach_action], uses_draw, drawn_card_name, get_branch_name("move_then_attach", uses_draw)))
+		plans.append(create_plan(actions, move, [attach_action], "move_then_attach"))
 
 func get_attach_actions_for_pieces(pieces: Dictionary, player_id: int, hand_cards: Array[Card]) -> Array[Dictionary]:
 	var actions: Array[Dictionary] = []
@@ -190,29 +383,30 @@ func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, p
 
 	return true
 
-func create_plan(actions: Array[Dictionary], move: Dictionary, setup_attach_actions: Array, uses_draw: bool, drawn_card_name: String, plan_type: String) -> Dictionary:
+func create_plan(actions: Array[Dictionary], move: Dictionary, setup_attach_actions: Array, plan_type: String) -> Dictionary:
 	return {
 		"actions": actions,
 		"move": move,
 		"setup_attach_actions": setup_attach_actions,
-		"uses_draw": uses_draw,
-		"drawn_card_name": drawn_card_name,
 		"plan_type": plan_type,
 	}
 
-func make_attach_action(player_id: int, card: Card, piece_pos: Vector2) -> Dictionary:
+func make_attach_action(player_id: int, card: Card, piece_pos: Vector2, hand_index: int = -1) -> Dictionary:
 	return {
 		"type": ACTION_ATTACH_CARD,
 		"player_id": player_id,
 		"card_name": card.card_name if card != null else "",
 		"piece_pos": piece_pos,
+		"hand_index": hand_index,
 		"card": card,
 	}
 
-func make_draw_action(player_id: int) -> Dictionary:
+func make_exchange_action(player_id: int, card_name: String, hand_index: int) -> Dictionary:
 	return {
-		"type": ACTION_DRAW_CARD,
+		"type": ACTION_EXCHANGE_CARD,
 		"player_id": player_id,
+		"card_name": card_name,
+		"hand_index": hand_index,
 	}
 
 func make_move_action(player_id: int, move: Dictionary) -> Dictionary:
@@ -243,23 +437,10 @@ func duplicate_actions(source_actions: Array[Dictionary]) -> Array[Dictionary]:
 		duplicated_actions.append(action.duplicate())
 	return duplicated_actions
 
-func duplicate_card_array(source_cards: Array[Card]) -> Array[Card]:
-	var duplicated_cards: Array[Card] = []
-	for card: Card in source_cards:
-		duplicated_cards.append(card)
-	return duplicated_cards
-
-func get_next_draw_card_name(game_state: GameStateData, player_id: int) -> String:
-	if game_state == null or !game_state.player_decks.has(player_id):
-		return ""
-
-	var deck: Array = game_state.player_decks[player_id]
-	if deck.is_empty():
-		return ""
-	return str(deck[0])
-
 func get_move_card(move: Dictionary) -> Card:
 	return move.get("card", null) as Card
 
-func get_branch_name(base_name: String, uses_draw: bool) -> String:
-	return "draw_then_%s" % base_name if uses_draw else base_name
+func increment_profile_count(profile: Dictionary, key: String, amount: int = 1) -> void:
+	if profile.is_empty():
+		return
+	profile[key] = int(profile.get(key, 0)) + amount

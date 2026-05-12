@@ -3,7 +3,6 @@ class_name HeuristicAIPlayer
 
 const AI_TURN_PLANNER_SCRIPT = preload("res://Scripts/AITurnPlanner.gd")
 const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
-const DRAW_AT_TURN_START_BELOW_HAND_SIZE: int = 3
 
 var player_id: int = 1
 var action_delay: float = 0.35
@@ -25,8 +24,18 @@ func play_turn(host: NetworkGameHost, tree: SceneTree) -> bool:
 	if !can_play_turn(host):
 		return false
 
-	var selected_plan: Dictionary = choose_turn_plan(host)
-	return await execute_turn_plan(host, tree, selected_plan)
+	var planner_start_usec: int = Time.get_ticks_usec()
+	var selected_plan: Dictionary = await execute_sequential_turn(host, tree)
+	var profile: Dictionary = selected_plan.get("profile", {}).duplicate()
+	profile["own_planner_ms"] = float(Time.get_ticks_usec() - planner_start_usec) / 1000.0
+	evaluator.last_profile = profile
+	AIPerformanceCsvLogger.log_decision(host.game_state, player_id, profile, selected_plan)
+	return !selected_plan.is_empty()
+
+func execute_sequential_turn(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
+	if planner == null:
+		return {}
+	return await planner.execute_sequential_turn(host, tree, player_id, evaluator, action_delay, BOARD_SIZE)
 
 func choose_turn_plan(host: NetworkGameHost) -> Dictionary:
 	var planner_start_usec: int = Time.get_ticks_usec()
@@ -84,8 +93,6 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 		return false
 
 	if selected_move.is_empty():
-		if await try_draw_card(host, tree):
-			return true
 		end_turn(host)
 		return false
 
@@ -119,34 +126,6 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 		await tree.create_timer(action_delay).timeout
 	end_turn(host)
 	return true
-
-func try_draw_card(host: NetworkGameHost, tree: SceneTree) -> bool:
-	if host == null or host.game_state == null or !host.can_draw_card_for_player(player_id):
-		return false
-
-	host.on_player_action({
-		"type": "draw_card",
-		"player_id": player_id,
-	})
-	if tree != null and action_delay > 0.0:
-		await tree.create_timer(action_delay).timeout
-	return true
-
-func try_draw_card_at_turn_start(host: NetworkGameHost, tree: SceneTree) -> bool:
-	if !should_draw_card_at_turn_start(host):
-		return false
-	return await try_draw_card(host, tree)
-
-func should_draw_card_at_turn_start(host: NetworkGameHost) -> bool:
-	if host == null or host.game_state == null:
-		return false
-	if !host.can_draw_card_for_player(player_id):
-		return false
-
-	var hand: Array = []
-	if host.game_state.player_hands.has(player_id):
-		hand = host.game_state.player_hands[player_id]
-	return hand.size() < DRAW_AT_TURN_START_BELOW_HAND_SIZE
 
 func end_turn(host: NetworkGameHost) -> void:
 	if host == null or host.game_state == null or host.game_state.game_over:

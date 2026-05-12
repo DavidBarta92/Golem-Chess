@@ -3,7 +3,6 @@ class_name RandomAIPlayer
 
 const AI_TURN_PLANNER_SCRIPT = preload("res://Scripts/AITurnPlanner.gd")
 const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
-const DRAW_AT_TURN_START_BELOW_HAND_SIZE: int = 3
 
 var player_id: int = 1
 var action_delay: float = 0.35
@@ -87,8 +86,6 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 		return false
 
 	if selected_move.is_empty():
-		if await try_draw_card(host, tree):
-			return true
 		end_turn(host)
 		return false
 
@@ -122,34 +119,6 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 		await tree.create_timer(action_delay).timeout
 	end_turn(host)
 	return true
-
-func try_draw_card(host: NetworkGameHost, tree: SceneTree) -> bool:
-	if host == null or host.game_state == null or !host.can_draw_card_for_player(player_id):
-		return false
-
-	host.on_player_action({
-		"type": "draw_card",
-		"player_id": player_id,
-	})
-	if tree != null and action_delay > 0.0:
-		await tree.create_timer(action_delay).timeout
-	return true
-
-func try_draw_card_at_turn_start(host: NetworkGameHost, tree: SceneTree) -> bool:
-	if !should_draw_card_at_turn_start(host):
-		return false
-	return await try_draw_card(host, tree)
-
-func should_draw_card_at_turn_start(host: NetworkGameHost) -> bool:
-	if host == null or host.game_state == null:
-		return false
-	if !host.can_draw_card_for_player(player_id):
-		return false
-
-	var hand: Array = []
-	if host.game_state.player_hands.has(player_id):
-		hand = host.game_state.player_hands[player_id]
-	return hand.size() < DRAW_AT_TURN_START_BELOW_HAND_SIZE
 
 func end_turn(host: NetworkGameHost) -> void:
 	if host == null or host.game_state == null or host.game_state.game_over:
