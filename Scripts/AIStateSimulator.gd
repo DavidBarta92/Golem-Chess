@@ -102,6 +102,8 @@ static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: D
 		match str(action.get("type", "")):
 			"attach_card":
 				apply_attach_action(simulated_state, player_id, action, board_size)
+			"exchange_card":
+				apply_exchange_action(simulated_state, player_id, action)
 			"move_piece":
 				apply_move_action(simulated_state, player_id, action, board_size)
 			"end_turn":
@@ -140,6 +142,63 @@ static func apply_attach_action(game_state: GameStateData, player_id: int, actio
 		return
 	CardEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, card, board_size)
 	_refresh_nexus_positions(game_state)
+
+static func apply_exchange_action(game_state: GameStateData, player_id: int, action: Dictionary) -> void:
+	if bool(game_state.exchanged_card_this_turn.get(player_id, false)):
+		return
+	if !game_state.player_hands.has(player_id) or !game_state.player_decks.has(player_id):
+		return
+
+	var hand: Array = game_state.player_hands[player_id]
+	var deck: Array = game_state.player_decks[player_id]
+	if hand.is_empty() or deck.is_empty():
+		return
+
+	var card_name: String = str(action.get("card_name", ""))
+	var hand_index: int = int(action.get("hand_index", -1))
+	var remove_index: int = get_exchange_card_index(hand, card_name, hand_index)
+	if remove_index == -1:
+		return
+
+	var returned_card_name: String = str(hand[remove_index])
+	var drawn_card_name: String = draw_card_from_deck_avoiding_names(deck, [returned_card_name])
+	if drawn_card_name.is_empty():
+		return
+
+	hand.remove_at(remove_index)
+	DeckManager.return_card_to_deck(deck, returned_card_name)
+	hand.insert(clampi(remove_index, 0, hand.size()), drawn_card_name)
+	game_state.player_hands[player_id] = hand
+	game_state.player_decks[player_id] = deck
+	game_state.exchanged_card_this_turn[player_id] = true
+	var exchanged_names: Array = game_state.exchanged_card_names_this_turn.get(player_id, [])
+	exchanged_names.append(returned_card_name)
+	game_state.exchanged_card_names_this_turn[player_id] = exchanged_names
+
+static func get_exchange_card_index(hand: Array, card_name: String, hand_index: int) -> int:
+	if hand_index >= 0 and hand_index < hand.size():
+		if card_name.is_empty() or str(hand[hand_index]) == card_name:
+			return hand_index
+	if !card_name.is_empty():
+		return hand.find(card_name)
+	return -1
+
+static func draw_card_from_deck_avoiding_names(deck: Array, avoided_card_names: Array) -> String:
+	if deck.is_empty():
+		return ""
+
+	var draw_index: int = -1
+	for index in range(deck.size()):
+		var candidate_name: String = str(deck[index])
+		if !avoided_card_names.has(candidate_name):
+			draw_index = index
+			break
+	if draw_index == -1:
+		draw_index = 0
+
+	var drawn_card_name: String = str(deck[draw_index])
+	deck.remove_at(draw_index)
+	return drawn_card_name
 
 static func apply_move_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> void:
 	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
@@ -270,25 +329,31 @@ static func get_original_hand_slot_for_play(game_state: GameStateData, player_id
 static func refill_played_cards_for_player(game_state: GameStateData, player_id: int) -> void:
 	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
 	if played_slots.is_empty():
+		game_state.exchanged_card_names_this_turn[player_id] = []
 		return
 	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
 		game_state.played_card_hand_slots_this_turn[player_id] = []
+		game_state.exchanged_card_names_this_turn[player_id] = []
 		return
 
 	played_slots.sort()
 	var deck: Array = game_state.player_decks[player_id]
 	var hand: Array = game_state.player_hands[player_id]
+	var protected_names: Array = game_state.exchanged_card_names_this_turn.get(player_id, [])
 	for slot_value in played_slots:
 		if deck.is_empty() or hand.size() >= DeckManager.HAND_SIZE:
 			break
 
-		var drawn_card_name: String = str(deck.pop_front())
+		var drawn_card_name: String = draw_card_from_deck_avoiding_names(deck, protected_names)
+		if drawn_card_name.is_empty():
+			break
 		var insert_index: int = clampi(int(slot_value), 0, hand.size())
 		hand.insert(insert_index, drawn_card_name)
 
 	game_state.player_decks[player_id] = deck
 	game_state.player_hands[player_id] = hand
 	game_state.played_card_hand_slots_this_turn[player_id] = []
+	game_state.exchanged_card_names_this_turn[player_id] = []
 
 static func handle_expired_nexus_card(game_state: GameStateData, player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
 	CardEffectResolver.clear_nexus_position_if_needed(game_state, player_id, true)

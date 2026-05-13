@@ -25,12 +25,17 @@ func play_turn(host: NetworkGameHost, tree: SceneTree) -> bool:
 		return false
 
 	var planner_start_usec: int = Time.get_ticks_usec()
-	var selected_plan: Dictionary = await execute_sequential_turn(host, tree)
+	var selected_plan: Dictionary = await execute_planned_turn(host, tree)
 	var profile: Dictionary = selected_plan.get("profile", {}).duplicate()
 	profile["own_planner_ms"] = float(Time.get_ticks_usec() - planner_start_usec) / 1000.0
 	evaluator.last_profile = profile
 	AIPerformanceCsvLogger.log_decision(host.game_state, player_id, profile, selected_plan)
 	return !selected_plan.is_empty()
+
+func execute_planned_turn(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
+	if planner == null:
+		return {}
+	return await planner.execute_planned_turn(host, tree, player_id, evaluator, action_delay, BOARD_SIZE)
 
 func execute_sequential_turn(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
 	if planner == null:

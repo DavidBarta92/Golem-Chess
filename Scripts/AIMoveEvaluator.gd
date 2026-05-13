@@ -96,6 +96,8 @@ const SCORE_WIN: float = 100000.0
 const SCORE_CAPTURE_NEXUS: float = 160.0
 const SCORE_ATTACH_NEXUS: float = 35.0
 const SCORE_THREATEN_NEXUS: float = 420.0
+const SCORE_NEXUS_BASE_ENTRY_THREAT: float = 900.0
+const SCORE_CAPTURE_BASE_STAGING_PIECE: float = 180.0
 const SCORE_CAPTURE_PIECE: float = 45.0
 const SCORE_CAPTURE_CARD: float = 75.0
 const SCORE_NEXUS_BASE_PROGRESS: float = 35.0
@@ -118,10 +120,9 @@ const PENALTY_MOVE_BASE_NOOP: float = 20.0
 const PENALTY_NEXUS_THREATENED: float = 1400.0
 const PENALTY_PIECE_THREATENED: float = 35.0
 const DEFAULT_OPPONENT_RESPONSE_WEIGHT: float = 0.62
-const CARD_VALUE_ATTACH_PLAY_WEIGHT: float = 0.5
+const CARD_VALUE_ATTACH_PLAY_WEIGHT: float = 0.35
 const CARD_VALUE_ATTACH_EXCHANGE_WEIGHT: float = 0.6
 const CARD_VALUE_CAPTURE_WEIGHT: float = 1.2
-const CARD_VALUE_DANGER_WEIGHT: float = 1.2
 
 var difficulty_level: int = DEFAULT_DIFFICULTY_LEVEL
 var search_depth: int = 1
@@ -178,6 +179,49 @@ func choose_best_move(game_state: GameStateData, player_id: int, valid_moves: Ar
 			best_score = move_score
 
 	return best_move
+
+func choose_best_move_with_response(
+	game_state: GameStateData,
+	player_id: int,
+	valid_moves: Array[Dictionary],
+	board_size: int = BoardConfig.BOARD_SIZE,
+	turn_planner = null,
+	profile: Dictionary = {}
+) -> Dictionary:
+	if game_state == null or valid_moves.is_empty():
+		return {}
+	if !should_score_opponent_responses(turn_planner):
+		increment_profile_count(profile, "evaluated_own_plans", valid_moves.size())
+		return choose_best_move(game_state, player_id, valid_moves, board_size)
+
+	var best_move: Dictionary = {}
+	var best_score: float = -INF
+	profile["move_response_candidate_count"] = valid_moves.size()
+	for move: Dictionary in valid_moves:
+		var plan: Dictionary = create_move_response_plan(player_id, move)
+		var move_score: float = score_turn_plan_with_response(game_state, player_id, plan, board_size, turn_planner, profile)
+		if randomness > 0.0:
+			move_score += randf_range(-randomness, randomness)
+
+		if best_move.is_empty() or move_score > best_score:
+			best_move = move
+			best_score = move_score
+
+	profile["best_move_response_score"] = best_score
+	return best_move
+
+func create_move_response_plan(player_id: int, move: Dictionary) -> Dictionary:
+	return {
+		"actions": [{
+			"type": "move_piece",
+			"player_id": player_id,
+			"from": AIStateSimulator.get_move_from(move),
+			"to": AIStateSimulator.get_move_to(move),
+		}],
+		"move": move,
+		"setup_attach_actions": [],
+		"plan_type": "move_response",
+	}
 
 func choose_best_turn_plan(game_state: GameStateData, player_id: int, turn_plans: Array[Dictionary], board_size: int = BoardConfig.BOARD_SIZE, turn_planner = null) -> Dictionary:
 	if game_state == null or turn_plans.is_empty():
@@ -435,7 +479,9 @@ func score_attach_setup_fast(game_state: GameStateData, player_id: int, attach_a
 		score += SCORE_ATTACH_NEXUS * 0.85
 	score += float(card.get_directions().size()) * 2.5
 	score += get_card_balance_value(card) * CARD_VALUE_ATTACH_PLAY_WEIGHT
+	score += score_nexus_base_entry_threat(game_state, player_id, piece_pos, card, board_size)
 	score += score_card_effect_fast(game_state, player_id, piece, card, piece_pos, piece_pos, null, move, board_size) * 0.65
+	score -= score_attachment_danger(game_state, player_id, attach_action, board_size, false)
 	return score
 
 func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
@@ -461,6 +507,7 @@ func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary
 
 	if captured_piece != null:
 		score += score_capture(captured_piece) * 0.9
+		score += score_base_staging_capture(game_state, player_id, captured_piece, to_pos, board_size) * 0.9
 
 	if AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
 		score += score_nexus_base_progress(game_state, player_id, from_pos, to_pos)
@@ -676,6 +723,7 @@ func score_attach_setup_with_card_value_weight(
 	if setup_moves.is_empty():
 		score -= PENALTY_ATTACH_SETUP_NO_MOVE
 	score += get_card_balance_value(card) * card_value_weight
+	score += score_nexus_base_entry_threat(game_state, player_id, piece_pos, card, board_size)
 
 	var setup_move: Dictionary = {
 		"from": piece_pos,
@@ -684,6 +732,7 @@ func score_attach_setup_with_card_value_weight(
 		"requires_attach": true,
 	}
 	score += score_card_effect(game_state, player_id, piece, card, piece_pos, piece_pos, null, setup_move, board_size) * 0.65
+	score -= score_attachment_danger(game_state, player_id, attach_action, board_size, true)
 	return score
 
 func score_move(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
@@ -707,6 +756,7 @@ func score_move(game_state: GameStateData, player_id: int, move: Dictionary, boa
 
 	if captured_piece != null:
 		score += score_capture(captured_piece)
+		score += score_base_staging_capture(game_state, player_id, captured_piece, to_pos, board_size)
 
 	if is_own_nexus_move:
 		score += score_nexus_base_progress(game_state, player_id, from_pos, to_pos)
@@ -761,6 +811,54 @@ func score_nexus_base_progress(game_state: GameStateData, player_id: int, from_p
 	var distance_after: float = abs(to_pos.x - opponent_base.x) + abs(to_pos.y - opponent_base.y)
 	return (distance_before - distance_after) * SCORE_NEXUS_BASE_PROGRESS
 
+func score_nexus_base_entry_threat(game_state: GameStateData, player_id: int, piece_pos: Vector2, card: Card, board_size: int) -> float:
+	if game_state == null or !MoveRules.is_nexus_card(card):
+		return 0.0
+
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
+	var nexus_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
+		game_state.pieces,
+		piece_pos,
+		player_color,
+		card,
+		board_size,
+		game_state.board_effects
+	)
+	if nexus_moves.has(opponent_base):
+		return SCORE_NEXUS_BASE_ENTRY_THREAT
+	return 0.0
+
+func score_base_staging_capture(game_state: GameStateData, player_id: int, captured_piece: Piece, captured_pos: Vector2, board_size: int) -> float:
+	if game_state == null or captured_piece == null or captured_piece.attached_card != null:
+		return 0.0
+
+	var opponent_player_id: int = 1 - player_id
+	if CardEffectResolver.get_player_id_for_color(captured_piece.color) != opponent_player_id:
+		return 0.0
+	if !player_has_nexus_base_entry_from_hand(game_state, opponent_player_id, captured_pos, board_size):
+		return 0.0
+	return SCORE_CAPTURE_BASE_STAGING_PIECE
+
+func player_has_nexus_base_entry_from_hand(game_state: GameStateData, player_id: int, piece_pos: Vector2, board_size: int) -> bool:
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
+	var hand_cards: Array[Card] = AIStateSimulator.get_hand_cards_from_state(game_state, player_id)
+	for card: Card in hand_cards:
+		if !MoveRules.is_nexus_card(card):
+			continue
+		var nexus_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
+			game_state.pieces,
+			piece_pos,
+			player_color,
+			card,
+			board_size,
+			game_state.board_effects
+		)
+		if nexus_moves.has(opponent_base):
+			return true
+	return false
+
 func score_center_control(pos: Vector2, board_size: int) -> float:
 	var center: Vector2 = Vector2(float(board_size - 1) / 2.0, float(board_size - 1) / 2.0)
 	var distance: float = abs(pos.x - center.x) + abs(pos.y - center.y)
@@ -800,14 +898,75 @@ func score_danger_after_move(game_state: GameStateData, player_id: int, move: Di
 	if !is_threatened:
 		return 0.0
 
-	if AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
-		return PENALTY_NEXUS_THREATENED
-
 	var threatened_piece: Piece = simulated_pieces.get(to_pos, null) as Piece
-	var danger_score: float = PENALTY_PIECE_THREATENED
-	if threatened_piece != null and threatened_piece.attached_card != null:
-		danger_score += get_card_balance_value(threatened_piece.attached_card) * CARD_VALUE_DANGER_WEIGHT
-	return maxf(0.0, danger_score)
+	return score_threatened_piece_loss(threatened_piece)
+
+func score_attachment_danger(
+	game_state: GameStateData,
+	player_id: int,
+	attach_action: Dictionary,
+	board_size: int,
+	simulate_effects: bool
+) -> float:
+	if game_state == null:
+		return 0.0
+
+	var piece_pos: Vector2 = CardEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+	var card: Card = attach_action.get("card", null) as Card
+	if card == null:
+		card = CardLibrary.get_card(str(attach_action.get("card_name", "")))
+	if card == null:
+		return 0.0
+
+	var simulated_state: GameStateData = null
+	var simulated_pieces: Dictionary = {}
+	var simulated_board_effects: Array = []
+	var attached_piece: Piece = null
+	if simulate_effects:
+		simulated_state = AIStateSimulator.clone_game_state(game_state)
+		AIStateSimulator.apply_attach_action(simulated_state, player_id, attach_action, board_size)
+		if simulated_state.game_over:
+			if simulated_state.winner_player == player_id:
+				return 0.0
+			return SCORE_WIN
+		simulated_pieces = simulated_state.pieces
+		simulated_board_effects = simulated_state.board_effects
+		attached_piece = simulated_state.get_piece(piece_pos)
+	else:
+		simulated_pieces = AIStateSimulator.clone_pieces(game_state.pieces)
+		simulated_board_effects = game_state.board_effects
+		attached_piece = simulated_pieces.get(piece_pos, null) as Piece
+		if attached_piece != null:
+			attached_piece.attached_card = card
+			attached_piece.turns_remaining = card.duration
+			attached_piece.exhausted_this_turn = true
+
+	if attached_piece == null or attached_piece.attached_card == null:
+		return 0.0
+
+	var opponent_player_id: int = 1 - player_id
+	var threat_state: GameStateData = game_state
+	if simulated_state != null:
+		threat_state = simulated_state
+	var opponent_hand_cards: Array[Card] = AIStateSimulator.get_hand_cards_from_state(threat_state, opponent_player_id)
+	if !AIStateSimulator.is_square_threatened(
+		simulated_pieces,
+		piece_pos,
+		opponent_player_id,
+		opponent_hand_cards,
+		simulated_board_effects,
+		board_size
+	):
+		return 0.0
+
+	return score_threatened_piece_loss(attached_piece)
+
+func score_threatened_piece_loss(piece: Piece) -> float:
+	if piece == null:
+		return 0.0
+	if CardEffectResolver.is_nexus_piece(piece):
+		return PENALTY_NEXUS_THREATENED
+	return maxf(PENALTY_PIECE_THREATENED, score_capture(piece))
 
 func score_card_effect(
 	game_state: GameStateData,
