@@ -166,7 +166,7 @@ static func apply_exchange_action(game_state: GameStateData, player_id: int, act
 		return
 
 	hand.remove_at(remove_index)
-	DeckManager.return_card_to_deck(deck, returned_card_name)
+	deck.append(returned_card_name)
 	hand.insert(clampi(remove_index, 0, hand.size()), drawn_card_name)
 	game_state.player_hands[player_id] = hand
 	game_state.player_decks[player_id] = deck

@@ -27,31 +27,45 @@ func execute_planned_turn(
 	if host == null or host.game_state == null or host.game_state.game_over or evaluator == null:
 		return {}
 
+	var selected_plan: Dictionary = choose_planned_turn(host.game_state, player_id, evaluator, board_size)
+	if selected_plan.is_empty():
+		return await execute_sequential_turn(host, tree, player_id, evaluator, action_delay, board_size)
+
+	await execute_turn_plan(host, tree, player_id, selected_plan, action_delay)
+	return selected_plan
+
+func choose_planned_turn(
+	game_state: GameStateData,
+	player_id: int,
+	evaluator: AIMoveEvaluator,
+	board_size: int = DEFAULT_BOARD_SIZE
+) -> Dictionary:
+	if game_state == null or game_state.game_over or evaluator == null:
+		return {}
+
 	planning_evaluator = evaluator
-	var tactical_plan: Dictionary = tactical_search.find_forced_tactical_plan(host.game_state, player_id, evaluator, board_size)
+	var tactical_plan: Dictionary = tactical_search.find_forced_tactical_plan(game_state, player_id, evaluator, board_size)
 	if !tactical_plan.is_empty():
 		var tactical_profile: Dictionary = evaluator.create_profile(1)
 		tactical_profile["best_plan_type"] = str(tactical_plan.get("plan_type", "tactical"))
 		tactical_profile["best_plan_score"] = AIMoveEvaluator.SCORE_WIN
 		tactical_plan["profile"] = tactical_profile
-		await execute_turn_plan(host, tree, player_id, tactical_plan, action_delay)
 		planning_evaluator = null
 		return tactical_plan
 
-	var turn_plans: Array[Dictionary] = create_turn_plans_from_state(host.game_state, player_id, board_size)
+	var turn_plans: Array[Dictionary] = create_turn_plans_from_state(game_state, player_id, board_size)
 	if turn_plans.is_empty():
 		planning_evaluator = null
-		return await execute_sequential_turn(host, tree, player_id, evaluator, action_delay, board_size)
+		return create_plan([make_end_turn_action(player_id)], {}, [], "end_turn")
 
-	var selected_plan: Dictionary = evaluator.choose_best_turn_plan(host.game_state, player_id, turn_plans, board_size, self)
+	var selected_plan: Dictionary = evaluator.choose_best_turn_plan(game_state, player_id, turn_plans, board_size, self)
 	if selected_plan.is_empty():
 		planning_evaluator = null
-		return await execute_sequential_turn(host, tree, player_id, evaluator, action_delay, board_size)
+		return create_plan([make_end_turn_action(player_id)], {}, [], "end_turn")
 
 	var selected_profile: Dictionary = evaluator.last_profile.duplicate()
 	selected_profile["own_turn_plan_count"] = turn_plans.size()
 	selected_plan["profile"] = selected_profile
-	await execute_turn_plan(host, tree, player_id, selected_plan, action_delay)
 	planning_evaluator = null
 	return selected_plan
 

@@ -70,23 +70,23 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_response_weight": 0.70,
 	},
 	10: {
-		"search_depth": 2,
+		"search_depth": 4,
 		"own_top_n": 10,
-		"opponent_top_n": 14,
+		"opponent_top_n": 10,
 		"randomness": 1.0,
 		"opponent_response_weight": 0.76,
 	},
 	11: {
-		"search_depth": 2,
-		"own_top_n": 11,
-		"opponent_top_n": 20,
+		"search_depth": 4,
+		"own_top_n": 10,
+		"opponent_top_n": 10,
 		"randomness": 0.0,
 		"opponent_response_weight": 0.80,
 	},
 	12: {
-		"search_depth": 2,
-		"own_top_n": 12,
-		"opponent_top_n": 30,
+		"search_depth": 4,
+		"own_top_n": 10,
+		"opponent_top_n": 10,
 		"randomness": 0.0,
 		"opponent_response_weight": 0.82,
 	},
@@ -120,6 +120,12 @@ const PENALTY_MOVE_BASE_NOOP: float = 20.0
 const PENALTY_NEXUS_THREATENED: float = 1400.0
 const PENALTY_PIECE_THREATENED: float = 35.0
 const DEFAULT_OPPONENT_RESPONSE_WEIGHT: float = 0.62
+const DEEP_ROOT_BEAM_WIDTH: int = 6
+const DEEP_OPPONENT_FIRST_BEAM_WIDTH: int = 6
+const DEEP_OWN_SECOND_BEAM_WIDTH: int = 4
+const DEEP_OPPONENT_SECOND_BEAM_WIDTH: int = 4
+const DEEP_SECOND_OWN_WEIGHT: float = 0.72
+const DEEP_SECOND_OPPONENT_WEIGHT: float = 0.62
 const CARD_VALUE_ATTACH_PLAY_WEIGHT: float = 0.35
 const CARD_VALUE_ATTACH_EXCHANGE_WEIGHT: float = 0.6
 const CARD_VALUE_CAPTURE_WEIGHT: float = 1.2
@@ -244,15 +250,19 @@ func choose_best_turn_plan(game_state: GameStateData, player_id: int, turn_plans
 		for scored_plan: Dictionary in response_candidates:
 			var plan: Dictionary = scored_plan.get("plan", {})
 			var own_score: float = float(scored_plan.get("score", 0.0))
-			var opponent_response_score: float = score_best_opponent_response(
-				game_state,
-				player_id,
-				plan,
-				board_size,
-				turn_planner,
-				profile
-			)
-			var plan_score: float = own_score - opponent_response_score * opponent_response_weight
+			var plan_score: float = 0.0
+			if should_score_deep_beam(turn_planner):
+				plan_score = score_deep_beam_turn_plan(game_state, player_id, plan, own_score, board_size, turn_planner, profile)
+			else:
+				var opponent_response_score: float = score_best_opponent_response(
+					game_state,
+					player_id,
+					plan,
+					board_size,
+					turn_planner,
+					profile
+				)
+				plan_score = own_score - opponent_response_score * opponent_response_weight
 			if randomness > 0.0:
 				plan_score += randf_range(-randomness, randomness)
 
@@ -285,12 +295,16 @@ func should_score_opponent_responses(turn_planner) -> bool:
 		&& own_top_n > 0 \
 		&& opponent_top_n > 0
 
+func should_score_deep_beam(turn_planner) -> bool:
+	return search_depth >= 4 && should_score_opponent_responses(turn_planner)
+
 func get_response_candidate_plans(scored_plans: Array[Dictionary]) -> Array[Dictionary]:
 	if scored_plans.is_empty():
 		return []
 	if search_depth < 2 or own_top_n <= 0:
 		return []
-	return get_top_scored_plans(scored_plans, own_top_n)
+	var candidate_limit: int = DEEP_ROOT_BEAM_WIDTH if search_depth >= 4 else own_top_n
+	return get_top_scored_plans(scored_plans, candidate_limit)
 
 func choose_best_scored_plan(scored_plans: Array[Dictionary], profile: Dictionary) -> Dictionary:
 	var best_plan: Dictionary = {}
@@ -316,6 +330,9 @@ func score_turn_plan_with_response(game_state: GameStateData, player_id: int, pl
 	increment_profile_count(profile, "evaluated_own_plans")
 	if !should_score_opponent_responses(turn_planner):
 		return own_score
+
+	if should_score_deep_beam(turn_planner):
+		return score_deep_beam_turn_plan(game_state, player_id, plan, own_score, board_size, turn_planner, profile)
 
 	var opponent_response_score: float = score_best_opponent_response(game_state, player_id, plan, board_size, turn_planner, profile)
 	return own_score - opponent_response_score * opponent_response_weight
@@ -361,6 +378,232 @@ func score_best_opponent_response(game_state: GameStateData, player_id: int, pla
 
 	return best_response_score if best_response_score != -INF else 0.0
 
+func score_deep_beam_turn_plan(
+	game_state: GameStateData,
+	player_id: int,
+	plan: Dictionary,
+	own_score: float,
+	board_size: int,
+	turn_planner,
+	profile: Dictionary = {}
+) -> float:
+	var simulator_start_usec: int = Time.get_ticks_usec()
+	var state_after_first_plan: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	add_profile_time(profile, "simulator_ms", Time.get_ticks_usec() - simulator_start_usec)
+	increment_profile_count(profile, "deep_beam_root_count")
+	if state_after_first_plan.game_over:
+		return own_score + get_terminal_score_for_player(state_after_first_plan, player_id)
+
+	var opponent_player_id: int = 1 - player_id
+	var opponent_plans: Array[Dictionary] = get_plans_for_player_with_profile(
+		state_after_first_plan,
+		opponent_player_id,
+		board_size,
+		turn_planner,
+		profile,
+		"opponent_planner_ms",
+		"deep_beam_opponent_first_plan_count"
+	)
+	if opponent_plans.is_empty():
+		return own_score
+
+	var opponent_beam: Array[Dictionary] = select_top_plans_for_player(
+		state_after_first_plan,
+		opponent_player_id,
+		opponent_plans,
+		board_size,
+		DEEP_OPPONENT_FIRST_BEAM_WIDTH,
+		profile
+	)
+	increment_profile_count(profile, "deep_beam_opponent_first_selected_count", opponent_beam.size())
+	if opponent_beam.is_empty():
+		return own_score
+
+	var worst_branch_value: float = INF
+	for opponent_plan: Dictionary in opponent_beam:
+		var branch_value: float = score_deep_beam_opponent_branch(
+			state_after_first_plan,
+			player_id,
+			opponent_plan,
+			board_size,
+			turn_planner,
+			profile
+		)
+		if branch_value < worst_branch_value:
+			worst_branch_value = branch_value
+
+	return own_score + (worst_branch_value if worst_branch_value != INF else 0.0)
+
+func score_deep_beam_opponent_branch(
+	state_after_first_plan: GameStateData,
+	player_id: int,
+	opponent_plan: Dictionary,
+	board_size: int,
+	turn_planner,
+	profile: Dictionary
+) -> float:
+	var opponent_player_id: int = 1 - player_id
+	var opponent_score: float = score_turn_plan(state_after_first_plan, opponent_player_id, opponent_plan, board_size)
+	increment_profile_count(profile, "evaluated_response_plans")
+
+	var simulator_start_usec: int = Time.get_ticks_usec()
+	var state_after_opponent: GameStateData = AIStateSimulator.apply_turn_plan(state_after_first_plan, opponent_player_id, opponent_plan, board_size)
+	add_profile_time(profile, "simulator_ms", Time.get_ticks_usec() - simulator_start_usec)
+	if state_after_opponent.game_over:
+		return get_terminal_score_for_player(state_after_opponent, player_id)
+
+	var own_second_plans: Array[Dictionary] = get_plans_for_player_with_profile(
+		state_after_opponent,
+		player_id,
+		board_size,
+		turn_planner,
+		profile,
+		"own_second_planner_ms",
+		"deep_beam_own_second_plan_count"
+	)
+	if own_second_plans.is_empty():
+		return -opponent_score * opponent_response_weight
+
+	var own_second_beam: Array[Dictionary] = select_top_plans_for_player(
+		state_after_opponent,
+		player_id,
+		own_second_plans,
+		board_size,
+		DEEP_OWN_SECOND_BEAM_WIDTH,
+		profile
+	)
+	increment_profile_count(profile, "deep_beam_own_second_selected_count", own_second_beam.size())
+	if own_second_beam.is_empty():
+		return -opponent_score * opponent_response_weight
+
+	var best_continuation_value: float = -INF
+	for own_second_plan: Dictionary in own_second_beam:
+		var continuation_value: float = score_deep_beam_own_second_branch(
+			state_after_opponent,
+			player_id,
+			own_second_plan,
+			board_size,
+			turn_planner,
+			profile
+		)
+		if continuation_value > best_continuation_value:
+			best_continuation_value = continuation_value
+
+	if best_continuation_value == -INF:
+		best_continuation_value = 0.0
+	return -opponent_score * opponent_response_weight + best_continuation_value * DEEP_SECOND_OWN_WEIGHT
+
+func score_deep_beam_own_second_branch(
+	state_after_opponent: GameStateData,
+	player_id: int,
+	own_second_plan: Dictionary,
+	board_size: int,
+	turn_planner,
+	profile: Dictionary
+) -> float:
+	var own_second_score: float = score_turn_plan(state_after_opponent, player_id, own_second_plan, board_size)
+	increment_profile_count(profile, "deep_beam_evaluated_own_second_plans")
+
+	var simulator_start_usec: int = Time.get_ticks_usec()
+	var state_after_own_second: GameStateData = AIStateSimulator.apply_turn_plan(state_after_opponent, player_id, own_second_plan, board_size)
+	add_profile_time(profile, "simulator_ms", Time.get_ticks_usec() - simulator_start_usec)
+	if state_after_own_second.game_over:
+		return get_terminal_score_for_player(state_after_own_second, player_id)
+
+	var opponent_player_id: int = 1 - player_id
+	var opponent_second_plans: Array[Dictionary] = get_plans_for_player_with_profile(
+		state_after_own_second,
+		opponent_player_id,
+		board_size,
+		turn_planner,
+		profile,
+		"opponent_second_planner_ms",
+		"deep_beam_opponent_second_plan_count"
+	)
+	if opponent_second_plans.is_empty():
+		return own_second_score
+
+	var opponent_second_beam: Array[Dictionary] = select_top_plans_for_player(
+		state_after_own_second,
+		opponent_player_id,
+		opponent_second_plans,
+		board_size,
+		DEEP_OPPONENT_SECOND_BEAM_WIDTH,
+		profile
+	)
+	increment_profile_count(profile, "deep_beam_opponent_second_selected_count", opponent_second_beam.size())
+	var best_opponent_second_score: float = get_best_plan_score_for_player(
+		state_after_own_second,
+		opponent_player_id,
+		opponent_second_beam,
+		board_size,
+		profile
+	)
+	return own_second_score - best_opponent_second_score * DEEP_SECOND_OPPONENT_WEIGHT
+
+func get_plans_for_player_with_profile(
+	game_state: GameStateData,
+	player_id: int,
+	board_size: int,
+	turn_planner,
+	profile: Dictionary,
+	time_key: String,
+	count_key: String
+) -> Array[Dictionary]:
+	var planner_start_usec: int = Time.get_ticks_usec()
+	var plans: Array[Dictionary] = turn_planner.create_turn_plans_from_state(game_state, player_id, board_size)
+	add_profile_time(profile, time_key, Time.get_ticks_usec() - planner_start_usec)
+	increment_profile_count(profile, count_key, plans.size())
+	return plans
+
+func select_top_plans_for_player(
+	game_state: GameStateData,
+	player_id: int,
+	plans: Array[Dictionary],
+	board_size: int,
+	limit: int,
+	profile: Dictionary
+) -> Array[Dictionary]:
+	if limit <= 0 or plans.is_empty():
+		return []
+
+	var fast_score_start_usec: int = Time.get_ticks_usec()
+	var scored_plans: Array[Dictionary] = []
+	for plan: Dictionary in plans:
+		scored_plans.append({
+			"plan": plan,
+			"score": score_turn_plan_fast(game_state, player_id, plan, board_size),
+		})
+	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - fast_score_start_usec)
+	return extract_plans(get_top_scored_plans(scored_plans, limit))
+
+func get_best_plan_score_for_player(
+	game_state: GameStateData,
+	player_id: int,
+	plans: Array[Dictionary],
+	board_size: int,
+	profile: Dictionary
+) -> float:
+	if plans.is_empty():
+		return 0.0
+
+	var best_score: float = -INF
+	var eval_start_usec: int = Time.get_ticks_usec()
+	for plan: Dictionary in plans:
+		var score: float = score_turn_plan(game_state, player_id, plan, board_size)
+		if score > best_score:
+			best_score = score
+	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - eval_start_usec)
+	increment_profile_count(profile, "deep_beam_evaluated_opponent_second_plans", plans.size())
+	return best_score if best_score != -INF else 0.0
+
+func get_terminal_score_for_player(game_state: GameStateData, player_id: int) -> float:
+	if game_state == null or !game_state.game_over:
+		return 0.0
+	if game_state.winner_player == player_id:
+		return SCORE_WIN
+	return -SCORE_WIN
+
 func select_top_opponent_response_plans(
 	game_state: GameStateData,
 	player_id: int,
@@ -370,16 +613,7 @@ func select_top_opponent_response_plans(
 ) -> Array[Dictionary]:
 	if opponent_top_n <= 0:
 		return []
-
-	var fast_score_start_usec: int = Time.get_ticks_usec()
-	var scored_plans: Array[Dictionary] = []
-	for plan: Dictionary in opponent_plans:
-		scored_plans.append({
-			"plan": plan,
-			"score": score_turn_plan_fast(game_state, player_id, plan, board_size),
-		})
-	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - fast_score_start_usec)
-	return extract_plans(get_top_scored_plans(scored_plans, opponent_top_n))
+	return select_top_plans_for_player(game_state, player_id, opponent_plans, board_size, opponent_top_n, profile)
 
 func extract_plans(scored_plans: Array[Dictionary]) -> Array[Dictionary]:
 	var plans: Array[Dictionary] = []

@@ -25,12 +25,88 @@ func play_turn(host: NetworkGameHost, tree: SceneTree) -> bool:
 		return false
 
 	var planner_start_usec: int = Time.get_ticks_usec()
-	var selected_plan: Dictionary = await execute_planned_turn(host, tree)
+	var selected_plan: Dictionary = await choose_plan_threaded(host, tree)
+	var own_planner_ms: float = float(Time.get_ticks_usec() - planner_start_usec) / 1000.0
+	if selected_plan.is_empty():
+		selected_plan = await execute_planned_turn(host, tree)
+		own_planner_ms = float(Time.get_ticks_usec() - planner_start_usec) / 1000.0
+	elif !can_play_turn(host):
+		return false
+	else:
+		await execute_turn_plan(host, tree, selected_plan)
+
 	var profile: Dictionary = selected_plan.get("profile", {}).duplicate()
-	profile["own_planner_ms"] = float(Time.get_ticks_usec() - planner_start_usec) / 1000.0
+	profile["own_planner_ms"] = own_planner_ms
 	evaluator.last_profile = profile
 	AIPerformanceCsvLogger.log_decision(host.game_state, player_id, profile, selected_plan)
 	return !selected_plan.is_empty()
+
+func choose_plan_threaded(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
+	if host == null or host.game_state == null or evaluator == null:
+		return {}
+
+	var state_snapshot: GameStateData = AIStateSimulator.clone_game_state(host.game_state)
+	var thread_args: Dictionary = {
+		"game_state": state_snapshot,
+		"player_id": player_id,
+		"difficulty_level": evaluator.difficulty_level,
+		"board_size": BOARD_SIZE,
+	}
+	var ai_thread: Thread = Thread.new()
+	var start_error: int = ai_thread.start(Callable(self, "_choose_plan_thread").bind(thread_args))
+	if start_error != OK:
+		push_warning("Could not start AI planning thread. Falling back to main-thread planning.")
+		return choose_plan_on_main_thread(state_snapshot)
+
+	if tree == null:
+		var blocking_result = ai_thread.wait_to_finish()
+		return blocking_result if blocking_result is Dictionary else {}
+
+	while ai_thread.is_alive():
+		await tree.process_frame
+
+	var result = ai_thread.wait_to_finish()
+	return result if result is Dictionary else {}
+
+func _choose_plan_thread(thread_args: Dictionary) -> Dictionary:
+	var game_state: GameStateData = thread_args.get("game_state", null) as GameStateData
+	var thread_player_id: int = int(thread_args.get("player_id", player_id))
+	var difficulty_level: int = int(thread_args.get("difficulty_level", AIMoveEvaluator.DEFAULT_DIFFICULTY_LEVEL))
+	var board_size: int = int(thread_args.get("board_size", BOARD_SIZE))
+	return choose_plan_on_main_thread(game_state, thread_player_id, difficulty_level, board_size)
+
+func choose_plan_on_main_thread(
+	game_state: GameStateData,
+	thread_player_id: int = -1,
+	difficulty_level: int = -1,
+	board_size: int = BOARD_SIZE
+) -> Dictionary:
+	if game_state == null:
+		return {}
+
+	var effective_player_id: int = player_id if thread_player_id == -1 else thread_player_id
+	var effective_difficulty: int = evaluator.difficulty_level if difficulty_level == -1 else difficulty_level
+	var thread_evaluator: AIMoveEvaluator = AIMoveEvaluator.new(effective_difficulty)
+	var thread_planner = AI_TURN_PLANNER_SCRIPT.new()
+	var selected_plan: Dictionary = thread_planner.choose_planned_turn(game_state, effective_player_id, thread_evaluator, board_size)
+	return strip_thread_plan_values(selected_plan)
+
+func strip_thread_plan_values(value):
+	if value is Dictionary:
+		var source_dict: Dictionary = value
+		var output_dict: Dictionary = {}
+		for key in source_dict:
+			if str(key) == "card":
+				continue
+			output_dict[key] = strip_thread_plan_values(source_dict[key])
+		return output_dict
+	if value is Array:
+		var source_array: Array = value
+		var output_array: Array = []
+		for item in source_array:
+			output_array.append(strip_thread_plan_values(item))
+		return output_array
+	return value
 
 func execute_planned_turn(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
 	if planner == null:
