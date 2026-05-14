@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dgl5umdn6mctq" path="res://Scripts/CardVisual.gd" id="1"]
 [ext_resource type="Script" uid="uid://b4rbx66i3ardt" path="res://Scripts/CardPatternView.gd" id="2"]
-[ext_resource type="Texture2D" uid="uid://dl0388jfrwad7" path="res://Assets/card_base.svg" id="3"]
+[ext_resource type="Texture2D" path="res://Assets/stamp_base.svg" id="3"]
 [ext_resource type="Shader" uid="uid://2w0ypeypns36" path="res://Shaders/card_tilt.gdshader" id="5"]
 [ext_resource type="FontFile" uid="uid://qkd6nyfjtoyf" path="res://Fonts/OLDENGL.TTF" id="5_7hptf"]
 [ext_resource type="Shader" uid="uid://cmkftqqcjg2yk" path="res://Shaders/card_shimmer.gdshader" id="6"]
@@ -16,7 +16,9 @@ resource_local_to_scene = true
 shader = ExtResource("5")
 shader_parameter/x_rot = 0.0
 shader_parameter/y_rot = 0.0
-shader_parameter/warp_strength = 0.0
+shader_parameter/warp_strength = 0.045
+shader_parameter/bend_axis = Vector2(1, 0)
+shader_parameter/bend_strength = 0.0
 shader_parameter/shine_strength = 0.18
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_shimmer"]
@@ -41,7 +43,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_button")
 script = ExtResource("1")
 
 [node name="Shadow" type="TextureRect" parent="." unique_id=1270621679]
-self_modulate = Color(0, 0, 0, 0.22)
+self_modulate = Color(0, 0, 0, 0)
 show_behind_parent = true
 layout_mode = 1
 anchors_preset = 15

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://ckgpomhljdak2"]
 
 [ext_resource type="Script" uid="uid://cngqle2h6g57n" path="res://Scenes/Deckbuilder.gd" id="1_deckbuilder"]
-[ext_resource type="Texture2D" uid="uid://br7yjr8xgo3o3" path="res://Assets/card_back_1.svg" id="2_cardback"]
+[ext_resource type="Texture2D" path="res://Assets/stamp_back.svg" id="2_cardback"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_coin"]
 bg_color = Color(1, 0.82, 0.12, 1)

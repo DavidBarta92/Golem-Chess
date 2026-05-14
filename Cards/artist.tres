@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="Card" format=3]
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://d06dxtexy7yy8"]
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_black"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_card"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="2_kf3i2"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_white"]
 
 [resource]
@@ -9,9 +10,10 @@ script = ExtResource("2_card")
 card_name = "Artist"
 card_code = "artist"
 duration = 5
-description = "When the linked piece captures, take a Nexus card from your deck and add it to your hand."
+card_art = ExtResource("2_kf3i2")
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
+description = "When the linked piece captures, take a Nexus card from your deck and add it to your hand."
 effect_type = "grant_card"
 effect_trigger = "on_capture"
 effect_settings = {

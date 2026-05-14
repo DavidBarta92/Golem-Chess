@@ -1,7 +1,7 @@
 extends RefCounted
 class_name DeckbuilderPackController
 
-const CARD_BACK_TEXTURE = preload("res://Assets/card_back_1.svg")
+const CARD_BACK_TEXTURE = preload("res://Assets/stamp_back.svg")
 const PACK_REWARD_CARD_COUNT: int = 3
 const PACK_ICON_SIZE: Vector2 = Vector2(72, 100)
 const MAX_VISIBLE_PACK_ICONS: int = 4

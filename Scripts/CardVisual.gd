@@ -4,8 +4,8 @@ class_name CardVisual
 const BURN_SHADER = preload("res://Shaders/card_burn.gdshader")
 const GRAYSCALE_SHADER = preload("res://Shaders/card_grayscale.gdshader")
 const CARD_ART_MASK_SHADER = preload("res://Shaders/card_art_mask.gdshader")
-const CARD_FRONT_TEXTURE = preload("res://Assets/card_base.svg")
-const CARD_BACK_TEXTURE = preload("res://Assets/card_back_1.svg")
+const CARD_FRONT_TEXTURE = preload("res://Assets/stamp_base.svg")
+const CARD_BACK_TEXTURE = preload("res://Assets/stamp_back.svg")
 const BASIC_TYPE_FRAME_TEXTURE = preload("res://Assets/basic_frame.svg")
 const NEXUS_TYPE_FRAME_TEXTURE = preload("res://Assets/nexus_frame.svg")
 const SHARED_TYPE_FRAME_TEXTURE = preload("res://Assets/shared_frame.svg")
@@ -15,6 +15,12 @@ const SHARED_TYPE_MASK_TEXTURE = preload("res://Assets/shared_mask.svg")
 const CARD_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR
 const CARD_ART_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 const CARD_SHIMMER_ENABLED: bool = false
+const DRAG_BEND_TILT_FACTOR: float = 0.055
+const DRAG_BEND_ROTATION_FACTOR: float = 0.0042
+const DRAG_BEND_STRENGTH_FACTOR: float = 0.000075
+const DRAG_BEND_MAX_TILT: float = 26.0
+const DRAG_BEND_MAX_STRENGTH: float = 0.052
+const DRAG_BEND_SMOOTHING: float = 18.0
 
 signal drag_started(card_visual: CardVisual)
 signal drag_moved(card_visual: CardVisual)
@@ -50,7 +56,7 @@ var tween_hover: Tween
 var tween_reset: Tween
 var tween_move: Tween
 var tween_burn: Tween
-var normal_shadow_alpha: float = 0.22
+var normal_shadow_alpha: float = 0.0
 var shimmer_time: float = 0.0
 var last_position: Vector2 = Vector2.ZERO
 var last_scale: Vector2 = Vector2.ONE
@@ -70,12 +76,15 @@ var is_hovered: bool = false
 var drop_target_active: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
 var normal_drag_offset: Vector2 = Vector2.ZERO
+var last_drag_global_position: Vector2 = Vector2.ZERO
+var drag_motion_velocity: Vector2 = Vector2.ZERO
 var collection_owned: bool = true
 var hover_raise_enabled: bool = true
 var rest_scale: Vector2 = Vector2.ONE
 
 func _ready() -> void:
 	_apply_texture_filter()
+	shadow.self_modulate.a = normal_shadow_alpha
 	description_label.scroll_active = false
 	description_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pivot_offset = size * 0.5
@@ -108,7 +117,9 @@ func _apply_texture_filter() -> void:
 
 func _process(_delta: float) -> void:
 	if is_dragging:
-		global_position = get_global_mouse_position() - drag_offset
+		var target_global_position: Vector2 = get_global_mouse_position() - drag_offset
+		update_drag_paper_motion(target_global_position, _delta)
+		global_position = target_global_position
 		drag_moved.emit(self)
 	elif is_hovered:
 		update_tilt_from_mouse()
@@ -235,6 +246,7 @@ func fly_home() -> void:
 	tween_move.parallel().tween_property(self, "rotation", 0.0, 0.22)
 	tween_move.parallel().tween_property(face_material, "shader_parameter/x_rot", 0.0, 0.22)
 	tween_move.parallel().tween_property(face_material, "shader_parameter/y_rot", 0.0, 0.22)
+	tween_move.parallel().tween_property(face_material, "shader_parameter/bend_strength", 0.0, 0.22)
 	tween_move.parallel().tween_property(shadow, "self_modulate:a", normal_shadow_alpha, 0.22)
 
 func fly_from_global_position(start_global_position: Vector2) -> void:
@@ -469,11 +481,15 @@ func start_drag() -> void:
 	z_index = 100
 	drag_offset = get_global_mouse_position() - global_position
 	normal_drag_offset = drag_offset
+	last_drag_global_position = global_position
+	drag_motion_velocity = Vector2.ZERO
 	scale = rest_scale * drag_scale
 	drag_started.emit(self)
 
 func finish_drag() -> void:
 	is_dragging = false
+	drag_motion_velocity = Vector2.ZERO
+	reset_drag_paper_motion()
 	drag_released.emit(self)
 
 func _on_mouse_entered() -> void:
@@ -515,6 +531,40 @@ func update_tilt_from_mouse() -> void:
 	face_material.set_shader_parameter("y_rot", y_rot)
 	rotation = deg_to_rad(y_rot * 0.08)
 
+func update_drag_paper_motion(target_global_position: Vector2, delta: float) -> void:
+	if face_down or !collection_owned or face_material == null:
+		return
+
+	var safe_delta: float = maxf(delta, 0.001)
+	var instant_velocity: Vector2 = (target_global_position - last_drag_global_position) / safe_delta
+	var smoothing_weight: float = 1.0 - exp(-DRAG_BEND_SMOOTHING * safe_delta)
+	drag_motion_velocity = drag_motion_velocity.lerp(instant_velocity, smoothing_weight)
+	last_drag_global_position = target_global_position
+
+	var local_velocity: Vector2 = drag_motion_velocity.rotated(-get_global_transform().get_rotation())
+	var x_rot: float = clampf(-local_velocity.y * DRAG_BEND_TILT_FACTOR, -DRAG_BEND_MAX_TILT, DRAG_BEND_MAX_TILT)
+	var y_rot: float = clampf(local_velocity.x * DRAG_BEND_TILT_FACTOR, -DRAG_BEND_MAX_TILT, DRAG_BEND_MAX_TILT)
+	var bend_strength: float = clampf(local_velocity.length() * DRAG_BEND_STRENGTH_FACTOR, 0.0, DRAG_BEND_MAX_STRENGTH)
+	var bend_axis: Vector2 = Vector2.RIGHT
+	if local_velocity.length_squared() > 1.0:
+		bend_axis = local_velocity.normalized()
+
+	face_material.set_shader_parameter("x_rot", x_rot)
+	face_material.set_shader_parameter("y_rot", y_rot)
+	face_material.set_shader_parameter("bend_axis", bend_axis)
+	face_material.set_shader_parameter("bend_strength", bend_strength)
+	rotation = deg_to_rad(clampf(local_velocity.x * DRAG_BEND_ROTATION_FACTOR, -8.5, 8.5))
+
+func reset_drag_paper_motion() -> void:
+	if face_material == null:
+		return
+
+	var tween_drag_reset: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween_drag_reset.tween_property(self, "rotation", 0.0, 0.16)
+	tween_drag_reset.parallel().tween_property(face_material, "shader_parameter/x_rot", 0.0, 0.16)
+	tween_drag_reset.parallel().tween_property(face_material, "shader_parameter/y_rot", 0.0, 0.16)
+	tween_drag_reset.parallel().tween_property(face_material, "shader_parameter/bend_strength", 0.0, 0.16)
+
 func update_ambient_motion(delta: float) -> void:
 	if face_down or !collection_owned or face_material == null:
 		return
@@ -539,6 +589,7 @@ func reset_tilt_and_scale() -> void:
 	if face_material:
 		tween_reset.parallel().tween_property(face_material, "shader_parameter/x_rot", 0.0, 0.24)
 		tween_reset.parallel().tween_property(face_material, "shader_parameter/y_rot", 0.0, 0.24)
+		tween_reset.parallel().tween_property(face_material, "shader_parameter/bend_strength", 0.0, 0.24)
 
 func _tween_scale(target_scale: Vector2, duration: float) -> void:
 	if tween_hover and tween_hover.is_running():

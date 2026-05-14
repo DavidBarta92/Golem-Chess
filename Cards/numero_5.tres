@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="Card" format=3 uid="uid://726segua6wat"]
 
 [ext_resource type="Texture2D" uid="uid://cu2ali7umjgo3" path="res://Assets/8b.png" id="1_fr16u"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="2_5j7x2"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_vqbu2"]
 [ext_resource type="Texture2D" uid="uid://b0d5umtb1h1c5" path="res://Assets/8w.png" id="3_vqbu2"]
 
@@ -8,6 +9,7 @@
 script = ExtResource("2_vqbu2")
 card_name = "Numero_5"
 card_code = "numero_5"
+card_art = ExtResource("2_5j7x2")
 white_piece_texture = ExtResource("3_vqbu2")
 black_piece_texture = ExtResource("1_fr16u")
 description = "No special effect."
