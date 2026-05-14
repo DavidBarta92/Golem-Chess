@@ -17,8 +17,6 @@ shader = ExtResource("5")
 shader_parameter/x_rot = 0.0
 shader_parameter/y_rot = 0.0
 shader_parameter/warp_strength = 0.045
-shader_parameter/bend_axis = Vector2(1, 0)
-shader_parameter/bend_strength = 0.0
 shader_parameter/shine_strength = 0.18
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_shimmer"]
