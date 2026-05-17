@@ -11,6 +11,7 @@ const MAX_PLAN_ATTACH_DEPTH: int = DeckManager.HAND_SIZE
 const MAX_PLAN_ATTACH_OPTIONS_PER_STATE: int = 4
 const MAX_PLAN_EXCHANGE_OPTIONS: int = 1
 const MAX_GENERATED_TURN_PLANS: int = 260
+const ATTACH_ACTION_DELAY: float = 1.00
 const TACTICAL_SEARCH_SCRIPT = preload("res://Scripts/AITacticalSearch.gd")
 
 var planning_evaluator: AIMoveEvaluator = null
@@ -136,8 +137,9 @@ func execute_ai_action(
 ) -> void:
 	host.on_player_action(make_executable_action(action))
 	selected_actions.append(action.duplicate())
-	if tree != null and action_delay > 0.0:
-		await tree.create_timer(action_delay).timeout
+	var delay: float = get_ai_action_delay(action, action_delay)
+	if tree != null and delay > 0.0:
+		await tree.create_timer(delay).timeout
 
 func create_sequential_plan(
 	actions: Array[Dictionary],
@@ -592,8 +594,9 @@ func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, p
 
 		if host.game_state.game_over or host.game_state.current_turn_player != player_id:
 			return true
-		if tree != null and action_delay > 0.0:
-			await tree.create_timer(action_delay).timeout
+		var delay: float = get_ai_action_delay(action, action_delay)
+		if tree != null and delay > 0.0:
+			await tree.create_timer(delay).timeout
 
 	if host.game_state.current_turn_player == player_id && !host.player_has_remaining_turn_action(player_id):
 		host.on_player_action(make_end_turn_action(player_id))
@@ -647,6 +650,13 @@ func make_executable_action(action: Dictionary) -> Dictionary:
 			continue
 		executable_action[key] = action[key]
 	return executable_action
+
+func get_ai_action_delay(action: Dictionary, action_delay: float) -> float:
+	if action_delay <= 0.0:
+		return 0.0
+	if str(action.get("type", "")) == ACTION_ATTACH_CARD:
+		return maxf(action_delay, ATTACH_ACTION_DELAY)
+	return action_delay
 
 func duplicate_actions(source_actions: Array[Dictionary]) -> Array[Dictionary]:
 	var duplicated_actions: Array[Dictionary] = []

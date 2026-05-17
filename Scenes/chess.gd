@@ -18,13 +18,19 @@ const OWN_DEFAULT_PIECE_TEXTURE = preload("res://Assets/king_back.svg")
 
 const TURN_WHITE = preload("res://Assets/turn-white.png")
 const TURN_BLACK = preload("res://Assets/turn-black.png")
+const DECK_COUNTER_DIGITS_TEXTURE = preload("res://Assets/deck_counter_digits.png")
+const DECK_COUNTER_BACKGROUND_TEXTURE = preload("res://Assets/counter_backround.png")
+const DECK_COUNTER_FRAME_TEXTURE = preload("res://Assets/counter_frame.png")
+const DECK_COUNTER_SHADOW_TEXTURE = preload("res://Assets/counter_shadow.png")
 
 const PIECE_MOVE = preload("res://Assets/Piece_move.png")
 const PIECE_EXHAUSTED_SHADER = preload("res://Shaders/piece_exhausted.gdshader")
-const OPPONENT_PIECE_RECOLOR_SHADER = preload("res://Shaders/opponent_piece_recolor.gdshader")
+const DECK_COUNTER_DIGIT_SHADER = preload("res://Shaders/deck_counter_digit.gdshader")
 const PIECE_ATTACH_GLOW_SHADER = preload("res://Shaders/piece_attach_glow.gdshader")
 const PIECE_ATTACH_RAYS_SHADER = preload("res://Shaders/piece_attach_rays.gdshader")
 const PIECE_TEXTURE_MORPH_SHADER = preload("res://Shaders/piece_texture_morph.gdshader")
+const PIECE_INVISIBILITY_REFRACT_SHADER = preload("res://Shaders/piece_invisibility_refract.gdshader")
+const PIECE_EXPIRE_DISSOLVE_SHADER = preload("res://Shaders/piece_expire_dissolve.gdshader")
 const BOARD_VISUAL_SCALE: float = 1.08
 # Adjust these values to tune the board-only perspective tilt.
 const BOARD_PERSPECTIVE_ENABLED: bool = true
@@ -78,12 +84,6 @@ const AMBIENT_BOARD_FILL_LIGHT_ENERGY: float = 0.16
 const AMBIENT_BOARD_LIGHT_COLOR = Color(1.0, 0.86, 0.58, 1.0)
 const AMBIENT_BOARD_LIGHT_SHADOW_COLOR = Color(0.0, 0.0, 0.0, 0.50)
 const AMBIENT_BOARD_LIGHT_SHADOW_SMOOTH: float = 2.0
-const OPPONENT_PIECE_RECOLOR_STRENGTH: float = 0.86
-const OPPONENT_PIECE_SHADOW_CHROMA: float = 0.16
-const OPPONENT_PIECE_SHADOW_COLOR = Color(0.30, 0.33, 0.38, 1.0)
-const OPPONENT_PIECE_MID_COLOR = Color(0.55, 0.57, 0.60, 1.0)
-const OPPONENT_PIECE_HIGHLIGHT_COLOR = Color(0.78, 0.79, 0.80, 1.0)
-
 const PLAYER_HAND_SIZE = DeckManager.HAND_SIZE
 const CARD_UI_SIZE = Vector2(164, 229)
 const CARD_HAND_SCALE = 0.648
@@ -99,6 +99,15 @@ const HIDDEN_CARD_GAP = 10
 const HIDDEN_CARD_SCALE = 0.70 * 0.75
 const HIDDEN_CARD_PREVIEW_ALPHA: float = 0.70
 const BOARD_MARKER_LINE_WIDTH = 1.8
+const CARD_ATTACH_TARGET_LINE_WIDTH: float = 1.45
+const CARD_ATTACH_TARGET_LINE_COLOR = Color(1.0, 0.72, 0.05, 1.0)
+const CARD_ATTACH_TARGET_GLOW_WIDTH: float = 5.6
+const CARD_ATTACH_TARGET_GLOW_COLOR = Color(1.0, 0.62, 0.04, 0.22)
+const CARD_ATTACH_TARGET_SOFT_GLOW_WIDTH: float = 9.0
+const CARD_ATTACH_TARGET_SOFT_GLOW_COLOR = Color(1.0, 0.74, 0.12, 0.10)
+const CARD_ATTACH_TARGET_WIGGLE_RISE: float = 2.2
+const CARD_ATTACH_TARGET_WIGGLE_ROTATION_DEGREES: float = 2.2
+const CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION: float = 0.105
 const SELECTED_PIECE_GLOW_NAME = "SelectedPieceGlow"
 const SELECTED_PIECE_GLOW_Z_INDEX = 24
 const SELECTED_PIECE_GLOW_STRENGTH: float = 1.0
@@ -106,8 +115,8 @@ const PIECE_ATTACH_GLOW_NAME = "PieceAttachGlow"
 const PIECE_ATTACH_RAYS_NAME = "PieceAttachRays"
 const PIECE_ATTACH_MORPH_NAME = "PieceAttachMorph"
 const PIECE_ATTACH_GLOW_Z_INDEX = 30
-const PIECE_ATTACH_RAYS_Z_INDEX = 31
-const PIECE_ATTACH_MORPH_Z_INDEX = 33
+const PIECE_ATTACH_MORPH_Z_INDEX = 31
+const PIECE_ATTACH_RAYS_Z_INDEX = 34
 const PIECE_ATTACH_GLOW_COLOR = Color(1.0, 0.82, 0.28, 1.0)
 const PIECE_ATTACH_GLOW_SIZE: float = 4.8
 const PIECE_ATTACH_GLOW_FILL_STRENGTH: float = 0.30
@@ -136,6 +145,14 @@ const PIECE_ATTACH_RAYS_CORE_INTENSITY: float = 2.0
 const PIECE_ATTACH_RAYS_SEED: float = 5.0
 const PIECE_ATTACH_RAYS_FADE_IN_DELAY_RATIO: float = 0.0
 const PIECE_ATTACH_RAYS_FADE_IN_DURATION_RATIO: float = 1.0
+const PIECE_INVISIBILITY_VISIBLE_HOLD_DURATION: float = 0.50
+const PIECE_INVISIBILITY_REFRACT_IN_DURATION: float = 0.42
+const PIECE_INVISIBILITY_FADE_OUT_DURATION: float = 0.48
+const PIECE_INVISIBILITY_REFRACT_DISTANCE: float = 16.0
+const PIECE_EXPIRE_DISSOLVE_DURATION: float = 0.62
+const PIECE_EXPIRE_DISSOLVE_BEAM_SIZE: float = 0.05
+const PIECE_EXPIRE_DISSOLVE_NOISE_DENSITY: float = 60.0
+const PIECE_EXPIRE_DISSOLVE_COLOR = Color(0.0, 1.02, 1.2, 1.0)
 const LAST_MOVE_ARROW_WIDTH = 3.0
 const LAST_MOVE_ARROW_ENDPOINT_INSET = 6.0
 const LAST_MOVE_ARROW_HEAD_LENGTH = 8.0
@@ -143,15 +160,37 @@ const LAST_MOVE_ARROW_HEAD_HALF_WIDTH = 5.0
 const LAST_MOVE_ARROW_COLOR = Color(1.0, 0.88, 0.18, 1.0)
 const DECK_COUNT_LABEL_SIZE = Vector2(88, 28)
 const DECK_COUNT_LABEL_GAP = 8
+const DECK_COUNTER_BACKGROUND_SIZE = Vector2(38, 38)
+const DECK_COUNTER_DIGIT_SIZE = DECK_COUNTER_BACKGROUND_SIZE
+const DECK_COUNTER_DIGIT_GAP: float = 0.0
+const DECK_COUNTER_FRAME_SIZE = Vector2(82, 42)
+const DECK_COUNTER_CONTENT_OFFSET = Vector2(
+	(DECK_COUNTER_FRAME_SIZE.x - (DECK_COUNTER_BACKGROUND_SIZE.x * 2.0 + DECK_COUNTER_DIGIT_GAP)) * 0.5,
+	(DECK_COUNTER_FRAME_SIZE.y - DECK_COUNTER_BACKGROUND_SIZE.y) * 0.5
+)
+const DECK_COUNTER_SIZE = DECK_COUNTER_FRAME_SIZE
+const DECK_COUNTER_ROLL_DURATION: float = 0.34
+const DECK_COUNTER_MOTION_BLUR: float = 1.0
+const DECK_COUNTER_OFFSET = Vector2(0.0, 0.0)
+const DECK_COUNTER_Z_INDEX: int = 952
 const PLAYER_NAME_LABEL_SIZE = Vector2(180, 28)
 const PLAYER_NAME_LABEL_GAP = 8
 const RULES_INFO_BUTTON_SIZE = Vector2(40, 40)
 const RULES_INFO_PANEL_SIZE = Vector2(310, 286)
 const RULES_INFO_PANEL_MARGIN = 24
-const ACTION_STATUS_SIZE = Vector2(118, 98)
+const ACTION_STATUS_SIZE = Vector2(132, 46)
 const ACTION_STATUS_MARGIN = 22
+const ACTION_STATUS_CELL_SIZE = Vector2(36, 42)
+const ACTION_STATUS_CELL_GAP: int = 7
+const ACTION_STATUS_FLIP_DURATION: float = 0.16
 const ACTION_STATUS_ACTIVE_COLOR = Color(1.0, 1.0, 1.0, 1.0)
-const ACTION_STATUS_INACTIVE_COLOR = Color(0.42, 0.42, 0.42, 1.0)
+const ACTION_STATUS_ACTIVE_TEXT_COLOR = Color(0.05, 0.05, 0.045, 1.0)
+const ACTION_STATUS_ACTIVE_BORDER_COLOR = Color(0.12, 0.10, 0.075, 1.0)
+const ACTION_STATUS_INACTIVE_COLOR = Color(0.94, 0.93, 0.89, 1.0)
+const ACTION_STATUS_BLOCKED_COLOR = Color(0.02, 0.02, 0.02, 1.0)
+const ACTION_STATUS_STATE_ACTIVE: String = "active"
+const ACTION_STATUS_STATE_EMPTY: String = "empty"
+const ACTION_STATUS_STATE_BLOCKED: String = "blocked"
 const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
@@ -218,19 +257,38 @@ var result_overlay: ColorRect
 var result_label: Label
 var has_received_server_state: bool = false
 var deck_count_label: Label
+var deck_counter_containers: Dictionary = {}
+var deck_counter_digit_nodes: Dictionary = {}
+var deck_counter_digit_materials: Dictionary = {}
+var deck_counter_values: Dictionary = {
+	1: -1,
+	-1: -1,
+}
+var deck_counter_roll_values: Dictionary = {}
+var deck_counter_tweens: Dictionary = {}
 var player_name_labels: Dictionary = {}
 var quit_confirmation_dialog: ConfirmationDialog
 var end_turn_button: Button
 var rules_info_button: Button
 var rules_info_panel: PanelContainer
 var rules_info_label: Label
-var action_status_container: VBoxContainer
+var action_status_container: HBoxContainer
+var action_status_cells: Dictionary = {}
 var action_status_labels: Dictionary = {}
+var action_status_states: Dictionary = {}
+var action_status_tweens: Dictionary = {}
 var white_deck_count_override: int = -1
 var black_deck_count_override: int = -1
 var hidden_card_preview_container: Control
 var hidden_card_previews: Array[CardVisual] = []
+var hidden_card_counts: Dictionary = {}
 var board_markers_node: Node2D
+var card_attach_target_marker: Node2D
+var card_attach_target_position: Vector2 = INVALID_BOARD_POS
+var card_attach_target_piece: Sprite2D
+var card_attach_target_piece_base_position: Vector2 = Vector2.ZERO
+var card_attach_target_piece_base_rotation: float = 0.0
+var card_attach_target_piece_tween: Tween
 var attach_point_light_texture: Texture2D
 var piece_attach_rays_square_texture: Texture2D
 var ambient_board_light: PointLight2D
@@ -247,6 +305,8 @@ var current_player_names: Dictionary = {
 }
 var pending_card_burn_animations: Array = []
 var card_burn_animation_sequence_running: bool = false
+var pending_piece_revert_animations: Array[Dictionary] = []
+var active_piece_revert_animation_count: int = 0
 var local_auto_end_turn_pending: bool = false
 var tutorial_mode_active: bool = false
 var tutorial_constraints_enabled: bool = false
@@ -280,6 +340,7 @@ func _ready():
 	create_hidden_card_preview_ui()
 	create_result_ui()
 	create_deck_count_ui()
+	create_deck_counter_ui()
 	create_player_name_ui()
 	create_quit_confirmation_ui()
 	create_end_turn_ui()
@@ -808,6 +869,174 @@ func create_deck_count_ui():
 	label_settings.outline_color = Color(0.0, 0.0, 0.0)
 	deck_count_label.label_settings = label_settings
 
+func create_deck_counter_ui() -> void:
+	for owner_color in [1, -1]:
+		var counter_container := Control.new()
+		canvas_layer.add_child(counter_container)
+		counter_container.name = "DeckCounter%d" % owner_color
+		counter_container.visible = false
+		counter_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		counter_container.size = DECK_COUNTER_SIZE
+		counter_container.z_index = DECK_COUNTER_Z_INDEX
+		deck_counter_containers[owner_color] = counter_container
+
+		var frame_rect := TextureRect.new()
+		counter_container.add_child(frame_rect)
+		frame_rect.name = "Frame"
+		frame_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		frame_rect.texture = DECK_COUNTER_FRAME_TEXTURE
+		frame_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		frame_rect.stretch_mode = TextureRect.STRETCH_SCALE
+		frame_rect.size = DECK_COUNTER_FRAME_SIZE
+		frame_rect.position = Vector2.ZERO
+		frame_rect.z_index = 0
+
+		var digit_nodes: Array = []
+		for digit_index in range(2):
+			var digit_position := DECK_COUNTER_CONTENT_OFFSET + Vector2(digit_index * (DECK_COUNTER_BACKGROUND_SIZE.x + DECK_COUNTER_DIGIT_GAP), 0.0)
+
+			var background_rect := TextureRect.new()
+			counter_container.add_child(background_rect)
+			background_rect.name = "Background%d" % digit_index
+			background_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			background_rect.texture = DECK_COUNTER_BACKGROUND_TEXTURE
+			background_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+			background_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			background_rect.stretch_mode = TextureRect.STRETCH_SCALE
+			background_rect.size = DECK_COUNTER_BACKGROUND_SIZE
+			background_rect.position = digit_position
+			background_rect.z_index = 1
+
+			var digit_rect := TextureRect.new()
+			counter_container.add_child(digit_rect)
+			digit_rect.name = "Digit%d" % digit_index
+			digit_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			digit_rect.texture = DECK_COUNTER_DIGITS_TEXTURE
+			digit_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+			digit_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			digit_rect.stretch_mode = TextureRect.STRETCH_SCALE
+			digit_rect.size = DECK_COUNTER_DIGIT_SIZE
+			digit_rect.position = digit_position
+			digit_rect.z_index = 2
+
+			var digit_material := ShaderMaterial.new()
+			digit_material.shader = DECK_COUNTER_DIGIT_SHADER
+			digit_material.set_shader_parameter("digit_atlas", DECK_COUNTER_DIGITS_TEXTURE)
+			digit_material.set_shader_parameter("roll_value", 0.0)
+			digit_material.set_shader_parameter("roll_direction", 1.0)
+			digit_material.set_shader_parameter("motion_blur", 0.0)
+			digit_material.set_shader_parameter("frame_count", 10.0)
+			digit_rect.material = digit_material
+
+			var digit_key: String = get_deck_counter_digit_key(owner_color, digit_index)
+			deck_counter_digit_materials[digit_key] = digit_material
+			deck_counter_roll_values[digit_key] = 0.0
+			digit_nodes.append(digit_rect)
+
+			var shadow_rect := TextureRect.new()
+			counter_container.add_child(shadow_rect)
+			shadow_rect.name = "Shadow%d" % digit_index
+			shadow_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			shadow_rect.texture = DECK_COUNTER_SHADOW_TEXTURE
+			shadow_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+			shadow_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			shadow_rect.stretch_mode = TextureRect.STRETCH_SCALE
+			shadow_rect.size = DECK_COUNTER_BACKGROUND_SIZE
+			shadow_rect.position = digit_position
+			shadow_rect.z_index = 3
+
+		deck_counter_digit_nodes[owner_color] = digit_nodes
+
+	update_deck_counter_ui(false)
+
+func update_deck_counter_ui(animate: bool = true) -> void:
+	for owner_color in [1, -1]:
+		var counter_container: Control = deck_counter_containers.get(owner_color, null) as Control
+		if counter_container == null:
+			continue
+
+		var deck_visual: CardVisual = get_deck_visual(owner_color)
+		if game_over or deck_visual == null or !is_instance_valid(deck_visual) or !deck_visual.visible:
+			counter_container.visible = false
+			continue
+
+		var deck_rect: Rect2 = deck_visual.get_global_rect()
+		counter_container.global_position = deck_rect.get_center() - DECK_COUNTER_SIZE * 0.5 + DECK_COUNTER_OFFSET
+		counter_container.visible = true
+		set_deck_counter_value(owner_color, get_card_deck_count(owner_color), animate)
+
+func set_deck_counter_value(owner_color: int, count: int, animate: bool) -> void:
+	var safe_count: int = clampi(count, 0, 99)
+	var previous_count: int = int(deck_counter_values.get(owner_color, -1))
+	if previous_count == safe_count:
+		return
+
+	deck_counter_values[owner_color] = safe_count
+	var should_animate: bool = animate and previous_count >= 0
+	var direction: int = 1
+	if should_animate and safe_count < previous_count:
+		direction = -1
+
+	var tens_digit: int = floori(float(safe_count) / 10.0)
+	var ones_digit: int = safe_count % 10
+	update_deck_counter_digit(owner_color, 0, tens_digit, direction, should_animate)
+	update_deck_counter_digit(owner_color, 1, ones_digit, direction, should_animate)
+
+func update_deck_counter_digit(owner_color: int, digit_index: int, target_digit: int, direction: int, animate: bool) -> void:
+	var digit_key: String = get_deck_counter_digit_key(owner_color, digit_index)
+	var digit_material: ShaderMaterial = deck_counter_digit_materials.get(digit_key, null) as ShaderMaterial
+	if digit_material == null:
+		return
+
+	var previous_tween: Tween = deck_counter_tweens.get(digit_key, null) as Tween
+	if previous_tween != null:
+		previous_tween.kill()
+		deck_counter_tweens.erase(digit_key)
+
+	var current_roll: float = float(deck_counter_roll_values.get(digit_key, float(target_digit)))
+	var target_roll: float = float(target_digit)
+	if animate:
+		target_roll = get_deck_counter_target_roll(current_roll, target_digit, direction)
+
+	deck_counter_roll_values[digit_key] = target_roll
+	digit_material.set_shader_parameter("roll_direction", float(direction))
+	if !animate or is_equal_approx(current_roll, target_roll):
+		digit_material.set_shader_parameter("roll_value", target_roll)
+		digit_material.set_shader_parameter("motion_blur", 0.0)
+		return
+
+	digit_material.set_shader_parameter("motion_blur", DECK_COUNTER_MOTION_BLUR)
+	var tween := create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+	deck_counter_tweens[digit_key] = tween
+	tween.tween_property(digit_material, "shader_parameter/roll_value", target_roll, DECK_COUNTER_ROLL_DURATION)
+	tween.parallel().tween_property(digit_material, "shader_parameter/motion_blur", 0.0, DECK_COUNTER_ROLL_DURATION)
+	tween.finished.connect(func():
+		if deck_counter_tweens.get(digit_key, null) == tween:
+			deck_counter_tweens.erase(digit_key)
+		if is_instance_valid(digit_material):
+			digit_material.set_shader_parameter("roll_value", target_roll)
+			digit_material.set_shader_parameter("motion_blur", 0.0)
+	)
+
+func get_deck_counter_target_roll(current_roll: float, target_digit: int, direction: int) -> float:
+	var current_digit: int = positive_mod_int(roundi(current_roll), 10)
+	if direction >= 0:
+		var forward_steps: int = positive_mod_int(target_digit - current_digit, 10)
+		return current_roll + float(forward_steps)
+
+	var backward_steps: int = positive_mod_int(current_digit - target_digit, 10)
+	return current_roll - float(backward_steps)
+
+func get_deck_counter_digit_key(owner_color: int, digit_index: int) -> String:
+	return "%d_%d" % [owner_color, digit_index]
+
+func positive_mod_int(value: int, divisor: int) -> int:
+	var result: int = value % divisor
+	if result < 0:
+		result += divisor
+	return result
+
 func create_player_name_ui():
 	player_name_labels[1] = create_player_name_label()
 	player_name_labels[-1] = create_player_name_label()
@@ -929,7 +1158,7 @@ func create_rules_info_ui():
 	update_rules_info_ui()
 
 func create_action_status_ui() -> void:
-	action_status_container = VBoxContainer.new()
+	action_status_container = HBoxContainer.new()
 	canvas_layer.add_child(action_status_container)
 	action_status_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	action_status_container.anchor_left = 0.5
@@ -938,23 +1167,35 @@ func create_action_status_ui() -> void:
 	action_status_container.anchor_bottom = 0.5
 	action_status_container.custom_minimum_size = ACTION_STATUS_SIZE
 	action_status_container.z_index = 910
-	action_status_container.add_theme_constant_override("separation", 8)
+	action_status_container.add_theme_constant_override("separation", ACTION_STATUS_CELL_GAP)
 
 	var label_settings := LabelSettings.new()
-	label_settings.font_size = 24
-	label_settings.font_color = ACTION_STATUS_ACTIVE_COLOR
-	label_settings.outline_size = 5
-	label_settings.outline_color = Color(0.0, 0.0, 0.0)
+	label_settings.font_size = 25
+	label_settings.font_color = ACTION_STATUS_ACTIVE_TEXT_COLOR
+	label_settings.outline_size = 0
 
+	var action_letters: Dictionary = {
+		"Switch": "S",
+		"Attach": "A",
+		"Move": "M",
+	}
 	for action_name in ["Switch", "Attach", "Move"]:
+		var action_cell := PanelContainer.new()
+		action_status_container.add_child(action_cell)
+		action_cell.custom_minimum_size = ACTION_STATUS_CELL_SIZE
+		action_cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		action_cell.pivot_offset = ACTION_STATUS_CELL_SIZE * 0.5
+		action_cell.scale = Vector2.ONE
+
 		var action_label := Label.new()
-		action_status_container.add_child(action_label)
-		action_label.text = action_name
-		action_label.custom_minimum_size = Vector2(ACTION_STATUS_SIZE.x, 26)
-		action_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		action_cell.add_child(action_label)
+		action_label.text = str(action_letters[action_name])
+		action_label.custom_minimum_size = ACTION_STATUS_CELL_SIZE
+		action_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		action_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		action_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		action_label.label_settings = label_settings.duplicate()
+		action_status_cells[action_name] = action_cell
 		action_status_labels[action_name] = action_label
 
 	arrange_action_status_ui()
@@ -1102,7 +1343,7 @@ func finish_card_attach_process(piece_position: Vector2) -> void:
 	update_action_status_ui()
 
 func has_pending_visual_processes() -> bool:
-	return active_card_attach_process_count > 0 or card_burn_animation_sequence_running or !pending_card_burn_animations.is_empty()
+	return active_card_attach_process_count > 0 or active_piece_revert_animation_count > 0 or card_burn_animation_sequence_running or !pending_card_burn_animations.is_empty() or !pending_piece_revert_animations.is_empty()
 
 func wait_for_pending_visual_processes() -> void:
 	while is_inside_tree() and has_pending_visual_processes():
@@ -1126,13 +1367,81 @@ func update_action_status_ui() -> void:
 	set_action_status_label("Move", can_move_action_now())
 
 func set_action_status_label(action_name: String, is_available: bool) -> void:
-	var action_label: Label = action_status_labels.get(action_name, null) as Label
-	if action_label == null:
+	var action_state: String = ACTION_STATUS_STATE_BLOCKED
+	if can_control_current_turn():
+		action_state = ACTION_STATUS_STATE_ACTIVE if is_available else ACTION_STATUS_STATE_EMPTY
+	set_action_status_cell_state(action_name, action_state)
+
+func set_action_status_cell_state(action_name: String, action_state: String) -> void:
+	var action_cell: PanelContainer = action_status_cells.get(action_name, null) as PanelContainer
+	if action_cell == null:
 		return
+
+	var previous_state: String = str(action_status_states.get(action_name, ""))
+	if previous_state == action_state:
+		return
+	action_status_states[action_name] = action_state
+
+	var previous_tween: Tween = action_status_tweens.get(action_name, null) as Tween
+	if previous_tween != null:
+		previous_tween.kill()
+
+	if previous_state == "":
+		apply_action_status_cell_state(action_name, action_state)
+		return
+
+	action_cell.pivot_offset = ACTION_STATUS_CELL_SIZE * 0.5
+	var tween: Tween = create_tween()
+	action_status_tweens[action_name] = tween
+	tween.finished.connect(func():
+		if action_status_tweens.get(action_name, null) == tween:
+			action_status_tweens.erase(action_name)
+	)
+	tween.set_trans(Tween.TRANS_CUBIC)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(action_cell, "scale:y", 0.0, ACTION_STATUS_FLIP_DURATION * 0.5)
+	tween.tween_callback(Callable(self, "apply_action_status_cell_state").bind(action_name, action_state))
+	tween.tween_property(action_cell, "scale:y", 1.0, ACTION_STATUS_FLIP_DURATION * 0.5)
+
+func apply_action_status_cell_state(action_name: String, action_state: String) -> void:
+	var action_cell: PanelContainer = action_status_cells.get(action_name, null) as PanelContainer
+	var action_label: Label = action_status_labels.get(action_name, null) as Label
+	if action_cell == null or action_label == null:
+		return
+
+	var cell_color: Color = ACTION_STATUS_ACTIVE_COLOR
+	var border_color: Color = ACTION_STATUS_ACTIVE_BORDER_COLOR
+	var label_color: Color = ACTION_STATUS_ACTIVE_TEXT_COLOR
+	var label_text: String = get_action_status_letter(action_name)
+	if action_state == ACTION_STATUS_STATE_EMPTY:
+		cell_color = ACTION_STATUS_INACTIVE_COLOR
+		label_text = ""
+	elif action_state == ACTION_STATUS_STATE_BLOCKED:
+		cell_color = ACTION_STATUS_BLOCKED_COLOR
+		border_color = Color(0.0, 0.0, 0.0, 1.0)
+		label_text = ""
+
+	var style_box := StyleBoxFlat.new()
+	style_box.bg_color = cell_color
+	style_box.border_color = border_color
+	style_box.set_border_width_all(2)
+	style_box.set_corner_radius_all(3)
+	action_cell.add_theme_stylebox_override("panel", style_box)
+	action_label.text = label_text
 
 	var label_settings: LabelSettings = action_label.label_settings
 	if label_settings != null:
-		label_settings.font_color = ACTION_STATUS_ACTIVE_COLOR if is_available else ACTION_STATUS_INACTIVE_COLOR
+		label_settings.font_color = label_color
+
+func get_action_status_letter(action_name: String) -> String:
+	match action_name:
+		"Switch":
+			return "S"
+		"Attach":
+			return "A"
+		"Move":
+			return "M"
+	return ""
 
 func can_switch_action_now() -> bool:
 	if !can_control_current_turn():
@@ -1387,15 +1696,18 @@ func mark_card_exchanged_this_turn(owner_color: int):
 func _on_card_drag_started(card_visual: CardVisual):
 	hide_hover_piece_details()
 	card_visual.set_drop_target_active(false)
+	update_card_attach_target_feedback(INVALID_BOARD_POS)
 
 func _on_card_drag_moved(card_visual: CardVisual):
 	var target_pos: Vector2 = get_card_drop_piece_position(card_visual)
 	var can_drop_on_deck: bool = can_drop_card_on_deck(card_visual)
 	card_visual.set_drop_target_active(target_pos != INVALID_BOARD_POS or can_drop_on_deck)
+	update_card_attach_target_feedback(target_pos)
 	handle_card_reorder(card_visual)
 
 func _on_card_drag_released(card_visual: CardVisual):
 	var target_pos: Vector2 = get_card_drop_piece_position(card_visual)
+	update_card_attach_target_feedback(INVALID_BOARD_POS)
 	if target_pos != INVALID_BOARD_POS:
 		attach_card_visual_to_piece(card_visual, target_pos)
 	elif can_drop_card_on_deck(card_visual):
@@ -1440,6 +1752,81 @@ func get_card_drop_piece_position(card_visual: CardVisual) -> Vector2:
 		return board_pos
 
 	return INVALID_BOARD_POS
+
+func update_card_attach_target_feedback(target_pos: Vector2) -> void:
+	if target_pos == card_attach_target_position:
+		return
+
+	clear_card_attach_target_feedback()
+	if target_pos == INVALID_BOARD_POS or !is_valid_position(target_pos):
+		return
+
+	card_attach_target_position = target_pos
+	card_attach_target_marker = create_card_attach_target_marker(target_pos)
+	start_card_attach_target_piece_wiggle(target_pos)
+
+func create_card_attach_target_marker(target_pos: Vector2) -> Node2D:
+	if board_markers_node == null:
+		return null
+
+	var marker_group := Node2D.new()
+	marker_group.name = "CardAttachTargetMarker"
+	marker_group.z_index = 0
+	var points: PackedVector2Array = get_board_cell_polygon_local(target_pos, CELL_WIDTH * 0.035)
+	marker_group.add_child(create_card_attach_target_line(points, CARD_ATTACH_TARGET_SOFT_GLOW_WIDTH, CARD_ATTACH_TARGET_SOFT_GLOW_COLOR, "SoftGlow"))
+	marker_group.add_child(create_card_attach_target_line(points, CARD_ATTACH_TARGET_GLOW_WIDTH, CARD_ATTACH_TARGET_GLOW_COLOR, "Glow"))
+	marker_group.add_child(create_card_attach_target_line(points, CARD_ATTACH_TARGET_LINE_WIDTH, CARD_ATTACH_TARGET_LINE_COLOR, "Outline"))
+	board_markers_node.add_child(marker_group)
+	return marker_group
+
+func create_card_attach_target_line(points: PackedVector2Array, line_width: float, line_color: Color, line_name: String) -> Line2D:
+	var line := Line2D.new()
+	line.name = line_name
+	line.default_color = line_color
+	line.width = line_width
+	line.joint_mode = Line2D.LINE_JOINT_ROUND
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.z_index = 0
+	enable_canvas_item_antialiasing(line)
+	for point: Vector2 in points:
+		line.add_point(point)
+	if points.size() > 0:
+		line.add_point(points[0])
+	return line
+
+func start_card_attach_target_piece_wiggle(target_pos: Vector2) -> void:
+	var holder: Sprite2D = get_piece_holder_at(target_pos)
+	if holder == null or !is_instance_valid(holder):
+		return
+
+	card_attach_target_piece = holder
+	card_attach_target_piece_base_position = holder.position
+	card_attach_target_piece_base_rotation = holder.rotation
+	var lift: Vector2 = Vector2(0.0, -CARD_ATTACH_TARGET_WIGGLE_RISE)
+	var tilt: float = deg_to_rad(CARD_ATTACH_TARGET_WIGGLE_ROTATION_DEGREES)
+	card_attach_target_piece_tween = create_tween().set_loops().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	card_attach_target_piece_tween.tween_property(holder, "position", card_attach_target_piece_base_position + lift, CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION)
+	card_attach_target_piece_tween.parallel().tween_property(holder, "rotation", card_attach_target_piece_base_rotation + tilt, CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION)
+	card_attach_target_piece_tween.tween_property(holder, "position", card_attach_target_piece_base_position, CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION)
+	card_attach_target_piece_tween.parallel().tween_property(holder, "rotation", card_attach_target_piece_base_rotation - tilt, CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION)
+	card_attach_target_piece_tween.tween_property(holder, "position", card_attach_target_piece_base_position + lift * 0.55, CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION)
+	card_attach_target_piece_tween.parallel().tween_property(holder, "rotation", card_attach_target_piece_base_rotation, CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION)
+	card_attach_target_piece_tween.tween_property(holder, "position", card_attach_target_piece_base_position, CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION)
+
+func clear_card_attach_target_feedback() -> void:
+	if card_attach_target_marker != null and is_instance_valid(card_attach_target_marker):
+		card_attach_target_marker.queue_free()
+	card_attach_target_marker = null
+	card_attach_target_position = INVALID_BOARD_POS
+
+	if card_attach_target_piece_tween != null and card_attach_target_piece_tween.is_running():
+		card_attach_target_piece_tween.kill()
+	card_attach_target_piece_tween = null
+	if card_attach_target_piece != null and is_instance_valid(card_attach_target_piece):
+		card_attach_target_piece.position = card_attach_target_piece_base_position
+		card_attach_target_piece.rotation = card_attach_target_piece_base_rotation
+	card_attach_target_piece = null
 
 func can_drop_card_on_deck(card_visual: CardVisual) -> bool:
 	if card_visual == null or !is_instance_valid(card_visual):
@@ -1877,6 +2264,73 @@ func count_card_name(card_names: Array, card_name: String) -> int:
 			count += 1
 	return count
 
+func collect_piece_revert_animations(previous_snapshot: Dictionary, recent_card_expirations: Array) -> Array[Dictionary]:
+	var animations: Array[Dictionary] = []
+	if !has_received_server_state or should_skip_visual_animations():
+		return animations
+
+	var used_previous_positions: Dictionary = {}
+	for expiration_value in recent_card_expirations:
+		if !(expiration_value is Dictionary):
+			continue
+
+		var expiration: Dictionary = expiration_value
+		var board_pos: Vector2 = value_to_vector2(expiration.get("piece_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		if !is_valid_position(board_pos) or !piece_objects.has(board_pos):
+			continue
+
+		var expired_card_name: String = str(expiration.get("card_name", ""))
+		if expired_card_name.is_empty():
+			continue
+
+		var piece: Piece = piece_objects[board_pos] as Piece
+		if piece == null or piece.attached_card != null:
+			continue
+
+		var expiration_player_id: int = int(expiration.get("player_id", -1))
+		if expiration_player_id >= 0 and get_player_id_for_color(piece.color) != expiration_player_id:
+			continue
+
+		var previous_state: Dictionary = find_previous_expiring_piece_state(
+			previous_snapshot,
+			used_previous_positions,
+			piece.color,
+			expired_card_name,
+			board_pos
+		)
+		if previous_state.is_empty():
+			continue
+
+		animations.append({
+			"position": board_pos,
+			"start_texture": previous_state.get("texture", get_default_piece_texture(piece.color)),
+		})
+
+	return animations
+
+func find_previous_expiring_piece_state(previous_snapshot: Dictionary, used_previous_positions: Dictionary, piece_color: int, expired_card_name: String, preferred_pos: Vector2) -> Dictionary:
+	if previous_snapshot.has(preferred_pos) and !used_previous_positions.has(preferred_pos):
+		var preferred_state: Dictionary = previous_snapshot[preferred_pos]
+		if int(preferred_state.get("color", 0)) == piece_color and str(preferred_state.get("card_name", "")) == expired_card_name:
+			used_previous_positions[preferred_pos] = true
+			return preferred_state
+
+	for position_value in previous_snapshot:
+		var previous_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
+		if used_previous_positions.has(previous_pos):
+			continue
+
+		var previous_state: Dictionary = previous_snapshot[position_value]
+		if int(previous_state.get("color", 0)) != piece_color:
+			continue
+		if str(previous_state.get("card_name", "")) != expired_card_name:
+			continue
+
+		used_previous_positions[previous_pos] = true
+		return previous_state
+
+	return {}
+
 func animate_recent_card_expirations(recent_card_expirations: Array) -> void:
 	for expiration_value in recent_card_expirations:
 		var expiration: Dictionary = expiration_value
@@ -1943,6 +2397,61 @@ func queue_card_expire_animation(piece_position: Vector2, expired_card: Card) ->
 		"expired_card": queued_card,
 	})
 	process_card_burn_animation_queue()
+
+func queue_piece_revert_animation(piece_position: Vector2, start_texture: Texture2D) -> void:
+	if start_texture == null or !is_valid_position(piece_position):
+		return
+
+	pending_piece_revert_animations.append({
+		"position": piece_position,
+		"start_texture": start_texture,
+	})
+
+func play_pending_piece_revert_animations() -> void:
+	if pending_piece_revert_animations.is_empty():
+		return
+
+	var animations: Array[Dictionary] = pending_piece_revert_animations.duplicate()
+	pending_piece_revert_animations.clear()
+	play_piece_revert_animations(animations)
+
+func play_piece_revert_animations(animations: Array[Dictionary]) -> void:
+	for animation: Dictionary in animations:
+		var board_pos: Vector2 = value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		var start_texture: Texture2D = animation.get("start_texture", null) as Texture2D
+		play_piece_revert_animation(board_pos, start_texture)
+
+func play_piece_revert_animation(piece_position: Vector2, start_texture: Texture2D) -> void:
+	if should_skip_visual_animations() or start_texture == null or !is_valid_position(piece_position):
+		return
+
+	var holder: Sprite2D = get_piece_holder_at(piece_position)
+	if holder == null or !is_instance_valid(holder):
+		return
+
+	active_piece_revert_animation_count += 1
+	var overlay := Sprite2D.new()
+	overlay.name = "PieceExpireDissolve"
+	overlay.z_index = PIECE_ATTACH_MORPH_Z_INDEX + 1
+	overlay.z_as_relative = true
+	overlay.light_mask = PIECE_EFFECT_LIGHT_RECEIVE_MASK
+	holder.add_child(overlay)
+	apply_piece_morph_overlay_target_visual(overlay, holder, start_texture)
+
+	var material := ShaderMaterial.new()
+	material.shader = PIECE_EXPIRE_DISSOLVE_SHADER
+	material.set_shader_parameter("progress", 0.0)
+	material.set_shader_parameter("beam_size", PIECE_EXPIRE_DISSOLVE_BEAM_SIZE)
+	material.set_shader_parameter("noise_density", PIECE_EXPIRE_DISSOLVE_NOISE_DENSITY)
+	material.set_shader_parameter("color", PIECE_EXPIRE_DISSOLVE_COLOR)
+	overlay.material = material
+
+	var tween: Tween = create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(material, "shader_parameter/progress", 1.0, PIECE_EXPIRE_DISSOLVE_DURATION)
+	await tween.finished
+	if is_instance_valid(overlay):
+		overlay.queue_free()
+	active_piece_revert_animation_count = maxi(0, active_piece_revert_animation_count - 1)
 
 func process_card_burn_animation_queue() -> void:
 	if card_burn_animation_sequence_running:
@@ -2091,6 +2600,7 @@ func arrange_card_visuals(visuals: Array[CardVisual], animate: bool):
 func _process(_delta):
 	update_hovered_piece()
 	update_deck_count_hover()
+	update_deck_counter_ui()
 	update_action_status_ui()
 	arrange_action_status_ui()
 	if rules_info_panel != null && rules_info_panel.visible:
@@ -2610,11 +3120,12 @@ func get_piece_visual_state_snapshot() -> Dictionary:
 
 	return snapshot
 
-func collect_state_attach_animations(previous_snapshot: Dictionary) -> Array[Dictionary]:
+func collect_state_attach_animations(previous_snapshot: Dictionary, hidden_cards: Array = [], previous_hidden_card_counts: Dictionary = {}) -> Array[Dictionary]:
 	var animations: Array[Dictionary] = []
 	if !has_received_server_state or should_skip_visual_animations():
 		return animations
 
+	var animated_positions: Dictionary = {}
 	for position_value in piece_objects:
 		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
 		if !previous_snapshot.has(board_pos):
@@ -2635,19 +3146,114 @@ func collect_state_attach_animations(previous_snapshot: Dictionary) -> Array[Dic
 			"card": piece.attached_card,
 			"start_texture": previous_state.get("texture", get_default_piece_texture(piece.color)),
 		})
+		animated_positions[board_pos] = true
+
+	append_hidden_invisibility_attach_animations(animations, animated_positions, previous_snapshot, hidden_cards, previous_hidden_card_counts)
 
 	return animations
+
+func append_hidden_invisibility_attach_animations(animations: Array[Dictionary], animated_positions: Dictionary, previous_snapshot: Dictionary, hidden_cards: Array, previous_hidden_card_counts: Dictionary) -> void:
+	var used_positions: Dictionary = animated_positions.duplicate()
+	var new_hidden_card_counts: Dictionary = get_new_hidden_card_counts(hidden_cards, previous_hidden_card_counts)
+	for hidden_card_value in hidden_cards:
+		if !(hidden_card_value is Dictionary):
+			continue
+
+		var hidden_card_data: Dictionary = hidden_card_value
+		var owner_player_id: int = int(hidden_card_data.get("owner_player_id", -1))
+		if owner_player_id < 0 or owner_player_id == get_own_player_id():
+			continue
+
+		var card_name: String = str(hidden_card_data.get("card_name", ""))
+		var hidden_signature: String = get_hidden_card_signature(owner_player_id, card_name)
+		var new_count: int = int(new_hidden_card_counts.get(hidden_signature, 0))
+		if new_count <= 0:
+			continue
+
+		var card: Card = CardLibrary.duplicate_card(card_name)
+		if card == null or card.effect_type != CardEffect.TYPE_INVISIBLE_TO_ENEMY:
+			continue
+
+		var piece_color: int = get_color_for_player_id(owner_player_id)
+		var hidden_pos: Vector2 = find_recently_hidden_piece_position(previous_snapshot, used_positions, piece_color)
+		if hidden_pos == INVALID_BOARD_POS:
+			continue
+
+		var previous_state: Dictionary = previous_snapshot[hidden_pos]
+		animations.append({
+			"position": hidden_pos,
+			"card": card,
+			"start_texture": previous_state.get("texture", get_default_piece_texture(piece_color)),
+			"piece_color": piece_color,
+			"hide_after_attach": true,
+		})
+		used_positions[hidden_pos] = true
+		new_hidden_card_counts[hidden_signature] = new_count - 1
+
+func find_recently_hidden_piece_position(previous_snapshot: Dictionary, used_positions: Dictionary, piece_color: int) -> Vector2:
+	for position_value in previous_snapshot:
+		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
+		if !is_valid_position(board_pos) or used_positions.has(board_pos) or piece_objects.has(board_pos):
+			continue
+
+		var previous_state: Dictionary = previous_snapshot[position_value]
+		if int(previous_state.get("color", 0)) != piece_color:
+			continue
+		var previous_card_name: String = str(previous_state.get("card_name", ""))
+		if !previous_card_name.is_empty():
+			continue
+		return board_pos
+
+	return INVALID_BOARD_POS
+
+func get_hidden_card_counts_from_state(hidden_cards: Array) -> Dictionary:
+	var counts: Dictionary = {}
+	for hidden_card_value in hidden_cards:
+		if !(hidden_card_value is Dictionary):
+			continue
+
+		var hidden_card_data: Dictionary = hidden_card_value
+		var owner_player_id: int = int(hidden_card_data.get("owner_player_id", -1))
+		var card_name: String = str(hidden_card_data.get("card_name", ""))
+		if owner_player_id < 0 or card_name.is_empty():
+			continue
+
+		var signature: String = get_hidden_card_signature(owner_player_id, card_name)
+		counts[signature] = int(counts.get(signature, 0)) + 1
+
+	return counts
+
+func get_new_hidden_card_counts(hidden_cards: Array, previous_hidden_card_counts: Dictionary) -> Dictionary:
+	var current_counts: Dictionary = get_hidden_card_counts_from_state(hidden_cards)
+	var new_counts: Dictionary = {}
+	for signature in current_counts:
+		var current_count: int = int(current_counts.get(signature, 0))
+		var previous_count: int = int(previous_hidden_card_counts.get(signature, 0))
+		var added_count: int = current_count - previous_count
+		if added_count > 0:
+			new_counts[signature] = added_count
+	return new_counts
+
+func get_hidden_card_signature(owner_player_id: int, card_name: String) -> String:
+	return "%d:%s" % [owner_player_id, card_name]
 
 func play_state_attach_animations(animations: Array[Dictionary]) -> void:
 	for animation: Dictionary in animations:
 		var board_pos: Vector2 = value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
 		var card: Card = animation.get("card", null) as Card
 		var start_texture: Texture2D = animation.get("start_texture", null) as Texture2D
+		var hide_after_attach: bool = bool(animation.get("hide_after_attach", false))
 		if !is_valid_position(board_pos) or card == null:
 			finish_card_attach_process(board_pos)
 			continue
 
-		await play_piece_card_attach_animation(board_pos, card, start_texture)
+		if hide_after_attach:
+			var piece_color: int = int(animation.get("piece_color", 0))
+			if piece_color == 0:
+				piece_color = get_color_for_player_id(1 - get_own_player_id())
+			await play_hidden_piece_invisibility_attach_animation(board_pos, card, start_texture, piece_color)
+		else:
+			await play_piece_card_attach_animation(board_pos, card, start_texture)
 		finish_card_attach_process(board_pos)
 
 func get_piece_holder_at(board_pos: Vector2) -> Sprite2D:
@@ -2905,6 +3511,134 @@ func play_piece_card_attach_animation(piece_position: Vector2, card: Card, start
 		rays_overlay.queue_free()
 	cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
 
+func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, card: Card, start_texture: Texture2D, piece_color: int) -> void:
+	if should_skip_visual_animations() or !is_inside_tree():
+		return
+	if card == null or !is_valid_position(piece_position) or start_texture == null:
+		return
+
+	var holder: Sprite2D = create_hidden_invisibility_animation_holder(piece_position, start_texture)
+	if holder == null:
+		return
+
+	var attached_texture: Texture2D = get_card_piece_texture_for_color(card, piece_color)
+	if attached_texture == null:
+		attached_texture = start_texture
+
+	var attach_point_light: PointLight2D = create_piece_attach_point_light(holder)
+	var attach_piece_light: PointLight2D = create_piece_attach_sprite_light(holder)
+	remove_piece_attach_effects(holder)
+	var glow_overlay: Sprite2D = create_piece_attach_glow_overlay(holder)
+	var rays_overlay: Sprite2D = create_piece_attach_rays_overlay(holder)
+	var glow_material: ShaderMaterial = glow_overlay.material as ShaderMaterial
+	var rays_material: ShaderMaterial = rays_overlay.material as ShaderMaterial
+
+	var in_tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	in_tween.tween_property(glow_material, "shader_parameter/glow_strength", PIECE_ATTACH_GLOW_BASE_STRENGTH, PIECE_ATTACH_IN_DURATION)
+	in_tween.parallel().tween_property(rays_material, "shader_parameter/size", PIECE_ATTACH_RAYS_SWITCH_SIZE, PIECE_ATTACH_IN_DURATION)
+	in_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 1.0, PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DURATION_RATIO).set_delay(PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DELAY_RATIO)
+	if attach_point_light != null:
+		in_tween.parallel().tween_property(attach_point_light, "energy", ATTACH_POINT_LIGHT_ENERGY, PIECE_ATTACH_IN_DURATION)
+	if attach_piece_light != null:
+		in_tween.parallel().tween_property(attach_piece_light, "energy", ATTACH_PIECE_LIGHT_ENERGY, PIECE_ATTACH_IN_DURATION)
+	await in_tween.finished
+
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	await get_tree().create_timer(PIECE_ATTACH_PRE_SWITCH_HOLD_DURATION).timeout
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	var switch_tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	switch_tween.tween_property(glow_material, "shader_parameter/glow_strength", PIECE_ATTACH_GLOW_SWITCH_STRENGTH, PIECE_ATTACH_GLOW_SWITCH_DURATION)
+	await switch_tween.finished
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	await play_piece_texture_morph(holder, attached_texture, PIECE_ATTACH_MORPH_DURATION, attach_point_light, attach_piece_light)
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	holder.texture = attached_texture
+	apply_piece_visual_size(holder, piece_position)
+	var morph_overlay: Node = holder.get_node_or_null(PIECE_ATTACH_MORPH_NAME)
+	if morph_overlay != null:
+		morph_overlay.queue_free()
+	update_attach_point_light_position(attach_point_light, holder)
+	update_attach_point_light_position(attach_piece_light, holder)
+	sync_piece_attach_overlay_to_holder(glow_overlay, holder)
+	apply_piece_attach_rays_overlay_transform(rays_overlay, holder)
+
+	await get_tree().create_timer(PIECE_ATTACH_POST_SWITCH_HOLD_DURATION).timeout
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	var out_tween: Tween = create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	out_tween.tween_property(glow_material, "shader_parameter/glow_strength", 0.0, PIECE_ATTACH_OUT_DURATION)
+	out_tween.parallel().tween_property(rays_material, "shader_parameter/size", PIECE_ATTACH_RAYS_START_SIZE, PIECE_ATTACH_OUT_DURATION)
+	out_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 0.0, PIECE_ATTACH_OUT_DURATION)
+	if attach_point_light != null:
+		out_tween.parallel().tween_property(attach_point_light, "energy", 0.0, PIECE_ATTACH_OUT_DURATION)
+	if attach_piece_light != null:
+		out_tween.parallel().tween_property(attach_piece_light, "energy", 0.0, PIECE_ATTACH_OUT_DURATION)
+	await out_tween.finished
+
+	if is_instance_valid(glow_overlay):
+		glow_overlay.queue_free()
+	if is_instance_valid(rays_overlay):
+		rays_overlay.queue_free()
+	cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+
+	if !is_inside_tree() or !is_instance_valid(holder):
+		return
+
+	await get_tree().create_timer(PIECE_INVISIBILITY_VISIBLE_HOLD_DURATION).timeout
+	if !is_inside_tree() or !is_instance_valid(holder):
+		return
+
+	var refract_material := ShaderMaterial.new()
+	refract_material.shader = PIECE_INVISIBILITY_REFRACT_SHADER
+	refract_material.set_shader_parameter("dist", PIECE_INVISIBILITY_REFRACT_DISTANCE)
+	refract_material.set_shader_parameter("alpha", 0.0)
+	holder.material = refract_material
+
+	var refract_tween: Tween = create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	refract_tween.tween_property(refract_material, "shader_parameter/alpha", 1.0, PIECE_INVISIBILITY_REFRACT_IN_DURATION)
+	await refract_tween.finished
+	if !is_inside_tree() or !is_instance_valid(holder):
+		return
+
+	var fade_tween: Tween = create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	fade_tween.tween_property(holder, "self_modulate:a", 0.0, PIECE_INVISIBILITY_FADE_OUT_DURATION)
+	await fade_tween.finished
+	if is_instance_valid(holder):
+		holder.queue_free()
+
+func create_hidden_invisibility_animation_holder(piece_position: Vector2, start_texture: Texture2D) -> Sprite2D:
+	if pieces_node == null or start_texture == null:
+		return null
+
+	var holder: Sprite2D = TEXTURE_HOLDER.instantiate() as Sprite2D
+	if holder == null:
+		return null
+	if side != null && !side:
+		holder.global_rotation_degrees = 180
+	pieces_node.add_child(holder)
+	holder.light_mask = PIECE_LIGHT_RECEIVE_MASK
+	holder.position = get_board_position_local_position(piece_position)
+	holder.set_meta("board_pos", piece_position)
+	holder.z_index = get_piece_depth_z_index(piece_position)
+	holder.texture = start_texture
+	holder.self_modulate = Color.WHITE
+	apply_piece_visual_size(holder, piece_position)
+	return holder
+
 func create_piece_attach_glow_overlay(holder: Sprite2D) -> Sprite2D:
 	return create_piece_glow_overlay(holder, PIECE_ATTACH_GLOW_NAME, PIECE_ATTACH_GLOW_Z_INDEX, 0.0)
 
@@ -3051,6 +3785,7 @@ func clear_resolved_pending_card_attach_positions() -> void:
 
 func display_board():
 	DebugLog.info("display_board() called: white=%s side=%s" % [white, side])
+	clear_card_attach_target_feedback()
 	clear_resolved_pending_card_attach_positions()
 	update_board_markers()
 	for child in pieces_node.get_children():
@@ -3117,24 +3852,6 @@ func apply_piece_exhausted_material(holder: Sprite2D, board_pos: Vector2) -> voi
 		exhausted_material.shader = PIECE_EXHAUSTED_SHADER
 		holder.material = exhausted_material
 		return
-
-	if should_apply_opponent_piece_recolor(holder, piece):
-		holder.material = create_opponent_piece_recolor_material()
-
-func should_apply_opponent_piece_recolor(holder: Sprite2D, piece: Piece) -> bool:
-	if holder.texture != DEFAULT_PIECE_TEXTURE:
-		return false
-	return piece.color * get_own_color() < 0
-
-func create_opponent_piece_recolor_material() -> ShaderMaterial:
-	var material := ShaderMaterial.new()
-	material.shader = OPPONENT_PIECE_RECOLOR_SHADER
-	material.set_shader_parameter("recolor_strength", OPPONENT_PIECE_RECOLOR_STRENGTH)
-	material.set_shader_parameter("shadow_chroma_strength", OPPONENT_PIECE_SHADOW_CHROMA)
-	material.set_shader_parameter("shadow_color", OPPONENT_PIECE_SHADOW_COLOR)
-	material.set_shader_parameter("mid_color", OPPONENT_PIECE_MID_COLOR)
-	material.set_shader_parameter("highlight_color", OPPONENT_PIECE_HIGHLIGHT_COLOR)
-	return material
 
 func show_options():
 	moves = get_moves(selected_piece)
@@ -3211,6 +3928,7 @@ func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
 	DebugLog.info("set_move() end: waiting for END TURN")
 
 	display_board()
+	call_deferred("play_pending_piece_revert_animations")
 
 	if (start_pos.x != end_pos.x || start_pos.y != end_pos.y) && (white && board[end_pos.x][end_pos.y] > 0 || !white && board[end_pos.x][end_pos.y] < 0):
 		start_pos = end_pos
@@ -3279,10 +3997,12 @@ func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> v
 		return
 
 	var owner_color: int = piece.color
+	var expiring_piece_texture: Texture2D = get_piece_visual_texture(piece)
 	var expired_card: Card = piece.use_turn()
 	if expired_card == null:
 		return
 
+	queue_piece_revert_animation(piece_pos, expiring_piece_texture)
 	if MoveRules.is_nexus_card(expired_card):
 		handle_expired_nexus_card_locally(owner_color, expired_card)
 		return
@@ -3569,6 +4289,8 @@ func is_stalemate():
 
 func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], last_move: Dictionary = {}):
 	var previous_piece_visual_state: Dictionary = get_piece_visual_state_snapshot()
+	var previous_hidden_card_counts: Dictionary = hidden_card_counts.duplicate()
+	var current_hidden_card_counts: Dictionary = get_hidden_card_counts_from_state(hidden_cards)
 	var previous_white_hand_names: Array[String] = get_card_names_from_hand(white_card_hand)
 	var previous_black_hand_names: Array[String] = get_card_names_from_hand(black_card_hand)
 
@@ -3621,12 +4343,16 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	hide_hover_piece_details()
 	update_hidden_card_previews(hidden_cards)
 	update_card_presentation()
-	var state_attach_animations: Array[Dictionary] = collect_state_attach_animations(previous_piece_visual_state)
+	var state_attach_animations: Array[Dictionary] = collect_state_attach_animations(previous_piece_visual_state, hidden_cards, previous_hidden_card_counts)
+	var state_piece_revert_animations: Array[Dictionary] = collect_piece_revert_animations(previous_piece_visual_state, recent_card_expirations)
+	hidden_card_counts = current_hidden_card_counts
 	var animated_attach_positions: Dictionary = get_attach_animation_positions(state_attach_animations)
 	display_board()
 	finish_resolved_pending_card_attach_processes(animated_attach_positions)
 	if !state_attach_animations.is_empty():
 		call_deferred("play_state_attach_animations", state_attach_animations)
+	if !state_piece_revert_animations.is_empty():
+		call_deferred("play_piece_revert_animations", state_piece_revert_animations)
 	if has_received_server_state && !should_skip_visual_animations():
 		if recent_card_transfers.is_empty():
 			animate_state_draw_if_needed(1, previous_white_hand_names, current_white_hand_names)
@@ -3734,19 +4460,22 @@ func arrange_action_status_ui() -> void:
 	if action_status_container == null:
 		return
 
-	var board_screen_size: float = BOARD_SIZE * CELL_WIDTH * get_board_screen_scale()
-	var left_offset: float = board_screen_size * 0.5 + ACTION_STATUS_MARGIN
-	var top_offset: float = -ACTION_STATUS_SIZE.y * 0.5
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	var max_left_offset: float = viewport_size.x * 0.5 - ACTION_STATUS_SIZE.x - ACTION_STATUS_MARGIN
-	if left_offset > max_left_offset:
-		left_offset = -board_screen_size * 0.5 - ACTION_STATUS_MARGIN - ACTION_STATUS_SIZE.x
-	var min_left_offset: float = -viewport_size.x * 0.5 + ACTION_STATUS_MARGIN
-	left_offset = max(left_offset, min_left_offset)
+	action_status_container.anchor_left = 1.0
+	action_status_container.anchor_right = 1.0
+	action_status_container.anchor_top = 1.0
+	action_status_container.anchor_bottom = 1.0
+
+	var button_center_x: float = -ACTION_STATUS_MARGIN - ACTION_STATUS_SIZE.x * 0.5
+	var bottom_offset: float = -ACTION_STATUS_MARGIN - ACTION_STATUS_SIZE.y
+	if end_turn_button != null:
+		button_center_x = (end_turn_button.offset_left + end_turn_button.offset_right) * 0.5
+		bottom_offset = end_turn_button.offset_top - 8.0
+	var left_offset: float = button_center_x - ACTION_STATUS_SIZE.x * 0.5
+	var top_offset: float = bottom_offset - ACTION_STATUS_SIZE.y
 	action_status_container.offset_left = left_offset
 	action_status_container.offset_right = left_offset + ACTION_STATUS_SIZE.x
 	action_status_container.offset_top = top_offset
-	action_status_container.offset_bottom = top_offset + ACTION_STATUS_SIZE.y
+	action_status_container.offset_bottom = bottom_offset
 
 func get_board_screen_scale() -> float:
 	var camera: Camera2D = $"../Camera2D"

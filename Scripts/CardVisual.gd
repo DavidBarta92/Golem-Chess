@@ -15,10 +15,10 @@ const SHARED_TYPE_MASK_TEXTURE = preload("res://Assets/shared_mask.svg")
 const CARD_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR
 const CARD_ART_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 const CARD_SHIMMER_ENABLED: bool = false
-const DRAG_TILT_FACTOR: float = 0.078
-const DRAG_TILT_ROTATION_FACTOR: float = 0.0042
-const DRAG_TILT_MAX: float = 34.0
-const DRAG_TILT_SMOOTHING: float = 18.0
+const DRAG_TILT_FACTOR: float = 0.115
+const DRAG_TILT_ROTATION_FACTOR: float = 0.0072
+const DRAG_TILT_MAX: float = 46.0
+const DRAG_TILT_SMOOTHING: float = 12.0
 const DROP_TARGET_SCALE_IN_DURATION: float = 0.24
 const DROP_TARGET_SCALE_OUT_DURATION: float = 0.12
 const AMBIENT_MOTION_FLOAT_PIXELS: float = 5.5
@@ -383,7 +383,7 @@ func create_card_snapshot_texture() -> Texture2D:
 	var snapshot_viewport := SubViewport.new()
 	snapshot_viewport.transparent_bg = true
 	snapshot_viewport.size = viewport_size
-	snapshot_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	snapshot_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	snapshot_viewport.disable_3d = true
 
 	var snapshot_source: CardVisual = duplicate() as CardVisual
@@ -393,6 +393,10 @@ func create_card_snapshot_texture() -> Texture2D:
 	snapshot_source.position = Vector2.ZERO
 	snapshot_source.rotation = 0.0
 	snapshot_source.scale = Vector2.ONE
+	snapshot_source.is_dragging = false
+	snapshot_source.is_hovered = false
+	snapshot_source.ambient_motion_enabled = false
+	snapshot_source.drop_target_active = false
 	snapshot_source.modulate = Color.WHITE
 	snapshot_source.self_modulate = Color.WHITE
 	if snapshot_source is Control:
@@ -405,10 +409,15 @@ func create_card_snapshot_texture() -> Texture2D:
 
 	snapshot_viewport.add_child(snapshot_source)
 	add_child(snapshot_viewport)
-	var source_shadow: CanvasItem = snapshot_source.get_node_or_null("Shadow") as CanvasItem
-	if source_shadow != null:
-		source_shadow.visible = false
+	await get_tree().process_frame
+	if !is_inside_tree() or !is_instance_valid(snapshot_viewport) or !is_instance_valid(snapshot_source):
+		if is_instance_valid(snapshot_viewport):
+			snapshot_viewport.queue_free()
+		return null
 
+	prepare_card_snapshot_source(snapshot_source)
+
+	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	if !is_inside_tree() or !is_instance_valid(snapshot_viewport):
 		return null
@@ -424,6 +433,47 @@ func create_card_snapshot_texture() -> Texture2D:
 		return null
 
 	return ImageTexture.create_from_image(image)
+
+func prepare_card_snapshot_source(snapshot_source: CardVisual) -> void:
+	if snapshot_source == null or !is_instance_valid(snapshot_source):
+		return
+
+	snapshot_source.is_dragging = false
+	snapshot_source.is_hovered = false
+	snapshot_source.is_assigned = false
+	snapshot_source.drop_target_active = false
+	snapshot_source.ambient_motion_enabled = false
+	snapshot_source.preview_alpha_enabled = false
+	snapshot_source.collection_owned = true
+	snapshot_source.face_down = face_down
+	snapshot_source.modulate = Color.WHITE
+	snapshot_source.self_modulate = Color.WHITE
+	snapshot_source.position = Vector2.ZERO
+	snapshot_source.rotation = 0.0
+	snapshot_source.scale = Vector2.ONE
+	snapshot_source.z_index = 0
+	if snapshot_source is Control:
+		var source_control := snapshot_source as Control
+		source_control.offset_left = 0.0
+		source_control.offset_top = 0.0
+		source_control.offset_right = size.x
+		source_control.offset_bottom = size.y
+		source_control.pivot_offset = size * 0.5
+
+	if card_print != null:
+		snapshot_source.set_card_print(card_print)
+	else:
+		snapshot_source.set_card(card)
+	snapshot_source.set_face_down(face_down)
+	snapshot_source.set_card_content_visible(true)
+	snapshot_source.disabled = true
+	snapshot_source.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	snapshot_source.shimmer.visible = false
+	snapshot_source.shadow.visible = false
+	snapshot_source.shadow.self_modulate.a = 0.0
+	if snapshot_source.face_material != null:
+		snapshot_source.face_material.set_shader_parameter("x_rot", 0.0)
+		snapshot_source.face_material.set_shader_parameter("y_rot", 0.0)
 
 func set_card_content_visible(value: bool) -> void:
 	card_face.visible = value
@@ -567,8 +617,8 @@ func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_button: InputEventMouseButton = event as InputEventMouseButton
 		if mouse_button.button_index == MOUSE_BUTTON_LEFT and mouse_button.pressed:
-			start_drag()
 			accept_event()
+			start_drag()
 		return
 
 	if not event is InputEventMouseMotion:
@@ -658,7 +708,7 @@ func update_drag_paper_motion(target_global_position: Vector2, delta: float) -> 
 
 	face_material.set_shader_parameter("x_rot", x_rot)
 	face_material.set_shader_parameter("y_rot", y_rot)
-	rotation = deg_to_rad(clampf(local_velocity.x * DRAG_TILT_ROTATION_FACTOR, -8.5, 8.5))
+	rotation = deg_to_rad(clampf(local_velocity.x * DRAG_TILT_ROTATION_FACTOR, -14.0, 14.0))
 
 func reset_drag_paper_motion() -> void:
 	if face_material == null:

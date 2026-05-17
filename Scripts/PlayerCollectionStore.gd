@@ -2,6 +2,7 @@ extends Node
 
 const COLLECTION_SCHEMA_VERSION: int = 4
 const COLLECTION_PATH: String = "user://player_collection.json"
+const SAVED_DECKS_PATH: String = "user://decks.json"
 const LOCAL_PROVIDER: String = "local_json"
 const DEFAULT_VARIANT_ID: String = "standard"
 const DEFAULT_VARIANT_NAME: String = "Standard"
@@ -42,11 +43,13 @@ func ensure_loaded() -> void:
 					collection_data = _create_default_collection()
 				else:
 					_add_missing_default_collection_prints()
+				_add_missing_saved_deck_prints()
 				save_collection()
 				return
 
 	collection_data = _create_default_collection()
 	is_loaded = true
+	_add_missing_saved_deck_prints()
 	save_collection()
 
 func list_items() -> Array:
@@ -301,6 +304,94 @@ func _add_missing_default_collection_prints() -> void:
 		items.append(_create_collection_item(card_print, default_quantity))
 
 	collection_data["items"] = items
+
+func _add_missing_saved_deck_prints() -> void:
+	if str(collection_data.get("provider", LOCAL_PROVIDER)) != LOCAL_PROVIDER:
+		return
+
+	var items: Array = _get_items()
+	var item_index_by_print_id: Dictionary = {}
+	for index in range(items.size()):
+		var item = items[index]
+		if item is Dictionary:
+			item_index_by_print_id[str(item.get("print_id", ""))] = index
+
+	for card_print_value in _get_saved_deck_prints():
+		var card_print: CardPrint = card_print_value as CardPrint
+		if card_print == null:
+			continue
+
+		if item_index_by_print_id.has(card_print.print_id):
+			var item_index: int = int(item_index_by_print_id[card_print.print_id])
+			var existing_item: Dictionary = items[item_index]
+			if int(existing_item.get("quantity", 0)) < 1:
+				existing_item["quantity"] = 1
+				items[item_index] = existing_item
+			continue
+
+		items.append(_create_collection_item(card_print, 1))
+		item_index_by_print_id[card_print.print_id] = items.size() - 1
+
+	collection_data["items"] = items
+
+func _get_saved_deck_prints() -> Array:
+	var saved_prints: Dictionary = {}
+	if !FileAccess.file_exists(SAVED_DECKS_PATH):
+		return []
+
+	var file := FileAccess.open(SAVED_DECKS_PATH, FileAccess.READ)
+	if file == null:
+		return []
+
+	var parsed = JSON.parse_string(file.get_as_text())
+	var decks: Array = []
+	if parsed is Dictionary:
+		var parsed_decks = parsed.get("decks", [])
+		if parsed_decks is Array:
+			decks = parsed_decks
+	elif parsed is Array:
+		decks = parsed
+
+	for deck_value in decks:
+		if !(deck_value is Dictionary):
+			continue
+
+		var deck: Dictionary = deck_value
+		var cards = deck.get("cards", [])
+		if !(cards is Array):
+			continue
+
+		for deck_card in cards:
+			var card_print: CardPrint = _get_saved_deck_card_print(deck_card)
+			if card_print != null:
+				saved_prints[card_print.print_id] = card_print
+
+	return saved_prints.values()
+
+func _get_saved_deck_card_print(deck_card) -> CardPrint:
+	if deck_card is Dictionary:
+		var print_id: String = str(deck_card.get("print_id", "")).strip_edges()
+		if !print_id.is_empty():
+			var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
+			if card_print != null:
+				return card_print
+
+		var card_code: String = str(deck_card.get("card_code", "")).strip_edges()
+		if card_code.is_empty():
+			card_code = _get_card_code_for_name(str(deck_card.get("card_name", "")))
+		if card_code.is_empty():
+			return null
+
+		var variant_id: String = CardPrintLibrary.normalize_variant_id(str(deck_card.get("variant_id", DEFAULT_VARIANT_ID)))
+		var card_print_by_variant: CardPrint = CardPrintLibrary.get_print(CardPrintLibrary.get_print_id(card_code, variant_id))
+		if card_print_by_variant != null:
+			return card_print_by_variant
+		return CardPrintLibrary.get_print(CardPrintLibrary.get_default_print_id_for_card_code(card_code))
+
+	var legacy_card_code: String = _get_card_code_for_name(str(deck_card))
+	if legacy_card_code.is_empty():
+		return null
+	return CardPrintLibrary.get_print(CardPrintLibrary.get_default_print_id_for_card_code(legacy_card_code))
 
 func _get_default_collection_quantity(card_print: CardPrint) -> int:
 	if card_print == null:
