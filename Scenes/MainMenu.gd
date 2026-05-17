@@ -4,6 +4,9 @@ const AI_VS_AI_UNLOCK_KEY: Key = KEY_A
 const AI_VS_AI_UNLOCK_PRESS_COUNT: int = 3
 const MAX_AI_VS_AI_MATCH_COUNT: int = 9999
 const TOP_BAR_HEIGHT: int = 60
+const FILM_GRAIN_SLIDER_MIN: float = 0.0
+const FILM_GRAIN_SLIDER_MAX: float = 0.16
+const FILM_GRAIN_SLIDER_STEP: float = 0.005
 
 @onready var ai_vs_ai_controls: Control = $AIVsAIControls
 @onready var dev_tools_window: Window = $DevToolsWindow
@@ -25,6 +28,8 @@ var settings_button: Button
 var settings_dialog: AcceptDialog
 var player_name_field: LineEdit
 var fullscreen_check: CheckBox
+var film_grain_intensity_slider: HSlider
+var film_grain_intensity_value_label: Label
 var last_move_arrow_check: CheckBox
 var enemy_attack_markers_check: CheckBox
 var points_hud: HBoxContainer
@@ -170,7 +175,7 @@ func create_settings_dialog() -> void:
 	settings_dialog.title = "Settings"
 	settings_dialog.dialog_text = ""
 	settings_dialog.exclusive = true
-	settings_dialog.min_size = Vector2i(440, 320)
+	settings_dialog.min_size = Vector2i(480, 350)
 	settings_dialog.confirmed.connect(_on_settings_confirmed)
 	settings_dialog.canceled.connect(_on_settings_canceled)
 
@@ -199,9 +204,36 @@ func create_settings_dialog() -> void:
 	player_name_field.placeholder_text = GameConfig.DEFAULT_PLAYER_NAME
 	player_name_field.max_length = GameConfig.MAX_PLAYER_NAME_LENGTH
 
+	var video_tab := VBoxContainer.new()
+	tabs.add_child(video_tab)
+	video_tab.name = "Video"
+	video_tab.add_theme_constant_override("separation", 12)
+
 	fullscreen_check = CheckBox.new()
-	general_tab.add_child(fullscreen_check)
+	video_tab.add_child(fullscreen_check)
 	fullscreen_check.text = "Fullscreen"
+
+	var film_grain_label := Label.new()
+	video_tab.add_child(film_grain_label)
+	film_grain_label.text = "Film grain intensity"
+
+	var film_grain_row := HBoxContainer.new()
+	video_tab.add_child(film_grain_row)
+	film_grain_row.add_theme_constant_override("separation", 12)
+
+	film_grain_intensity_slider = HSlider.new()
+	film_grain_row.add_child(film_grain_intensity_slider)
+	film_grain_intensity_slider.min_value = FILM_GRAIN_SLIDER_MIN
+	film_grain_intensity_slider.max_value = FILM_GRAIN_SLIDER_MAX
+	film_grain_intensity_slider.step = FILM_GRAIN_SLIDER_STEP
+	film_grain_intensity_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_connect_once(film_grain_intensity_slider.value_changed, Callable(self, "_on_film_grain_intensity_slider_changed"))
+
+	film_grain_intensity_value_label = Label.new()
+	film_grain_row.add_child(film_grain_intensity_value_label)
+	film_grain_intensity_value_label.custom_minimum_size = Vector2(58, 0)
+	film_grain_intensity_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	film_grain_intensity_value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 	var ui_tab := VBoxContainer.new()
 	tabs.add_child(ui_tab)
@@ -415,18 +447,31 @@ func _on_exit_button_pressed():
 func _on_settings_button_pressed() -> void:
 	player_name_field.text = PlayerSettingsStore.get_player_name()
 	fullscreen_check.button_pressed = PlayerSettingsStore.is_fullscreen_enabled()
+	film_grain_intensity_slider.value = PlayerSettingsStore.get_film_grain_intensity()
+	update_film_grain_intensity_value_label(film_grain_intensity_slider.value)
 	last_move_arrow_check.button_pressed = PlayerSettingsStore.is_last_move_arrow_enabled()
 	enemy_attack_markers_check.button_pressed = PlayerSettingsStore.is_enemy_attack_markers_enabled()
-	settings_dialog.popup_centered(Vector2i(440, 320))
+	settings_dialog.popup_centered(Vector2i(480, 350))
 
 func _on_settings_confirmed() -> void:
 	PlayerSettingsStore.set_player_name(player_name_field.text)
 	PlayerSettingsStore.set_fullscreen_enabled(fullscreen_check.button_pressed)
+	PlayerSettingsStore.set_film_grain_intensity(float(film_grain_intensity_slider.value))
 	PlayerSettingsStore.set_last_move_arrow_enabled(last_move_arrow_check.button_pressed)
 	PlayerSettingsStore.set_enemy_attack_markers_enabled(enemy_attack_markers_check.button_pressed)
 
 func _on_settings_canceled() -> void:
 	player_name_field.text = PlayerSettingsStore.get_player_name()
 	fullscreen_check.button_pressed = PlayerSettingsStore.is_fullscreen_enabled()
+	film_grain_intensity_slider.value = PlayerSettingsStore.get_film_grain_intensity()
+	update_film_grain_intensity_value_label(film_grain_intensity_slider.value)
 	last_move_arrow_check.button_pressed = PlayerSettingsStore.is_last_move_arrow_enabled()
 	enemy_attack_markers_check.button_pressed = PlayerSettingsStore.is_enemy_attack_markers_enabled()
+
+func _on_film_grain_intensity_slider_changed(value: float) -> void:
+	update_film_grain_intensity_value_label(value)
+
+func update_film_grain_intensity_value_label(value: float) -> void:
+	if film_grain_intensity_value_label == null:
+		return
+	film_grain_intensity_value_label.text = "%.1f%%" % (value * 100.0)

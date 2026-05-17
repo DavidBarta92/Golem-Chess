@@ -19,5 +19,5 @@ void fragment() {
 	float light = 1.0 + (centered.x * sin(yr) + centered.y * sin(xr)) * 0.18;
 	float glare = 1.0 - smoothstep(0.0, 0.55, distance(UV, vec2(0.24 + sin(yr) * 0.18, 0.18 + sin(xr) * 0.18)));
 	vec3 color = tex.rgb * light + vec3(0.88, 0.95, 1.0) * glare * shine_strength;
-	COLOR = vec4(color, tex.a * in_bounds);
+	COLOR = vec4(color, tex.a * COLOR.a * in_bounds);
 }

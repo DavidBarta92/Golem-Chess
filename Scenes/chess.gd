@@ -13,27 +13,76 @@ const CELL_WIDTH: int = BoardConfig.CELL_WIDTH
 const TEXTURE_HOLDER = preload("res://Scenes/texture_holder.tscn")
 const CARD_VISUAL = preload("res://Scenes/CardVisual.tscn")
 
-const BLACK_BISHOP = preload("res://Assets/black_bishop.png")
-const BLACK_KING = preload("res://Assets/black_king.png")
-const BLACK_KNIGHT = preload("res://Assets/black_knight.png")
-const BLACK_PAWN = preload("res://Assets/black_pawn.png")
-const BLACK_QUEEN = preload("res://Assets/black_queen.png")
-const BLACK_ROOK = preload("res://Assets/black_rook.png")
-const WHITE_BISHOP = preload("res://Assets/white_bishop.png")
-const WHITE_KING = preload("res://Assets/white_king.png")
-const WHITE_KNIGHT = preload("res://Assets/white_knight.png")
-const WHITE_PAWN = preload("res://Assets/white_pawn.png")
-const WHITE_QUEEN = preload("res://Assets/white_queen.png")
-const WHITE_ROOK = preload("res://Assets/white_rook.png")
+const DEFAULT_PIECE_TEXTURE = preload("res://Assets/king.svg")
+const OWN_DEFAULT_PIECE_TEXTURE = preload("res://Assets/king_back.svg")
 
 const TURN_WHITE = preload("res://Assets/turn-white.png")
 const TURN_BLACK = preload("res://Assets/turn-black.png")
 
 const PIECE_MOVE = preload("res://Assets/Piece_move.png")
 const PIECE_EXHAUSTED_SHADER = preload("res://Shaders/piece_exhausted.gdshader")
-const PIECE_SELECTED_OUTLINE_SHADER = preload("res://Shaders/piece_selected_outline.gdshader")
-const BOARD_TILE_LIGHT = preload("res://Assets/board_tile_light.svg")
-const BOARD_TILE_DARK = preload("res://Assets/board_tile_dark.svg")
+const OPPONENT_PIECE_RECOLOR_SHADER = preload("res://Shaders/opponent_piece_recolor.gdshader")
+const PIECE_ATTACH_GLOW_SHADER = preload("res://Shaders/piece_attach_glow.gdshader")
+const PIECE_ATTACH_RAYS_SHADER = preload("res://Shaders/piece_attach_rays.gdshader")
+const PIECE_TEXTURE_MORPH_SHADER = preload("res://Shaders/piece_texture_morph.gdshader")
+const BOARD_VISUAL_SCALE: float = 1.08
+# Adjust these values to tune the board-only perspective tilt.
+const BOARD_PERSPECTIVE_ENABLED: bool = true
+const BOARD_PERSPECTIVE_TOP_SCALE: float = 0.74
+const BOARD_PERSPECTIVE_BOTTOM_SCALE: float = 1.05
+const BOARD_PERSPECTIVE_VERTICAL_SCALE: float = 0.72
+const BOARD_TILE_LIGHT_COLOR = Color(0.561, 0.427, 0.165, 1.0)
+const BOARD_TILE_DARK_COLOR = Color(0.408, 0.302, 0.110, 1.0)
+const DEFAULT_PIECE_VISUAL_HEIGHT: float = 24.0
+const DEFAULT_PIECE_BOTTOM_INSET: float = 1.5
+const PIECE_PERSPECTIVE_SCALE_VARIATION: float = 0.10
+const PIECE_SHADOW_NAME = "PieceShadow"
+const PIECE_SHADOW_LIGHT_TEXTURE_SCALE: float = 0.22
+const PIECE_SHADOW_LIGHT_SOURCE_OFFSET: float = 8.0
+const PIECE_SHADOW_LIGHT_ENERGY: float = 0.30
+const PIECE_SHADOW_LIGHT_COLOR = Color(1.0, 0.92, 0.72, 1.0)
+const PIECE_SHADOW_LIGHT_SHADOW_COLOR = Color(0.0, 0.0, 0.0, 0.88)
+const PIECE_SHADOW_LIGHT_SHADOW_SMOOTH: float = 0.0
+const PIECE_LIGHT_OCCLUDER_NAME = "PieceLightOccluder"
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_WIDTH_FACTOR: float = 0.68
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_HEIGHT_FACTOR: float = 0.20
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_BOTTOM_INSET_FACTOR: float = 0.05
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET = Vector2.ZERO
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_SEGMENTS: int = 18
+const BOARD_LIGHT_RECEIVE_MASK: int = 1
+const PIECE_LIGHT_OCCLUDER_MASK: int = 1
+const PIECE_LIGHT_RECEIVE_MASK: int = 2
+const PIECE_EFFECT_LIGHT_RECEIVE_MASK: int = 0
+const ATTACH_POINT_LIGHT_NAME = "AttachPointLight"
+const ATTACH_PIECE_LIGHT_NAME = "AttachPieceLight"
+const ATTACH_POINT_LIGHT_TEXTURE_SIZE: int = 256
+const ATTACH_POINT_LIGHT_TEXTURE_SCALE: float = 0.92
+const ATTACH_POINT_LIGHT_ENERGY: float = 1.25
+const ATTACH_POINT_LIGHT_COLOR = Color(1.0, 0.74, 0.24, 1.0)
+const ATTACH_POINT_LIGHT_SHADOW_COLOR = Color(0.0, 0.0, 0.0, 0.52)
+const ATTACH_POINT_LIGHT_SHADOW_SMOOTH: float = 2.5
+const ATTACH_PIECE_LIGHT_TEXTURE_SCALE: float = 1.08
+const ATTACH_PIECE_LIGHT_ENERGY: float = 0.62
+const ATTACH_PIECE_LIGHT_COLOR = Color(1.0, 0.84, 0.36, 1.0)
+const LIGHT_TEXTURE_GRAIN_STRENGTH: float = 0.12
+const LIGHT_TEXTURE_FINE_GRAIN_STRENGTH: float = 0.045
+const LIGHT_TEXTURE_GRAIN_FREQUENCY: float = 0.085
+const LIGHT_TEXTURE_FINE_GRAIN_FREQUENCY: float = 0.31
+const AMBIENT_BOARD_LIGHT_NAME = "AmbientBoardLight"
+const AMBIENT_BOARD_FILL_LIGHT_NAME = "AmbientBoardFillLight"
+const AMBIENT_BOARD_LIGHT_TEXTURE_SCALE: float = 0.92
+const AMBIENT_BOARD_FILL_LIGHT_TEXTURE_SCALE: float = 2.35
+const AMBIENT_BOARD_LIGHT_OFFSET = Vector2.ZERO
+const AMBIENT_BOARD_LIGHT_ENERGY: float = 0.32
+const AMBIENT_BOARD_FILL_LIGHT_ENERGY: float = 0.16
+const AMBIENT_BOARD_LIGHT_COLOR = Color(1.0, 0.86, 0.58, 1.0)
+const AMBIENT_BOARD_LIGHT_SHADOW_COLOR = Color(0.0, 0.0, 0.0, 0.50)
+const AMBIENT_BOARD_LIGHT_SHADOW_SMOOTH: float = 2.0
+const OPPONENT_PIECE_RECOLOR_STRENGTH: float = 0.86
+const OPPONENT_PIECE_SHADOW_CHROMA: float = 0.16
+const OPPONENT_PIECE_SHADOW_COLOR = Color(0.30, 0.33, 0.38, 1.0)
+const OPPONENT_PIECE_MID_COLOR = Color(0.55, 0.57, 0.60, 1.0)
+const OPPONENT_PIECE_HIGHLIGHT_COLOR = Color(0.78, 0.79, 0.80, 1.0)
 
 const PLAYER_HAND_SIZE = DeckManager.HAND_SIZE
 const CARD_UI_SIZE = Vector2(164, 229)
@@ -47,11 +96,46 @@ const HOVER_DESCRIPTION_GAP = 14
 const HOVER_DESCRIPTION_SIZE = Vector2(260, 118)
 const HIDDEN_CARD_MARGIN = 24
 const HIDDEN_CARD_GAP = 10
-const HIDDEN_CARD_SCALE = 0.78
+const HIDDEN_CARD_SCALE = 0.70 * 0.75
+const HIDDEN_CARD_PREVIEW_ALPHA: float = 0.70
 const BOARD_MARKER_LINE_WIDTH = 1.8
-const SELECTED_PIECE_OUTLINE_NAME = "SelectedPieceOutline"
-const SELECTED_PIECE_OUTLINE_WIDTH = 3.0
-const SELECTED_PIECE_OUTLINE_COLOR = Color(1.0, 0.86, 0.16, 1.0)
+const SELECTED_PIECE_GLOW_NAME = "SelectedPieceGlow"
+const SELECTED_PIECE_GLOW_Z_INDEX = 24
+const SELECTED_PIECE_GLOW_STRENGTH: float = 1.0
+const PIECE_ATTACH_GLOW_NAME = "PieceAttachGlow"
+const PIECE_ATTACH_RAYS_NAME = "PieceAttachRays"
+const PIECE_ATTACH_MORPH_NAME = "PieceAttachMorph"
+const PIECE_ATTACH_GLOW_Z_INDEX = 30
+const PIECE_ATTACH_RAYS_Z_INDEX = 31
+const PIECE_ATTACH_MORPH_Z_INDEX = 33
+const PIECE_ATTACH_GLOW_COLOR = Color(1.0, 0.82, 0.28, 1.0)
+const PIECE_ATTACH_GLOW_SIZE: float = 4.8
+const PIECE_ATTACH_GLOW_FILL_STRENGTH: float = 0.30
+const PIECE_ATTACH_GLOW_BASE_STRENGTH: float = 1.0
+const PIECE_ATTACH_GLOW_SWITCH_STRENGTH: float = 4.0
+const PIECE_ATTACH_GLOW_SWITCH_DURATION: float = 0.06
+const PIECE_ATTACH_IN_DURATION: float = 0.32
+const PIECE_ATTACH_PRE_SWITCH_HOLD_DURATION: float = 0.14
+const PIECE_ATTACH_MORPH_DURATION: float = 1.00
+const PIECE_ATTACH_POST_SWITCH_HOLD_DURATION: float = 0.20
+const PIECE_ATTACH_OUT_DURATION: float = 0.32
+const PIECE_ATTACH_MORPH_NOISE_STRENGTH: float = 0.14
+const PIECE_ATTACH_MORPH_SHINE_STRENGTH: float = 0.34
+const PIECE_ATTACH_RAYS_START_SIZE: float = 10.0
+const PIECE_ATTACH_RAYS_SWITCH_SIZE: float = 1.0
+const PIECE_ATTACH_RAYS_TEXTURE_SIZE: int = 256
+const PIECE_ATTACH_RAYS_OVERLAY_SCALE: float = 2.65
+const PIECE_ATTACH_RAYS_LOCAL_OFFSET = Vector2.ZERO
+const PIECE_ATTACH_RAYS_SPREAD: float = 0.5
+const PIECE_ATTACH_RAYS_CUTOFF: float = 0.39
+const PIECE_ATTACH_RAYS_SPEED: float = 1.4
+const PIECE_ATTACH_RAYS_RAY1_DENSITY: float = 8.0
+const PIECE_ATTACH_RAYS_RAY2_DENSITY: float = 10.0
+const PIECE_ATTACH_RAYS_RAY2_INTENSITY: float = 0.3
+const PIECE_ATTACH_RAYS_CORE_INTENSITY: float = 2.0
+const PIECE_ATTACH_RAYS_SEED: float = 5.0
+const PIECE_ATTACH_RAYS_FADE_IN_DELAY_RATIO: float = 0.0
+const PIECE_ATTACH_RAYS_FADE_IN_DURATION_RATIO: float = 1.0
 const LAST_MOVE_ARROW_WIDTH = 3.0
 const LAST_MOVE_ARROW_ENDPOINT_INSET = 6.0
 const LAST_MOVE_ARROW_HEAD_LENGTH = 8.0
@@ -119,6 +203,8 @@ var played_card_hand_slots_this_turn: Dictionary = {
 	1: [],
 	-1: [],
 }
+var pending_card_attach_positions: Dictionary = {}
+var active_card_attach_process_count: int = 0
 var exchanged_card_names_this_turn: Dictionary = {
 	1: [],
 	-1: [],
@@ -145,6 +231,10 @@ var black_deck_count_override: int = -1
 var hidden_card_preview_container: Control
 var hidden_card_previews: Array[CardVisual] = []
 var board_markers_node: Node2D
+var attach_point_light_texture: Texture2D
+var piece_attach_rays_square_texture: Texture2D
+var ambient_board_light: PointLight2D
+var ambient_board_fill_light: PointLight2D
 var current_last_move: Dictionary = {}
 var current_board_effects: Array = []
 var current_player_base_fields: Dictionary = {
@@ -168,6 +258,7 @@ func set_turn(_turn):
 	side = _turn
 	reset_current_turn_card_attach()
 	update_card_presentation()
+	create_board_tiles()
 	display_board()
 	if side != null && !side:
 		$"../Camera2D".global_rotation_degrees = 180
@@ -177,8 +268,10 @@ func set_turn(_turn):
 func _ready():
 	randomize()
 	texture = null
+	apply_board_visual_scale()
 	create_board_tiles()
 	create_board_markers_node()
+	create_ambient_board_light()
 	board = BoardConfig.create_starting_board()
 
 	create_pieces_from_board()
@@ -193,6 +286,9 @@ func _ready():
 	create_rules_info_ui()
 	create_action_status_ui()
 	update_player_name_labels()
+
+func apply_board_visual_scale() -> void:
+	scale = Vector2.ONE * BOARD_VISUAL_SCALE
 
 func set_tutorial_constraints(constraints: Dictionary) -> void:
 	tutorial_constraints = constraints.duplicate(true)
@@ -408,15 +504,18 @@ func create_board_tiles():
 
 	for row in BOARD_SIZE:
 		for col in BOARD_SIZE:
-			var tile := Sprite2D.new()
+			var tile := Polygon2D.new()
 			board_tiles_node.add_child(tile)
-			tile.texture = BOARD_TILE_LIGHT if (row + col) % 2 == 0 else BOARD_TILE_DARK
-			tile.position = get_board_position_local_position(Vector2(row, col))
-			if tile.texture != null:
-				var tile_size: Vector2 = tile.texture.get_size()
-				if tile_size.x > 0.0 && tile_size.y > 0.0:
-					tile.scale = Vector2(CELL_WIDTH / tile_size.x, CELL_WIDTH / tile_size.y)
+			tile.color = BOARD_TILE_LIGHT_COLOR if (row + col) % 2 == 0 else BOARD_TILE_DARK_COLOR
+			tile.polygon = get_board_cell_polygon_local(Vector2(row, col))
+			enable_canvas_item_antialiasing(tile)
 			tile.z_index = 0
+
+func enable_canvas_item_antialiasing(canvas_item: Object) -> void:
+	for property: Dictionary in canvas_item.get_property_list():
+		if str(property.get("name", "")) == "antialiased":
+			canvas_item.set("antialiased", true)
+			return
 
 func create_board_markers_node():
 	board_markers_node = Node2D.new()
@@ -427,6 +526,38 @@ func create_board_markers_node():
 	pieces_node.z_index = 10
 	dots.z_index = 20
 	turn.z_index = 30
+
+func create_ambient_board_light() -> void:
+	if ambient_board_light != null and is_instance_valid(ambient_board_light) and ambient_board_fill_light != null and is_instance_valid(ambient_board_fill_light):
+		return
+
+	if ambient_board_fill_light == null or !is_instance_valid(ambient_board_fill_light):
+		ambient_board_fill_light = PointLight2D.new()
+		ambient_board_fill_light.name = AMBIENT_BOARD_FILL_LIGHT_NAME
+		ambient_board_fill_light.texture = get_attach_point_light_texture()
+		ambient_board_fill_light.texture_scale = AMBIENT_BOARD_FILL_LIGHT_TEXTURE_SCALE
+		ambient_board_fill_light.color = AMBIENT_BOARD_LIGHT_COLOR
+		ambient_board_fill_light.energy = AMBIENT_BOARD_FILL_LIGHT_ENERGY
+		ambient_board_fill_light.range_item_cull_mask = BOARD_LIGHT_RECEIVE_MASK
+		ambient_board_fill_light.shadow_enabled = false
+		ambient_board_fill_light.position = AMBIENT_BOARD_LIGHT_OFFSET
+		add_child(ambient_board_fill_light)
+
+	if ambient_board_light == null or !is_instance_valid(ambient_board_light):
+		ambient_board_light = PointLight2D.new()
+		ambient_board_light.name = AMBIENT_BOARD_LIGHT_NAME
+		ambient_board_light.texture = get_attach_point_light_texture()
+		ambient_board_light.texture_scale = AMBIENT_BOARD_LIGHT_TEXTURE_SCALE
+		ambient_board_light.color = AMBIENT_BOARD_LIGHT_COLOR
+		ambient_board_light.energy = AMBIENT_BOARD_LIGHT_ENERGY
+		ambient_board_light.range_item_cull_mask = BOARD_LIGHT_RECEIVE_MASK
+		ambient_board_light.shadow_enabled = false
+		ambient_board_light.shadow_color = AMBIENT_BOARD_LIGHT_SHADOW_COLOR
+		ambient_board_light.shadow_filter = Light2D.SHADOW_FILTER_PCF5
+		ambient_board_light.shadow_filter_smooth = AMBIENT_BOARD_LIGHT_SHADOW_SMOOTH
+		ambient_board_light.shadow_item_cull_mask = PIECE_LIGHT_OCCLUDER_MASK
+		ambient_board_light.position = AMBIENT_BOARD_LIGHT_OFFSET
+		add_child(ambient_board_light)
 
 func create_pieces_from_board():
 	piece_objects.clear()
@@ -958,6 +1089,25 @@ func update_end_turn_button():
 	end_turn_button.visible = !game_over
 	end_turn_button.disabled = !can_control_current_turn() or !is_tutorial_action_allowed(TUTORIAL_ACTION_END_TURN)
 
+func begin_card_attach_process(piece_position: Vector2) -> void:
+	if !pending_card_attach_positions.has(piece_position):
+		active_card_attach_process_count += 1
+	pending_card_attach_positions[piece_position] = true
+
+func finish_card_attach_process(piece_position: Vector2) -> void:
+	if pending_card_attach_positions.has(piece_position):
+		pending_card_attach_positions.erase(piece_position)
+		active_card_attach_process_count = maxi(0, active_card_attach_process_count - 1)
+	update_card_drag_permissions()
+	update_action_status_ui()
+
+func has_pending_visual_processes() -> bool:
+	return active_card_attach_process_count > 0 or card_burn_animation_sequence_running or !pending_card_burn_animations.is_empty()
+
+func wait_for_pending_visual_processes() -> void:
+	while is_inside_tree() and has_pending_visual_processes():
+		await get_tree().process_frame
+
 func update_rules_info_ui():
 	if rules_info_button == null:
 		return
@@ -1086,6 +1236,9 @@ func _auto_end_turn_locally_if_still_needed() -> void:
 	local_auto_end_turn_pending = false
 	if GameController.current_game_host or game_over or !can_control_current_turn():
 		return
+	await wait_for_pending_visual_processes()
+	if game_over or !can_control_current_turn():
+		return
 	if has_remaining_turn_action_now():
 		return
 	end_current_turn_locally()
@@ -1105,6 +1258,10 @@ func _on_end_turn_pressed():
 		"owner_color": get_controllable_color(),
 		"player_id": get_own_player_id(),
 	}, true):
+		return
+
+	await wait_for_pending_visual_processes()
+	if !can_control_current_turn():
 		return
 
 	if GameController.current_game_host:
@@ -1401,45 +1558,66 @@ func record_exchanged_card_name_this_turn(owner_color: int, card_name: String) -
 func clear_exchanged_card_names_this_turn(owner_color: int) -> void:
 	exchanged_card_names_this_turn[owner_color] = []
 
-func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector2):
+func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector2) -> void:
+	if card_visual == null or !is_instance_valid(card_visual):
+		return
 	if not piece_objects.has(piece_position) or card_visual.card == null:
 		card_visual.fly_home()
 		return
-	var card_name: String = card_visual.card.card_name
+	var attach_card: Card = card_visual.card
+	var card_name: String = attach_card.card_name
+	var owner_color: int = card_visual.owner_color
 	var hand_index: int = get_card_visual_index(card_visual)
 	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD, {
-		"owner_color": card_visual.owner_color,
+		"owner_color": owner_color,
 		"piece_pos": piece_position,
 		"card_name": card_name,
 		"hand_index": hand_index,
 	}, true):
 		card_visual.fly_home()
 		return
-	if !can_attach_card_to_piece(piece_position, card_name, card_visual.owner_color):
+	if !can_attach_card_to_piece(piece_position, card_name, owner_color):
 		card_visual.fly_home()
 		return
 
+	var start_texture: Texture2D = null
+	var holder: Sprite2D = get_piece_holder_at(piece_position)
+	if holder != null and is_instance_valid(holder):
+		start_texture = holder.texture
+
+	begin_card_attach_process(piece_position)
+
 	if GameController.current_game_host:
-		record_played_card_hand_slot(card_visual.owner_color, hand_index)
-		send_card_attach_action(card_visual.owner_color, card_name, piece_position, hand_index)
+		record_played_card_hand_slot(owner_color, hand_index)
 		card_visual.assign_and_hide()
-		mark_card_attached_this_turn(card_visual.owner_color)
-		card_attached.emit(piece_position, card_name, card_visual.owner_color, hand_index)
+		if !send_card_attach_action(owner_color, card_name, piece_position, hand_index):
+			finish_card_attach_process(piece_position)
+			return
+		mark_card_attached_this_turn(owner_color)
+		card_attached.emit(piece_position, card_name, owner_color, hand_index)
 		return
 
 	if !apply_card_to_piece(piece_position, card_name):
-		card_visual.fly_home()
+		finish_card_attach_process(piece_position)
+		if is_instance_valid(card_visual):
+			card_visual.fly_home()
 		return
 
-	record_played_card_hand_slot(card_visual.owner_color, hand_index)
-	remove_card_from_hand(card_visual)
-	mark_card_attached_this_turn(card_visual.owner_color)
-	card_attached.emit(piece_position, card_name, card_visual.owner_color, hand_index)
+	record_played_card_hand_slot(owner_color, hand_index)
+	if is_instance_valid(card_visual):
+		remove_card_from_hand(card_visual)
+	else:
+		remove_card_from_hand_index(owner_color, hand_index, false)
+	mark_card_attached_this_turn(owner_color)
+	card_attached.emit(piece_position, card_name, owner_color, hand_index)
 
 	if get_parent().has_method("send_card_attach"):
-		get_parent().send_card_attach(piece_position, card_name, card_visual.owner_color, hand_index, "")
+		get_parent().send_card_attach(piece_position, card_name, owner_color, hand_index, "")
 
-func send_card_attach_action(owner_color: int, card_name: String, piece_position: Vector2, hand_index: int):
+	await play_piece_card_attach_animation(piece_position, attach_card, start_texture)
+	finish_card_attach_process(piece_position)
+
+func send_card_attach_action(owner_color: int, card_name: String, piece_position: Vector2, hand_index: int) -> bool:
 	var action: Dictionary = {
 		"type": "attach_card",
 		"player_id": get_player_id_for_color(owner_color),
@@ -1447,10 +1625,12 @@ func send_card_attach_action(owner_color: int, card_name: String, piece_position
 		"piece_pos": piece_position,
 		"hand_index": hand_index,
 	}
-	GameController.send_action(action)
+	return bool(GameController.send_action(action))
 
 func can_attach_card_to_piece(piece_position: Vector2, card_name: String = "", owner_color: int = 0) -> bool:
 	if not piece_objects.has(piece_position):
+		return false
+	if pending_card_attach_positions.has(piece_position):
 		return false
 	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD, {
 		"owner_color": owner_color,
@@ -1803,7 +1983,7 @@ func play_card_expire_animation(piece_position: Vector2, expired_card: Card) -> 
 	card_visual.disabled = true
 	card_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var animation_scale: float = 0.74
+	var animation_scale: float = 0.74 * 0.75
 	var piece_screen_position: Vector2 = get_board_position_screen_position(piece_position)
 	var visual_size: Vector2 = CARD_UI_SIZE * animation_scale
 	card_visual.global_position = piece_screen_position - visual_size * 0.5 + Vector2(0.0, -visual_size.y * 0.72)
@@ -1991,7 +2171,7 @@ func try_move_selected_piece(target_pos: Vector2) -> bool:
 func clear_piece_selection() -> void:
 	delete_dots()
 	state = false
-	update_selected_piece_outline()
+	update_selected_piece_glow()
 	hovered_piece = Vector2(-1, -1)
 	hide_hover_piece_details()
 
@@ -2009,17 +2189,16 @@ func _input(event):
 				if is_mouse_out(): return
 				if has_moved_piece_this_turn(get_controllable_color()):
 					return
-				var local_pos: Vector2 = to_local(get_global_mouse_position())
+				var clicked_pos: Vector2 = get_mouse_board_position()
+				var clicked_cell_value = "invalid"
+				if is_valid_position(clicked_pos):
+					clicked_cell_value = board[int(clicked_pos.x)][int(clicked_pos.y)]
 
-				var offset = (BOARD_SIZE * CELL_WIDTH) / 2.0
-				var adjusted_x = local_pos.x + offset
-				var adjusted_y = -local_pos.y + offset
-
-				var var1 = int(adjusted_x / CELL_WIDTH)
-				var var2 = int(adjusted_y / CELL_WIDTH)
-				var clicked_pos: Vector2 = Vector2(var2, var1)
-
-				DebugLog.info("Click: grid=(%s,%s) board[%s][%s]=%s" % [var1, var2, var2, var1, board[var2][var1] if is_valid_position(clicked_pos) else "invalid"])
+				DebugLog.info("Click: board[%s][%s]=%s" % [
+					int(clicked_pos.x),
+					int(clicked_pos.y),
+					clicked_cell_value,
+				])
 
 				if !is_valid_position(clicked_pos):
 					return
@@ -2069,17 +2248,82 @@ func send_move_action(from_pos: Vector2, to_pos: Vector2):
 	set_move(from_pos, to_pos)
 
 func is_mouse_out():
-	return !get_board_rect_local().has_point(to_local(get_global_mouse_position()))
+	return get_mouse_board_position() == INVALID_BOARD_POS
 
 func get_board_rect_local() -> Rect2:
+	var rect: Rect2 = get_board_unprojected_rect_local()
+	return get_points_bounds_local(PackedVector2Array([
+		project_board_point_local(rect.position),
+		project_board_point_local(rect.position + Vector2(rect.size.x, 0.0)),
+		project_board_point_local(rect.position + rect.size),
+		project_board_point_local(rect.position + Vector2(0.0, rect.size.y)),
+	]))
+
+func get_board_unprojected_rect_local() -> Rect2:
 	return BoardConfig.get_board_rect_local()
+
+func project_board_point_local(point: Vector2) -> Vector2:
+	if !BOARD_PERSPECTIVE_ENABLED:
+		return point
+
+	var half_size: float = BoardConfig.get_board_pixel_size() * 0.5
+	if half_size <= 0.0:
+		return point
+
+	var board_view_color: int = get_board_view_color()
+	var top_factor: float = clampf((half_size - point.y) / (half_size * 2.0), 0.0, 1.0)
+	if board_view_color < 0:
+		top_factor = 1.0 - top_factor
+	var horizontal_scale: float = lerpf(BOARD_PERSPECTIVE_BOTTOM_SCALE, BOARD_PERSPECTIVE_TOP_SCALE, top_factor)
+	var projected_x: float = point.x * horizontal_scale
+	var projected_y: float = half_size - ((half_size - point.y) * BOARD_PERSPECTIVE_VERTICAL_SCALE)
+	if board_view_color < 0:
+		projected_y = -half_size + ((point.y + half_size) * BOARD_PERSPECTIVE_VERTICAL_SCALE)
+	return Vector2(projected_x, projected_y)
+
+func get_board_view_color() -> int:
+	if side != null && !side:
+		return -1
+	return 1
+
+func get_board_cell_polygon_local(board_pos: Vector2, inset: float = 0.0) -> PackedVector2Array:
+	var center: Vector2 = BoardConfig.get_cell_center_local(board_pos)
+	var half_cell: float = CELL_WIDTH * 0.5
+	var corners := [
+		center + Vector2(-half_cell, -half_cell),
+		center + Vector2(half_cell, -half_cell),
+		center + Vector2(half_cell, half_cell),
+		center + Vector2(-half_cell, half_cell),
+	]
+	var polygon := PackedVector2Array()
+	var projected_center: Vector2 = get_board_position_local_position(board_pos)
+	var inset_factor: float = clampf(inset / half_cell, 0.0, 0.95) if half_cell > 0.0 else 0.0
+	for corner: Vector2 in corners:
+		var projected_corner: Vector2 = project_board_point_local(corner)
+		polygon.append(projected_corner.lerp(projected_center, inset_factor))
+	return polygon
+
+func get_points_bounds_local(points: PackedVector2Array) -> Rect2:
+	if points.size() == 0:
+		return Rect2()
+
+	var min_point: Vector2 = points[0]
+	var max_point: Vector2 = points[0]
+	for point: Vector2 in points:
+		min_point.x = min(min_point.x, point.x)
+		min_point.y = min(min_point.y, point.y)
+		max_point.x = max(max_point.x, point.x)
+		max_point.y = max(max_point.y, point.y)
+	return Rect2(min_point, max_point - min_point)
 
 func get_mouse_board_position() -> Vector2:
 	var local_pos: Vector2 = to_local(get_global_mouse_position())
-	var offset = (BOARD_SIZE * CELL_WIDTH) / 2.0
-	var adjusted_x = local_pos.x + offset
-	var adjusted_y = -local_pos.y + offset
-	return Vector2(int(adjusted_y / CELL_WIDTH), int(adjusted_x / CELL_WIDTH))
+	for row in BOARD_SIZE:
+		for col in BOARD_SIZE:
+			var board_pos := Vector2(row, col)
+			if Geometry2D.is_point_in_polygon(local_pos, get_board_cell_polygon_local(board_pos)):
+				return board_pos
+	return INVALID_BOARD_POS
 
 func update_hovered_piece():
 	if state:
@@ -2152,36 +2396,171 @@ func get_board_position_screen_position(board_pos: Vector2) -> Vector2:
 	return get_global_transform_with_canvas() * get_board_position_local_position(board_pos)
 
 func get_board_position_local_position(board_pos: Vector2) -> Vector2:
-	return BoardConfig.get_cell_center_local(board_pos)
+	return project_board_point_local(BoardConfig.get_cell_center_local(board_pos))
 
 func get_default_piece_texture(piece_value: int) -> Texture2D:
-	match piece_value:
-		-6:
-			return BLACK_KING
-		-5:
-			return BLACK_QUEEN
-		-4:
-			return BLACK_ROOK
-		-3:
-			return BLACK_BISHOP
-		-2:
-			return BLACK_KNIGHT
-		-1:
-			return BLACK_PAWN
-		6:
-			return WHITE_KING
-		5:
-			return WHITE_QUEEN
-		4:
-			return WHITE_ROOK
-		3:
-			return WHITE_BISHOP
-		2:
-			return WHITE_KNIGHT
-		1:
-			return WHITE_PAWN
+	if piece_value == 0:
+		return null
+	if piece_value * get_own_color() > 0:
+		return OWN_DEFAULT_PIECE_TEXTURE
+	return DEFAULT_PIECE_TEXTURE
 
-	return null
+func is_default_piece_texture(texture_value: Texture2D) -> bool:
+	return texture_value == DEFAULT_PIECE_TEXTURE || texture_value == OWN_DEFAULT_PIECE_TEXTURE
+
+func get_piece_visual_transform_for_texture(texture_value: Texture2D, board_pos: Vector2) -> Dictionary:
+	var visual_transform := {
+		"scale": Vector2.ONE,
+		"offset": Vector2.ZERO,
+	}
+	if texture_value == null:
+		return visual_transform
+
+	var perspective_scale: float = get_piece_perspective_scale(board_pos)
+	if is_default_piece_texture(texture_value):
+		var texture_size: Vector2 = texture_value.get_size()
+		if texture_size.y > 0.0:
+			var visual_scale: float = (DEFAULT_PIECE_VISUAL_HEIGHT / texture_size.y) * perspective_scale
+			var cell_bounds: Rect2 = get_board_cell_rect_local(board_pos)
+			var cell_bottom_offset: float = cell_bounds.end.y - get_board_position_local_position(board_pos).y
+			visual_transform["scale"] = Vector2.ONE * visual_scale
+			visual_transform["offset"] = Vector2(0.0, (cell_bottom_offset - DEFAULT_PIECE_BOTTOM_INSET) / visual_scale - (texture_size.y * 0.5))
+		return visual_transform
+
+	visual_transform["scale"] = Vector2.ONE * perspective_scale
+	return visual_transform
+
+func get_piece_light_global_position_for_texture(holder: Sprite2D, texture_value: Texture2D) -> Vector2:
+	if holder == null or !is_instance_valid(holder):
+		return Vector2.ZERO
+
+	var board_pos: Vector2 = value_to_vector2(holder.get_meta("board_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	if !is_valid_position(board_pos):
+		return holder.to_global(holder.offset)
+
+	var visual_transform: Dictionary = get_piece_visual_transform_for_texture(texture_value, board_pos)
+	var visual_scale: Vector2 = visual_transform.get("scale", holder.scale)
+	var visual_offset: Vector2 = visual_transform.get("offset", holder.offset)
+	var scaled_offset := Vector2(visual_offset.x * visual_scale.x, visual_offset.y * visual_scale.y)
+	var parent_node := holder.get_parent()
+	if parent_node is Node2D:
+		var parent_2d := parent_node as Node2D
+		return parent_2d.to_global(holder.position + scaled_offset.rotated(holder.rotation))
+
+	return holder.to_global(visual_offset)
+
+func apply_piece_visual_size(holder: Sprite2D, board_pos: Vector2) -> void:
+	holder.scale = Vector2.ONE
+	holder.offset = Vector2.ZERO
+	if holder.texture == null:
+		return
+
+	var visual_transform: Dictionary = get_piece_visual_transform_for_texture(holder.texture, board_pos)
+	holder.scale = visual_transform.get("scale", Vector2.ONE)
+	holder.offset = visual_transform.get("offset", Vector2.ZERO)
+
+func get_piece_perspective_scale(board_pos: Vector2) -> float:
+	var center_row: float = float(BOARD_SIZE - 1) * 0.5
+	if center_row <= 0.0:
+		return 1.0
+
+	var row_delta_from_center: float = (center_row - board_pos.x) * float(get_board_view_color())
+	var normalized_distance: float = clampf(row_delta_from_center / center_row, -1.0, 1.0)
+	return 1.0 + normalized_distance * PIECE_PERSPECTIVE_SCALE_VARIATION
+
+func get_piece_depth_z_index(board_pos: Vector2) -> int:
+	if get_board_view_color() < 0:
+		return int(board_pos.x)
+	return BOARD_SIZE - 1 - int(board_pos.x)
+
+func apply_piece_shadow(holder: Sprite2D, board_pos: Vector2) -> void:
+	remove_piece_shadow(holder)
+	if holder == null or !is_instance_valid(holder) or holder.texture == null or !piece_objects.has(board_pos):
+		return
+
+	var texture_size: Vector2 = holder.texture.get_size()
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
+		return
+
+	var radius_y: float = texture_size.y * PIECE_LIGHT_OCCLUDER_FOOTPRINT_HEIGHT_FACTOR * 0.5
+	var visual_bottom_y: float = holder.offset.y + texture_size.y * (0.5 - PIECE_LIGHT_OCCLUDER_FOOTPRINT_BOTTOM_INSET_FACTOR)
+	var footprint_center := Vector2(
+		holder.offset.x + PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET.x,
+		visual_bottom_y - radius_y + PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET.y
+	)
+
+	var shadow := PointLight2D.new()
+	shadow.name = PIECE_SHADOW_NAME
+	shadow.top_level = true
+	shadow.texture = get_attach_point_light_texture()
+	shadow.texture_scale = PIECE_SHADOW_LIGHT_TEXTURE_SCALE
+	shadow.color = PIECE_SHADOW_LIGHT_COLOR
+	shadow.energy = PIECE_SHADOW_LIGHT_ENERGY
+	shadow.range_item_cull_mask = BOARD_LIGHT_RECEIVE_MASK
+	shadow.shadow_enabled = true
+	shadow.shadow_color = PIECE_SHADOW_LIGHT_SHADOW_COLOR
+	shadow.shadow_filter = Light2D.SHADOW_FILTER_NONE
+	shadow.shadow_filter_smooth = PIECE_SHADOW_LIGHT_SHADOW_SMOOTH
+	shadow.shadow_item_cull_mask = PIECE_LIGHT_OCCLUDER_MASK
+	holder.add_child(shadow)
+	var piece: Piece = piece_objects[board_pos] as Piece
+	var light_source_y_direction: float = -float(get_board_view_color())
+	if piece != null and piece.color * get_own_color() < 0:
+		light_source_y_direction *= -1.0
+	shadow.global_position = holder.to_global(footprint_center) + Vector2(0.0, PIECE_SHADOW_LIGHT_SOURCE_OFFSET * light_source_y_direction)
+
+func remove_piece_shadow(holder: Sprite2D) -> void:
+	var existing_shadow: Node = holder.get_node_or_null(PIECE_SHADOW_NAME)
+	if existing_shadow != null:
+		existing_shadow.free()
+
+func apply_piece_light_occluder(holder: Sprite2D, board_pos: Vector2) -> void:
+	remove_piece_light_occluder(holder)
+	if holder.texture == null or !piece_objects.has(board_pos):
+		return
+
+	var texture_size: Vector2 = holder.texture.get_size()
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
+		return
+
+	var occluder := LightOccluder2D.new()
+	occluder.name = PIECE_LIGHT_OCCLUDER_NAME
+	occluder.occluder_light_mask = PIECE_LIGHT_OCCLUDER_MASK
+
+	var radius_x: float = texture_size.x * PIECE_LIGHT_OCCLUDER_FOOTPRINT_WIDTH_FACTOR * 0.5
+	var radius_y: float = texture_size.y * PIECE_LIGHT_OCCLUDER_FOOTPRINT_HEIGHT_FACTOR * 0.5
+	if radius_x <= 0.0 or radius_y <= 0.0:
+		return
+
+	var visual_bottom_y: float = holder.offset.y + texture_size.y * (0.5 - PIECE_LIGHT_OCCLUDER_FOOTPRINT_BOTTOM_INSET_FACTOR)
+	var center: Vector2 = Vector2(
+		holder.offset.x + PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET.x,
+		visual_bottom_y - radius_y + PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET.y
+	)
+	var segments: int = maxi(8, PIECE_LIGHT_OCCLUDER_FOOTPRINT_SEGMENTS)
+	var footprint_polygon := PackedVector2Array()
+	for point_index in segments:
+		var angle: float = TAU * float(point_index) / float(segments)
+		footprint_polygon.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
+
+	var occluder_polygon := OccluderPolygon2D.new()
+	occluder_polygon.closed = true
+	occluder_polygon.polygon = footprint_polygon
+	occluder.occluder = occluder_polygon
+	holder.add_child(occluder)
+
+func remove_piece_light_occluder(holder: Sprite2D) -> void:
+	var existing_occluder: Node = holder.get_node_or_null(PIECE_LIGHT_OCCLUDER_NAME)
+	if existing_occluder != null:
+		existing_occluder.free()
+
+func set_piece_light_occluder_enabled(holder: Sprite2D, is_enabled: bool) -> void:
+	if holder == null or !is_instance_valid(holder):
+		return
+
+	var occluder: LightOccluder2D = holder.get_node_or_null(PIECE_LIGHT_OCCLUDER_NAME) as LightOccluder2D
+	if occluder != null:
+		occluder.occluder_light_mask = PIECE_LIGHT_OCCLUDER_MASK if is_enabled else 0
 
 func get_attached_card_piece_texture(piece: Piece) -> Texture2D:
 	if piece == null or piece.attached_card == null:
@@ -2199,8 +2578,480 @@ func get_piece_texture_for_position(board_pos: Vector2, piece_value: int) -> Tex
 		return attached_texture
 	return get_default_piece_texture(piece_value)
 
+func get_card_piece_texture_for_color(card: Card, piece_color: int) -> Texture2D:
+	if card == null:
+		return null
+	if piece_color > 0:
+		return card.white_piece_texture
+	return card.black_piece_texture
+
+func get_piece_visual_texture(piece: Piece) -> Texture2D:
+	if piece == null:
+		return null
+
+	var attached_texture: Texture2D = get_attached_card_piece_texture(piece)
+	if attached_texture != null:
+		return attached_texture
+	return get_default_piece_texture(piece.color)
+
+func get_piece_visual_state_snapshot() -> Dictionary:
+	var snapshot: Dictionary = {}
+	for position_value in piece_objects:
+		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
+		var piece: Piece = piece_objects[position_value] as Piece
+		if piece == null:
+			continue
+
+		snapshot[board_pos] = {
+			"color": piece.color,
+			"card_name": piece.attached_card.card_name if piece.attached_card != null else "",
+			"texture": get_piece_visual_texture(piece),
+		}
+
+	return snapshot
+
+func collect_state_attach_animations(previous_snapshot: Dictionary) -> Array[Dictionary]:
+	var animations: Array[Dictionary] = []
+	if !has_received_server_state or should_skip_visual_animations():
+		return animations
+
+	for position_value in piece_objects:
+		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
+		if !previous_snapshot.has(board_pos):
+			continue
+
+		var piece: Piece = piece_objects[position_value] as Piece
+		if piece == null or piece.attached_card == null:
+			continue
+
+		var previous_state: Dictionary = previous_snapshot[board_pos]
+		if int(previous_state.get("color", 0)) != piece.color:
+			continue
+		if str(previous_state.get("card_name", "")) == piece.attached_card.card_name:
+			continue
+
+		animations.append({
+			"position": board_pos,
+			"card": piece.attached_card,
+			"start_texture": previous_state.get("texture", get_default_piece_texture(piece.color)),
+		})
+
+	return animations
+
+func play_state_attach_animations(animations: Array[Dictionary]) -> void:
+	for animation: Dictionary in animations:
+		var board_pos: Vector2 = value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		var card: Card = animation.get("card", null) as Card
+		var start_texture: Texture2D = animation.get("start_texture", null) as Texture2D
+		if !is_valid_position(board_pos) or card == null:
+			finish_card_attach_process(board_pos)
+			continue
+
+		await play_piece_card_attach_animation(board_pos, card, start_texture)
+		finish_card_attach_process(board_pos)
+
+func get_piece_holder_at(board_pos: Vector2) -> Sprite2D:
+	if pieces_node == null:
+		return null
+
+	for child in pieces_node.get_children():
+		var holder: Sprite2D = child as Sprite2D
+		if holder == null or holder.is_queued_for_deletion():
+			continue
+		var holder_pos: Vector2 = value_to_vector2(holder.get_meta("board_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		if holder_pos == board_pos:
+			return holder
+
+	return null
+
+func refresh_piece_holder_visual(holder: Sprite2D, board_pos: Vector2) -> void:
+	if holder == null or !is_instance_valid(holder):
+		return
+
+	holder.light_mask = PIECE_LIGHT_RECEIVE_MASK
+	holder.position = get_board_position_local_position(board_pos)
+	holder.z_index = get_piece_depth_z_index(board_pos)
+	apply_piece_visual_size(holder, board_pos)
+	apply_piece_light_occluder(holder, board_pos)
+	apply_piece_shadow(holder, board_pos)
+	apply_piece_exhausted_material(holder, board_pos)
+	apply_selected_piece_glow(holder, board_pos)
+
+func get_attach_point_light_texture() -> Texture2D:
+	if attach_point_light_texture != null:
+		return attach_point_light_texture
+
+	var texture_size: int = ATTACH_POINT_LIGHT_TEXTURE_SIZE
+	var image := Image.create(texture_size, texture_size, false, Image.FORMAT_RGBA8)
+	var center := Vector2(float(texture_size) * 0.5, float(texture_size) * 0.5)
+	var radius: float = float(texture_size) * 0.5
+	var grain_noise := FastNoiseLite.new()
+	grain_noise.seed = 91357
+	grain_noise.frequency = LIGHT_TEXTURE_GRAIN_FREQUENCY
+	grain_noise.fractal_octaves = 3
+	grain_noise.fractal_gain = 0.52
+	var fine_grain_noise := FastNoiseLite.new()
+	fine_grain_noise.seed = 24731
+	fine_grain_noise.frequency = LIGHT_TEXTURE_FINE_GRAIN_FREQUENCY
+	fine_grain_noise.fractal_octaves = 2
+	fine_grain_noise.fractal_gain = 0.44
+	for y in texture_size:
+		for x in texture_size:
+			var pixel_pos := Vector2(float(x) + 0.5, float(y) + 0.5)
+			var distance_ratio: float = clampf(pixel_pos.distance_to(center) / radius, 0.0, 1.0)
+			var alpha: float = pow(1.0 - distance_ratio, 1.85)
+			var grain: float = grain_noise.get_noise_2d(float(x), float(y)) * LIGHT_TEXTURE_GRAIN_STRENGTH
+			grain += fine_grain_noise.get_noise_2d(float(x), float(y)) * LIGHT_TEXTURE_FINE_GRAIN_STRENGTH
+			alpha = clampf(alpha * (1.0 + grain), 0.0, 1.0)
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+
+	attach_point_light_texture = ImageTexture.create_from_image(image)
+	return attach_point_light_texture
+
+func create_piece_attach_point_light(holder: Sprite2D) -> PointLight2D:
+	if holder == null or !is_instance_valid(holder):
+		return null
+
+	var point_light := PointLight2D.new()
+	point_light.name = ATTACH_POINT_LIGHT_NAME
+	point_light.texture = get_attach_point_light_texture()
+	point_light.texture_scale = ATTACH_POINT_LIGHT_TEXTURE_SCALE
+	point_light.color = ATTACH_POINT_LIGHT_COLOR
+	point_light.energy = 0.0
+	point_light.range_item_cull_mask = BOARD_LIGHT_RECEIVE_MASK
+	point_light.shadow_enabled = true
+	point_light.shadow_color = ATTACH_POINT_LIGHT_SHADOW_COLOR
+	point_light.shadow_filter = Light2D.SHADOW_FILTER_PCF5
+	point_light.shadow_filter_smooth = ATTACH_POINT_LIGHT_SHADOW_SMOOTH
+	point_light.shadow_item_cull_mask = PIECE_LIGHT_OCCLUDER_MASK
+	add_child(point_light)
+	point_light.global_position = get_piece_light_global_position_for_texture(holder, holder.texture)
+	return point_light
+
+func create_piece_attach_sprite_light(holder: Sprite2D) -> PointLight2D:
+	if holder == null or !is_instance_valid(holder):
+		return null
+
+	var piece_light := PointLight2D.new()
+	piece_light.name = ATTACH_PIECE_LIGHT_NAME
+	piece_light.texture = get_attach_point_light_texture()
+	piece_light.texture_scale = ATTACH_PIECE_LIGHT_TEXTURE_SCALE
+	piece_light.color = ATTACH_PIECE_LIGHT_COLOR
+	piece_light.energy = 0.0
+	piece_light.range_item_cull_mask = PIECE_LIGHT_RECEIVE_MASK
+	piece_light.shadow_enabled = false
+	add_child(piece_light)
+	piece_light.global_position = get_piece_light_global_position_for_texture(holder, holder.texture)
+	return piece_light
+
+func update_attach_point_light_position(point_light: PointLight2D, holder: Sprite2D) -> void:
+	if point_light == null or !is_instance_valid(point_light) or holder == null or !is_instance_valid(holder):
+		return
+
+	point_light.global_position = get_piece_light_global_position_for_texture(holder, holder.texture)
+
+func cleanup_piece_attach_point_light(holder, point_light, piece_light = null) -> void:
+	if point_light != null and is_instance_valid(point_light):
+		point_light.queue_free()
+	if piece_light != null and is_instance_valid(piece_light):
+		piece_light.queue_free()
+	if holder != null and is_instance_valid(holder) and holder is Sprite2D:
+		set_piece_light_occluder_enabled(holder as Sprite2D, true)
+
+func apply_piece_morph_overlay_target_visual(morph_overlay: Sprite2D, holder: Sprite2D, target_texture: Texture2D) -> void:
+	if morph_overlay == null or !is_instance_valid(morph_overlay) or holder == null or !is_instance_valid(holder):
+		return
+
+	morph_overlay.texture = target_texture
+	var board_pos: Vector2 = value_to_vector2(holder.get_meta("board_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	if !is_valid_position(board_pos):
+		return
+
+	var target_transform: Dictionary = get_piece_visual_transform_for_texture(target_texture, board_pos)
+	var target_scale: Vector2 = target_transform.get("scale", Vector2.ONE)
+	morph_overlay.offset = target_transform.get("offset", Vector2.ZERO)
+	morph_overlay.scale = Vector2(
+		target_scale.x / holder.scale.x if absf(holder.scale.x) > 0.0001 else target_scale.x,
+		target_scale.y / holder.scale.y if absf(holder.scale.y) > 0.0001 else target_scale.y
+	)
+
+func play_piece_texture_morph(holder: Sprite2D, target_texture: Texture2D, duration: float, point_light: PointLight2D = null, piece_light: PointLight2D = null) -> void:
+	if holder == null or !is_instance_valid(holder) or target_texture == null:
+		return
+	if duration <= 0.0:
+		return
+
+	var existing_morph: Node = holder.get_node_or_null(PIECE_ATTACH_MORPH_NAME)
+	if existing_morph != null:
+		existing_morph.free()
+
+	var morph_overlay := Sprite2D.new()
+	morph_overlay.name = PIECE_ATTACH_MORPH_NAME
+	morph_overlay.z_index = PIECE_ATTACH_MORPH_Z_INDEX
+	morph_overlay.z_as_relative = true
+	sync_piece_attach_overlay_to_holder(morph_overlay, holder)
+	apply_piece_morph_overlay_target_visual(morph_overlay, holder, target_texture)
+	morph_overlay.light_mask = PIECE_LIGHT_RECEIVE_MASK
+
+	var morph_material := ShaderMaterial.new()
+	morph_material.shader = PIECE_TEXTURE_MORPH_SHADER
+	morph_material.set_shader_parameter("morph_progress", 0.0)
+	morph_material.set_shader_parameter("noise_strength", PIECE_ATTACH_MORPH_NOISE_STRENGTH)
+	morph_material.set_shader_parameter("shine_strength", PIECE_ATTACH_MORPH_SHINE_STRENGTH)
+	morph_material.set_shader_parameter("shine_color", PIECE_ATTACH_GLOW_COLOR)
+	morph_overlay.material = morph_material
+	holder.add_child(morph_overlay)
+
+	var target_light_position: Vector2 = get_piece_light_global_position_for_texture(holder, target_texture)
+	var morph_tween: Tween = create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	morph_tween.tween_property(morph_material, "shader_parameter/morph_progress", 1.0, duration)
+	if point_light != null and is_instance_valid(point_light):
+		morph_tween.parallel().tween_property(point_light, "global_position", target_light_position, duration)
+	if piece_light != null and is_instance_valid(piece_light):
+		morph_tween.parallel().tween_property(piece_light, "global_position", target_light_position, duration)
+	await morph_tween.finished
+
+func play_piece_card_attach_animation(piece_position: Vector2, card: Card, start_texture: Texture2D = null) -> void:
+	if should_skip_visual_animations() or !is_inside_tree():
+		return
+	if card == null or !piece_objects.has(piece_position):
+		return
+
+	var piece: Piece = piece_objects[piece_position] as Piece
+	if piece == null:
+		return
+
+	var attached_texture: Texture2D = get_card_piece_texture_for_color(card, piece.color)
+	if attached_texture == null:
+		return
+
+	var holder: Sprite2D = get_piece_holder_at(piece_position)
+	if holder == null or holder.texture == null:
+		return
+
+	if start_texture != null and holder.texture != start_texture:
+		holder.texture = start_texture
+		refresh_piece_holder_visual(holder, piece_position)
+
+	var attach_point_light: PointLight2D = create_piece_attach_point_light(holder)
+	var attach_piece_light: PointLight2D = create_piece_attach_sprite_light(holder)
+	set_piece_light_occluder_enabled(holder, false)
+	remove_piece_attach_effects(holder)
+	var glow_overlay: Sprite2D = create_piece_attach_glow_overlay(holder)
+	var rays_overlay: Sprite2D = create_piece_attach_rays_overlay(holder)
+	var glow_material: ShaderMaterial = glow_overlay.material as ShaderMaterial
+	var rays_material: ShaderMaterial = rays_overlay.material as ShaderMaterial
+
+	var in_tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	in_tween.tween_property(glow_material, "shader_parameter/glow_strength", PIECE_ATTACH_GLOW_BASE_STRENGTH, PIECE_ATTACH_IN_DURATION)
+	in_tween.parallel().tween_property(rays_material, "shader_parameter/size", PIECE_ATTACH_RAYS_SWITCH_SIZE, PIECE_ATTACH_IN_DURATION)
+	in_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 1.0, PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DURATION_RATIO).set_delay(PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DELAY_RATIO)
+	if attach_point_light != null:
+		in_tween.parallel().tween_property(attach_point_light, "energy", ATTACH_POINT_LIGHT_ENERGY, PIECE_ATTACH_IN_DURATION)
+	if attach_piece_light != null:
+		in_tween.parallel().tween_property(attach_piece_light, "energy", ATTACH_PIECE_LIGHT_ENERGY, PIECE_ATTACH_IN_DURATION)
+	await in_tween.finished
+
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	await get_tree().create_timer(PIECE_ATTACH_PRE_SWITCH_HOLD_DURATION).timeout
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	var switch_tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	switch_tween.tween_property(glow_material, "shader_parameter/glow_strength", PIECE_ATTACH_GLOW_SWITCH_STRENGTH, PIECE_ATTACH_GLOW_SWITCH_DURATION)
+	await switch_tween.finished
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	await play_piece_texture_morph(holder, attached_texture, PIECE_ATTACH_MORPH_DURATION, attach_point_light, attach_piece_light)
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	holder.texture = attached_texture
+	refresh_piece_holder_visual(holder, piece_position)
+	var morph_overlay: Node = holder.get_node_or_null(PIECE_ATTACH_MORPH_NAME)
+	if morph_overlay != null:
+		morph_overlay.queue_free()
+	set_piece_light_occluder_enabled(holder, false)
+	update_attach_point_light_position(attach_point_light, holder)
+	update_attach_point_light_position(attach_piece_light, holder)
+	sync_piece_attach_overlay_to_holder(glow_overlay, holder)
+	apply_piece_attach_rays_overlay_transform(rays_overlay, holder)
+
+	await get_tree().create_timer(PIECE_ATTACH_POST_SWITCH_HOLD_DURATION).timeout
+	if !is_inside_tree() or !is_instance_valid(holder):
+		cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+		return
+
+	var out_tween: Tween = create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	out_tween.tween_property(glow_material, "shader_parameter/glow_strength", 0.0, PIECE_ATTACH_OUT_DURATION)
+	out_tween.parallel().tween_property(rays_material, "shader_parameter/size", PIECE_ATTACH_RAYS_START_SIZE, PIECE_ATTACH_OUT_DURATION)
+	out_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 0.0, PIECE_ATTACH_OUT_DURATION)
+	if attach_point_light != null:
+		out_tween.parallel().tween_property(attach_point_light, "energy", 0.0, PIECE_ATTACH_OUT_DURATION)
+	if attach_piece_light != null:
+		out_tween.parallel().tween_property(attach_piece_light, "energy", 0.0, PIECE_ATTACH_OUT_DURATION)
+	await out_tween.finished
+
+	if is_instance_valid(glow_overlay):
+		glow_overlay.queue_free()
+	if is_instance_valid(rays_overlay):
+		rays_overlay.queue_free()
+	cleanup_piece_attach_point_light(holder, attach_point_light, attach_piece_light)
+
+func create_piece_attach_glow_overlay(holder: Sprite2D) -> Sprite2D:
+	return create_piece_glow_overlay(holder, PIECE_ATTACH_GLOW_NAME, PIECE_ATTACH_GLOW_Z_INDEX, 0.0)
+
+func create_piece_glow_overlay(holder: Sprite2D, effect_name: String, z_index: int, glow_strength: float) -> Sprite2D:
+	var overlay := Sprite2D.new()
+	overlay.name = effect_name
+	overlay.z_index = z_index
+	overlay.z_as_relative = true
+	sync_piece_attach_overlay_to_holder(overlay, holder)
+
+	var material := ShaderMaterial.new()
+	material.shader = PIECE_ATTACH_GLOW_SHADER
+	material.set_shader_parameter("glow_color", PIECE_ATTACH_GLOW_COLOR)
+	material.set_shader_parameter("glow_strength", glow_strength)
+	material.set_shader_parameter("glow_size", PIECE_ATTACH_GLOW_SIZE)
+	material.set_shader_parameter("fill_strength", PIECE_ATTACH_GLOW_FILL_STRENGTH)
+	overlay.material = material
+
+	holder.add_child(overlay)
+	return overlay
+
+func create_piece_attach_rays_overlay(holder: Sprite2D) -> Sprite2D:
+	var overlay := Sprite2D.new()
+	overlay.name = PIECE_ATTACH_RAYS_NAME
+	overlay.z_index = PIECE_ATTACH_RAYS_Z_INDEX
+	overlay.z_as_relative = true
+	apply_piece_attach_rays_overlay_transform(overlay, holder)
+
+	var material := ShaderMaterial.new()
+	material.shader = PIECE_ATTACH_RAYS_SHADER
+	material.set_shader_parameter("gradient", create_piece_attach_rays_gradient_texture())
+	material.set_shader_parameter("spread", PIECE_ATTACH_RAYS_SPREAD)
+	material.set_shader_parameter("cutoff", PIECE_ATTACH_RAYS_CUTOFF)
+	material.set_shader_parameter("speed", PIECE_ATTACH_RAYS_SPEED)
+	material.set_shader_parameter("ray1_density", PIECE_ATTACH_RAYS_RAY1_DENSITY)
+	material.set_shader_parameter("ray2_density", PIECE_ATTACH_RAYS_RAY2_DENSITY)
+	material.set_shader_parameter("ray2_intensity", PIECE_ATTACH_RAYS_RAY2_INTENSITY)
+	material.set_shader_parameter("core_intensity", PIECE_ATTACH_RAYS_CORE_INTENSITY)
+	material.set_shader_parameter("size", PIECE_ATTACH_RAYS_START_SIZE)
+	material.set_shader_parameter("alpha_strength", 0.0)
+	material.set_shader_parameter("seed", PIECE_ATTACH_RAYS_SEED)
+	overlay.material = material
+
+	holder.add_child(overlay)
+	return overlay
+
+func apply_piece_attach_rays_overlay_transform(overlay: Sprite2D, holder: Sprite2D) -> void:
+	if overlay == null or !is_instance_valid(overlay) or holder == null or !is_instance_valid(holder):
+		return
+
+	overlay.texture = get_piece_attach_rays_square_texture()
+	overlay.centered = true
+	overlay.offset = Vector2.ZERO
+	overlay.flip_h = false
+	overlay.flip_v = false
+	overlay.region_enabled = false
+	overlay.hframes = 1
+	overlay.vframes = 1
+	overlay.frame = 0
+	overlay.light_mask = PIECE_EFFECT_LIGHT_RECEIVE_MASK
+
+	var holder_texture_size: Vector2 = holder.texture.get_size() if holder.texture != null else Vector2.ONE * PIECE_ATTACH_RAYS_TEXTURE_SIZE
+	var square_side: float = maxf(holder_texture_size.x, holder_texture_size.y)
+	var overlay_scale_value: float = (square_side / float(PIECE_ATTACH_RAYS_TEXTURE_SIZE)) * PIECE_ATTACH_RAYS_OVERLAY_SCALE
+	overlay.scale = Vector2.ONE * overlay_scale_value
+	overlay.position = holder.offset + PIECE_ATTACH_RAYS_LOCAL_OFFSET
+
+func get_piece_attach_rays_square_texture() -> Texture2D:
+	if piece_attach_rays_square_texture != null:
+		return piece_attach_rays_square_texture
+
+	var image := Image.create(PIECE_ATTACH_RAYS_TEXTURE_SIZE, PIECE_ATTACH_RAYS_TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	piece_attach_rays_square_texture = ImageTexture.create_from_image(image)
+	return piece_attach_rays_square_texture
+
+func create_piece_attach_rays_gradient_texture() -> Texture2D:
+	var gradient := Gradient.new()
+	gradient.set_offset(0, 0.0)
+	gradient.set_color(0, Color(1.0, 0.42, 0.0, 0.0))
+	gradient.set_offset(1, 1.0)
+	gradient.set_color(1, Color(1.0, 0.96, 0.03, 1.0))
+	gradient.add_point(0.18, Color(1.0, 0.48, 0.02, 0.10))
+	gradient.add_point(0.42, Color(1.0, 0.52, 0.02, 0.72))
+	gradient.add_point(0.72, Color(1.0, 0.74, 0.03, 0.96))
+
+	var texture := GradientTexture1D.new()
+	texture.width = 256
+	texture.gradient = gradient
+	return texture
+
+func sync_piece_attach_overlay_to_holder(overlay: Sprite2D, holder: Sprite2D) -> void:
+	if overlay == null or !is_instance_valid(overlay) or holder == null or !is_instance_valid(holder):
+		return
+
+	overlay.texture = holder.texture
+	overlay.centered = holder.centered
+	overlay.offset = holder.offset
+	overlay.flip_h = holder.flip_h
+	overlay.flip_v = holder.flip_v
+	overlay.region_enabled = holder.region_enabled
+	overlay.region_rect = holder.region_rect
+	overlay.hframes = holder.hframes
+	overlay.vframes = holder.vframes
+	overlay.frame = holder.frame
+	overlay.light_mask = PIECE_EFFECT_LIGHT_RECEIVE_MASK
+	overlay.position = Vector2.ZERO
+	overlay.rotation = 0.0
+	overlay.scale = Vector2.ONE
+
+func remove_piece_attach_effects(holder: Sprite2D) -> void:
+	if holder == null or !is_instance_valid(holder):
+		return
+
+	for effect_name in [PIECE_ATTACH_GLOW_NAME, PIECE_ATTACH_RAYS_NAME, PIECE_ATTACH_MORPH_NAME]:
+		var existing_effect: Node = holder.get_node_or_null(effect_name)
+		if existing_effect != null:
+			existing_effect.free()
+
+func get_attach_animation_positions(animations: Array[Dictionary]) -> Dictionary:
+	var positions: Dictionary = {}
+	for animation: Dictionary in animations:
+		var board_pos: Vector2 = value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		if is_valid_position(board_pos):
+			positions[board_pos] = true
+	return positions
+
+func finish_resolved_pending_card_attach_processes(excluded_positions: Dictionary = {}) -> void:
+	for position_value in pending_card_attach_positions.keys():
+		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
+		if excluded_positions.has(board_pos):
+			continue
+		if !piece_objects.has(board_pos):
+			finish_card_attach_process(position_value)
+			continue
+
+		finish_card_attach_process(position_value)
+
+func clear_resolved_pending_card_attach_positions() -> void:
+	for position_value in pending_card_attach_positions.keys():
+		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
+		if !piece_objects.has(board_pos):
+			finish_card_attach_process(position_value)
+
 func display_board():
 	DebugLog.info("display_board() called: white=%s side=%s" % [white, side])
+	clear_resolved_pending_card_attach_positions()
 	update_board_markers()
 	for child in pieces_node.get_children():
 		child.queue_free()
@@ -2212,47 +3063,35 @@ func display_board():
 				holder.global_rotation_degrees = 180
 				$"../Camera2D".global_rotation_degrees = 180
 			pieces_node.add_child(holder)
+			holder.light_mask = PIECE_LIGHT_RECEIVE_MASK
 			holder.position = get_board_position_local_position(Vector2(i, j))
 			holder.set_meta("board_pos", Vector2(i, j))
+			holder.z_index = get_piece_depth_z_index(Vector2(i, j))
 			holder.texture = get_piece_texture_for_position(Vector2(i, j), int(board[i][j]))
+			apply_piece_visual_size(holder, Vector2(i, j))
+			apply_piece_light_occluder(holder, Vector2(i, j))
+			apply_piece_shadow(holder, Vector2(i, j))
 			apply_piece_exhausted_material(holder, Vector2(i, j))
-			apply_selected_piece_outline(holder, Vector2(i, j))
+			apply_selected_piece_glow(holder, Vector2(i, j))
 
 	if white: turn.texture = TURN_WHITE
 	else: turn.texture = TURN_BLACK
 
-func apply_selected_piece_outline(holder: Sprite2D, board_pos: Vector2) -> void:
-	remove_selected_piece_outline(holder)
+func apply_selected_piece_glow(holder: Sprite2D, board_pos: Vector2) -> void:
+	remove_selected_piece_glow(holder)
 	if !state or board_pos != selected_piece or holder.texture == null:
 		return
 	if !piece_objects.has(board_pos):
 		return
 
-	var outline := Sprite2D.new()
-	outline.name = SELECTED_PIECE_OUTLINE_NAME
-	outline.texture = holder.texture
-	outline.centered = holder.centered
-	outline.offset = holder.offset
-	outline.flip_h = holder.flip_h
-	outline.flip_v = holder.flip_v
-	outline.region_enabled = holder.region_enabled
-	outline.region_rect = holder.region_rect
-	outline.z_index = -1
-	outline.show_behind_parent = true
+	create_piece_glow_overlay(holder, SELECTED_PIECE_GLOW_NAME, SELECTED_PIECE_GLOW_Z_INDEX, SELECTED_PIECE_GLOW_STRENGTH)
 
-	var material := ShaderMaterial.new()
-	material.shader = PIECE_SELECTED_OUTLINE_SHADER
-	material.set_shader_parameter("outline_color", SELECTED_PIECE_OUTLINE_COLOR)
-	material.set_shader_parameter("outline_size", SELECTED_PIECE_OUTLINE_WIDTH)
-	outline.material = material
-	holder.add_child(outline)
+func remove_selected_piece_glow(holder: Sprite2D) -> void:
+	var existing_glow: Node = holder.get_node_or_null(SELECTED_PIECE_GLOW_NAME)
+	if existing_glow != null:
+		existing_glow.free()
 
-func remove_selected_piece_outline(holder: Sprite2D) -> void:
-	var existing_outline: Node = holder.get_node_or_null(SELECTED_PIECE_OUTLINE_NAME)
-	if existing_outline != null:
-		existing_outline.free()
-
-func update_selected_piece_outline() -> void:
+func update_selected_piece_glow() -> void:
 	if pieces_node == null:
 		return
 
@@ -2262,7 +3101,7 @@ func update_selected_piece_outline() -> void:
 			continue
 
 		var board_pos: Vector2 = value_to_vector2(holder.get_meta("board_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
-		apply_selected_piece_outline(holder, board_pos)
+		apply_selected_piece_glow(holder, board_pos)
 
 func apply_piece_exhausted_material(holder: Sprite2D, board_pos: Vector2) -> void:
 	holder.material = null
@@ -2270,22 +3109,42 @@ func apply_piece_exhausted_material(holder: Sprite2D, board_pos: Vector2) -> voi
 		return
 
 	var piece: Piece = piece_objects[board_pos] as Piece
-	if piece == null || !piece.exhausted_this_turn:
+	if piece == null:
 		return
 
+	if piece.exhausted_this_turn:
+		var exhausted_material := ShaderMaterial.new()
+		exhausted_material.shader = PIECE_EXHAUSTED_SHADER
+		holder.material = exhausted_material
+		return
+
+	if should_apply_opponent_piece_recolor(holder, piece):
+		holder.material = create_opponent_piece_recolor_material()
+
+func should_apply_opponent_piece_recolor(holder: Sprite2D, piece: Piece) -> bool:
+	if holder.texture != DEFAULT_PIECE_TEXTURE:
+		return false
+	return piece.color * get_own_color() < 0
+
+func create_opponent_piece_recolor_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
-	material.shader = PIECE_EXHAUSTED_SHADER
-	holder.material = material
+	material.shader = OPPONENT_PIECE_RECOLOR_SHADER
+	material.set_shader_parameter("recolor_strength", OPPONENT_PIECE_RECOLOR_STRENGTH)
+	material.set_shader_parameter("shadow_chroma_strength", OPPONENT_PIECE_SHADOW_CHROMA)
+	material.set_shader_parameter("shadow_color", OPPONENT_PIECE_SHADOW_COLOR)
+	material.set_shader_parameter("mid_color", OPPONENT_PIECE_MID_COLOR)
+	material.set_shader_parameter("highlight_color", OPPONENT_PIECE_HIGHLIGHT_COLOR)
+	return material
 
 func show_options():
 	moves = get_moves(selected_piece)
 	if moves == []:
 		state = false
-		update_selected_piece_outline()
+		update_selected_piece_glow()
 		return
 	delete_dots()
 	show_dots()
-	update_selected_piece_outline()
+	update_selected_piece_glow()
 	show_hover_piece_details(selected_piece)
 
 func show_dots():
@@ -2709,6 +3568,7 @@ func is_stalemate():
 	return !current_player_has_valid_turn_action()
 
 func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], last_move: Dictionary = {}):
+	var previous_piece_visual_state: Dictionary = get_piece_visual_state_snapshot()
 	var previous_white_hand_names: Array[String] = get_card_names_from_hand(white_card_hand)
 	var previous_black_hand_names: Array[String] = get_card_names_from_hand(black_card_hand)
 
@@ -2761,7 +3621,12 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	hide_hover_piece_details()
 	update_hidden_card_previews(hidden_cards)
 	update_card_presentation()
+	var state_attach_animations: Array[Dictionary] = collect_state_attach_animations(previous_piece_visual_state)
+	var animated_attach_positions: Dictionary = get_attach_animation_positions(state_attach_animations)
 	display_board()
+	finish_resolved_pending_card_attach_processes(animated_attach_positions)
+	if !state_attach_animations.is_empty():
+		call_deferred("play_state_attach_animations", state_attach_animations)
 	if has_received_server_state && !should_skip_visual_animations():
 		if recent_card_transfers.is_empty():
 			animate_state_draw_if_needed(1, previous_white_hand_names, current_white_hand_names)
@@ -2823,6 +3688,7 @@ func update_hidden_card_previews(hidden_cards: Array):
 		card_visual.disabled = true
 		card_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_visual.scale = Vector2.ONE * HIDDEN_CARD_SCALE
+		card_visual.set_preview_alpha(HIDDEN_CARD_PREVIEW_ALPHA)
 		card_visual.z_index = 850 + i
 		card_visual.set_ambient_motion_enabled(true)
 		hidden_card_previews.append(card_visual)
@@ -2885,8 +3751,8 @@ func arrange_action_status_ui() -> void:
 func get_board_screen_scale() -> float:
 	var camera: Camera2D = $"../Camera2D"
 	if camera == null:
-		return 1.0
-	return absf(camera.zoom.x)
+		return absf(global_scale.x)
+	return absf(camera.zoom.x) * absf(global_scale.x)
 
 func parse_player_base_fields(player_base_fields: Dictionary) -> Dictionary:
 	var parsed_fields: Dictionary = {
@@ -3012,36 +3878,32 @@ func add_last_move_arrow_marker():
 	add_board_arrow(from_pos, to_pos, LAST_MOVE_ARROW_COLOR, LAST_MOVE_ARROW_WIDTH)
 
 func add_board_square_fill(board_pos: Vector2, marker_color: Color):
-	var rect: Rect2 = get_board_cell_rect_local(board_pos)
 	var marker := Polygon2D.new()
 	marker.color = marker_color
-	marker.polygon = PackedVector2Array([
-		rect.position,
-		rect.position + Vector2(rect.size.x, 0.0),
-		rect.position + rect.size,
-		rect.position + Vector2(0.0, rect.size.y),
-	])
+	marker.polygon = get_board_cell_polygon_local(board_pos)
+	enable_canvas_item_antialiasing(marker)
 	board_markers_node.add_child(marker)
 
 func add_board_square_x_marker(board_pos: Vector2, line_color: Color, fill_color: Color):
 	add_board_square_fill(board_pos, fill_color)
-	var rect: Rect2 = get_board_cell_rect_local(board_pos).grow(-CELL_WIDTH * 0.22)
-	add_board_line([rect.position, rect.position + rect.size], line_color, BOARD_MARKER_LINE_WIDTH)
-	add_board_line([rect.position + Vector2(0.0, rect.size.y), rect.position + Vector2(rect.size.x, 0.0)], line_color, BOARD_MARKER_LINE_WIDTH)
+	var points: PackedVector2Array = get_board_cell_polygon_local(board_pos, CELL_WIDTH * 0.22)
+	add_board_line([points[0], points[2]], line_color, BOARD_MARKER_LINE_WIDTH)
+	add_board_line([points[3], points[1]], line_color, BOARD_MARKER_LINE_WIDTH)
 
 func add_board_base_marker(board_pos: Vector2, player_id: int):
-	var outer_rect: Rect2 = get_board_cell_rect_local(board_pos).grow(-CELL_WIDTH * 0.08)
+	var outer_polygon: PackedVector2Array = get_board_cell_polygon_local(board_pos, CELL_WIDTH * 0.08)
 	var marker_color: Color = Color(1.0, 1.0, 1.0, 1.0) if player_id == 0 else Color(0.0, 0.0, 0.0, 1.0)
-	add_board_rect_outline(outer_rect, marker_color, BOARD_MARKER_LINE_WIDTH * 1.5)
+	add_board_polygon_outline(outer_polygon, marker_color, BOARD_MARKER_LINE_WIDTH * 1.5)
 
-func add_board_rect_outline(rect: Rect2, line_color: Color, line_width: float):
-	add_board_line([
-		rect.position,
-		rect.position + Vector2(rect.size.x, 0.0),
-		rect.position + rect.size,
-		rect.position + Vector2(0.0, rect.size.y),
-		rect.position,
-	], line_color, line_width)
+func add_board_polygon_outline(points: PackedVector2Array, line_color: Color, line_width: float):
+	if points.size() < 2:
+		return
+
+	var line_points: Array = []
+	for point: Vector2 in points:
+		line_points.append(point)
+	line_points.append(points[0])
+	add_board_line(line_points, line_color, line_width)
 
 func add_board_line(points: Array, line_color: Color, line_width: float):
 	var line := Line2D.new()
@@ -3050,6 +3912,7 @@ func add_board_line(points: Array, line_color: Color, line_width: float):
 	line.joint_mode = Line2D.LINE_JOINT_ROUND
 	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	enable_canvas_item_antialiasing(line)
 	for point_value in points:
 		line.add_point(point_value)
 	board_markers_node.add_child(line)
@@ -3075,8 +3938,8 @@ func add_board_arrow(from_pos: Vector2, to_pos: Vector2, arrow_color: Color, lin
 		head_base + perpendicular * LAST_MOVE_ARROW_HEAD_HALF_WIDTH,
 		head_base - perpendicular * LAST_MOVE_ARROW_HEAD_HALF_WIDTH,
 	])
+	enable_canvas_item_antialiasing(arrow_head)
 	board_markers_node.add_child(arrow_head)
 
 func get_board_cell_rect_local(board_pos: Vector2) -> Rect2:
-	var center: Vector2 = get_board_position_local_position(board_pos)
-	return Rect2(center - Vector2.ONE * CELL_WIDTH * 0.5, Vector2.ONE * CELL_WIDTH)
+	return get_points_bounds_local(get_board_cell_polygon_local(board_pos))

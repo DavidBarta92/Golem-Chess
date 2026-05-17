@@ -21,6 +21,11 @@ const DRAG_TILT_MAX: float = 34.0
 const DRAG_TILT_SMOOTHING: float = 18.0
 const DROP_TARGET_SCALE_IN_DURATION: float = 0.24
 const DROP_TARGET_SCALE_OUT_DURATION: float = 0.12
+const AMBIENT_MOTION_FLOAT_PIXELS: float = 5.5
+const AMBIENT_MOTION_SIDE_PIXELS: float = 2.0
+const AMBIENT_MOTION_ROTATION_DEGREES: float = 2.0
+const AMBIENT_MOTION_X_TILT: float = 5.0
+const AMBIENT_MOTION_Y_TILT: float = 6.0
 
 signal drag_started(card_visual: CardVisual)
 signal drag_moved(card_visual: CardVisual)
@@ -81,6 +86,8 @@ var drag_motion_velocity: Vector2 = Vector2.ZERO
 var collection_owned: bool = true
 var hover_raise_enabled: bool = true
 var rest_scale: Vector2 = Vector2.ONE
+var preview_alpha_enabled: bool = false
+var preview_alpha: float = 1.0
 
 func _ready() -> void:
 	_apply_texture_filter()
@@ -206,6 +213,25 @@ func set_ambient_motion_enabled(value: bool) -> void:
 			face_material.set_shader_parameter("x_rot", 0.0)
 			face_material.set_shader_parameter("y_rot", 0.0)
 
+func set_preview_alpha(value: float) -> void:
+	preview_alpha_enabled = true
+	preview_alpha = clampf(value, 0.0, 1.0)
+	if is_node_ready():
+		apply_preview_alpha()
+
+func apply_preview_alpha() -> void:
+	apply_preview_alpha_to_node(self, preview_alpha)
+
+func apply_preview_alpha_to_node(node: Node, alpha: float) -> void:
+	if node != shadow and node is CanvasItem:
+		var canvas_item := node as CanvasItem
+		var color: Color = canvas_item.self_modulate
+		color.a = alpha
+		canvas_item.self_modulate = color
+
+	for child: Node in node.get_children():
+		apply_preview_alpha_to_node(child, alpha)
+
 func set_hand_context(new_owner_color: int, new_hand_index: int, new_home_position: Vector2) -> void:
 	owner_color = new_owner_color
 	hand_index = new_hand_index
@@ -297,24 +323,22 @@ func play_burn_away_and_free() -> void:
 	_kill_hover_tweens()
 	_kill_move_tween()
 	_kill_burn_tween()
+	shadow.visible = false
+	shadow.self_modulate.a = 0.0
+	modulate.a = 1.0
+	shimmer.visible = false
+
+	await get_tree().process_frame
+	if !is_inside_tree():
+		return
 
 	var burn_material: ShaderMaterial = ShaderMaterial.new()
 	burn_material.shader = BURN_SHADER
 	burn_material.set_shader_parameter("burn_progress", 0.0)
 	burn_material.set_shader_parameter("seed", randf() * 1000.0)
-	card_face.material = burn_material
-	shimmer.visible = false
-	name_label.visible = false
-	description_label.visible = false
-	type_frame.visible = false
-	card_art.visible = false
-	duration_label.visible = false
-	effect_icon_texture.visible = false
-	effect_icon_label.visible = false
-	nexus_icon_label.visible = false
-	pattern_view.visible = false
-	shadow.self_modulate.a = 0.32
-	modulate.a = 1.0
+	var burn_snapshot: TextureRect = await create_burn_snapshot_rect(burn_material)
+	if burn_snapshot == null:
+		card_face.material = burn_material
 
 	tween_burn = create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tween_burn.tween_property(burn_material, "shader_parameter/burn_progress", 1.0, 1.15)
@@ -326,6 +350,92 @@ func play_burn_away_and_free() -> void:
 func _finish_burn_away() -> void:
 	burn_finished.emit(self)
 	queue_free()
+
+func create_burn_snapshot_rect(burn_material: ShaderMaterial) -> TextureRect:
+	var snapshot_texture: Texture2D = await create_card_snapshot_texture()
+	if snapshot_texture == null:
+		return null
+
+	set_card_content_visible(false)
+	var snapshot_rect := TextureRect.new()
+	snapshot_rect.name = "BurnSnapshot"
+	snapshot_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	snapshot_rect.layout_mode = 1
+	snapshot_rect.anchor_left = 0.0
+	snapshot_rect.anchor_top = 0.0
+	snapshot_rect.anchor_right = 1.0
+	snapshot_rect.anchor_bottom = 1.0
+	snapshot_rect.offset_left = 0.0
+	snapshot_rect.offset_top = 0.0
+	snapshot_rect.offset_right = 0.0
+	snapshot_rect.offset_bottom = 0.0
+	snapshot_rect.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	snapshot_rect.grow_vertical = Control.GROW_DIRECTION_BOTH
+	snapshot_rect.texture = snapshot_texture
+	snapshot_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	snapshot_rect.material = burn_material
+	snapshot_rect.z_index = 500
+	add_child(snapshot_rect)
+	return snapshot_rect
+
+func create_card_snapshot_texture() -> Texture2D:
+	var viewport_size := Vector2i(maxi(1, int(ceil(size.x))), maxi(1, int(ceil(size.y))))
+	var snapshot_viewport := SubViewport.new()
+	snapshot_viewport.transparent_bg = true
+	snapshot_viewport.size = viewport_size
+	snapshot_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	snapshot_viewport.disable_3d = true
+
+	var snapshot_source: CardVisual = duplicate() as CardVisual
+	if snapshot_source == null:
+		snapshot_viewport.queue_free()
+		return null
+	snapshot_source.position = Vector2.ZERO
+	snapshot_source.rotation = 0.0
+	snapshot_source.scale = Vector2.ONE
+	snapshot_source.modulate = Color.WHITE
+	snapshot_source.self_modulate = Color.WHITE
+	if snapshot_source is Control:
+		var source_control := snapshot_source as Control
+		source_control.offset_left = 0.0
+		source_control.offset_top = 0.0
+		source_control.offset_right = size.x
+		source_control.offset_bottom = size.y
+		source_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	snapshot_viewport.add_child(snapshot_source)
+	add_child(snapshot_viewport)
+	var source_shadow: CanvasItem = snapshot_source.get_node_or_null("Shadow") as CanvasItem
+	if source_shadow != null:
+		source_shadow.visible = false
+
+	await RenderingServer.frame_post_draw
+	if !is_inside_tree() or !is_instance_valid(snapshot_viewport):
+		return null
+
+	var viewport_texture: ViewportTexture = snapshot_viewport.get_texture()
+	if viewport_texture == null:
+		snapshot_viewport.queue_free()
+		return null
+
+	var image: Image = viewport_texture.get_image()
+	snapshot_viewport.queue_free()
+	if image == null or image.get_width() <= 0 or image.get_height() <= 0:
+		return null
+
+	return ImageTexture.create_from_image(image)
+
+func set_card_content_visible(value: bool) -> void:
+	card_face.visible = value
+	type_frame.visible = value && !face_down && card != null && type_frame.texture != null
+	card_art.visible = value && !face_down && card_art.texture != null
+	duration_label.visible = value && !face_down
+	effect_icon_texture.visible = value && !face_down && card != null && card.has_effect() && card.effect_icon != null
+	effect_icon_label.visible = value && !face_down && card != null && card.has_effect() && card.effect_icon == null
+	nexus_icon_label.visible = false
+	name_label.visible = value && !face_down
+	description_label.visible = value && !face_down
+	pattern_view.visible = value && !face_down
 
 func _apply_card() -> void:
 	if card == null:
@@ -347,6 +457,8 @@ func _apply_card() -> void:
 	_apply_art_state()
 	_apply_face_state()
 	_apply_collection_state()
+	if preview_alpha_enabled:
+		apply_preview_alpha()
 
 func _apply_art_state() -> void:
 	var type_frame_texture: Texture2D = _get_type_frame_texture()
@@ -563,11 +675,12 @@ func update_ambient_motion(delta: float) -> void:
 
 	ambient_motion_time += delta
 	var sway: float = sin(ambient_motion_time * 1.35)
+	var side_sway: float = sin(ambient_motion_time * 1.05 + 1.3)
 	var tilt: float = sin(ambient_motion_time * 1.85 + 0.7)
-	position = home_position + Vector2(0.0, sway * 4.0)
-	rotation = deg_to_rad(sway * 2.4)
-	face_material.set_shader_parameter("x_rot", tilt * 5.5)
-	face_material.set_shader_parameter("y_rot", sway * 6.5)
+	position = home_position + Vector2(side_sway * AMBIENT_MOTION_SIDE_PIXELS, sway * AMBIENT_MOTION_FLOAT_PIXELS)
+	rotation = deg_to_rad(sway * AMBIENT_MOTION_ROTATION_DEGREES)
+	face_material.set_shader_parameter("x_rot", tilt * AMBIENT_MOTION_X_TILT)
+	face_material.set_shader_parameter("y_rot", sway * AMBIENT_MOTION_Y_TILT)
 
 func reset_tilt_and_scale() -> void:
 	if tween_hover and tween_hover.is_running():

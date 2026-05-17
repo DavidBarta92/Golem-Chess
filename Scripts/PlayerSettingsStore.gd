@@ -1,14 +1,25 @@
 extends Node
 
-const SETTINGS_SCHEMA_VERSION: int = 2
+const FILM_GRAIN_SHADER = preload("res://Shaders/film_grain.gdshader")
+
+const SETTINGS_SCHEMA_VERSION: int = 4
 const SETTINGS_PATH: String = "user://settings.json"
 const TARGET_WIDTH: int = 1280
 const TARGET_HEIGHT: int = 720
 const MIN_WINDOW_WIDTH: int = 1024
 const MIN_WINDOW_HEIGHT: int = 576
+const PREVIOUS_DEFAULT_FILM_GRAIN_INTENSITY: float = 0.045
+const DEFAULT_FILM_GRAIN_INTENSITY: float = 0.02
+const MIN_FILM_GRAIN_INTENSITY: float = 0.0
+const MAX_FILM_GRAIN_INTENSITY: float = 0.16
+const FILM_GRAIN_SIZE: float = 1.35
+const FILM_GRAIN_SPEED: float = 18.0
+const FILM_GRAIN_LAYER: int = 128
 
 var settings_data: Dictionary = {}
 var is_loaded: bool = false
+var film_grain_layer: CanvasLayer
+var film_grain_overlay: ColorRect
 
 func _ready() -> void:
 	ensure_loaded()
@@ -71,9 +82,60 @@ func set_enemy_attack_markers_enabled(enabled: bool) -> void:
 	settings_data["show_enemy_attack_markers"] = enabled
 	save_settings()
 
+func get_film_grain_intensity() -> float:
+	ensure_loaded()
+	return clampf(float(settings_data.get("film_grain_intensity", DEFAULT_FILM_GRAIN_INTENSITY)), MIN_FILM_GRAIN_INTENSITY, MAX_FILM_GRAIN_INTENSITY)
+
+func set_film_grain_intensity(intensity: float) -> void:
+	ensure_loaded()
+	settings_data["film_grain_intensity"] = clampf(intensity, MIN_FILM_GRAIN_INTENSITY, MAX_FILM_GRAIN_INTENSITY)
+	apply_film_grain_settings()
+	save_settings()
+
 func apply_runtime_settings() -> void:
 	apply_window_settings()
 	_sync_game_config()
+	ensure_film_grain_overlay()
+
+func ensure_film_grain_overlay() -> void:
+	if film_grain_layer == null || !is_instance_valid(film_grain_layer):
+		film_grain_layer = CanvasLayer.new()
+		film_grain_layer.name = "GlobalFilmGrainLayer"
+		film_grain_layer.layer = FILM_GRAIN_LAYER
+		add_child(film_grain_layer)
+
+	if film_grain_overlay == null || !is_instance_valid(film_grain_overlay):
+		film_grain_overlay = ColorRect.new()
+		film_grain_overlay.name = "GlobalFilmGrainOverlay"
+		film_grain_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		film_grain_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+		film_grain_overlay.offset_left = 0.0
+		film_grain_overlay.offset_top = 0.0
+		film_grain_overlay.offset_right = 0.0
+		film_grain_overlay.offset_bottom = 0.0
+		film_grain_overlay.color = Color.WHITE
+		film_grain_layer.add_child(film_grain_overlay)
+
+		var material := ShaderMaterial.new()
+		material.shader = FILM_GRAIN_SHADER
+		film_grain_overlay.material = material
+
+	apply_film_grain_settings()
+
+func apply_film_grain_settings() -> void:
+	if film_grain_overlay == null || !is_instance_valid(film_grain_overlay):
+		return
+
+	var intensity: float = get_film_grain_intensity()
+	film_grain_overlay.visible = intensity > 0.0
+	var material := film_grain_overlay.material as ShaderMaterial
+	if material == null:
+		material = ShaderMaterial.new()
+		material.shader = FILM_GRAIN_SHADER
+		film_grain_overlay.material = material
+	material.set_shader_parameter("intensity", intensity)
+	material.set_shader_parameter("grain_size", FILM_GRAIN_SIZE)
+	material.set_shader_parameter("animation_speed", FILM_GRAIN_SPEED)
 
 func apply_window_settings() -> void:
 	DisplayServer.window_set_min_size(Vector2i(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT))
@@ -121,6 +183,7 @@ func _create_default_settings() -> Dictionary:
 		"master_volume": 1.0,
 		"show_last_move_arrow": true,
 		"show_enemy_attack_markers": true,
+		"film_grain_intensity": DEFAULT_FILM_GRAIN_INTENSITY,
 	}
 
 func _normalize_settings(raw_data) -> Dictionary:
@@ -128,6 +191,7 @@ func _normalize_settings(raw_data) -> Dictionary:
 	if !(raw_data is Dictionary):
 		return normalized
 
+	var raw_schema_version: int = int(raw_data.get("schema_version", 0))
 	normalized["schema_version"] = SETTINGS_SCHEMA_VERSION
 	normalized["player_name"] = GameConfig.sanitize_player_name(str(raw_data.get("player_name", GameConfig.DEFAULT_PLAYER_NAME)))
 	normalized["fullscreen"] = bool(raw_data.get("fullscreen", false))
@@ -135,4 +199,8 @@ func _normalize_settings(raw_data) -> Dictionary:
 	normalized["master_volume"] = clampf(float(raw_data.get("master_volume", 1.0)), 0.0, 1.0)
 	normalized["show_last_move_arrow"] = bool(raw_data.get("show_last_move_arrow", true))
 	normalized["show_enemy_attack_markers"] = bool(raw_data.get("show_enemy_attack_markers", true))
+	var film_grain_intensity: float = float(raw_data.get("film_grain_intensity", DEFAULT_FILM_GRAIN_INTENSITY))
+	if raw_schema_version < SETTINGS_SCHEMA_VERSION && is_equal_approx(film_grain_intensity, PREVIOUS_DEFAULT_FILM_GRAIN_INTENSITY):
+		film_grain_intensity = DEFAULT_FILM_GRAIN_INTENSITY
+	normalized["film_grain_intensity"] = clampf(film_grain_intensity, MIN_FILM_GRAIN_INTENSITY, MAX_FILM_GRAIN_INTENSITY)
 	return normalized

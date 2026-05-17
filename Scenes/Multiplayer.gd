@@ -291,7 +291,8 @@ func apply_game_state(state_data: Dictionary):
 			"position": pos,
 			"color": piece_data.color,
 			"card_name": piece_data.card_name,
-			"turns_remaining": piece_data.turns_remaining
+			"turns_remaining": piece_data.turns_remaining,
+			"exhausted_this_turn": bool(piece_data.get("exhausted_this_turn", false))
 		}
 		DebugLog.info("  Piece loaded: pos=%s, card=%s, turns=%d" % [pos, piece_data.card_name, piece_data.turns_remaining])
 
