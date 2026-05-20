@@ -28,12 +28,16 @@ var settings_button: Button
 var settings_dialog: AcceptDialog
 var player_name_field: LineEdit
 var fullscreen_check: CheckBox
+var resolution_option_button: OptionButton
+var fps_limit_option_button: OptionButton
 var film_grain_intensity_slider: HSlider
 var film_grain_intensity_value_label: Label
 var last_move_arrow_check: CheckBox
 var enemy_attack_markers_check: CheckBox
 var points_hud: HBoxContainer
 var points_label: Label
+var resolution_options: Array[Vector2i] = []
+var fps_limit_options: Array[int] = []
 
 func _ready():
 	PlayerSettingsStore.ensure_loaded()
@@ -175,7 +179,7 @@ func create_settings_dialog() -> void:
 	settings_dialog.title = "Settings"
 	settings_dialog.dialog_text = ""
 	settings_dialog.exclusive = true
-	settings_dialog.min_size = Vector2i(480, 350)
+	settings_dialog.min_size = Vector2i(540, 420)
 	settings_dialog.confirmed.connect(_on_settings_confirmed)
 	settings_dialog.canceled.connect(_on_settings_canceled)
 
@@ -212,6 +216,24 @@ func create_settings_dialog() -> void:
 	fullscreen_check = CheckBox.new()
 	video_tab.add_child(fullscreen_check)
 	fullscreen_check.text = "Fullscreen"
+
+	var resolution_label := Label.new()
+	video_tab.add_child(resolution_label)
+	resolution_label.text = "Resolution"
+
+	resolution_option_button = OptionButton.new()
+	video_tab.add_child(resolution_option_button)
+	resolution_option_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	populate_resolution_options()
+
+	var fps_limit_label := Label.new()
+	video_tab.add_child(fps_limit_label)
+	fps_limit_label.text = "FPS limit"
+
+	fps_limit_option_button = OptionButton.new()
+	video_tab.add_child(fps_limit_option_button)
+	fps_limit_option_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	populate_fps_limit_options()
 
 	var film_grain_label := Label.new()
 	video_tab.add_child(film_grain_label)
@@ -447,15 +469,19 @@ func _on_exit_button_pressed():
 func _on_settings_button_pressed() -> void:
 	player_name_field.text = PlayerSettingsStore.get_player_name()
 	fullscreen_check.button_pressed = PlayerSettingsStore.is_fullscreen_enabled()
+	select_current_resolution_option()
+	select_current_fps_limit_option()
 	film_grain_intensity_slider.value = PlayerSettingsStore.get_film_grain_intensity()
 	update_film_grain_intensity_value_label(film_grain_intensity_slider.value)
 	last_move_arrow_check.button_pressed = PlayerSettingsStore.is_last_move_arrow_enabled()
 	enemy_attack_markers_check.button_pressed = PlayerSettingsStore.is_enemy_attack_markers_enabled()
-	settings_dialog.popup_centered(Vector2i(480, 350))
+	settings_dialog.popup_centered(Vector2i(540, 420))
 
 func _on_settings_confirmed() -> void:
 	PlayerSettingsStore.set_player_name(player_name_field.text)
 	PlayerSettingsStore.set_fullscreen_enabled(fullscreen_check.button_pressed)
+	PlayerSettingsStore.set_window_resolution(get_selected_window_resolution())
+	PlayerSettingsStore.set_fps_limit(get_selected_fps_limit())
 	PlayerSettingsStore.set_film_grain_intensity(float(film_grain_intensity_slider.value))
 	PlayerSettingsStore.set_last_move_arrow_enabled(last_move_arrow_check.button_pressed)
 	PlayerSettingsStore.set_enemy_attack_markers_enabled(enemy_attack_markers_check.button_pressed)
@@ -463,6 +489,8 @@ func _on_settings_confirmed() -> void:
 func _on_settings_canceled() -> void:
 	player_name_field.text = PlayerSettingsStore.get_player_name()
 	fullscreen_check.button_pressed = PlayerSettingsStore.is_fullscreen_enabled()
+	select_current_resolution_option()
+	select_current_fps_limit_option()
 	film_grain_intensity_slider.value = PlayerSettingsStore.get_film_grain_intensity()
 	update_film_grain_intensity_value_label(film_grain_intensity_slider.value)
 	last_move_arrow_check.button_pressed = PlayerSettingsStore.is_last_move_arrow_enabled()
@@ -475,3 +503,71 @@ func update_film_grain_intensity_value_label(value: float) -> void:
 	if film_grain_intensity_value_label == null:
 		return
 	film_grain_intensity_value_label.text = "%.1f%%" % (value * 100.0)
+
+func populate_resolution_options() -> void:
+	if resolution_option_button == null:
+		return
+
+	resolution_option_button.clear()
+	resolution_options = PlayerSettingsStore.get_supported_window_resolutions()
+	for resolution in resolution_options:
+		resolution_option_button.add_item(format_resolution_label(resolution))
+	select_current_resolution_option()
+
+func select_current_resolution_option() -> void:
+	if resolution_option_button == null:
+		return
+
+	var current_resolution: Vector2i = PlayerSettingsStore.get_window_resolution()
+	var selected_index: int = resolution_options.find(current_resolution)
+	if selected_index < 0:
+		resolution_options.append(current_resolution)
+		resolution_option_button.add_item(format_resolution_label(current_resolution))
+		selected_index = resolution_options.size() - 1
+	resolution_option_button.select(selected_index)
+
+func get_selected_window_resolution() -> Vector2i:
+	if resolution_option_button == null:
+		return PlayerSettingsStore.get_window_resolution()
+	var selected_index: int = resolution_option_button.selected
+	if selected_index < 0 or selected_index >= resolution_options.size():
+		return PlayerSettingsStore.get_window_resolution()
+	return resolution_options[selected_index]
+
+func format_resolution_label(resolution: Vector2i) -> String:
+	return "%d x %d" % [resolution.x, resolution.y]
+
+func populate_fps_limit_options() -> void:
+	if fps_limit_option_button == null:
+		return
+
+	fps_limit_option_button.clear()
+	fps_limit_options = PlayerSettingsStore.get_supported_fps_limits()
+	for fps_limit in fps_limit_options:
+		fps_limit_option_button.add_item(format_fps_limit_label(fps_limit))
+	select_current_fps_limit_option()
+
+func select_current_fps_limit_option() -> void:
+	if fps_limit_option_button == null:
+		return
+
+	var current_fps_limit: int = PlayerSettingsStore.get_fps_limit()
+	var selected_index: int = fps_limit_options.find(current_fps_limit)
+	if selected_index < 0:
+		fps_limit_options.append(current_fps_limit)
+		fps_limit_option_button.add_item(format_fps_limit_label(current_fps_limit))
+		selected_index = fps_limit_options.size() - 1
+	fps_limit_option_button.select(selected_index)
+
+func get_selected_fps_limit() -> int:
+	if fps_limit_option_button == null:
+		return PlayerSettingsStore.get_fps_limit()
+	var selected_index: int = fps_limit_option_button.selected
+	if selected_index < 0 or selected_index >= fps_limit_options.size():
+		return PlayerSettingsStore.get_fps_limit()
+	return fps_limit_options[selected_index]
+
+func format_fps_limit_label(fps_limit: int) -> String:
+	if fps_limit <= 0:
+		return "Default / VSync"
+	return "%d FPS" % fps_limit

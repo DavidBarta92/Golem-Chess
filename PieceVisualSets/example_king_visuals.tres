@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PieceVisualSet" format=3 uid="uid://b0r1lnxhfjo2b"]
+
+[ext_resource type="Script" uid="uid://brv1p4k8s2mty" path="res://Scripts/PieceVisualSet.gd" id="1_visuals"]
+[ext_resource type="Texture2D" uid="uid://b6gj30cfrq1y6" path="res://Assets/king.svg" id="2_front"]
+[ext_resource type="Texture2D" uid="uid://c2w4pc2ecrbp" path="res://Assets/king_back.svg" id="3_back"]
+
+[resource]
+script = ExtResource("1_visuals")
+white_front = ExtResource("2_front")
+white_back = ExtResource("3_back")
+white_preview = ExtResource("2_front")
+black_front = ExtResource("2_front")
+black_back = ExtResource("3_back")
+black_preview = ExtResource("2_front")

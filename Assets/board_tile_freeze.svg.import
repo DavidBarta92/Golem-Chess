@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://kvycoewvq8td"
-path="res://.godot/imported/board_tile_light.svg-d3005c36eb57b5b12b67c73d7ae3ae6d.ctex"
+uid="uid://cjxvr35gj5qtc"
+path="res://.godot/imported/board_tile_freeze.svg-e022cdae2a0329109d892a4b41312dac.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/board_tile_light.svg"
-dest_files=["res://.godot/imported/board_tile_light.svg-d3005c36eb57b5b12b67c73d7ae3ae6d.ctex"]
+source_file="res://Assets/board_tile_freeze.svg"
+dest_files=["res://.godot/imported/board_tile_freeze.svg-e022cdae2a0329109d892a4b41312dac.ctex"]
 
 [params]
 

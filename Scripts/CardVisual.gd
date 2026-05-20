@@ -1,4 +1,4 @@
-﻿extends Button
+extends Button
 class_name CardVisual
 
 const BURN_SHADER = preload("res://Shaders/card_burn.gdshader")
@@ -92,8 +92,6 @@ var preview_alpha: float = 1.0
 func _ready() -> void:
 	_apply_texture_filter()
 	shadow.self_modulate.a = normal_shadow_alpha
-	description_label.scroll_active = false
-	description_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pivot_offset = size * 0.5
 	face_material = card_face.material.duplicate() as ShaderMaterial
 	card_face.material = face_material
@@ -484,13 +482,11 @@ func set_card_content_visible(value: bool) -> void:
 	effect_icon_label.visible = value && !face_down && card != null && card.has_effect() && card.effect_icon == null
 	nexus_icon_label.visible = false
 	name_label.visible = value && !face_down
-	description_label.visible = value && !face_down
 	pattern_view.visible = value && !face_down
 
 func _apply_card() -> void:
 	if card == null:
 		name_label.text = ""
-		description_label.text = ""
 		duration_label.text = ""
 		effect_icon_texture.texture = null
 		effect_icon_label.text = ""
@@ -498,7 +494,6 @@ func _apply_card() -> void:
 		pattern_view.set_card(null)
 	else:
 		name_label.text = card.card_name
-		description_label.text = card.description.strip_edges()
 		duration_label.text = "INF" if card.duration < 0 else str(card.duration)
 		effect_icon_texture.texture = card.effect_icon
 		effect_icon_label.text = CardEffect.get_effect_label(card.effect_type)
@@ -577,7 +572,6 @@ func _get_type_mask_texture() -> Texture2D:
 func _apply_face_state() -> void:
 	var has_effect_icon: bool = card != null && card.has_effect()
 	name_label.visible = !face_down
-	description_label.visible = !face_down
 	duration_label.visible = !face_down
 	effect_icon_texture.visible = !face_down && has_effect_icon && card.effect_icon != null
 	effect_icon_label.visible = !face_down && has_effect_icon && card.effect_icon == null

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://kvycoewvq8td"
-path="res://.godot/imported/board_tile_light.svg-d3005c36eb57b5b12b67c73d7ae3ae6d.ctex"
+uid="uid://cabv3k7g4ruyj"
+path="res://.godot/imported/king_front.svg-5cd8acd8490c25fe62f08fb54ab3ce1f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/board_tile_light.svg"
-dest_files=["res://.godot/imported/board_tile_light.svg-d3005c36eb57b5b12b67c73d7ae3ae6d.ctex"]
+source_file="res://Assets/king_front.svg"
+dest_files=["res://.godot/imported/king_front.svg-5cd8acd8490c25fe62f08fb54ab3ce1f.ctex"]
 
 [params]
 
@@ -38,6 +38,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=8.0
+svg/scale=1.0
 editor/scale_with_editor_scale=false
 editor/convert_colors_with_editor_theme=false

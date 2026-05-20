@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dgl5umdn6mctq" path="res://Scripts/CardVisual.gd" id="1"]
 [ext_resource type="Script" uid="uid://b4rbx66i3ardt" path="res://Scripts/CardPatternView.gd" id="2"]
-[ext_resource type="Texture2D" path="res://Assets/stamp_base.svg" id="3"]
+[ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="3"]
 [ext_resource type="Shader" uid="uid://2w0ypeypns36" path="res://Shaders/card_tilt.gdshader" id="5"]
 [ext_resource type="FontFile" uid="uid://qkd6nyfjtoyf" path="res://Fonts/OLDENGL.TTF" id="5_7hptf"]
 [ext_resource type="Shader" uid="uid://cmkftqqcjg2yk" path="res://Shaders/card_shimmer.gdshader" id="6"]
@@ -108,10 +108,10 @@ mouse_filter = 2
 
 [node name="DurationLabel" type="Label" parent="." unique_id=336129338]
 layout_mode = 1
-offset_left = 11.0
-offset_top = 12.0
-offset_right = 49.0
-offset_bottom = 52.0
+offset_left = 14.0
+offset_top = 17.0
+offset_right = 52.0
+offset_bottom = 57.0
 theme_override_colors/font_color = Color(0.8745098, 0.85882354, 0.81960785, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
@@ -185,7 +185,7 @@ anchor_bottom = 1.0
 offset_left = 20.0
 offset_top = -61.0
 offset_right = -20.0
-offset_bottom = -35.0
+offset_bottom = -21.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.8745098, 0.85882354, 0.81960785, 1)
@@ -198,16 +198,3 @@ text = "Card"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
-
-[node name="DescriptionLabel" type="RichTextLabel" parent="." unique_id=1754150722]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 189.0
-offset_right = 145.0
-offset_bottom = 212.0
-mouse_filter = 2
-theme_override_colors/default_color = Color(0.09803922, 0.09803922, 0.09803922, 1)
-theme_override_fonts/normal_font = ExtResource("8_5weds")
-theme_override_font_sizes/normal_font_size = 5
-text = "DescriptionDescriptionDescriptionDescriptionDescriptionDescriptionDescription"
-scroll_active = false

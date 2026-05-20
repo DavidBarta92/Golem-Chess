@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://c1hoxdtpqrkg1" path="res://Assets/10b.png" id="1_gyegn"]
 [ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="2_58heb"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_p5p1d"]
+[ext_resource type="Resource" path="res://PieceVisualSets/king.tres" id="3_58heb"]
 [ext_resource type="Texture2D" uid="uid://crbfhk5qpqbmo" path="res://Assets/10w.png" id="3_p5p1d"]
 
 [resource]
@@ -10,6 +11,7 @@ script = ExtResource("2_p5p1d")
 card_name = "Numero_7"
 card_code = "numero_7"
 card_art = ExtResource("2_58heb")
+piece_visuals = ExtResource("3_58heb")
 white_piece_texture = ExtResource("3_p5p1d")
 black_piece_texture = ExtResource("1_gyegn")
 description = "No special effect."

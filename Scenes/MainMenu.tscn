@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://b2oed0tahffou"]
+[gd_scene format=3 uid="uid://b2oed0tahffou"]
 
 [ext_resource type="Script" uid="uid://cef2ndnwft8t1" path="res://Scenes/MainMenu.gd" id="1_tt5f1"]
 
@@ -11,8 +11,8 @@ border_width_bottom = 1
 border_color = Color(0.58, 0.42, 0.02, 1)
 corner_radius_top_left = 9
 corner_radius_top_right = 9
-corner_radius_bottom_left = 9
 corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
 
 [node name="MainMenu" type="Control" unique_id=683751200]
 layout_mode = 3
@@ -23,7 +23,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tt5f1")
 
-[node name="TopBackground" type="ColorRect" parent="."]
+[node name="TopBackground" type="ColorRect" parent="." unique_id=366199248]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -31,7 +31,7 @@ offset_bottom = 60.0
 grow_horizontal = 2
 color = Color(0.36, 0.32, 0.32, 1)
 
-[node name="TopBar" type="HBoxContainer" parent="."]
+[node name="TopBar" type="HBoxContainer" parent="." unique_id=411097308]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -42,35 +42,35 @@ offset_bottom = 52.0
 grow_horizontal = 2
 theme_override_constants/separation = 12
 
-[node name="TopSpacer" type="Control" parent="TopBar"]
+[node name="TopSpacer" type="Control" parent="TopBar" unique_id=403020104]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SettingsButton" type="Button" parent="TopBar"]
+[node name="SettingsButton" type="Button" parent="TopBar" unique_id=992141542]
 custom_minimum_size = Vector2(110, 40)
 layout_mode = 2
 focus_mode = 0
 text = "Settings"
 
-[node name="ExitButton" type="Button" parent="TopBar"]
+[node name="ExitButton" type="Button" parent="TopBar" unique_id=24372862]
 custom_minimum_size = Vector2(92, 40)
 layout_mode = 2
 focus_mode = 0
 text = "Exit"
 
-[node name="PointsHud" type="HBoxContainer" parent="TopBar"]
+[node name="PointsHud" type="HBoxContainer" parent="TopBar" unique_id=1733465618]
 custom_minimum_size = Vector2(116, 38)
 layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 2
 
-[node name="PointIcon" type="PanelContainer" parent="TopBar/PointsHud"]
+[node name="PointIcon" type="PanelContainer" parent="TopBar/PointsHud" unique_id=731680785]
 custom_minimum_size = Vector2(18, 18)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxFlat_coin")
 
-[node name="PointsLabel" type="Label" parent="TopBar/PointsHud"]
+[node name="PointsLabel" type="Label" parent="TopBar/PointsHud" unique_id=1471077960]
 custom_minimum_size = Vector2(78, 32)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.96, 0.82, 1)
@@ -105,7 +105,7 @@ placeholder_text = "Player"
 layout_mode = 2
 text = "Singleplayer"
 
-[node name="TutorialButton" type="Button" parent="VBoxContainer"]
+[node name="TutorialButton" type="Button" parent="VBoxContainer" unique_id=684865236]
 layout_mode = 2
 text = "Tutorial"
 
@@ -125,9 +125,9 @@ text = "Exit"
 [node name="AIVsAIControls" type="Control" parent="." unique_id=155862287]
 visible = false
 layout_mode = 1
-anchors_preset = 2
-anchor_right = 1.0
+anchors_preset = 12
 anchor_top = 1.0
+anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
 offset_top = -56.0
@@ -140,16 +140,15 @@ grow_vertical = 0
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
-text = "Golem v0.0.6 alpha"
+text = "Golem v0.0.7 alpha"
 
-[node name="DevToolsWindow" type="Window" parent="."]
+[node name="DevToolsWindow" type="Window" parent="." unique_id=91807004]
 title = "Developer Tools"
 position = Vector2i(260, 145)
 size = Vector2i(760, 430)
 visible = false
 
-[node name="DevToolsRoot" type="VBoxContainer" parent="DevToolsWindow"]
-layout_mode = 1
+[node name="DevToolsRoot" type="VBoxContainer" parent="DevToolsWindow" unique_id=2948191]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -157,90 +156,92 @@ offset_left = 18.0
 offset_top = 18.0
 offset_right = -18.0
 offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="DevToolsWindow/DevToolsRoot"]
+[node name="TitleLabel" type="Label" parent="DevToolsWindow/DevToolsRoot" unique_id=1182864154]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "Developer Tools"
 
-[node name="AIVsAISection" type="VBoxContainer" parent="DevToolsWindow/DevToolsRoot"]
+[node name="AIVsAISection" type="VBoxContainer" parent="DevToolsWindow/DevToolsRoot" unique_id=399133896]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="AIVsAILabel" type="Label" parent="DevToolsWindow/DevToolsRoot/AIVsAISection"]
+[node name="AIVsAILabel" type="Label" parent="DevToolsWindow/DevToolsRoot/AIVsAISection" unique_id=2033220919]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "AI vs AI"
 
-[node name="AIVsAIControls" type="HBoxContainer" parent="DevToolsWindow/DevToolsRoot/AIVsAISection"]
+[node name="AIVsAIControls" type="HBoxContainer" parent="DevToolsWindow/DevToolsRoot/AIVsAISection" unique_id=281423712]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="MatchCountField" type="LineEdit" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls"]
+[node name="MatchCountField" type="LineEdit" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls" unique_id=164293685]
 custom_minimum_size = Vector2(96, 36)
 layout_mode = 2
 text = "1"
 placeholder_text = "Matches"
 
-[node name="FastModeCheck" type="CheckBox" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls"]
+[node name="FastModeCheck" type="CheckBox" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls" unique_id=1372003640]
 custom_minimum_size = Vector2(104, 36)
 layout_mode = 2
 text = "Fast"
 
-[node name="RandomDeckCheck" type="CheckBox" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls"]
+[node name="RandomDeckCheck" type="CheckBox" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls" unique_id=519164057]
 custom_minimum_size = Vector2(150, 36)
 layout_mode = 2
 text = "Random decks"
 
-[node name="AIVsAIButton" type="Button" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls"]
+[node name="AIVsAIButton" type="Button" parent="DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls" unique_id=2016412986]
 custom_minimum_size = Vector2(150, 36)
 layout_mode = 2
 text = "Run AI Matches"
 
-[node name="CsvLogDirField" type="LineEdit" parent="DevToolsWindow/DevToolsRoot/AIVsAISection"]
+[node name="CsvLogDirField" type="LineEdit" parent="DevToolsWindow/DevToolsRoot/AIVsAISection" unique_id=129139214]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "user://ai_match_logs"
 placeholder_text = "CSV/log folder"
 
-[node name="AIDeckOptionButton" type="OptionButton" parent="DevToolsWindow/DevToolsRoot/AIVsAISection"]
+[node name="AIDeckOptionButton" type="OptionButton" parent="DevToolsWindow/DevToolsRoot/AIVsAISection" unique_id=1185455417]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 tooltip_text = "Both AI players use this saved deck."
 
-[node name="Separator" type="HSeparator" parent="DevToolsWindow/DevToolsRoot"]
+[node name="Separator" type="HSeparator" parent="DevToolsWindow/DevToolsRoot" unique_id=2072885197]
 layout_mode = 2
 
-[node name="BalanceSection" type="VBoxContainer" parent="DevToolsWindow/DevToolsRoot"]
+[node name="BalanceSection" type="VBoxContainer" parent="DevToolsWindow/DevToolsRoot" unique_id=88484094]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="BalanceLabel" type="Label" parent="DevToolsWindow/DevToolsRoot/BalanceSection"]
+[node name="BalanceLabel" type="Label" parent="DevToolsWindow/DevToolsRoot/BalanceSection" unique_id=1449896305]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Card Balance"
 
-[node name="BalanceButtons" type="HBoxContainer" parent="DevToolsWindow/DevToolsRoot/BalanceSection"]
+[node name="BalanceButtons" type="HBoxContainer" parent="DevToolsWindow/DevToolsRoot/BalanceSection" unique_id=2098568448]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="PromoteCardValuesButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons"]
+[node name="PromoteCardValuesButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons" unique_id=1717250798]
 custom_minimum_size = Vector2(180, 36)
 layout_mode = 2
 text = "Promote Card Values"
 
-[node name="OpenLogsButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons"]
+[node name="OpenLogsButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons" unique_id=262609463]
 custom_minimum_size = Vector2(120, 36)
 layout_mode = 2
 text = "Open Logs"
 
-[node name="ResetSessionsButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons"]
+[node name="ResetSessionsButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons" unique_id=202020805]
 custom_minimum_size = Vector2(170, 36)
 layout_mode = 2
 text = "Reset Sessions"
 
-[node name="BalanceStatusLabel" type="Label" parent="DevToolsWindow/DevToolsRoot/BalanceSection"]
+[node name="BalanceStatusLabel" type="Label" parent="DevToolsWindow/DevToolsRoot/BalanceSection" unique_id=625907937]
 layout_mode = 2
 text = "Balance sessions are saved during AI vs AI runs."
 autowrap_mode = 2

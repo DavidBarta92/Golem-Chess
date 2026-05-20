@@ -15,8 +15,9 @@ enum Role {
 @export var texture: Texture2D
 @export var card_art: Texture2D
 @export var card_art_mask: Texture2D
-@export var white_piece_texture: Texture2D
-@export var black_piece_texture: Texture2D
+@export var piece_visuals: PieceVisualSet
+@export_storage var white_piece_texture: Texture2D
+@export_storage var black_piece_texture: Texture2D
 @export var description: String = ""
 @export var symbol: String = ""
 @export_enum("none", "shared_control", "steal_card", "grant_card", "give_card", "move_base", "invisible_to_enemy", "invalid_squares", "frozen_squares", "bomb", "uncapturable", "increase_own_durations", "increase_enemy_durations", "decrease_own_durations", "decrease_enemy_durations", "increase_self_duration") var effect_type: String = CardEffect.TYPE_NONE
@@ -95,3 +96,18 @@ func get_movement_options() -> Array[Dictionary]:
 
 func has_effect() -> bool:
 	return CardEffect.has_effect(effect_type)
+
+func get_piece_texture(piece_color: int, view: String = PieceVisualSet.VIEW_BACK) -> Texture2D:
+	if piece_visuals != null:
+		var visual_set_texture: Texture2D = piece_visuals.get_texture(piece_color, view)
+		if visual_set_texture != null:
+			return visual_set_texture
+	return get_legacy_piece_texture(piece_color)
+
+func get_piece_preview_texture(piece_color: int) -> Texture2D:
+	return get_piece_texture(piece_color, PieceVisualSet.VIEW_PREVIEW)
+
+func get_legacy_piece_texture(piece_color: int) -> Texture2D:
+	if piece_color > 0:
+		return white_piece_texture
+	return black_piece_texture
