@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PortraitConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/PortraitConfig.gd" id="1_portrait_config"]
+
+[resource]
+script = ExtResource("1_portrait_config")
+portrait_id = "tutorial_mentor"
+display_name = "Mentor"
+seed = 42
+torso_id = "torso_02"
+hair_id = "hair_03"
+eyes_id = "eyes_02"
+nose_id = "nose_02"
+mouth_id = "mouth_smile"
+brows_id = "brows_01"
+skin_color = Color(0.78, 0.57, 0.43, 1)
+hair_color = Color(0.82, 0.78, 0.66, 1)
+eye_color = Color(0.2, 0.34, 0.48, 1)
+clothing_color = Color(0.2, 0.16, 0.3, 1)
+accent_color = Color(0.92, 0.72, 0.28, 1)
+mouth_color = Color(0.36, 0.1, 0.11, 1)
+expression = "happy"

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="PortraitConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/PortraitConfig.gd" id="1_portrait_config"]
+
+[resource]
+script = ExtResource("1_portrait_config")
+portrait_id = "story_opponent_06"
+display_name = "Opponent 06"
+seed = 1006
+torso_id = "torso_02"
+hair_id = "hair_03"
+eyes_id = "eyes_02"
+nose_id = "nose_02"
+mouth_id = "mouth_neutral"
+brows_id = "brows_02"
+skin_color = Color(0.76, 0.52, 0.39, 1)
+hair_color = Color(0.12, 0.08, 0.06, 1)
+eye_color = Color(0.13, 0.3, 0.47, 1)
+clothing_color = Color(0.12, 0.24, 0.2, 1)
+accent_color = Color(0.58, 0.76, 0.88, 1)
+expression = "stern"

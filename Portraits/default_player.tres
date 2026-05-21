@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="PortraitConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/PortraitConfig.gd" id="1_portrait_config"]
+
+[resource]
+script = ExtResource("1_portrait_config")
+portrait_id = "default_player"
+display_name = "Player"
+seed = 17
+hair_id = "hair_01"
+eyes_id = "eyes_01"
+nose_id = "nose_01"
+mouth_id = "mouth_neutral"
+brows_id = "brows_01"
+skin_color = Color(0.84, 0.62, 0.48, 1)
+hair_color = Color(0.18, 0.11, 0.08, 1)
+eye_color = Color(0.14, 0.36, 0.32, 1)
+clothing_color = Color(0.15, 0.19, 0.28, 1)
+accent_color = Color(0.86, 0.68, 0.26, 1)
+mouth_color = Color(0.36, 0.1, 0.11, 1)
+expression = "neutral"

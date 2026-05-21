@@ -626,7 +626,8 @@ func broadcast_full_state():
 			local_state_data.player_names,
 			local_state_data.recent_card_transfers,
 			local_state_data.recent_card_expirations,
-			local_state_data.last_move
+			local_state_data.last_move,
+			local_state_data.player_portraits
 		)
 
 	for peer_id in multiplayer_node.connected_peer_ids:
@@ -660,6 +661,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"player_base_fields": serialize_player_base_fields(),
 		"board_effects": serialize_board_effects(),
 		"player_names": get_serialized_player_names(),
+		"player_portraits": get_serialized_player_portraits(),
 		"recent_card_transfers": serialize_recent_card_transfers(viewer_player_id),
 		"recent_card_expirations": serialize_recent_card_expirations(),
 		"last_move": serialize_last_move_for_player(viewer_player_id),
@@ -788,6 +790,15 @@ func get_serialized_player_names() -> Dictionary:
 	return {
 		0: "Player",
 		1: "Player",
+	}
+
+func get_serialized_player_portraits() -> Dictionary:
+	if multiplayer_node != null && multiplayer_node.has_method("get_player_portraits_by_id"):
+		return multiplayer_node.get_player_portraits_by_id()
+
+	return {
+		0: PortraitLibrary.get_default_portrait_for_player_id(0).to_dict(),
+		1: PortraitLibrary.get_default_portrait_for_player_id(1).to_dict(),
 	}
 
 func duplicate_player_card_list(source) -> Array:

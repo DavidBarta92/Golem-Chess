@@ -12,6 +12,7 @@ const CELL_WIDTH: int = BoardConfig.CELL_WIDTH
 
 const TEXTURE_HOLDER = preload("res://Scenes/texture_holder.tscn")
 const CARD_VISUAL = preload("res://Scenes/CardVisual.tscn")
+const PORTRAIT_VIEW = preload("res://Scenes/PortraitView.tscn")
 
 const BOARD_TILE_TEXTURE = preload("res://Assets/board_tile.svg")
 const BOARD_TILE_BASE_WHITE_TEXTURE = preload("res://Assets/board_tile_base_white.svg")
@@ -138,7 +139,7 @@ const SELECTED_PIECE_GLOW_NAME = "SelectedPieceGlow"
 const SELECTED_PIECE_GLOW_Z_INDEX = 24
 const SELECTED_PIECE_GLOW_STRENGTH: float = 1.0
 const PIECE_FREEZE_CRACK_NAME = "PieceFreezeCrack"
-const PIECE_FREEZE_CRACK_Z_INDEX = 26
+const PIECE_FREEZE_CRACK_Z_INDEX = 0
 const PIECE_FREEZE_CRACK_DURATION: float = 1.5
 const PIECE_FREEZE_CRACK_RELEASE_DURATION: float = 1.5
 const PIECE_FREEZE_CRACK_START_WIDTH: float = 0.0
@@ -219,8 +220,15 @@ const DECK_COUNTER_ROLL_DURATION: float = 0.34
 const DECK_COUNTER_MOTION_BLUR: float = 1.0
 const DECK_COUNTER_OFFSET = Vector2(0.0, 0.0)
 const DECK_COUNTER_Z_INDEX: int = 952
+const TURN_TIMER_LIMIT_SECONDS: int = 20
+const TURN_TIMER_COUNTER_KEY: int = 0
+const TURN_TIMER_GAP: float = 8.0
+const TURN_TIMER_Z_INDEX: int = 961
 const PLAYER_NAME_LABEL_SIZE = Vector2(180, 28)
 const PLAYER_NAME_LABEL_GAP = 8
+const PLAYER_PORTRAIT_SIZE = Vector2(232, 272)
+const PLAYER_PORTRAIT_MARGIN = 22
+const PLAYER_PORTRAIT_Z_INDEX: int = 928
 const RULES_INFO_BUTTON_SIZE = Vector2(40, 40)
 const RULES_INFO_PANEL_SIZE = Vector2(310, 286)
 const RULES_INFO_PANEL_MARGIN = 24
@@ -313,7 +321,13 @@ var deck_counter_values: Dictionary = {
 }
 var deck_counter_roll_values: Dictionary = {}
 var deck_counter_tweens: Dictionary = {}
+var turn_timer_counter_container: Control
+var turn_timer_remaining_seconds: int = TURN_TIMER_LIMIT_SECONDS
+var turn_timer_elapsed_seconds: float = 0.0
+var turn_timer_turn_color: int = 0
+var turn_timer_timeout_pending: bool = false
 var player_name_labels: Dictionary = {}
+var player_portrait_views: Dictionary = {}
 var quit_confirmation_dialog: ConfirmationDialog
 var end_turn_button: Button
 var rules_info_button: Button
@@ -358,6 +372,7 @@ var current_player_names: Dictionary = {
 	0: "Player",
 	1: "Player",
 }
+var current_player_portraits: Dictionary = {}
 var pending_card_burn_animations: Array = []
 var card_burn_animation_sequence_running: bool = false
 var pending_piece_revert_animations: Array[Dictionary] = []
@@ -397,12 +412,18 @@ func _ready():
 	create_result_ui()
 	create_deck_count_ui()
 	create_deck_counter_ui()
+	initialize_player_portraits()
+	create_player_portrait_ui()
 	create_player_name_ui()
 	create_quit_confirmation_ui()
 	create_end_turn_ui()
 	create_rules_info_ui()
 	create_action_status_ui()
+	create_turn_timer_ui()
+	if !get_viewport().size_changed.is_connected(update_player_portrait_views):
+		get_viewport().size_changed.connect(update_player_portrait_views)
 	update_player_name_labels()
+	update_player_portrait_views()
 
 func apply_board_visual_scale() -> void:
 	scale = Vector2.ONE * BOARD_VISUAL_SCALE
@@ -1306,84 +1327,88 @@ func create_deck_count_ui():
 
 func create_deck_counter_ui() -> void:
 	for owner_color in [1, -1]:
-		var counter_container := Control.new()
-		canvas_layer.add_child(counter_container)
-		counter_container.name = "DeckCounter%d" % owner_color
-		counter_container.visible = false
-		counter_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		counter_container.size = DECK_COUNTER_SIZE
-		counter_container.z_index = DECK_COUNTER_Z_INDEX
+		var counter_container := create_digit_counter_container("DeckCounter%d" % owner_color, owner_color)
 		deck_counter_containers[owner_color] = counter_container
 
-		var frame_rect := TextureRect.new()
-		counter_container.add_child(frame_rect)
-		frame_rect.name = "Frame"
-		frame_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		frame_rect.texture = DECK_COUNTER_FRAME_TEXTURE
-		frame_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		frame_rect.stretch_mode = TextureRect.STRETCH_SCALE
-		frame_rect.size = DECK_COUNTER_FRAME_SIZE
-		frame_rect.position = Vector2.ZERO
-		frame_rect.z_index = 0
-
-		var digit_nodes: Array = []
-		for digit_index in range(2):
-			var digit_position := DECK_COUNTER_CONTENT_OFFSET + Vector2(digit_index * (DECK_COUNTER_BACKGROUND_SIZE.x + DECK_COUNTER_DIGIT_GAP), 0.0)
-
-			var background_rect := TextureRect.new()
-			counter_container.add_child(background_rect)
-			background_rect.name = "Background%d" % digit_index
-			background_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			background_rect.texture = DECK_COUNTER_BACKGROUND_TEXTURE
-			background_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-			background_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			background_rect.stretch_mode = TextureRect.STRETCH_SCALE
-			background_rect.size = DECK_COUNTER_BACKGROUND_SIZE
-			background_rect.position = digit_position
-			background_rect.z_index = 1
-
-			var digit_rect := TextureRect.new()
-			counter_container.add_child(digit_rect)
-			digit_rect.name = "Digit%d" % digit_index
-			digit_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			digit_rect.texture = DECK_COUNTER_DIGITS_TEXTURE
-			digit_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-			digit_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			digit_rect.stretch_mode = TextureRect.STRETCH_SCALE
-			digit_rect.size = DECK_COUNTER_DIGIT_SIZE
-			digit_rect.position = digit_position
-			digit_rect.z_index = 2
-
-			var digit_material := ShaderMaterial.new()
-			digit_material.shader = DECK_COUNTER_DIGIT_SHADER
-			digit_material.set_shader_parameter("digit_atlas", DECK_COUNTER_DIGITS_TEXTURE)
-			digit_material.set_shader_parameter("roll_value", 0.0)
-			digit_material.set_shader_parameter("roll_direction", 1.0)
-			digit_material.set_shader_parameter("motion_blur", 0.0)
-			digit_material.set_shader_parameter("frame_count", 10.0)
-			digit_rect.material = digit_material
-
-			var digit_key: String = get_deck_counter_digit_key(owner_color, digit_index)
-			deck_counter_digit_materials[digit_key] = digit_material
-			deck_counter_roll_values[digit_key] = 0.0
-			digit_nodes.append(digit_rect)
-
-			var shadow_rect := TextureRect.new()
-			counter_container.add_child(shadow_rect)
-			shadow_rect.name = "Shadow%d" % digit_index
-			shadow_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			shadow_rect.texture = DECK_COUNTER_SHADOW_TEXTURE
-			shadow_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-			shadow_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			shadow_rect.stretch_mode = TextureRect.STRETCH_SCALE
-			shadow_rect.size = DECK_COUNTER_BACKGROUND_SIZE
-			shadow_rect.position = digit_position
-			shadow_rect.z_index = 3
-
-		deck_counter_digit_nodes[owner_color] = digit_nodes
-
 	update_deck_counter_ui(false)
+
+func create_digit_counter_container(counter_name: String, digit_owner_key: int) -> Control:
+	var counter_container := Control.new()
+	canvas_layer.add_child(counter_container)
+	counter_container.name = counter_name
+	counter_container.visible = false
+	counter_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	counter_container.size = DECK_COUNTER_SIZE
+	counter_container.z_index = DECK_COUNTER_Z_INDEX
+
+	var frame_rect := TextureRect.new()
+	counter_container.add_child(frame_rect)
+	frame_rect.name = "Frame"
+	frame_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_rect.texture = DECK_COUNTER_FRAME_TEXTURE
+	frame_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	frame_rect.size = DECK_COUNTER_FRAME_SIZE
+	frame_rect.position = Vector2.ZERO
+	frame_rect.z_index = 0
+
+	var digit_nodes: Array = []
+	for digit_index in range(2):
+		var digit_position := DECK_COUNTER_CONTENT_OFFSET + Vector2(digit_index * (DECK_COUNTER_BACKGROUND_SIZE.x + DECK_COUNTER_DIGIT_GAP), 0.0)
+
+		var background_rect := TextureRect.new()
+		counter_container.add_child(background_rect)
+		background_rect.name = "Background%d" % digit_index
+		background_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		background_rect.texture = DECK_COUNTER_BACKGROUND_TEXTURE
+		background_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		background_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		background_rect.stretch_mode = TextureRect.STRETCH_SCALE
+		background_rect.size = DECK_COUNTER_BACKGROUND_SIZE
+		background_rect.position = digit_position
+		background_rect.z_index = 1
+
+		var digit_rect := TextureRect.new()
+		counter_container.add_child(digit_rect)
+		digit_rect.name = "Digit%d" % digit_index
+		digit_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		digit_rect.texture = DECK_COUNTER_DIGITS_TEXTURE
+		digit_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		digit_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		digit_rect.stretch_mode = TextureRect.STRETCH_SCALE
+		digit_rect.size = DECK_COUNTER_DIGIT_SIZE
+		digit_rect.position = digit_position
+		digit_rect.z_index = 2
+
+		var digit_material := ShaderMaterial.new()
+		digit_material.shader = DECK_COUNTER_DIGIT_SHADER
+		digit_material.set_shader_parameter("digit_atlas", DECK_COUNTER_DIGITS_TEXTURE)
+		digit_material.set_shader_parameter("roll_value", 0.0)
+		digit_material.set_shader_parameter("roll_direction", 1.0)
+		digit_material.set_shader_parameter("motion_blur", 0.0)
+		digit_material.set_shader_parameter("frame_count", 10.0)
+		digit_rect.material = digit_material
+
+		var digit_key: String = get_deck_counter_digit_key(digit_owner_key, digit_index)
+		deck_counter_digit_materials[digit_key] = digit_material
+		deck_counter_roll_values[digit_key] = 0.0
+		digit_nodes.append(digit_rect)
+
+		var shadow_rect := TextureRect.new()
+		counter_container.add_child(shadow_rect)
+		shadow_rect.name = "Shadow%d" % digit_index
+		shadow_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		shadow_rect.texture = DECK_COUNTER_SHADOW_TEXTURE
+		shadow_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		shadow_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		shadow_rect.stretch_mode = TextureRect.STRETCH_SCALE
+		shadow_rect.size = DECK_COUNTER_BACKGROUND_SIZE
+		shadow_rect.position = digit_position
+		shadow_rect.z_index = 3
+
+	deck_counter_digit_nodes[digit_owner_key] = digit_nodes
+	return counter_container
 
 func update_deck_counter_ui(animate: bool = true) -> void:
 	for owner_color in [1, -1]:
@@ -1471,6 +1496,28 @@ func positive_mod_int(value: int, divisor: int) -> int:
 	if result < 0:
 		result += divisor
 	return result
+
+func initialize_player_portraits() -> void:
+	current_player_portraits = {
+		0: PortraitLibrary.get_default_portrait_for_player_id(0),
+		1: PortraitLibrary.get_default_portrait_for_player_id(1),
+	}
+
+func create_player_portrait_ui() -> void:
+	player_portrait_views[1] = create_player_portrait_view()
+	player_portrait_views[-1] = create_player_portrait_view()
+	update_player_portrait_views()
+
+func create_player_portrait_view() -> PortraitView:
+	var portrait_view: PortraitView = PORTRAIT_VIEW.instantiate() as PortraitView
+	canvas_layer.add_child(portrait_view)
+	portrait_view.visible = false
+	portrait_view.size = PLAYER_PORTRAIT_SIZE
+	portrait_view.custom_minimum_size = PLAYER_PORTRAIT_SIZE
+	portrait_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	portrait_view.z_index = PLAYER_PORTRAIT_Z_INDEX
+	portrait_view.show_frame = true
+	return portrait_view
 
 func create_player_name_ui():
 	player_name_labels[1] = create_player_name_label()
@@ -1636,6 +1683,14 @@ func create_action_status_ui() -> void:
 	arrange_action_status_ui()
 	update_action_status_ui()
 
+func create_turn_timer_ui() -> void:
+	turn_timer_counter_container = create_digit_counter_container("TurnTimerCounter", TURN_TIMER_COUNTER_KEY)
+	turn_timer_counter_container.z_index = TURN_TIMER_Z_INDEX
+	set_deck_counter_value(TURN_TIMER_COUNTER_KEY, TURN_TIMER_LIMIT_SECONDS, false)
+	reset_turn_timer()
+	arrange_turn_timer_ui()
+	update_turn_timer_visibility()
+
 func create_hidden_card_preview_ui():
 	hidden_card_preview_container = Control.new()
 	canvas_layer.add_child(hidden_card_preview_container)
@@ -1694,6 +1749,7 @@ func update_card_presentation():
 	update_card_face_visibility(local_color)
 	update_card_drag_permissions()
 	update_player_name_labels()
+	update_player_portrait_views()
 	update_end_turn_button()
 	update_rules_info_ui()
 	update_action_status_ui()
@@ -1723,6 +1779,36 @@ func update_player_name_labels():
 			label_y
 		)
 		name_label.visible = true
+
+func update_player_portrait_views() -> void:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	for owner_color in [1, -1]:
+		var portrait_view: PortraitView = player_portrait_views.get(owner_color, null) as PortraitView
+		if portrait_view == null or !is_instance_valid(portrait_view):
+			continue
+
+		var player_id: int = get_player_id_for_color(owner_color)
+		portrait_view.set_portrait_config(get_portrait_config_for_player(player_id))
+		portrait_view.set_turn_focus(owner_color == get_current_turn_color())
+		portrait_view.size = PLAYER_PORTRAIT_SIZE
+		portrait_view.visible = true
+
+		var is_top_portrait: bool = is_card_hand_top(owner_color)
+		var portrait_y: float = PLAYER_PORTRAIT_MARGIN
+		if !is_top_portrait:
+			portrait_y = viewport_size.y - PLAYER_PORTRAIT_SIZE.y - PLAYER_PORTRAIT_MARGIN
+
+		portrait_view.position = Vector2(PLAYER_PORTRAIT_MARGIN, maxf(PLAYER_PORTRAIT_MARGIN, portrait_y))
+
+func get_portrait_config_for_player(player_id: int) -> PortraitConfig:
+	if current_player_portraits.has(player_id):
+		return PortraitLibrary.config_from_data_or_default(current_player_portraits[player_id], player_id)
+
+	var string_key: String = str(player_id)
+	if current_player_portraits.has(string_key):
+		return PortraitLibrary.config_from_data_or_default(current_player_portraits[string_key], player_id)
+
+	return PortraitLibrary.get_default_portrait_for_player_id(player_id)
 
 func is_card_hand_top(owner_color: int) -> bool:
 	var local_color: int = get_local_view_color()
@@ -1966,6 +2052,71 @@ func has_tutorial_allowed_piece_move(owner_color: int) -> bool:
 func has_remaining_turn_action_now() -> bool:
 	return can_switch_action_now() or can_attach_action_now() or can_move_action_now()
 
+func reset_turn_timer() -> void:
+	turn_timer_turn_color = get_current_turn_color()
+	turn_timer_elapsed_seconds = 0.0
+	turn_timer_remaining_seconds = TURN_TIMER_LIMIT_SECONDS
+	turn_timer_timeout_pending = false
+	set_deck_counter_value(TURN_TIMER_COUNTER_KEY, TURN_TIMER_LIMIT_SECONDS, false)
+	update_turn_timer_visibility()
+
+func update_turn_timer(delta: float) -> void:
+	if turn_timer_counter_container == null:
+		return
+	if game_over:
+		turn_timer_counter_container.visible = false
+		return
+
+	var current_turn_color: int = get_current_turn_color()
+	if turn_timer_turn_color != current_turn_color:
+		reset_turn_timer()
+
+	update_turn_timer_visibility()
+	if !should_run_turn_timer() or turn_timer_timeout_pending:
+		return
+
+	turn_timer_elapsed_seconds += maxf(delta, 0.0)
+	var remaining_seconds: int = clampi(ceili(float(TURN_TIMER_LIMIT_SECONDS) - turn_timer_elapsed_seconds), 0, TURN_TIMER_LIMIT_SECONDS)
+	if remaining_seconds != turn_timer_remaining_seconds:
+		turn_timer_remaining_seconds = remaining_seconds
+		set_deck_counter_value(TURN_TIMER_COUNTER_KEY, remaining_seconds, true)
+
+	if turn_timer_elapsed_seconds >= float(TURN_TIMER_LIMIT_SECONDS):
+		turn_timer_timeout_pending = true
+		call_deferred("_on_turn_timer_timeout", current_turn_color)
+
+func update_turn_timer_visibility() -> void:
+	if turn_timer_counter_container == null:
+		return
+	turn_timer_counter_container.visible = !game_over and should_show_turn_timer()
+
+func should_show_turn_timer() -> bool:
+	if GameConfig.is_ai_vs_ai_batch:
+		return false
+	return can_control_current_turn() and is_current_turn_human_controlled()
+
+func should_run_turn_timer() -> bool:
+	if !should_show_turn_timer():
+		return false
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_END_TURN):
+		return false
+	return true
+
+func is_current_turn_human_controlled() -> bool:
+	var player_id: int = get_player_id_for_color(get_current_turn_color())
+	if GameConfig.is_singleplayer:
+		return GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN
+	return true
+
+func _on_turn_timer_timeout(expected_turn_color: int) -> void:
+	if !is_inside_tree():
+		return
+	await request_end_turn(false, expected_turn_color)
+	if !is_inside_tree() or get_current_turn_color() != expected_turn_color:
+		return
+	if GameController.current_game_host == null:
+		turn_timer_timeout_pending = false
+
 func maybe_auto_end_turn_locally() -> void:
 	if GameController.current_game_host:
 		return
@@ -1999,16 +2150,23 @@ func _on_rules_info_pressed():
 		arrange_rules_info_panel()
 
 func _on_end_turn_pressed():
+	await request_end_turn(true)
+
+func request_end_turn(emit_tutorial_rejection: bool, expected_turn_color: int = 0) -> void:
 	if !can_control_current_turn():
+		return
+	if expected_turn_color != 0 and get_current_turn_color() != expected_turn_color:
 		return
 	if !is_tutorial_action_allowed(TUTORIAL_ACTION_END_TURN, {
 		"owner_color": get_controllable_color(),
 		"player_id": get_own_player_id(),
-	}, true):
+	}, emit_tutorial_rejection):
 		return
 
 	await wait_for_pending_visual_processes()
 	if !can_control_current_turn():
+		return
+	if expected_turn_color != 0 and get_current_turn_color() != expected_turn_color:
 		return
 
 	if GameController.current_game_host:
@@ -3070,12 +3228,14 @@ func arrange_card_visuals(visuals: Array[CardVisual], animate: bool):
 		card_visual.hand_index = i
 		card_visual.set_home_position(get_card_home_position(i), animate)
 
-func _process(_delta):
+func _process(delta):
 	update_hovered_piece()
 	update_deck_count_hover()
 	update_deck_counter_ui()
 	update_action_status_ui()
 	arrange_action_status_ui()
+	update_turn_timer(delta)
+	arrange_turn_timer_ui()
 	if rules_info_panel != null && rules_info_panel.visible:
 		arrange_rules_info_panel()
 	maybe_auto_end_turn_locally()
@@ -4697,18 +4857,17 @@ func play_piece_freeze_release_animation(holder: Sprite2D, board_pos: Vector2) -
 	if should_skip_visual_animations() or !is_inside_tree():
 		return
 
-	var release_holder: Sprite2D = create_piece_effect_holder(board_pos, holder.texture, PIECE_FREEZE_RELEASE_NAME)
-	if release_holder == null:
-		return
-
+	var existing_release: Node = holder.get_node_or_null(PIECE_FREEZE_RELEASE_NAME)
+	if existing_release != null:
+		existing_release.free()
 	var freeze_material: ShaderMaterial = create_piece_freeze_crack_material(PIECE_FREEZE_CRACK_END_WIDTH)
-	release_holder.material = freeze_material
+	var release_overlay: Sprite2D = create_piece_freeze_overlay(holder, PIECE_FREEZE_RELEASE_NAME, freeze_material)
 	var square_release: Polygon2D = create_piece_freeze_square_overlay(board_pos, freeze_material, PIECE_FREEZE_SQUARE_RELEASE_NAME)
 	var tween: Tween = create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(freeze_material, "shader_parameter/crack_width", PIECE_FREEZE_CRACK_START_WIDTH, PIECE_FREEZE_CRACK_RELEASE_DURATION)
 	tween.finished.connect(func():
-		if is_instance_valid(release_holder):
-			release_holder.queue_free()
+		if is_instance_valid(release_overlay):
+			release_overlay.queue_free()
 		if is_instance_valid(square_release):
 			square_release.queue_free()
 	)
@@ -5189,7 +5348,7 @@ func is_in_check(king_pos: Vector2):
 func is_stalemate():
 	return !current_player_has_valid_turn_action()
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], last_move: Dictionary = {}):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}):
 	var previous_piece_visual_state: Dictionary = get_piece_visual_state_snapshot()
 	var previous_hidden_card_counts: Dictionary = hidden_card_counts.duplicate()
 	var current_hidden_card_counts: Dictionary = get_hidden_card_counts_from_state(hidden_cards)
@@ -5234,6 +5393,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 	current_player_base_fields = parse_player_base_fields(player_base_fields)
 	current_board_effects = parse_board_effects(board_effects)
 	current_player_names = parse_player_names(player_names)
+	current_player_portraits = parse_player_portraits(player_portraits)
 	current_last_move = parse_last_move(last_move)
 	white_card_hand = create_card_hand_from_names(current_white_hand_names)
 	black_card_hand = create_card_hand_from_names(current_black_hand_names)
@@ -5289,6 +5449,25 @@ func parse_player_names(player_names: Dictionary) -> Dictionary:
 			parsed_names[player_id] = GameConfig.sanitize_player_name(str(player_names[string_key]))
 
 	return parsed_names
+
+func parse_player_portraits(player_portraits: Dictionary) -> Dictionary:
+	var parsed_portraits: Dictionary = current_player_portraits.duplicate()
+	if parsed_portraits.is_empty():
+		parsed_portraits = {
+			0: PortraitLibrary.get_default_portrait_for_player_id(0),
+			1: PortraitLibrary.get_default_portrait_for_player_id(1),
+		}
+
+	for player_id in [0, 1]:
+		if player_portraits.has(player_id):
+			parsed_portraits[player_id] = PortraitLibrary.config_from_data_or_default(player_portraits[player_id], player_id)
+			continue
+
+		var string_key: String = str(player_id)
+		if player_portraits.has(string_key):
+			parsed_portraits[player_id] = PortraitLibrary.config_from_data_or_default(player_portraits[string_key], player_id)
+
+	return parsed_portraits
 
 func update_hidden_card_previews(hidden_cards: Array):
 	clear_hidden_card_previews()
@@ -5383,6 +5562,31 @@ func arrange_action_status_ui() -> void:
 	action_status_container.offset_right = left_offset + ACTION_STATUS_SIZE.x
 	action_status_container.offset_top = top_offset
 	action_status_container.offset_bottom = bottom_offset
+
+func arrange_turn_timer_ui() -> void:
+	if turn_timer_counter_container == null:
+		return
+
+	turn_timer_counter_container.anchor_left = 1.0
+	turn_timer_counter_container.anchor_right = 1.0
+	turn_timer_counter_container.anchor_top = 1.0
+	turn_timer_counter_container.anchor_bottom = 1.0
+
+	var button_center_x: float = -ACTION_STATUS_MARGIN - DECK_COUNTER_SIZE.x * 0.5
+	var bottom_offset: float = -ACTION_STATUS_MARGIN - ACTION_STATUS_SIZE.y - TURN_TIMER_GAP
+	if action_status_container != null:
+		button_center_x = (action_status_container.offset_left + action_status_container.offset_right) * 0.5
+		bottom_offset = action_status_container.offset_top - TURN_TIMER_GAP
+	elif end_turn_button != null:
+		button_center_x = (end_turn_button.offset_left + end_turn_button.offset_right) * 0.5
+		bottom_offset = end_turn_button.offset_top - TURN_TIMER_GAP
+
+	var left_offset: float = button_center_x - DECK_COUNTER_SIZE.x * 0.5
+	var top_offset: float = bottom_offset - DECK_COUNTER_SIZE.y
+	turn_timer_counter_container.offset_left = left_offset
+	turn_timer_counter_container.offset_right = left_offset + DECK_COUNTER_SIZE.x
+	turn_timer_counter_container.offset_top = top_offset
+	turn_timer_counter_container.offset_bottom = bottom_offset
 
 func get_board_screen_scale() -> float:
 	var camera: Camera2D = $"../Camera2D"

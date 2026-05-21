@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scenes/PortraitView.gd" id="1_portrait_view"]
+
+[node name="PortraitView" type="Control"]
+custom_minimum_size = Vector2(232, 272)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 232.0
+offset_bottom = 272.0
+mouse_filter = 2
+clip_contents = true
+script = ExtResource("1_portrait_view")

@@ -9,6 +9,7 @@ var connected_peer_ids = []
 var peer_player_ids: Dictionary = {}
 var peer_player_names: Dictionary = {}
 var peer_player_decks: Dictionary = {}
+var peer_player_portraits: Dictionary = {}
 var server_turn = true
 var multiplayer_game_started: bool = false
 
@@ -39,6 +40,7 @@ func start_singleplayer_game():
 	peer_player_ids[1] = get_local_human_player_id()
 	peer_player_names.clear()
 	peer_player_decks.clear()
+	peer_player_portraits.clear()
 	setup_singleplayer_player_names()
 	ai_players.clear()
 
@@ -70,8 +72,10 @@ func setup_singleplayer_player_names() -> void:
 	for player_id in [0, 1]:
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
 			peer_player_names[player_id] = GameConfig.get_local_player_name()
+			peer_player_portraits[player_id] = GameConfig.get_local_portrait_data()
 		else:
 			peer_player_names[player_id] = "AI %s" % ("White" if player_id == 0 else "Black")
+			peer_player_portraits[player_id] = GameConfig.get_ai_portrait_data(player_id)
 
 func get_local_human_player_id() -> int:
 	for player_id in [0, 1]:
@@ -131,6 +135,7 @@ func host_game(port = 9999):
 	GameController.set_game_host(game_host)
 	peer_player_names[1] = GameConfig.get_local_player_name()
 	peer_player_decks[1] = GameConfig.get_selected_deck_card_names()
+	peer_player_portraits[1] = GameConfig.get_local_portrait_data()
 
 	_on_peer_connected(1)
 	return true
@@ -169,11 +174,12 @@ func _on_peer_disconnected(peer_id):
 	connected_peer_ids.erase(peer_id)
 	peer_player_names.erase(peer_id)
 	peer_player_decks.erase(peer_id)
+	peer_player_portraits.erase(peer_id)
 	DebugLog.info("  Players: %d/2" % connected_peer_ids.size())
 
 func _on_connection_succeeded():
 	DebugLog.info("Connected to server")
-	register_player_name.rpc_id(1, multiplayer.get_unique_id(), GameConfig.get_local_player_name(), GameConfig.get_selected_deck_card_names())
+	register_player_name.rpc_id(1, multiplayer.get_unique_id(), GameConfig.get_local_player_name(), GameConfig.get_selected_deck_card_names(), GameConfig.get_local_portrait_data())
 
 func _on_connection_failed():
 	push_error("Failed to connect to server")
@@ -190,12 +196,13 @@ func close_game_connection():
 	multiplayer.multiplayer_peer = null
 
 @rpc("any_peer", "call_local", "reliable")
-func register_player_name(peer_id: int, player_name: String, deck_card_names: Array = []):
+func register_player_name(peer_id: int, player_name: String, deck_card_names: Array = [], portrait_data: Dictionary = {}):
 	if !is_server:
 		return
 
 	peer_player_names[peer_id] = GameConfig.sanitize_player_name(player_name)
 	peer_player_decks[peer_id] = duplicate_string_array(deck_card_names)
+	peer_player_portraits[peer_id] = PortraitLibrary.config_from_data_or_default(portrait_data, int(peer_player_ids.get(peer_id, 0))).to_dict()
 	_try_start_multiplayer_game()
 	if game_host != null && game_host.game_state != null && game_host.game_state.player_hands.has(0):
 		game_host.broadcast_full_state()
@@ -309,7 +316,8 @@ func apply_game_state(state_data: Dictionary):
 		state_data.get("player_names", {}),
 		state_data.get("recent_card_transfers", []),
 		state_data.get("recent_card_expirations", []),
-		state_data.get("last_move", {})
+		state_data.get("last_move", {}),
+		state_data.get("player_portraits", {})
 	)
 
 	DebugLog.info("apply_game_state() end")
@@ -329,6 +337,22 @@ func get_player_names_by_id() -> Dictionary:
 		var player_id: int = int(peer_player_ids[peer_id])
 		player_names[player_id] = str(peer_player_names.get(peer_id, "Player"))
 	return player_names
+
+func get_player_portraits_by_id() -> Dictionary:
+	if GameConfig.is_singleplayer:
+		return {
+			0: PortraitLibrary.config_from_data_or_default(peer_player_portraits.get(0, {}), 0).to_dict(),
+			1: PortraitLibrary.config_from_data_or_default(peer_player_portraits.get(1, {}), 1).to_dict(),
+		}
+
+	var player_portraits: Dictionary = {
+		0: PortraitLibrary.get_default_portrait_for_player_id(0).to_dict(),
+		1: PortraitLibrary.get_default_portrait_for_player_id(1).to_dict(),
+	}
+	for peer_id in peer_player_ids:
+		var player_id: int = int(peer_player_ids[peer_id])
+		player_portraits[player_id] = PortraitLibrary.config_from_data_or_default(peer_player_portraits.get(peer_id, {}), player_id).to_dict()
+	return player_portraits
 
 func get_starting_deck_for_player_id(player_id: int) -> Array[String]:
 	if GameConfig.is_singleplayer:

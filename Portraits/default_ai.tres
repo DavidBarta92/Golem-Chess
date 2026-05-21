@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PortraitConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/PortraitConfig.gd" id="1_portrait_config"]
+
+[resource]
+script = ExtResource("1_portrait_config")
+portrait_id = "default_ai"
+display_name = "AI"
+seed = 3012
+torso_id = "torso_02"
+hair_id = "hair_02"
+eyes_id = "eyes_02"
+nose_id = "nose_02"
+mouth_id = "mouth_neutral"
+brows_id = "brows_02"
+skin_color = Color(0.76, 0.52, 0.39, 1)
+hair_color = Color(0.08, 0.09, 0.12, 1)
+eye_color = Color(0.13, 0.3, 0.47, 1)
+clothing_color = Color(0.28, 0.12, 0.16, 1)
+accent_color = Color(0.82, 0.38, 0.3, 1)
+mouth_color = Color(0.33, 0.08, 0.1, 1)
+expression = "stern"

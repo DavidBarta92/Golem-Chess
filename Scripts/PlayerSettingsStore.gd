@@ -2,7 +2,7 @@ extends Node
 
 const FILM_GRAIN_SHADER = preload("res://Shaders/film_grain.gdshader")
 
-const SETTINGS_SCHEMA_VERSION: int = 5
+const SETTINGS_SCHEMA_VERSION: int = 6
 const SETTINGS_PATH: String = "user://settings.json"
 const TARGET_WIDTH: int = 1280
 const TARGET_HEIGHT: int = 720
@@ -69,6 +69,17 @@ func get_player_name() -> String:
 func set_player_name(player_name: String) -> void:
 	ensure_loaded()
 	settings_data["player_name"] = GameConfig.sanitize_player_name(player_name)
+	_sync_game_config()
+	save_settings()
+
+func get_player_portrait_data() -> Dictionary:
+	ensure_loaded()
+	var portrait_data = settings_data.get("player_portrait", {})
+	return PortraitLibrary.config_from_data_or_default(portrait_data, 0).to_dict()
+
+func set_player_portrait_data(portrait_data: Dictionary) -> void:
+	ensure_loaded()
+	settings_data["player_portrait"] = PortraitLibrary.config_from_data_or_default(portrait_data, 0).to_dict()
 	_sync_game_config()
 	save_settings()
 
@@ -232,11 +243,13 @@ func save_settings() -> bool:
 
 func _sync_game_config() -> void:
 	GameConfig.set_local_player_name(get_player_name())
+	GameConfig.set_local_portrait_data(get_player_portrait_data())
 
 func _create_default_settings() -> Dictionary:
 	return {
 		"schema_version": SETTINGS_SCHEMA_VERSION,
 		"player_name": GameConfig.DEFAULT_PLAYER_NAME,
+		"player_portrait": PortraitLibrary.get_default_player_portrait().to_dict(),
 		"fullscreen": false,
 		"window_resolution": _window_resolution_to_settings_dict(Vector2i(TARGET_WIDTH, TARGET_HEIGHT)),
 		"fps_limit": DEFAULT_FPS_LIMIT,
@@ -255,6 +268,7 @@ func _normalize_settings(raw_data) -> Dictionary:
 	var raw_schema_version: int = int(raw_data.get("schema_version", 0))
 	normalized["schema_version"] = SETTINGS_SCHEMA_VERSION
 	normalized["player_name"] = GameConfig.sanitize_player_name(str(raw_data.get("player_name", GameConfig.DEFAULT_PLAYER_NAME)))
+	normalized["player_portrait"] = PortraitLibrary.config_from_data_or_default(raw_data.get("player_portrait", {}), 0).to_dict()
 	normalized["fullscreen"] = bool(raw_data.get("fullscreen", false))
 	normalized["window_resolution"] = _window_resolution_to_settings_dict(_sanitize_window_resolution(raw_data.get("window_resolution", Vector2i(TARGET_WIDTH, TARGET_HEIGHT))))
 	normalized["fps_limit"] = _sanitize_fps_limit(int(raw_data.get("fps_limit", DEFAULT_FPS_LIMIT)))

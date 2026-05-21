@@ -9,6 +9,7 @@ const INVALID_BOARD_POS: Vector2 = Vector2(-1, -1)
 
 var board
 var dialogue_panel
+var mentor_portrait: PortraitConfig
 var steps: Array[Dictionary] = []
 var current_step_index: int = -1
 var last_attached_piece: Vector2 = INVALID_BOARD_POS
@@ -31,6 +32,7 @@ func begin_tutorial() -> void:
 		board.set_tutorial_mode_active(true)
 	connect_board_signals()
 	connect_dialogue_signals()
+	mentor_portrait = PortraitLibrary.get_tutorial_portrait()
 	build_steps()
 	start_step(0)
 
@@ -308,7 +310,8 @@ func start_step(step_index: int) -> void:
 	if board.has_method("set_tutorial_constraints"):
 		board.set_tutorial_constraints(constraints)
 
-	dialogue_panel.show_line(str(step.get("speaker", MENTOR_NAME)), str(step.get("text", "")))
+	var speaker: String = str(step.get("speaker", MENTOR_NAME))
+	dialogue_panel.show_line(speaker, str(step.get("text", "")), get_portrait_for_speaker(speaker))
 
 func finish_tutorial() -> void:
 	if board != null and board.has_method("clear_tutorial_constraints"):
@@ -316,7 +319,7 @@ func finish_tutorial() -> void:
 	if board != null and board.has_method("set_tutorial_mode_active"):
 		board.set_tutorial_mode_active(false)
 	current_step_index = -1
-	dialogue_panel.show_line(MENTOR_NAME, "Tutorial complete. Good work.")
+	dialogue_panel.show_line(MENTOR_NAME, "Tutorial complete. Good work.", mentor_portrait)
 
 func _on_dialogue_continue_requested() -> void:
 	if waiting_for_continue_after_completion:
@@ -401,7 +404,8 @@ func _on_tutorial_action_rejected(_action_name: String, _context: Dictionary) ->
 		return
 
 	var step: Dictionary = steps[current_step_index]
-	dialogue_panel.show_line(str(step.get("speaker", MENTOR_NAME)), str(step.get("rejection_text", step.get("text", ""))))
+	var speaker: String = str(step.get("speaker", MENTOR_NAME))
+	dialogue_panel.show_line(speaker, str(step.get("rejection_text", step.get("text", ""))), get_portrait_for_speaker(speaker))
 
 func advance_current_step() -> void:
 	start_step(current_step_index + 1)
@@ -412,10 +416,16 @@ func complete_current_action_step() -> void:
 		waiting_for_continue_after_completion = true
 		if board != null and board.has_method("set_tutorial_constraints"):
 			board.set_tutorial_constraints(no_actions())
-		dialogue_panel.show_line(str(step.get("speaker", MENTOR_NAME)), str(step.get("post_completion_text", step.get("text", ""))))
+		var speaker: String = str(step.get("speaker", MENTOR_NAME))
+		dialogue_panel.show_line(speaker, str(step.get("post_completion_text", step.get("text", ""))), get_portrait_for_speaker(speaker))
 		return
 
 	advance_current_step()
+
+func get_portrait_for_speaker(speaker: String) -> PortraitConfig:
+	if speaker == MENTOR_NAME:
+		return mentor_portrait
+	return null
 
 func get_current_step() -> Dictionary:
 	if current_step_index < 0 or current_step_index >= steps.size():

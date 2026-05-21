@@ -15,6 +15,7 @@ var is_ai_vs_ai_batch: bool = false
 var server_ip: String = "127.0.0.1"
 var server_port: int = 9999
 var player_name: String = DEFAULT_PLAYER_NAME
+var local_portrait_data: Dictionary = {}
 var ai_vs_ai_match_count: int = 1
 var ai_vs_ai_matches_played: int = 0
 var ai_vs_ai_log_session_id: String = ""
@@ -71,6 +72,17 @@ func set_local_player_name(new_player_name: String) -> void:
 
 func get_local_player_name() -> String:
 	return sanitize_player_name(player_name)
+
+func set_local_portrait_data(portrait_data: Dictionary) -> void:
+	local_portrait_data = PortraitLibrary.config_from_data_or_default(portrait_data, 0).to_dict()
+
+func get_local_portrait_data() -> Dictionary:
+	if local_portrait_data.is_empty():
+		local_portrait_data = PortraitLibrary.get_default_player_portrait().to_dict()
+	return local_portrait_data.duplicate(true)
+
+func get_ai_portrait_data(player_id: int) -> Dictionary:
+	return PortraitLibrary.create_ai_portrait(player_id, get_player_ai_difficulty_level(player_id)).to_dict()
 
 func sanitize_player_name(raw_player_name: String) -> String:
 	var cleaned_name: String = raw_player_name.strip_edges()
