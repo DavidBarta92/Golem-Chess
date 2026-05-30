@@ -4,6 +4,16 @@ class_name PortraitLibrary
 const PORTRAIT_DIR: String = "res://Portraits"
 const PLACEHOLDER_ASSET_DIR: String = "res://Assets/Portraits/Placeholders"
 
+const HEAD_LIGHT_IDS: Array[String] = ["head_01", "head_narrow_01", "head_round_01", "head_long_01", "head_square_01"]
+const HEAD_DARK_IDS: Array[String] = ["head_dark_01", "head_dark_narrow_01", "head_dark_round_01", "head_dark_long_01", "head_dark_square_01"]
+const TORSO_IDS: Array[String] = ["torso_01", "torso_dark_01"]
+const HAIR_IDS: Array[String] = ["hair_01", "hair_brown_01", "hair_blond_01"]
+const BROWS_IDS: Array[String] = ["brows_01", "brows_brown_01", "brows_blond_01"]
+const PUPILS_IDS: Array[String] = ["pupils_01", "pupils_blue_01", "pupils_brown_01"]
+const NOSE_LIGHT_IDS: Array[String] = ["nose_01", "nose_narrow_01", "nose_wide_01", "nose_round_01"]
+const NOSE_DARK_IDS: Array[String] = ["nose_dark_01", "nose_dark_narrow_01", "nose_dark_wide_01", "nose_dark_round_01"]
+const MUSTACHE_IDS: Array[String] = ["mustage_01", "mustage_brown_01", "mustage_blond_01"]
+
 static var texture_cache: Dictionary = {}
 
 static func get_part_texture(category: String, part_id: String) -> Texture2D:
@@ -37,41 +47,58 @@ static func get_part_paths() -> Dictionary:
 	return {
 		"head": {
 			"head_01": "%s/head_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"head_narrow_01": "%s/head_narrow_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"head_round_01": "%s/head_round_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"head_long_01": "%s/head_long_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"head_square_01": "%s/head_square_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"head_dark_01": "%s/head_dark_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"head_dark_narrow_01": "%s/head_dark_narrow_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"head_dark_round_01": "%s/head_dark_round_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"head_dark_long_01": "%s/head_dark_long_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"head_dark_square_01": "%s/head_dark_square_01.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 		"torso": {
 			"torso_01": "%s/torso_01.svg" % PLACEHOLDER_ASSET_DIR,
-			"torso_02": "%s/torso_02.svg" % PLACEHOLDER_ASSET_DIR,
+			"torso_dark_01": "%s/torso_dark_01.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 		"hair": {
 			"hair_01": "%s/hair_01.svg" % PLACEHOLDER_ASSET_DIR,
-			"hair_02": "%s/hair_02.svg" % PLACEHOLDER_ASSET_DIR,
-			"hair_03": "%s/hair_03.svg" % PLACEHOLDER_ASSET_DIR,
+			"hair_brown_01": "%s/hair_brown_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"hair_blond_01": "%s/hair_blond_01.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 		"eyes": {
 			"eyes_01": "%s/eyes_01.svg" % PLACEHOLDER_ASSET_DIR,
-			"eyes_02": "%s/eyes_02.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 		"closed_eyes": {
 			"closed_01": "%s/closed_01.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 		"pupils": {
 			"pupils_01": "%s/pupils_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"pupils_blue_01": "%s/pupils_blue_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"pupils_brown_01": "%s/pupils_brown_01.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 		"nose": {
 			"nose_01": "%s/nose_01.svg" % PLACEHOLDER_ASSET_DIR,
-			"nose_02": "%s/nose_02.svg" % PLACEHOLDER_ASSET_DIR,
+			"nose_narrow_01": "%s/nose_narrow_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"nose_wide_01": "%s/nose_wide_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"nose_round_01": "%s/nose_round_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"nose_dark_01": "%s/nose_dark_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"nose_dark_narrow_01": "%s/nose_dark_narrow_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"nose_dark_wide_01": "%s/nose_dark_wide_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"nose_dark_round_01": "%s/nose_dark_round_01.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 		"mouth": {
 			"mouth_neutral": "%s/mouth_neutral.svg" % PLACEHOLDER_ASSET_DIR,
-			"mouth_smile": "%s/mouth_smile.svg" % PLACEHOLDER_ASSET_DIR,
-			"mouth_frown": "%s/mouth_frown.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 		"brows": {
 			"brows_01": "%s/brows_01.svg" % PLACEHOLDER_ASSET_DIR,
-			"brows_02": "%s/brows_02.svg" % PLACEHOLDER_ASSET_DIR,
+			"brows_brown_01": "%s/brows_brown_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"brows_blond_01": "%s/brows_blond_01.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 		"mustache": {
 			"mustage_01": "%s/mustage_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"mustage_brown_01": "%s/mustage_brown_01.svg" % PLACEHOLDER_ASSET_DIR,
+			"mustage_blond_01": "%s/mustage_blond_01.svg" % PLACEHOLDER_ASSET_DIR,
 		},
 	}
 
@@ -100,68 +127,30 @@ static func get_default_part_id(category: String) -> String:
 	return ""
 
 static func get_default_player_portrait() -> PortraitConfig:
-	var loaded_config: PortraitConfig = load_portrait_resource("%s/default_player.tres" % PORTRAIT_DIR)
-	if loaded_config != null:
-		return loaded_config
-
-	var config := PortraitConfig.new()
+	var config: PortraitConfig = create_random_portrait(17)
 	config.portrait_id = "default_player"
 	config.display_name = "Player"
-	config.seed = 17
-	config.hair_id = "hair_01"
-	config.eyes_id = "eyes_01"
-	config.nose_id = "nose_01"
-	config.mouth_id = "mouth_neutral"
-	config.brows_id = "brows_01"
-	config.skin_color = Color(0.84, 0.62, 0.48, 1.0)
-	config.hair_color = Color(0.18, 0.11, 0.08, 1.0)
-	config.eye_color = Color(0.14, 0.36, 0.32, 1.0)
-	config.clothing_color = Color(0.15, 0.19, 0.28, 1.0)
-	config.accent_color = Color(0.86, 0.68, 0.26, 1.0)
 	return config
 
 static func get_default_portrait_for_player_id(player_id: int) -> PortraitConfig:
 	if player_id == 0:
 		return get_default_player_portrait()
-	var loaded_config: PortraitConfig = load_portrait_resource("%s/default_ai.tres" % PORTRAIT_DIR)
-	if loaded_config != null:
-		loaded_config.display_name = "AI %s" % ("White" if player_id == 0 else "Black")
-		return loaded_config
-	return create_ai_portrait(player_id, 8)
+	return create_ai_portrait(player_id, 1)
 
 static func get_tutorial_portrait() -> PortraitConfig:
-	var loaded_config: PortraitConfig = load_portrait_resource("%s/tutorial_mentor.tres" % PORTRAIT_DIR)
-	if loaded_config != null:
-		return loaded_config
-
-	var config := PortraitConfig.new()
+	var config: PortraitConfig = create_random_portrait(42)
 	config.portrait_id = "tutorial_mentor"
 	config.display_name = "Mentor"
-	config.seed = 42
-	config.hair_id = "hair_03"
-	config.eyes_id = "eyes_02"
-	config.nose_id = "nose_02"
-	config.mouth_id = "mouth_smile"
-	config.brows_id = "brows_01"
-	config.expression = "happy"
-	config.skin_color = Color(0.78, 0.57, 0.43, 1.0)
-	config.hair_color = Color(0.82, 0.78, 0.66, 1.0)
-	config.eye_color = Color(0.20, 0.34, 0.48, 1.0)
-	config.clothing_color = Color(0.20, 0.16, 0.30, 1.0)
-	config.accent_color = Color(0.92, 0.72, 0.28, 1.0)
 	return config
 
 static func get_story_portrait(index: int) -> PortraitConfig:
 	var safe_index: int = wrapi(index - 1, 0, 12) + 1
-	var loaded_config: PortraitConfig = load_portrait_resource("%s/story_opponent_%02d.tres" % [PORTRAIT_DIR, safe_index])
-	if loaded_config != null:
-		return loaded_config
-	return create_random_portrait(1000 + safe_index)
+	var config: PortraitConfig = create_random_portrait(1000 + safe_index)
+	config.portrait_id = "story_opponent_%02d" % safe_index
+	config.display_name = "Opponent %02d" % safe_index
+	return config
 
 static func create_ai_portrait(player_id: int, difficulty_level: int) -> PortraitConfig:
-	if difficulty_level == 1:
-		return create_level_one_ai_portrait(player_id)
-
 	var seed: int = 3000 + player_id * 173 + difficulty_level * 31
 	var config: PortraitConfig = create_random_portrait(seed)
 	config.portrait_id = "ai_%d_%d" % [player_id, difficulty_level]
@@ -169,10 +158,30 @@ static func create_ai_portrait(player_id: int, difficulty_level: int) -> Portrai
 	return config
 
 static func create_level_one_ai_portrait(player_id: int) -> PortraitConfig:
+	return create_ai_portrait(player_id, 1)
+
+static func create_random_portrait(seed: int = 0) -> PortraitConfig:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = maxi(1, seed if seed != 0 else int(Time.get_unix_time_from_system()))
+
+	var config: PortraitConfig = create_base_portrait_config(int(rng.seed))
+	config.portrait_id = "generated_%d" % config.seed
+
+	var skin_index: int = rng.randi_range(0, 1)
+	config.head_id = pick(rng, get_head_ids_for_skin_index(skin_index))
+	config.torso_id = TORSO_IDS[mini(skin_index, TORSO_IDS.size() - 1)]
+	config.nose_id = pick(rng, get_nose_ids_for_skin_index(skin_index))
+
+	var hair_index: int = rng.randi_range(0, HAIR_IDS.size() - 1)
+	config.hair_id = HAIR_IDS[hair_index]
+	config.brows_id = BROWS_IDS[mini(hair_index, BROWS_IDS.size() - 1)]
+	config.mustache_id = MUSTACHE_IDS[mini(hair_index, MUSTACHE_IDS.size() - 1)]
+	config.pupils_id = pick(rng, PUPILS_IDS)
+	return config
+
+static func create_base_portrait_config(seed: int) -> PortraitConfig:
 	var config := PortraitConfig.new()
-	config.portrait_id = "ai_level_1_%d" % player_id
-	config.display_name = "AI %s" % ("White" if player_id == 0 else "Black")
-	config.seed = 3204 + player_id
+	config.seed = maxi(1, seed)
 	config.use_asset_colors = true
 	config.canvas_size = Vector2(595.28, 841.89)
 	config.head_origin = Vector2(51.72, 63.89)
@@ -218,59 +227,26 @@ static func create_level_one_ai_portrait(player_id: int) -> PortraitConfig:
 	config.occasional_head_motion_enabled = true
 	return config
 
-static func create_random_portrait(seed: int = 0) -> PortraitConfig:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = maxi(1, seed if seed != 0 else int(Time.get_unix_time_from_system()))
+static func get_head_ids_for_skin_index(skin_index: int) -> Array[String]:
+	if skin_index <= 0:
+		return HEAD_LIGHT_IDS
+	return HEAD_DARK_IDS
 
-	var config := PortraitConfig.new()
-	config.seed = int(rng.seed)
-	config.portrait_id = "generated_%d" % config.seed
-	config.torso_id = pick(rng, ["torso_01", "torso_02"])
-	config.hair_id = pick(rng, ["hair_01", "hair_02", "hair_03"])
-	config.eyes_id = pick(rng, ["eyes_01", "eyes_02"])
-	config.nose_id = pick(rng, ["nose_01", "nose_02"])
-	config.brows_id = pick(rng, ["brows_01", "brows_02"])
-	config.mouth_id = pick(rng, ["mouth_neutral", "mouth_smile", "mouth_frown"])
-	config.expression = pick(rng, ["neutral", "happy", "stern", "worried"])
-	config.skin_color = pick(rng, [
-		Color(0.92, 0.68, 0.50, 1.0),
-		Color(0.76, 0.52, 0.39, 1.0),
-		Color(0.58, 0.38, 0.28, 1.0),
-		Color(0.86, 0.71, 0.58, 1.0),
-	])
-	config.hair_color = pick(rng, [
-		Color(0.12, 0.08, 0.06, 1.0),
-		Color(0.34, 0.20, 0.11, 1.0),
-		Color(0.64, 0.50, 0.28, 1.0),
-		Color(0.78, 0.76, 0.68, 1.0),
-		Color(0.08, 0.09, 0.12, 1.0),
-	])
-	config.eye_color = pick(rng, [
-		Color(0.13, 0.30, 0.47, 1.0),
-		Color(0.18, 0.38, 0.29, 1.0),
-		Color(0.40, 0.25, 0.14, 1.0),
-		Color(0.38, 0.35, 0.28, 1.0),
-	])
-	config.clothing_color = pick(rng, [
-		Color(0.18, 0.23, 0.34, 1.0),
-		Color(0.28, 0.12, 0.16, 1.0),
-		Color(0.12, 0.24, 0.20, 1.0),
-		Color(0.32, 0.28, 0.20, 1.0),
-	])
-	config.accent_color = pick(rng, [
-		Color(0.86, 0.68, 0.26, 1.0),
-		Color(0.58, 0.76, 0.88, 1.0),
-		Color(0.82, 0.38, 0.30, 1.0),
-		Color(0.72, 0.72, 0.76, 1.0),
-	])
-	return config
+static func get_nose_ids_for_skin_index(skin_index: int) -> Array[String]:
+	if skin_index <= 0:
+		return NOSE_LIGHT_IDS
+	return NOSE_DARK_IDS
 
 static func config_from_data_or_default(data, player_id: int = 0) -> PortraitConfig:
+	var config: PortraitConfig
 	if data is PortraitConfig:
-		return (data as PortraitConfig).duplicate_config()
-	if data is Dictionary and !(data as Dictionary).is_empty():
-		return PortraitConfig.from_dict(data)
-	return get_default_portrait_for_player_id(player_id)
+		config = (data as PortraitConfig).duplicate_config()
+	elif data is Dictionary and !(data as Dictionary).is_empty():
+		config = PortraitConfig.from_dict(data)
+	else:
+		config = get_default_portrait_for_player_id(player_id)
+	apply_base_portrait_rig(config)
+	return config
 
 static func data_from_config(config: PortraitConfig) -> Dictionary:
 	if config == null:
@@ -282,8 +258,48 @@ static func load_portrait_resource(path: String) -> PortraitConfig:
 		return null
 	var resource := load(path)
 	if resource is PortraitConfig:
-		return (resource as PortraitConfig).duplicate_config()
+		var config: PortraitConfig = (resource as PortraitConfig).duplicate_config()
+		apply_base_portrait_rig(config)
+		return config
 	return null
+
+static func apply_base_portrait_rig(config: PortraitConfig) -> void:
+	if config == null:
+		return
+
+	var base: PortraitConfig = create_base_portrait_config(config.seed)
+	config.use_asset_colors = true
+	config.canvas_size = base.canvas_size
+	config.head_origin = base.head_origin
+	config.head_pivot = base.head_pivot
+	config.torso_layer_offset = base.torso_layer_offset
+	config.layer_offsets = base.layer_offsets.duplicate(true)
+	config.look_down_pupil_offset = base.look_down_pupil_offset
+	config.look_down_eyelid_drop_pixels = base.look_down_eyelid_drop_pixels
+	config.look_down_head_offset = base.look_down_head_offset
+	config.look_down_head_scale = base.look_down_head_scale
+	config.look_down_layer_offsets = base.look_down_layer_offsets.duplicate(true)
+	config.eyes_id = normalize_part_id("eyes", config.eyes_id)
+	config.closed_eyes_id = ""
+	config.mouth_id = normalize_part_id("mouth", config.mouth_id)
+	config.head_id = normalize_part_id("head", config.head_id)
+	config.torso_id = normalize_part_id("torso", config.torso_id)
+	config.hair_id = normalize_part_id("hair", config.hair_id)
+	config.pupils_id = normalize_part_id("pupils", config.pupils_id)
+	config.nose_id = normalize_part_id("nose", config.nose_id)
+	config.brows_id = normalize_part_id("brows", config.brows_id)
+	config.mustache_id = normalize_part_id("mustache", config.mustache_id)
+	config.expression = "neutral"
+	config.blink_style = "move_eyes"
+	config.torso_breath_enabled = true
+	config.occasional_head_motion_enabled = true
+
+static func normalize_part_id(category: String, part_id: String) -> String:
+	var category_paths: Dictionary = get_part_paths().get(category, {})
+	var resolved_id: String = str(part_id).strip_edges()
+	if category_paths.has(resolved_id):
+		return resolved_id
+	return get_default_part_id(category)
 
 static func pick(rng: RandomNumberGenerator, values: Array):
 	if values.is_empty():

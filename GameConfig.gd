@@ -6,6 +6,7 @@ const MIN_AI_DIFFICULTY_LEVEL: int = 1
 const MAX_AI_DIFFICULTY_LEVEL: int = 12
 const DEFAULT_AI_DIFFICULTY_LEVEL: int = 12
 const DEFAULT_AI_VS_AI_CSV_LOG_DIR: String = "user://ai_match_logs"
+const DEFAULT_SERVER_PORT: int = 9999
 const DEFAULT_PLAYER_NAME: String = "Player"
 const MAX_PLAYER_NAME_LENGTH: int = 24
 
@@ -13,7 +14,7 @@ var is_singleplayer: bool = false
 var is_hosting: bool = false
 var is_ai_vs_ai_batch: bool = false
 var server_ip: String = "127.0.0.1"
-var server_port: int = 9999
+var server_port: int = DEFAULT_SERVER_PORT
 var player_name: String = DEFAULT_PLAYER_NAME
 var local_portrait_data: Dictionary = {}
 var ai_vs_ai_match_count: int = 1
@@ -91,6 +92,21 @@ func sanitize_player_name(raw_player_name: String) -> String:
 	if cleaned_name.length() > MAX_PLAYER_NAME_LENGTH:
 		cleaned_name = cleaned_name.substr(0, MAX_PLAYER_NAME_LENGTH)
 	return cleaned_name
+
+func set_server_port(raw_port) -> void:
+	server_port = parse_server_port(raw_port)
+
+func parse_server_port(raw_port) -> int:
+	var parsed_port: int = DEFAULT_SERVER_PORT
+	if raw_port is int:
+		parsed_port = int(raw_port)
+	elif raw_port is float:
+		parsed_port = int(raw_port)
+	else:
+		var cleaned_port: String = str(raw_port).strip_edges()
+		if cleaned_port.is_valid_int():
+			parsed_port = int(cleaned_port)
+	return clampi(parsed_port, 1, 65535)
 
 func set_singleplayer_controllers(player_0_controller: String = CONTROLLER_HUMAN, player_1_controller: String = CONTROLLER_AI) -> void:
 	set_player_controller(0, player_0_controller)

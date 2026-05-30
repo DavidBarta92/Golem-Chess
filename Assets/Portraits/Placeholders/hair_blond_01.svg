@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512">
+  <defs>
+    <style>
+      .back { fill: #8f641f; }
+      .base { fill: #d8b45d; }
+      .light { fill: #f0d98a; }
+      .shadow { fill: #ad7f2d; }
+    </style>
+  </defs>
+  <path class="back" d="M118,219 C113,170 137,124 181,98 C222,74 285,73 331,95 C379,118 404,164 396,218 C382,246 361,266 333,278 C339,239 333,202 311,173 C287,141 235,134 199,157 C171,175 155,207 151,256 C135,249 123,235 118,219 Z"/>
+  <circle class="base" cx="151" cy="185" r="37"/>
+  <circle class="base" cx="182" cy="139" r="42"/>
+  <circle class="light" cx="231" cy="113" r="43"/>
+  <circle class="base" cx="282" cy="113" r="45"/>
+  <circle class="light" cx="331" cy="139" r="41"/>
+  <circle class="base" cx="365" cy="185" r="36"/>
+  <circle class="shadow" cx="128" cy="230" r="28"/>
+  <circle class="shadow" cx="386" cy="230" r="29"/>
+  <path class="base" d="M143,204 C159,156 200,128 257,126 C313,124 357,154 371,206 C341,185 300,174 255,176 C213,177 174,187 143,204 Z"/>
+  <path class="light" d="M181,159 C204,137 238,126 276,130 C249,143 229,163 214,192 C204,177 193,166 181,159 Z"/>
+  <path class="shadow" d="M303,137 C333,151 354,175 364,209 C337,188 307,178 271,176 C279,160 290,147 303,137 Z"/>
+</svg>

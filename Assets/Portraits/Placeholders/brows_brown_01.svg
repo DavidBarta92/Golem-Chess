@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512">
+  <defs><style>.brow { fill: #4a2d1d; }</style></defs>
+  <path class="brow" d="M151,201 C171,193 198,190 225,193 C229,193 232,196 232,200 L232,207 C205,205 177,206 150,213 C147,209 148,204 151,201 Z"/>
+  <path class="brow" d="M287,197 C313,191 340,192 363,201 C367,203 368,208 365,213 C338,207 310,205 283,208 L282,201 C282,199 284,198 287,197 Z"/>
+</svg>

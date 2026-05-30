@@ -1,16 +1,19 @@
 extends Control
 
 @onready var deck_option_button: OptionButton = $VBoxContainer/DeckOptionButton
+@onready var port_input: LineEdit = $VBoxContainer/PortLineEdit
 @onready var host_button: Button = $VBoxContainer/HostButton
 @onready var join_button: Button = $VBoxContainer/JoinButton
 
 var deck_ids: Array[String] = []
 
 func _ready() -> void:
+	port_input.text = str(GameConfig.server_port)
 	_populate_deck_options()
 
 func _on_host_button_pressed():
 	_save_selected_deck()
+	_save_server_port()
 	GameConfig.stop_ai_vs_ai_batch()
 	GameConfig.is_singleplayer = false
 	GameConfig.is_hosting = true
@@ -20,6 +23,7 @@ func _on_host_button_pressed():
 
 func _on_join_button_pressed():
 	_save_selected_deck()
+	_save_server_port()
 	GameConfig.stop_ai_vs_ai_batch()
 	GameConfig.is_singleplayer = false
 	GameConfig.reset_multiplayer_controllers()
@@ -67,3 +71,7 @@ func _save_selected_deck() -> void:
 		return
 
 	GameConfig.set_selected_deck_id(deck_ids[selected_index])
+
+func _save_server_port() -> void:
+	GameConfig.set_server_port(port_input.text)
+	port_input.text = str(GameConfig.server_port)

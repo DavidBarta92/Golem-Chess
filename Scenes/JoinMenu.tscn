@@ -31,6 +31,19 @@ text = "Enter Server IP:"
 layout_mode = 2
 placeholder_text = "127.0.0.1"
 
+[node name="PortLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Port:"
+
+[node name="PortLineEdit" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 2
+text = "9999"
+placeholder_text = "9999"
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = ""
+
 [node name="ConnectButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 text = "Connect"

@@ -10,7 +10,7 @@ const DEFAULT_PUPILS_ID: String = "pupils_01"
 const DEFAULT_NOSE_ID: String = "nose_01"
 const DEFAULT_MOUTH_ID: String = "mouth_neutral"
 const DEFAULT_BROWS_ID: String = "brows_01"
-const DEFAULT_MUSTACHE_ID: String = ""
+const DEFAULT_MUSTACHE_ID: String = "mustage_01"
 
 @export var portrait_id: String = "portrait"
 @export var display_name: String = ""

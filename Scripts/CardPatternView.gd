@@ -3,13 +3,36 @@ class_name CardPatternView
 
 const PATTERN_SHIMMER_SHADER = preload("res://Shaders/pattern_shimmer.gdshader")
 const GRID_SIZE: int = 5
-const GUIDE_DOT_RADIUS_RATIO: float = 0.0675
-const MOVE_DOT_SIZE_RATIO: float = 0.36
-const X_MARKER_SIZE_RATIO: float = 0.26
+const GUIDE_MARKER_SIZE_RATIO: float = 0.135
+const MOVE_ONLY_MARKER_SIZE_RATIO: float = 0.36
+const ACTIVE_MARKER_SIZE_RATIO: float = MOVE_ONLY_MARKER_SIZE_RATIO * 1.05
+const CAPTURE_ONLY_MARKER_SIZE_RATIO: float = MOVE_ONLY_MARKER_SIZE_RATIO * 1.05
+const INVALID_MARKER_SIZE_RATIO: float = 0.52
+const FROZEN_MARKER_SIZE_RATIO: float = 0.52
 const BASE_MARKER_SIZE_RATIO: float = 0.57
+const BOMB_MARKER_SIZE_RATIO: float = 0.68
 const DOT_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 
-@export var dot_texture: Texture2D
+const DEFAULT_MOVE_ONLY_TEXTURE = preload("res://Assets/card_pattern_move_only.svg")
+const DEFAULT_ACTIVE_TEXTURE = preload("res://Assets/card_pattern_active.svg")
+const DEFAULT_CAPTURE_ONLY_TEXTURE = preload("res://Assets/card_pattern_capture_only.svg")
+const DEFAULT_INVALID_TEXTURE = preload("res://Assets/card_pattern_invalid.svg")
+const DEFAULT_FROZEN_TEXTURE = preload("res://Assets/card_pattern_frozen.svg")
+const DEFAULT_BASE_TEXTURE = preload("res://Assets/card_pattern_base.svg")
+const DEFAULT_BOMB_TEXTURE = preload("res://Assets/card_pattern_bomb.svg")
+
+@export_group("Marker Textures")
+@export var guide_texture: Texture2D = DEFAULT_MOVE_ONLY_TEXTURE
+@export var center_texture: Texture2D = DEFAULT_MOVE_ONLY_TEXTURE
+@export var move_only_texture: Texture2D = DEFAULT_MOVE_ONLY_TEXTURE
+@export var active_texture: Texture2D = DEFAULT_ACTIVE_TEXTURE
+@export var capture_only_texture: Texture2D = DEFAULT_CAPTURE_ONLY_TEXTURE
+@export var invalid_texture: Texture2D = DEFAULT_INVALID_TEXTURE
+@export var frozen_texture: Texture2D = DEFAULT_FROZEN_TEXTURE
+@export var base_texture: Texture2D = DEFAULT_BASE_TEXTURE
+@export var bomb_texture: Texture2D = DEFAULT_BOMB_TEXTURE
+
+@export_group("Marker Colors")
 @export var active_color: Color = Color(1.0, 1.0, 1.0, 1.0)
 @export var move_only_color: Color = Color(0.35, 0.72, 1.0, 1.0)
 @export var capture_only_color: Color = Color(1.0, 0.32, 0.28, 1.0)
@@ -70,14 +93,14 @@ func _draw() -> void:
 		for col in range(GRID_SIZE):
 			var cell_origin: Vector2 = origin + Vector2(col, row) * cell_size
 			var center: Vector2 = cell_origin + Vector2.ONE * cell_size * 0.5
-			draw_circle(center, cell_size * GUIDE_DOT_RADIUS_RATIO, guide_color)
+			_draw_marker_texture(guide_texture, center, cell_size * GUIDE_MARKER_SIZE_RATIO, guide_color)
 
 			if row == 2 and col == 2:
-				draw_circle(center, cell_size * GUIDE_DOT_RADIUS_RATIO, center_color)
+				_draw_marker_texture(center_texture, center, cell_size * GUIDE_MARKER_SIZE_RATIO, center_color)
 			else:
 				var movement_type: int = _get_pattern_value(movement_pattern, row, col)
 				if movement_type != CardEffect.MOVEMENT_NONE:
-					_draw_move_dot(center, cell_size, _get_movement_color(movement_type))
+					_draw_movement_marker(center, cell_size, movement_type)
 
 				if has_effect_pattern && _get_pattern_value(effect_pattern, row, col) != CardEffect.MOVEMENT_NONE:
 					_draw_effect_marker(center, cell_size)
@@ -100,55 +123,31 @@ func _get_pattern_value(pattern: Array, row: int, col: int) -> int:
 
 	return int(pattern_row[col])
 
-func _get_movement_color(movement_type: int) -> Color:
+func _draw_movement_marker(center: Vector2, cell_size: float, movement_type: int) -> void:
 	match movement_type:
 		CardEffect.MOVEMENT_MOVE_ONLY:
-			return move_only_color
+			_draw_marker_texture(move_only_texture, center, cell_size * MOVE_ONLY_MARKER_SIZE_RATIO, move_only_color)
 		CardEffect.MOVEMENT_CAPTURE_ONLY:
-			return capture_only_color
+			_draw_marker_texture(capture_only_texture, center, cell_size * CAPTURE_ONLY_MARKER_SIZE_RATIO, capture_only_color)
 		_:
-			return active_color
-
-func _draw_move_dot(center: Vector2, cell_size: float, dot_color: Color) -> void:
-	var dot_size: float = cell_size * MOVE_DOT_SIZE_RATIO
-	var rect: Rect2 = Rect2(center - Vector2.ONE * dot_size * 0.5, Vector2.ONE * dot_size)
-
-	if dot_texture:
-		draw_texture_rect(dot_texture, rect, false, dot_color)
-	else:
-		draw_circle(center, dot_size * 0.45, dot_color)
+			_draw_marker_texture(active_texture, center, cell_size * ACTIVE_MARKER_SIZE_RATIO, active_color)
 
 func _draw_effect_marker(center: Vector2, cell_size: float) -> void:
 	match effect_type:
 		CardEffect.TYPE_INVALID_SQUARES:
-			_draw_x_marker(center, cell_size, invalid_color)
+			_draw_marker_texture(invalid_texture, center, cell_size * INVALID_MARKER_SIZE_RATIO, invalid_color)
 		CardEffect.TYPE_FROZEN_SQUARES:
-			_draw_x_marker(center, cell_size, frozen_color)
+			_draw_marker_texture(frozen_texture, center, cell_size * FROZEN_MARKER_SIZE_RATIO, frozen_color)
 		CardEffect.TYPE_MOVE_BASE:
-			_draw_base_marker(center, cell_size)
+			_draw_marker_texture(base_texture, center, cell_size * BASE_MARKER_SIZE_RATIO, base_color)
 		CardEffect.TYPE_BOMB:
-			_draw_bomb_marker(center, cell_size)
+			_draw_marker_texture(bomb_texture, center, cell_size * BOMB_MARKER_SIZE_RATIO, bomb_color)
 		_:
-			_draw_move_dot(center, cell_size, active_color)
+			_draw_marker_texture(active_texture, center, cell_size * ACTIVE_MARKER_SIZE_RATIO, active_color)
 
-func _draw_x_marker(center: Vector2, cell_size: float, marker_color: Color) -> void:
-	var half_size: float = cell_size * X_MARKER_SIZE_RATIO
-	var width: float = maxf(1.4, cell_size * 0.09)
-	draw_line(center + Vector2(-half_size, -half_size), center + Vector2(half_size, half_size), marker_color, width)
-	draw_line(center + Vector2(-half_size, half_size), center + Vector2(half_size, -half_size), marker_color, width)
+func _draw_marker_texture(texture: Texture2D, center: Vector2, marker_size: float, marker_color: Color) -> void:
+	if texture == null or marker_size <= 0.0:
+		return
 
-func _draw_base_marker(center: Vector2, cell_size: float) -> void:
-	var square_size: float = cell_size * BASE_MARKER_SIZE_RATIO
-	var rect: Rect2 = Rect2(center - Vector2.ONE * square_size * 0.5, Vector2.ONE * square_size)
-	draw_rect(rect, Color(base_color.r, base_color.g, base_color.b, 0.28), true)
-	draw_rect(rect, base_color, false, maxf(2.0, cell_size * 0.1))
-
-func _draw_bomb_marker(center: Vector2, cell_size: float) -> void:
-	var radius: float = cell_size * 0.24
-	draw_circle(center, radius, Color(bomb_color.r, bomb_color.g, bomb_color.b, 0.22))
-	draw_arc(center, radius, 0.0, TAU, 18, bomb_color, maxf(2.0, cell_size * 0.08))
-	var spark_radius: float = cell_size * 0.34
-	for angle in [0.0, PI * 0.5, PI, PI * 1.5]:
-		var from_point: Vector2 = center + Vector2(cos(angle), sin(angle)) * radius * 0.65
-		var to_point: Vector2 = center + Vector2(cos(angle), sin(angle)) * spark_radius
-		draw_line(from_point, to_point, bomb_color, maxf(1.5, cell_size * 0.07))
+	var rect: Rect2 = Rect2(center - Vector2.ONE * marker_size * 0.5, Vector2.ONE * marker_size)
+	draw_texture_rect(texture, rect, false, marker_color)

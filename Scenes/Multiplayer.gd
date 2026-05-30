@@ -1,6 +1,7 @@
 extends Node2D
 
 const HEURISTIC_AI_PLAYER_SCRIPT = preload("res://Scripts/HeuristicAIPlayer.gd")
+const CONNECTION_DIAGNOSTIC_DELAY: float = 8.0
 
 var multiplayer_peer = ENetMultiplayerPeer.new()
 var is_server = false
@@ -16,11 +17,22 @@ var multiplayer_game_started: bool = false
 var game_host: NetworkGameHost = null
 var ai_players: Dictionary = {}
 var ai_turn_in_progress: bool = false
+var network_status_label: Label = null
 
 func _ready():
 	if !GameConfig.should_skip_ai_vs_ai_delays():
 		await get_tree().create_timer(0.1).timeout
 
+	if !GameConfig.is_singleplayer:
+		ensure_network_status_label()
+		set_network_status("Starting network...")
+	DebugLog.network("Multiplayer scene ready. singleplayer=%s hosting=%s endpoint=%s:%d log=%s" % [
+		GameConfig.is_singleplayer,
+		GameConfig.is_hosting,
+		GameConfig.server_ip,
+		GameConfig.server_port,
+		DebugLog.get_network_log_path(),
+	])
 	if GameConfig.is_singleplayer:
 		DebugLog.info("Starting in singleplayer mode")
 		start_singleplayer_game()
@@ -30,6 +42,33 @@ func _ready():
 	else:
 		DebugLog.info("Starting in join mode - IP: %s" % GameConfig.server_ip)
 		join_game(GameConfig.server_ip, GameConfig.server_port)
+
+func ensure_network_status_label() -> void:
+	if network_status_label != null:
+		return
+
+	var canvas_layer: CanvasLayer = get_node_or_null("CanvasLayer") as CanvasLayer
+	if canvas_layer == null:
+		canvas_layer = CanvasLayer.new()
+		canvas_layer.name = "CanvasLayer"
+		add_child(canvas_layer)
+
+	network_status_label = Label.new()
+	network_status_label.name = "NetworkStatusLabel"
+	network_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	network_status_label.position = Vector2(18, 18)
+	network_status_label.size = Vector2(520, 34)
+	network_status_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.78))
+	network_status_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.85))
+	network_status_label.add_theme_constant_override("shadow_offset_x", 2)
+	network_status_label.add_theme_constant_override("shadow_offset_y", 2)
+	canvas_layer.add_child(network_status_label)
+
+func set_network_status(message: String) -> void:
+	ensure_network_status_label()
+	if network_status_label == null:
+		return
+	network_status_label.text = message
 
 func start_singleplayer_game():
 	is_server = true
@@ -115,10 +154,15 @@ func _play_singleplayer_ai_turn(player_id: int):
 	maybe_play_singleplayer_ai_turn()
 
 func host_game(port = 9999):
+	set_network_status("Hosting on UDP %d. Waiting for peer..." % port)
+	DebugLog.network("Starting ENet host on UDP port %d. Local IPv4 addresses: %s" % [port, get_local_address_summary()])
 	var error = multiplayer_peer.create_server(port, 2, 0, 0, 0)
 
 	if error != OK:
-		push_error("Failed to start server: %d" % error)
+		var error_message: String = "Failed to start ENet server on UDP port %d. Error code: %d" % [port, error]
+		set_network_status("Host failed on UDP %d." % port)
+		DebugLog.network_error(error_message)
+		push_error(error_message)
 		return false
 
 	is_server = true
@@ -130,6 +174,8 @@ func host_game(port = 9999):
 	multiplayer_game_started = false
 
 	DebugLog.info("Server started on port %d" % port)
+	DebugLog.network("ENet server started on UDP port %d. Waiting for remote peer." % port)
+	call_deferred("_log_host_connection_status_after_delay", port)
 
 	game_host = NetworkGameHost.new(self)
 	GameController.set_game_host(game_host)
@@ -141,29 +187,106 @@ func host_game(port = 9999):
 	return true
 
 func join_game(ip, port = 9999):
+	set_network_status("Connecting to %s:%d..." % [ip, port])
+	DebugLog.network("Starting ENet client. Target=%s:%d" % [ip, port])
 	var error = multiplayer_peer.create_client(ip, port)
 	if error != OK:
-		push_error("Failed to connect: %d" % error)
+		var error_message: String = "Failed to create ENet client for %s:%d. Error code: %d" % [ip, port, error]
+		set_network_status("Connection setup failed.")
+		DebugLog.network_error(error_message)
+		push_error(error_message)
 		return false
 
 	multiplayer.multiplayer_peer = multiplayer_peer
 	DebugLog.info("Connecting to %s:%d" % [ip, port])
+	DebugLog.network("ENet client created. Waiting for connection result from %s:%d" % [ip, port])
 
 	multiplayer.connected_to_server.connect(_on_connection_succeeded)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 	GameController.set_game_host(self)
+	call_deferred("_log_client_connection_status_after_delay", ip, port)
 	return true
+
+func _log_host_connection_status_after_delay(port: int) -> void:
+	await get_tree().create_timer(CONNECTION_DIAGNOSTIC_DELAY).timeout
+	if !is_server:
+		return
+	var status_text: String = get_peer_connection_status_text()
+	var peer_summary: String = str(multiplayer.get_peers())
+	DebugLog.network("Host diagnostic after %.1fs: status=%s local_and_remote_players=%d/2 multiplayer_peers=%s udp_port=%d" % [
+		CONNECTION_DIAGNOSTIC_DELAY,
+		status_text,
+		connected_peer_ids.size(),
+		peer_summary,
+		port,
+	])
+	if connected_peer_ids.size() < 2:
+		set_network_status("Hosting on UDP %d. Still waiting for peer." % port)
+		DebugLog.network_error("No remote peer reached the host. Most likely cause: UDP %d is not forwarded to this PC, Windows Firewall blocked the game, wrong public IP was used, or the host is behind CGNAT." % port)
+
+func _log_client_connection_status_after_delay(ip: String, port: int) -> void:
+	await get_tree().create_timer(CONNECTION_DIAGNOSTIC_DELAY).timeout
+	if is_server:
+		return
+	var status_text: String = get_peer_connection_status_text()
+	var peer_summary: String = str(multiplayer.get_peers())
+	DebugLog.network("Client diagnostic after %.1fs: status=%s multiplayer_peers=%s target=%s:%d" % [
+		CONNECTION_DIAGNOSTIC_DELAY,
+		status_text,
+		peer_summary,
+		ip,
+		port,
+	])
+	if status_text != "connected":
+		set_network_status("Connection failed or timed out.")
+		DebugLog.network_error("Client is not connected to %s:%d. Check that the host gave the public IPv4 address and UDP %d is reachable." % [ip, port, port])
+
+func get_local_address_summary() -> String:
+	var addresses: PackedStringArray = IP.get_local_addresses()
+	var ipv4_summary: String = ""
+	for address_value in addresses:
+		var address: String = str(address_value)
+		if address.find(":") != -1:
+			continue
+		if address.begins_with("127."):
+			continue
+		if !ipv4_summary.is_empty():
+			ipv4_summary += ", "
+		ipv4_summary += address
+	if !ipv4_summary.is_empty():
+		return ipv4_summary
+
+	var fallback_summary: String = ""
+	for address_value in addresses:
+		if !fallback_summary.is_empty():
+			fallback_summary += ", "
+		fallback_summary += str(address_value)
+	return fallback_summary if !fallback_summary.is_empty() else "none"
+
+func get_peer_connection_status_text() -> String:
+	match multiplayer_peer.get_connection_status():
+		MultiplayerPeer.CONNECTION_CONNECTED:
+			return "connected"
+		MultiplayerPeer.CONNECTION_CONNECTING:
+			return "connecting"
+		MultiplayerPeer.CONNECTION_DISCONNECTED:
+			return "disconnected"
+		_:
+			return "unknown"
 
 func _on_peer_connected(peer_id):
 	if !is_server:
 		return
 
 	DebugLog.info("Player connected: %s" % peer_id)
+	DebugLog.network("Peer connected: %s" % peer_id)
 
 	if connected_peer_ids.size() < 2 && !connected_peer_ids.has(peer_id):
 		connected_peer_ids.append(peer_id)
 		DebugLog.info("  Players: %d/2" % connected_peer_ids.size())
+		DebugLog.network("Connected players: %d/2" % connected_peer_ids.size())
+		set_network_status("Connected players: %d/2" % connected_peer_ids.size())
 		_try_start_multiplayer_game()
 
 func _on_peer_disconnected(peer_id):
@@ -171,21 +294,31 @@ func _on_peer_disconnected(peer_id):
 		return
 
 	DebugLog.info("Player disconnected: %s" % peer_id)
+	DebugLog.network("Peer disconnected: %s" % peer_id)
 	connected_peer_ids.erase(peer_id)
 	peer_player_names.erase(peer_id)
 	peer_player_decks.erase(peer_id)
 	peer_player_portraits.erase(peer_id)
 	DebugLog.info("  Players: %d/2" % connected_peer_ids.size())
+	DebugLog.network("Connected players: %d/2" % connected_peer_ids.size())
+	set_network_status("Connected players: %d/2" % connected_peer_ids.size())
 
 func _on_connection_succeeded():
 	DebugLog.info("Connected to server")
+	DebugLog.network("Connected to server. Local peer id: %s" % multiplayer.get_unique_id())
+	set_network_status("Connected. Registering player...")
 	register_player_name.rpc_id(1, multiplayer.get_unique_id(), GameConfig.get_local_player_name(), GameConfig.get_selected_deck_card_names(), GameConfig.get_local_portrait_data())
 
 func _on_connection_failed():
-	push_error("Failed to connect to server")
+	var error_message: String = "Connection failed for %s:%d. Check host UDP port forwarding and firewall." % [GameConfig.server_ip, GameConfig.server_port]
+	set_network_status("Connection failed.")
+	DebugLog.network_error(error_message)
+	push_error(error_message)
 
 func _on_server_disconnected():
 	DebugLog.info("Server disconnected")
+	set_network_status("Server disconnected.")
+	DebugLog.network_error("Server disconnected.")
 
 func send_move(start_pos, end_pos, promotion = null):
 	DebugLog.info("send_move(): %s -> %s my_id=%s" % [start_pos, end_pos, multiplayer.get_unique_id()])
@@ -200,6 +333,7 @@ func register_player_name(peer_id: int, player_name: String, deck_card_names: Ar
 	if !is_server:
 		return
 
+	DebugLog.network("Registering peer %s as '%s' with %d deck cards." % [peer_id, GameConfig.sanitize_player_name(player_name), deck_card_names.size()])
 	peer_player_names[peer_id] = GameConfig.sanitize_player_name(player_name)
 	peer_player_decks[peer_id] = duplicate_string_array(deck_card_names)
 	peer_player_portraits[peer_id] = PortraitLibrary.config_from_data_or_default(portrait_data, int(peer_player_ids.get(peer_id, 0))).to_dict()
@@ -211,10 +345,18 @@ func _try_start_multiplayer_game() -> void:
 	if !is_server or GameConfig.is_singleplayer or multiplayer_game_started:
 		return
 	if connected_peer_ids.size() < 2:
+		set_network_status("Connected players: %d/2. Waiting for peer..." % connected_peer_ids.size())
+		DebugLog.network("Waiting for remote peer. Connected players: %d/2" % connected_peer_ids.size())
 		return
 
 	for peer_id in connected_peer_ids:
 		if !peer_player_names.has(peer_id) or !peer_player_decks.has(peer_id):
+			set_network_status("Waiting for peer registration...")
+			DebugLog.network("Waiting for peer registration data. Peer=%s has_name=%s has_deck=%s" % [
+				peer_id,
+				peer_player_names.has(peer_id),
+				peer_player_decks.has(peer_id),
+			])
 			return
 
 	multiplayer_game_started = true
@@ -222,6 +364,8 @@ func _try_start_multiplayer_game() -> void:
 	peer_player_ids[connected_peer_ids[0]] = first_player_id
 	peer_player_ids[connected_peer_ids[1]] = 1 - first_player_id
 	DebugLog.info("Game starting")
+	DebugLog.network("Game starting. peer_ids=%s server_turn=%s first_player_id=%d" % [connected_peer_ids, server_turn, first_player_id])
+	set_network_status("Game starting...")
 
 	var board_data = $board.board
 	game_host.initialize_game(board_data)
@@ -253,7 +397,7 @@ func send_player_action(peer_id: int, action: Dictionary):
 
 @rpc("any_peer", "call_local", "reliable")
 func send_move_info(id, start_pos, end_pos, promotion):
-	DebugLog.info("send_move_info() - id=%s server_turn=%s connected[0]=%s connected[1]=%s is_server=%s" % [id, server_turn, connected_peer_ids[0], connected_peer_ids[1], is_server])
+	DebugLog.info("send_move_info() - id=%s server_turn=%s connected=%s is_server=%s" % [id, server_turn, connected_peer_ids, is_server])
 
 	if !is_server || connected_peer_ids.size() < 2:
 		DebugLog.info("SKIP: is_server=%s conn_size=%s" % [is_server, connected_peer_ids.size()])
