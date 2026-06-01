@@ -6,6 +6,7 @@ var color: int  # 1 = white, -1 = black
 var attached_card: Card = null
 var turns_remaining: int = 0
 var exhausted_this_turn: bool = false
+var respawn_cooldown_turns: int = 0
 
 func _init(pos: Vector2, col: int):
 	position = pos
@@ -26,8 +27,24 @@ func detach_card() -> Card:
 	return old_card
 
 func can_move() -> bool:
-	return !exhausted_this_turn && attached_card != null && (turns_remaining > 0 || turns_remaining == -1)
+	return !is_respawn_locked() && !exhausted_this_turn && attached_card != null && (turns_remaining > 0 || turns_remaining == -1)
 	# return has_card() && (turns_remaining > 0 || turns_remaining == -1)
+
+func can_receive_card() -> bool:
+	return !is_respawn_locked() && attached_card == null
+
+func is_respawn_locked() -> bool:
+	return respawn_cooldown_turns > 0
+
+func set_respawn_cooldown(turns: int) -> void:
+	respawn_cooldown_turns = 1 if turns > 0 else 0
+	if respawn_cooldown_turns > 0:
+		exhausted_this_turn = true
+	else:
+		exhausted_this_turn = false
+
+func tick_respawn_cooldown() -> void:
+	pass
 
 func get_movement_directions() -> Array:
 	if attached_card:

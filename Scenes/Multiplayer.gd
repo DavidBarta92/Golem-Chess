@@ -1,6 +1,5 @@
 extends Node2D
 
-const HEURISTIC_AI_PLAYER_SCRIPT = preload("res://Scripts/HeuristicAIPlayer.gd")
 const CONNECTION_DIAGNOSTIC_DELAY: float = 8.0
 
 var multiplayer_peer = ENetMultiplayerPeer.new()
@@ -18,6 +17,7 @@ var game_host: NetworkGameHost = null
 var ai_players: Dictionary = {}
 var ai_turn_in_progress: bool = false
 var network_status_label: Label = null
+var codex_bridge_poll_elapsed: float = 0.0
 
 func _ready():
 	if !GameConfig.should_skip_ai_vs_ai_delays():
@@ -42,6 +42,16 @@ func _ready():
 	else:
 		DebugLog.info("Starting in join mode - IP: %s" % GameConfig.server_ip)
 		join_game(GameConfig.server_ip, GameConfig.server_port)
+
+func _process(delta: float) -> void:
+	if !is_server or game_host == null:
+		return
+	codex_bridge_poll_elapsed += delta
+	if codex_bridge_poll_elapsed < 0.25:
+		return
+	codex_bridge_poll_elapsed = 0.0
+	if game_host.process_codex_bridge_commands():
+		game_host.broadcast_full_state()
 
 func ensure_network_status_label() -> void:
 	if network_status_label != null:
@@ -83,7 +93,8 @@ func start_singleplayer_game():
 	setup_singleplayer_player_names()
 	ai_players.clear()
 
-	game_host = NetworkGameHost.new(self)
+	game_host = NetworkGameHost.new()
+	game_host.configure(self)
 	GameController.set_game_host(game_host)
 
 	var board_data = $board.board
@@ -102,7 +113,9 @@ func setup_singleplayer_ai_controllers():
 	for player_id in [0, 1]:
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
 			var ai_difficulty_level: int = GameConfig.get_player_ai_difficulty_level(player_id)
-			var ai_player = HEURISTIC_AI_PLAYER_SCRIPT.new(player_id, ai_difficulty_level)
+			var ai_script = load("res://Scripts/HeuristicAIPlayer.gd")
+			var ai_player = ai_script.new()
+			ai_player.configure(player_id, ai_difficulty_level)
 			if GameConfig.should_skip_ai_vs_ai_delays():
 				ai_player.action_delay = 0.0
 			ai_players[player_id] = ai_player
@@ -112,6 +125,9 @@ func setup_singleplayer_player_names() -> void:
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
 			peer_player_names[player_id] = GameConfig.get_local_player_name()
 			peer_player_portraits[player_id] = GameConfig.get_local_portrait_data()
+		elif GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_CODEX:
+			peer_player_names[player_id] = "Codex"
+			peer_player_portraits[player_id] = GameConfig.get_ai_portrait_data(player_id)
 		else:
 			peer_player_names[player_id] = "AI %s" % ("White" if player_id == 0 else "Black")
 			peer_player_portraits[player_id] = GameConfig.get_ai_portrait_data(player_id)
@@ -177,7 +193,8 @@ func host_game(port = 9999):
 	DebugLog.network("ENet server started on UDP port %d. Waiting for remote peer." % port)
 	call_deferred("_log_host_connection_status_after_delay", port)
 
-	game_host = NetworkGameHost.new(self)
+	game_host = NetworkGameHost.new()
+	game_host.configure(self)
 	GameController.set_game_host(game_host)
 	peer_player_names[1] = GameConfig.get_local_player_name()
 	peer_player_decks[1] = GameConfig.get_selected_deck_card_names()
@@ -443,7 +460,8 @@ func apply_game_state(state_data: Dictionary):
 			"color": piece_data.color,
 			"card_name": piece_data.card_name,
 			"turns_remaining": piece_data.turns_remaining,
-			"exhausted_this_turn": bool(piece_data.get("exhausted_this_turn", false))
+			"exhausted_this_turn": bool(piece_data.get("exhausted_this_turn", false)),
+			"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0))
 		}
 		DebugLog.info("  Piece loaded: pos=%s, card=%s, turns=%d" % [pos, piece_data.card_name, piece_data.turns_remaining])
 

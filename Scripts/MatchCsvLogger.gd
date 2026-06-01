@@ -459,6 +459,7 @@ func normalize_value(value):
 			"player_id": CardEffectResolver.get_player_id_for_color(piece.color),
 			"card_name": piece.attached_card.card_name if piece.attached_card != null else "",
 			"turns_remaining": piece.turns_remaining,
+			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
 		}
 	if value is Array:
 		var source_array: Array = value
@@ -543,6 +544,7 @@ func get_active_cards(game_state: GameStateData, player_id: int) -> Array:
 			"position": normalize_value(position_value),
 			"card_name": piece.attached_card.card_name,
 			"turns_remaining": piece.turns_remaining,
+			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
 			"effect_type": piece.attached_card.effect_type,
 		})
 	return active_cards

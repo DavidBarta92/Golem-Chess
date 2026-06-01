@@ -43,7 +43,8 @@ func choose_random_turn_plan(host: NetworkGameHost) -> Dictionary:
 
 func get_turn_plans(host: NetworkGameHost) -> Array[Dictionary]:
 	if planner == null:
-		return []
+		var empty_plans: Array[Dictionary] = []
+		return empty_plans
 	return planner.create_turn_plans(host, player_id, BOARD_SIZE)
 
 func choose_random_turn_move(host: NetworkGameHost) -> Dictionary:

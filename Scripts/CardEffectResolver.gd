@@ -521,15 +521,27 @@ static func respawn_captured_piece(game_state: GameStateData, captured_piece: Pi
 	if captured_piece == null or player_id < 0:
 		return false
 
+	if release_pending_respawn_piece(game_state, player_id):
+		return true
+
 	var respawn_pos: Vector2 = get_random_empty_home_position(game_state, player_id)
 	if respawn_pos == Vector2(-1, -1):
 		push_warning("No empty home row square for captured piece respawn.")
 		return false
 
 	captured_piece.position = respawn_pos
-	captured_piece.exhausted_this_turn = false
+	captured_piece.set_respawn_cooldown(GameConfig.RESPAWN_COOLDOWN_OWN_TURNS)
 	game_state.set_piece(respawn_pos, captured_piece)
 	return true
+
+static func release_pending_respawn_piece(game_state: GameStateData, player_id: int) -> bool:
+	var player_color: int = get_color_for_player_id(player_id)
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null and piece.color == player_color and piece.is_respawn_locked():
+			piece.set_respawn_cooldown(0)
+			return true
+	return false
 
 static func get_random_empty_home_position(game_state: GameStateData, player_id: int) -> Vector2:
 	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)

@@ -21,6 +21,10 @@ func find_forced_tactical_plan(
 	if !defense_move.is_empty():
 		return create_move_plan(player_id, defense_move, "immediate_base_defense")
 
+	var two_turn_threat_move: Dictionary = find_two_turn_base_threat_move(game_state, player_id, evaluator, board_size)
+	if !two_turn_threat_move.is_empty():
+		return create_move_plan(player_id, two_turn_threat_move, "two_turn_base_threat")
+
 	var staging_capture_move: Dictionary = find_base_staging_capture_move(game_state, player_id, evaluator, board_size)
 	if !staging_capture_move.is_empty():
 		return create_move_plan(player_id, staging_capture_move, "base_staging_capture")
@@ -69,6 +73,37 @@ func find_immediate_base_defense_move(
 				return move
 			continue
 		if !find_immediate_base_win_move(simulated_state, 1 - player_id, board_size).is_empty():
+			continue
+
+		var score: float = evaluator.score_move(game_state, player_id, move, board_size) if evaluator != null else 0.0
+		if best_move.is_empty() or score > best_score:
+			best_move = move
+			best_score = score
+	return best_move
+
+func find_two_turn_base_threat_move(
+	game_state: GameStateData,
+	player_id: int,
+	evaluator: AIMoveEvaluator,
+	board_size: int
+) -> Dictionary:
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
+		game_state.pieces,
+		player_color,
+		board_size,
+		game_state.board_effects
+	)
+	var best_move: Dictionary = {}
+	var best_score: float = -INF
+	for move: Dictionary in valid_moves:
+		var plan: Dictionary = create_move_plan(player_id, move, "two_turn_candidate")
+		var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+		if simulated_state.game_over:
+			continue
+		if !find_immediate_base_win_move(simulated_state, 1 - player_id, board_size).is_empty():
+			continue
+		if find_immediate_base_win_move(simulated_state, player_id, board_size).is_empty():
 			continue
 
 		var score: float = evaluator.score_move(game_state, player_id, move, board_size) if evaluator != null else 0.0

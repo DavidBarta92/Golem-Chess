@@ -16,6 +16,7 @@ static func clone_piece(piece: Piece) -> Piece:
 	cloned_piece.attached_card = piece.attached_card
 	cloned_piece.turns_remaining = piece.turns_remaining
 	cloned_piece.exhausted_this_turn = piece.exhausted_this_turn
+	cloned_piece.respawn_cooldown_turns = piece.respawn_cooldown_turns
 	return cloned_piece
 
 static func clone_game_state(source_state: GameStateData) -> GameStateData:
@@ -118,7 +119,7 @@ static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: D
 static func apply_attach_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> void:
 	var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 	var piece: Piece = game_state.get_piece(piece_pos)
-	if piece == null or piece.attached_card != null:
+	if piece == null or !piece.can_receive_card():
 		return
 
 	var card_name: String = str(action.get("card_name", ""))
@@ -304,8 +305,18 @@ static func end_simulated_turn(game_state: GameStateData, player_id: int, board_
 
 	game_state.current_turn_player = player_id
 	refill_played_cards_for_player(game_state, player_id)
+	clear_piece_exhaustion_for_player(game_state, player_id)
 	game_state.switch_turn()
 	CardEffectResolver.tick_board_effects(game_state)
+
+static func clear_piece_exhaustion_for_player(game_state: GameStateData, player_id: int) -> void:
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null and piece.color == player_color:
+			if piece.is_respawn_locked():
+				continue
+			piece.exhausted_this_turn = false
 
 static func record_played_card_hand_slot(game_state: GameStateData, player_id: int, current_hand_index: int) -> void:
 	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
@@ -376,14 +387,26 @@ static func respawn_captured_piece(game_state: GameStateData, captured_piece: Pi
 	if captured_piece == null or captured_player_id < 0:
 		return false
 
+	if release_pending_respawn_piece(game_state, captured_player_id):
+		return true
+
 	var respawn_pos: Vector2 = get_random_empty_home_position(game_state, captured_player_id)
 	if respawn_pos == Vector2(-1, -1):
 		return false
 
 	captured_piece.position = respawn_pos
-	captured_piece.exhausted_this_turn = false
+	captured_piece.set_respawn_cooldown(GameConfig.RESPAWN_COOLDOWN_OWN_TURNS)
 	game_state.set_piece(respawn_pos, captured_piece)
 	return true
+
+static func release_pending_respawn_piece(game_state: GameStateData, player_id: int) -> bool:
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null and piece.color == player_color and piece.is_respawn_locked():
+			piece.set_respawn_cooldown(0)
+			return true
+	return false
 
 static func get_random_empty_home_position(game_state: GameStateData, player_id: int) -> Vector2:
 	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
@@ -446,6 +469,9 @@ static func respawn_captured_piece_in_pieces(pieces: Dictionary, captured_piece:
 		return false
 
 	var player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color)
+	if release_pending_respawn_piece_in_pieces(pieces, player_id):
+		return true
+
 	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
 	var empty_positions: Array[Vector2] = []
 	for col in BoardConfig.BOARD_SIZE:
@@ -458,9 +484,18 @@ static func respawn_captured_piece_in_pieces(pieces: Dictionary, captured_piece:
 
 	var respawn_pos: Vector2 = empty_positions[randi() % empty_positions.size()]
 	captured_piece.position = respawn_pos
-	captured_piece.exhausted_this_turn = false
+	captured_piece.set_respawn_cooldown(GameConfig.RESPAWN_COOLDOWN_OWN_TURNS)
 	pieces[respawn_pos] = captured_piece
 	return true
+
+static func release_pending_respawn_piece_in_pieces(pieces: Dictionary, player_id: int) -> bool:
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	for position_value in pieces:
+		var piece: Piece = pieces[position_value] as Piece
+		if piece != null and piece.color == player_color and piece.is_respawn_locked():
+			piece.set_respawn_cooldown(0)
+			return true
+	return false
 
 static func get_move_from(move: Dictionary) -> Vector2:
 	return CardEffectResolver.as_vector2(move.get("from", Vector2(-1, -1)), Vector2(-1, -1))

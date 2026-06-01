@@ -80,16 +80,19 @@ static func can_capture_target_piece(target_piece: Piece, piece_color: int) -> b
 static func get_piece_moves(pieces: Dictionary, piece_position: Vector2, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
 	var piece: Piece = get_piece_at(pieces, piece_position)
 	if piece == null || !piece.can_move():
-		return []
+		var empty_moves: Array[Vector2] = []
+		return empty_moves
 	var owner_player_id: int = BoardConfig.get_player_id_for_color(piece.color)
 	return get_piece_moves_for_player(pieces, piece_position, owner_player_id, board_size, board_effects)
 
 static func get_piece_moves_for_player(pieces: Dictionary, piece_position: Vector2, player_id: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
 	var piece: Piece = get_piece_at(pieces, piece_position)
 	if piece == null || !piece.can_move():
-		return []
+		var empty_moves: Array[Vector2] = []
+		return empty_moves
 	if !CardEffectResolver.can_player_control_piece(piece, player_id):
-		return []
+		var empty_control_moves: Array[Vector2] = []
+		return empty_control_moves
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	return get_card_moves_for_piece(pieces, piece_position, player_color, piece.attached_card, board_size, board_effects)
@@ -120,7 +123,7 @@ static func get_attach_card_moves(pieces: Dictionary, player_color: int, hand_ca
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || piece.color != player_color || piece.attached_card != null:
+		if piece == null || piece.color != player_color || !piece.can_receive_card():
 			continue
 
 		for card: Card in hand_cards:
@@ -143,7 +146,7 @@ static func can_attach_any_card(pieces: Dictionary, player_color: int, hand_card
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || piece.color != player_color || piece.attached_card != null:
+		if piece == null || piece.color != player_color || !piece.can_receive_card():
 			continue
 
 		for card: Card in hand_cards:

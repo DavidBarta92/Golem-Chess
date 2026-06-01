@@ -1,11 +1,18 @@
 class_name NetworkGameHost
 
+const CODEX_BRIDGE_SCRIPT = preload("res://Scripts/CodexBridge.gd")
+
 var game_state: GameStateData
 var multiplayer_node
+var codex_bridge = null
 
-func _init(mp_node):
+func _init(mp_node = null):
+	configure(mp_node)
+
+func configure(mp_node = null) -> void:
 	multiplayer_node = mp_node
 	game_state = GameStateData.new()
+	codex_bridge = CODEX_BRIDGE_SCRIPT.new()
 
 func initialize_game(board_data: Array):
 	for i in range(board_data.size()):
@@ -43,6 +50,11 @@ func initialize_game(board_data: Array):
 
 	broadcast_full_state()
 
+func process_codex_bridge_commands() -> bool:
+	if codex_bridge == null:
+		return false
+	return codex_bridge.process_command_file(self)
+
 func create_starting_deck_for_player_id(player_id: int) -> Array[String]:
 	if multiplayer_node != null && multiplayer_node.has_method("get_starting_deck_for_player_id"):
 		var selected_deck: Array[String] = multiplayer_node.get_starting_deck_for_player_id(player_id)
@@ -54,11 +66,21 @@ func create_starting_deck_for_player_id(player_id: int) -> Array[String]:
 	return DeckManager.create_starting_deck()
 
 func setup_match_logging() -> void:
-	if !GameConfig.is_ai_vs_ai_batch:
+	if !should_log_match():
 		return
 
 	game_state.match_logger = MatchCsvLogger.new()
 	game_state.match_logger.start_match(game_state)
+
+func should_log_match() -> bool:
+	if GameConfig.is_ai_vs_ai_batch:
+		return true
+	if !GameConfig.is_singleplayer:
+		return false
+	for player_id in [0, 1]:
+		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
+			return true
+	return false
 
 func on_player_action(action: Dictionary):
 	DebugLog.info("Action received: %s" % [action])
@@ -105,8 +127,8 @@ func handle_attach_card(action: Dictionary):
 		push_warning("This piece does not belong to the player.")
 		return
 
-	if piece.attached_card != null:
-		push_warning("This piece already has a card.")
+	if !piece.can_receive_card():
+		push_warning("This piece cannot receive a card right now.")
 		return
 
 	var card = CardLibrary.get_card(card_name)
@@ -392,6 +414,8 @@ func clear_piece_exhaustion_for_player(player_id: int) -> void:
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
 		if piece != null && piece.color == player_color:
+			if piece.is_respawn_locked():
+				continue
 			piece.exhausted_this_turn = false
 
 func handle_expired_nexus_card(player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
@@ -423,15 +447,27 @@ func respawn_captured_piece(captured_piece: Piece, player_id: int) -> bool:
 	if captured_piece == null or player_id < 0:
 		return false
 
+	if release_pending_respawn_piece(player_id):
+		return true
+
 	var respawn_pos: Vector2 = get_random_empty_home_position(player_id)
 	if respawn_pos == Vector2(-1, -1):
 		push_warning("No empty home row square for captured piece respawn.")
 		return false
 
 	captured_piece.position = respawn_pos
-	captured_piece.exhausted_this_turn = false
+	captured_piece.set_respawn_cooldown(GameConfig.RESPAWN_COOLDOWN_OWN_TURNS)
 	game_state.set_piece(respawn_pos, captured_piece)
 	return true
+
+func release_pending_respawn_piece(player_id: int) -> bool:
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null && piece.color == player_color && piece.is_respawn_locked():
+			piece.set_respawn_cooldown(0)
+			return true
+	return false
 
 func get_random_empty_home_position(player_id: int) -> Vector2:
 	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
@@ -611,7 +647,8 @@ func broadcast_full_state():
 				"color": piece_data.color,
 				"card_name": piece_data.card_name,
 				"turns_remaining": piece_data.turns_remaining,
-				"exhausted_this_turn": piece_data.exhausted_this_turn
+				"exhausted_this_turn": piece_data.exhausted_this_turn,
+				"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0))
 			}
 		multiplayer_node.get_node("board").update_from_server_state(
 			pieces_data,
@@ -638,6 +675,9 @@ func broadcast_full_state():
 
 	if multiplayer_node.has_method("on_host_state_changed"):
 		multiplayer_node.on_host_state_changed()
+
+	if codex_bridge != null:
+		codex_bridge.export_state(self, "broadcast")
 
 	game_state.recent_card_transfers.clear()
 	game_state.recent_card_expirations.clear()
@@ -677,7 +717,8 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 			"color": piece.color,
 			"card_name": piece.attached_card.card_name if piece.attached_card else "",
 			"turns_remaining": piece.turns_remaining,
-			"exhausted_this_turn": piece.exhausted_this_turn
+			"exhausted_this_turn": piece.exhausted_this_turn,
+			"respawn_cooldown_turns": piece.respawn_cooldown_turns
 		})
 
 	return data

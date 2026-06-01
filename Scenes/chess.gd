@@ -255,7 +255,7 @@ const TUTORIAL_ACTION_ATTACH_CARD = "attach_card"
 const TUTORIAL_ACTION_MOVE_PIECE = "move_piece"
 const TUTORIAL_ACTION_EXCHANGE_CARD = "exchange_card"
 const TUTORIAL_ACTION_END_TURN = "end_turn"
-const RULES_INFO_TEXT: String = "Goal: attach a Nexus card to one of your pieces, then move that Nexus onto the opponent's base square.\n\nTurn flow:\n1. Play any number of cards from your hand onto your empty pieces.\n2. Move one ready piece using its attached card pattern.\n3. End your turn. Each card you played is replaced from your deck.\n\nCards:\n- Your hand holds up to 3 cards.\n- Once per turn, drag a hand card onto your deck to replace it.\n- Duration only drops when that piece moves.\n\nCaptures:\n- Captured pieces respawn on an empty home-row square.\n- Their attached card is removed. Nexus cards return to their owner's deck."
+const RULES_INFO_TEXT: String = "Goal: attach a Nexus card to one of your pieces, then move that Nexus onto the opponent's base square.\n\nTurn flow:\n1. Play any number of cards from your hand onto your empty pieces.\n2. Move one ready piece using its attached card pattern.\n3. End your turn. Each card you played is replaced from your deck.\n\nCards:\n- Your hand holds up to 3 cards.\n- Once per turn, drag a hand card onto your deck to replace it.\n- Duration only drops when that piece moves.\n\nCaptures:\n- The first captured piece respawns locked on an empty home-row square. The next captured piece unlocks it instead of respawning.\n- Their attached card is removed. Nexus cards return to their owner's deck."
 
 @onready var pieces_node = $Pieces
 @onready var dots = $Dots
@@ -2272,6 +2272,8 @@ func clear_piece_exhaustion_for_color(owner_color: int) -> void:
 	for position_value in piece_objects:
 		var piece: Piece = piece_objects[position_value] as Piece
 		if piece != null && piece.color == owner_color:
+			if piece.is_respawn_locked():
+				continue
 			piece.exhausted_this_turn = false
 
 func has_moved_piece_this_turn(owner_color: int) -> bool:
@@ -2609,15 +2611,15 @@ func can_attach_card_to_piece(piece_position: Vector2, card_name: String = "", o
 		return false
 
 	var piece: Piece = piece_objects[piece_position] as Piece
-	return piece.attached_card == null
+	return piece.can_receive_card()
 
 func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 	if not piece_objects.has(piece_position):
 		return false
 
 	var piece: Piece = piece_objects[piece_position] as Piece
-	if piece.attached_card != null:
-		push_warning("This piece already has a card: %s" % piece_position)
+	if !piece.can_receive_card():
+		push_warning("This piece cannot receive a card right now: %s" % piece_position)
 		return false
 
 	var card: Card = CardLibrary.duplicate_card(card_name)
@@ -4163,8 +4165,21 @@ func refresh_piece_holder_visual(holder: Sprite2D, board_pos: Vector2) -> void:
 	apply_piece_light_occluder(holder, board_pos)
 	apply_piece_shadow(holder, board_pos)
 	apply_piece_exhausted_material(holder, board_pos)
+	apply_piece_respawn_lock_opacity(holder, board_pos)
 	apply_piece_freeze_overlay(holder, board_pos)
 	apply_selected_piece_glow(holder, board_pos)
+
+func apply_piece_respawn_lock_opacity(holder: Sprite2D, board_pos: Vector2) -> void:
+	if holder == null or !is_instance_valid(holder):
+		return
+	var alpha: float = 1.0
+	if piece_objects.has(board_pos):
+		var piece: Piece = piece_objects[board_pos] as Piece
+		if piece != null and piece.is_respawn_locked():
+			alpha = 0.5
+	var tint: Color = holder.self_modulate
+	tint.a = alpha
+	holder.self_modulate = tint
 
 func get_attach_point_light_texture() -> Texture2D:
 	if attach_point_light_texture != null:
@@ -4705,6 +4720,7 @@ func display_board():
 			apply_piece_light_occluder(holder, Vector2(i, j))
 			apply_piece_shadow(holder, Vector2(i, j))
 			apply_piece_exhausted_material(holder, Vector2(i, j))
+			apply_piece_respawn_lock_opacity(holder, Vector2(i, j))
 			apply_piece_freeze_overlay(holder, Vector2(i, j))
 			apply_selected_piece_glow(holder, Vector2(i, j))
 
@@ -4763,6 +4779,7 @@ func apply_piece_freeze_overlay(holder: Sprite2D, board_pos: Vector2) -> void:
 	var freeze_material: ShaderMaterial = create_piece_freeze_crack_material(PIECE_FREEZE_CRACK_START_WIDTH if should_animate else PIECE_FREEZE_CRACK_END_WIDTH)
 	create_piece_freeze_overlay(holder, PIECE_FREEZE_CRACK_NAME, freeze_material)
 	create_piece_freeze_square_overlay(board_pos, freeze_material, PIECE_FREEZE_SQUARE_NAME)
+	create_respawn_cooldown_label(holder, board_pos)
 	if should_animate:
 		var tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 		tween.tween_property(freeze_material, "shader_parameter/crack_width", PIECE_FREEZE_CRACK_END_WIDTH, PIECE_FREEZE_CRACK_DURATION)
@@ -4783,6 +4800,9 @@ func create_piece_freeze_overlay(holder: Sprite2D, overlay_name: String, freeze_
 	overlay.material = freeze_material
 	holder.add_child(overlay)
 	return overlay
+
+func create_respawn_cooldown_label(holder: Sprite2D, board_pos: Vector2) -> void:
+	return
 
 func create_piece_freeze_square_overlay(board_pos: Vector2, freeze_material: ShaderMaterial, overlay_name: String) -> Polygon2D:
 	if board_markers_node == null or !is_instance_valid(board_markers_node):
@@ -4879,6 +4899,9 @@ func remove_piece_freeze_overlay(holder: Sprite2D) -> void:
 	var existing_freeze: Node = holder.get_node_or_null(PIECE_FREEZE_CRACK_NAME)
 	if existing_freeze != null:
 		existing_freeze.free()
+	var existing_label: Node = holder.get_node_or_null("RespawnCooldownLabel")
+	if existing_label != null:
+		existing_label.free()
 
 func remove_piece_freeze_square_overlay(board_pos: Vector2) -> void:
 	if board_markers_node == null or !is_instance_valid(board_markers_node):
@@ -5074,16 +5097,27 @@ func respawn_captured_piece_locally(captured_piece: Piece) -> bool:
 	if captured_piece == null:
 		return false
 
+	if release_pending_respawn_piece_locally(captured_piece.color):
+		return true
+
 	var respawn_pos: Vector2 = get_random_empty_home_position_locally(captured_piece.color)
 	if respawn_pos == INVALID_BOARD_POS:
 		push_warning("No empty home row square for captured piece respawn.")
 		return false
 
 	captured_piece.position = respawn_pos
-	captured_piece.exhausted_this_turn = false
+	captured_piece.set_respawn_cooldown(GameConfig.RESPAWN_COOLDOWN_OWN_TURNS)
 	piece_objects[respawn_pos] = captured_piece
 	board[respawn_pos.x][respawn_pos.y] = captured_piece.color
 	return true
+
+func release_pending_respawn_piece_locally(owner_color: int) -> bool:
+	for position_value in piece_objects:
+		var piece: Piece = piece_objects[position_value] as Piece
+		if piece != null and piece.color == owner_color and piece.is_respawn_locked():
+			piece.set_respawn_cooldown(0)
+			return true
+	return false
 
 func get_random_empty_home_position_locally(owner_color: int) -> Vector2:
 	var player_id: int = get_player_id_for_color(owner_color)
@@ -5370,6 +5404,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 				piece.attach_card(card)
 				piece.turns_remaining = int(data.turns_remaining)
 				piece.exhausted_this_turn = bool(data.get("exhausted_this_turn", false))
+		piece.respawn_cooldown_turns = int(data.get("respawn_cooldown_turns", 0))
 
 		piece_objects[piece_position] = piece
 		if is_valid_position(piece_position):

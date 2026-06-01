@@ -171,10 +171,10 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Now capture the enemy piece. Captured pieces return to an empty square on their starting row and lose their card.",
+			"text": "Now capture the enemy piece. The first captured piece returns locked to its starting row. A later capture unlocks it instead of creating another respawn.",
 			"completion": "piece_moved",
 			"continue_after_completion": true,
-			"post_completion_text": "The captured piece returned to its home row. Its attached card is gone. Press Continue when you are ready.",
+			"post_completion_text": "The captured piece returned to its home row. Its attached card is gone, and it stays locked until another piece is captured. Press Continue when you are ready.",
 			"expected_from": Vector2(3, 2),
 			"expected_to": Vector2(3, 3),
 			"setup": {

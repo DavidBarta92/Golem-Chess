@@ -2,11 +2,13 @@ extends Node
 
 const CONTROLLER_HUMAN: String = "human"
 const CONTROLLER_AI: String = "ai"
+const CONTROLLER_CODEX: String = "codex"
 const MIN_AI_DIFFICULTY_LEVEL: int = 1
 const MAX_AI_DIFFICULTY_LEVEL: int = 12
 const DEFAULT_AI_DIFFICULTY_LEVEL: int = 12
 const DEFAULT_AI_VS_AI_CSV_LOG_DIR: String = "user://ai_match_logs"
 const DEFAULT_SERVER_PORT: int = 9999
+const RESPAWN_COOLDOWN_OWN_TURNS: int = 1
 const DEFAULT_PLAYER_NAME: String = "Player"
 const MAX_PLAYER_NAME_LENGTH: int = 24
 

@@ -2,17 +2,27 @@ extends RefCounted
 class_name HeuristicAIPlayer
 
 const AI_TURN_PLANNER_SCRIPT = preload("res://Scripts/AITurnPlanner.gd")
+const AI_STRATEGY_DIRECTOR_SCRIPT = preload("res://Scripts/AIStrategyDirector.gd")
 const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 
 var player_id: int = 1
 var action_delay: float = 0.35
-var evaluator: AIMoveEvaluator
+var evaluator
 var planner
+var strategy_director
+var strategy_memory: Dictionary = {}
 
-func _init(new_player_id: int = 1, ai_difficulty_level: int = AIMoveEvaluator.DEFAULT_DIFFICULTY_LEVEL):
+func _init(new_player_id: int = 1, ai_difficulty_level: int = 12):
+	configure(new_player_id, ai_difficulty_level)
+
+func configure(new_player_id: int = 1, ai_difficulty_level: int = 12) -> void:
 	player_id = new_player_id
-	evaluator = AIMoveEvaluator.new(ai_difficulty_level)
+	var evaluator_script = load("res://Scripts/AIMoveEvaluator.gd")
+	evaluator = evaluator_script.new()
+	evaluator.set_difficulty_level(ai_difficulty_level)
 	planner = AI_TURN_PLANNER_SCRIPT.new()
+	strategy_director = AI_STRATEGY_DIRECTOR_SCRIPT.new()
+	strategy_memory = {}
 
 func can_play_turn(host: NetworkGameHost) -> bool:
 	return host != null \
@@ -38,6 +48,7 @@ func play_turn(host: NetworkGameHost, tree: SceneTree) -> bool:
 	var profile: Dictionary = selected_plan.get("profile", {}).duplicate()
 	profile["own_planner_ms"] = own_planner_ms
 	evaluator.last_profile = profile
+	update_strategy_memory_from_profile(profile)
 	AIPerformanceCsvLogger.log_decision(host.game_state, player_id, profile, selected_plan)
 	return !selected_plan.is_empty()
 
@@ -51,6 +62,7 @@ func choose_plan_threaded(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
 		"player_id": player_id,
 		"difficulty_level": evaluator.difficulty_level,
 		"board_size": BOARD_SIZE,
+		"strategy_memory": strategy_memory.duplicate(),
 	}
 	var ai_thread: Thread = Thread.new()
 	var start_error: int = ai_thread.start(Callable(self, "_choose_plan_thread").bind(thread_args))
@@ -71,22 +83,29 @@ func choose_plan_threaded(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
 func _choose_plan_thread(thread_args: Dictionary) -> Dictionary:
 	var game_state: GameStateData = thread_args.get("game_state", null) as GameStateData
 	var thread_player_id: int = int(thread_args.get("player_id", player_id))
-	var difficulty_level: int = int(thread_args.get("difficulty_level", AIMoveEvaluator.DEFAULT_DIFFICULTY_LEVEL))
+	var difficulty_level: int = int(thread_args.get("difficulty_level", 12))
 	var board_size: int = int(thread_args.get("board_size", BOARD_SIZE))
-	return choose_plan_on_main_thread(game_state, thread_player_id, difficulty_level, board_size)
+	var thread_strategy_memory: Dictionary = thread_args.get("strategy_memory", {}).duplicate()
+	return choose_plan_on_main_thread(game_state, thread_player_id, difficulty_level, board_size, thread_strategy_memory)
 
 func choose_plan_on_main_thread(
 	game_state: GameStateData,
 	thread_player_id: int = -1,
 	difficulty_level: int = -1,
-	board_size: int = BOARD_SIZE
+	board_size: int = BOARD_SIZE,
+	planning_strategy_memory: Dictionary = {}
 ) -> Dictionary:
 	if game_state == null:
 		return {}
 
 	var effective_player_id: int = player_id if thread_player_id == -1 else thread_player_id
 	var effective_difficulty: int = evaluator.difficulty_level if difficulty_level == -1 else difficulty_level
-	var thread_evaluator: AIMoveEvaluator = AIMoveEvaluator.new(effective_difficulty)
+	var effective_strategy_memory: Dictionary = strategy_memory.duplicate() if planning_strategy_memory.is_empty() else planning_strategy_memory.duplicate()
+	var evaluator_script = load("res://Scripts/AIMoveEvaluator.gd")
+	var thread_evaluator = evaluator_script.new()
+	thread_evaluator.set_difficulty_level(effective_difficulty)
+	var thread_strategy_director = AI_STRATEGY_DIRECTOR_SCRIPT.new()
+	thread_evaluator.set_strategy_context(thread_strategy_director.evaluate_strategy(game_state, effective_player_id, effective_strategy_memory, board_size))
 	var thread_planner = AI_TURN_PLANNER_SCRIPT.new()
 	var selected_plan: Dictionary = thread_planner.choose_planned_turn(game_state, effective_player_id, thread_evaluator, board_size)
 	return strip_thread_plan_values(selected_plan)
@@ -111,6 +130,7 @@ func strip_thread_plan_values(value):
 func execute_planned_turn(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
 	if planner == null:
 		return {}
+	prepare_strategy_context(host.game_state, evaluator)
 	return await planner.execute_planned_turn(host, tree, player_id, evaluator, action_delay, BOARD_SIZE)
 
 func execute_sequential_turn(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
@@ -125,16 +145,19 @@ func choose_turn_plan(host: NetworkGameHost) -> Dictionary:
 	if turn_plans.is_empty():
 		return {}
 
+	prepare_strategy_context(host.game_state, evaluator)
 	var selected_plan: Dictionary = evaluator.choose_best_turn_plan(host.game_state, player_id, turn_plans, BOARD_SIZE, planner)
 	var profile: Dictionary = evaluator.last_profile.duplicate()
 	profile["own_planner_ms"] = own_planner_ms
 	profile["own_turn_plan_count"] = turn_plans.size()
+	update_strategy_memory_from_profile(profile)
 	AIPerformanceCsvLogger.log_decision(host.game_state, player_id, profile, selected_plan)
 	return selected_plan
 
 func get_turn_plans(host: NetworkGameHost) -> Array[Dictionary]:
 	if planner == null:
-		return []
+		var empty_plans: Array[Dictionary] = []
+		return empty_plans
 	return planner.create_turn_plans(host, player_id, BOARD_SIZE)
 
 func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, selected_plan: Dictionary) -> bool:
@@ -147,7 +170,23 @@ func choose_turn_move(host: NetworkGameHost) -> Dictionary:
 	if valid_moves.is_empty():
 		return {}
 
+	prepare_strategy_context(host.game_state, evaluator)
 	return evaluator.choose_best_move(host.game_state, player_id, valid_moves, BOARD_SIZE)
+
+func prepare_strategy_context(game_state: GameStateData, target_evaluator) -> Dictionary:
+	if game_state == null or target_evaluator == null:
+		return {}
+	if strategy_director == null:
+		strategy_director = AI_STRATEGY_DIRECTOR_SCRIPT.new()
+	var context: Dictionary = strategy_director.evaluate_strategy(game_state, player_id, strategy_memory, BOARD_SIZE)
+	target_evaluator.set_strategy_context(context)
+	return context
+
+func update_strategy_memory_from_profile(profile: Dictionary) -> void:
+	var profile_memory: Dictionary = profile.get("strategy_memory", {})
+	if profile_memory.is_empty():
+		return
+	strategy_memory = profile_memory.duplicate()
 
 func get_valid_turn_moves(host: NetworkGameHost) -> Array[Dictionary]:
 	var valid_moves: Array[Dictionary] = []

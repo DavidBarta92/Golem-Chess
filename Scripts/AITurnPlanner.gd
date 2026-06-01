@@ -8,9 +8,9 @@ const ACTION_MOVE_PIECE: String = "move_piece"
 const ACTION_END_TURN: String = "end_turn"
 const MAX_SEQUENTIAL_ATTACH_ACTIONS: int = DeckManager.HAND_SIZE
 const MAX_PLAN_ATTACH_DEPTH: int = DeckManager.HAND_SIZE
-const MAX_PLAN_ATTACH_OPTIONS_PER_STATE: int = 4
+const MAX_PLAN_ATTACH_OPTIONS_PER_STATE: int = 2
 const MAX_PLAN_EXCHANGE_OPTIONS: int = 1
-const MAX_GENERATED_TURN_PLANS: int = 260
+const MAX_GENERATED_TURN_PLANS: int = 120
 const ATTACH_ACTION_DELAY: float = 1.00
 const TACTICAL_SEARCH_SCRIPT = preload("res://Scripts/AITacticalSearch.gd")
 
@@ -272,7 +272,7 @@ func count_free_attach_pieces(game_state: GameStateData, player_id: int) -> int:
 	var count: int = 0
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null and piece.color == player_color and piece.attached_card == null:
+		if piece != null and piece.color == player_color and piece.can_receive_card():
 			count += 1
 	return count
 
@@ -301,7 +301,8 @@ func find_best_existing_move(
 
 func create_turn_plans(host: NetworkGameHost, player_id: int, board_size: int = DEFAULT_BOARD_SIZE) -> Array[Dictionary]:
 	if host == null or host.game_state == null or host.game_state.game_over:
-		return []
+		var empty_plans: Array[Dictionary] = []
+		return empty_plans
 
 	return create_turn_plans_from_state(host.game_state, player_id, board_size)
 
@@ -564,7 +565,7 @@ func get_attach_actions_for_pieces(pieces: Dictionary, player_id: int, hand_card
 	for position_value in pieces:
 		var piece_position: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_card != null:
+		if piece == null or piece.color != player_color or !piece.can_receive_card():
 			continue
 
 		for card: Card in hand_cards:

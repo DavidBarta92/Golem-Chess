@@ -4,13 +4,8 @@ class_name CardPatternView
 const PATTERN_SHIMMER_SHADER = preload("res://Shaders/pattern_shimmer.gdshader")
 const GRID_SIZE: int = 5
 const GUIDE_MARKER_SIZE_RATIO: float = 0.135
-const MOVE_ONLY_MARKER_SIZE_RATIO: float = 0.36
-const ACTIVE_MARKER_SIZE_RATIO: float = MOVE_ONLY_MARKER_SIZE_RATIO * 1.05
-const CAPTURE_ONLY_MARKER_SIZE_RATIO: float = MOVE_ONLY_MARKER_SIZE_RATIO * 1.05
-const INVALID_MARKER_SIZE_RATIO: float = 0.52
-const FROZEN_MARKER_SIZE_RATIO: float = 0.52
-const BASE_MARKER_SIZE_RATIO: float = 0.57
-const BOMB_MARKER_SIZE_RATIO: float = 0.68
+const MARKER_SIZE_SCALE: float = 1.0
+const MARKER_SIZE_RATIO: float = 0.52 * MARKER_SIZE_SCALE
 const DOT_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 
 const DEFAULT_MOVE_ONLY_TEXTURE = preload("res://Assets/card_pattern_move_only.svg")
@@ -93,16 +88,20 @@ func _draw() -> void:
 		for col in range(GRID_SIZE):
 			var cell_origin: Vector2 = origin + Vector2(col, row) * cell_size
 			var center: Vector2 = cell_origin + Vector2.ONE * cell_size * 0.5
-			_draw_marker_texture(guide_texture, center, cell_size * GUIDE_MARKER_SIZE_RATIO, guide_color)
+			var movement_type: int = _get_pattern_value(movement_pattern, row, col)
+			var has_effect_marker: bool = has_effect_pattern && _get_pattern_value(effect_pattern, row, col) != CardEffect.MOVEMENT_NONE
+			var has_marker: bool = movement_type != CardEffect.MOVEMENT_NONE || has_effect_marker
 
 			if row == 2 and col == 2:
 				_draw_marker_texture(center_texture, center, cell_size * GUIDE_MARKER_SIZE_RATIO, center_color)
 			else:
-				var movement_type: int = _get_pattern_value(movement_pattern, row, col)
+				if !has_marker:
+					_draw_marker_texture(guide_texture, center, cell_size * GUIDE_MARKER_SIZE_RATIO, guide_color)
+
 				if movement_type != CardEffect.MOVEMENT_NONE:
 					_draw_movement_marker(center, cell_size, movement_type)
 
-				if has_effect_pattern && _get_pattern_value(effect_pattern, row, col) != CardEffect.MOVEMENT_NONE:
+				if has_effect_marker:
 					_draw_effect_marker(center, cell_size)
 
 func _should_show_effect_pattern(card: Card) -> bool:
@@ -126,24 +125,24 @@ func _get_pattern_value(pattern: Array, row: int, col: int) -> int:
 func _draw_movement_marker(center: Vector2, cell_size: float, movement_type: int) -> void:
 	match movement_type:
 		CardEffect.MOVEMENT_MOVE_ONLY:
-			_draw_marker_texture(move_only_texture, center, cell_size * MOVE_ONLY_MARKER_SIZE_RATIO, move_only_color)
+			_draw_marker_texture(move_only_texture, center, cell_size * MARKER_SIZE_RATIO, move_only_color)
 		CardEffect.MOVEMENT_CAPTURE_ONLY:
-			_draw_marker_texture(capture_only_texture, center, cell_size * CAPTURE_ONLY_MARKER_SIZE_RATIO, capture_only_color)
+			_draw_marker_texture(capture_only_texture, center, cell_size * MARKER_SIZE_RATIO, capture_only_color)
 		_:
-			_draw_marker_texture(active_texture, center, cell_size * ACTIVE_MARKER_SIZE_RATIO, active_color)
+			_draw_marker_texture(active_texture, center, cell_size * MARKER_SIZE_RATIO, active_color)
 
 func _draw_effect_marker(center: Vector2, cell_size: float) -> void:
 	match effect_type:
 		CardEffect.TYPE_INVALID_SQUARES:
-			_draw_marker_texture(invalid_texture, center, cell_size * INVALID_MARKER_SIZE_RATIO, invalid_color)
+			_draw_marker_texture(invalid_texture, center, cell_size * MARKER_SIZE_RATIO, invalid_color)
 		CardEffect.TYPE_FROZEN_SQUARES:
-			_draw_marker_texture(frozen_texture, center, cell_size * FROZEN_MARKER_SIZE_RATIO, frozen_color)
+			_draw_marker_texture(frozen_texture, center, cell_size * MARKER_SIZE_RATIO, frozen_color)
 		CardEffect.TYPE_MOVE_BASE:
-			_draw_marker_texture(base_texture, center, cell_size * BASE_MARKER_SIZE_RATIO, base_color)
+			_draw_marker_texture(base_texture, center, cell_size * MARKER_SIZE_RATIO, base_color)
 		CardEffect.TYPE_BOMB:
-			_draw_marker_texture(bomb_texture, center, cell_size * BOMB_MARKER_SIZE_RATIO, bomb_color)
+			_draw_marker_texture(bomb_texture, center, cell_size * MARKER_SIZE_RATIO, bomb_color)
 		_:
-			_draw_marker_texture(active_texture, center, cell_size * ACTIVE_MARKER_SIZE_RATIO, active_color)
+			_draw_marker_texture(active_texture, center, cell_size * MARKER_SIZE_RATIO, active_color)
 
 func _draw_marker_texture(texture: Texture2D, center: Vector2, marker_size: float, marker_color: Color) -> void:
 	if texture == null or marker_size <= 0.0:
