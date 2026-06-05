@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512">
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 572.9 728">
   <defs><style>.iris { fill: #2b5d8f; }.deep { fill: #18304f; }.glint { fill: #d8f0ff; }</style></defs>
-  <ellipse class="iris" cx="201" cy="263" rx="12" ry="16"/>
-  <ellipse class="deep" cx="203" cy="265" rx="6" ry="9"/>
-  <circle class="glint" cx="198" cy="258" r="3"/>
-  <ellipse class="iris" cx="305" cy="263" rx="12" ry="16"/>
-  <ellipse class="deep" cx="307" cy="265" rx="6" ry="9"/>
-  <circle class="glint" cx="302" cy="258" r="3"/>
+  <g id="portrait_part_content" transform="translate(53.7 71.9)">
+    <ellipse class="iris" cx="201" cy="263" rx="12" ry="16"/>
+      <ellipse class="deep" cx="203" cy="265" rx="6" ry="9"/>
+      <circle class="glint" cx="198" cy="258" r="3"/>
+      <ellipse class="iris" cx="305" cy="263" rx="12" ry="16"/>
+      <ellipse class="deep" cx="307" cy="265" rx="6" ry="9"/>
+      <circle class="glint" cx="302" cy="258" r="3"/>
+  </g>
 </svg>

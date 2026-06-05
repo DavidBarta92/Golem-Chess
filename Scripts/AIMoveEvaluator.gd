@@ -166,6 +166,8 @@ const SCORE_DEFENSE_CAPTURE_NEXUS: float = 1800.0
 const SCORE_DEFENSE_BASE_GUARD: float = 52.0
 const SCORE_DEFENSE_PUSH_NEXUS_BACK: float = 420.0
 const PENALTY_IGNORE_ENEMY_NEXUS_PUSH: float = 2600.0
+const SCORE_MOVE_BASE_PIECE_ESCAPE: float = 950.0
+const PENALTY_MOVE_BASE_PIECE_THREATENED_BY_NEXUS: float = 1800.0
 const SCORE_MATERIAL_ADVANTAGE_FINISH: float = 360.0
 const PENALTY_AHEAD_NON_CLOSING_CAPTURE: float = 380.0
 const SCORE_ENDGAME_NEXUS_ROUTE: float = 95.0
@@ -1938,6 +1940,7 @@ func score_hard_tactical_rules_for_plan(game_state: GameStateData, player_id: in
 
 	score += score_active_nexus_finish_rule(game_state, simulated_state, player_id, plan, board_size)
 	score += score_opponent_active_nexus_defense_rule(game_state, simulated_state, player_id, plan, board_size)
+	score += score_move_base_piece_escape_rule(game_state, simulated_state, player_id, plan, board_size)
 	score += score_material_advantage_finish_rule(game_state, simulated_state, player_id, plan, board_size)
 	score += score_move_off_enemy_base_rule(game_state, player_id, plan)
 	return score
@@ -2002,6 +2005,77 @@ func score_material_advantage_finish_rule(
 			score -= PENALTY_AHEAD_NON_CLOSING_CAPTURE
 	score += float(maxi(0, material_advantage)) * SCORE_MATERIAL_ADVANTAGE_FINISH
 	return score
+
+func score_move_base_piece_escape_rule(
+	before_state: GameStateData,
+	after_state: GameStateData,
+	player_id: int,
+	plan: Dictionary,
+	board_size: int
+) -> float:
+	var before_risk: float = score_move_base_piece_nexus_risk(before_state, player_id, board_size)
+	if before_risk <= 0.0:
+		return 0.0
+
+	var after_risk: float = score_move_base_piece_nexus_risk(after_state, player_id, board_size)
+	var score: float = (before_risk - after_risk) * SCORE_MOVE_BASE_PIECE_ESCAPE
+	if after_risk >= before_risk:
+		score -= PENALTY_MOVE_BASE_PIECE_THREATENED_BY_NEXUS
+
+	var move: Dictionary = plan.get("move", {})
+	if !move.is_empty():
+		var from_pos: Vector2 = AIStateSimulator.get_move_from(move)
+		var moving_piece: Piece = before_state.get_piece(from_pos)
+		if is_move_base_piece(moving_piece):
+			score += SCORE_MOVE_BASE_PIECE_ESCAPE * 0.75
+	return score
+
+func score_move_base_piece_nexus_risk(game_state: GameStateData, player_id: int, board_size: int) -> float:
+	if game_state == null:
+		return 0.0
+
+	var risk: float = 0.0
+	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var opponent_player_id: int = 1 - player_id
+	for position_value in game_state.pieces:
+		var pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece == null or piece.color != player_color or !is_move_base_piece(piece):
+			continue
+
+		if can_opponent_nexus_capture_square(game_state, opponent_player_id, pos, board_size):
+			risk += 3.0
+			continue
+
+		var nearest_nexus_distance: float = get_nearest_active_nexus_distance(game_state, opponent_player_id, pos)
+		if nearest_nexus_distance <= 1.0:
+			risk += 2.0
+		elif nearest_nexus_distance <= 2.0:
+			risk += 1.0
+	return risk
+
+func is_move_base_piece(piece: Piece) -> bool:
+	return piece != null and piece.attached_card != null and piece.attached_card.effect_type == CardEffect.TYPE_MOVE_BASE
+
+func can_opponent_nexus_capture_square(game_state: GameStateData, opponent_player_id: int, square: Vector2, board_size: int) -> bool:
+	var opponent_color: int = CardEffectResolver.get_color_for_player_id(opponent_player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
+		game_state.pieces,
+		opponent_color,
+		board_size,
+		game_state.board_effects
+	)
+	for move: Dictionary in valid_moves:
+		if AIStateSimulator.get_move_to(move) == square and AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, opponent_player_id):
+			return true
+	return false
+
+func get_nearest_active_nexus_distance(game_state: GameStateData, player_id: int, square: Vector2) -> float:
+	var best_distance: float = 999.0
+	for entry: Dictionary in get_active_nexus_pieces_for_player(game_state, player_id):
+		var pos: Vector2 = CardEffectResolver.as_vector2(entry.get("position", Vector2(-1, -1)), Vector2(-1, -1))
+		best_distance = minf(best_distance, get_manhattan_distance(pos, square))
+	return best_distance
 
 func score_active_nexus_finish_rule(before_state: GameStateData, after_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
 	if !should_push_active_board_nexus(before_state, player_id):
@@ -2867,6 +2941,8 @@ func score_move_base_effect(game_state: GameStateData, player_id: int, moving_pi
 
 	var new_base_pos: Vector2 = raw_target_squares[0]
 	if !MoveRules.is_valid_position(new_base_pos, board_size):
+		return -PENALTY_MOVE_BASE_NOOP
+	if CardEffectResolver.is_base_field_for_other_player(game_state, new_base_pos, player_id):
 		return -PENALTY_MOVE_BASE_NOOP
 
 	var current_base_pos: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, player_id)

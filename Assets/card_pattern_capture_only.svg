@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <path fill="#ffffff" d="M32 2C35.2 20.2 43.8 28.8 62 32C43.8 35.2 35.2 43.8 32 62C28.8 43.8 20.2 35.2 2 32C20.2 28.8 28.8 20.2 32 2Z"/>
+<svg id="Réteg_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 64 64">
+  <!-- Generator: Adobe Illustrator 30.4.0, SVG Export Plug-In . SVG Version: 2.1.4 Build 226)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #fff;
+      }
+    </style>
+  </defs>
+  <path class="st0" d="M32,2c3.2,18.2,11.8,26.8,30,30-18.2,3.2-26.8,11.8-30,30-3.2-18.2-11.8-26.8-30-30,18.2-3.2,26.8-11.8,30-30Z"/>
 </svg>

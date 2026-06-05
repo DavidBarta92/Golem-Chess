@@ -9,14 +9,13 @@ script = ExtResource("2_j8rry")
 card_name = "Troubadour"
 card_code = "troubadour"
 duration = 5
-description = "When the linked piece is captured, take a Nexus card from your deck and add it to your hand."
 white_piece_texture = ExtResource("3_rqqbm")
 black_piece_texture = ExtResource("1_2pj1y")
-effect_type = "grant_card"
+description = "When the linked piece is captured, take a Nexus card from your deck and add it to your hand."
+symbol = "1"
 effect_trigger = "on_captured"
-effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 effect_settings = {
 "card_name": "King"
 }
-movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]])
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 3, 1, 3, 0], [0, 3, 0, 1, 0], [0, 1, 3, 1, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

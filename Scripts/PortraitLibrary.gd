@@ -183,20 +183,20 @@ static func create_base_portrait_config(seed: int) -> PortraitConfig:
 	var config := PortraitConfig.new()
 	config.seed = maxi(1, seed)
 	config.use_asset_colors = true
-	config.canvas_size = Vector2(595.28, 841.89)
-	config.head_origin = Vector2(51.72, 63.89)
+	config.canvas_size = Vector2(572.9, 728.0)
+	config.head_origin = Vector2.ZERO
 	config.head_pivot = Vector2(307.72, 359.89)
-	config.torso_layer_offset = Vector2(2.13, 262.35)
+	config.torso_layer_offset = Vector2.ZERO
 	config.layer_offsets = {
-		"torso": Vector2(2.13, 262.35),
-		"head": Vector2(51.72, 63.89),
-		"hair": Vector2(57.10, 61.52),
-		"eyes": Vector2(51.17, 81.91),
-		"pupils": Vector2(53.70, 71.90),
-		"brows": Vector2(57.22, 111.52),
-		"nose": Vector2(40.16, 65.22),
-		"mouth": Vector2(50.89, 73.23),
-		"mustache": Vector2(51.12, 165.30),
+		"torso": Vector2.ZERO,
+		"head": Vector2.ZERO,
+		"hair": Vector2.ZERO,
+		"eyes": Vector2.ZERO,
+		"pupils": Vector2.ZERO,
+		"brows": Vector2.ZERO,
+		"nose": Vector2.ZERO,
+		"mouth": Vector2.ZERO,
+		"mustache": Vector2.ZERO,
 	}
 	config.look_down_pupil_offset = Vector2(0.0, 7.0)
 	config.look_down_eyelid_drop_pixels = 5.5

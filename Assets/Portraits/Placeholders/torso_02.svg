@@ -1,5 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <path d="M96 512c10-88 68-135 160-135s150 47 160 135H96z" fill="#ffffff"/>
-  <path d="M174 430h164v82H174z" fill="#d8d8d8" opacity="0.6"/>
-  <path d="M206 392l50 68 50-68 24 120H182l24-120z" fill="#eeeeee" opacity="0.72"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 572.9 728">
+  <g id="portrait_part_content" transform="translate(2.13 262.35)">
+    <path d="M96 512c10-88 68-135 160-135s150 47 160 135H96z" fill="#ffffff"/>
+      <path d="M174 430h164v82H174z" fill="#d8d8d8" opacity="0.6"/>
+      <path d="M206 392l50 68 50-68 24 120H182l24-120z" fill="#eeeeee" opacity="0.72"/>
+  </g>
 </svg>

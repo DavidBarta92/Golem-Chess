@@ -44,7 +44,7 @@ func get_directions() -> Array:
 	directions.assign(get_pattern_offsets(movement_pattern))
 	return directions
 
-func get_pattern_offsets(pattern: Array) -> Array[Vector2]:
+func get_pattern_offsets(pattern: Array, include_center: bool = false) -> Array[Vector2]:
 	var offsets: Array[Vector2] = []
 	var rows: int = pattern.size()
 	if rows == 0:
@@ -58,7 +58,7 @@ func get_pattern_offsets(pattern: Array) -> Array[Vector2]:
 	for x in range(rows):
 		var pattern_row: Array = pattern[x]
 		for y in range(pattern_row.size()):
-			if x == center_x and y == center_y:
+			if !include_center and x == center_x and y == center_y:
 				continue
 			if int(pattern_row[y]) != CardEffect.MOVEMENT_NONE:
 				offsets.append(Vector2(center_x - x, y - center_y))
@@ -66,7 +66,7 @@ func get_pattern_offsets(pattern: Array) -> Array[Vector2]:
 	return offsets
 
 func get_effect_offsets() -> Array[Vector2]:
-	return get_pattern_offsets(effect_params)
+	return get_pattern_offsets(effect_params, true)
 
 func get_movement_options() -> Array[Dictionary]:
 	var options: Array[Dictionary] = []

@@ -15,7 +15,14 @@ var player_base_fields: Dictionary = {
 var board_effects: Array = []
 var recent_card_transfers: Array = []
 var recent_card_expirations: Array = []
+var recent_bomb_effects: Array = []
+var recent_pending_respawn_queues: Array = []
+var recent_pending_respawn_arrivals: Array = []
 var last_move: Dictionary = {}
+var pending_respawns: Dictionary = {
+	0: [],
+	1: [],
+}
 var attached_card_this_turn: Dictionary = {
 	0: false,
 	1: false,

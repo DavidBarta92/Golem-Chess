@@ -341,6 +341,7 @@ func handle_move_piece(action: Dictionary):
 	if captured_piece != null:
 		captured_piece.detach_card()
 		respawn_captured_piece(captured_piece, captured_piece_owner_player_id)
+	CardEffectResolver.resolve_pending_respawns_for_all_players(game_state)
 
 	var opponent_base_field: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var entered_opponent_base: bool = to_pos == opponent_base_field
@@ -444,43 +445,13 @@ func consume_moved_piece_duration(player_id: int, piece: Piece, piece_pos: Vecto
 	})
 
 func respawn_captured_piece(captured_piece: Piece, player_id: int) -> bool:
-	if captured_piece == null or player_id < 0:
-		return false
-
-	if release_pending_respawn_piece(player_id):
-		return true
-
-	var respawn_pos: Vector2 = get_random_empty_home_position(player_id)
-	if respawn_pos == Vector2(-1, -1):
-		push_warning("No empty home row square for captured piece respawn.")
-		return false
-
-	captured_piece.position = respawn_pos
-	captured_piece.set_respawn_cooldown(GameConfig.RESPAWN_COOLDOWN_OWN_TURNS)
-	game_state.set_piece(respawn_pos, captured_piece)
-	return true
+	return CardEffectResolver.respawn_captured_piece(game_state, captured_piece, player_id)
 
 func release_pending_respawn_piece(player_id: int) -> bool:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	for position_value in game_state.pieces:
-		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && piece.is_respawn_locked():
-			piece.set_respawn_cooldown(0)
-			return true
-	return false
+	return CardEffectResolver.release_pending_respawn_piece(game_state, player_id)
 
 func get_random_empty_home_position(player_id: int) -> Vector2:
-	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
-	var empty_positions: Array[Vector2] = []
-	for col in BoardConfig.BOARD_SIZE:
-		var pos: Vector2 = Vector2(home_row, col)
-		if !game_state.pieces.has(pos):
-			empty_positions.append(pos)
-
-	if empty_positions.is_empty():
-		return Vector2(-1, -1)
-
-	return empty_positions[randi() % empty_positions.size()]
+	return CardEffectResolver.get_random_empty_home_position(game_state, player_id)
 
 func maybe_auto_end_turn(player_id: int) -> bool:
 	if game_state.game_over or game_state.current_turn_player != player_id:
@@ -648,7 +619,8 @@ func broadcast_full_state():
 				"card_name": piece_data.card_name,
 				"turns_remaining": piece_data.turns_remaining,
 				"exhausted_this_turn": piece_data.exhausted_this_turn,
-				"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0))
+				"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0)),
+				"hidden_from_viewer": bool(piece_data.get("hidden_from_viewer", false))
 			}
 		multiplayer_node.get_node("board").update_from_server_state(
 			pieces_data,
@@ -663,6 +635,9 @@ func broadcast_full_state():
 			local_state_data.player_names,
 			local_state_data.recent_card_transfers,
 			local_state_data.recent_card_expirations,
+			local_state_data.recent_bomb_effects,
+			local_state_data.recent_pending_respawn_queues,
+			local_state_data.recent_pending_respawn_arrivals,
 			local_state_data.last_move,
 			local_state_data.player_portraits
 		)
@@ -681,6 +656,9 @@ func broadcast_full_state():
 
 	game_state.recent_card_transfers.clear()
 	game_state.recent_card_expirations.clear()
+	game_state.recent_bomb_effects.clear()
+	game_state.recent_pending_respawn_queues.clear()
+	game_state.recent_pending_respawn_arrivals.clear()
 	DebugLog.info("State broadcast complete")
 
 func serialize_state() -> Dictionary:
@@ -704,21 +682,25 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"player_portraits": get_serialized_player_portraits(),
 		"recent_card_transfers": serialize_recent_card_transfers(viewer_player_id),
 		"recent_card_expirations": serialize_recent_card_expirations(),
+		"recent_bomb_effects": serialize_recent_bomb_effects(),
+		"recent_pending_respawn_queues": serialize_recent_pending_respawn_queues(),
+		"recent_pending_respawn_arrivals": serialize_recent_pending_respawn_arrivals(),
 		"last_move": serialize_last_move_for_player(viewer_player_id),
 	}
 
 	for pos in game_state.pieces:
 		var piece: Piece = game_state.pieces[pos]
-		if viewer_player_id != -1 && !CardEffectResolver.is_piece_visible_to_player(piece, viewer_player_id):
+		var hidden_from_viewer: bool = viewer_player_id != -1 && !CardEffectResolver.is_piece_visible_to_player(piece, viewer_player_id)
+		if hidden_from_viewer:
 			append_hidden_card_data(data["hidden_cards"], piece)
-			continue
 		data.pieces.append({
 			"position": [pos.x, pos.y],
 			"color": piece.color,
-			"card_name": piece.attached_card.card_name if piece.attached_card else "",
-			"turns_remaining": piece.turns_remaining,
-			"exhausted_this_turn": piece.exhausted_this_turn,
-			"respawn_cooldown_turns": piece.respawn_cooldown_turns
+			"card_name": "" if hidden_from_viewer else (piece.attached_card.card_name if piece.attached_card else ""),
+			"turns_remaining": 0 if hidden_from_viewer else piece.turns_remaining,
+			"exhausted_this_turn": true if hidden_from_viewer else piece.exhausted_this_turn,
+			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
+			"hidden_from_viewer": hidden_from_viewer,
 		})
 
 	return data
@@ -752,14 +734,62 @@ func serialize_recent_card_expirations() -> Array:
 
 	return serialized_expirations
 
+func serialize_recent_bomb_effects() -> Array:
+	var serialized_effects: Array = []
+	for effect_value in game_state.recent_bomb_effects:
+		var effect: Dictionary = effect_value
+		var serialized_squares: Array = []
+		var squares: Array = effect.get("squares", [])
+		for square_value in squares:
+			serialized_squares.append(vector2_to_array(CardEffectResolver.as_vector2(square_value, Vector2(-1, -1))))
+
+		var serialized_affected_positions: Array = []
+		var affected_positions: Array = effect.get("affected_positions", [])
+		for position_value in affected_positions:
+			serialized_affected_positions.append(vector2_to_array(CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))))
+
+		serialized_effects.append({
+			"player_id": int(effect.get("player_id", -1)),
+			"card_name": str(effect.get("card_name", "")),
+			"source_pos": vector2_to_array(CardEffectResolver.as_vector2(effect.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
+			"squares": serialized_squares,
+			"affected_positions": serialized_affected_positions,
+		})
+
+	return serialized_effects
+
+func serialize_recent_pending_respawn_queues() -> Array:
+	var serialized_queues: Array = []
+	for queue_value in game_state.recent_pending_respawn_queues:
+		var queue_event: Dictionary = queue_value
+		serialized_queues.append({
+			"player_id": int(queue_event.get("player_id", -1)),
+			"piece_color": int(queue_event.get("piece_color", 0)),
+			"source_pos": vector2_to_array(CardEffectResolver.as_vector2(queue_event.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
+		})
+
+	return serialized_queues
+
+func serialize_recent_pending_respawn_arrivals() -> Array:
+	var serialized_arrivals: Array = []
+	for arrival_value in game_state.recent_pending_respawn_arrivals:
+		var arrival: Dictionary = arrival_value
+		serialized_arrivals.append({
+			"player_id": int(arrival.get("player_id", -1)),
+			"piece_color": int(arrival.get("piece_color", 0)),
+			"respawn_pos": vector2_to_array(CardEffectResolver.as_vector2(arrival.get("respawn_pos", Vector2(-1, -1)), Vector2(-1, -1))),
+			"respawn_cooldown_turns": int(arrival.get("respawn_cooldown_turns", 0)),
+		})
+
+	return serialized_arrivals
+
 func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 	if game_state.last_move.is_empty():
 		return {}
 
 	var mover_player_id: int = int(game_state.last_move.get("player_id", -1))
-	if viewer_player_id != -1 && mover_player_id == viewer_player_id:
-		return {}
-	if viewer_player_id != -1 && !bool(game_state.last_move.get("visible_to_enemy", true)):
+	var is_mover_viewer: bool = viewer_player_id != -1 && mover_player_id == viewer_player_id
+	if viewer_player_id != -1 && !is_mover_viewer && !bool(game_state.last_move.get("visible_to_enemy", true)):
 		return {}
 
 	var from_pos: Vector2 = CardEffectResolver.as_vector2(game_state.last_move.get("from", Vector2(-1, -1)), Vector2(-1, -1))
@@ -770,7 +800,7 @@ func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 	var moving_piece: Piece = game_state.get_piece(to_pos)
 	if moving_piece == null:
 		return {}
-	if viewer_player_id != -1 && !CardEffectResolver.is_piece_visible_to_player(moving_piece, viewer_player_id):
+	if viewer_player_id != -1 && !is_mover_viewer && !CardEffectResolver.is_piece_visible_to_player(moving_piece, viewer_player_id):
 		return {}
 
 	return {
@@ -779,6 +809,7 @@ func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 		"player_id": mover_player_id,
 		"piece_color": int(game_state.last_move.get("piece_color", CardEffectResolver.get_color_for_player_id(mover_player_id))),
 		"visible_to_enemy": bool(game_state.last_move.get("visible_to_enemy", true)),
+		"show_arrow": !is_mover_viewer,
 	}
 
 func append_hidden_card_data(hidden_cards: Array, piece: Piece) -> void:

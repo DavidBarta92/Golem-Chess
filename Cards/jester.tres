@@ -8,12 +8,12 @@
 script = ExtResource("2_50y3g")
 card_name = "Jester"
 card_code = "jester"
-duration = 5
+duration = 6
 white_piece_texture = ExtResource("3_50y3g")
 black_piece_texture = ExtResource("1_xnrh2")
 description = "When the linked piece is captured, move your base field to the lower-right target square."
 effect_type = "move_base"
 effect_trigger = "on_captured"
-effect_params = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 1]])
-movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 0, 0, 1], [0, 0, 0, 1, 1], [0, 0, 0, 0, 1], [0, 0, 0, 0, 0]])
+effect_params = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+movement_pattern = Array[Array]([[0, 2, 0, 2, 0], [2, 0, 0, 0, 2], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2], [0, 2, 0, 2, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

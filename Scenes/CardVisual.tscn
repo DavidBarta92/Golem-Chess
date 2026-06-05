@@ -6,14 +6,7 @@
 [ext_resource type="Shader" uid="uid://2w0ypeypns36" path="res://Shaders/card_tilt.gdshader" id="5"]
 [ext_resource type="FontFile" uid="uid://qkd6nyfjtoyf" path="res://Fonts/OLDENGL.TTF" id="5_7hptf"]
 [ext_resource type="Shader" uid="uid://cmkftqqcjg2yk" path="res://Shaders/card_shimmer.gdshader" id="6"]
-[ext_resource type="Texture2D" uid="uid://cpmtmkv1q8xa0" path="res://Assets/card_pattern_move_only.svg" id="7_marker_move"]
 [ext_resource type="FontFile" uid="uid://b1beq61l8rupp" path="res://Fonts/Rosemartin.otf" id="8_5weds"]
-[ext_resource type="Texture2D" uid="uid://cpata6ye84j1x" path="res://Assets/card_pattern_active.svg" id="9_marker_active"]
-[ext_resource type="Texture2D" uid="uid://cpcptuw56k2yn" path="res://Assets/card_pattern_capture_only.svg" id="10_marker_capture"]
-[ext_resource type="Texture2D" uid="uid://cpin2aqr8g7m0" path="res://Assets/card_pattern_invalid.svg" id="11_marker_invalid"]
-[ext_resource type="Texture2D" uid="uid://cpfrz3kq9m1na" path="res://Assets/card_pattern_frozen.svg" id="12_marker_frozen"]
-[ext_resource type="Texture2D" uid="uid://cpbas6tw2k1or" path="res://Assets/card_pattern_base.svg" id="13_marker_base"]
-[ext_resource type="Texture2D" uid="uid://cpbom7vx5z2ps" path="res://Assets/card_pattern_bomb.svg" id="14_marker_bomb"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
 
@@ -178,19 +171,10 @@ offset_right = 144.0
 offset_bottom = 164.0
 mouse_filter = 2
 script = ExtResource("2")
-guide_texture = ExtResource("7_marker_move")
-center_texture = ExtResource("7_marker_move")
-move_only_texture = ExtResource("7_marker_move")
-active_texture = ExtResource("9_marker_active")
-capture_only_texture = ExtResource("10_marker_capture")
-invalid_texture = ExtResource("11_marker_invalid")
-frozen_texture = ExtResource("12_marker_frozen")
-base_texture = ExtResource("13_marker_base")
-bomb_texture = ExtResource("14_marker_bomb")
 active_color = Color(0.8502264, 0.79584396, 0.9886561, 1)
 move_only_color = Color(0.8015804, 0.95878893, 0.9925092, 1)
 capture_only_color = Color(1, 0.85782367, 0.83689725, 1)
-invalid_color = Color(0.7464643, 0.7854934, 0.7310733, 1)
+invalid_color = Color(1, 0.85882354, 0.8352941, 1)
 frozen_color = Color(0.83576155, 0.9007987, 1, 1)
 base_color = Color(1, 0.9397981, 0.7224909, 1)
 bomb_color = Color(1, 0.88448834, 0.84586585, 1)

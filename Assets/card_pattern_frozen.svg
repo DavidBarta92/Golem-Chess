@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="square">
-    <path d="M6 32H58"/>
-    <path d="M32 6V58"/>
-    <path d="M13.6 13.6L50.4 50.4"/>
-    <path d="M50.4 13.6L13.6 50.4"/>
+<svg id="Réteg_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 64 64">
+  <!-- Generator: Adobe Illustrator 30.4.0, SVG Export Plug-In . SVG Version: 2.1.4 Build 226)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: none;
+        stroke: #fff;
+        stroke-linecap: square;
+        stroke-width: 7px;
+      }
+    </style>
+  </defs>
+  <g>
+    <path class="st0" d="M6,32h52"/>
+    <path class="st0" d="M32,6v52"/>
+    <path class="st0" d="M18.6,18.6l26.8,26.8"/>
   </g>
+  <path class="st0" d="M45.4,18.6l-26.8,26.8"/>
 </svg>

@@ -11,6 +11,7 @@ const MODE_EMERGENCY_DEFENSE: String = "emergency_defense"
 const CENTER_RADIUS: float = 2.0
 const BASE_DANGER_RADIUS: float = 2.0
 const BASE_PRESSURE_RADIUS: float = 3.0
+const BASE_STAGING_RADIUS: float = 4.0
 const ENDGAME_RESOURCE_COUNT: int = 5
 const ENDGAME_DECK_COUNT: int = 2
 const ENDGAME_HAND_COUNT: int = 2
@@ -29,8 +30,10 @@ func evaluate_strategy(game_state: GameStateData, player_id: int, memory: Dictio
 	context["own_active_nexus_count"] = count_active_nexus_pieces(game_state, player_id)
 	context["own_available_nexus_count"] = count_available_nexus_cards(game_state, player_id)
 	context["enemy_active_nexus_count"] = count_active_nexus_pieces(game_state, 1 - player_id)
+	context["enemy_available_nexus_count"] = count_available_nexus_cards(game_state, 1 - player_id)
 	context["enemy_base_pressure_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_PRESSURE_RADIUS)
 	context["enemy_base_danger_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_DANGER_RADIUS)
+	context["enemy_base_staging_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_STAGING_RADIUS)
 	context["enemy_nexus_min_base_distance"] = get_enemy_nexus_min_base_distance(game_state, player_id)
 	context["enemy_immediate_base_win"] = has_immediate_base_win(game_state, 1 - player_id, board_size)
 	context["own_base"] = CardEffectResolver.get_base_field_for_player(game_state, player_id)
@@ -45,13 +48,16 @@ func evaluate_strategy(game_state: GameStateData, player_id: int, memory: Dictio
 	context["memory"] = memory.duplicate()
 
 	if bool(context.get("enemy_immediate_base_win", false)) \
-			or int(context.get("enemy_active_nexus_count", 0)) > 0 and float(context.get("enemy_nexus_min_base_distance", 99.0)) <= BASE_PRESSURE_RADIUS:
+			or int(context.get("enemy_active_nexus_count", 0)) > 0 and float(context.get("enemy_nexus_min_base_distance", 99.0)) <= BASE_PRESSURE_RADIUS \
+			or int(context.get("enemy_available_nexus_count", 0)) > 0 and int(context.get("enemy_base_danger_count", 0)) > 0:
 		context["mode"] = MODE_EMERGENCY_DEFENSE
 	elif int(context.get("own_active_nexus_count", 0)) > 0:
 		context["mode"] = MODE_ACTIVE_NEXUS_PUSH
 	elif should_enter_endgame_nexus_finish(context):
 		context["mode"] = MODE_ENDGAME_NEXUS_FINISH
-	elif int(context.get("enemy_base_danger_count", 0)) >= 2 or int(context.get("enemy_active_nexus_count", 0)) > 0:
+	elif int(context.get("enemy_base_danger_count", 0)) >= 2 \
+			or int(context.get("enemy_active_nexus_count", 0)) > 0 \
+			or int(context.get("enemy_available_nexus_count", 0)) > 0 and int(context.get("enemy_base_staging_count", 0)) > 0:
 		context["mode"] = MODE_SOFT_DEFENSE
 	elif !opening_completed:
 		context["mode"] = MODE_OPENING

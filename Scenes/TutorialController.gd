@@ -171,7 +171,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Now capture the enemy piece. The first captured piece returns locked to its starting row. A later capture unlocks it instead of creating another respawn.",
+			"text": "Now capture the enemy piece. The first captured piece returns locked to a non-base square on its starting row. A later capture unlocks it instead of creating another respawn.",
 			"completion": "piece_moved",
 			"continue_after_completion": true,
 			"post_completion_text": "The captured piece returned to its home row. Its attached card is gone, and it stays locked until another piece is captured. Press Continue when you are ready.",

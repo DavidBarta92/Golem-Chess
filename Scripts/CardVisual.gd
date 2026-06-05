@@ -345,6 +345,34 @@ func play_burn_away_and_free() -> void:
 	tween_burn.parallel().tween_property(self, "rotation", rotation + deg_to_rad(randf_range(-7.0, 7.0)), 1.15)
 	tween_burn.tween_callback(Callable(self, "_finish_burn_away"))
 
+func play_return_to_deck_and_free(target_global_position: Vector2, target_scale: Vector2, duration: float = 0.62) -> void:
+	is_assigned = true
+	is_dragging = false
+	is_hovered = false
+	drop_target_active = false
+	draggable = false
+	disabled = true
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face_down = false
+	z_index = 980
+	_kill_hover_tweens()
+	_kill_move_tween()
+	_kill_burn_tween()
+	shadow.visible = false
+	shadow.self_modulate.a = 0.0
+	modulate.a = 1.0
+	shimmer.visible = false
+
+	var lift_position: Vector2 = global_position + Vector2(0.0, -18.0)
+	tween_burn = create_tween()
+	tween_burn.tween_property(self, "global_position", lift_position, 0.12).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	tween_burn.parallel().tween_property(self, "scale", scale * 1.05, 0.12).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	tween_burn.parallel().tween_property(self, "rotation", rotation + deg_to_rad(randf_range(-3.0, 3.0)), 0.12).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	tween_burn.tween_property(self, "global_position", target_global_position, duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween_burn.parallel().tween_property(self, "scale", target_scale, duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween_burn.parallel().tween_property(self, "rotation", 0.0, duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween_burn.tween_callback(Callable(self, "_finish_burn_away"))
+
 func _finish_burn_away() -> void:
 	burn_finished.emit(self)
 	queue_free()
@@ -464,6 +492,7 @@ func prepare_card_snapshot_source(snapshot_source: CardVisual) -> void:
 		snapshot_source.set_card(card)
 	snapshot_source.set_face_down(face_down)
 	snapshot_source.set_card_content_visible(true)
+	reset_snapshot_source_alpha(snapshot_source)
 	snapshot_source.disabled = true
 	snapshot_source.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	snapshot_source.shimmer.visible = false
@@ -472,6 +501,16 @@ func prepare_card_snapshot_source(snapshot_source: CardVisual) -> void:
 	if snapshot_source.face_material != null:
 		snapshot_source.face_material.set_shader_parameter("x_rot", 0.0)
 		snapshot_source.face_material.set_shader_parameter("y_rot", 0.0)
+
+func reset_snapshot_source_alpha(node: Node) -> void:
+	if node is CanvasItem:
+		var canvas_item := node as CanvasItem
+		var color: Color = canvas_item.self_modulate
+		color.a = 1.0
+		canvas_item.self_modulate = color
+
+	for child: Node in node.get_children():
+		reset_snapshot_source_alpha(child)
 
 func set_card_content_visible(value: bool) -> void:
 	card_face.visible = value

@@ -290,6 +290,14 @@ static func resolve_move_base(game_state: GameStateData, player_id: int, card: C
 			"base_before": get_base_field_for_player(game_state, player_id),
 			"base_after": get_base_field_for_player(game_state, player_id),
 		}
+	if is_base_field_for_other_player(game_state, target_pos, player_id):
+		DebugLog.info("Move base ignored: target already contains another base: %s" % target_pos)
+		return {
+			"squares": [],
+			"base_player_id": player_id,
+			"base_before": get_base_field_for_player(game_state, player_id),
+			"base_after": get_base_field_for_player(game_state, player_id),
+		}
 
 	var target_squares: Array[Vector2] = []
 	target_squares.append(target_pos)
@@ -298,6 +306,7 @@ static func resolve_move_base(game_state: GameStateData, player_id: int, card: C
 
 	var base_before: Vector2 = get_base_field_for_player(game_state, player_id)
 	game_state.player_base_fields[player_id] = target_pos
+	resolve_pending_respawns_for_all_players(game_state)
 	DebugLog.info("Base moved: player=%d, new_base=%s" % [player_id, target_pos])
 	return {
 		"squares": target_squares,
@@ -377,10 +386,15 @@ static func resolve_bomb(game_state: GameStateData, player_id: int, card: Card, 
 			else:
 				enemy_pieces_affected += 1
 
+	if !positions_to_remove.is_empty():
+		register_bomb_effect(game_state, player_id, card.card_name, source_pos, get_effect_squares(card, source_pos, board_size, effect_color), positions_to_remove)
+
 	for target_pos: Vector2 in positions_to_remove:
 		remove_piece_as_effect_capture(game_state, player_id, target_pos)
 		if game_state.game_over:
 			break
+	if !game_state.game_over:
+		resolve_pending_respawns_for_all_players(game_state)
 
 	DebugLog.info("Bomb resolved: player=%d, source=%s, removed=%d" % [player_id, source_pos, positions_to_remove.size()])
 	return {
@@ -391,6 +405,18 @@ static func resolve_bomb(game_state: GameStateData, player_id: int, card: Card, 
 		"enemy_pieces_affected": enemy_pieces_affected,
 		"card_names": affected_card_names,
 	}
+
+static func register_bomb_effect(game_state: GameStateData, player_id: int, card_name: String, source_pos: Vector2, squares: Array[Vector2], affected_positions: Array[Vector2]) -> void:
+	if game_state == null or affected_positions.is_empty():
+		return
+
+	game_state.recent_bomb_effects.append({
+		"player_id": player_id,
+		"card_name": card_name,
+		"source_pos": source_pos,
+		"squares": squares,
+		"affected_positions": affected_positions,
+	})
 
 static func resolve_self_duration_adjustment(game_state: GameStateData, player_id: int, source_piece: Piece, source_pos: Vector2, board_size: int, delta: int) -> Dictionary:
 	if source_piece == null or source_piece.attached_card == null:
@@ -526,8 +552,9 @@ static func respawn_captured_piece(game_state: GameStateData, captured_piece: Pi
 
 	var respawn_pos: Vector2 = get_random_empty_home_position(game_state, player_id)
 	if respawn_pos == Vector2(-1, -1):
-		push_warning("No empty home row square for captured piece respawn.")
-		return false
+		queue_pending_respawn_piece(game_state, captured_piece, player_id)
+		push_warning("No empty non-base home row square for captured piece respawn. Piece queued.")
+		return true
 
 	captured_piece.position = respawn_pos
 	captured_piece.set_respawn_cooldown(GameConfig.RESPAWN_COOLDOWN_OWN_TURNS)
@@ -541,6 +568,13 @@ static func release_pending_respawn_piece(game_state: GameStateData, player_id: 
 		if piece != null and piece.color == player_color and piece.is_respawn_locked():
 			piece.set_respawn_cooldown(0)
 			return true
+
+	var pending_respawns: Array = get_pending_respawns_for_player(game_state, player_id)
+	for pending_piece_value in pending_respawns:
+		var pending_piece: Piece = pending_piece_value as Piece
+		if pending_piece != null and pending_piece.color == player_color and pending_piece.is_respawn_locked():
+			pending_piece.set_respawn_cooldown(0)
+			return true
 	return false
 
 static func get_random_empty_home_position(game_state: GameStateData, player_id: int) -> Vector2:
@@ -548,13 +582,97 @@ static func get_random_empty_home_position(game_state: GameStateData, player_id:
 	var empty_positions: Array[Vector2] = []
 	for col in BoardConfig.BOARD_SIZE:
 		var pos: Vector2 = Vector2(home_row, col)
-		if !game_state.pieces.has(pos):
+		if !game_state.pieces.has(pos) and !is_any_base_field(game_state, pos):
 			empty_positions.append(pos)
 
 	if empty_positions.is_empty():
 		return Vector2(-1, -1)
 
 	return empty_positions[randi() % empty_positions.size()]
+
+static func queue_pending_respawn_piece(game_state: GameStateData, captured_piece: Piece, player_id: int) -> void:
+	if game_state == null or captured_piece == null or player_id < 0:
+		return
+
+	var source_pos: Vector2 = captured_piece.position
+	captured_piece.position = Vector2(-1, -1)
+	captured_piece.set_respawn_cooldown(GameConfig.RESPAWN_COOLDOWN_OWN_TURNS)
+	var pending_respawns: Array = get_pending_respawns_for_player(game_state, player_id)
+	pending_respawns.append(captured_piece)
+	game_state.pending_respawns[player_id] = pending_respawns
+	register_pending_respawn_queue(game_state, {
+		"player_id": player_id,
+		"piece_color": captured_piece.color,
+		"source_pos": source_pos,
+	})
+
+static func get_pending_respawns_for_player(game_state: GameStateData, player_id: int) -> Array:
+	if game_state == null:
+		return []
+	if !game_state.pending_respawns.has(player_id):
+		game_state.pending_respawns[player_id] = []
+	return game_state.pending_respawns[player_id]
+
+static func resolve_pending_respawns_for_all_players(game_state: GameStateData) -> Array[Dictionary]:
+	var arrivals: Array[Dictionary] = []
+	for player_id in [0, 1]:
+		arrivals.append_array(resolve_pending_respawns_for_player(game_state, player_id))
+	return arrivals
+
+static func resolve_pending_respawns_for_player(game_state: GameStateData, player_id: int) -> Array[Dictionary]:
+	var arrivals: Array[Dictionary] = []
+	if game_state == null or player_id < 0:
+		return arrivals
+
+	var pending_respawns: Array = get_pending_respawns_for_player(game_state, player_id)
+	while !pending_respawns.is_empty():
+		var respawn_pos: Vector2 = get_random_empty_home_position(game_state, player_id)
+		if respawn_pos == Vector2(-1, -1):
+			break
+
+		var piece: Piece = pending_respawns.pop_front() as Piece
+		if piece == null:
+			continue
+
+		piece.position = respawn_pos
+		game_state.set_piece(respawn_pos, piece)
+		var arrival: Dictionary = {
+			"player_id": player_id,
+			"piece_color": piece.color,
+			"respawn_pos": respawn_pos,
+			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
+		}
+		arrivals.append(arrival)
+		register_pending_respawn_arrival(game_state, arrival)
+
+	game_state.pending_respawns[player_id] = pending_respawns
+	return arrivals
+
+static func register_pending_respawn_arrival(game_state: GameStateData, arrival: Dictionary) -> void:
+	if game_state == null or arrival.is_empty():
+		return
+	game_state.recent_pending_respawn_arrivals.append(arrival)
+
+static func register_pending_respawn_queue(game_state: GameStateData, queue_event: Dictionary) -> void:
+	if game_state == null or queue_event.is_empty():
+		return
+	game_state.recent_pending_respawn_queues.append(queue_event)
+
+static func is_any_base_field(game_state: GameStateData, pos: Vector2) -> bool:
+	for player_id in [0, 1]:
+		if pos == BoardConfig.get_base_field_for_player_id(player_id):
+			return true
+		if pos == get_base_field_for_player(game_state, player_id):
+			return true
+	return false
+
+static func is_base_field_for_other_player(game_state: GameStateData, pos: Vector2, owner_player_id: int) -> bool:
+	for player_id in [0, 1]:
+		if player_id == owner_player_id:
+			continue
+		if pos == get_base_field_for_player(game_state, player_id):
+			return true
+	return false
 
 static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id: int, card_name: String, source_pos: Vector2 = Vector2(-1, -1), reason: String = "effect_capture") -> void:
 	var deck: Array[String] = []

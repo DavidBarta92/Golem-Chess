@@ -1,6 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <ellipse cx="213" cy="262" rx="28" ry="13" fill="#ffffff"/>
-  <ellipse cx="299" cy="262" rx="28" ry="13" fill="#ffffff"/>
-  <path d="M184 258c18-14 39-15 58-2" fill="none" stroke="#cfcfcf" stroke-width="8" stroke-linecap="round"/>
-  <path d="M270 256c20-13 40-12 58 2" fill="none" stroke="#cfcfcf" stroke-width="8" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 572.9 728">
+  <g id="portrait_part_content" transform="translate(51.17 81.91)">
+    <ellipse cx="213" cy="262" rx="28" ry="13" fill="#ffffff"/>
+      <ellipse cx="299" cy="262" rx="28" ry="13" fill="#ffffff"/>
+      <path d="M184 258c18-14 39-15 58-2" fill="none" stroke="#cfcfcf" stroke-width="8" stroke-linecap="round"/>
+      <path d="M270 256c20-13 40-12 58 2" fill="none" stroke="#cfcfcf" stroke-width="8" stroke-linecap="round"/>
+  </g>
 </svg>

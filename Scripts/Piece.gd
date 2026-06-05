@@ -7,6 +7,7 @@ var attached_card: Card = null
 var turns_remaining: int = 0
 var exhausted_this_turn: bool = false
 var respawn_cooldown_turns: int = 0
+var hidden_from_viewer: bool = false
 
 func _init(pos: Vector2, col: int):
 	position = pos

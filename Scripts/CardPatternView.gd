@@ -93,16 +93,17 @@ func _draw() -> void:
 			var has_marker: bool = movement_type != CardEffect.MOVEMENT_NONE || has_effect_marker
 
 			if row == 2 and col == 2:
-				_draw_marker_texture(center_texture, center, cell_size * GUIDE_MARKER_SIZE_RATIO, center_color)
+				if !has_marker:
+					_draw_marker_texture(center_texture, center, cell_size * GUIDE_MARKER_SIZE_RATIO, center_color)
 			else:
 				if !has_marker:
 					_draw_marker_texture(guide_texture, center, cell_size * GUIDE_MARKER_SIZE_RATIO, guide_color)
 
-				if movement_type != CardEffect.MOVEMENT_NONE:
-					_draw_movement_marker(center, cell_size, movement_type)
+			if movement_type != CardEffect.MOVEMENT_NONE:
+				_draw_movement_marker(center, cell_size, movement_type)
 
-				if has_effect_marker:
-					_draw_effect_marker(center, cell_size)
+			if has_effect_marker:
+				_draw_effect_marker(center, cell_size)
 
 func _should_show_effect_pattern(card: Card) -> bool:
 	return card.effect_type in [

@@ -35,7 +35,11 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.board_effects = duplicate_board_effects(source_state.board_effects)
 	cloned_state.recent_card_transfers = []
 	cloned_state.recent_card_expirations = []
+	cloned_state.recent_bomb_effects = []
+	cloned_state.recent_pending_respawn_queues = []
+	cloned_state.recent_pending_respawn_arrivals = []
 	cloned_state.last_move = source_state.last_move.duplicate(true)
+	cloned_state.pending_respawns = duplicate_pending_respawns(source_state.pending_respawns)
 	cloned_state.attached_card_this_turn = source_state.attached_card_this_turn.duplicate()
 	cloned_state.moved_piece_this_turn = source_state.moved_piece_this_turn.duplicate()
 	cloned_state.exchanged_card_this_turn = source_state.exchanged_card_this_turn.duplicate()
@@ -89,6 +93,21 @@ static func duplicate_board_effects(source_effects: Array) -> Array:
 			"squares": duplicated_squares,
 			"turns_remaining": int(effect.get("turns_remaining", -1)),
 		})
+	return output
+
+static func duplicate_pending_respawns(source: Dictionary) -> Dictionary:
+	var output: Dictionary = {
+		0: [],
+		1: [],
+	}
+	for key in source:
+		var source_list: Array = source[key]
+		var duplicated_list: Array = []
+		for piece_value in source_list:
+			var piece: Piece = piece_value as Piece
+			if piece != null:
+				duplicated_list.append(clone_piece(piece))
+		output[key] = duplicated_list
 	return output
 
 static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> GameStateData:
@@ -223,6 +242,7 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 	game_state.moved_piece_this_turn[player_id] = true
 	if captured_piece != null:
 		respawn_captured_piece(game_state, captured_piece, captured_player_id)
+	CardEffectResolver.resolve_pending_respawns_for_all_players(game_state)
 
 	if MoveRules.is_nexus_card(moving_piece.attached_card):
 		if player_id == 0:
@@ -384,42 +404,13 @@ static func handle_captured_piece_card(game_state: GameStateData, captured_piece
 		CardEffectResolver.clear_nexus_position_if_needed(game_state, captured_player_id, true)
 
 static func respawn_captured_piece(game_state: GameStateData, captured_piece: Piece, captured_player_id: int) -> bool:
-	if captured_piece == null or captured_player_id < 0:
-		return false
-
-	if release_pending_respawn_piece(game_state, captured_player_id):
-		return true
-
-	var respawn_pos: Vector2 = get_random_empty_home_position(game_state, captured_player_id)
-	if respawn_pos == Vector2(-1, -1):
-		return false
-
-	captured_piece.position = respawn_pos
-	captured_piece.set_respawn_cooldown(GameConfig.RESPAWN_COOLDOWN_OWN_TURNS)
-	game_state.set_piece(respawn_pos, captured_piece)
-	return true
+	return CardEffectResolver.respawn_captured_piece(game_state, captured_piece, captured_player_id)
 
 static func release_pending_respawn_piece(game_state: GameStateData, player_id: int) -> bool:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	for position_value in game_state.pieces:
-		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null and piece.color == player_color and piece.is_respawn_locked():
-			piece.set_respawn_cooldown(0)
-			return true
-	return false
+	return CardEffectResolver.release_pending_respawn_piece(game_state, player_id)
 
 static func get_random_empty_home_position(game_state: GameStateData, player_id: int) -> Vector2:
-	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
-	var empty_positions: Array[Vector2] = []
-	for col in BoardConfig.BOARD_SIZE:
-		var pos: Vector2 = Vector2(home_row, col)
-		if !game_state.pieces.has(pos):
-			empty_positions.append(pos)
-
-	if empty_positions.is_empty():
-		return Vector2(-1, -1)
-
-	return empty_positions[randi() % empty_positions.size()]
+	return CardEffectResolver.get_random_empty_home_position(game_state, player_id)
 
 static func consume_moved_piece_duration(game_state: GameStateData, player_id: int, piece: Piece, piece_pos: Vector2, board_size: int) -> void:
 	if piece == null or piece.attached_card == null:
@@ -476,7 +467,7 @@ static func respawn_captured_piece_in_pieces(pieces: Dictionary, captured_piece:
 	var empty_positions: Array[Vector2] = []
 	for col in BoardConfig.BOARD_SIZE:
 		var pos: Vector2 = Vector2(home_row, col)
-		if !pieces.has(pos):
+		if !pieces.has(pos) and pos != BoardConfig.WHITE_BASE_FIELD and pos != BoardConfig.BLACK_BASE_FIELD:
 			empty_positions.append(pos)
 
 	if empty_positions.is_empty():

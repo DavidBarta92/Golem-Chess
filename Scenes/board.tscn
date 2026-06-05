@@ -11,5 +11,3 @@ script = ExtResource("2_uh3b8")
 [node name="Pieces" type="Node2D" parent="."]
 
 [node name="Dots" type="Node2D" parent="."]
-
-[node name="Turn" type="Sprite2D" parent="."]
