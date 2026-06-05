@@ -82,12 +82,12 @@ Completed low-risk technical renames:
 - The instantiated scene node is now `MatchBoard`.
 - References were updated in `Scenes/main.tscn`, `Scenes/Tutorial.tscn`, `Scenes/Multiplayer.gd`, and `Scenes/TutorialController.gd`.
 
-Likely dead/stale chess helpers in `MatchBoard.gd`:
+Completed stale chess cleanup in `MatchBoard.gd`:
 
-- `is_in_check(king_pos)`
-- `is_stalemate()`
-- `set_move(..., promotion = null)` parameter
-- `is_enemy`, `is_enemy_for_color`, `is_current_player_piece`, `is_own_piece` may be removable wrappers, but verify after extraction.
+- Removed `is_in_check(king_pos)`.
+- Removed `is_stalemate()`.
+- Removed the unused `promotion` parameter from `set_move` and the multiplayer move RPC chain.
+- Removed unused wrappers: `is_enemy`, `is_enemy_for_color`, `is_current_player_piece`, `is_own_piece`.
 
 Higher-risk content/resource names:
 
@@ -106,12 +106,6 @@ Static reference scan found these likely review candidates. Do not delete blindl
 
 - `has_attached_card_this_turn`
 - `apply_remote_card_attach`
-- `is_enemy`
-- `is_enemy_for_color`
-- `is_current_player_piece`
-- `is_own_piece`
-- `is_in_check`
-- `is_stalemate`
 
 Other scripts:
 
@@ -297,7 +291,6 @@ Run after each extraction chunk:
 Do not start by moving gameplay rules. Start with:
 
 1. Add/document Godot CLI command.
-2. Remove obviously stale chess helpers (`is_in_check`, `is_stalemate`, unused `promotion`) after a load check.
-3. Extract `BoardGeometry` and `BoardVisualController`.
+2. Extract `BoardGeometry` and `BoardVisualController`.
 
 This should reduce file size and cognitive load without changing rules.

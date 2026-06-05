@@ -7193,7 +7193,7 @@ func delete_dots():
 	for child in dots.get_children():
 		child.queue_free()
 
-func set_move(start_pos : Vector2, end_pos : Vector2, promotion = null):
+func set_move(start_pos : Vector2, end_pos : Vector2):
 	if game_over:
 		return
 
@@ -7673,19 +7673,6 @@ func is_empty(pos : Vector2):
 	if board[pos.x][pos.y] == 0: return true
 	return false
 
-func is_enemy(pos : Vector2):
-	if white && board[pos.x][pos.y] < 0 || !white && board[pos.x][pos.y] > 0: return true
-	return false
-
-func is_enemy_for_color(pos: Vector2, owner_color: int) -> bool:
-	return board[pos.x][pos.y] * owner_color < 0
-
-func is_current_player_piece(pos : Vector2) -> bool:
-	return can_player_control_piece_at(pos, get_own_player_id())
-
-func is_own_piece(pos: Vector2) -> bool:
-	return is_piece_owned_by(pos, get_controllable_color())
-
 func is_piece_owned_by(pos: Vector2, owner_color: int) -> bool:
 	return board[pos.x][pos.y] * owner_color > 0
 
@@ -7697,51 +7684,6 @@ func can_player_control_piece_at(pos: Vector2, player_id: int) -> bool:
 
 func can_control_current_turn() -> bool:
 	return !game_over && (side == null || side == white)
-
-func is_in_check(king_pos: Vector2):
-	var directions = [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0),
-	Vector2(1, 1), Vector2(1, -1), Vector2(-1, 1), Vector2(-1, -1)]
-
-	var pawn_direction: int = 1 if white else -1
-	var pawn_attacks = [
-		king_pos + Vector2(pawn_direction, 1),
-		king_pos + Vector2(pawn_direction, -1)
-	]
-
-	for i in pawn_attacks:
-		if is_valid_position(i):
-			if white && board[i.x][i.y] == -1 || !white && board[i.x][i.y] == 1: return true
-
-	for i in directions:
-		var pos = king_pos + i
-		if is_valid_position(pos):
-			if white && board[pos.x][pos.y] == -6 || !white && board[pos.x][pos.y] == 6: return true
-
-	for i in directions:
-		var pos = king_pos + i
-		while is_valid_position(pos):
-			if !is_empty(pos):
-				var piece = board[pos.x][pos.y]
-				if (i.x == 0 || i.y == 0) && (white && piece in [-4, -5] || !white && piece in [4, 5]):
-					return true
-				elif (i.x != 0 && i.y != 0) && (white && piece in [-3, -5] || !white && piece in [3, 5]):
-					return true
-				break
-			pos += i
-
-	var knight_directions = [Vector2(2, 1), Vector2(2, -1), Vector2(1, 2), Vector2(1, -2),
-	Vector2(-2, 1), Vector2(-2, -1), Vector2(-1, 2), Vector2(-1, -2)]
-
-	for i in knight_directions:
-		var pos = king_pos + i
-		if is_valid_position(pos):
-			if white && board[pos.x][pos.y] == -2 || !white && board[pos.x][pos.y] == 2:
-				return true
-
-	return false
-
-func is_stalemate():
-	return !current_player_has_valid_turn_action()
 
 func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}):
 	var previous_piece_visual_state: Dictionary = get_piece_visual_state_snapshot()

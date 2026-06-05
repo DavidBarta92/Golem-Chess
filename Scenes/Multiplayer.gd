@@ -337,9 +337,9 @@ func _on_server_disconnected():
 	set_network_status("Server disconnected.")
 	DebugLog.network_error("Server disconnected.")
 
-func send_move(start_pos, end_pos, promotion = null):
+func send_move(start_pos, end_pos):
 	DebugLog.info("send_move(): %s -> %s my_id=%s" % [start_pos, end_pos, multiplayer.get_unique_id()])
-	send_move_info.rpc_id(1, multiplayer.get_unique_id(), start_pos, end_pos, promotion)
+	send_move_info.rpc_id(1, multiplayer.get_unique_id(), start_pos, end_pos)
 
 func close_game_connection():
 	multiplayer_peer.close()
@@ -413,7 +413,7 @@ func send_player_action(peer_id: int, action: Dictionary):
 	game_host.on_player_action(action)
 
 @rpc("any_peer", "call_local", "reliable")
-func send_move_info(id, start_pos, end_pos, promotion):
+func send_move_info(id, start_pos, end_pos):
 	DebugLog.info("send_move_info() - id=%s server_turn=%s connected=%s is_server=%s" % [id, server_turn, connected_peer_ids, is_server])
 
 	if !is_server || connected_peer_ids.size() < 2:
@@ -422,17 +422,17 @@ func send_move_info(id, start_pos, end_pos, promotion):
 
 	if id == connected_peer_ids[0] && server_turn:
 		DebugLog.info("White moved: %s -> %s" % [start_pos, end_pos])
-		return_enemy_move.rpc_id(connected_peer_ids[1], start_pos, end_pos, promotion)
+		return_enemy_move.rpc_id(connected_peer_ids[1], start_pos, end_pos)
 		server_turn = !server_turn
 	elif id == connected_peer_ids[1] && !server_turn:
 		DebugLog.info("Black moved: %s -> %s" % [start_pos, end_pos])
-		return_enemy_move.rpc_id(connected_peer_ids[0], start_pos, end_pos, promotion)
+		return_enemy_move.rpc_id(connected_peer_ids[0], start_pos, end_pos)
 		server_turn = !server_turn
 
 @rpc("authority", "call_local", "reliable")
-func return_enemy_move(start_pos, end_pos, promotion):
+func return_enemy_move(start_pos, end_pos):
 	DebugLog.info("return_enemy_move(): %s -> %s my_id=%s" % [start_pos, end_pos, multiplayer.get_unique_id()])
-	$MatchBoard.set_move(start_pos, end_pos, promotion)
+	$MatchBoard.set_move(start_pos, end_pos)
 
 @rpc("authority", "call_remote", "reliable")
 func give_turn(turn):
