@@ -4,7 +4,7 @@ const PLAYER_COLOR: int = 1
 const MENTOR_NAME: String = "Mentor"
 const INVALID_BOARD_POS: Vector2 = Vector2(-1, -1)
 
-@export var board_path: NodePath = NodePath("../board")
+@export var board_path: NodePath = NodePath("../MatchBoard")
 @export var dialogue_panel_path: NodePath = NodePath("../CanvasLayer/DialoguePanel")
 
 var board

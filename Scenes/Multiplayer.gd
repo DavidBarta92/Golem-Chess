@@ -97,16 +97,16 @@ func start_singleplayer_game():
 	game_host.configure(self)
 	GameController.set_game_host(game_host)
 
-	var board_data = $board.board
+	var board_data = $MatchBoard.board
 	game_host.initialize_game(board_data)
 	game_host.game_state.current_turn_player = 0
 	setup_singleplayer_ai_controllers()
 	game_host.finish_if_player_has_no_valid_turn(game_host.game_state.current_turn_player)
 	game_host.broadcast_full_state()
 	if GameConfig.is_ai_vs_ai_batch:
-		$board.set_turn(null)
+		$MatchBoard.set_turn(null)
 	else:
-		$board.set_turn(get_side_for_player_id(get_local_human_player_id()))
+		$MatchBoard.set_turn(get_side_for_player_id(get_local_human_player_id()))
 
 func setup_singleplayer_ai_controllers():
 	ai_players.clear()
@@ -384,7 +384,7 @@ func _try_start_multiplayer_game() -> void:
 	DebugLog.network("Game starting. peer_ids=%s server_turn=%s first_player_id=%d" % [connected_peer_ids, server_turn, first_player_id])
 	set_network_status("Game starting...")
 
-	var board_data = $board.board
+	var board_data = $MatchBoard.board
 	game_host.initialize_game(board_data)
 	game_host.game_state.current_turn_player = 0 if server_turn else 1
 	game_host.finish_if_player_has_no_valid_turn(game_host.game_state.current_turn_player)
@@ -393,7 +393,7 @@ func _try_start_multiplayer_game() -> void:
 	await get_tree().create_timer(0.2).timeout
 
 	if connected_peer_ids[0] == 1:
-		$board.set_turn(server_turn)
+		$MatchBoard.set_turn(server_turn)
 	else:
 		give_turn.rpc_id(connected_peer_ids[0], server_turn)
 
@@ -432,12 +432,12 @@ func send_move_info(id, start_pos, end_pos, promotion):
 @rpc("authority", "call_local", "reliable")
 func return_enemy_move(start_pos, end_pos, promotion):
 	DebugLog.info("return_enemy_move(): %s -> %s my_id=%s" % [start_pos, end_pos, multiplayer.get_unique_id()])
-	$board.set_move(start_pos, end_pos, promotion)
+	$MatchBoard.set_move(start_pos, end_pos, promotion)
 
 @rpc("authority", "call_remote", "reliable")
 func give_turn(turn):
 	DebugLog.info("Assigned side: %s" % ("White" if turn else "Black"))
-	$board.set_turn(turn)
+	$MatchBoard.set_turn(turn)
 
 @rpc("authority", "call_remote", "reliable")
 func receive_game_state(state_data: Dictionary):
@@ -466,7 +466,7 @@ func apply_game_state(state_data: Dictionary):
 		}
 		DebugLog.info("  Piece loaded: pos=%s, card=%s, turns=%d" % [pos, piece_data.card_name, piece_data.turns_remaining])
 
-	$board.update_from_server_state(
+	$MatchBoard.update_from_server_state(
 		pieces_data,
 		state_data.player_hands,
 		state_data.current_turn,

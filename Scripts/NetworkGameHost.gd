@@ -608,8 +608,9 @@ func broadcast_full_state():
 
 	var local_viewer_player_id: int = get_viewer_player_id_for_peer(1)
 	var local_state_data: Dictionary = serialize_state_for_player(local_viewer_player_id)
+	var match_board = multiplayer_node.get_node_or_null("MatchBoard")
 
-	if multiplayer_node.has_node("board"):
+	if match_board != null:
 		var pieces_data = {}
 		for piece_data in local_state_data.pieces:
 			var pos = Vector2(piece_data.position[0], piece_data.position[1])
@@ -622,7 +623,7 @@ func broadcast_full_state():
 				"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0)),
 				"hidden_from_viewer": bool(piece_data.get("hidden_from_viewer", false))
 			}
-		multiplayer_node.get_node("board").update_from_server_state(
+		match_board.update_from_server_state(
 			pieces_data,
 			local_state_data.player_hands,
 			local_state_data.current_turn,

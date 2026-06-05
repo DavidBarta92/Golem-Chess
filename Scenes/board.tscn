@@ -1,13 +1,13 @@
-[gd_scene load_steps=2 format=3 uid="uid://cc03qg5anporg"]
+[gd_scene format=3 uid="uid://dxjmyjc61xhdr"]
 
-[ext_resource type="Script" uid="uid://drclmniyw23eb" path="res://Scenes/chess.gd" id="2_uh3b8"]
+[ext_resource type="Script" path="res://Scenes/chess.gd" id="2_uh3b8"]
 
-[node name="board" type="Sprite2D"]
+[node name="board" type="Sprite2D" unique_id=765468139]
 position = Vector2(72, -72)
 script = ExtResource("2_uh3b8")
 
-[node name="BoardTiles" type="Node2D" parent="."]
+[node name="BoardTiles" type="Node2D" parent="." unique_id=653961741]
 
-[node name="Pieces" type="Node2D" parent="."]
+[node name="Pieces" type="Node2D" parent="." unique_id=1544026738]
 
-[node name="Dots" type="Node2D" parent="."]
+[node name="Dots" type="Node2D" parent="." unique_id=2012282900]
