@@ -155,53 +155,141 @@ Status: completed for the scene script, packed scene, instantiated node name, an
 
 Goal: move low-risk visual code first.
 
-Create:
+Status: first and second passes completed.
+
+Created:
 
 - `Scripts/MatchView/BoardGeometry.gd`
 - `Scripts/MatchView/BoardVisualController.gd`
 
-Move first:
+Moved/delegated so far:
 
 - board perspective/projection helpers
-- tile polygon and UV helpers
-- board frame/side/special tile visuals
-- board markers and move dots
+- tile polygon and texture UV helpers
+- board frame/side visual construction
+- board marker drawing primitives
+- generic board cell polygon UV helpers
+
+Still intentionally left in `MatchBoard.gd` for a later, smaller pass:
+
+- special tile target selection and transition animations
+- move dot permission/material logic
+- board marker orchestration, enemy attack marker decisions, and last-move visibility decisions
 
 Reason: this is mostly deterministic drawing code and has lower gameplay risk.
 
 ### Phase 3: Extract Piece Visuals
 
-Create:
+Status: first pass completed.
+
+Created:
 
 - `Scripts/MatchView/PieceVisualController.gd`
-- `Scripts/MatchView/PieceOcclusionController.gd`
 
-Move:
+Moved/delegated in the first pass:
 
-- piece holder creation/update
 - visual scale/texture filter
 - depth/z-index calculation
 - shadows and light occluders
+- piece footprint measurement/cache used by shadows and occluders
+- piece holder lookup
+- piece holder base visual refresh
+- respawn-lock opacity application
+- generic sprite overlay sync helpers
+- attach-effect child cleanup helpers
+
+Still intentionally left in `MatchBoard.gd` for a later, smaller pass:
+
+- piece holder creation/update orchestration and gameplay-state branching
 - selected glow and freeze overlays
+- effect occlusion dimming around attach/expire/respawn animations
+- gameplay-state decisions around hidden, exhausted, and frozen pieces
+
+Possible follow-up:
+
+- Split shadow/occluder and effect-dimming code into `Scripts/MatchView/PieceOcclusionController.gd` once the animator extraction has clearer dependency boundaries.
 
 Keep `MatchBoard.gd` as owner of actual `piece_objects` until later.
 
 ### Phase 4: Extract Animators
 
-Create:
+Status: first and second piece-move passes completed. First shatter pass completed. First through fourth piece-effect passes completed.
+
+Created:
 
 - `Scripts/MatchView/PieceMoveAnimator.gd`
 - `Scripts/MatchView/PieceShatterAnimator.gd`
 - `Scripts/MatchView/PieceEffectAnimator.gd`
+- `Scripts/MatchView/MatchCardHud.gd`
+- `Scripts/MatchView/CardHoverPreviewController.gd`
+- `Scripts/MatchView/HiddenCardPreviewController.gd`
+
+Still planned:
+
 - `Scripts/MatchView/CardAnimationController.gd`
 
-Move:
+Moved/delegated in the piece-move passes:
 
-- movement routing and easing
-- shatter fragments and respawn fragment travel
-- capture flash
-- attach/expire/freeze/bomb visual effects
+- movement route smoothing
+- movement duration based on route length
+- arrival deceleration/easing
+- movement holder transform interpolation
+- generic polyline sampling for movement
+- occupied-footprint route avoidance
+- moving-piece z-index and occlusion decisions
+
+Moved/delegated in the first shatter pass:
+
+- shatter fragment and shard node creation
+- shatter scatter target selection
+- shatter return and pending-edge route calculation
+- shatter return easing and polyline sampling
+- shatter item z-index decisions
+- fragment/shard tween construction
+
+Moved/delegated in the piece-effect passes:
+
+- capture flash node creation and tweening
+- bomb warning marker node creation and tweening
+- bomb warning target position calculation
+- generic piece effect holder creation
+- piece revert dissolve overlay and tweening
+- hidden invisibility final hold/refract/fade tweening
+- attach point/sprite light creation, positioning, and cleanup
+- attach glow overlay creation
+- attach rays overlay creation, transform sync, texture cache, and gradient creation
+- generic glow overlay creation used by attach and selected-piece glow
+- attach texture morph overlay target sizing and morph/light tweening
+- effect occlusion dimming holder selection, dim overlay creation, tweening, and cleanup
+- shared attach orchestration sequence for visible and hidden-invisibility attach animations
+- attach effect child cleanup delegation through the effect animator
+
+Still intentionally left in `MatchBoard.gd` until a later animator pass:
+
+- capture placeholder coordination
+- all gameplay-state mutation around moves
+- shatter respawn reveal counters and fragment marker ownership
+- pending edge respawn marker storage
+- expire/freeze effect orchestration
+- hidden invisibility effect holder setup and final invisibility exit trigger
+
+Move later:
+
+- remaining attach/expire/freeze visual orchestration
 - card draw/return/burn animations
+
+Moved/delegated in the first card-HUD pass:
+
+- card hand container layout helpers
+- card hand visual creation and signal-connector callback
+- deck visual creation and cleanup
+- shared card/deck home-position calculations
+- hover card/description/piece/duration preview UI construction
+- hover preview show/hide/update helpers
+- hidden card preview container creation
+- hidden card preview card creation, layout, ambient motion setup, and cleanup
+- hidden invisibility preview noise/material creation
+- hidden invisibility snapshot shader application
 
 Important: each animator should receive board geometry and scene nodes as dependencies instead of reaching into the whole match scene.
 
@@ -286,11 +374,12 @@ Run after each extraction chunk:
 11. Hidden/invisible card preview shader appears.
 12. Deckbuilder still opens and saved decks load.
 
-## Recommended First Work Item
+## Recommended Next Work Item
 
-Do not start by moving gameplay rules. Start with:
+Do not start by moving gameplay rules yet. Continue with:
 
-1. Add/document Godot CLI command.
-2. Extract `BoardGeometry` and `BoardVisualController`.
+1. Do a small shatter cleanup pass if needed: remove stale wrappers only after confirming no hidden signal/debug references need them.
+2. Extend `PieceEffectAnimator.gd` with the remaining attach/expire/freeze visual effects, including the hidden-invisibility attach setup/morph layer.
+3. Keep respawn state ownership in `MatchBoard.gd` until the server-state adapter exists.
 
 This should reduce file size and cognitive load without changing rules.

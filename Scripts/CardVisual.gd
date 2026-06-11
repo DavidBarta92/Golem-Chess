@@ -49,7 +49,7 @@ signal burn_finished(card_visual: CardVisual)
 @onready var effect_icon_label: Label = $EffectIconLabel
 @onready var nexus_icon_label: Label = $NexusIconLabel
 @onready var name_label: Label = $NameLabel
-@onready var description_label: RichTextLabel = $DescriptionLabel
+@onready var description_label: RichTextLabel = get_node_or_null("DescriptionLabel") as RichTextLabel
 @onready var pattern_view: CardPatternView = $PatternView
 
 var card: Card

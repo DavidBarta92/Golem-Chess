@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://b2oed0tahffou"]
 
 [ext_resource type="Script" uid="uid://cef2ndnwft8t1" path="res://Scenes/MainMenu.gd" id="1_tt5f1"]
+[ext_resource type="Texture2D" uid="uid://cn5e1f7amlgkn" path="res://Assets/golem_painted_vector_transparent_2.svg" id="2_853f1"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_coin"]
 bg_color = Color(1, 0.82, 0.12, 1)
@@ -29,7 +30,7 @@ anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 60.0
 grow_horizontal = 2
-color = Color(0.36, 0.32, 0.32, 1)
+color = Color(0.9366637, 0.9330646, 0.89437205, 1)
 
 [node name="TopBar" type="HBoxContainer" parent="." unique_id=411097308]
 layout_mode = 1
@@ -73,7 +74,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_coin")
 [node name="PointsLabel" type="Label" parent="TopBar/PointsHud" unique_id=1471077960]
 custom_minimum_size = Vector2(78, 32)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.96, 0.82, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 20
 text = "0"
 vertical_alignment = 1
@@ -138,9 +139,13 @@ grow_vertical = 0
 
 [node name="Label" type="Label" parent="." unique_id=1540343529]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 23.0
-text = "Golem v0.0.7 alpha"
+offset_left = 187.0
+offset_top = 37.0
+offset_right = 292.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(0.61960787, 0.6039216, 0.6862745, 1)
+theme_override_font_sizes/font_size = 12
+text = "v0.0.7 alpha"
 
 [node name="DevToolsWindow" type="Window" parent="." unique_id=91807004]
 title = "Developer Tools"
@@ -245,6 +250,11 @@ text = "Reset Sessions"
 layout_mode = 2
 text = "Balance sessions are saved during AI vs AI runs."
 autowrap_mode = 2
+
+[node name="GolemPaintedVectorTransparent2" type="Sprite2D" parent="." unique_id=2114504425]
+position = Vector2(101, 29)
+scale = Vector2(0.07829182, 0.07829182)
+texture = ExtResource("2_853f1")
 
 [connection signal="pressed" from="VBoxContainer/SingleplayerButton" to="." method="_on_singleplayer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/TutorialButton" to="." method="_on_tutorial_button_pressed"]

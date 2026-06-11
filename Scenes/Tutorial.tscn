@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="PackedScene" path="res://Scenes/MatchBoard.tscn" id="1_board"]
 [ext_resource type="PackedScene" path="res://Scenes/DialoguePanel.tscn" id="2_dialogue"]
 [ext_resource type="Script" path="res://Scenes/TutorialController.gd" id="3_controller"]
+[ext_resource type="PackedScene" path="res://Scenes/MatchBackground.tscn" id="4_background"]
 
 [node name="Tutorial" type="Node2D"]
 
@@ -10,6 +11,11 @@
 position = Vector2(72, -72)
 ignore_rotation = false
 zoom = Vector2(3, 3)
+
+[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+layer = -100
+
+[node name="MatchBackground" parent="BackgroundLayer" instance=ExtResource("4_background")]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -49,3 +55,5 @@ grow_vertical = 2
 
 [node name="TutorialController" type="Node" parent="."]
 script = ExtResource("3_controller")
+
+[editable path="BackgroundLayer/MatchBackground"]

@@ -1,13 +1,13 @@
 [gd_scene format=3 uid="uid://cc03qg5anporg"]
 
-[ext_resource type="Script" path="res://Scenes/MatchBoard.gd" id="2_uh3b8"]
+[ext_resource type="Script" uid="uid://drclmniyw23eb" path="res://Scenes/MatchBoard.gd" id="2_uh3b8"]
 
-[node name="MatchBoard" type="Sprite2D"]
+[node name="MatchBoard" type="Sprite2D" unique_id=1888482059]
 position = Vector2(72, -72)
 script = ExtResource("2_uh3b8")
 
-[node name="BoardTiles" type="Node2D" parent="."]
+[node name="BoardTiles" type="Node2D" parent="." unique_id=643626954]
 
-[node name="Pieces" type="Node2D" parent="."]
+[node name="Pieces" type="Node2D" parent="." unique_id=480012277]
 
-[node name="Dots" type="Node2D" parent="."]
+[node name="Dots" type="Node2D" parent="." unique_id=409879813]

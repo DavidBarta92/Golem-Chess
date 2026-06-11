@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://bmwxm03yki7x2" path="res://Scenes/Multiplayer.gd" id="1_hptm8"]
 [ext_resource type="PackedScene" path="res://Scenes/MatchBoard.tscn" id="1_jjgbg"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="1_ynf5e"]
+[ext_resource type="PackedScene" path="res://Scenes/MatchBackground.tscn" id="2_r3s2l"]
 [ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="2_hptm8"]
 [ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="3_d1ilt"]
 [ext_resource type="Texture2D" uid="uid://dtqaapxigua1r" path="res://Assets/white_queen.png" id="4_6iyac"]
@@ -65,6 +66,11 @@ script = ExtResource("1_hptm8")
 position = Vector2(72, -72)
 ignore_rotation = false
 zoom = Vector2(3, 3)
+
+[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+layer = -100
+
+[node name="MatchBackground" parent="BackgroundLayer" instance=ExtResource("2_r3s2l")]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=348762509]
 
@@ -199,3 +205,5 @@ offset_left = -64.0
 offset_top = -99.0
 offset_right = 12.0
 offset_bottom = -63.0
+
+[editable path="BackgroundLayer/MatchBackground"]
