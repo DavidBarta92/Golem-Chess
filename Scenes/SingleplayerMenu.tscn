@@ -42,13 +42,6 @@ text = "Deck"
 [node name="DeckOptionButton" type="OptionButton" parent="VBoxContainer"]
 layout_mode = 2
 
-[node name="OpponentControllerLabel" type="Label" parent="VBoxContainer"]
-layout_mode = 2
-text = "Opponent"
-
-[node name="OpponentControllerOptionButton" type="OptionButton" parent="VBoxContainer"]
-layout_mode = 2
-
 [node name="AIDifficultyLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
 text = "AI difficulty"

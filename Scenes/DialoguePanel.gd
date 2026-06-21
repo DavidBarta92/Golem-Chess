@@ -18,6 +18,7 @@ var visible_character_count: int = 0
 var is_typing: bool = false
 var character_progress: float = 0.0
 var portrait_view: PortraitView
+var line_allows_continue: bool = true
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -37,18 +38,20 @@ func create_portrait_view() -> void:
 	portrait_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	portrait_view.show_frame = false
 
-func show_line(speaker: String, text: String, portrait = null) -> void:
+func show_line(speaker: String, text: String, portrait = null, allow_continue: bool = true) -> void:
 	visible = true
 	full_text = text
 	visible_character_count = 0
 	character_progress = 0.0
 	is_typing = true
+	line_allows_continue = allow_continue
 
 	speaker_label.text = speaker
 	update_portrait(speaker, portrait)
 
 	dialogue_text.text = text
 	dialogue_text.visible_characters = 0
+	continue_button.visible = true
 	continue_button.text = "Skip"
 	set_process(true)
 
@@ -78,6 +81,7 @@ func finish_line() -> void:
 	visible_character_count = full_text.length()
 	dialogue_text.visible_characters = -1
 	continue_button.text = "Continue"
+	continue_button.visible = line_allows_continue
 	set_process(false)
 
 func _process(delta: float) -> void:
@@ -97,6 +101,8 @@ func _process(delta: float) -> void:
 func _on_continue_pressed() -> void:
 	if is_typing:
 		finish_line()
+		return
+	if !line_allows_continue:
 		return
 	continue_requested.emit()
 

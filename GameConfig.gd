@@ -7,16 +7,27 @@ const MIN_AI_DIFFICULTY_LEVEL: int = 1
 const MAX_AI_DIFFICULTY_LEVEL: int = 12
 const DEFAULT_AI_DIFFICULTY_LEVEL: int = 12
 const DEFAULT_AI_VS_AI_CSV_LOG_DIR: String = "user://ai_match_logs"
+const DEFAULT_SERVER_IP: String = "79.76.116.120"
 const DEFAULT_SERVER_PORT: int = 9999
+const MULTIPLAYER_PROVIDER_CUSTOM_SERVER: String = "custom_server"
+const MULTIPLAYER_PROVIDER_STEAM: String = "steam"
+const MATCHMAKING_MODE_DIRECT_CONNECT: String = "direct_connect"
+const MATCHMAKING_MODE_ROOM_LIST: String = "room_list"
+const MATCHMAKING_MODE_FRIEND_INVITE: String = "friend_invite"
+const MATCHMAKING_MODE_QUICK_MATCH: String = "quick_match"
 const RESPAWN_COOLDOWN_OWN_TURNS: int = 1
 const DEFAULT_PLAYER_NAME: String = "Player"
 const MAX_PLAYER_NAME_LENGTH: int = 24
 
 var is_singleplayer: bool = false
 var is_hosting: bool = false
+var is_dedicated_server: bool = false
 var is_ai_vs_ai_batch: bool = false
-var server_ip: String = "127.0.0.1"
+var server_ip: String = DEFAULT_SERVER_IP
 var server_port: int = DEFAULT_SERVER_PORT
+var multiplayer_provider: String = MULTIPLAYER_PROVIDER_CUSTOM_SERVER
+var matchmaking_mode: String = MATCHMAKING_MODE_DIRECT_CONNECT
+var selected_lobby_id: String = ""
 var player_name: String = DEFAULT_PLAYER_NAME
 var local_portrait_data: Dictionary = {}
 var ai_vs_ai_match_count: int = 1
@@ -27,6 +38,7 @@ var ai_vs_ai_fast_mode: bool = false
 var ai_vs_ai_use_random_database_decks: bool = false
 var selected_deck_id: String = ""
 var selected_ai_deck_id: String = ""
+var multiplayer_menu_status_message: String = ""
 var ai_vs_ai_results: Dictionary = {
 	0: 0,
 	1: 0,
@@ -97,6 +109,38 @@ func sanitize_player_name(raw_player_name: String) -> String:
 
 func set_server_port(raw_port) -> void:
 	server_port = parse_server_port(raw_port)
+
+func use_default_public_server_endpoint() -> void:
+	server_ip = DEFAULT_SERVER_IP
+	server_port = DEFAULT_SERVER_PORT
+
+func set_multiplayer_provider(provider: String) -> void:
+	match provider:
+		MULTIPLAYER_PROVIDER_CUSTOM_SERVER, MULTIPLAYER_PROVIDER_STEAM:
+			multiplayer_provider = provider
+		_:
+			multiplayer_provider = MULTIPLAYER_PROVIDER_CUSTOM_SERVER
+
+func is_using_custom_server_multiplayer() -> bool:
+	return multiplayer_provider == MULTIPLAYER_PROVIDER_CUSTOM_SERVER
+
+func is_using_steam_multiplayer() -> bool:
+	return multiplayer_provider == MULTIPLAYER_PROVIDER_STEAM
+
+func set_matchmaking_mode(mode: String) -> void:
+	match mode:
+		MATCHMAKING_MODE_DIRECT_CONNECT, MATCHMAKING_MODE_ROOM_LIST, MATCHMAKING_MODE_FRIEND_INVITE, MATCHMAKING_MODE_QUICK_MATCH:
+			matchmaking_mode = mode
+		_:
+			matchmaking_mode = MATCHMAKING_MODE_DIRECT_CONNECT
+
+func set_multiplayer_menu_status_message(message: String) -> void:
+	multiplayer_menu_status_message = message.strip_edges()
+
+func consume_multiplayer_menu_status_message() -> String:
+	var message: String = multiplayer_menu_status_message
+	multiplayer_menu_status_message = ""
+	return message
 
 func parse_server_port(raw_port) -> int:
 	var parsed_port: int = DEFAULT_SERVER_PORT

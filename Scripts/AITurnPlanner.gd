@@ -89,19 +89,20 @@ func execute_sequential_turn(
 	if host == null or host.game_state == null or host.game_state.game_over or evaluator == null:
 		return create_sequential_plan(selected_actions, selected_move, setup_attach_actions, best_score_seen, profile)
 
-	while can_continue_sequential_turn(host, player_id) and attach_actions_played < MAX_SEQUENTIAL_ATTACH_ACTIONS:
-		var best_attach: Dictionary = find_best_attach_setup(host.game_state, player_id, evaluator, board_size, profile)
-		var attach_threshold: float = get_attach_setup_threshold(host.game_state, player_id)
-		best_score_seen = max(best_score_seen, float(best_attach.get("score", -INF)))
-		if float(best_attach.get("score", -INF)) >= attach_threshold:
-			var attach_action: Dictionary = best_attach.get("action", {})
-			if attach_action.is_empty():
-				break
+	while can_continue_sequential_turn(host, player_id):
+		if attach_actions_played < MAX_SEQUENTIAL_ATTACH_ACTIONS:
+			var best_attach: Dictionary = find_best_attach_setup(host.game_state, player_id, evaluator, board_size, profile)
+			var attach_threshold: float = get_attach_setup_threshold(host.game_state, player_id)
+			best_score_seen = max(best_score_seen, float(best_attach.get("score", -INF)))
+			if float(best_attach.get("score", -INF)) >= attach_threshold:
+				var attach_action: Dictionary = best_attach.get("action", {})
+				if attach_action.is_empty():
+					break
 
-			setup_attach_actions.append(attach_action)
-			await execute_ai_action(host, tree, attach_action, action_delay, selected_actions)
-			attach_actions_played += 1
-			continue
+				setup_attach_actions.append(attach_action)
+				await execute_ai_action(host, tree, attach_action, action_delay, selected_actions)
+				attach_actions_played += 1
+				continue
 
 		if !exchanged_card and host.can_exchange_card_for_player(player_id) and has_free_attach_piece(host.game_state, player_id):
 			var exchange_action: Dictionary = find_exchange_action_for_worst_card(host.game_state, player_id, evaluator, board_size, profile)

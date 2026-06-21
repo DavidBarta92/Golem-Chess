@@ -56,7 +56,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Cards give pieces their movement. Drag Numero_1 from your hand onto one of your pieces.",
+			"text": "Stamps give pieces their movement. Drag Numero_1 from your hand onto one of your pieces.",
 			"completion": "card_attached",
 			"expected_card_name": "Numero_1",
 			"remember_attached_piece": true,
@@ -77,7 +77,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "The piece is ready. Select that same piece, then move it to one of the highlighted squares.",
+			"text": "The piece is ready for this tutorial step. Select that same piece, then move it to one of the highlighted squares.",
 			"completion": "piece_moved",
 			"use_last_attached_piece_as_move_source": true,
 			"constraints": {
@@ -87,13 +87,13 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "After a piece moves, its card loses one duration. Cards do not tick down just because the turn ends.",
+			"text": "After a piece moves, its stamp loses one duration. Stamps do not tick down just because the turn ends.",
 			"completion": "dialogue",
 			"constraints": no_actions(),
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "You can attach more than one card in a turn. Put both cards from your hand onto two empty pieces.",
+			"text": "You can attach more than one stamp in a turn. Put both stamps from your hand onto two empty pieces.",
 			"completion": "card_attached",
 			"required_count": 2,
 			"setup": {
@@ -112,13 +112,13 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Good. Even with several cards attached, you still move only one piece during your turn.",
+			"text": "Good. Even with several stamps attached, you still move only one piece during your turn.",
 			"completion": "dialogue",
 			"constraints": no_actions(),
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "End your turn now. The cards you played will be refilled from your deck.",
+			"text": "End your turn now. The stamps you played will be refilled from your deck.",
 			"completion": "turn_ended",
 			"constraints": {
 				"allowed_actions": ["end_turn"],
@@ -127,10 +127,10 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Once per turn, you may switch a hand card. Drag a card from your hand onto your deck to replace it.",
+			"text": "Once per turn, you may switch a hand stamp. Drag a stamp from your hand onto your deck to replace it.",
 			"completion": "card_exchanged",
 			"continue_after_completion": true,
-			"post_completion_text": "The switched card returned to the deck, and a replacement card flew into your hand. Press Continue when you are ready.",
+			"post_completion_text": "The switched stamp returned to the deck, and a replacement stamp flew into your hand. Press Continue when you are ready.",
 			"setup": {
 				"board": starting_board(),
 				"white_hand": ["Numero_4", "Numero_5", "Numero_6"],
@@ -146,7 +146,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Some cards have effects. Drag Training Seal onto a piece; its effect will mark frozen squares around it.",
+			"text": "Some stamps have effects. Drag Training Seal onto a piece; its effect will mark frozen squares around it.",
 			"completion": "card_attached",
 			"expected_card_name": "Training Seal",
 			"setup": {
@@ -165,7 +165,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Those blue marks are board effects. Effects can change what pieces may do, separate from the card's movement pattern.",
+			"text": "Those blue marks are board effects. Effects can change what pieces may do, separate from the stamp's movement pattern.",
 			"completion": "dialogue",
 			"constraints": no_actions(),
 		},
@@ -174,7 +174,7 @@ func build_steps() -> void:
 			"text": "Now capture the enemy piece. The first captured piece returns locked to a non-base square on its starting row. A later capture unlocks it instead of creating another respawn.",
 			"completion": "piece_moved",
 			"continue_after_completion": true,
-			"post_completion_text": "The captured piece returned to its home row. Its attached card is gone, and it stays locked until another piece is captured. Press Continue when you are ready.",
+			"post_completion_text": "The captured piece returned to its home row. Its attached stamp is gone, and it stays locked until another piece is captured. Press Continue when you are ready.",
 			"expected_from": Vector2(3, 2),
 			"expected_to": Vector2(3, 3),
 			"setup": {
@@ -202,7 +202,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Nexus cards are special. Attach Crown to a piece. If a Nexus is captured, it returns to its owner's deck.",
+			"text": "Nexus stamps are special. Attach Crown to a piece. If a Nexus is captured, it returns to its owner's deck.",
 			"completion": "card_attached",
 			"expected_card_name": "Crown",
 			"setup": {
@@ -311,7 +311,7 @@ func start_step(step_index: int) -> void:
 		board.set_tutorial_constraints(constraints)
 
 	var speaker: String = str(step.get("speaker", MENTOR_NAME))
-	dialogue_panel.show_line(speaker, str(step.get("text", "")), get_portrait_for_speaker(speaker))
+	dialogue_panel.show_line(speaker, str(step.get("text", "")), get_portrait_for_speaker(speaker), should_show_continue_for_step(step))
 
 func finish_tutorial() -> void:
 	if board != null and board.has_method("clear_tutorial_constraints"):
@@ -319,7 +319,7 @@ func finish_tutorial() -> void:
 	if board != null and board.has_method("set_tutorial_mode_active"):
 		board.set_tutorial_mode_active(false)
 	current_step_index = -1
-	dialogue_panel.show_line(MENTOR_NAME, "Tutorial complete. Good work.", mentor_portrait)
+	dialogue_panel.show_line(MENTOR_NAME, "Tutorial complete. Good work.", mentor_portrait, true)
 
 func _on_dialogue_continue_requested() -> void:
 	if waiting_for_continue_after_completion:
@@ -405,7 +405,7 @@ func _on_tutorial_action_rejected(_action_name: String, _context: Dictionary) ->
 
 	var step: Dictionary = steps[current_step_index]
 	var speaker: String = str(step.get("speaker", MENTOR_NAME))
-	dialogue_panel.show_line(speaker, str(step.get("rejection_text", step.get("text", ""))), get_portrait_for_speaker(speaker))
+	dialogue_panel.show_line(speaker, str(step.get("rejection_text", step.get("text", ""))), get_portrait_for_speaker(speaker), should_show_continue_for_step(step))
 
 func advance_current_step() -> void:
 	start_step(current_step_index + 1)
@@ -417,7 +417,7 @@ func complete_current_action_step() -> void:
 		if board != null and board.has_method("set_tutorial_constraints"):
 			board.set_tutorial_constraints(no_actions())
 		var speaker: String = str(step.get("speaker", MENTOR_NAME))
-		dialogue_panel.show_line(speaker, str(step.get("post_completion_text", step.get("text", ""))), get_portrait_for_speaker(speaker))
+		dialogue_panel.show_line(speaker, str(step.get("post_completion_text", step.get("text", ""))), get_portrait_for_speaker(speaker), true)
 		return
 
 	advance_current_step()
@@ -435,13 +435,18 @@ func get_current_step() -> Dictionary:
 func is_current_completion(completion_name: String) -> bool:
 	return str(get_current_step().get("completion", "")) == completion_name
 
+func should_show_continue_for_step(step: Dictionary) -> bool:
+	return str(step.get("completion", "")) == "dialogue"
+
 func ready_piece_for_tutorial_move(owner_color: int) -> void:
 	if board == null:
 		return
-	if board.has_method("clear_piece_exhaustion_for_color"):
-		board.clear_piece_exhaustion_for_color(owner_color)
+	if board.has_method("get_local_state_mutator"):
+		board.get_local_state_mutator().clear_piece_exhaustion_for_color(owner_color)
 	if board.has_method("display_board"):
 		board.display_board()
+	if board.has_method("refresh_tutorial_dependent_ui"):
+		board.refresh_tutorial_dependent_ui()
 
 func value_to_vector2(value, fallback: Vector2) -> Vector2:
 	if value is Vector2:

@@ -11,11 +11,14 @@ const DEFAULT_NOSE_ID: String = "nose_01"
 const DEFAULT_MOUTH_ID: String = "mouth_neutral"
 const DEFAULT_BROWS_ID: String = "brows_01"
 const DEFAULT_MUSTACHE_ID: String = "mustage_01"
+const DEFAULT_PORTRAIT_SET_ID: String = "A"
 
 @export var portrait_id: String = "portrait"
 @export var display_name: String = ""
 @export var seed: int = 1
 @export var use_asset_colors: bool = false
+@export var portrait_set_id: String = DEFAULT_PORTRAIT_SET_ID
+@export var png_part_ids: Dictionary = {}
 
 @export_group("Parts")
 @export var head_id: String = DEFAULT_HEAD_ID
@@ -70,6 +73,8 @@ func to_dict() -> Dictionary:
 		"display_name": display_name,
 		"seed": seed,
 		"use_asset_colors": use_asset_colors,
+		"portrait_set_id": portrait_set_id,
+		"png_part_ids": png_part_ids.duplicate(true),
 		"head_id": head_id,
 		"torso_id": torso_id,
 		"hair_id": hair_id,
@@ -107,6 +112,8 @@ func apply_dict(data: Dictionary) -> void:
 	display_name = sanitize_string(data.get("display_name", display_name), display_name)
 	seed = int(data.get("seed", seed))
 	use_asset_colors = bool(data.get("use_asset_colors", use_asset_colors))
+	portrait_set_id = sanitize_string(data.get("portrait_set_id", portrait_set_id), DEFAULT_PORTRAIT_SET_ID).to_upper()
+	png_part_ids = sanitize_part_id_dict(data.get("png_part_ids", png_part_ids))
 	head_id = sanitize_string(data.get("head_id", head_id), DEFAULT_HEAD_ID)
 	torso_id = sanitize_string(data.get("torso_id", torso_id), DEFAULT_TORSO_ID)
 	hair_id = sanitize_string(data.get("hair_id", hair_id), DEFAULT_HAIR_ID)
@@ -149,6 +156,18 @@ static func sanitize_string(value, fallback: String) -> String:
 
 static func sanitize_optional_string(value) -> String:
 	return str(value).strip_edges()
+
+static func sanitize_part_id_dict(value) -> Dictionary:
+	var output: Dictionary = {}
+	if !(value is Dictionary):
+		return output
+
+	for key in value:
+		var cleaned_key: String = str(key).strip_edges()
+		var cleaned_value: String = str(value[key]).strip_edges()
+		if !cleaned_key.is_empty() and !cleaned_value.is_empty():
+			output[cleaned_key] = cleaned_value
+	return output
 
 static func sanitize_expression(value: String) -> String:
 	var cleaned_value: String = value.strip_edges().to_lower()

@@ -280,7 +280,7 @@ func add_board_zone_effect(source_pos: Vector2, piece: Piece, card: Card) -> voi
 		return
 
 	var squares: Array[Vector2] = CardEffectResolver.get_effect_squares(card, source_pos, board_size, piece.color)
-	if card.effect_type == CardEffect.TYPE_INVALID_SQUARES:
+	if card.effect_type == CardEffect.TYPE_INVALID_SQUARES or card.effect_type == CardEffect.TYPE_FROZEN_SQUARES:
 		squares = filter_base_fields_from_effect_squares(squares)
 	if squares.is_empty():
 		return
@@ -326,16 +326,6 @@ func clear_piece_exhaustion_for_color(owner_color: int) -> void:
 			if piece.is_respawn_locked():
 				continue
 			piece.exhausted_this_turn = false
-
-func sync_moved_piece_this_turn_from_server_state(current_last_move: Dictionary) -> void:
-	var current_color: int = get_current_turn_color()
-	moved_piece_this_turn[current_color] = false
-	if current_last_move.is_empty():
-		return
-
-	var mover_player_id: int = int(current_last_move.get("player_id", -1))
-	if mover_player_id == get_player_id_for_color(current_color):
-		moved_piece_this_turn[current_color] = true
 
 func filter_base_fields_from_effect_squares(squares: Array[Vector2]) -> Array[Vector2]:
 	var filtered_squares: Array[Vector2] = []
@@ -398,11 +388,10 @@ func is_nexus_piece_at(piece_position: Vector2) -> bool:
 
 func current_player_has_valid_turn_action() -> bool:
 	var current_color: int = get_current_turn_color()
-	if has_moved_piece_this_turn(current_color):
-		return can_exchange_card(current_color)
 	var hand_cards: Array[Card] = get_card_hand(current_color)
-	var can_attach_card: bool = true
-	if MoveRules.has_valid_turn_action(piece_objects, current_color, hand_cards, can_attach_card, board_size, board_effects):
+	if !has_moved_piece_this_turn(current_color) and MoveRules.has_valid_piece_move(piece_objects, current_color, board_size, board_effects):
+		return true
+	if MoveRules.has_valid_attachment_move(piece_objects, current_color, hand_cards, board_size, board_effects):
 		return true
 	if can_exchange_card(current_color):
 		return true

@@ -20,6 +20,9 @@ func _on_connect_button_pressed():
 	DebugLog.network("Join requested from menu: %s:%d; log=%s" % [ip, port, DebugLog.get_network_log_path()])
 
 	GameConfig.is_hosting = false
+	GameConfig.is_dedicated_server = false
+	GameConfig.set_multiplayer_provider(GameConfig.MULTIPLAYER_PROVIDER_CUSTOM_SERVER)
+	GameConfig.set_matchmaking_mode(GameConfig.MATCHMAKING_MODE_DIRECT_CONNECT)
 	GameConfig.server_ip = ip
 	GameConfig.server_port = port
 

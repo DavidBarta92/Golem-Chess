@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PieceVisualSet" format=3 uid="uid://br4oybocnaq4y"]
+
+[ext_resource type="Texture2D" uid="uid://fabwbx04rgx5" path="res://Assets/bishop.svg" id="1_x6lck"]
+[ext_resource type="Texture2D" uid="uid://dg2efgpx06uk5" path="res://Assets/bishop_front.svg" id="2_lxulj"]
+[ext_resource type="Texture2D" uid="uid://vllhjb0h6f5y" path="res://Assets/bishop_back.svg" id="4_nxf7c"]
+[ext_resource type="Script" uid="uid://brv1p4k8s2mty" path="res://Scripts/PieceVisualSet.gd" id="4_t62q8"]
+
+[resource]
+script = ExtResource("4_t62q8")
+white_front = ExtResource("2_lxulj")
+white_back = ExtResource("4_nxf7c")
+white_preview = ExtResource("1_x6lck")
+black_front = ExtResource("2_lxulj")
+black_back = ExtResource("4_nxf7c")
+black_preview = ExtResource("1_x6lck")

@@ -354,6 +354,11 @@ func play_transfer_source_pulse(transfer: Dictionary) -> void:
 		deck_visual.play_draw_pulse()
 
 func get_card_transfer_source_position(transfer: Dictionary) -> Vector2:
+	if transfer.has("source_global_position"):
+		var provided_source_position: Vector2 = value_to_vector2(transfer.get("source_global_position"), INVALID_BOARD_POS)
+		if provided_source_position != INVALID_BOARD_POS:
+			return provided_source_position
+
 	var source_player_id: int = int(transfer.get("source_player_id", -1))
 	var source_color: int = get_color_for_player_id(source_player_id) if source_player_id >= 0 else get_local_view_color()
 	var source_zone: String = str(transfer.get("source_zone", ""))

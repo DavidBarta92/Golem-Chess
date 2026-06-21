@@ -1,6 +1,67 @@
 [gd_scene format=3 uid="uid://cc03qg5anporg"]
 
 [ext_resource type="Script" uid="uid://drclmniyw23eb" path="res://Scenes/MatchBoard.gd" id="2_uh3b8"]
+[ext_resource type="PackedScene" path="res://Scenes/PortraitView.tscn" id="2_yyk5b"]
+[ext_resource type="Script" uid="uid://prxce8kchyxi" path="res://Scripts/PortraitConfig.gd" id="3_2gffj"]
+
+[sub_resource type="Resource" id="Resource_seeaf"]
+script = ExtResource("3_2gffj")
+portrait_id = "default_player"
+display_name = "Player"
+seed = 17
+use_asset_colors = true
+png_part_ids = {
+"body": "A1",
+"eyebrows": "A2",
+"eyelash": "A1",
+"eyewhite": "A1",
+"facial_hair": "A1",
+"hair": "A2",
+"head": "A1",
+"mouth": "A1",
+"neck": "A1",
+"nose": "A1",
+"pupils": "A1"
+}
+head_id = "A1"
+torso_id = "A1"
+hair_id = "A2"
+eyes_id = "A1"
+closed_eyes_id = ""
+pupils_id = "A1"
+nose_id = "A1"
+mouth_id = "A1"
+brows_id = "A2"
+mustache_id = "A1"
+canvas_size = Vector2(249, 316)
+head_pivot = Vector2(124.5, 170)
+layer_offsets = {
+"body": Vector2(0, 0),
+"eyebrows": Vector2(0, 0),
+"eyelash": Vector2(0, 0),
+"eyewhite": Vector2(0, 0),
+"facial_hair": Vector2(0, 0),
+"hair": Vector2(0, 0),
+"head": Vector2(0, 0),
+"mouth": Vector2(0, 0),
+"neck": Vector2(0, 0),
+"nose": Vector2(0, 0),
+"pupils": Vector2(0, 0)
+}
+look_down_pupil_offset = Vector2(0, 4)
+look_down_eyelid_drop_pixels = 4.0
+look_down_head_offset = Vector2(0, 2.2)
+look_down_layer_offsets = {
+"eyebrows": Vector2(0, 2),
+"eyelash": Vector2(0, 2.8),
+"eyewhite": Vector2(0, 1.4),
+"facial_hair": Vector2(0, 1),
+"hair": Vector2(0, -0.8),
+"mouth": Vector2(0, 0.8),
+"nose": Vector2(0, 1.3),
+"pupils": Vector2(0, 1.8)
+}
+blink_style = "move_eyes"
 
 [node name="MatchBoard" type="Sprite2D" unique_id=1888482059]
 position = Vector2(72, -72)
@@ -11,3 +72,17 @@ script = ExtResource("2_uh3b8")
 [node name="Pieces" type="Node2D" parent="." unique_id=480012277]
 
 [node name="Dots" type="Node2D" parent="." unique_id=409879813]
+
+[node name="PortraitPreviewLayer" type="CanvasLayer" parent="." unique_id=2108066845]
+
+[node name="PortraitPlacementPreview" parent="PortraitPreviewLayer" unique_id=109465943 instance=ExtResource("2_yyk5b")]
+custom_minimum_size = Vector2(224, 89)
+offset_left = 132.0
+offset_top = 93.0
+offset_right = 356.0
+offset_bottom = 182.0
+portrait_config = SubResource("Resource_seeaf")
+show_frame = false
+show_background = true
+background_color = Color(0.909804, 0.694118, 0.486275, 1)
+use_scene_mask = true

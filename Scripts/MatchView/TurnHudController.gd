@@ -28,8 +28,9 @@ var end_turn_indicator_color: Color = Color(1.0, 1.0, 1.0, 0.92)
 var end_turn_indicator_z_index: int = 950
 var player_name_label_size: Vector2 = Vector2(180, 28)
 var player_name_label_gap: float = 8.0
-var player_portrait_size: Vector2 = Vector2(232, 272)
+var player_portrait_size: Vector2 = Vector2(224, 89)
 var player_portrait_margin: float = 22.0
+var player_portrait_top_position: Vector2 = Vector2(70, 4)
 var player_portrait_z_index: int = 928
 var rules_info_button_size: Vector2 = Vector2(40, 40)
 var rules_info_panel_size: Vector2 = Vector2(310, 286)
@@ -111,6 +112,7 @@ func configure(config: Dictionary) -> void:
 	player_name_label_gap = float(config.get("player_name_label_gap", player_name_label_gap))
 	player_portrait_size = config.get("player_portrait_size", player_portrait_size)
 	player_portrait_margin = float(config.get("player_portrait_margin", player_portrait_margin))
+	player_portrait_top_position = config.get("player_portrait_top_position", player_portrait_top_position)
 	player_portrait_z_index = int(config.get("player_portrait_z_index", player_portrait_z_index))
 	rules_info_button_size = config.get("rules_info_button_size", rules_info_button_size)
 	rules_info_panel_size = config.get("rules_info_panel_size", rules_info_panel_size)
@@ -317,7 +319,10 @@ func create_player_portrait_view() -> PortraitView:
 	portrait_view.custom_minimum_size = player_portrait_size
 	portrait_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	portrait_view.z_index = player_portrait_z_index
-	portrait_view.show_frame = true
+	portrait_view.show_frame = false
+	portrait_view.show_background = true
+	portrait_view.background_color = Color(0.909804, 0.694118, 0.486275, 1.0)
+	portrait_view.use_scene_mask = true
 	return portrait_view
 
 func create_player_name_ui() -> void:
@@ -444,24 +449,23 @@ func update_player_name_labels() -> void:
 		name_label.visible = true
 
 func update_player_portrait_views() -> void:
-	var viewport_size: Vector2 = get_visible_viewport_size()
 	for owner_color in [1, -1]:
 		var portrait_view: PortraitView = player_portrait_views.get(owner_color, null) as PortraitView
 		if portrait_view == null or !is_instance_valid(portrait_view):
 			continue
 
 		var player_id: int = get_player_id_for_color(owner_color)
+		var is_top_portrait: bool = is_card_hand_top(owner_color)
+		if !is_top_portrait:
+			portrait_view.visible = false
+			continue
+
 		portrait_view.set_portrait_config(get_portrait_config_for_player(player_id))
 		portrait_view.set_turn_focus(owner_color == get_current_turn_color())
 		portrait_view.size = player_portrait_size
+		portrait_view.custom_minimum_size = player_portrait_size
 		portrait_view.visible = true
-
-		var is_top_portrait: bool = is_card_hand_top(owner_color)
-		var portrait_y: float = player_portrait_margin
-		if !is_top_portrait:
-			portrait_y = viewport_size.y - player_portrait_size.y - player_portrait_margin
-
-		portrait_view.position = Vector2(player_portrait_margin, maxf(player_portrait_margin, portrait_y))
+		portrait_view.position = player_portrait_top_position
 
 func update_rules_info_ui() -> void:
 	if rules_info_button == null:

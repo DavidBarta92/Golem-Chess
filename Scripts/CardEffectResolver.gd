@@ -317,7 +317,7 @@ static func resolve_move_base(game_state: GameStateData, player_id: int, card: C
 
 static func resolve_board_zone_effect(game_state: GameStateData, player_id: int, card: Card, source_pos: Vector2, board_size: int, effect_color: int) -> Dictionary:
 	var squares: Array[Vector2] = get_effect_squares(card, source_pos, board_size, effect_color)
-	if card.effect_type == CardEffect.TYPE_INVALID_SQUARES:
+	if card.effect_type == CardEffect.TYPE_INVALID_SQUARES or card.effect_type == CardEffect.TYPE_FROZEN_SQUARES:
 		squares = filter_out_base_fields(game_state, squares)
 	if squares.is_empty():
 		return {}

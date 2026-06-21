@@ -11,18 +11,18 @@ void fragment() {
 	vec2 pixel_size = TEXTURE_PIXEL_SIZE * glow_size;
 	float expanded_alpha = source.a;
 
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(pixel_size.x, 0.0)).a);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(-pixel_size.x, 0.0)).a);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(0.0, pixel_size.y)).a);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(0.0, -pixel_size.y)).a);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(pixel_size.x, pixel_size.y)).a);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(-pixel_size.x, pixel_size.y)).a);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(pixel_size.x, -pixel_size.y)).a);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(-pixel_size.x, -pixel_size.y)).a);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(pixel_size.x * 1.75, 0.0)).a * 0.7);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(-pixel_size.x * 1.75, 0.0)).a * 0.7);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(0.0, pixel_size.y * 1.75)).a * 0.7);
-	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(0.0, -pixel_size.y * 1.75)).a * 0.7);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(pixel_size.x, 0.0)).a * COLOR.a);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(-pixel_size.x, 0.0)).a * COLOR.a);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(0.0, pixel_size.y)).a * COLOR.a);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(0.0, -pixel_size.y)).a * COLOR.a);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(pixel_size.x, pixel_size.y)).a * COLOR.a);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(-pixel_size.x, pixel_size.y)).a * COLOR.a);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(pixel_size.x, -pixel_size.y)).a * COLOR.a);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(-pixel_size.x, -pixel_size.y)).a * COLOR.a);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(pixel_size.x * 1.75, 0.0)).a * COLOR.a * 0.7);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(-pixel_size.x * 1.75, 0.0)).a * COLOR.a * 0.7);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(0.0, pixel_size.y * 1.75)).a * COLOR.a * 0.7);
+	expanded_alpha = max(expanded_alpha, texture(TEXTURE, UV + vec2(0.0, -pixel_size.y * 1.75)).a * COLOR.a * 0.7);
 
 	float outer_alpha = max(0.0, expanded_alpha - source.a);
 	float inner_alpha = source.a * fill_strength;

@@ -1,7 +1,11 @@
 [gd_scene format=3 uid="uid://bd4avsx325i0l"]
 
+[ext_resource type="Texture2D" uid="uid://bmx0fdl8k87wn" path="res://Assets/bg2.png" id="1_2kvp8"]
 [ext_resource type="Texture2D" uid="uid://xlny0gmjo6gq" path="res://Assets/bg_table.png" id="1_57m6y"]
-[ext_resource type="Texture2D" uid="uid://badeun0a3v5ok" path="res://Assets/bg_frames.png" id="2_x26p7"]
+[ext_resource type="Texture2D" uid="uid://dubsncrjkelfu" path="res://Assets/bg_body.png" id="2_1kcp2"]
+[ext_resource type="Texture2D" uid="uid://bls6orxkdumiy" path="res://Assets/bg_window_shadows.png" id="5_uylmj"]
+[ext_resource type="Texture2D" uid="uid://brp0j6v6w1470" path="res://Assets/bg_window.png" id="6_f30kt"]
+[ext_resource type="Texture2D" uid="uid://cfxum3p3vuuup" path="res://Assets/bg_board_shadows.png" id="7_6a255"]
 
 [node name="MatchBackground" type="Control" unique_id=302405062]
 z_index = -100
@@ -12,6 +16,30 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="Bg2" type="TextureRect" parent="." unique_id=1562108338]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("1_2kvp8")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="BgBody" type="TextureRect" parent="." unique_id=1319291795]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_1kcp2")
+expand_mode = 1
+stretch_mode = 6
 
 [node name="BgTable" type="TextureRect" parent="." unique_id=44563227]
 layout_mode = 1
@@ -25,8 +53,7 @@ texture = ExtResource("1_57m6y")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="WindowFrameShadows" type="Control" parent="." unique_id=1576243211]
-visible = false
+[node name="BgWindowShadows" type="TextureRect" parent="." unique_id=1563171118]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,49 +61,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+texture = ExtResource("5_uylmj")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="LeftWindowFrameShadowSoft" type="ColorRect" parent="WindowFrameShadows" unique_id=473533497]
-layout_mode = 1
-offset_left = 188.0
-offset_top = 6.0
-offset_right = 290.0
-offset_bottom = 366.0
-mouse_filter = 2
-color = Color(0, 0, 0, 0.12)
-
-[node name="LeftWindowFrameShadowCore" type="ColorRect" parent="WindowFrameShadows" unique_id=1952498790]
-layout_mode = 1
-offset_left = 204.0
-offset_right = 266.0
-offset_bottom = 352.0
-mouse_filter = 2
-color = Color(0, 0, 0, 0.18)
-
-[node name="RightWindowFrameShadowSoft" type="ColorRect" parent="WindowFrameShadows" unique_id=952215197]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -252.0
-offset_top = 8.0
-offset_right = -126.0
-offset_bottom = 366.0
-mouse_filter = 2
-color = Color(0, 0, 0, 0.12)
-
-[node name="RightWindowFrameShadowCore" type="ColorRect" parent="WindowFrameShadows" unique_id=1527831187]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -222.0
-offset_right = -156.0
-offset_bottom = 352.0
-mouse_filter = 2
-color = Color(0, 0, 0, 0.18)
-
-[node name="BgFrames" type="TextureRect" parent="." unique_id=1304993668]
-visible = false
+[node name="BgWindow" type="TextureRect" parent="." unique_id=176240198]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -84,6 +73,18 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-texture = ExtResource("2_x26p7")
+texture = ExtResource("6_f30kt")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="BgBoardShadows" type="TextureRect" parent="." unique_id=2032998321]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("7_6a255")
 expand_mode = 1
 stretch_mode = 6

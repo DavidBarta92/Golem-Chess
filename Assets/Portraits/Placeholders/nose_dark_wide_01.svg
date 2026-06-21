@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 572.9 728">
-  <defs><style>.skin { fill: #a9796d; }.line { fill: #3f3a3b; opacity: .72; }</style></defs>
-  <g id="portrait_part_content" transform="translate(40.16 65.22)">
-    <path class="skin" d="M274,259 C267,280 263,301 262,320 C248,322 236,328 229,338 C242,349 261,351 278,343 C287,350 304,350 319,341 C314,330 303,323 289,321 C287,298 284,277 274,259 Z"/>
-      <path class="line" d="M238,337 C250,329 262,327 275,331 C263,342 249,344 238,337 Z"/>
-      <path class="line" d="M310,337 C298,329 286,327 273,331 C285,342 299,344 310,337 Z"/>
-  </g>
-</svg>

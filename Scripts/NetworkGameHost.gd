@@ -521,10 +521,11 @@ func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 
 func player_has_valid_turn_action(player_id: int) -> bool:
 	var player_color: int = BoardConfig.get_color_for_player_id(player_id)
-	var can_attach_card: bool = true
 	var can_move_piece: bool = !bool(game_state.moved_piece_this_turn.get(player_id, false))
 	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
-	if can_move_piece && MoveRules.has_valid_turn_action(game_state.pieces, player_color, hand_cards, can_attach_card, BoardConfig.BOARD_SIZE, game_state.board_effects):
+	if can_move_piece && MoveRules.has_valid_piece_move(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects):
+		return true
+	if MoveRules.has_valid_attachment_move(game_state.pieces, player_color, hand_cards, BoardConfig.BOARD_SIZE, game_state.board_effects):
 		return true
 	if should_hold_turn_for_optional_exchange(player_id):
 		return true
@@ -640,7 +641,9 @@ func broadcast_full_state():
 			local_state_data.recent_pending_respawn_queues,
 			local_state_data.recent_pending_respawn_arrivals,
 			local_state_data.last_move,
-			local_state_data.player_portraits
+			local_state_data.player_portraits,
+			int(local_state_data.get("viewer_player_id", -1)),
+			local_state_data.turn_action_state
 		)
 
 	for peer_id in multiplayer_node.connected_peer_ids:
@@ -667,6 +670,7 @@ func serialize_state() -> Dictionary:
 
 func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 	var data = {
+		"viewer_player_id": viewer_player_id,
 		"pieces": [],
 		"hidden_cards": [],
 		"player_hands": game_state.player_hands,
@@ -687,6 +691,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"recent_pending_respawn_queues": serialize_recent_pending_respawn_queues(),
 		"recent_pending_respawn_arrivals": serialize_recent_pending_respawn_arrivals(),
 		"last_move": serialize_last_move_for_player(viewer_player_id),
+		"turn_action_state": serialize_turn_action_state(),
 	}
 
 	for pos in game_state.pieces:
@@ -705,6 +710,19 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		})
 
 	return data
+
+func serialize_turn_action_state() -> Dictionary:
+	return {
+		"attached_card_this_turn": duplicate_bool_dictionary(game_state.attached_card_this_turn),
+		"moved_piece_this_turn": duplicate_bool_dictionary(game_state.moved_piece_this_turn),
+		"exchanged_card_this_turn": duplicate_bool_dictionary(game_state.exchanged_card_this_turn),
+	}
+
+func duplicate_bool_dictionary(source: Dictionary) -> Dictionary:
+	var output: Dictionary = {}
+	for key in source:
+		output[key] = bool(source[key])
+	return output
 
 func serialize_recent_card_transfers(_viewer_player_id: int) -> Array:
 	var serialized_transfers: Array = []

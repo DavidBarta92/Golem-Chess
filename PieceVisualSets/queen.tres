@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PieceVisualSet" format=3 uid="uid://1fis6807ij4u"]
+
+[ext_resource type="Texture2D" uid="uid://dwwdge00gw58" path="res://Assets/queen_back.svg" id="1_v5jn4"]
+[ext_resource type="Texture2D" uid="uid://cvpsgg7ryfndm" path="res://Assets/queen_front.svg" id="2_vnxjb"]
+[ext_resource type="Texture2D" uid="uid://4hfrl5d3hpnt" path="res://Assets/quenn.svg" id="3_54s1h"]
+[ext_resource type="Script" uid="uid://brv1p4k8s2mty" path="res://Scripts/PieceVisualSet.gd" id="4_346dj"]
+
+[resource]
+script = ExtResource("4_346dj")
+white_front = ExtResource("2_vnxjb")
+white_back = ExtResource("1_v5jn4")
+white_preview = ExtResource("3_54s1h")
+black_front = ExtResource("2_vnxjb")
+black_back = ExtResource("1_v5jn4")
+black_preview = ExtResource("3_54s1h")

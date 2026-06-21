@@ -459,8 +459,14 @@ func append_hidden_invisibility_attach_animations(animations: Array[Dictionary],
 func find_recently_hidden_piece_position(previous_snapshot: Dictionary, piece_objects: Dictionary, used_positions: Dictionary, piece_color: int) -> Vector2:
 	for position_value in previous_snapshot:
 		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
-		if !is_valid_position(board_pos) or used_positions.has(board_pos) or piece_objects.has(board_pos):
+		if !is_valid_position(board_pos) or used_positions.has(board_pos):
 			continue
+		if piece_objects.has(board_pos):
+			var current_piece: Piece = piece_objects[board_pos] as Piece
+			if current_piece == null or !current_piece.hidden_from_viewer:
+				continue
+			if current_piece.color != piece_color:
+				continue
 
 		var previous_state: Dictionary = previous_snapshot[position_value]
 		if int(previous_state.get("color", 0)) != piece_color:

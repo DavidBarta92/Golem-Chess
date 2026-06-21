@@ -76,8 +76,11 @@ func update_selected_piece_glow() -> void:
 		var board_pos: Vector2 = match_board.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
 		apply_selected_piece_glow(holder, board_pos)
 
-func apply_piece_exhausted_material(holder: Sprite2D, _board_pos: Vector2) -> void:
-	holder.material = null
+func apply_piece_exhausted_material(holder: Sprite2D, board_pos: Vector2) -> void:
+	if holder.texture == null or !match_board.piece_objects.has(board_pos):
+		holder.material = null
+		return
+	holder.material = match_board.get_piece_kuwahara_material()
 
 func apply_piece_freeze_overlay(holder: Sprite2D, board_pos: Vector2) -> void:
 	match_board.get_freeze_effect_animator().apply_overlay(holder, board_pos)

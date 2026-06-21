@@ -24,7 +24,8 @@ float noise(vec2 uv) {
 void fragment() {
 	vec4 target_color = texture(TEXTURE, UV) * COLOR;
 	float grain = noise(UV * 18.0 + vec2(TIME * 1.7, -TIME * 1.1));
-	float reveal = clamp(morph_progress + (grain - 0.5) * noise_strength, 0.0, 1.0);
+	float reveal_noise = (grain - 0.5) * noise_strength * morph_progress;
+	float reveal = clamp(morph_progress + reveal_noise, 0.0, 1.0);
 	float shine = (1.0 - abs(reveal - 0.5) * 2.0) * shine_strength * target_color.a;
 	target_color.rgb += shine_color.rgb * shine;
 	target_color.a *= reveal;

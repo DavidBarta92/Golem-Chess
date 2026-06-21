@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PieceVisualSet" format=3 uid="uid://beq12efn5kyj6"]
+
+[ext_resource type="Texture2D" uid="uid://bn3hcd13cogkw" path="res://Assets/frince_back.svg" id="1_pdc2n"]
+[ext_resource type="Texture2D" uid="uid://bb6udx24gg8jn" path="res://Assets/prince_front.svg" id="2_la0rn"]
+[ext_resource type="Texture2D" uid="uid://cs0up0p7ahsn3" path="res://Assets/prince.svg" id="3_svwmy"]
+[ext_resource type="Script" uid="uid://brv1p4k8s2mty" path="res://Scripts/PieceVisualSet.gd" id="4_pgsq1"]
+
+[resource]
+script = ExtResource("4_pgsq1")
+white_front = ExtResource("2_la0rn")
+white_back = ExtResource("1_pdc2n")
+white_preview = ExtResource("3_svwmy")
+black_front = ExtResource("2_la0rn")
+black_back = ExtResource("1_pdc2n")
+black_preview = ExtResource("3_svwmy")

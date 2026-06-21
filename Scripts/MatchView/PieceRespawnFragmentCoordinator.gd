@@ -13,8 +13,11 @@ func prepare_piece_shatter_respawn_reveals(animations: Array[Dictionary]) -> voi
 		var fragment_group: String = str(animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
 		begin_piece_shatter_respawn_reveal(respawn_pos, fragment_group)
 
-func prepare_pending_edge_respawn_arrival_reveals(animations: Array[Dictionary]) -> void:
-	for animation: Dictionary in animations:
+func prepare_pending_edge_respawn_arrival_reveals(animations: Array) -> void:
+	for animation_value in animations:
+		if !(animation_value is Dictionary):
+			continue
+		var animation: Dictionary = animation_value
 		var respawn_pos: Vector2 = match_board.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
 		var fragment_group: String = str(animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM))
 		begin_piece_shatter_respawn_reveal(respawn_pos, fragment_group)
@@ -247,8 +250,11 @@ func take_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Sprit
 func get_pending_edge_respawn_key(piece_color: int) -> int:
 	return match_board.get_player_id_for_color(piece_color)
 
-func play_pending_edge_respawn_arrival_animations(animations: Array[Dictionary]) -> void:
-	for animation: Dictionary in animations:
+func play_pending_edge_respawn_arrival_animations(animations: Array) -> void:
+	for animation_value in animations:
+		if !(animation_value is Dictionary):
+			continue
+		var animation: Dictionary = animation_value
 		var respawn_pos: Vector2 = match_board.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
 		var piece_color: int = int(animation.get("piece_color", 0))
 		var fragment_group: String = str(animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM))

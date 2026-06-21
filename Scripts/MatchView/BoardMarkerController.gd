@@ -27,6 +27,7 @@ var piece_objects_provider: Callable
 var board_effects_provider: Callable
 var current_last_move_provider: Callable
 var local_view_color_provider: Callable
+var local_view_ready_provider: Callable
 var own_player_id_provider: Callable
 var can_move_action_now_provider: Callable
 var can_player_control_piece_at_provider: Callable
@@ -61,6 +62,7 @@ func configure(config: Dictionary) -> void:
 	board_effects_provider = config.get("board_effects_provider", board_effects_provider)
 	current_last_move_provider = config.get("current_last_move_provider", current_last_move_provider)
 	local_view_color_provider = config.get("local_view_color_provider", local_view_color_provider)
+	local_view_ready_provider = config.get("local_view_ready_provider", local_view_ready_provider)
 	own_player_id_provider = config.get("own_player_id_provider", own_player_id_provider)
 	can_move_action_now_provider = config.get("can_move_action_now_provider", can_move_action_now_provider)
 	can_player_control_piece_at_provider = config.get("can_player_control_piece_at_provider", can_player_control_piece_at_provider)
@@ -101,9 +103,9 @@ func update_markers() -> void:
 	for child in board_markers_node.get_children():
 		child.queue_free()
 
-	if PlayerSettingsStore.is_enemy_attack_markers_enabled():
+	if PlayerSettingsStore.is_enemy_attack_markers_enabled() and is_local_view_ready():
 		add_enemy_attack_markers()
-	if PlayerSettingsStore.is_last_move_arrow_enabled():
+	if PlayerSettingsStore.is_last_move_arrow_enabled() and is_local_view_ready():
 		add_last_move_arrow_marker()
 
 func add_enemy_attack_markers() -> void:
@@ -233,6 +235,11 @@ func get_local_view_color() -> int:
 	if local_view_color_provider.is_valid():
 		return int(local_view_color_provider.call())
 	return 1
+
+func is_local_view_ready() -> bool:
+	if local_view_ready_provider.is_valid():
+		return bool(local_view_ready_provider.call())
+	return true
 
 func get_own_player_id() -> int:
 	if own_player_id_provider.is_valid():

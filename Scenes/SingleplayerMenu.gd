@@ -2,7 +2,6 @@ extends Control
 
 @onready var start_button: Button = $VBoxContainer/StartButton
 @onready var deck_option_button: OptionButton = $VBoxContainer/DeckOptionButton
-@onready var opponent_controller_option_button: OptionButton = $VBoxContainer/OpponentControllerOptionButton
 @onready var ai_difficulty_option_button: OptionButton = $VBoxContainer/AIDifficultyOptionButton
 @onready var ai_deck_option_button: OptionButton = $VBoxContainer/AIDeckOptionButton
 
@@ -10,7 +9,6 @@ var deck_ids: Array[String] = []
 var ai_deck_ids: Array[String] = []
 
 func _ready() -> void:
-	_populate_opponent_controller_options()
 	_populate_deck_options()
 	_populate_ai_difficulty_options()
 
@@ -22,7 +20,7 @@ func _on_start_button_pressed() -> void:
 	GameConfig.is_singleplayer = true
 	GameConfig.is_hosting = true
 	GameConfig.server_ip = ""
-	GameConfig.set_singleplayer_controllers(GameConfig.CONTROLLER_HUMAN, get_selected_opponent_controller())
+	GameConfig.set_singleplayer_controllers(GameConfig.CONTROLLER_HUMAN, GameConfig.CONTROLLER_AI)
 	get_tree().change_scene_to_file("res://Scenes/main.tscn")
 
 func _on_back_button_pressed() -> void:
@@ -72,20 +70,6 @@ func _populate_deck_options() -> void:
 	ai_deck_option_button.select(selected_ai_index)
 	_save_selected_deck()
 	_save_selected_ai_deck()
-
-func _populate_opponent_controller_options() -> void:
-	opponent_controller_option_button.clear()
-	opponent_controller_option_button.add_item("AI")
-	opponent_controller_option_button.set_item_metadata(opponent_controller_option_button.get_item_count() - 1, GameConfig.CONTROLLER_AI)
-	opponent_controller_option_button.add_item("Codex")
-	opponent_controller_option_button.set_item_metadata(opponent_controller_option_button.get_item_count() - 1, GameConfig.CONTROLLER_CODEX)
-	opponent_controller_option_button.select(0)
-
-func get_selected_opponent_controller() -> String:
-	var selected_index: int = opponent_controller_option_button.selected
-	if selected_index < 0:
-		return GameConfig.CONTROLLER_AI
-	return str(opponent_controller_option_button.get_item_metadata(selected_index))
 
 func _populate_ai_difficulty_options() -> void:
 	ai_difficulty_option_button.clear()

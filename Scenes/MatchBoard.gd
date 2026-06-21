@@ -41,6 +41,8 @@ const DECK_COUNTER_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/DeckCoun
 const MATCH_INPUT_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchInputController.gd")
 const MATCH_BOARD_LIFECYCLE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchBoardLifecycleController.gd")
 const CARD_HAND_STATE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/CardHandStateController.gd")
+const PORTRAIT_PLACEMENT_PREVIEW_PATH: NodePath = NodePath("PortraitPreviewLayer/PortraitPlacementPreview")
+const RESPONSIVE_REFERENCE_VIEWPORT_SIZE = Vector2(1280.0, 720.0)
 const HOVER_DESCRIPTION_CARD_BASE_TEXTURE = preload("res://Assets/stamp_base.svg")
 
 const BOARD_TILE_TEXTURE = preload("res://Assets/board_tile.svg")
@@ -75,6 +77,8 @@ const PIECE_INVISIBILITY_REFRACT_SHADER = preload("res://Shaders/piece_invisibil
 const PIECE_EXPIRE_DISSOLVE_SHADER = preload("res://Shaders/piece_expire_dissolve.gdshader")
 const MOVE_OPTION_DOT_SHADER = preload("res://Shaders/move_option_dot.gdshader")
 const HIDDEN_CARD_INVISIBILITY_SHADER = preload("res://Shaders/hidden_card_invisibility.gdshader")
+const BOARD_KUWAHARA_SHADER = preload("res://Shaders/board_kuwahara.gdshader")
+const PIECE_KUWAHARA_SHADER = preload("res://Shaders/piece_kuwahara.gdshader")
 const MOVE_OPTION_DOT_CELL_WIDTH_RATIO: float = 0.45
 const MOVE_OPTION_DOT_SHADER_SPEED: float = 0.24
 const MOVE_OPTION_DOT_SHADER_GLOW_STRENGTH: float = 2.0
@@ -106,9 +110,12 @@ const BOARD_TILE_OCCLUSION_LIP_INSET_FACTOR: float = 0.18
 const BOARD_TILE_TRANSITION_COVER_Z_INDEX: int = 5
 const BOARD_FRAME_WIDTH: float = CELL_WIDTH
 const BOARD_FRAME_VERTICAL_EXTENSION: float = CELL_WIDTH
-const BOARD_FRAME_COLOR = Color(0.18, 0.105, 0.055, 1.0)
+const BOARD_FRAME_COLOR = Color(0.40, 0.32, 0.30, 1.0)
 const BOARD_SIDE_THICKNESS: float = CELL_WIDTH * 0.58
-const BOARD_SIDE_COLOR = Color(0.085, 0.052, 0.034, 1.0)
+const BOARD_SIDE_COLOR = Color(0.02, 0.12, 0.16, 1.0)
+const BOARD_SHADER_OVERLAY_Z_INDEX: int = 220
+const BOARD_SHADER_RADIUS: int = 1
+const PIECE_KUWAHARA_RADIUS: int = 2
 const DEFAULT_PIECE_VISUAL_HEIGHT: float = 24.0
 const PIECE_AUTO_FIT_HEIGHT_THRESHOLD: float = DEFAULT_PIECE_VISUAL_HEIGHT * 2.0
 const DEFAULT_PIECE_BOTTOM_INSET: float = 1.5
@@ -216,11 +223,12 @@ const PIECE_FREEZE_SQUARE_Z_INDEX: int = 0
 const PIECE_FREEZE_SQUARE_INSET: float = 0.0
 const PIECE_FREEZE_SQUARE_ALPHA: float = 0.74
 const PIECE_ATTACH_GLOW_NAME = "PieceAttachGlow"
+const PIECE_ATTACH_TARGET_GLOW_NAME = "PieceAttachTargetGlow"
 const PIECE_ATTACH_RAYS_NAME = "PieceAttachRays"
 const PIECE_ATTACH_MORPH_NAME = "PieceAttachMorph"
-const PIECE_ATTACH_GLOW_Z_INDEX = 0
-const PIECE_ATTACH_MORPH_Z_INDEX = 0
-const PIECE_ATTACH_RAYS_Z_INDEX = 0
+const PIECE_ATTACH_GLOW_Z_INDEX = 26
+const PIECE_ATTACH_MORPH_Z_INDEX = 1
+const PIECE_ATTACH_RAYS_Z_INDEX = 25
 const PIECE_EFFECT_OCCLUSION_DIM_NAME = "PieceEffectOcclusionDim"
 const PIECE_EFFECT_OCCLUSION_DIM_Z_INDEX = 0
 const PIECE_ATTACH_GLOW_COLOR = Color(1.0, 0.82, 0.28, 1.0)
@@ -232,6 +240,7 @@ const PIECE_ATTACH_GLOW_SWITCH_DURATION: float = 0.06
 const PIECE_ATTACH_IN_DURATION: float = 0.32
 const PIECE_ATTACH_PRE_SWITCH_HOLD_DURATION: float = 0.14
 const PIECE_ATTACH_MORPH_DURATION: float = 1.00
+const PIECE_ATTACH_TARGET_APPEAR_DURATION: float = 0.50
 const PIECE_ATTACH_POST_SWITCH_HOLD_DURATION: float = 0.20
 const PIECE_ATTACH_OUT_DURATION: float = 0.32
 const PIECE_ATTACH_MORPH_NOISE_STRENGTH: float = 0.14
@@ -285,8 +294,9 @@ const TURN_TIMER_GAP: float = 8.0
 const TURN_TIMER_Z_INDEX: int = 961
 const PLAYER_NAME_LABEL_SIZE = Vector2(180, 28)
 const PLAYER_NAME_LABEL_GAP = 8
-const PLAYER_PORTRAIT_SIZE = Vector2(232, 272)
+const PLAYER_PORTRAIT_SIZE = Vector2(116, 136)
 const PLAYER_PORTRAIT_MARGIN = 22
+const PLAYER_PORTRAIT_TOP_POSITION = Vector2(70, 4)
 const PLAYER_PORTRAIT_Z_INDEX: int = 928
 const RULES_INFO_BUTTON_SIZE = Vector2(40, 40)
 const RULES_INFO_PANEL_SIZE = Vector2(310, 286)
@@ -378,6 +388,15 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @export var board_shadow_offset: Vector2 = Vector2(9.0, 14.0)
 @export_range(0.0, 24.0, 0.5) var board_shadow_spread: float = 7.0
 @export_range(1, 8, 1) var board_shadow_steps: int = 4
+
+@export_group("Board Shader")
+@export var board_shader_enabled: bool = true
+@export_range(0.0, 128.0, 1.0) var board_shader_margin: float = CELL_WIDTH * 3.5
+@export var board_shader_offset: Vector3 = Vector3.ZERO
+
+@export_group("Piece Shader")
+@export var piece_kuwahara_enabled: bool = false
+@export var piece_kuwahara_offset: Vector3 = Vector3.ZERO
 
 @onready var pieces_node = $Pieces
 @onready var dots = $Dots
@@ -475,6 +494,10 @@ var piece_effects_node: Node2D
 var attach_point_light_texture: Texture2D
 var ambient_board_light: PointLight2D
 var ambient_board_fill_light: PointLight2D
+var board_shader_backbuffer: BackBufferCopy
+var board_shader_overlay: ColorRect
+var board_shader_material: ShaderMaterial
+var piece_kuwahara_material: ShaderMaterial
 var current_last_move: Dictionary = {}
 var current_board_effects: Array = []
 var current_player_base_fields: Dictionary = {
@@ -643,6 +666,7 @@ func sync_board_marker_controller() -> void:
 		"board_effects_provider": Callable(self, "get_current_board_effects"),
 		"current_last_move_provider": Callable(self, "get_current_last_move"),
 		"local_view_color_provider": Callable(self, "get_local_view_color"),
+		"local_view_ready_provider": Callable(self, "is_local_view_ready"),
 		"own_player_id_provider": Callable(self, "get_own_player_id"),
 		"can_move_action_now_provider": Callable(self, "can_move_action_now"),
 		"can_player_control_piece_at_provider": Callable(self, "can_player_control_piece_at"),
@@ -870,7 +894,7 @@ func sync_piece_visual_controller() -> void:
 		"piece_footprint_stable_width_band_ratio": PIECE_FOOTPRINT_STABLE_WIDTH_BAND_RATIO,
 		"piece_footprint_stable_row_sample_count": PIECE_FOOTPRINT_STABLE_ROW_SAMPLE_COUNT,
 		"piece_light_occluder_footprint_min_radius_bounds_factor": PIECE_LIGHT_OCCLUDER_FOOTPRINT_MIN_RADIUS_BOUNDS_FACTOR,
-		"attach_effect_names": [PIECE_ATTACH_GLOW_NAME, PIECE_ATTACH_RAYS_NAME, PIECE_ATTACH_MORPH_NAME],
+		"attach_effect_names": [PIECE_ATTACH_GLOW_NAME, PIECE_ATTACH_TARGET_GLOW_NAME, PIECE_ATTACH_RAYS_NAME, PIECE_ATTACH_MORPH_NAME],
 	})
 
 func get_piece_visuals():
@@ -1061,6 +1085,7 @@ func sync_piece_effect_animator() -> void:
 		"attach_point_light_energy": ATTACH_POINT_LIGHT_ENERGY,
 		"attach_piece_light_energy": ATTACH_PIECE_LIGHT_ENERGY,
 		"piece_attach_glow_name": PIECE_ATTACH_GLOW_NAME,
+		"piece_attach_target_glow_name": PIECE_ATTACH_TARGET_GLOW_NAME,
 		"piece_attach_rays_name": PIECE_ATTACH_RAYS_NAME,
 		"piece_attach_morph_name": PIECE_ATTACH_MORPH_NAME,
 		"piece_effect_occlusion_dim_name": PIECE_EFFECT_OCCLUSION_DIM_NAME,
@@ -1081,6 +1106,7 @@ func sync_piece_effect_animator() -> void:
 		"piece_attach_in_duration": PIECE_ATTACH_IN_DURATION,
 		"piece_attach_pre_switch_hold_duration": PIECE_ATTACH_PRE_SWITCH_HOLD_DURATION,
 		"piece_attach_morph_duration": PIECE_ATTACH_MORPH_DURATION,
+		"piece_attach_target_appear_duration": PIECE_ATTACH_TARGET_APPEAR_DURATION,
 		"piece_attach_post_switch_hold_duration": PIECE_ATTACH_POST_SWITCH_HOLD_DURATION,
 		"piece_attach_morph_noise_strength": PIECE_ATTACH_MORPH_NOISE_STRENGTH,
 		"piece_attach_morph_shine_strength": PIECE_ATTACH_MORPH_SHINE_STRENGTH,
@@ -1409,8 +1435,9 @@ func sync_turn_hud_controller() -> void:
 		"end_turn_indicator_z_index": END_TURN_INDICATOR_Z_INDEX,
 		"player_name_label_size": PLAYER_NAME_LABEL_SIZE,
 		"player_name_label_gap": PLAYER_NAME_LABEL_GAP,
-		"player_portrait_size": PLAYER_PORTRAIT_SIZE,
+		"player_portrait_size": get_scaled_player_portrait_size(),
 		"player_portrait_margin": PLAYER_PORTRAIT_MARGIN,
+		"player_portrait_top_position": get_player_portrait_top_position(),
 		"player_portrait_z_index": PLAYER_PORTRAIT_Z_INDEX,
 		"rules_info_button_size": RULES_INFO_BUTTON_SIZE,
 		"rules_info_panel_size": RULES_INFO_PANEL_SIZE,
@@ -1441,6 +1468,44 @@ func sync_turn_hud_controller() -> void:
 func get_turn_hud_controller():
 	initialize_turn_hud_controller()
 	return turn_hud_controller
+
+func get_player_portrait_top_position() -> Vector2:
+	var preview := get_node_or_null(PORTRAIT_PLACEMENT_PREVIEW_PATH) as Control
+	if preview != null:
+		return scale_canvas_point_from_reference(preview.position)
+	return scale_canvas_point_from_reference(PLAYER_PORTRAIT_TOP_POSITION)
+
+func get_scaled_player_portrait_size() -> Vector2:
+	var preview := get_node_or_null(PORTRAIT_PLACEMENT_PREVIEW_PATH) as Control
+	if preview != null and preview.size.x > 0.0 and preview.size.y > 0.0:
+		return scale_canvas_size_from_reference(preview.size)
+	return scale_canvas_size_from_reference(PLAYER_PORTRAIT_SIZE)
+
+func update_portrait_placement_preview_mask() -> void:
+	var preview := get_node_or_null(PORTRAIT_PLACEMENT_PREVIEW_PATH) as PortraitView
+	if preview != null:
+		preview.use_scene_mask = true
+
+func hide_portrait_placement_preview() -> void:
+	update_portrait_placement_preview_mask()
+	var preview_layer := get_node_or_null("PortraitPreviewLayer") as CanvasLayer
+	if preview_layer != null:
+		preview_layer.visible = false
+
+func scale_canvas_point_from_reference(point: Vector2) -> Vector2:
+	return point * get_canvas_scale_from_reference()
+
+func scale_canvas_size_from_reference(source_size: Vector2) -> Vector2:
+	return source_size * get_canvas_scale_from_reference()
+
+func get_canvas_scale_from_reference() -> Vector2:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return Vector2.ONE
+	return Vector2(
+		viewport_size.x / RESPONSIVE_REFERENCE_VIEWPORT_SIZE.x,
+		viewport_size.y / RESPONSIVE_REFERENCE_VIEWPORT_SIZE.y
+	)
 
 func initialize_match_input_controller() -> void:
 	if match_input_controller == null:
@@ -1576,6 +1641,80 @@ func create_ambient_board_light() -> void:
 		ambient_board_light.shadow_item_cull_mask = PIECE_LIGHT_OCCLUDER_MASK
 		ambient_board_light.position = AMBIENT_BOARD_LIGHT_OFFSET
 		add_child(ambient_board_light)
+
+func create_board_shader_overlay() -> void:
+	if !board_shader_enabled:
+		remove_board_shader_overlay()
+		return
+
+	if board_shader_material == null:
+		board_shader_material = ShaderMaterial.new()
+		board_shader_material.shader = BOARD_KUWAHARA_SHADER
+	update_board_shader_material()
+
+	if board_shader_backbuffer == null or !is_instance_valid(board_shader_backbuffer):
+		board_shader_backbuffer = BackBufferCopy.new()
+		board_shader_backbuffer.name = "BoardShaderBackBuffer"
+		board_shader_backbuffer.copy_mode = BackBufferCopy.COPY_MODE_VIEWPORT
+		board_shader_backbuffer.z_as_relative = false
+		board_shader_backbuffer.z_index = BOARD_SHADER_OVERLAY_Z_INDEX - 1
+		add_child(board_shader_backbuffer)
+
+	if board_shader_overlay == null or !is_instance_valid(board_shader_overlay):
+		board_shader_overlay = ColorRect.new()
+		board_shader_overlay.name = "BoardShaderOverlay"
+		board_shader_overlay.color = Color.WHITE
+		board_shader_overlay.material = board_shader_material
+		board_shader_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		board_shader_overlay.z_as_relative = false
+		board_shader_overlay.z_index = BOARD_SHADER_OVERLAY_Z_INDEX
+		board_shader_overlay.light_mask = 0
+		add_child(board_shader_overlay)
+
+	update_board_shader_overlay_rect()
+
+func remove_board_shader_overlay() -> void:
+	if board_shader_overlay != null and is_instance_valid(board_shader_overlay):
+		board_shader_overlay.queue_free()
+	if board_shader_backbuffer != null and is_instance_valid(board_shader_backbuffer):
+		board_shader_backbuffer.queue_free()
+	board_shader_overlay = null
+	board_shader_backbuffer = null
+
+func update_board_shader_material() -> void:
+	if board_shader_material == null:
+		return
+	board_shader_material.set_shader_parameter("radius", BOARD_SHADER_RADIUS)
+	board_shader_material.set_shader_parameter("offset", board_shader_offset)
+
+func update_board_shader_overlay_rect() -> void:
+	if board_shader_overlay == null or !is_instance_valid(board_shader_overlay):
+		return
+
+	var overlay_rect: Rect2 = get_board_shader_overlay_rect()
+	board_shader_overlay.position = overlay_rect.position
+	board_shader_overlay.size = overlay_rect.size
+
+func get_board_shader_overlay_rect() -> Rect2:
+	var board_polygon: PackedVector2Array = get_projected_board_rect_polygon(
+		BOARD_FRAME_WIDTH,
+		BOARD_FRAME_VERTICAL_EXTENSION,
+		false
+	)
+	if board_polygon.size() == 0:
+		return BoardConfig.get_board_rect_local().grow(board_shader_margin)
+
+	return get_board_geometry().get_points_bounds_local(board_polygon).grow(board_shader_margin)
+
+func get_piece_kuwahara_material() -> ShaderMaterial:
+	if !piece_kuwahara_enabled:
+		return null
+	if piece_kuwahara_material == null:
+		piece_kuwahara_material = ShaderMaterial.new()
+		piece_kuwahara_material.shader = PIECE_KUWAHARA_SHADER
+	piece_kuwahara_material.set_shader_parameter("radius", PIECE_KUWAHARA_RADIUS)
+	piece_kuwahara_material.set_shader_parameter("offset", piece_kuwahara_offset)
+	return piece_kuwahara_material
 
 func create_pieces_from_board():
 	piece_objects.clear()
@@ -1725,6 +1864,9 @@ func get_local_view_color() -> int:
 		return get_controllable_color()
 	return get_own_color()
 
+func is_local_view_ready() -> bool:
+	return side != null or GameConfig.is_singleplayer or tutorial_mode_active
+
 func get_controllable_color() -> int:
 	if side == null:
 		return 1 if white else -1
@@ -1780,9 +1922,19 @@ func is_tutorial_exchange_card_allowed(owner_color: int, card_name: String, hand
 		"hand_index": hand_index,
 	}, emit_rejection)
 
-func complete_card_exchange(owner_color: int, card_name: String, hand_index: int, should_record_name: bool) -> void:
+func complete_card_exchange(owner_color: int, card_name: String, hand_index: int, should_record_name: bool, source_global_position = null) -> void:
 	if should_record_name:
 		get_card_hand_state_controller().record_exchanged_card_name_this_turn(owner_color, card_name)
+		var return_animation: Dictionary = {
+			"source_player_id": get_player_id_for_color(owner_color),
+			"target_player_id": get_player_id_for_color(owner_color),
+			"card_name": card_name,
+			"source_zone": "hand",
+			"target_zone": "deck",
+		}
+		if source_global_position is Vector2:
+			return_animation["source_global_position"] = source_global_position
+		get_card_animation_controller().queue_card_return_to_deck_animation(return_animation)
 	get_turn_action_state_controller().mark_card_exchanged_this_turn(owner_color)
 	card_exchanged.emit(card_name, owner_color, hand_index)
 
@@ -1868,8 +2020,9 @@ func can_attach_card_to_piece(piece_position: Vector2, card_name: String = "", o
 		return false
 	if pending_card_attach_positions.has(piece_position):
 		return false
+	var action_owner_color: int = owner_color if owner_color != 0 else get_controllable_color()
 	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD, {
-		"owner_color": owner_color,
+		"owner_color": action_owner_color,
 		"piece_pos": piece_position,
 		"card_name": card_name,
 	}):
@@ -1908,6 +2061,9 @@ func apply_remote_card_attach(piece_position: Vector2, card_name: String, owner_
 
 func remove_card_from_hand(card_visual: CardVisual) -> String:
 	return get_card_hand_state_controller().remove_card_from_hand(card_visual)
+
+func remove_card_from_hand_index(owner_color: int, hand_index: int, should_draw_replacement: bool = false, replacement_card_name: String = "") -> String:
+	return get_card_hand_state_controller().remove_card_from_hand_index(owner_color, hand_index, should_draw_replacement, replacement_card_name)
 
 func get_card_visual_index(card_visual: CardVisual) -> int:
 	return get_card_hand_state_controller().get_card_visual_index(card_visual)
@@ -2478,7 +2634,7 @@ func prepare_piece_shatter_respawn_reveals(animations: Array[Dictionary]) -> voi
 func parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals: Array) -> Array[Dictionary]:
 	return get_match_state_sync_controller().parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals)
 
-func prepare_pending_edge_respawn_arrival_reveals(animations: Array[Dictionary]) -> void:
+func prepare_pending_edge_respawn_arrival_reveals(animations: Array) -> void:
 	get_piece_respawn_fragment_coordinator().prepare_pending_edge_respawn_arrival_reveals(animations)
 
 func is_piece_shatter_respawn_reveal_pending(board_pos: Vector2) -> bool:
@@ -2603,7 +2759,7 @@ func add_pending_edge_respawn_fragment_marker(piece_color: int, fragment: Sprite
 func take_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Sprite2D]:
 	return get_piece_respawn_fragment_coordinator().take_pending_edge_respawn_fragment_markers(piece_color)
 
-func play_pending_edge_respawn_arrival_animations(animations: Array[Dictionary]) -> void:
+func play_pending_edge_respawn_arrival_animations(animations: Array) -> void:
 	get_piece_respawn_fragment_coordinator().play_pending_edge_respawn_arrival_animations(animations)
 
 func create_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Sprite2D]:
@@ -2771,9 +2927,13 @@ func can_player_control_piece_at(pos: Vector2, player_id: int) -> bool:
 	return CardEffectResolver.can_player_control_piece(piece, player_id)
 
 func can_control_current_turn() -> bool:
-	return !game_over && (side == null || side == white)
+	if game_over:
+		return false
+	if side == null:
+		return GameConfig.is_singleplayer or tutorial_mode_active
+	return side == white
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}, viewer_player_id: int = -1, turn_action_state: Dictionary = {}):
 	get_server_state_update_controller().update_from_server_state(
 		pieces_data,
 		player_hands,
@@ -2791,7 +2951,9 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 		recent_pending_respawn_queues,
 		recent_pending_respawn_arrivals,
 		last_move,
-		player_portraits
+		player_portraits,
+		viewer_player_id,
+		turn_action_state
 	)
 
 func should_skip_visual_animations() -> bool:

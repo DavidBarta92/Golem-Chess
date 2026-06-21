@@ -197,9 +197,6 @@ func serialize_legal_actions(host) -> Dictionary:
 		}],
 	}
 
-	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
-		return legal_actions
-
 	var hand_card_names: Array = game_state.player_hands.get(player_id, [])
 	for position_value in game_state.pieces:
 		var pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
@@ -221,15 +218,16 @@ func serialize_legal_actions(host) -> Dictionary:
 				"note": "Attach exhausts the piece this turn; these moves are for later turns.",
 			})
 
-	var existing_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects)
-	for move in existing_moves:
-		legal_actions["move_piece"].append({
-			"type": "move_piece",
-			"player_id": player_id,
-			"from": vector2_to_array(AIStateSimulator.get_move_from(move)),
-			"to": vector2_to_array(AIStateSimulator.get_move_to(move)),
-			"card_name": get_move_card_name(move),
-		})
+	if !bool(game_state.moved_piece_this_turn.get(player_id, false)):
+		var existing_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects)
+		for move in existing_moves:
+			legal_actions["move_piece"].append({
+				"type": "move_piece",
+				"player_id": player_id,
+				"from": vector2_to_array(AIStateSimulator.get_move_from(move)),
+				"to": vector2_to_array(AIStateSimulator.get_move_to(move)),
+				"card_name": get_move_card_name(move),
+			})
 
 	if host.can_exchange_card_for_player(player_id):
 		for hand_index in range(hand_card_names.size()):

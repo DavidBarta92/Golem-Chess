@@ -40,6 +40,11 @@ var resolution_options: Array[Vector2i] = []
 var fps_limit_options: Array[int] = []
 
 func _ready():
+	if should_start_dedicated_server_from_launch():
+		prepare_dedicated_server_launch()
+		call_deferred("launch_dedicated_server_scene")
+		return
+
 	PlayerSettingsStore.ensure_loaded()
 	PlayerProgressStore.ensure_loaded()
 	ai_vs_ai_controls.visible = false
@@ -58,6 +63,56 @@ func _ready():
 	_connect_once(open_ai_logs_button.pressed, Callable(self, "_on_open_ai_logs_button_pressed"))
 	_connect_once(reset_balance_sessions_button.pressed, Callable(self, "_on_reset_balance_sessions_button_pressed"))
 	_update_ai_vs_ai_deck_controls()
+
+func launch_dedicated_server_scene() -> void:
+	if get_tree():
+		get_tree().change_scene_to_file("res://Scenes/main.tscn")
+
+func should_start_dedicated_server_from_launch() -> bool:
+	if GameConfig.is_dedicated_server or OS.has_feature("dedicated_server"):
+		return true
+	for argument in get_network_command_line_arguments():
+		var normalized_argument: String = str(argument).strip_edges().to_lower()
+		if normalized_argument == "--golem-server" or normalized_argument == "--server" or normalized_argument == "--dedicated-server":
+			return true
+	var env_server: String = OS.get_environment("GOLEM_SERVER").strip_edges().to_lower()
+	return env_server == "1" or env_server == "true" or env_server == "yes"
+
+func prepare_dedicated_server_launch() -> void:
+	GameConfig.is_singleplayer = false
+	GameConfig.is_hosting = false
+	GameConfig.is_dedicated_server = true
+	GameConfig.set_multiplayer_provider(GameConfig.MULTIPLAYER_PROVIDER_CUSTOM_SERVER)
+	GameConfig.set_matchmaking_mode(GameConfig.MATCHMAKING_MODE_ROOM_LIST)
+	apply_dedicated_server_port_override()
+	DebugLog.network("MainMenu resolved dedicated server launch on UDP port %d." % GameConfig.server_port)
+
+func apply_dedicated_server_port_override() -> void:
+	var arguments: Array[String] = get_network_command_line_arguments()
+	for index in range(arguments.size()):
+		var argument: String = str(arguments[index]).strip_edges()
+		var normalized_argument: String = argument.to_lower()
+		if normalized_argument.begins_with("--port="):
+			GameConfig.set_server_port(argument.substr("--port=".length()))
+		elif normalized_argument.begins_with("--server-port="):
+			GameConfig.set_server_port(argument.substr("--server-port=".length()))
+		elif normalized_argument == "--port" or normalized_argument == "--server-port":
+			if index + 1 < arguments.size():
+				GameConfig.set_server_port(arguments[index + 1])
+
+	var env_port: String = OS.get_environment("GOLEM_PORT").strip_edges()
+	if !env_port.is_empty():
+		GameConfig.set_server_port(env_port)
+
+func get_network_command_line_arguments() -> Array[String]:
+	var arguments: Array[String] = []
+	for argument in OS.get_cmdline_args():
+		arguments.append(str(argument))
+	for argument in OS.get_cmdline_user_args():
+		var user_argument: String = str(argument)
+		if !arguments.has(user_argument):
+			arguments.append(user_argument)
+	return arguments
 
 func _connect_once(signal_value: Signal, callable: Callable) -> void:
 	if !signal_value.is_connected(callable):

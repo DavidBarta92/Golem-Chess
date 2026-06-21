@@ -22,7 +22,9 @@ func update_from_server_state(
 	recent_pending_respawn_queues: Array = [],
 	recent_pending_respawn_arrivals: Array = [],
 	last_move: Dictionary = {},
-	player_portraits: Dictionary = {}
+	player_portraits: Dictionary = {},
+	viewer_player_id: int = -1,
+	turn_action_state: Dictionary = {}
 ) -> void:
 	var previous_piece_visual_state: Dictionary = match_board.get_piece_visual_state_snapshot()
 	var previous_hidden_card_counts: Dictionary = match_board.hidden_card_counts.duplicate()
@@ -36,6 +38,7 @@ func update_from_server_state(
 
 	var turn_transition: Dictionary = match_board.get_match_state_sync_controller().get_turn_transition_from_server(match_board.white, current_turn, match_board.has_received_server_state)
 	match_board.white = bool(turn_transition.get("is_white_turn", match_board.white))
+	apply_viewer_player_id(viewer_player_id)
 	var should_emit_turn_ended: bool = bool(turn_transition.get("should_emit_turn_ended", false))
 	var server_ending_color: int = int(turn_transition.get("server_ending_color", 0))
 	if bool(turn_transition.get("changed_turn", false)):
@@ -51,7 +54,8 @@ func update_from_server_state(
 	match_board.current_player_names = match_board.get_match_state_sync_controller().parse_player_names(player_names, match_board.current_player_names)
 	match_board.current_player_portraits = match_board.get_match_state_sync_controller().parse_player_portraits(player_portraits, match_board.current_player_portraits)
 	match_board.current_last_move = match_board.get_match_state_sync_controller().parse_last_move(last_move)
-	match_board.get_local_state_mutator().sync_moved_piece_this_turn_from_server_state(match_board.current_last_move)
+	if !apply_turn_action_state_from_server(turn_action_state):
+		apply_missing_turn_action_state_fallback()
 	match_board.update_end_turn_button()
 	match_board.get_turn_hud_controller().update_action_status_ui()
 	match_board.white_card_hand = match_board.create_card_hand_from_names(current_white_hand_names)
@@ -132,3 +136,41 @@ func update_from_server_state(
 		return
 
 	match_board.finish_server_state_visual_update(visual_context)
+
+func apply_viewer_player_id(viewer_player_id: int) -> void:
+	if viewer_player_id != 0 and viewer_player_id != 1:
+		return
+	var viewer_side: bool = viewer_player_id == 0
+	match_board.side = viewer_side
+	var camera: Camera2D = match_board.get_node_or_null("../Camera2D") as Camera2D
+	if camera != null:
+		camera.global_rotation_degrees = 0 if viewer_side else 180
+
+func apply_turn_action_state_from_server(turn_action_state: Dictionary) -> bool:
+	if turn_action_state.is_empty():
+		return false
+
+	for player_id in [0, 1]:
+		var owner_color: int = match_board.get_color_for_player_id(player_id)
+		match_board.attached_card_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "attached_card_this_turn", player_id)
+		match_board.moved_piece_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "moved_piece_this_turn", player_id)
+		match_board.exchanged_card_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "exchanged_card_this_turn", player_id)
+	return true
+
+func apply_missing_turn_action_state_fallback() -> void:
+	var current_color: int = match_board.get_current_turn_color()
+	match_board.moved_piece_this_turn[current_color] = false
+
+func get_turn_action_flag(turn_action_state: Dictionary, flag_name: String, player_id: int) -> bool:
+	var flags_value = turn_action_state.get(flag_name, {})
+	if !(flags_value is Dictionary):
+		return false
+
+	var flags: Dictionary = flags_value
+	if flags.has(player_id):
+		return bool(flags[player_id])
+
+	var player_key: String = str(player_id)
+	if flags.has(player_key):
+		return bool(flags[player_key])
+	return false

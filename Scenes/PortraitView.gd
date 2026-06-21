@@ -1,3 +1,4 @@
+@tool
 extends Control
 class_name PortraitView
 
@@ -29,6 +30,11 @@ const HEAD_MOTION_MIN_INTERVAL: float = 2.8
 const HEAD_MOTION_MAX_INTERVAL: float = 6.5
 const HEAD_MOTION_MIN_DURATION: float = 0.28
 const HEAD_MOTION_MAX_DURATION: float = 0.58
+const PNG_EYELASH_BLINK_DROP_SCALE: float = 0.3
+const PNG_EYELASH_OCCLUSION_BASE_Y: float = 125.0
+const SCENE_MASK_SHADER = preload("res://Shaders/portrait_scene_mask.gdshader")
+const SCENE_MASK_TEXTURE = preload("res://Assets/portrait_mask_local.png")
+const EYE_OCCLUSION_SHADER = preload("res://Shaders/portrait_eye_occlusion.gdshader")
 
 @export var portrait_config: PortraitConfig:
 	set(value):
@@ -40,15 +46,47 @@ const HEAD_MOTION_MAX_DURATION: float = 0.58
 
 @export var animation_enabled: bool = true
 @export var show_frame: bool = true
+@export var show_background: bool = false:
+	set(value):
+		_show_background = value
+		if is_inside_tree():
+			update_background_style()
+	get:
+		return _show_background
+@export var background_color: Color = Color(0.909804, 0.694118, 0.486275, 1.0):
+	set(value):
+		_background_color = value
+		if is_inside_tree():
+			update_background_style()
+	get:
+		return _background_color
+@export var use_scene_mask: bool = false:
+	set(value):
+		_use_scene_mask = value
+		if is_inside_tree():
+			apply_scene_mask()
+	get:
+		return _use_scene_mask
 
 var _portrait_config: PortraitConfig
+var _use_scene_mask: bool = false
+var _show_background: bool = false
+var _background_color: Color = Color(0.909804, 0.694118, 0.486275, 1.0)
+var mask_group: CanvasGroup
+var background_rect: ColorRect
 var canvas_root: Node2D
 var torso_root: Node2D
 var head_root: Node2D
 var face_root: Node2D
+var body_layer: Sprite2D
+var neck_layer: Sprite2D
 var torso_layer: Sprite2D
 var head_layer: Sprite2D
 var hair_layer: Sprite2D
+var facial_hair_layer: Sprite2D
+var eyebrows_layer: Sprite2D
+var eyelash_layer: Sprite2D
+var eyewhite_layer: Sprite2D
 var eyes_layer: Sprite2D
 var closed_eyes_layer: Sprite2D
 var pupils_layer: Sprite2D
@@ -64,6 +102,7 @@ var current_blink_amount: float = 0.0
 var applied_config: PortraitConfig
 var applied_signature: String = ""
 var layer_base_positions: Dictionary = {}
+var eye_occlusion_materials: Dictionary = {}
 var current_pupil_offset: Vector2 = Vector2.ZERO
 var pupil_from_offset: Vector2 = Vector2.ZERO
 var pupil_target_offset: Vector2 = Vector2.ZERO
@@ -91,7 +130,7 @@ func _ready() -> void:
 	if portrait_config == null:
 		portrait_config = PortraitLibrary.get_default_player_portrait()
 	set_portrait_config(portrait_config)
-	set_process(animation_enabled)
+	set_process(animation_enabled or Engine.is_editor_hint())
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
@@ -110,24 +149,80 @@ func build_node_tree() -> void:
 	if canvas_root != null:
 		return
 
-	canvas_root = Node2D.new()
-	canvas_root.name = "PortraitCanvas"
-	add_child(canvas_root)
+	mask_group = get_node_or_null("PortraitMaskGroup") as CanvasGroup
+	if mask_group == null:
+		mask_group = CanvasGroup.new()
+		mask_group.name = "PortraitMaskGroup"
+		add_child(mask_group)
+	mask_group.z_index = 0
 
-	torso_root = Node2D.new()
-	torso_root.name = "TorsoRoot"
-	canvas_root.add_child(torso_root)
+	background_rect = mask_group.get_node_or_null("PortraitBackground") as ColorRect
+	if background_rect == null:
+		background_rect = ColorRect.new()
+		background_rect.name = "PortraitBackground"
+		mask_group.add_child(background_rect)
+	background_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	background_rect.z_index = -1000
 
-	head_root = Node2D.new()
-	head_root.name = "HeadRoot"
+	canvas_root = mask_group.get_node_or_null("PortraitCanvas") as Node2D
+	if canvas_root == null:
+		canvas_root = Node2D.new()
+		canvas_root.name = "PortraitCanvas"
+		mask_group.add_child(canvas_root)
+
+	var mask_debug := get_node_or_null("PortraitMaskDebug") as Control
+	if mask_debug != null:
+		mask_debug.visible = Engine.is_editor_hint()
+		move_child(mask_debug, get_child_count() - 1)
+
+	torso_root = canvas_root.get_node_or_null("TorsoRoot") as Node2D
+	if torso_root == null:
+		torso_root = Node2D.new()
+		torso_root.name = "TorsoRoot"
+		canvas_root.add_child(torso_root)
+
+	head_root = canvas_root.get_node_or_null("HeadRoot") as Node2D
+	if head_root == null:
+		head_root = Node2D.new()
+		head_root.name = "HeadRoot"
+		canvas_root.add_child(head_root)
 	head_root.position = get_head_pivot()
-	canvas_root.add_child(head_root)
 
-	face_root = Node2D.new()
-	face_root.name = "FaceRoot"
-	head_root.add_child(face_root)
+	face_root = head_root.get_node_or_null("FaceRoot") as Node2D
+	if face_root == null:
+		face_root = Node2D.new()
+		face_root.name = "FaceRoot"
+		head_root.add_child(face_root)
 
+	apply_scene_mask()
+	update_background_style()
 	arrange_canvas()
+
+func apply_scene_mask() -> void:
+	update_mask_group_material()
+	update_layer_scene_mask_materials()
+	update_background_style()
+
+func update_mask_group_material() -> void:
+	if mask_group == null:
+		return
+	if !_use_scene_mask:
+		mask_group.material = null
+		return
+	var material := mask_group.material as ShaderMaterial
+	if material == null or material.shader != SCENE_MASK_SHADER:
+		material = ShaderMaterial.new()
+		material.shader = SCENE_MASK_SHADER
+		mask_group.material = material
+	material.set_shader_parameter("mask_texture", SCENE_MASK_TEXTURE)
+
+func update_background_style() -> void:
+	if background_rect == null:
+		return
+
+	background_rect.visible = _show_background
+	background_rect.color = _background_color
+	background_rect.material = null
 
 func set_portrait_config(config: PortraitConfig) -> void:
 	var next_config: PortraitConfig = PortraitLibrary.config_from_data_or_default(config)
@@ -177,12 +272,19 @@ func set_turn_focus(enabled: bool) -> void:
 		start_pupil_motion(Vector2.ZERO)
 
 func rebuild_layers() -> void:
-	clear_layers(torso_root)
-	clear_layers(head_root)
+	clear_dynamic_layers(torso_root)
+	clear_dynamic_layers(head_root)
 	layer_base_positions.clear()
+	eye_occlusion_materials.clear()
+	body_layer = null
+	neck_layer = null
 	torso_layer = null
 	head_layer = null
 	hair_layer = null
+	facial_hair_layer = null
+	eyebrows_layer = null
+	eyelash_layer = null
+	eyewhite_layer = null
 	eyes_layer = null
 	closed_eyes_layer = null
 	pupils_layer = null
@@ -190,6 +292,7 @@ func rebuild_layers() -> void:
 	mouth_layer = null
 	brows_layer = null
 	mustache_layer = null
+	face_root = null
 
 	head_root.position = get_head_pivot()
 	head_root.rotation_degrees = 0.0
@@ -197,14 +300,98 @@ func rebuild_layers() -> void:
 	torso_root.position = Vector2.ZERO
 	torso_root.scale = Vector2.ONE
 
+	if !applied_config.png_part_ids.is_empty():
+		rebuild_png_layers()
+	else:
+		rebuild_legacy_layers()
+
+	apply_expression()
+	apply_pupil_position()
+	apply_blink_pose()
+
+func rebuild_png_layers() -> void:
+	var parts: Dictionary = applied_config.png_part_ids
+	var head_categories: Array[String] = [
+		"hair",
+		"facial_hair",
+		"eyebrows",
+		"pupils",
+		"eyelash",
+		"eyewhite",
+		"nose",
+		"mouth",
+		"head",
+	]
+	var body_categories: Array[String] = ["body", "neck"]
+
+	for category in PortraitLibrary.PNG_LAYER_ORDER:
+		var parent: Node2D = torso_root if category in body_categories else head_root
+		if !(category in head_categories) and !(category in body_categories):
+			continue
+		var layer: Sprite2D = add_layer(
+			parent,
+			category,
+			str(parts.get(category, "")),
+			Color.WHITE,
+			get_layer_local_offset(category, parent)
+		)
+		assign_png_layer(category, layer)
+
+	eyes_layer = eyelash_layer
+	brows_layer = eyebrows_layer
+	mustache_layer = facial_hair_layer
+	torso_layer = body_layer
+	setup_png_eye_occlusion()
+
+func setup_png_eye_occlusion() -> void:
+	if eyelash_layer == null or eyelash_layer.texture == null:
+		return
+	apply_eye_occlusion_material(eyewhite_layer)
+	apply_eye_occlusion_material(pupils_layer)
+
+func apply_eye_occlusion_material(layer: Sprite2D) -> void:
+	if layer == null:
+		return
+	var material := ShaderMaterial.new()
+	material.shader = EYE_OCCLUSION_SHADER
+	material.set_shader_parameter("scene_mask_texture", SCENE_MASK_TEXTURE)
+	material.set_shader_parameter("scene_mask_enabled", 0.0)
+	material.set_shader_parameter("occlusion_bottom_y_pixels", PNG_EYELASH_OCCLUSION_BASE_Y)
+	material.set_shader_parameter("mask_strength", 0.0)
+	layer.material = material
+	eye_occlusion_materials[layer] = material
+
+func update_layer_scene_mask_materials() -> void:
+	for layer in layer_base_positions.keys():
+		if layer is Sprite2D and is_instance_valid(layer):
+			apply_scene_mask_material_to_layer(layer as Sprite2D)
+	for material in eye_occlusion_materials.values():
+		var shader_material := material as ShaderMaterial
+		if shader_material != null:
+			shader_material.set_shader_parameter("scene_mask_enabled", 0.0)
+
+func apply_scene_mask_material_to_layer(layer: Sprite2D) -> void:
+	if layer == null:
+		return
+	if eye_occlusion_materials.has(layer):
+		var eye_material := eye_occlusion_materials[layer] as ShaderMaterial
+		if eye_material != null:
+			eye_material.set_shader_parameter("scene_mask_enabled", 0.0)
+		return
+	layer.material = null
+
+func rebuild_legacy_layers() -> void:
 	torso_layer = add_layer(torso_root, "torso", applied_config.torso_id, applied_config.clothing_color, get_layer_local_offset("torso", torso_root))
+	body_layer = torso_layer
 	head_layer = add_layer(head_root, "head", applied_config.head_id, applied_config.skin_color, get_layer_local_offset("head", head_root))
 	hair_layer = add_layer(head_root, "hair", applied_config.hair_id, applied_config.hair_color, get_layer_local_offset("hair", head_root))
 
-	face_root = Node2D.new()
-	face_root.name = "FaceRoot"
+	face_root = head_root.get_node_or_null("FaceRoot") as Node2D
+	if face_root == null:
+		face_root = Node2D.new()
+		face_root.name = "FaceRoot"
+		head_root.add_child(face_root)
 	face_root.z_index = 3
-	head_root.add_child(face_root)
 
 	pupils_layer = add_layer(face_root, "pupils", applied_config.pupils_id, applied_config.eye_color, get_layer_local_offset("pupils", face_root))
 	eyes_layer = add_layer(face_root, "eyes", applied_config.eyes_id, Color.WHITE, get_layer_local_offset("eyes", face_root))
@@ -214,9 +401,30 @@ func rebuild_layers() -> void:
 	nose_layer = add_layer(face_root, "nose", applied_config.nose_id, applied_config.skin_color.darkened(0.12), get_layer_local_offset("nose", face_root))
 	brows_layer = add_layer(face_root, "brows", applied_config.brows_id, applied_config.hair_color, get_layer_local_offset("brows", face_root))
 
-	apply_expression()
-	apply_pupil_position()
-	apply_blink_pose()
+func assign_png_layer(category: String, layer: Sprite2D) -> void:
+	match category:
+		"body":
+			body_layer = layer
+		"neck":
+			neck_layer = layer
+		"head":
+			head_layer = layer
+		"hair":
+			hair_layer = layer
+		"facial_hair":
+			facial_hair_layer = layer
+		"eyebrows":
+			eyebrows_layer = layer
+		"pupils":
+			pupils_layer = layer
+		"eyelash":
+			eyelash_layer = layer
+		"eyewhite":
+			eyewhite_layer = layer
+		"nose":
+			nose_layer = layer
+		"mouth":
+			mouth_layer = layer
 
 func add_layer(parent: Node2D, category: String, part_id: String, tint: Color, layer_offset: Vector2) -> Sprite2D:
 	var resolved_id: String = str(part_id).strip_edges()
@@ -227,28 +435,55 @@ func add_layer(parent: Node2D, category: String, part_id: String, tint: Color, l
 	if texture == null:
 		return null
 
-	var sprite := Sprite2D.new()
-	sprite.name = "%s_%s" % [category.capitalize(), resolved_id]
+	var sprite := get_or_create_layer(parent, category, resolved_id)
+	var created_by_code: bool = bool(sprite.get_meta("_created_by_code", false))
+	var base_position: Vector2 = sprite.position
+	if created_by_code:
+		base_position = layer_offset
+		sprite.position = layer_offset
+		sprite.remove_meta("_created_by_code")
+	sprite.name = get_layer_node_name(category, resolved_id)
 	sprite.texture = texture
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	sprite.centered = false
-	sprite.position = layer_offset
 	sprite.modulate = get_layer_tint(tint)
+	sprite.z_as_relative = false
+	sprite.z_index = PortraitLibrary.get_render_order_z_index(category)
 	sprite.set_meta("category", category)
-	sprite.set_meta("base_position", layer_offset)
+	sprite.set_meta("base_position", base_position)
 	sprite.set_meta("base_modulate", sprite.modulate)
-	parent.add_child(sprite)
-	layer_base_positions[sprite] = layer_offset
+	layer_base_positions[sprite] = base_position
+	apply_scene_mask_material_to_layer(sprite)
 	return sprite
 
-func clear_layers(parent: Node) -> void:
+func get_or_create_layer(parent: Node2D, category: String, part_id: String) -> Sprite2D:
+	var layer := find_layer(parent, category)
+	if layer != null:
+		return layer
+	var resolved_id: String = str(part_id).strip_edges()
+	layer = Sprite2D.new()
+	layer.name = get_layer_node_name(category, resolved_id)
+	layer.set_meta("_created_by_code", true)
+	parent.add_child(layer)
+	return layer
+
+func get_layer_node_name(category: String, part_id: String) -> String:
+	return "%s_%s" % [PortraitLibrary.normalize_category(category), str(part_id).strip_edges()]
+
+func clear_dynamic_layers(parent: Node) -> void:
 	for child in parent.get_children():
-		parent.remove_child(child)
-		child.queue_free()
+		if child is Sprite2D:
+			(child as Sprite2D).texture = null
+			(child as Sprite2D).material = null
+		clear_dynamic_layers(child)
 
 func find_layer(parent: Node, category: String) -> Sprite2D:
-	var prefix: String = category.capitalize()
+	var normalized_category := PortraitLibrary.normalize_category(category)
 	for child in parent.get_children():
+		if child is Sprite2D and get_layer_category(child as Sprite2D) == normalized_category:
+			return child
+	for child in parent.get_children():
+		var prefix: String = category.capitalize()
 		if child is Sprite2D and str(child.name).begins_with(prefix):
 			return child
 	return null
@@ -263,25 +498,36 @@ func apply_expression() -> void:
 		brows_layer.scale = Vector2.ONE
 		brows_layer.position = get_layer_base_position(brows_layer)
 
-	match applied_config.expression:
-		"happy":
-			mouth_id = "mouth_smile"
-			if brows_layer != null:
-				brows_layer.rotation_degrees = -1.4
-				brows_layer.position = get_layer_base_position(brows_layer) + Vector2(0.0, -2.0)
-		"stern":
-			mouth_id = "mouth_neutral"
-			if brows_layer != null:
-				brows_layer.rotation_degrees = 2.0
-				brows_layer.scale = Vector2(0.98, 1.0)
-				brows_layer.position = get_layer_base_position(brows_layer) + Vector2(0.0, 2.0)
-		"worried":
-			mouth_id = "mouth_frown"
-			if brows_layer != null:
-				brows_layer.rotation_degrees = -2.2
+	if applied_config.png_part_ids.is_empty():
+		match applied_config.expression:
+			"happy":
+				mouth_id = "mouth_smile"
+				if brows_layer != null:
+					brows_layer.rotation_degrees = -1.4
+					brows_layer.position = get_layer_base_position(brows_layer) + Vector2(0.0, -2.0)
+			"stern":
+				mouth_id = "mouth_neutral"
+				if brows_layer != null:
+					brows_layer.rotation_degrees = 2.0
+					brows_layer.scale = Vector2(0.98, 1.0)
+					brows_layer.position = get_layer_base_position(brows_layer) + Vector2(0.0, 2.0)
+			"worried":
+				mouth_id = "mouth_frown"
+				if brows_layer != null:
+					brows_layer.rotation_degrees = -2.2
+					brows_layer.position = get_layer_base_position(brows_layer) + Vector2(0.0, 1.0)
+	elif brows_layer != null:
+		match applied_config.expression:
+			"happy":
+				brows_layer.position = get_layer_base_position(brows_layer) + Vector2(0.0, -1.0)
+			"stern":
+				brows_layer.rotation_degrees = 1.0
+				brows_layer.position = get_layer_base_position(brows_layer) + Vector2(0.0, 1.0)
+			"worried":
+				brows_layer.rotation_degrees = -1.0
 				brows_layer.position = get_layer_base_position(brows_layer) + Vector2(0.0, 1.0)
 
-	if mouth_layer != null:
+	if mouth_layer != null and applied_config.png_part_ids.is_empty():
 		mouth_layer.texture = PortraitLibrary.get_part_texture("mouth", mouth_id)
 
 func get_layer_base_position(layer: Sprite2D) -> Vector2:
@@ -301,6 +547,11 @@ func get_layer_rest_position(layer: Sprite2D) -> Vector2:
 func get_layer_category(layer: Sprite2D) -> String:
 	if layer != null and layer.has_meta("category"):
 		return str(layer.get_meta("category"))
+	if layer != null:
+		var node_name := str(layer.name).to_lower()
+		for category in PortraitLibrary.REQUIRED_PNG_CATEGORIES:
+			if node_name.begins_with(category):
+				return category
 	return ""
 
 func get_layer_pose_offset(category: String) -> Vector2:
@@ -324,23 +575,37 @@ func get_layer_base_modulate(layer: Sprite2D) -> Color:
 	return Color.WHITE
 
 func reset_static_layer_positions() -> void:
-	for layer in [torso_layer, head_layer, hair_layer, eyes_layer, closed_eyes_layer, mouth_layer, mustache_layer, nose_layer, brows_layer]:
+	for layer in [body_layer, neck_layer, torso_layer, head_layer, hair_layer, facial_hair_layer, eyebrows_layer, eyelash_layer, eyewhite_layer, eyes_layer, closed_eyes_layer, pupils_layer, mouth_layer, mustache_layer, nose_layer, brows_layer]:
 		if layer != null and is_instance_valid(layer):
 			layer.position = get_layer_base_position(layer)
+			layer.scale = Vector2.ONE
 			set_layer_alpha(layer, 1.0)
 
 func arrange_canvas() -> void:
-	if canvas_root == null:
+	if mask_group == null:
 		return
 
 	var available_size: Vector2 = size
 	if available_size.x <= 0.0 or available_size.y <= 0.0:
 		available_size = custom_minimum_size
 
-	var canvas_size: Vector2 = get_canvas_size()
-	var scale_factor: float = minf(available_size.x / canvas_size.x, available_size.y / canvas_size.y)
-	canvas_root.scale = Vector2.ONE * scale_factor
-	canvas_root.position = (available_size - canvas_size * scale_factor) * 0.5
+	var composition_size: Vector2 = get_composition_size()
+	var scale_factor: float = minf(available_size.x / composition_size.x, available_size.y / composition_size.y)
+	var canvas_position: Vector2 = (available_size - composition_size * scale_factor) * 0.5
+
+	if background_rect != null:
+		background_rect.position = Vector2.ZERO
+		background_rect.size = composition_size
+
+	mask_group.scale = Vector2.ONE * scale_factor
+	mask_group.position = canvas_position
+	if canvas_root != null:
+		canvas_root.scale = Vector2.ONE
+
+func get_composition_size() -> Vector2:
+	if _use_scene_mask and SCENE_MASK_TEXTURE != null:
+		return SCENE_MASK_TEXTURE.get_size()
+	return get_canvas_size()
 
 func get_canvas_size() -> Vector2:
 	if applied_config == null:
@@ -401,6 +666,8 @@ func reset_animation_state() -> void:
 
 func _process(delta: float) -> void:
 	if applied_config == null:
+		return
+	if Engine.is_editor_hint():
 		return
 
 	idle_time += delta
@@ -472,7 +739,7 @@ func apply_head_transform() -> void:
 
 func apply_current_pose() -> void:
 	apply_head_transform()
-	for layer in [head_layer, hair_layer, closed_eyes_layer, mouth_layer, mustache_layer, nose_layer]:
+	for layer in [head_layer, hair_layer, facial_hair_layer, eyebrows_layer, eyelash_layer, eyewhite_layer, closed_eyes_layer, mouth_layer, mustache_layer, nose_layer]:
 		if layer != null and is_instance_valid(layer):
 			layer.position = get_layer_base_position(layer)
 	apply_expression()
@@ -541,15 +808,23 @@ func apply_pupil_position() -> void:
 	if pupils_layer == null:
 		return
 	pupils_layer.position = get_layer_base_position(pupils_layer) + current_pupil_offset
+	pupils_layer.scale = get_png_eye_squash_scale()
 
 func apply_blink_pose() -> void:
 	if applied_config == null:
 		return
 
 	if applied_config.blink_style == "move_eyes":
+		if !applied_config.png_part_ids.is_empty():
+			apply_png_blink_pose()
+			return
+
 		if eyes_layer != null:
 			eyes_layer.visible = true
 			eyes_layer.position = get_layer_base_position(eyes_layer) + Vector2(0.0, get_eyelid_drop_pixels())
+		if eyelash_layer != null and eyelash_layer != eyes_layer:
+			eyelash_layer.visible = true
+			eyelash_layer.position = get_layer_base_position(eyelash_layer) + Vector2(0.0, get_eyelid_drop_pixels())
 		if closed_eyes_layer != null:
 			closed_eyes_layer.visible = false
 		if pupils_layer != null:
@@ -560,6 +835,40 @@ func apply_blink_pose() -> void:
 		return
 
 	update_blink_layers(current_blink_amount > 0.0 or blink_remaining > 0.0)
+
+func apply_png_blink_pose() -> void:
+	var eye_drop: float = get_png_eye_drop_pixels()
+	if eyelash_layer != null:
+		eyelash_layer.visible = true
+		eyelash_layer.position = get_layer_base_position(eyelash_layer) + Vector2(0.0, eye_drop)
+		eyelash_layer.scale = Vector2.ONE
+	if eyes_layer != null and eyes_layer != eyelash_layer:
+		eyes_layer.visible = true
+		eyes_layer.position = get_layer_base_position(eyes_layer) + Vector2(0.0, eye_drop)
+		eyes_layer.scale = Vector2.ONE
+	if eyewhite_layer != null:
+		eyewhite_layer.visible = true
+		eyewhite_layer.position = get_layer_base_position(eyewhite_layer) + Vector2(0.0, eye_drop)
+		eyewhite_layer.scale = Vector2.ONE
+	if pupils_layer != null:
+		apply_pupil_position()
+		pupils_layer.visible = true
+		set_layer_alpha(pupils_layer, 1.0)
+	update_eye_occlusion_materials(eye_drop)
+
+func update_eye_occlusion_materials(eyelash_drop: float) -> void:
+	var strength: float = clampf(maxf(current_blink_amount, turn_focus_amount * 0.45), 0.0, 1.0)
+	for layer in eye_occlusion_materials.keys():
+		if layer == null or !is_instance_valid(layer):
+			continue
+		var material: ShaderMaterial = eye_occlusion_materials[layer] as ShaderMaterial
+		if material == null:
+			continue
+		var occlusion_bottom_y: float = PNG_EYELASH_OCCLUSION_BASE_Y + eyelash_drop
+		if layer == pupils_layer:
+			occlusion_bottom_y -= current_pupil_offset.y
+		material.set_shader_parameter("occlusion_bottom_y_pixels", occlusion_bottom_y)
+		material.set_shader_parameter("mask_strength", strength)
 
 func update_blink_layers(blinking: bool) -> void:
 	if eyes_layer != null:
@@ -578,6 +887,15 @@ func schedule_next_blink() -> void:
 
 func get_eyelid_drop_pixels() -> float:
 	return current_blink_amount * BLINK_EYE_DROP_PIXELS + turn_focus_amount * get_look_down_eyelid_drop_pixels()
+
+func get_png_eyelash_drop_pixels() -> float:
+	return current_blink_amount * BLINK_EYE_DROP_PIXELS * PNG_EYELASH_BLINK_DROP_SCALE + turn_focus_amount * get_look_down_eyelid_drop_pixels()
+
+func get_png_eye_drop_pixels() -> float:
+	return get_png_eyelash_drop_pixels()
+
+func get_png_eye_squash_scale() -> Vector2:
+	return Vector2.ONE
 
 func schedule_next_look(min_delay: float = LOOK_MIN_INTERVAL, max_delay: float = LOOK_MAX_INTERVAL) -> void:
 	next_look_time = rng.randf_range(min_delay, max_delay)

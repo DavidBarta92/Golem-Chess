@@ -187,9 +187,13 @@ func exchange_card_visual_with_deck(card_visual: CardVisual) -> void:
 		card_visual.fly_home()
 		return
 
+	var return_source_position: Vector2 = card_visual.global_position
 	remove_card_from_hand_index(owner_color, hand_index, true, replacement_card_name)
 	DeckManager.return_card_to_deck(deck, card_name)
-	complete_card_exchange(owner_color, card_name, hand_index, true)
+	complete_card_exchange(owner_color, card_name, hand_index, true, return_source_position)
+	if is_instance_valid(card_visual):
+		card_visual.assign_and_hide()
+		card_visual.queue_free()
 
 func draw_exchange_replacement_card_name(deck: Array, returned_card_name: String) -> String:
 	return draw_card_from_deck_avoiding_names(deck, [returned_card_name])
@@ -387,9 +391,9 @@ func remove_card_from_hand_index(owner_color: int, hand_index: int, should_draw_
 	if remove_card_from_hand_index_callback.is_valid():
 		remove_card_from_hand_index_callback.call(owner_color, hand_index, should_draw_replacement, replacement_card_name)
 
-func complete_card_exchange(owner_color: int, card_name: String, hand_index: int, should_record_name: bool) -> void:
+func complete_card_exchange(owner_color: int, card_name: String, hand_index: int, should_record_name: bool, source_global_position = null) -> void:
 	if complete_card_exchange_callback.is_valid():
-		complete_card_exchange_callback.call(owner_color, card_name, hand_index, should_record_name)
+		complete_card_exchange_callback.call(owner_color, card_name, hand_index, should_record_name, source_global_position)
 
 func is_valid_position(board_pos: Vector2) -> bool:
 	return bool(is_valid_position_callback.call(board_pos)) if is_valid_position_callback.is_valid() else false

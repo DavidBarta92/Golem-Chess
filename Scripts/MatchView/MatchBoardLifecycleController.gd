@@ -13,6 +13,7 @@ func set_turn(turn_value) -> void:
 	match_board.update_card_presentation()
 	match_board.get_board_tile_controller().create_board_tiles()
 	match_board.display_board()
+	match_board.create_board_shader_overlay()
 	match_board.update_end_turn_button()
 	if match_board.side != null and !match_board.side:
 		match_board.get_node("../Camera2D").global_rotation_degrees = 180
@@ -22,6 +23,7 @@ func set_turn(turn_value) -> void:
 func ready() -> void:
 	randomize()
 	match_board.texture = null
+	match_board.hide_portrait_placement_preview()
 	apply_board_visual_scale()
 	match_board.initialize_board_view_helpers()
 	match_board.initialize_board_tile_controller()
@@ -54,6 +56,7 @@ func ready() -> void:
 	match_board.board = BoardConfig.create_starting_board()
 
 	match_board.create_pieces_from_board()
+	match_board.create_board_shader_overlay()
 	match_board.setup_player_card_hands()
 	match_board.create_hover_piece_ui()
 	match_board.get_hidden_card_preview_controller().create_ui()
@@ -70,11 +73,16 @@ func ready() -> void:
 	match_board.get_turn_hud_controller().create_action_status_ui()
 	match_board.get_turn_hud_controller().create_turn_timer_ui()
 	var hud_controller = match_board.get_turn_hud_controller()
-	var portrait_update_callable := Callable(hud_controller, "update_player_portrait_views")
-	if !match_board.get_viewport().size_changed.is_connected(portrait_update_callable):
-		match_board.get_viewport().size_changed.connect(portrait_update_callable)
+	var resize_callable := Callable(self, "on_viewport_size_changed")
+	if !match_board.get_viewport().size_changed.is_connected(resize_callable):
+		match_board.get_viewport().size_changed.connect(resize_callable)
 	hud_controller.update_player_name_labels()
 	hud_controller.update_player_portrait_views()
+
+func on_viewport_size_changed() -> void:
+	match_board.sync_turn_hud_controller()
+	match_board.get_turn_hud_controller().update_player_name_labels()
+	match_board.get_turn_hud_controller().update_player_portrait_views()
 
 func apply_board_visual_scale() -> void:
 	match_board.scale = Vector2.ONE * board_visual_scale

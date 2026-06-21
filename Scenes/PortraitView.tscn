@@ -1,13 +1,177 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://cgyl58ydu44nm"]
 
-[ext_resource type="Script" path="res://Scenes/PortraitView.gd" id="1_portrait_view"]
+[ext_resource type="Script" uid="uid://c18dpdgku4mgw" path="res://Scenes/PortraitView.gd" id="1_portrait_view"]
+[ext_resource type="Script" uid="uid://prxce8kchyxi" path="res://Scripts/PortraitConfig.gd" id="2_xmh5g"]
+[ext_resource type="Texture2D" uid="uid://dhg1sfqmpjv2v" path="res://Assets/portrait_mask_local.png" id="3_mask"]
+[ext_resource type="Shader" uid="uid://dlvxdbnaxj1iy" path="res://Shaders/portrait_scene_mask.gdshader" id="3_mmthx"]
+[ext_resource type="Shader" uid="uid://djswjrwhireyx" path="res://Shaders/portrait_mask_debug.gdshader" id="4_mask_debug"]
 
-[node name="PortraitView" type="Control"]
-custom_minimum_size = Vector2(232, 272)
+[sub_resource type="Resource" id="Resource_mmthx"]
+script = ExtResource("2_xmh5g")
+portrait_id = "default_player"
+display_name = "Player"
+seed = 17
+use_asset_colors = true
+png_part_ids = {
+"body": "A1",
+"eyebrows": "A2",
+"eyelash": "A1",
+"eyewhite": "A1",
+"facial_hair": "A1",
+"hair": "A2",
+"head": "A1",
+"mouth": "A1",
+"neck": "A1",
+"nose": "A1",
+"pupils": "A1"
+}
+head_id = "A1"
+torso_id = "A1"
+hair_id = "A2"
+eyes_id = "A1"
+closed_eyes_id = ""
+pupils_id = "A1"
+nose_id = "A1"
+mouth_id = "A1"
+brows_id = "A2"
+mustache_id = "A1"
+canvas_size = Vector2(249, 316)
+head_pivot = Vector2(124.5, 170)
+layer_offsets = {
+"body": Vector2(0, 0),
+"eyebrows": Vector2(0, 0),
+"eyelash": Vector2(0, 0),
+"eyewhite": Vector2(0, 0),
+"facial_hair": Vector2(0, 0),
+"hair": Vector2(0, 0),
+"head": Vector2(0, 0),
+"mouth": Vector2(0, 0),
+"neck": Vector2(0, 0),
+"nose": Vector2(0, 0),
+"pupils": Vector2(0, 0)
+}
+look_down_pupil_offset = Vector2(0, 4)
+look_down_eyelid_drop_pixels = 4.0
+look_down_head_offset = Vector2(0, 2.2)
+look_down_layer_offsets = {
+"eyebrows": Vector2(0, 2),
+"eyelash": Vector2(0, 2.8),
+"eyewhite": Vector2(0, 1.4),
+"facial_hair": Vector2(0, 1),
+"hair": Vector2(0, -0.8),
+"mouth": Vector2(0, 0.8),
+"nose": Vector2(0, 1.3),
+"pupils": Vector2(0, 1.8)
+}
+blink_style = "move_eyes"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cvdxm"]
+shader = ExtResource("3_mmthx")
+shader_parameter/mask_texture = ExtResource("3_mask")
+shader_parameter/mask_threshold = 0.05
+shader_parameter/mask_softness = 0.02
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mask_debug"]
+shader = ExtResource("4_mask_debug")
+shader_parameter/debug_color = Color(0.1, 0.85, 1, 0.26)
+
+[node name="PortraitView" type="Control" unique_id=1459214290]
+clip_contents = true
+custom_minimum_size = Vector2(449, 178)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 232.0
-offset_bottom = 272.0
+offset_right = 449.0
+offset_bottom = 178.0
 mouse_filter = 2
-clip_contents = true
 script = ExtResource("1_portrait_view")
+portrait_config = SubResource("Resource_mmthx")
+show_frame = false
+show_background = true
+use_scene_mask = true
+
+[node name="PortraitMaskGroup" type="CanvasGroup" parent="." unique_id=1721502087]
+material = SubResource("ShaderMaterial_cvdxm")
+
+[node name="PortraitBackground" type="ColorRect" parent="PortraitMaskGroup" unique_id=1665939617]
+z_index = -1000
+offset_right = 449.0
+offset_bottom = 178.0
+mouse_filter = 2
+color = Color(0.909804, 0.694118, 0.486275, 1)
+
+[node name="PortraitCanvas" type="Node2D" parent="PortraitMaskGroup" unique_id=1561070255]
+position = Vector2(42, -58)
+
+[node name="TorsoRoot" type="Node2D" parent="PortraitMaskGroup/PortraitCanvas" unique_id=117245032]
+
+[node name="Body_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/TorsoRoot" unique_id=1659137531]
+texture_filter = 1
+centered = false
+
+[node name="Neck_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/TorsoRoot" unique_id=37997328]
+texture_filter = 1
+centered = false
+
+[node name="HeadRoot" type="Node2D" parent="PortraitMaskGroup/PortraitCanvas" unique_id=1371132224]
+position = Vector2(256, 296)
+
+[node name="Head_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1491586399]
+texture_filter = 1
+position = Vector2(-124.5, -170)
+centered = false
+
+[node name="Hair_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=2116986648]
+texture_filter = 1
+position = Vector2(-124.5, -170)
+centered = false
+
+[node name="Facial_hair_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1193254919]
+texture_filter = 1
+position = Vector2(-124.5, -170)
+centered = false
+
+[node name="Eyebrows_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1005669811]
+texture_filter = 1
+position = Vector2(-124.5, -170)
+centered = false
+
+[node name="Pupils_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=285021983]
+texture_filter = 1
+position = Vector2(-124.5, -170)
+centered = false
+
+[node name="Eyelash_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1334185174]
+texture_filter = 1
+position = Vector2(-124.5, -170)
+centered = false
+
+[node name="Eyewhite_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=471686519]
+texture_filter = 1
+position = Vector2(-124.5, -170)
+centered = false
+
+[node name="Nose_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1299448564]
+texture_filter = 1
+position = Vector2(-124.5, -170)
+centered = false
+
+[node name="Mouth_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=311222599]
+texture_filter = 1
+position = Vector2(-124.5, -170)
+centered = false
+
+[node name="FaceRoot" type="Node2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1511098848]
+
+[node name="PortraitMaskDebug" type="TextureRect" parent="." unique_id=1869334916]
+z_index = 1000
+material = SubResource("ShaderMaterial_mask_debug")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_mask")
+expand_mode = 1
+stretch_mode = 5

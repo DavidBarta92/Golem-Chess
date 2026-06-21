@@ -97,8 +97,6 @@ func create_board_tiles() -> void:
 	match_board.board_special_tile_types.clear()
 	match_board.board_special_tiles_initialized = false
 
-	create_board_shadow_visuals()
-
 	match_board.board_frame_node = Node2D.new()
 	match_board.board_frame_node.name = "BoardFrame"
 	match_board.board_frame_node.z_index = -2

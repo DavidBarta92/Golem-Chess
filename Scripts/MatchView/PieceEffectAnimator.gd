@@ -54,12 +54,13 @@ var attach_piece_light_color: Color = Color(1.0, 0.84, 0.36, 1.0)
 var attach_point_light_energy: float = 1.25
 var attach_piece_light_energy: float = 0.62
 var piece_attach_glow_name: String = "PieceAttachGlow"
+var piece_attach_target_glow_name: String = "PieceAttachTargetGlow"
 var piece_attach_rays_name: String = "PieceAttachRays"
 var piece_attach_morph_name: String = "PieceAttachMorph"
 var piece_effect_occlusion_dim_name: String = "PieceEffectOcclusionDim"
-var piece_attach_glow_z_index: int = 0
-var piece_attach_rays_z_index: int = 0
-var piece_attach_morph_z_index: int = 0
+var piece_attach_glow_z_index: int = 26
+var piece_attach_rays_z_index: int = 25
+var piece_attach_morph_z_index: int = 1
 var piece_effect_occlusion_dim_z_index: int = 0
 var piece_attach_glow_shader: Shader
 var piece_attach_rays_shader: Shader
@@ -74,6 +75,7 @@ var piece_attach_glow_switch_duration: float = 0.06
 var piece_attach_in_duration: float = 0.32
 var piece_attach_pre_switch_hold_duration: float = 0.14
 var piece_attach_morph_duration: float = 1.00
+var piece_attach_target_appear_duration: float = 0.50
 var piece_attach_post_switch_hold_duration: float = 0.20
 var piece_attach_morph_noise_strength: float = 0.14
 var piece_attach_morph_shine_strength: float = 0.34
@@ -153,6 +155,7 @@ func configure(config: Dictionary) -> void:
 	attach_point_light_energy = float(config.get("attach_point_light_energy", attach_point_light_energy))
 	attach_piece_light_energy = float(config.get("attach_piece_light_energy", attach_piece_light_energy))
 	piece_attach_glow_name = str(config.get("piece_attach_glow_name", piece_attach_glow_name))
+	piece_attach_target_glow_name = str(config.get("piece_attach_target_glow_name", piece_attach_target_glow_name))
 	piece_attach_rays_name = str(config.get("piece_attach_rays_name", piece_attach_rays_name))
 	piece_attach_morph_name = str(config.get("piece_attach_morph_name", piece_attach_morph_name))
 	piece_effect_occlusion_dim_name = str(config.get("piece_effect_occlusion_dim_name", piece_effect_occlusion_dim_name))
@@ -173,6 +176,7 @@ func configure(config: Dictionary) -> void:
 	piece_attach_in_duration = float(config.get("piece_attach_in_duration", piece_attach_in_duration))
 	piece_attach_pre_switch_hold_duration = float(config.get("piece_attach_pre_switch_hold_duration", piece_attach_pre_switch_hold_duration))
 	piece_attach_morph_duration = float(config.get("piece_attach_morph_duration", piece_attach_morph_duration))
+	piece_attach_target_appear_duration = float(config.get("piece_attach_target_appear_duration", piece_attach_target_appear_duration))
 	piece_attach_post_switch_hold_duration = float(config.get("piece_attach_post_switch_hold_duration", piece_attach_post_switch_hold_duration))
 	piece_attach_morph_noise_strength = float(config.get("piece_attach_morph_noise_strength", piece_attach_morph_noise_strength))
 	piece_attach_morph_shine_strength = float(config.get("piece_attach_morph_shine_strength", piece_attach_morph_shine_strength))
@@ -288,9 +292,25 @@ func cleanup_attach_point_light(holder, point_light, piece_light = null) -> void
 func cleanup_attach_animation_layers(holder, point_light, piece_light, occlusion_dimmers: Array[Sprite2D]) -> void:
 	cleanup_attach_point_light(holder, point_light, piece_light)
 	end_effect_occlusion_dimming(occlusion_dimmers)
+	remove_attach_effects_if_holder_valid(holder)
 
 func create_attach_glow_overlay(holder: Sprite2D) -> Sprite2D:
 	return create_glow_overlay(holder, piece_attach_glow_name, piece_attach_glow_z_index, 0.0)
+
+func create_attach_target_glow_overlay(holder: Sprite2D, target_texture: Texture2D, glow_material: ShaderMaterial) -> Sprite2D:
+	if holder == null or !is_instance_valid(holder) or target_texture == null or glow_material == null:
+		return null
+
+	var overlay := Sprite2D.new()
+	overlay.name = piece_attach_target_glow_name
+	overlay.z_index = piece_attach_glow_z_index
+	overlay.z_as_relative = true
+	sync_sprite_overlay_to_holder(overlay, holder)
+	apply_morph_overlay_target_visual(overlay, holder, target_texture)
+	overlay.material = glow_material
+	overlay.self_modulate.a = 0.0
+	holder.add_child(overlay)
+	return overlay
 
 func create_glow_overlay(holder: Sprite2D, effect_name: String, z_index: int, glow_strength: float) -> Sprite2D:
 	if holder == null or !is_instance_valid(holder):
@@ -406,6 +426,10 @@ func remove_attach_effects(holder: Sprite2D) -> void:
 	if piece_visuals != null:
 		piece_visuals.remove_attach_effects(holder)
 
+func remove_attach_effects_if_holder_valid(holder) -> void:
+	if holder != null and is_instance_valid(holder) and holder is Sprite2D:
+		remove_attach_effects(holder as Sprite2D)
+
 func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: Texture2D, options: Dictionary = {}) -> bool:
 	if holder == null or !is_instance_valid(holder) or target_texture == null:
 		return false
@@ -432,6 +456,10 @@ func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: 
 	var glow_material: ShaderMaterial = glow_overlay.material as ShaderMaterial
 	var rays_material: ShaderMaterial = rays_overlay.material as ShaderMaterial
 	if glow_material == null or rays_material == null:
+		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+		return false
+	var target_glow_overlay: Sprite2D = create_attach_target_glow_overlay(holder, target_texture, glow_material)
+	if target_glow_overlay == null:
 		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
@@ -473,7 +501,7 @@ func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: 
 		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
-	await play_texture_morph(holder, target_texture, piece_attach_morph_duration, attach_point_light, attach_piece_light)
+	await play_texture_morph(holder, target_texture, piece_attach_morph_duration, attach_point_light, attach_piece_light, target_glow_overlay)
 	if !is_attach_holder_active(holder):
 		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
@@ -487,6 +515,8 @@ func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: 
 	var morph_overlay: Node = holder.get_node_or_null(piece_attach_morph_name)
 	if morph_overlay != null:
 		morph_overlay.queue_free()
+	if is_instance_valid(target_glow_overlay):
+		target_glow_overlay.queue_free()
 	if disable_holder_occluder:
 		set_holder_light_occluder_enabled(holder, false)
 	update_attach_point_light_position(attach_point_light, holder)
@@ -519,6 +549,8 @@ func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: 
 
 	if is_instance_valid(glow_overlay):
 		glow_overlay.queue_free()
+	if is_instance_valid(target_glow_overlay):
+		target_glow_overlay.queue_free()
 	if is_instance_valid(rays_overlay):
 		rays_overlay.queue_free()
 	cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
@@ -636,7 +668,7 @@ func apply_morph_overlay_target_visual(morph_overlay: Sprite2D, holder: Sprite2D
 		target_scale.y / holder.scale.y if absf(holder.scale.y) > 0.0001 else target_scale.y
 	)
 
-func play_texture_morph(holder: Sprite2D, target_texture: Texture2D, duration: float, point_light: PointLight2D = null, piece_light: PointLight2D = null) -> void:
+func play_texture_morph(holder: Sprite2D, target_texture: Texture2D, duration: float, point_light: PointLight2D = null, piece_light: PointLight2D = null, target_glow_overlay: Sprite2D = null) -> void:
 	if holder == null or !is_instance_valid(holder) or target_texture == null:
 		return
 	if duration <= 0.0 or piece_texture_morph_shader == null:
@@ -668,7 +700,15 @@ func play_texture_morph(holder: Sprite2D, target_texture: Texture2D, duration: f
 	if morph_tween == null:
 		return
 	morph_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	morph_tween.tween_property(morph_material, "shader_parameter/morph_progress", 1.0, duration)
+	var target_appear_duration: float = clampf(piece_attach_target_appear_duration, 0.0, duration)
+	if target_appear_duration <= 0.0:
+		morph_material.set_shader_parameter("morph_progress", 1.0)
+		if target_glow_overlay != null and is_instance_valid(target_glow_overlay):
+			target_glow_overlay.self_modulate.a = 1.0
+	else:
+		morph_tween.tween_property(morph_material, "shader_parameter/morph_progress", 1.0, target_appear_duration)
+		if target_glow_overlay != null and is_instance_valid(target_glow_overlay):
+			morph_tween.parallel().tween_property(target_glow_overlay, "self_modulate:a", 1.0, target_appear_duration)
 	if point_light != null and is_instance_valid(point_light):
 		morph_tween.parallel().tween_property(point_light, "global_position", target_light_position, duration)
 	if piece_light != null and is_instance_valid(piece_light):
