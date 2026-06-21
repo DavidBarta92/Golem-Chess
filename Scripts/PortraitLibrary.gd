@@ -4,6 +4,7 @@ class_name PortraitLibrary
 const PORTRAIT_DIR: String = "res://Portraits"
 const PORTRAIT_ASSET_DIR: String = "res://Assets/Portraits"
 const GENERATION_CONFIG_PATH: String = "res://Assets/Portraits/portrait_generation.json"
+const PORTRAIT_ASSET_MANIFEST = preload("res://Scripts/PortraitAssetManifest.gd")
 
 const PNG_LAYER_ORDER: Array[String] = [
 	"hair",
@@ -53,6 +54,13 @@ static func get_part_texture(category: String, part_id: String) -> Texture2D:
 	if texture_cache.has(resolved_path):
 		return texture_cache[resolved_path]
 
+	var normalized_category: String = normalize_category(category)
+	var resolved_id: String = resolved_path.get_file().get_basename()
+	var manifest_texture: Texture2D = PORTRAIT_ASSET_MANIFEST.get_texture(normalized_category, resolved_id)
+	if manifest_texture != null:
+		texture_cache[resolved_path] = manifest_texture
+		return manifest_texture
+
 	var texture: Texture2D = load(resolved_path) as Texture2D
 	if texture != null:
 		texture_cache[resolved_path] = texture
@@ -86,7 +94,7 @@ static func get_part_paths() -> Dictionary:
 	return part_paths_cache
 
 static func collect_category_part_paths(category: String) -> Dictionary:
-	var output: Dictionary = {}
+	var output: Dictionary = PORTRAIT_ASSET_MANIFEST.get_part_paths(category)
 	var category_dir_path: String = "%s/%s" % [PORTRAIT_ASSET_DIR, category]
 	var dir := DirAccess.open(category_dir_path)
 	if dir == null:
@@ -95,9 +103,10 @@ static func collect_category_part_paths(category: String) -> Dictionary:
 	dir.list_dir_begin()
 	var file_name: String = dir.get_next()
 	while !file_name.is_empty():
-		if !dir.current_is_dir() and file_name.get_extension().to_lower() == "png":
-			var part_id: String = file_name.get_basename()
-			output[part_id] = "%s/%s" % [category_dir_path, file_name]
+		var resource_file_name: String = file_name.trim_suffix(".remap")
+		if !dir.current_is_dir() and resource_file_name.get_extension().to_lower() == "png":
+			var part_id: String = resource_file_name.get_basename()
+			output[part_id] = "%s/%s" % [category_dir_path, resource_file_name]
 		file_name = dir.get_next()
 	dir.list_dir_end()
 

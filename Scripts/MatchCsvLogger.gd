@@ -66,6 +66,10 @@ var action_count: int = 0
 var match_finished: bool = false
 var initial_decks: Dictionary = {}
 var starting_hands: Dictionary = {}
+var log_dir_override: String = ""
+
+func set_log_dir(log_dir: String) -> void:
+	log_dir_override = log_dir.strip_edges().replace("\\", "/")
 
 func start_match(game_state: GameStateData) -> void:
 	if !enabled or game_state == null:
@@ -134,7 +138,14 @@ func log_match_end(game_state: GameStateData, win_condition: String) -> void:
 		"white_wins_in_batch": get_batch_wins_including_current(game_state, 0),
 		"black_wins_in_batch": get_batch_wins_including_current(game_state, 1),
 	}
-	append_row("matches.csv", MATCH_HEADERS, row)
+	var match_file_name: String = "matches.csv"
+	var match_headers: Array = MATCH_HEADERS
+	if GameConfig.is_dedicated_server:
+		match_file_name = GameConfig.SERVER_MATCH_CSV_FILE_NAME
+		match_headers = MATCH_HEADERS.duplicate()
+		match_headers.append("game_version")
+		row["game_version"] = GameConfig.get_game_version()
+	append_row(match_file_name, match_headers, row)
 	log_turn_snapshot(game_state, "match_end")
 	refresh_card_balance_report()
 
@@ -483,6 +494,8 @@ func get_log_file_path(file_name: String) -> String:
 	return "%s/%s" % [get_log_dir().trim_suffix("/"), file_name]
 
 func get_log_dir() -> String:
+	if !log_dir_override.is_empty():
+		return log_dir_override
 	var log_dir: String = GameConfig.get_ai_vs_ai_csv_log_dir()
 	if log_dir.strip_edges().is_empty():
 		return DEFAULT_LOG_DIR

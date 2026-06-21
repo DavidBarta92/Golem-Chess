@@ -23,7 +23,6 @@ func set_turn(turn_value) -> void:
 func ready() -> void:
 	randomize()
 	match_board.texture = null
-	match_board.hide_portrait_placement_preview()
 	apply_board_visual_scale()
 	match_board.initialize_board_view_helpers()
 	match_board.initialize_board_tile_controller()

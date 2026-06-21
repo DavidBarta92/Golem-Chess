@@ -7,6 +7,7 @@ const MIN_AI_DIFFICULTY_LEVEL: int = 1
 const MAX_AI_DIFFICULTY_LEVEL: int = 12
 const DEFAULT_AI_DIFFICULTY_LEVEL: int = 12
 const DEFAULT_AI_VS_AI_CSV_LOG_DIR: String = "user://ai_match_logs"
+const SERVER_MATCH_CSV_FILE_NAME: String = "server_matches.csv"
 const DEFAULT_SERVER_IP: String = "79.76.116.120"
 const DEFAULT_SERVER_PORT: int = 9999
 const MULTIPLAYER_PROVIDER_CUSTOM_SERVER: String = "custom_server"
@@ -194,6 +195,12 @@ func get_ai_vs_ai_csv_log_dir() -> String:
 	if ai_vs_ai_csv_log_dir.strip_edges().is_empty():
 		return DEFAULT_AI_VS_AI_CSV_LOG_DIR
 	return ai_vs_ai_csv_log_dir
+
+func get_game_version() -> String:
+	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
+
+func get_dedicated_server_log_dir() -> String:
+	return OS.get_executable_path().get_base_dir().replace("\\", "/")
 
 func set_selected_deck_id(deck_id: String) -> void:
 	selected_deck_id = deck_id.strip_edges()

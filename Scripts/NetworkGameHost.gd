@@ -70,9 +70,14 @@ func setup_match_logging() -> void:
 		return
 
 	game_state.match_logger = MatchCsvLogger.new()
+	if GameConfig.is_dedicated_server:
+		game_state.match_logger.set_log_dir(GameConfig.get_dedicated_server_log_dir())
+		DebugLog.info("Dedicated match CSV logs: %s" % GameConfig.get_dedicated_server_log_dir())
 	game_state.match_logger.start_match(game_state)
 
 func should_log_match() -> bool:
+	if GameConfig.is_dedicated_server:
+		return true
 	if GameConfig.is_ai_vs_ai_batch:
 		return true
 	if !GameConfig.is_singleplayer:

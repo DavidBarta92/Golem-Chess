@@ -1,6 +1,6 @@
 extends RefCounted
 
-const PORTRAIT_VIEW = preload("res://Scenes/PortraitView.tscn")
+const DIALOGUE_PANEL = preload("res://Scenes/DialoguePanel.tscn")
 
 var canvas_layer: CanvasLayer
 var tween_owner: Node
@@ -72,6 +72,8 @@ var result_overlay: ColorRect
 var result_label: Label
 var player_name_labels: Dictionary = {}
 var player_portrait_views: Dictionary = {}
+var opponent_panel: DialoguePanel
+var opponent_panel_managed_by_hud: bool = false
 var rules_info_button: Button
 var rules_info_panel: PanelContainer
 var rules_info_label: Label
@@ -305,49 +307,30 @@ func initialize_player_portraits() -> void:
 	}
 
 func create_player_portrait_ui() -> void:
-	if canvas_layer == null or !is_instance_valid(canvas_layer):
-		return
-	player_portrait_views[1] = create_player_portrait_view()
-	player_portrait_views[-1] = create_player_portrait_view()
-	update_player_portrait_views()
-
-func create_player_portrait_view() -> PortraitView:
-	var portrait_view: PortraitView = PORTRAIT_VIEW.instantiate() as PortraitView
-	canvas_layer.add_child(portrait_view)
-	portrait_view.visible = false
-	portrait_view.size = player_portrait_size
-	portrait_view.custom_minimum_size = player_portrait_size
-	portrait_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	portrait_view.z_index = player_portrait_z_index
-	portrait_view.show_frame = false
-	portrait_view.show_background = true
-	portrait_view.background_color = Color(0.909804, 0.694118, 0.486275, 1.0)
-	portrait_view.use_scene_mask = true
-	return portrait_view
+	ensure_opponent_panel()
+	update_opponent_panel()
 
 func create_player_name_ui() -> void:
+	ensure_opponent_panel()
+	update_opponent_panel()
+
+func ensure_opponent_panel() -> void:
+	if opponent_panel != null and is_instance_valid(opponent_panel):
+		return
 	if canvas_layer == null or !is_instance_valid(canvas_layer):
 		return
-	player_name_labels[1] = create_player_name_label()
-	player_name_labels[-1] = create_player_name_label()
 
-func create_player_name_label() -> Label:
-	var name_label := Label.new()
-	canvas_layer.add_child(name_label)
-	name_label.visible = false
-	name_label.size = player_name_label_size
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	name_label.z_index = 940
+	var existing_panel := canvas_layer.get_node_or_null("DialoguePanel") as DialoguePanel
+	if existing_panel != null:
+		opponent_panel = existing_panel
+		opponent_panel_managed_by_hud = false
+		return
 
-	var label_settings := LabelSettings.new()
-	label_settings.font_size = 20
-	label_settings.font_color = Color(1.0, 1.0, 1.0)
-	label_settings.outline_size = 4
-	label_settings.outline_color = Color(0.0, 0.0, 0.0)
-	name_label.label_settings = label_settings
-	return name_label
+	opponent_panel = DIALOGUE_PANEL.instantiate() as DialoguePanel
+	opponent_panel.name = "OpponentPanel"
+	opponent_panel.z_index = player_portrait_z_index
+	canvas_layer.add_child(opponent_panel)
+	opponent_panel_managed_by_hud = true
 
 func create_rules_info_ui() -> void:
 	if canvas_layer == null or !is_instance_valid(canvas_layer):
@@ -426,46 +409,27 @@ func create_rules_info_ui() -> void:
 	update_rules_info_ui()
 
 func update_player_name_labels() -> void:
-	for owner_color in [1, -1]:
-		if !player_name_labels.has(owner_color):
-			continue
-
-		var name_label: Label = player_name_labels[owner_color] as Label
-		var deck_visual: CardVisual = get_deck_visual(owner_color)
-		if name_label == null or deck_visual == null or !is_instance_valid(deck_visual) or !deck_visual.visible:
-			if name_label != null:
-				name_label.visible = false
-			continue
-
-		var deck_rect: Rect2 = deck_visual.get_global_rect()
-		var is_top_hand: bool = is_card_hand_top(owner_color)
-		var label_x: float = deck_rect.get_center().x - player_name_label_size.x * 0.5
-		var label_y: float = deck_rect.end.y + player_name_label_gap if is_top_hand else deck_rect.position.y - player_name_label_size.y - player_name_label_gap
-		if label_y < 0.0:
-			label_y = deck_rect.end.y + player_name_label_gap
-
-		name_label.text = get_display_name_for_player(get_player_id_for_color(owner_color))
-		name_label.global_position = Vector2(max(0.0, label_x), label_y)
-		name_label.visible = true
+	update_opponent_panel()
 
 func update_player_portrait_views() -> void:
+	update_opponent_panel()
+
+func update_opponent_panel() -> void:
+	ensure_opponent_panel()
+	if opponent_panel == null or !is_instance_valid(opponent_panel) or !opponent_panel_managed_by_hud:
+		return
+
 	for owner_color in [1, -1]:
-		var portrait_view: PortraitView = player_portrait_views.get(owner_color, null) as PortraitView
-		if portrait_view == null or !is_instance_valid(portrait_view):
+		if !is_card_hand_top(owner_color):
 			continue
 
 		var player_id: int = get_player_id_for_color(owner_color)
-		var is_top_portrait: bool = is_card_hand_top(owner_color)
-		if !is_top_portrait:
-			portrait_view.visible = false
-			continue
-
-		portrait_view.set_portrait_config(get_portrait_config_for_player(player_id))
-		portrait_view.set_turn_focus(owner_color == get_current_turn_color())
-		portrait_view.size = player_portrait_size
-		portrait_view.custom_minimum_size = player_portrait_size
-		portrait_view.visible = true
-		portrait_view.position = player_portrait_top_position
+		opponent_panel.show_profile(
+			get_display_name_for_player(player_id),
+			get_portrait_config_for_player(player_id)
+		)
+		opponent_panel.set_turn_focus(owner_color == get_current_turn_color())
+		return
 
 func update_rules_info_ui() -> void:
 	if rules_info_button == null:

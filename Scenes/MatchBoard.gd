@@ -41,7 +41,6 @@ const DECK_COUNTER_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/DeckCoun
 const MATCH_INPUT_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchInputController.gd")
 const MATCH_BOARD_LIFECYCLE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchBoardLifecycleController.gd")
 const CARD_HAND_STATE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/CardHandStateController.gd")
-const PORTRAIT_PLACEMENT_PREVIEW_PATH: NodePath = NodePath("PortraitPreviewLayer/PortraitPlacementPreview")
 const RESPONSIVE_REFERENCE_VIEWPORT_SIZE = Vector2(1280.0, 720.0)
 const HOVER_DESCRIPTION_CARD_BASE_TEXTURE = preload("res://Assets/stamp_base.svg")
 
@@ -1470,27 +1469,10 @@ func get_turn_hud_controller():
 	return turn_hud_controller
 
 func get_player_portrait_top_position() -> Vector2:
-	var preview := get_node_or_null(PORTRAIT_PLACEMENT_PREVIEW_PATH) as Control
-	if preview != null:
-		return scale_canvas_point_from_reference(preview.position)
 	return scale_canvas_point_from_reference(PLAYER_PORTRAIT_TOP_POSITION)
 
 func get_scaled_player_portrait_size() -> Vector2:
-	var preview := get_node_or_null(PORTRAIT_PLACEMENT_PREVIEW_PATH) as Control
-	if preview != null and preview.size.x > 0.0 and preview.size.y > 0.0:
-		return scale_canvas_size_from_reference(preview.size)
 	return scale_canvas_size_from_reference(PLAYER_PORTRAIT_SIZE)
-
-func update_portrait_placement_preview_mask() -> void:
-	var preview := get_node_or_null(PORTRAIT_PLACEMENT_PREVIEW_PATH) as PortraitView
-	if preview != null:
-		preview.use_scene_mask = true
-
-func hide_portrait_placement_preview() -> void:
-	update_portrait_placement_preview_mask()
-	var preview_layer := get_node_or_null("PortraitPreviewLayer") as CanvasLayer
-	if preview_layer != null:
-		preview_layer.visible = false
 
 func scale_canvas_point_from_reference(point: Vector2) -> Vector2:
 	return point * get_canvas_scale_from_reference()
