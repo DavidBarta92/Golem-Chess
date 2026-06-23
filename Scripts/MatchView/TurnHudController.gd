@@ -5,7 +5,7 @@ const DIALOGUE_PANEL = preload("res://Scenes/DialoguePanel.tscn")
 var canvas_layer: CanvasLayer
 var tween_owner: Node
 
-var turn_timer_limit_seconds: int = 20
+var turn_timer_limit_seconds: int = 300
 var turn_timer_counter_key: int = 0
 var turn_timer_gap: float = 8.0
 var turn_timer_z_index: int = 961
@@ -43,6 +43,8 @@ var end_turn_pressed_callback: Callable
 var game_over_provider: Callable
 var can_control_current_turn_provider: Callable
 var tutorial_end_turn_allowed_provider: Callable
+var show_first_turn_end_provider: Callable
+var can_end_first_turn_provider: Callable
 var can_switch_action_provider: Callable
 var can_attach_action_provider: Callable
 var can_move_action_provider: Callable
@@ -64,10 +66,7 @@ var action_status_labels: Dictionary = {}
 var action_status_states: Dictionary = {}
 var action_status_tweens: Dictionary = {}
 var turn_timer_counter_container: Control
-var turn_timer_remaining_seconds: int = 20
-var turn_timer_elapsed_seconds: float = 0.0
-var turn_timer_turn_color: int = 0
-var turn_timer_timeout_pending: bool = false
+var player_clock_seconds: Dictionary = {0: 300.0, 1: 300.0}
 var result_overlay: ColorRect
 var result_label: Label
 var player_name_labels: Dictionary = {}
@@ -129,6 +128,8 @@ func configure(config: Dictionary) -> void:
 	game_over_provider = config.get("game_over_provider", game_over_provider)
 	can_control_current_turn_provider = config.get("can_control_current_turn_provider", can_control_current_turn_provider)
 	tutorial_end_turn_allowed_provider = config.get("tutorial_end_turn_allowed_provider", tutorial_end_turn_allowed_provider)
+	show_first_turn_end_provider = config.get("show_first_turn_end_provider", show_first_turn_end_provider)
+	can_end_first_turn_provider = config.get("can_end_first_turn_provider", can_end_first_turn_provider)
 	can_switch_action_provider = config.get("can_switch_action_provider", can_switch_action_provider)
 	can_attach_action_provider = config.get("can_attach_action_provider", can_attach_action_provider)
 	can_move_action_provider = config.get("can_move_action_provider", can_move_action_provider)
@@ -141,8 +142,6 @@ func configure(config: Dictionary) -> void:
 	visible_viewport_size_provider = config.get("visible_viewport_size_provider", visible_viewport_size_provider)
 	board_screen_size_provider = config.get("board_screen_size_provider", board_screen_size_provider)
 	game_result_context_provider = config.get("game_result_context_provider", game_result_context_provider)
-	if turn_timer_remaining_seconds <= 0:
-		turn_timer_remaining_seconds = turn_timer_limit_seconds
 
 func create_end_turn_ui() -> void:
 	if canvas_layer == null or !is_instance_valid(canvas_layer):
@@ -237,12 +236,10 @@ func create_action_status_ui() -> void:
 func create_turn_timer_ui() -> void:
 	if !create_digit_counter_callback.is_valid():
 		return
-
-	turn_timer_counter_container = create_digit_counter_callback.call("TurnTimerCounter", turn_timer_counter_key) as Control
+	turn_timer_counter_container = create_digit_counter_callback.call("ChessClock", turn_timer_counter_key, 4, true) as Control
 	if turn_timer_counter_container == null:
 		return
 	turn_timer_counter_container.z_index = turn_timer_z_index
-	set_digit_counter_value(turn_timer_counter_key, turn_timer_limit_seconds, false)
 	reset_turn_timer()
 	arrange_turn_timer_ui()
 	update_turn_timer_visibility()
@@ -485,14 +482,14 @@ func get_display_name_for_player(player_id: int) -> String:
 func update_end_turn_button() -> void:
 	if end_turn_button == null:
 		return
-	end_turn_button.visible = !is_game_over()
-	end_turn_button.disabled = !can_control_current_turn() or !is_tutorial_end_turn_allowed()
+	end_turn_button.visible = !is_game_over() and get_bool(show_first_turn_end_provider, false)
+	end_turn_button.disabled = !can_control_current_turn() or !get_bool(can_end_first_turn_provider, false) or !is_tutorial_end_turn_allowed()
 	update_end_turn_indicator()
 
 func update_end_turn_indicator() -> void:
 	if end_turn_indicator == null:
 		return
-	end_turn_indicator.visible = !is_game_over() and can_control_current_turn()
+	end_turn_indicator.visible = end_turn_button != null and end_turn_button.visible and can_control_current_turn()
 
 func update_action_status_ui() -> void:
 	if action_status_container == null:
@@ -571,12 +568,17 @@ func apply_action_status_cell_state(action_name: String, action_state: String) -
 		label_settings.font_color = label_color
 
 func reset_turn_timer() -> void:
-	turn_timer_turn_color = get_current_turn_color()
-	turn_timer_elapsed_seconds = 0.0
-	turn_timer_remaining_seconds = turn_timer_limit_seconds
-	turn_timer_timeout_pending = false
-	set_digit_counter_value(turn_timer_counter_key, turn_timer_limit_seconds, false)
+	player_clock_seconds = {0: float(turn_timer_limit_seconds), 1: float(turn_timer_limit_seconds)}
+	update_turn_timer_label()
 	update_turn_timer_visibility()
+
+func sync_player_clocks(clock_state: Dictionary) -> void:
+	if clock_state.is_empty():
+		return
+	for player_id in [0, 1]:
+		var value = clock_state.get(player_id, clock_state.get(str(player_id), turn_timer_limit_seconds))
+		player_clock_seconds[player_id] = maxf(float(value), 0.0)
+	update_turn_timer_label()
 
 func update_turn_timer(delta: float) -> void:
 	if turn_timer_counter_container == null:
@@ -585,24 +587,18 @@ func update_turn_timer(delta: float) -> void:
 		turn_timer_counter_container.visible = false
 		return
 
-	var current_turn_color: int = get_current_turn_color()
-	if turn_timer_turn_color != current_turn_color:
-		reset_turn_timer()
-
 	update_turn_timer_visibility()
-	if !should_run_turn_timer() or turn_timer_timeout_pending:
+	if !should_run_turn_timer():
 		return
+	var own_player_id: int = get_player_id_for_color(get_own_color())
+	player_clock_seconds[own_player_id] = maxf(float(player_clock_seconds.get(own_player_id, turn_timer_limit_seconds)) - maxf(delta, 0.0), 0.0)
+	update_turn_timer_label()
 
-	turn_timer_elapsed_seconds += maxf(delta, 0.0)
-	var remaining_seconds: int = clampi(ceili(float(turn_timer_limit_seconds) - turn_timer_elapsed_seconds), 0, turn_timer_limit_seconds)
-	if remaining_seconds != turn_timer_remaining_seconds:
-		turn_timer_remaining_seconds = remaining_seconds
-		set_digit_counter_value(turn_timer_counter_key, remaining_seconds, true)
-
-	if turn_timer_elapsed_seconds >= float(turn_timer_limit_seconds):
-		turn_timer_timeout_pending = true
-		if turn_timer_timeout_callback.is_valid():
-			turn_timer_timeout_callback.call(current_turn_color)
+func update_turn_timer_label(animate: bool = true) -> void:
+	var own_player_id: int = get_player_id_for_color(get_own_color())
+	var total_seconds: int = maxi(ceili(float(player_clock_seconds.get(own_player_id, turn_timer_limit_seconds))), 0)
+	var timer_digits: int = floori(float(total_seconds) / 60.0) * 100 + total_seconds % 60
+	set_digit_counter_value(turn_timer_counter_key, timer_digits, animate)
 
 func update_turn_timer_visibility() -> void:
 	if turn_timer_counter_container == null:
@@ -610,21 +606,19 @@ func update_turn_timer_visibility() -> void:
 	turn_timer_counter_container.visible = !is_game_over() and should_show_turn_timer()
 
 func clear_turn_timer_timeout_pending() -> void:
-	turn_timer_timeout_pending = false
+	pass
 
 func should_show_turn_timer() -> bool:
 	if GameConfig.is_ai_vs_ai_batch:
 		return false
 	if GameConfig.is_singleplayer:
 		return false
-	return can_control_current_turn() and is_current_turn_human_controlled()
+	return true
 
 func should_run_turn_timer() -> bool:
 	if !should_show_turn_timer():
 		return false
-	if !is_tutorial_end_turn_allowed():
-		return false
-	return true
+	return can_control_current_turn() and is_current_turn_human_controlled()
 
 func is_current_turn_human_controlled() -> bool:
 	var player_id: int = get_player_id_for_color(get_current_turn_color())
@@ -671,10 +665,11 @@ func arrange_turn_timer_ui() -> void:
 		button_center_x = (end_turn_button.offset_left + end_turn_button.offset_right) * 0.5
 		bottom_offset = end_turn_button.offset_top - turn_timer_gap
 
-	var left_offset: float = button_center_x - deck_counter_size.x * 0.5
-	var top_offset: float = bottom_offset - deck_counter_size.y
+	var timer_size: Vector2 = turn_timer_counter_container.size
+	var left_offset: float = button_center_x - timer_size.x * 0.5
+	var top_offset: float = bottom_offset - timer_size.y
 	turn_timer_counter_container.offset_left = left_offset
-	turn_timer_counter_container.offset_right = left_offset + deck_counter_size.x
+	turn_timer_counter_container.offset_right = left_offset + timer_size.x
 	turn_timer_counter_container.offset_top = top_offset
 	turn_timer_counter_container.offset_bottom = bottom_offset
 

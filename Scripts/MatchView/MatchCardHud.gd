@@ -5,6 +5,7 @@ var card_ui_size: Vector2 = Vector2(164, 229)
 var player_hand_size: int = DeckManager.HAND_SIZE
 var card_hand_scale: float = 0.648
 var deck_card_scale: float = 0.648
+var deck_extra_left_offset: float = 200.0
 var card_ui_gap: float = 10.0
 var top_card_hand_margin: float = -28.0
 var bottom_card_hand_margin: float = 34.0
@@ -15,6 +16,7 @@ func configure(config: Dictionary) -> void:
 	player_hand_size = int(config.get("player_hand_size", player_hand_size))
 	card_hand_scale = float(config.get("card_hand_scale", card_hand_scale))
 	deck_card_scale = float(config.get("deck_card_scale", deck_card_scale))
+	deck_extra_left_offset = float(config.get("deck_extra_left_offset", deck_extra_left_offset))
 	card_ui_gap = float(config.get("card_ui_gap", card_ui_gap))
 	top_card_hand_margin = float(config.get("top_card_hand_margin", top_card_hand_margin))
 	bottom_card_hand_margin = float(config.get("bottom_card_hand_margin", bottom_card_hand_margin))
@@ -29,7 +31,7 @@ func get_card_home_position(index: int) -> Vector2:
 	return Vector2(index * get_hand_step(), 0)
 
 func get_deck_home_position() -> Vector2:
-	return Vector2(-(card_ui_size.x * deck_card_scale) - (card_ui_gap * 2.0), 0)
+	return Vector2(-(card_ui_size.x * deck_card_scale) - (card_ui_gap * 2.0) - deck_extra_left_offset, 0)
 
 func configure_hand_container(hand_node: Control, is_top: bool) -> void:
 	if hand_node == null or !is_instance_valid(hand_node):

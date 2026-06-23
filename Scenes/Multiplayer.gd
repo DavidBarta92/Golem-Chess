@@ -117,6 +117,7 @@ func is_using_single_server_room_mode() -> bool:
 func _process(delta: float) -> void:
 	if !is_server or game_host == null:
 		return
+	game_host.process(delta)
 	codex_bridge_poll_elapsed += delta
 	if codex_bridge_poll_elapsed < 0.25:
 		return
@@ -546,6 +547,10 @@ func send_move(start_pos, end_pos):
 	send_move_info.rpc_id(1, multiplayer.get_unique_id(), start_pos, end_pos)
 
 func close_game_connection():
+	if game_host != null:
+		game_host.detach_multiplayer_node()
+	game_host = null
+	GameController.set_game_host(null)
 	multiplayer_peer.close()
 	multiplayer.multiplayer_peer = null
 
@@ -828,7 +833,7 @@ func receive_custom_lobby_error(message: String) -> void:
 	if is_using_single_server_room_mode():
 		GameConfig.set_multiplayer_menu_status_message(message)
 		close_game_connection()
-		get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
+		SceneTransition.change_scene("res://Scenes/MultiplayerMenu.tscn")
 
 @rpc("authority", "call_remote", "reliable")
 func receive_custom_room_waiting(message: String) -> void:
@@ -849,7 +854,7 @@ func return_to_menu_after_match_peer_left() -> void:
 	await get_tree().create_timer(5.0).timeout
 	close_game_connection()
 	if get_tree():
-		get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")
+		SceneTransition.change_scene("res://Scenes/MainMenu.tscn")
 
 func update_custom_lobby_list_ui() -> void:
 	ensure_custom_lobby_panel()
@@ -1008,7 +1013,8 @@ func apply_game_state(state_data: Dictionary):
 		state_data.get("last_move", {}),
 		state_data.get("player_portraits", {}),
 		int(state_data.get("viewer_player_id", -1)),
-		state_data.get("turn_action_state", {})
+		state_data.get("turn_action_state", {}),
+		state_data.get("player_clock_seconds", {})
 	)
 
 	DebugLog.info("apply_game_state() end")

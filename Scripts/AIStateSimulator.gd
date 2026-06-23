@@ -29,6 +29,8 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.player_initial_decks = duplicate_card_list_dictionary(source_state.player_initial_decks)
 	cloned_state.player_hands = duplicate_card_list_dictionary(source_state.player_hands)
 	cloned_state.current_turn_player = source_state.current_turn_player
+	cloned_state.completed_turn_counts = source_state.completed_turn_counts.duplicate()
+	cloned_state.player_clock_seconds = source_state.player_clock_seconds.duplicate()
 	cloned_state.white_nexus_position = source_state.white_nexus_position
 	cloned_state.black_nexus_position = source_state.black_nexus_position
 	cloned_state.player_base_fields = duplicate_vector2_dictionary(source_state.player_base_fields)
@@ -41,6 +43,7 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.last_move = source_state.last_move.duplicate(true)
 	cloned_state.pending_respawns = duplicate_pending_respawns(source_state.pending_respawns)
 	cloned_state.attached_card_this_turn = source_state.attached_card_this_turn.duplicate()
+	cloned_state.attached_card_count_this_turn = source_state.attached_card_count_this_turn.duplicate()
 	cloned_state.moved_piece_this_turn = source_state.moved_piece_this_turn.duplicate()
 	cloned_state.exchanged_card_this_turn = source_state.exchanged_card_this_turn.duplicate()
 	cloned_state.played_card_hand_slots_this_turn = duplicate_int_list_dictionary(source_state.played_card_hand_slots_this_turn)
@@ -154,9 +157,11 @@ static func apply_attach_action(game_state: GameStateData, player_id: int, actio
 	if removed_hand_index == -1:
 		return
 	record_played_card_hand_slot(game_state, player_id, removed_hand_index)
+	game_state.attached_card_this_turn[player_id] = true
+	game_state.attached_card_count_this_turn[player_id] = int(game_state.attached_card_count_this_turn.get(player_id, 0)) + 1
 	piece.attached_card = card
 	piece.turns_remaining = card.duration
-	piece.exhausted_this_turn = true
+	piece.exhausted_this_turn = int(game_state.completed_turn_counts.get(player_id, 0)) == 0
 	simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_ATTACH, player_id, piece, piece_pos, card, board_size)
 	if game_state.game_over:
 		return
@@ -326,6 +331,7 @@ static func end_simulated_turn(game_state: GameStateData, player_id: int, board_
 	game_state.current_turn_player = player_id
 	refill_played_cards_for_player(game_state, player_id)
 	clear_piece_exhaustion_for_player(game_state, player_id)
+	game_state.completed_turn_counts[player_id] = int(game_state.completed_turn_counts.get(player_id, 0)) + 1
 	game_state.switch_turn()
 	CardEffectResolver.tick_board_effects(game_state)
 

@@ -1,11 +1,27 @@
 extends RefCounted
 
+const PIECE_MOVE_SHADOW_SHADER = preload("res://Shaders/piece_move_shadow.gdshader")
+
 var geometry
 var piece_visuals
+var tween_owner: Node
 var cell_width: int = BoardConfig.CELL_WIDTH
 var board_size: int = BoardConfig.BOARD_SIZE
 var move_duration: float = 0.32
-var move_lift_ratio: float = 0.08
+var move_lift_ratio: float = 0.16
+var lift_duration: float = 0.16
+var drop_duration: float = 0.18
+var wobble_step_duration: float = 0.12
+var wobble_rotation_degrees: float = 2.4
+var movement_tilt_degrees: float = 1.4
+var movement_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.30)
+var movement_shadow_radius_scale: Vector2 = Vector2(0.92, 0.72)
+var movement_shadow_ground_edge_softness: float = 0.10
+var movement_shadow_lifted_edge_softness: float = 0.72
+var movement_shadow_lifted_scale: Vector2 = Vector2(1.38, 1.28)
+var movement_shadow_lifted_alpha: float = 0.42
+var movement_shadow_z_offset: int = -2
+var lifted_z_offset: int = 2
 var corner_rounding_ratio: float = 0.28
 var corner_sample_count: int = 4
 var pieces_node: Node
@@ -19,14 +35,30 @@ var view_color: int = 1
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
 var piece_exists_provider: Callable = Callable()
 var sprite_bounds_provider: Callable = Callable()
+var movement_shadow_texture: Texture2D
+var last_wobble_variant_index: int = -1
 
 func configure(config: Dictionary) -> void:
 	geometry = config.get("geometry", geometry)
 	piece_visuals = config.get("piece_visuals", piece_visuals)
+	tween_owner = config.get("tween_owner", tween_owner)
 	cell_width = int(config.get("cell_width", cell_width))
 	board_size = int(config.get("board_size", board_size))
 	move_duration = float(config.get("move_duration", move_duration))
 	move_lift_ratio = float(config.get("move_lift_ratio", move_lift_ratio))
+	lift_duration = float(config.get("lift_duration", lift_duration))
+	drop_duration = float(config.get("drop_duration", drop_duration))
+	wobble_step_duration = float(config.get("wobble_step_duration", wobble_step_duration))
+	wobble_rotation_degrees = float(config.get("wobble_rotation_degrees", wobble_rotation_degrees))
+	movement_tilt_degrees = float(config.get("movement_tilt_degrees", movement_tilt_degrees))
+	movement_shadow_color = config.get("movement_shadow_color", movement_shadow_color)
+	movement_shadow_radius_scale = config.get("movement_shadow_radius_scale", movement_shadow_radius_scale)
+	movement_shadow_ground_edge_softness = float(config.get("movement_shadow_ground_edge_softness", movement_shadow_ground_edge_softness))
+	movement_shadow_lifted_edge_softness = float(config.get("movement_shadow_lifted_edge_softness", movement_shadow_lifted_edge_softness))
+	movement_shadow_lifted_scale = config.get("movement_shadow_lifted_scale", movement_shadow_lifted_scale)
+	movement_shadow_lifted_alpha = float(config.get("movement_shadow_lifted_alpha", movement_shadow_lifted_alpha))
+	movement_shadow_z_offset = int(config.get("movement_shadow_z_offset", movement_shadow_z_offset))
+	lifted_z_offset = int(config.get("lifted_z_offset", lifted_z_offset))
 	corner_rounding_ratio = float(config.get("corner_rounding_ratio", corner_rounding_ratio))
 	corner_sample_count = int(config.get("corner_sample_count", corner_sample_count))
 	pieces_node = config.get("pieces_node", pieces_node)
@@ -40,6 +72,194 @@ func configure(config: Dictionary) -> void:
 	invalid_board_pos = config.get("invalid_board_pos", invalid_board_pos)
 	piece_exists_provider = config.get("piece_exists_provider", piece_exists_provider)
 	sprite_bounds_provider = config.get("sprite_bounds_provider", sprite_bounds_provider)
+
+func play_move_sequence(
+	holder: Sprite2D,
+	from_pos: Vector2,
+	to_pos: Vector2,
+	start_scale: Vector2,
+	end_scale: Vector2,
+	start_offset: Vector2,
+	end_offset: Vector2
+) -> bool:
+	if holder == null or !is_instance_valid(holder) or !_is_valid_position(from_pos) or !_is_valid_position(to_pos):
+		return false
+	if !can_create_tween():
+		return false
+
+	var route_points: Array[Vector2] = get_smoothed_route_points(get_route_points(from_pos, to_pos, holder))
+	var travel_duration: float = get_animation_duration(route_points, from_pos, to_pos)
+	var start_ground_pos: Vector2 = get_position_local(from_pos)
+	var end_ground_pos: Vector2 = get_position_local(to_pos)
+	var perspective_scale: float = piece_visuals.get_perspective_scale(from_pos) if piece_visuals != null else 1.0
+	var lift_height: float = float(cell_width) * move_lift_ratio * perspective_scale
+	var resting_rotation: float = holder.rotation
+	var movement_shadow: Sprite2D = create_movement_shadow(holder, from_pos)
+
+	holder.position = start_ground_pos
+	holder.z_index = get_z_index_for_local_position(start_ground_pos, holder) + lifted_z_offset
+	var lift_tween: Tween = create_animation_tween()
+	if lift_tween == null:
+		cleanup_movement_shadow(movement_shadow)
+		return false
+	lift_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	lift_tween.tween_property(holder, "position:y", start_ground_pos.y - lift_height, lift_duration)
+	var shadow_material: ShaderMaterial = movement_shadow.material as ShaderMaterial if movement_shadow != null else null
+	var shadow_ground_scale: Vector2 = movement_shadow.scale if movement_shadow != null else Vector2.ONE
+	if shadow_material != null:
+		lift_tween.parallel().tween_property(movement_shadow, "scale", shadow_ground_scale * movement_shadow_lifted_scale, lift_duration)
+		lift_tween.parallel().tween_property(shadow_material, "shader_parameter/alpha_strength", movement_shadow_lifted_alpha, lift_duration)
+		lift_tween.parallel().tween_property(shadow_material, "shader_parameter/edge_softness", movement_shadow_lifted_edge_softness, lift_duration)
+	await lift_tween.finished
+	if !is_move_holder_active(holder):
+		cleanup_movement_shadow(movement_shadow)
+		return false
+
+	var travel_tween: Tween = create_animation_tween()
+	if travel_tween == null:
+		cleanup_movement_shadow(movement_shadow)
+		return false
+	travel_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_LINEAR)
+	travel_tween.tween_method(
+		func(progress: float): update_holder_travel(
+			holder,
+			route_points,
+			to_pos,
+			start_scale,
+			end_scale,
+			start_offset,
+			end_offset,
+			lift_height,
+			movement_shadow,
+			resting_rotation,
+			get_arrival_progress(progress, route_points, from_pos, to_pos)
+		),
+		0.0,
+		1.0,
+		travel_duration
+	)
+	await travel_tween.finished
+	if !is_move_holder_active(holder):
+		cleanup_movement_shadow(movement_shadow)
+		return false
+
+	var drop_tween: Tween = create_animation_tween()
+	if drop_tween == null:
+		cleanup_movement_shadow(movement_shadow)
+		return false
+	drop_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	drop_tween.tween_property(holder, "position:y", end_ground_pos.y, drop_duration)
+	drop_tween.parallel().tween_property(holder, "rotation", resting_rotation, drop_duration)
+	if shadow_material != null:
+		drop_tween.parallel().tween_property(movement_shadow, "scale", shadow_ground_scale, drop_duration)
+		drop_tween.parallel().tween_property(shadow_material, "shader_parameter/alpha_strength", 1.0, drop_duration)
+		drop_tween.parallel().tween_property(shadow_material, "shader_parameter/edge_softness", movement_shadow_ground_edge_softness, drop_duration)
+	await drop_tween.finished
+	if !is_move_holder_active(holder):
+		cleanup_movement_shadow(movement_shadow)
+		return false
+
+	holder.position = end_ground_pos
+	holder.z_index = get_depth_z_index(to_pos)
+	var wobble_tween: Tween = create_animation_tween()
+	if wobble_tween == null:
+		holder.rotation = resting_rotation
+		cleanup_movement_shadow(movement_shadow)
+		return false
+	wobble_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	var wobble_angle: float = deg_to_rad(wobble_rotation_degrees)
+	var wobble_variant: Dictionary = get_random_wobble_variant()
+	var wobble_angles: Array = wobble_variant.get("angles", [])
+	var wobble_durations: Array = wobble_variant.get("durations", [])
+	for index in wobble_angles.size():
+		var duration_scale: float = float(wobble_durations[index]) if index < wobble_durations.size() else 1.0
+		wobble_tween.tween_property(
+			holder,
+			"rotation",
+			resting_rotation + wobble_angle * float(wobble_angles[index]),
+			wobble_step_duration * duration_scale
+		)
+	await wobble_tween.finished
+	cleanup_movement_shadow(movement_shadow)
+	if is_instance_valid(holder):
+		holder.rotation = resting_rotation
+	return is_move_holder_active(holder)
+
+func create_movement_shadow(holder: Sprite2D, from_pos: Vector2) -> Sprite2D:
+	if holder == null or !is_instance_valid(holder) or pieces_node == null or !is_instance_valid(pieces_node):
+		return null
+
+	var footprint: Dictionary = get_footprint_board_geometry(holder)
+	if bool(footprint.get("empty", true)):
+		return null
+	var radius_x: float = float(footprint.get("radius_x", 0.0)) * movement_shadow_radius_scale.x
+	var radius_y: float = float(footprint.get("radius_y", 0.0)) * movement_shadow_radius_scale.y
+	if radius_x <= 0.0 or radius_y <= 0.0:
+		return null
+
+	var shadow := Sprite2D.new()
+	shadow.name = "PieceMoveGroundShadow"
+	shadow.z_index = get_depth_z_index(from_pos) + movement_shadow_z_offset
+	shadow.light_mask = 0
+	shadow.texture = get_movement_shadow_texture()
+	shadow.scale = Vector2(radius_x * 2.0 / float(shadow.texture.get_width()), radius_y * 2.0 / float(shadow.texture.get_height()))
+	var shadow_material := ShaderMaterial.new()
+	shadow_material.shader = PIECE_MOVE_SHADOW_SHADER
+	shadow_material.set_shader_parameter("shadow_color", movement_shadow_color)
+	shadow_material.set_shader_parameter("alpha_strength", 0.0)
+	shadow_material.set_shader_parameter("edge_softness", movement_shadow_ground_edge_softness)
+	shadow.material = shadow_material
+	pieces_node.add_child(shadow)
+
+	var footprint_center: Vector2 = footprint.get("center", get_position_local(from_pos))
+	if pieces_node is Node2D and local_space_node != null and is_instance_valid(local_space_node):
+		shadow.position = (pieces_node as Node2D).to_local(local_space_node.to_global(footprint_center))
+	else:
+		shadow.position = footprint_center
+	return shadow
+
+func get_movement_shadow_texture() -> Texture2D:
+	if movement_shadow_texture != null:
+		return movement_shadow_texture
+
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	movement_shadow_texture = ImageTexture.create_from_image(image)
+	return movement_shadow_texture
+
+func get_random_wobble_variant() -> Dictionary:
+	var variants: Array[Dictionary] = [
+		{"angles": [1.0, -1.0, 0.48, -0.34, 0.0], "durations": [1.0, 1.25, 1.0, 1.0, 1.0]},
+		{"angles": [1.10, -0.28, 0.0], "durations": [1.20, 1.35, 1.10]},
+		{"angles": [-1.10, 0.28, 0.0], "durations": [1.20, 1.35, 1.10]},
+		{"angles": [0.25, -0.16, 0.0], "durations": [1.05, 1.15, 1.0]},
+		{"angles": [-0.30, 0.18, -0.08, 0.0], "durations": [1.0, 1.10, 0.95, 1.0]},
+		{"angles": [1.18, -1.02, 0.78, -0.58, 0.38, -0.20, 0.0], "durations": [0.95, 1.15, 1.0, 1.0, 0.95, 0.90, 1.0]},
+		{"angles": [-1.18, 1.02, -0.78, 0.58, -0.38, 0.20, 0.0], "durations": [0.95, 1.15, 1.0, 1.0, 0.95, 0.90, 1.0]},
+		{"angles": [0.68, -0.52, 0.22, 0.0], "durations": [1.15, 1.25, 1.05, 1.0]},
+		{"angles": [-0.82, 0.38, -0.12, 0.0], "durations": [1.25, 1.30, 1.05, 1.0]},
+		{"angles": [1.25, -0.45, 0.16, -0.06, 0.0], "durations": [1.30, 1.35, 1.0, 0.90, 1.0]},
+	]
+	var variant_index: int = randi_range(0, variants.size() - 1)
+	if variants.size() > 1 and variant_index == last_wobble_variant_index:
+		variant_index = (variant_index + randi_range(1, variants.size() - 1)) % variants.size()
+	last_wobble_variant_index = variant_index
+	return variants[variant_index]
+
+func cleanup_movement_shadow(shadow) -> void:
+	if shadow != null and is_instance_valid(shadow):
+		shadow.queue_free()
+
+func can_create_tween() -> bool:
+	return tween_owner != null and is_instance_valid(tween_owner) and tween_owner.is_inside_tree()
+
+func create_animation_tween() -> Tween:
+	if !can_create_tween():
+		return null
+	return tween_owner.create_tween()
+
+func is_move_holder_active(holder) -> bool:
+	return can_create_tween() and holder != null and is_instance_valid(holder) and holder is Sprite2D
 
 func get_route_points(from_pos: Vector2, to_pos: Vector2, moving_holder: Sprite2D) -> Array[Vector2]:
 	var start_point: Vector2 = get_position_local(from_pos)
@@ -479,7 +699,7 @@ func get_occlusion_z_index_for_local_position(local_pos: Vector2, moving_holder:
 
 	return occlusion_z_index
 
-func update_holder_motion(
+func update_holder_travel(
 	holder: Sprite2D,
 	route_points: Array[Vector2],
 	to_pos: Vector2,
@@ -487,6 +707,9 @@ func update_holder_motion(
 	end_scale: Vector2,
 	start_offset: Vector2,
 	end_offset: Vector2,
+	lift_height: float,
+	movement_shadow: Sprite2D,
+	resting_rotation: float,
 	progress: float
 ) -> void:
 	if holder == null or !is_instance_valid(holder):
@@ -495,13 +718,38 @@ func update_holder_motion(
 	var ground_pos: Vector2 = get_polyline_position(route_points, progress)
 	if route_points.is_empty() and geometry != null:
 		ground_pos = geometry.get_position_local(to_pos)
-	var perspective_scale: float = piece_visuals.get_perspective_scale(to_pos) if piece_visuals != null else 1.0
-	var lift: float = sin(progress * PI) * float(cell_width) * move_lift_ratio * perspective_scale
-	var local_pos: Vector2 = ground_pos + Vector2(0.0, -lift)
+	var local_pos: Vector2 = ground_pos + Vector2(0.0, -lift_height)
 	holder.position = local_pos
 	holder.scale = start_scale.lerp(end_scale, progress)
 	holder.offset = start_offset.lerp(end_offset, progress)
-	holder.z_index = get_z_index_for_local_position(ground_pos, holder)
+	holder.z_index = get_z_index_for_local_position(ground_pos, holder) + lifted_z_offset
+	holder.rotation = get_travel_rotation(route_points, progress, resting_rotation)
+	update_movement_shadow_position(movement_shadow, holder, lift_height)
+
+func get_travel_rotation(route_points: Array[Vector2], progress: float, resting_rotation: float) -> float:
+	if route_points.size() < 2 or movement_tilt_degrees <= 0.0:
+		return resting_rotation
+	var sample_distance: float = 0.025
+	var before: Vector2 = get_polyline_position(route_points, maxf(0.0, progress - sample_distance))
+	var after: Vector2 = get_polyline_position(route_points, minf(1.0, progress + sample_distance))
+	var direction: Vector2 = (after - before).normalized()
+	var start_blend: float = smoothstep(0.0, 0.14, progress)
+	var end_blend: float = 1.0 - smoothstep(0.82, 1.0, progress)
+	var tilt: float = deg_to_rad(movement_tilt_degrees) * direction.x * start_blend * end_blend
+	return resting_rotation + tilt
+
+func update_movement_shadow_position(shadow: Sprite2D, holder: Sprite2D, lift_height: float) -> void:
+	if shadow == null or !is_instance_valid(shadow):
+		return
+	var footprint: Dictionary = get_footprint_board_geometry(holder)
+	if bool(footprint.get("empty", true)):
+		return
+	var ground_center: Vector2 = footprint.get("center", holder.position) + Vector2(0.0, lift_height)
+	shadow.z_index = get_z_index_for_local_position(ground_center, holder) + movement_shadow_z_offset
+	if pieces_node is Node2D and local_space_node != null and is_instance_valid(local_space_node):
+		shadow.position = (pieces_node as Node2D).to_local(local_space_node.to_global(ground_center))
+	else:
+		shadow.position = ground_center
 
 func get_polyline_position(path_points: Array[Vector2], progress: float) -> Vector2:
 	if path_points.is_empty():

@@ -12,7 +12,6 @@ var dialogue_panel
 var mentor_portrait: PortraitConfig
 var steps: Array[Dictionary] = []
 var current_step_index: int = -1
-var last_attached_piece: Vector2 = INVALID_BOARD_POS
 var attached_this_step: int = 0
 var moved_this_step: int = 0
 var waiting_for_continue_after_completion: bool = false
@@ -56,11 +55,9 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Stamps give pieces their movement. Drag Numero_1 from your hand onto one of your pieces.",
+			"text": "Stamps give pieces their movement. On your first turn every piece is frozen, so you must attach at least one stamp. Drag Numero_1 onto a piece.",
 			"completion": "card_attached",
 			"expected_card_name": "Numero_1",
-			"remember_attached_piece": true,
-			"ready_attached_piece_for_move": true,
 			"setup": {
 				"board": starting_board(),
 				"white_hand": ["Numero_1"],
@@ -77,17 +74,35 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "The piece is ready for this tutorial step. Select that same piece, then move it to one of the highlighted squares.",
-			"completion": "piece_moved",
-			"use_last_attached_piece_as_move_source": true,
+			"text": "The End Turn button is now active. Press it to finish your first turn. If you attach all three stamps, the turn ends automatically.",
+			"completion": "turn_ended",
 			"constraints": {
-				"allowed_actions": ["select_piece", "move_piece"],
+				"allowed_actions": ["end_turn"],
 				"allow_auto_end_turn": false,
 			},
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "After a piece moves, its stamp loses one duration. Stamps do not tick down just because the turn ends.",
+			"text": "From your next turn onward, moving is mandatory and immediately ends your turn. Switch and attach before moving. Select the ready piece, then move it to a highlighted square.",
+			"completion": "piece_moved",
+			"setup": {
+				"board": starting_board(),
+				"attached_cards": [{"pos": Vector2(0, 1), "card_name": "Numero_1", "turns_remaining": 3, "exhausted": false}],
+				"white_hand": [],
+				"white_deck": ["Numero_2", "Numero_3", "Numero_4"],
+				"black_hand": [],
+				"black_deck": [],
+				"turn_color": PLAYER_COLOR,
+			},
+			"constraints": {
+				"allowed_actions": ["select_piece", "move_piece"],
+				"allowed_move_sources": [Vector2(0, 1)],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "After a piece moves, its stamp loses one duration and the turn ends. Stamps do not tick down merely because another piece moved.",
 			"completion": "dialogue",
 			"constraints": no_actions(),
 		},
@@ -98,6 +113,7 @@ func build_steps() -> void:
 			"required_count": 2,
 			"setup": {
 				"board": starting_board(),
+				"attached_cards": [{"pos": Vector2(0, 1), "card_name": "Numero_1", "turns_remaining": 3, "exhausted": false}],
 				"white_hand": ["Numero_2", "Numero_3"],
 				"white_deck": ["Numero_4", "Numero_5", "Numero_6"],
 				"black_hand": [],
@@ -112,16 +128,11 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Good. Even with several stamps attached, you still move only one piece during your turn.",
-			"completion": "dialogue",
-			"constraints": no_actions(),
-		},
-		{
-			"speaker": MENTOR_NAME,
-			"text": "End your turn now. The stamps you played will be refilled from your deck.",
-			"completion": "turn_ended",
+			"text": "Good. Now move the piece that was already ready. A successful move ends the turn and refills the stamps you played from your deck.",
+			"completion": "piece_moved",
 			"constraints": {
-				"allowed_actions": ["end_turn"],
+				"allowed_actions": ["select_piece", "move_piece"],
+				"allowed_move_sources": [Vector2(0, 1)],
 				"allow_auto_end_turn": false,
 			},
 		},
@@ -143,6 +154,12 @@ func build_steps() -> void:
 				"allowed_actions": ["exchange_card"],
 				"allow_auto_end_turn": false,
 			},
+		},
+		{
+			"speaker": MENTOR_NAME,
+			"text": "In multiplayer, each player has five minutes for the whole match. Your clock runs only during your turns; reaching 00:00 loses the game.",
+			"completion": "dialogue",
+			"constraints": no_actions(),
 		},
 		{
 			"speaker": MENTOR_NAME,
@@ -305,8 +322,6 @@ func start_step(step_index: int) -> void:
 		board.apply_tutorial_setup(step.get("setup", {}))
 
 	var constraints: Dictionary = step.get("constraints", {}).duplicate(true)
-	if bool(step.get("use_last_attached_piece_as_move_source", false)) and last_attached_piece != INVALID_BOARD_POS:
-		constraints["allowed_move_sources"] = [last_attached_piece]
 	if board.has_method("set_tutorial_constraints"):
 		board.set_tutorial_constraints(constraints)
 
@@ -342,11 +357,6 @@ func _on_card_attached(piece_pos: Vector2, card_name: String, owner_color: int, 
 	if !expected_card_name.is_empty() and card_name != expected_card_name:
 		return
 
-	if bool(step.get("remember_attached_piece", false)):
-		last_attached_piece = piece_pos
-	if bool(step.get("ready_attached_piece_for_move", false)):
-		ready_piece_for_tutorial_move(owner_color)
-
 	attached_this_step += 1
 	if attached_this_step >= int(step.get("required_count", 1)):
 		complete_current_action_step()
@@ -371,9 +381,6 @@ func _on_piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int) -> vo
 	var step: Dictionary = get_current_step()
 	if owner_color != PLAYER_COLOR:
 		return
-	if bool(step.get("use_last_attached_piece_as_move_source", false)) and last_attached_piece != INVALID_BOARD_POS and from_pos != last_attached_piece:
-		return
-
 	var expected_from: Vector2 = value_to_vector2(step.get("expected_from", INVALID_BOARD_POS), INVALID_BOARD_POS)
 	if expected_from != INVALID_BOARD_POS and from_pos != expected_from:
 		return
@@ -393,9 +400,7 @@ func _on_piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int) -> vo
 	complete_current_action_step()
 
 func _on_turn_ended(ending_color: int, _next_color: int) -> void:
-	if !is_current_completion("turn_ended"):
-		return
-	if ending_color != PLAYER_COLOR:
+	if !is_current_completion("turn_ended") or ending_color != PLAYER_COLOR:
 		return
 	complete_current_action_step()
 
@@ -437,16 +442,6 @@ func is_current_completion(completion_name: String) -> bool:
 
 func should_show_continue_for_step(step: Dictionary) -> bool:
 	return str(step.get("completion", "")) == "dialogue"
-
-func ready_piece_for_tutorial_move(owner_color: int) -> void:
-	if board == null:
-		return
-	if board.has_method("get_local_state_mutator"):
-		board.get_local_state_mutator().clear_piece_exhaustion_for_color(owner_color)
-	if board.has_method("display_board"):
-		board.display_board()
-	if board.has_method("refresh_tutorial_dependent_ui"):
-		board.refresh_tutorial_dependent_ui()
 
 func value_to_vector2(value, fallback: Vector2) -> Vector2:
 	if value is Vector2:

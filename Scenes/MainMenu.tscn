@@ -139,13 +139,13 @@ grow_vertical = 0
 
 [node name="Label" type="Label" parent="." unique_id=1540343529]
 layout_mode = 0
-offset_left = 187.0
-offset_top = 37.0
-offset_right = 292.0
-offset_bottom = 60.0
+offset_left = 178.0
+offset_top = 30.0
+offset_right = 283.0
+offset_bottom = 61.0
 theme_override_colors/font_color = Color(0.61960787, 0.6039216, 0.6862745, 1)
 theme_override_font_sizes/font_size = 12
-text = "v0.0.7 alpha"
+text = "v0.0.8 alpha"
 
 [node name="DevToolsWindow" type="Window" parent="." unique_id=91807004]
 title = "Developer Tools"

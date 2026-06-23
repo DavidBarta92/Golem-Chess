@@ -18,7 +18,6 @@ func process(delta: float) -> void:
 	match_board.get_turn_hud_controller().update_turn_timer(delta)
 	match_board.get_turn_hud_controller().arrange_turn_timer_ui()
 	match_board.get_turn_hud_controller().arrange_rules_info_panel()
-	match_board.maybe_auto_end_turn_locally()
 
 func select_piece_for_action(piece_pos: Vector2) -> bool:
 	var player_id: int = match_board.get_own_player_id()

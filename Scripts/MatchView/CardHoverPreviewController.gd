@@ -8,6 +8,7 @@ var hover_card_margin: float = 24.0
 var hover_card_preview_scale: float = 0.82
 var hover_card_vertical_offset: float = 54.0
 var hover_card_rotation_degrees: float = -4.0
+var hover_card_visual_edge_overlap: float = 12.0
 var hover_piece_preview_size: Vector2 = Vector2(188, 224)
 var hover_piece_preview_vertical_offset: float = -78.0
 var description_text_margin: Vector2 = Vector2(22, 30)
@@ -32,6 +33,7 @@ func configure(config: Dictionary) -> void:
 	hover_card_preview_scale = float(config.get("hover_card_preview_scale", hover_card_preview_scale))
 	hover_card_vertical_offset = float(config.get("hover_card_vertical_offset", hover_card_vertical_offset))
 	hover_card_rotation_degrees = float(config.get("hover_card_rotation_degrees", hover_card_rotation_degrees))
+	hover_card_visual_edge_overlap = float(config.get("hover_card_visual_edge_overlap", hover_card_visual_edge_overlap))
 	hover_piece_preview_size = config.get("hover_piece_preview_size", hover_piece_preview_size)
 	hover_piece_preview_vertical_offset = float(config.get("hover_piece_preview_vertical_offset", hover_piece_preview_vertical_offset))
 	description_text_margin = config.get("description_text_margin", description_text_margin)
@@ -55,7 +57,7 @@ func create_ui() -> void:
 	hover_card_group.anchor_right = 1.0
 	hover_card_group.anchor_top = 0.5
 	hover_card_group.anchor_bottom = 0.5
-	var hover_card_group_size := Vector2(card_ui_size.x * 2.0, card_ui_size.y)
+	var hover_card_group_size := Vector2(card_ui_size.x * 2.0 - hover_card_visual_edge_overlap, card_ui_size.y)
 	hover_card_group.offset_right = -hover_card_margin
 	hover_card_group.offset_left = hover_card_group.offset_right - hover_card_group_size.x
 	hover_card_group.offset_top = -hover_card_group_size.y * 0.5 + hover_card_vertical_offset
@@ -175,8 +177,8 @@ func create_card_preview() -> void:
 	hover_card_preview.anchor_right = 0.0
 	hover_card_preview.anchor_top = 0.0
 	hover_card_preview.anchor_bottom = 0.0
-	hover_card_preview.offset_left = card_ui_size.x
-	hover_card_preview.offset_right = card_ui_size.x * 2.0
+	hover_card_preview.offset_left = card_ui_size.x - hover_card_visual_edge_overlap
+	hover_card_preview.offset_right = card_ui_size.x * 2.0 - hover_card_visual_edge_overlap
 	hover_card_preview.offset_top = 0.0
 	hover_card_preview.offset_bottom = card_ui_size.y
 	hover_card_preview.set_rest_scale(Vector2.ONE)

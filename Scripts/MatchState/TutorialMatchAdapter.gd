@@ -173,6 +173,7 @@ func set_attached_cards(attached_cards: Array) -> void:
 func reset_turn_state() -> void:
 	for owner_color in [1, -1]:
 		match_board.attached_card_this_turn[owner_color] = false
+		match_board.attached_card_count_this_turn[match_board.get_player_id_for_color(owner_color)] = 0
 		match_board.moved_piece_this_turn[owner_color] = false
 		match_board.exchanged_card_this_turn[owner_color] = false
 		match_board.played_card_hand_slots_this_turn[owner_color] = []

@@ -1281,7 +1281,7 @@ func _on_done_pressed() -> void:
 	_show_page(current_page)
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+	SceneTransition.change_scene(MAIN_MENU_SCENE)
 
 func _update_deck_editor_state() -> void:
 	if new_deck_button == null:

@@ -66,7 +66,7 @@ func _ready():
 
 func launch_dedicated_server_scene() -> void:
 	if get_tree():
-		get_tree().change_scene_to_file("res://Scenes/main.tscn")
+		SceneTransition.change_scene("res://Scenes/main.tscn")
 
 func should_start_dedicated_server_from_launch() -> bool:
 	if GameConfig.is_dedicated_server or OS.has_feature("dedicated_server"):
@@ -384,11 +384,11 @@ func _on_dev_tools_window_close_requested() -> void:
 
 func _on_singleplayer_button_pressed():
 	save_player_name()
-	get_tree().change_scene_to_file("res://Scenes/SingleplayerMenu.tscn")
+	SceneTransition.change_scene("res://Scenes/SingleplayerMenu.tscn")
 
 func _on_tutorial_button_pressed():
 	save_player_name()
-	get_tree().change_scene_to_file("res://Scenes/Tutorial.tscn")
+	SceneTransition.change_scene("res://Scenes/Tutorial.tscn")
 
 func _on_ai_vs_ai_button_pressed():
 	if !is_dev_tools_available():
@@ -406,7 +406,7 @@ func _on_ai_vs_ai_button_pressed():
 		if !selected_deck_id.is_empty():
 			GameConfig.select_deck_for_both_players(selected_deck_id)
 	GameConfig.start_ai_vs_ai_batch(match_count)
-	get_tree().change_scene_to_file("res://Scenes/main.tscn")
+	SceneTransition.change_scene("res://Scenes/main.tscn")
 
 func _on_promote_card_values_button_pressed() -> void:
 	if !is_dev_tools_available():
@@ -512,11 +512,11 @@ func save_player_name() -> void:
 
 func _on_multiplayer_button_pressed():
 	save_player_name()
-	get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
+	SceneTransition.change_scene("res://Scenes/MultiplayerMenu.tscn")
 
 func _on_deckbuilder_button_pressed():
 	save_player_name()
-	get_tree().change_scene_to_file("res://Scenes/Deckbuilder.tscn")
+	SceneTransition.change_scene("res://Scenes/Deckbuilder.tscn")
 
 func _on_exit_button_pressed():
 	get_tree().quit()

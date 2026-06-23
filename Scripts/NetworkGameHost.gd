@@ -1,6 +1,7 @@
 class_name NetworkGameHost
 
 const CODEX_BRIDGE_SCRIPT = preload("res://Scripts/CodexBridge.gd")
+const CHESS_CLOCK_SECONDS: float = 300.0
 
 var game_state: GameStateData
 var multiplayer_node
@@ -54,6 +55,21 @@ func process_codex_bridge_commands() -> bool:
 	if codex_bridge == null:
 		return false
 	return codex_bridge.process_command_file(self)
+
+func process(delta: float) -> void:
+	if GameConfig.is_singleplayer or game_state == null or game_state.game_over:
+		return
+	var active_player: int = game_state.current_turn_player
+	var remaining: float = maxf(float(game_state.player_clock_seconds.get(active_player, CHESS_CLOCK_SECONDS)) - maxf(delta, 0.0), 0.0)
+	game_state.player_clock_seconds[active_player] = remaining
+	if remaining > 0.0:
+		return
+	DebugLog.info("Chess clock expired for player: %d" % active_player)
+	finish_game(1 - active_player, "time_expired")
+	broadcast_full_state()
+
+func detach_multiplayer_node() -> void:
+	multiplayer_node = null
 
 func create_starting_deck_for_player_id(player_id: int) -> Array[String]:
 	if multiplayer_node != null && multiplayer_node.has_method("get_starting_deck_for_player_id"):
@@ -143,12 +159,14 @@ func handle_attach_card(action: Dictionary):
 		var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
 		var piece_card_before: String = piece.attached_card.card_name if piece.attached_card != null else ""
 		var piece_turns_before: int = piece.turns_remaining
-		piece.attach_card(card)
+		piece.attach_card(card, is_first_turn_for_player(player_id))
 
 		if !play_card_from_player_hand(player_id, card_name, hand_index):
 			piece.detach_card()
 			push_warning("Card could not be removed from hand.")
 			return
+		game_state.attached_card_this_turn[player_id] = true
+		game_state.attached_card_count_this_turn[player_id] = int(game_state.attached_card_count_this_turn.get(player_id, 0)) + 1
 		if MoveRules.is_nexus_card(card):
 			if player_id == 0:
 				game_state.white_nexus_position = piece_pos
@@ -173,7 +191,9 @@ func handle_attach_card(action: Dictionary):
 		log_turn_snapshot("after_attach")
 
 		DebugLog.info("Card attached successfully")
-		if maybe_auto_end_turn(player_id):
+		if is_first_turn_for_player(player_id) and int(game_state.attached_card_count_this_turn.get(player_id, 0)) >= DeckManager.HAND_SIZE:
+			DebugLog.info("Three first-turn stamps attached. Ending turn for player: %d" % player_id)
+			end_current_turn()
 			return
 		broadcast_full_state()
 
@@ -234,8 +254,6 @@ func handle_exchange_card(action: Dictionary):
 	log_card_drawn(player_id, drawn_card_name, hand_before, deck_before, deck_top_before, "hand", "hand_exchange")
 	log_turn_snapshot("after_exchange")
 
-	if maybe_auto_end_turn(player_id):
-		return true
 	broadcast_full_state()
 	return true
 
@@ -306,7 +324,7 @@ func handle_move_piece(action: Dictionary):
 				log_move_result(move_log_context, "capturing_piece_removed")
 				game_state.moved_piece_this_turn[player_id] = true
 				log_turn_snapshot("after_move")
-				broadcast_full_state()
+				end_current_turn()
 				return
 
 		if captured_nexus && captured_piece.attached_card != null:
@@ -382,22 +400,16 @@ func handle_move_piece(action: Dictionary):
 	game_state.moved_piece_this_turn[player_id] = true
 	log_turn_snapshot("after_move")
 
-	DebugLog.info("Move complete. Waiting for END TURN from player: %s" % game_state.current_turn_player)
-
-	if maybe_auto_end_turn(player_id):
-		return
-	broadcast_full_state()
+	DebugLog.info("Move complete. Ending turn for player: %s" % game_state.current_turn_player)
+	end_current_turn()
 
 func handle_end_turn(action: Dictionary):
 	var player_id: int = int(action.player_id)
-	DebugLog.info("End turn: player=%s" % player_id)
-
-	if game_state.game_over:
+	if game_state.game_over or game_state.current_turn_player != player_id:
 		return
-	if game_state.current_turn_player != player_id:
-		push_warning("It is not this player's turn.")
+	if !can_end_turn_by_button(player_id):
+		push_warning("End turn rejected for player %d: a move is required unless the first-turn or frozen-piece exception applies." % player_id)
 		return
-
 	end_current_turn()
 
 func end_current_turn():
@@ -407,6 +419,7 @@ func end_current_turn():
 	var ending_player_id: int = game_state.current_turn_player
 	refill_played_cards_for_player(ending_player_id)
 	clear_piece_exhaustion_for_player(ending_player_id)
+	game_state.completed_turn_counts[ending_player_id] = int(game_state.completed_turn_counts.get(ending_player_id, 0)) + 1
 	game_state.switch_turn()
 	advance_logged_turn()
 	CardEffectResolver.tick_board_effects(game_state)
@@ -459,14 +472,10 @@ func get_random_empty_home_position(player_id: int) -> Vector2:
 	return CardEffectResolver.get_random_empty_home_position(game_state, player_id)
 
 func maybe_auto_end_turn(player_id: int) -> bool:
-	if game_state.game_over or game_state.current_turn_player != player_id:
-		return false
-	if player_has_remaining_turn_action(player_id):
-		return false
+	return false
 
-	DebugLog.info("All available turn actions are complete. Auto-ending turn for player: %s" % player_id)
-	end_current_turn()
-	return true
+func is_first_turn_for_player(player_id: int) -> bool:
+	return int(game_state.completed_turn_counts.get(player_id, 0)) == 0
 
 func player_has_remaining_turn_action(player_id: int) -> bool:
 	if can_attach_any_card_for_player(player_id):
@@ -525,16 +534,26 @@ func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 	return true
 
 func player_has_valid_turn_action(player_id: int) -> bool:
-	var player_color: int = BoardConfig.get_color_for_player_id(player_id)
-	var can_move_piece: bool = !bool(game_state.moved_piece_this_turn.get(player_id, false))
-	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
-	if can_move_piece && MoveRules.has_valid_piece_move(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects):
+	if is_first_turn_for_player(player_id):
+		return int(game_state.attached_card_count_this_turn.get(player_id, 0)) > 0 or can_attach_any_card_for_player(player_id)
+	if can_move_any_piece_for_player(player_id):
 		return true
-	if MoveRules.has_valid_attachment_move(game_state.pieces, player_color, hand_cards, BoardConfig.BOARD_SIZE, game_state.board_effects):
+	if can_attach_any_card_for_player(player_id):
 		return true
-	if should_hold_turn_for_optional_exchange(player_id):
+	if can_end_turn_due_to_frozen_piece(player_id):
 		return true
 	return false
+
+func can_end_turn_by_button(player_id: int) -> bool:
+	if is_first_turn_for_player(player_id):
+		return int(game_state.attached_card_count_this_turn.get(player_id, 0)) >= 1
+	return can_end_turn_due_to_frozen_piece(player_id)
+
+func can_end_turn_due_to_frozen_piece(player_id: int) -> bool:
+	if can_move_any_piece_for_player(player_id):
+		return false
+	var player_color: int = BoardConfig.get_color_for_player_id(player_id)
+	return MoveRules.has_frozen_movable_piece(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects)
 
 func can_exchange_card_for_player(player_id: int) -> bool:
 	if bool(game_state.exchanged_card_this_turn.get(player_id, false)):
@@ -611,6 +630,9 @@ func is_valid_move(_piece: Piece, from_pos: Vector2, to_pos: Vector2, player_id:
 
 func broadcast_full_state():
 	DebugLog.info("Broadcasting full state")
+	if multiplayer_node == null or !is_instance_valid(multiplayer_node):
+		DebugLog.info("State broadcast skipped: multiplayer node is no longer available")
+		return
 
 	var local_viewer_player_id: int = get_viewer_player_id_for_peer(1)
 	var local_state_data: Dictionary = serialize_state_for_player(local_viewer_player_id)
@@ -648,7 +670,8 @@ func broadcast_full_state():
 			local_state_data.last_move,
 			local_state_data.player_portraits,
 			int(local_state_data.get("viewer_player_id", -1)),
-			local_state_data.turn_action_state
+			local_state_data.turn_action_state,
+			local_state_data.player_clock_seconds
 		)
 
 	for peer_id in multiplayer_node.connected_peer_ids:
@@ -697,6 +720,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"recent_pending_respawn_arrivals": serialize_recent_pending_respawn_arrivals(),
 		"last_move": serialize_last_move_for_player(viewer_player_id),
 		"turn_action_state": serialize_turn_action_state(),
+		"player_clock_seconds": game_state.player_clock_seconds.duplicate(),
 	}
 
 	for pos in game_state.pieces:
@@ -721,6 +745,8 @@ func serialize_turn_action_state() -> Dictionary:
 		"attached_card_this_turn": duplicate_bool_dictionary(game_state.attached_card_this_turn),
 		"moved_piece_this_turn": duplicate_bool_dictionary(game_state.moved_piece_this_turn),
 		"exchanged_card_this_turn": duplicate_bool_dictionary(game_state.exchanged_card_this_turn),
+		"attached_card_count_this_turn": game_state.attached_card_count_this_turn.duplicate(),
+		"completed_turn_counts": game_state.completed_turn_counts.duplicate(),
 	}
 
 func duplicate_bool_dictionary(source: Dictionary) -> Dictionary:
@@ -847,6 +873,8 @@ func append_hidden_card_data(hidden_cards: Array, piece: Piece) -> void:
 	})
 
 func get_viewer_player_id_for_peer(peer_id: int) -> int:
+	if multiplayer_node == null or !is_instance_valid(multiplayer_node):
+		return 0
 	if multiplayer_node.peer_player_ids.has(peer_id):
 		return int(multiplayer_node.peer_player_ids[peer_id])
 	return 0

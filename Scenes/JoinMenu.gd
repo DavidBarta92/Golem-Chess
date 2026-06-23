@@ -26,10 +26,10 @@ func _on_connect_button_pressed():
 	GameConfig.server_ip = ip
 	GameConfig.server_port = port
 
-	get_tree().change_scene_to_file("res://Scenes/main.tscn")
+	SceneTransition.change_scene("res://Scenes/main.tscn")
 
 func _on_back_button_pressed():
-	get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
+	SceneTransition.change_scene("res://Scenes/MultiplayerMenu.tscn")
 
 func _parse_endpoint(raw_ip: String, raw_port: String) -> Dictionary:
 	var ip: String = raw_ip.strip_edges()

@@ -57,12 +57,12 @@ func choose_planned_turn(
 	var turn_plans: Array[Dictionary] = create_turn_plans_from_state(game_state, player_id, board_size)
 	if turn_plans.is_empty():
 		planning_evaluator = null
-		return create_plan([make_end_turn_action(player_id)], {}, [], "end_turn")
+		return {}
 
 	var selected_plan: Dictionary = evaluator.choose_best_turn_plan(game_state, player_id, turn_plans, board_size, self)
 	if selected_plan.is_empty():
 		planning_evaluator = null
-		return create_plan([make_end_turn_action(player_id)], {}, [], "end_turn")
+		return {}
 
 	var selected_profile: Dictionary = evaluator.last_profile.duplicate()
 	selected_profile["own_turn_plan_count"] = turn_plans.size()
@@ -92,7 +92,7 @@ func execute_sequential_turn(
 	while can_continue_sequential_turn(host, player_id):
 		if attach_actions_played < MAX_SEQUENTIAL_ATTACH_ACTIONS:
 			var best_attach: Dictionary = find_best_attach_setup(host.game_state, player_id, evaluator, board_size, profile)
-			var attach_threshold: float = get_attach_setup_threshold(host.game_state, player_id)
+			var attach_threshold: float = -INF if int(host.game_state.completed_turn_counts.get(player_id, 0)) == 0 else get_attach_setup_threshold(host.game_state, player_id)
 			best_score_seen = max(best_score_seen, float(best_attach.get("score", -INF)))
 			if float(best_attach.get("score", -INF)) >= attach_threshold:
 				var attach_action: Dictionary = best_attach.get("action", {})
@@ -118,7 +118,7 @@ func execute_sequential_turn(
 		if !selected_move.is_empty():
 			await execute_ai_action(host, tree, make_move_action(player_id, selected_move), action_delay, selected_actions)
 
-	if can_continue_sequential_turn(host, player_id):
+	if can_continue_sequential_turn(host, player_id) and int(host.game_state.completed_turn_counts.get(player_id, 0)) == 0 and int(host.game_state.attached_card_count_this_turn.get(player_id, 0)) > 0:
 		await execute_ai_action(host, tree, make_end_turn_action(player_id), action_delay, selected_actions)
 
 	return create_sequential_plan(selected_actions, selected_move, setup_attach_actions, best_score_seen, profile)
@@ -325,10 +325,6 @@ func create_turn_plans_from_state(game_state: GameStateData, player_id: int, boa
 		board_size
 	)
 
-	if plans.is_empty():
-		var end_actions: Array[Dictionary] = [make_end_turn_action(player_id)]
-		plans.append(create_plan(end_actions, {}, [], "end_turn"))
-
 	return plans
 
 func add_sequential_turn_plan_branches(
@@ -409,12 +405,12 @@ func add_current_state_finish_plans(
 	if plans.size() >= MAX_GENERATED_TURN_PLANS:
 		return
 
-	if !setup_attach_actions.is_empty() or !prefix_actions.is_empty():
+	var is_first_turn: bool = int(game_state.completed_turn_counts.get(player_id, 0)) == 0
+	if is_first_turn and !setup_attach_actions.is_empty():
 		var setup_only_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 		setup_only_actions.append(make_end_turn_action(player_id))
 		plans.append(create_plan(setup_only_actions, {}, duplicate_actions(setup_attach_actions), "setup_only"))
-		if plans.size() >= MAX_GENERATED_TURN_PLANS:
-			return
+		return
 
 	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
 		return
@@ -432,7 +428,6 @@ func add_current_state_finish_plans(
 
 		var move_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 		move_actions.append(make_move_action(player_id, move))
-		move_actions.append(make_end_turn_action(player_id))
 		var plan_type: String = "setup_move" if !setup_attach_actions.is_empty() else "move"
 		plans.append(create_plan(move_actions, move, duplicate_actions(setup_attach_actions), plan_type))
 
@@ -532,16 +527,6 @@ func add_branch_plans(
 		move_actions.append(make_move_action(player_id, move))
 		plans.append(create_plan(move_actions, move, [], "move"))
 
-		if can_attach && !bool(move.get("requires_attach", false)):
-			add_move_then_attach_plans(
-				plans,
-				game_state,
-				player_id,
-				hand_cards,
-				prefix_actions,
-				move,
-				board_size
-			)
 
 func add_move_then_attach_plans(
 	plans: Array[Dictionary],
@@ -584,7 +569,6 @@ func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, p
 
 	var actions: Array = plan.get("actions", [])
 	if actions.is_empty():
-		host.on_player_action(make_end_turn_action(player_id))
 		return false
 
 	for action_value in actions:
@@ -599,9 +583,6 @@ func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, p
 		var delay: float = get_ai_action_delay(action, action_delay)
 		if tree != null and delay > 0.0:
 			await tree.create_timer(delay).timeout
-
-	if host.game_state.current_turn_player == player_id && !host.player_has_remaining_turn_action(player_id):
-		host.on_player_action(make_end_turn_action(player_id))
 
 	return true
 

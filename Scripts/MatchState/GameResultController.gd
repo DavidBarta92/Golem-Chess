@@ -2,10 +2,12 @@ extends RefCounted
 
 var match_board
 var main_menu_scene: String = "res://Scenes/MainMenu.tscn"
+var match_end_feedback_scene: String = "res://Scenes/MatchEndFeedback.tscn"
 
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
 	main_menu_scene = str(config.get("main_menu_scene", main_menu_scene))
+	match_end_feedback_scene = str(config.get("match_end_feedback_scene", match_end_feedback_scene))
 
 func finish_if_current_player_has_no_valid_turn() -> bool:
 	if match_board.game_over:
@@ -39,7 +41,7 @@ func finish_game(winner_color: int) -> void:
 	if match_board.get_parent().has_method("close_game_connection"):
 		match_board.get_parent().close_game_connection()
 	if match_board.get_tree():
-		match_board.get_tree().change_scene_to_file(next_scene)
+		SceneTransition.change_scene(next_scene)
 
 func get_next_scene_after_game(winner_color: int) -> String:
 	if GameConfig.is_ai_vs_ai_batch:
@@ -56,8 +58,9 @@ func get_next_scene_after_game(winner_color: int) -> String:
 			return "res://Scenes/main.tscn"
 
 		GameConfig.stop_ai_vs_ai_batch()
+		return main_menu_scene
 
-	return main_menu_scene
+	return match_end_feedback_scene
 
 func award_win_points_if_applicable(winner_color: int) -> void:
 	if !should_award_win_points(winner_color):

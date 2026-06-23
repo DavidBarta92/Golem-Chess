@@ -6,6 +6,8 @@ var player_decks: Dictionary = {}  # int (player_id) -> Array[String] (card name
 var player_initial_decks: Dictionary = {}  # int (player_id) -> Array[String] (full starting deck order)
 var player_hands: Dictionary = {}  # int (player_id) -> Array[String] (card names)
 var current_turn_player: int = 0  # 0 = white, 1 = black
+var completed_turn_counts: Dictionary = {0: 0, 1: 0}
+var player_clock_seconds: Dictionary = {0: 300.0, 1: 300.0}
 var white_nexus_position: Vector2 = Vector2(-1, -1)
 var black_nexus_position: Vector2 = Vector2(-1, -1)
 var player_base_fields: Dictionary = {
@@ -26,6 +28,10 @@ var pending_respawns: Dictionary = {
 var attached_card_this_turn: Dictionary = {
 	0: false,
 	1: false,
+}
+var attached_card_count_this_turn: Dictionary = {
+	0: 0,
+	1: 0,
 }
 var moved_piece_this_turn: Dictionary = {
 	0: false,
@@ -66,6 +72,7 @@ func is_white_turn() -> bool:
 func switch_turn():
 	current_turn_player = 1 - current_turn_player
 	attached_card_this_turn[current_turn_player] = false
+	attached_card_count_this_turn[current_turn_player] = 0
 	moved_piece_this_turn[current_turn_player] = false
 	exchanged_card_this_turn[current_turn_player] = false
 	played_card_hand_slots_this_turn[current_turn_player] = []

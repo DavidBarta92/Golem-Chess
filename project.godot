@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Golem"
-config/version="0.0.7"
+config/version="0.0.8"
 run/main_scene="uid://b2oed0tahffou"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
@@ -30,6 +30,7 @@ PlayerProgressStore="*res://Scripts/PlayerProgressStore.gd"
 GameConfig="*res://GameConfig.gd"
 PlayerSettingsStore="*res://Scripts/PlayerSettingsStore.gd"
 GameController="*res://Scripts/GameController.gd"
+SceneTransition="*res://Scripts/SceneTransition.gd"
 
 [display]
 
@@ -39,6 +40,10 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/size/min_width=1024
 window/size/min_height=576
+
+[gui]
+
+theme/custom="res://ui/themes/global_theme.tres"
 
 [rendering]
 

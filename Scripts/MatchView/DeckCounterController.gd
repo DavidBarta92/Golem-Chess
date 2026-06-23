@@ -88,16 +88,20 @@ func create_deck_counter_ui() -> void:
 
 	update_deck_counter_ui(false)
 
-func create_digit_counter_container(counter_name: String, digit_owner_key: int) -> Control:
+func create_digit_counter_container(counter_name: String, digit_owner_key: int, digit_count: int = 2, show_middle_separator: bool = false) -> Control:
 	if canvas_layer == null or !is_instance_valid(canvas_layer):
 		return null
+	digit_count = maxi(digit_count, 1)
+	var separator_width: float = 14.0 if show_middle_separator and digit_count == 4 else 0.0
+	var content_width: float = deck_counter_background_size.x * float(digit_count) + deck_counter_digit_gap * float(digit_count - 1) + separator_width
+	var counter_frame_size := Vector2(content_width + deck_counter_content_offset.x * 2.0, deck_counter_frame_size.y)
 
 	var counter_container := Control.new()
 	canvas_layer.add_child(counter_container)
 	counter_container.name = counter_name
 	counter_container.visible = false
 	counter_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	counter_container.size = deck_counter_size
+	counter_container.size = counter_frame_size
 	counter_container.z_index = deck_counter_z_index
 
 	var frame_rect := TextureRect.new()
@@ -108,13 +112,14 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int) 
 	frame_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	frame_rect.stretch_mode = TextureRect.STRETCH_SCALE
-	frame_rect.size = deck_counter_frame_size
+	frame_rect.size = counter_frame_size
 	frame_rect.position = Vector2.ZERO
 	frame_rect.z_index = 0
 
 	var digit_nodes: Array = []
-	for digit_index in range(2):
-		var digit_position := deck_counter_content_offset + Vector2(digit_index * (deck_counter_background_size.x + deck_counter_digit_gap), 0.0)
+	for digit_index in range(digit_count):
+		var separator_offset: float = separator_width if digit_index >= 2 else 0.0
+		var digit_position := deck_counter_content_offset + Vector2(digit_index * (deck_counter_background_size.x + deck_counter_digit_gap) + separator_offset, 0.0)
 
 		var background_rect := TextureRect.new()
 		counter_container.add_child(background_rect)
@@ -166,6 +171,20 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int) 
 		shadow_rect.position = digit_position
 		shadow_rect.z_index = 3
 
+	if separator_width > 0.0:
+		var separator := Label.new()
+		counter_container.add_child(separator)
+		separator.name = "Separator"
+		separator.text = ":"
+		separator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		separator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		separator.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		separator.add_theme_font_size_override("font_size", 22)
+		separator.add_theme_color_override("font_color", Color(0.08, 0.075, 0.065, 1.0))
+		separator.position = deck_counter_content_offset + Vector2(deck_counter_background_size.x * 2.0, 0.0)
+		separator.size = Vector2(separator_width, deck_counter_background_size.y)
+		separator.z_index = 4
+
 	deck_counter_digit_nodes[digit_owner_key] = digit_nodes
 	return counter_container
 
@@ -186,7 +205,13 @@ func update_deck_counter_ui(animate: bool = true) -> void:
 		set_deck_counter_value(owner_color, get_card_deck_count(owner_color), animate)
 
 func set_deck_counter_value(owner_color: int, count: int, animate: bool) -> void:
-	var safe_count: int = clampi(count, 0, 99)
+	var digit_nodes: Array = deck_counter_digit_nodes.get(owner_color, [])
+	var digit_count: int = maxi(digit_nodes.size(), 2)
+	var maximum_value: int = 1
+	for _digit_index in range(digit_count):
+		maximum_value *= 10
+	maximum_value -= 1
+	var safe_count: int = clampi(count, 0, maximum_value)
 	var previous_count: int = int(deck_counter_values.get(owner_color, -1))
 	if previous_count == safe_count:
 		return
@@ -197,10 +222,13 @@ func set_deck_counter_value(owner_color: int, count: int, animate: bool) -> void
 	if should_animate and safe_count < previous_count:
 		direction = -1
 
-	var tens_digit: int = floori(float(safe_count) / 10.0)
-	var ones_digit: int = safe_count % 10
-	update_deck_counter_digit(owner_color, 0, tens_digit, direction, should_animate)
-	update_deck_counter_digit(owner_color, 1, ones_digit, direction, should_animate)
+	var divisor: int = 1
+	for _digit_index in range(digit_count - 1):
+		divisor *= 10
+	for digit_index in range(digit_count):
+		var target_digit: int = floori(float(safe_count) / float(divisor)) % 10
+		update_deck_counter_digit(owner_color, digit_index, target_digit, direction, should_animate)
+		divisor = maxi(floori(float(divisor) / 10.0), 1)
 
 func update_deck_counter_digit(owner_color: int, digit_index: int, target_digit: int, direction: int, animate: bool) -> void:
 	var digit_key: String = get_deck_counter_digit_key(owner_color, digit_index)

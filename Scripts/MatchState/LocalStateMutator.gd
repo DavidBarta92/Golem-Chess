@@ -393,9 +393,19 @@ func current_player_has_valid_turn_action() -> bool:
 		return true
 	if MoveRules.has_valid_attachment_move(piece_objects, current_color, hand_cards, board_size, board_effects):
 		return true
+	if current_player_can_end_turn_due_to_frozen_piece():
+		return true
 	if can_exchange_card(current_color):
 		return true
 	return false
+
+func current_player_can_end_turn_due_to_frozen_piece() -> bool:
+	var current_color: int = get_current_turn_color()
+	if has_moved_piece_this_turn(current_color):
+		return false
+	if MoveRules.has_valid_piece_move(piece_objects, current_color, board_size, board_effects):
+		return false
+	return MoveRules.has_frozen_movable_piece(piece_objects, current_color, board_size, board_effects)
 
 func get_card_hand(owner_color: int) -> Array[Card]:
 	if card_hand_provider.is_valid():

@@ -11,10 +11,12 @@ var move_option_dot_texture: Texture2D
 var move_option_dot_shader: Shader
 var cell_width: float = 36.0
 var board_size: int = 9
-var move_option_dot_cell_width_ratio: float = 0.45
+var move_option_dot_cell_width_ratio: float = 0.58
 var move_option_dot_shader_speed: float = 0.24
 var move_option_dot_shader_glow_strength: float = 2.0
 var move_option_dot_shader_edge_softness: float = 0.85
+var move_option_dot_shader_pulse_min_scale: float = 0.88
+var move_option_dot_shader_pulse_max_scale: float = 1.18
 var move_option_dot_shader_color: Color = Color(1.0, 0.94, 0.78, 1.0)
 var last_move_arrow_color: Color = Color(1.0, 0.88, 0.18, 1.0)
 var last_move_arrow_width: float = 3.0
@@ -50,6 +52,8 @@ func configure(config: Dictionary) -> void:
 	move_option_dot_shader_speed = float(config.get("move_option_dot_shader_speed", move_option_dot_shader_speed))
 	move_option_dot_shader_glow_strength = float(config.get("move_option_dot_shader_glow_strength", move_option_dot_shader_glow_strength))
 	move_option_dot_shader_edge_softness = float(config.get("move_option_dot_shader_edge_softness", move_option_dot_shader_edge_softness))
+	move_option_dot_shader_pulse_min_scale = float(config.get("move_option_dot_shader_pulse_min_scale", move_option_dot_shader_pulse_min_scale))
+	move_option_dot_shader_pulse_max_scale = float(config.get("move_option_dot_shader_pulse_max_scale", move_option_dot_shader_pulse_max_scale))
 	move_option_dot_shader_color = config.get("move_option_dot_shader_color", move_option_dot_shader_color)
 	last_move_arrow_color = config.get("last_move_arrow_color", last_move_arrow_color)
 	last_move_arrow_width = float(config.get("last_move_arrow_width", last_move_arrow_width))
@@ -177,6 +181,8 @@ func create_move_option_dot_material(pulse_strength: float) -> ShaderMaterial:
 	material.set_shader_parameter("speed", move_option_dot_shader_speed)
 	material.set_shader_parameter("glow_strength", move_option_dot_shader_glow_strength)
 	material.set_shader_parameter("edge_softness", move_option_dot_shader_edge_softness)
+	material.set_shader_parameter("pulse_min_scale", move_option_dot_shader_pulse_min_scale)
+	material.set_shader_parameter("pulse_max_scale", move_option_dot_shader_pulse_max_scale)
 	material.set_shader_parameter("color", move_option_dot_shader_color)
 	material.set_shader_parameter("pulse_strength", pulse_strength)
 	return material

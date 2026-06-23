@@ -24,8 +24,11 @@ func update_from_server_state(
 	last_move: Dictionary = {},
 	player_portraits: Dictionary = {},
 	viewer_player_id: int = -1,
-	turn_action_state: Dictionary = {}
+	turn_action_state: Dictionary = {},
+	player_clock_seconds: Dictionary = {}
 ) -> void:
+	await wait_for_active_piece_move_animation()
+
 	var previous_piece_visual_state: Dictionary = match_board.get_piece_visual_state_snapshot()
 	var previous_hidden_card_counts: Dictionary = match_board.hidden_card_counts.duplicate()
 	var current_hidden_card_counts: Dictionary = match_board.get_match_state_sync_controller().get_hidden_card_counts_from_state(hidden_cards)
@@ -56,6 +59,7 @@ func update_from_server_state(
 	match_board.current_last_move = match_board.get_match_state_sync_controller().parse_last_move(last_move)
 	if !apply_turn_action_state_from_server(turn_action_state):
 		apply_missing_turn_action_state_fallback()
+	match_board.get_turn_hud_controller().sync_player_clocks(player_clock_seconds)
 	match_board.update_end_turn_button()
 	match_board.get_turn_hud_controller().update_action_status_ui()
 	match_board.white_card_hand = match_board.create_card_hand_from_names(current_white_hand_names)
@@ -137,6 +141,10 @@ func update_from_server_state(
 
 	match_board.finish_server_state_visual_update(visual_context)
 
+func wait_for_active_piece_move_animation() -> void:
+	while match_board != null and match_board.is_inside_tree() and match_board.active_piece_move_animation_count > 0:
+		await match_board.get_tree().process_frame
+
 func apply_viewer_player_id(viewer_player_id: int) -> void:
 	if viewer_player_id != 0 and viewer_player_id != 1:
 		return
@@ -155,6 +163,8 @@ func apply_turn_action_state_from_server(turn_action_state: Dictionary) -> bool:
 		match_board.attached_card_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "attached_card_this_turn", player_id)
 		match_board.moved_piece_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "moved_piece_this_turn", player_id)
 		match_board.exchanged_card_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "exchanged_card_this_turn", player_id)
+		match_board.attached_card_count_this_turn[player_id] = get_turn_action_int(turn_action_state, "attached_card_count_this_turn", player_id)
+		match_board.completed_turn_counts[player_id] = get_turn_action_int(turn_action_state, "completed_turn_counts", player_id)
 	return true
 
 func apply_missing_turn_action_state_fallback() -> void:
@@ -174,3 +184,9 @@ func get_turn_action_flag(turn_action_state: Dictionary, flag_name: String, play
 	if flags.has(player_key):
 		return bool(flags[player_key])
 	return false
+
+func get_turn_action_int(turn_action_state: Dictionary, value_name: String, player_id: int) -> int:
+	var values = turn_action_state.get(value_name, {})
+	if !(values is Dictionary):
+		return 0
+	return int(values.get(player_id, values.get(str(player_id), 0)))

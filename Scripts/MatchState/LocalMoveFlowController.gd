@@ -34,9 +34,12 @@ func set_move(start_pos: Vector2, end_pos: Vector2) -> void:
 
 	resolve_local_move_capture_respawn(move_context)
 	finish_local_move_state_updates(move_context)
-	DebugLog.info("set_move() end: waiting for END TURN")
+	DebugLog.info("set_move() end")
 
 	await play_local_move_transition(move_context)
+	if !match_board.tutorial_mode_active:
+		match_board.get_turn_flow_controller().end_current_turn_locally()
+		return
 	restore_local_move_selection(move_context)
 
 func create_local_move_context(start_pos: Vector2, end_pos: Vector2) -> Dictionary:

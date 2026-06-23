@@ -78,10 +78,12 @@ const MOVE_OPTION_DOT_SHADER = preload("res://Shaders/move_option_dot.gdshader")
 const HIDDEN_CARD_INVISIBILITY_SHADER = preload("res://Shaders/hidden_card_invisibility.gdshader")
 const BOARD_KUWAHARA_SHADER = preload("res://Shaders/board_kuwahara.gdshader")
 const PIECE_KUWAHARA_SHADER = preload("res://Shaders/piece_kuwahara.gdshader")
-const MOVE_OPTION_DOT_CELL_WIDTH_RATIO: float = 0.45
+const MOVE_OPTION_DOT_CELL_WIDTH_RATIO: float = 0.58
 const MOVE_OPTION_DOT_SHADER_SPEED: float = 0.24
 const MOVE_OPTION_DOT_SHADER_GLOW_STRENGTH: float = 2.0
 const MOVE_OPTION_DOT_SHADER_EDGE_SOFTNESS: float = 0.85
+const MOVE_OPTION_DOT_SHADER_PULSE_MIN_SCALE: float = 0.88
+const MOVE_OPTION_DOT_SHADER_PULSE_MAX_SCALE: float = 1.18
 const MOVE_OPTION_DOT_SHADER_COLOR = Color(1.0, 0.94, 0.78, 1.0)
 const HIDDEN_CARD_INVISIBILITY_RADIUS: float = 0.32
 const HIDDEN_CARD_INVISIBILITY_EFFECT_CONTROL: float = 0.76
@@ -171,6 +173,7 @@ const PLAYER_HAND_SIZE = DeckManager.HAND_SIZE
 const CARD_UI_SIZE = Vector2(164, 229)
 const CARD_HAND_SCALE = 0.648
 const DECK_CARD_SCALE = CARD_HAND_SCALE
+const DECK_EXTRA_LEFT_OFFSET: float = 200.0
 const CARD_RETURN_TO_DECK_START_SCALE: float = 0.74 * 0.75
 const CARD_RETURN_TO_DECK_END_SCALE: float = DECK_CARD_SCALE * 0.50
 const CARD_RETURN_TO_DECK_DURATION: float = 0.62
@@ -181,6 +184,7 @@ const HOVER_CARD_MARGIN = 24
 const HOVER_CARD_PREVIEW_SCALE: float = 0.82
 const HOVER_CARD_VERTICAL_OFFSET: float = 54.0
 const HOVER_CARD_ROTATION_DEGREES: float = -4.0
+const HOVER_CARD_VISUAL_EDGE_OVERLAP: float = 12.0
 const HOVER_PIECE_PREVIEW_SIZE = Vector2(188, 224)
 const HOVER_PIECE_PREVIEW_VERTICAL_OFFSET: float = -78.0
 const HOVER_DESCRIPTION_TEXT_MARGIN = Vector2(22, 30)
@@ -287,7 +291,7 @@ const DECK_COUNTER_ROLL_DURATION: float = 0.34
 const DECK_COUNTER_MOTION_BLUR: float = 1.0
 const DECK_COUNTER_OFFSET = Vector2(0.0, 0.0)
 const DECK_COUNTER_Z_INDEX: int = 952
-const TURN_TIMER_LIMIT_SECONDS: int = 20
+const TURN_TIMER_LIMIT_SECONDS: int = 300
 const TURN_TIMER_COUNTER_KEY: int = 0
 const TURN_TIMER_GAP: float = 8.0
 const TURN_TIMER_Z_INDEX: int = 961
@@ -298,7 +302,7 @@ const PLAYER_PORTRAIT_MARGIN = 22
 const PLAYER_PORTRAIT_TOP_POSITION = Vector2(70, 4)
 const PLAYER_PORTRAIT_Z_INDEX: int = 928
 const RULES_INFO_BUTTON_SIZE = Vector2(40, 40)
-const RULES_INFO_PANEL_SIZE = Vector2(310, 286)
+const RULES_INFO_PANEL_SIZE = Vector2(340, 390)
 const RULES_INFO_PANEL_MARGIN = 24
 const END_TURN_INDICATOR_PADDING: float = 7.0
 const END_TURN_INDICATOR_COLOR = Color(1.0, 1.0, 1.0, 0.92)
@@ -320,13 +324,14 @@ const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
+const MATCH_END_FEEDBACK_SCENE = "res://Scenes/MatchEndFeedback.tscn"
 const CARD_BURN_SEQUENCE_GAP = 0.08
 const TUTORIAL_ACTION_SELECT_PIECE = "select_piece"
 const TUTORIAL_ACTION_ATTACH_CARD = "attach_card"
 const TUTORIAL_ACTION_MOVE_PIECE = "move_piece"
 const TUTORIAL_ACTION_EXCHANGE_CARD = "exchange_card"
 const TUTORIAL_ACTION_END_TURN = "end_turn"
-const RULES_INFO_TEXT: String = "Goal: attach a Nexus card to one of your pieces, then move that Nexus onto the opponent's base square.\n\nTurn flow:\n1. Play any number of cards from your hand onto your empty pieces.\n2. Move one ready piece using its attached card pattern.\n3. End your turn. Each card you played is replaced from your deck.\n\nCards:\n- Your hand holds up to 3 cards.\n- Once per turn, drag a hand card onto your deck to replace it.\n- Duration only drops when that piece moves.\n\nCaptures:\n- The first captured piece respawns locked on an empty non-base home-row square. If none is available, its fragments wait at the board edge until one opens. The next captured piece unlocks the waiting respawn instead of creating another.\n- Their attached card is removed. Nexus cards return to their owner's deck."
+const RULES_INFO_TEXT: String = "Goal: attach a Nexus stamp to one of your pieces, then move that Nexus onto the opponent's base square.\n\nTurn flow:\n1. On your first turn, attach at least one stamp, then press End Turn. Attaching all 3 stamps ends it automatically.\n2. On later turns, switch and attach before moving.\n3. Moving is mandatory and immediately ends the turn. If a frozen stamped piece leaves you with no legal move, press End Turn.\n\nStamps:\n- Your hand holds up to 3 stamps.\n- Once per turn, drag a hand stamp onto your deck to replace it.\n- Duration drops only when that piece moves.\n\nMultiplayer:\n- Each player has five minutes for the match. Only the active player's clock runs.\n\nCaptures:\n- The first captured piece respawns locked on an empty non-base home-row square. The next capture unlocks it.\n- Its attached stamp is removed. Nexus stamps return to their owner's deck."
 const PIECE_SHATTER_FRAGMENT_GROUP_NONE: String = ""
 const PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM: String = "bottom"
 const PIECE_SHATTER_FRAGMENT_GROUP_TOP: String = "top"
@@ -368,7 +373,18 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @export var piece_move_animation_enabled: bool = true
 @export var piece_move_avoid_occupied_footprints: bool = true
 @export_range(0.05, 1.0, 0.01) var piece_move_duration: float = 0.32
-@export_range(0.0, 0.5, 0.01) var piece_move_lift_ratio: float = 0.08
+@export_range(0.0, 0.5, 0.01) var piece_move_lift_ratio: float = 0.16
+@export_range(0.05, 0.5, 0.01) var piece_move_lift_duration: float = 0.16
+@export_range(0.05, 0.5, 0.01) var piece_move_drop_duration: float = 0.18
+@export_range(0.03, 0.3, 0.01) var piece_move_wobble_step_duration: float = 0.12
+@export_range(0.0, 8.0, 0.1) var piece_move_wobble_rotation_degrees: float = 2.4
+@export_range(0.0, 5.0, 0.1) var piece_move_travel_tilt_degrees: float = 1.4
+@export var piece_move_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.30)
+@export var piece_move_shadow_radius_scale: Vector2 = Vector2(0.92, 0.72)
+@export_range(0.01, 0.9, 0.01) var piece_move_shadow_ground_edge_softness: float = 0.10
+@export_range(0.01, 0.9, 0.01) var piece_move_shadow_lifted_edge_softness: float = 0.72
+@export var piece_move_shadow_lifted_scale: Vector2 = Vector2(1.38, 1.28)
+@export_range(0.05, 1.0, 0.01) var piece_move_shadow_lifted_alpha: float = 0.42
 @export_range(0.0, 16.0, 0.5) var piece_move_footprint_clearance: float = 2.0
 
 @export_group("Piece Effect Occlusion")
@@ -423,6 +439,8 @@ var attached_card_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
+var attached_card_count_this_turn: Dictionary = {0: 0, 1: 0}
+var completed_turn_counts: Dictionary = {0: 0, 1: 0}
 var moved_piece_this_turn: Dictionary = {
 	1: false,
 	-1: false,
@@ -655,6 +673,8 @@ func sync_board_marker_controller() -> void:
 		"move_option_dot_shader_speed": MOVE_OPTION_DOT_SHADER_SPEED,
 		"move_option_dot_shader_glow_strength": MOVE_OPTION_DOT_SHADER_GLOW_STRENGTH,
 		"move_option_dot_shader_edge_softness": MOVE_OPTION_DOT_SHADER_EDGE_SOFTNESS,
+		"move_option_dot_shader_pulse_min_scale": MOVE_OPTION_DOT_SHADER_PULSE_MIN_SCALE,
+		"move_option_dot_shader_pulse_max_scale": MOVE_OPTION_DOT_SHADER_PULSE_MAX_SCALE,
 		"move_option_dot_shader_color": MOVE_OPTION_DOT_SHADER_COLOR,
 		"last_move_arrow_color": LAST_MOVE_ARROW_COLOR,
 		"last_move_arrow_width": LAST_MOVE_ARROW_WIDTH,
@@ -799,6 +819,7 @@ func sync_game_result_controller() -> void:
 	game_result_controller.configure({
 		"match_board": self,
 		"main_menu_scene": MAIN_MENU_SCENE,
+		"match_end_feedback_scene": MATCH_END_FEEDBACK_SCENE,
 	})
 
 func get_game_result_controller():
@@ -911,10 +932,22 @@ func sync_piece_move_animator() -> void:
 	piece_move_animator.configure({
 		"geometry": get_board_geometry(),
 		"piece_visuals": get_piece_visuals(),
+		"tween_owner": self,
 		"cell_width": CELL_WIDTH,
 		"board_size": BOARD_SIZE,
 		"move_duration": piece_move_duration,
 		"move_lift_ratio": piece_move_lift_ratio,
+		"lift_duration": piece_move_lift_duration,
+		"drop_duration": piece_move_drop_duration,
+		"wobble_step_duration": piece_move_wobble_step_duration,
+		"wobble_rotation_degrees": piece_move_wobble_rotation_degrees,
+		"movement_tilt_degrees": piece_move_travel_tilt_degrees,
+		"movement_shadow_color": piece_move_shadow_color,
+		"movement_shadow_radius_scale": piece_move_shadow_radius_scale,
+		"movement_shadow_ground_edge_softness": piece_move_shadow_ground_edge_softness,
+		"movement_shadow_lifted_edge_softness": piece_move_shadow_lifted_edge_softness,
+		"movement_shadow_lifted_scale": piece_move_shadow_lifted_scale,
+		"movement_shadow_lifted_alpha": piece_move_shadow_lifted_alpha,
 		"corner_rounding_ratio": PIECE_MOVE_ROUTE_CORNER_ROUNDING_RATIO,
 		"corner_sample_count": PIECE_MOVE_ROUTE_CORNER_SAMPLE_COUNT,
 		"pieces_node": pieces_node,
@@ -1229,6 +1262,7 @@ func sync_card_hud_controller() -> void:
 		"player_hand_size": PLAYER_HAND_SIZE,
 		"card_hand_scale": CARD_HAND_SCALE,
 		"deck_card_scale": DECK_CARD_SCALE,
+		"deck_extra_left_offset": DECK_EXTRA_LEFT_OFFSET,
 		"card_ui_gap": CARD_UI_GAP,
 		"top_card_hand_margin": TOP_CARD_HAND_MARGIN,
 		"bottom_card_hand_margin": BOTTOM_CARD_HAND_MARGIN,
@@ -1255,6 +1289,7 @@ func sync_card_hover_preview_controller() -> void:
 		"hover_card_preview_scale": HOVER_CARD_PREVIEW_SCALE,
 		"hover_card_vertical_offset": HOVER_CARD_VERTICAL_OFFSET,
 		"hover_card_rotation_degrees": HOVER_CARD_ROTATION_DEGREES,
+		"hover_card_visual_edge_overlap": HOVER_CARD_VISUAL_EDGE_OVERLAP,
 		"hover_piece_preview_size": HOVER_PIECE_PREVIEW_SIZE,
 		"hover_piece_preview_vertical_offset": HOVER_PIECE_PREVIEW_VERTICAL_OFFSET,
 		"description_text_margin": HOVER_DESCRIPTION_TEXT_MARGIN,
@@ -1450,6 +1485,8 @@ func sync_turn_hud_controller() -> void:
 		"game_over_provider": Callable(self, "is_game_over"),
 		"can_control_current_turn_provider": Callable(self, "can_control_current_turn"),
 		"tutorial_end_turn_allowed_provider": Callable(self, "is_end_turn_tutorial_allowed"),
+		"show_first_turn_end_provider": Callable(self, "should_show_first_turn_end_button"),
+		"can_end_first_turn_provider": Callable(self, "can_end_first_turn"),
 		"can_switch_action_provider": Callable(self, "can_switch_action_now"),
 		"can_attach_action_provider": Callable(self, "can_attach_action_now"),
 		"can_move_action_provider": Callable(self, "can_move_action_now"),
@@ -1531,6 +1568,20 @@ func is_game_over() -> bool:
 
 func is_end_turn_tutorial_allowed() -> bool:
 	return is_tutorial_action_allowed(TUTORIAL_ACTION_END_TURN)
+
+func should_show_first_turn_end_button() -> bool:
+	var player_id: int = get_player_id_for_color(get_current_turn_color())
+	if int(completed_turn_counts.get(player_id, 0)) == 0:
+		return true
+	return get_local_state_mutator().current_player_can_end_turn_due_to_frozen_piece()
+
+func can_end_first_turn() -> bool:
+	if !should_show_first_turn_end_button():
+		return false
+	var player_id: int = get_player_id_for_color(get_current_turn_color())
+	if int(completed_turn_counts.get(player_id, 0)) == 0:
+		return int(attached_card_count_this_turn.get(player_id, 0)) >= 1
+	return get_local_state_mutator().current_player_can_end_turn_due_to_frozen_piece()
 
 func defer_turn_timer_timeout(expected_turn_color: int) -> void:
 	call_deferred("_on_turn_timer_timeout", expected_turn_color)
@@ -2027,7 +2078,8 @@ func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 		push_warning("Card not found for attach: %s" % card_name)
 		return false
 
-	piece.attach_card(card)
+	var owner_player_id: int = get_player_id_for_color(piece.color)
+	piece.attach_card(card, int(completed_turn_counts.get(owner_player_id, 0)) == 0)
 	var pending_respawn_arrivals: Array[Dictionary] = []
 	if !GameController.current_game_host:
 		pending_respawn_arrivals = get_local_state_mutator().apply_card_effect_trigger(CardEffect.TRIGGER_ON_ATTACH, piece_position, piece, card)
@@ -2139,7 +2191,7 @@ func _on_quit_confirmed():
 	if get_parent().has_method("close_game_connection"):
 		get_parent().close_game_connection()
 	if get_tree():
-		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+		SceneTransition.change_scene(MAIN_MENU_SCENE)
 
 func send_move_action(from_pos: Vector2, to_pos: Vector2):
 	get_match_input_controller().send_move_action(from_pos, to_pos)
@@ -2685,28 +2737,17 @@ func play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, start_texture
 	holder.scale = start_scale
 	holder.offset = start_offset
 	var move_animator = get_piece_move_animator()
-	holder.z_index = move_animator.get_z_index_for_local_position(holder.position, holder)
-	var route_points: Array[Vector2] = move_animator.get_route_points(from_pos, to_pos, holder)
-	route_points = move_animator.get_smoothed_route_points(route_points)
-	var move_duration: float = move_animator.get_animation_duration(route_points, from_pos, to_pos)
-
-	var tween: Tween = create_tween().set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_method(
-		func(progress: float): move_animator.update_holder_motion(
-			holder,
-			route_points,
-			to_pos,
-			start_scale,
-			end_scale,
-			start_offset,
-			end_offset,
-			move_animator.get_arrival_progress(progress, route_points, from_pos, to_pos)
-		),
-		0.0,
-		1.0,
-		move_duration
+	remove_piece_shadow(holder)
+	remove_piece_light_occluder(holder)
+	await move_animator.play_move_sequence(
+		holder,
+		from_pos,
+		to_pos,
+		start_scale,
+		end_scale,
+		start_offset,
+		end_offset
 	)
-	await tween.finished
 
 	if is_instance_valid(holder):
 		holder.texture = end_texture
@@ -2915,7 +2956,7 @@ func can_control_current_turn() -> bool:
 		return GameConfig.is_singleplayer or tutorial_mode_active
 	return side == white
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}, viewer_player_id: int = -1, turn_action_state: Dictionary = {}):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}, viewer_player_id: int = -1, turn_action_state: Dictionary = {}, player_clock_seconds: Dictionary = {}):
 	get_server_state_update_controller().update_from_server_state(
 		pieces_data,
 		player_hands,
@@ -2935,7 +2976,8 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 		last_move,
 		player_portraits,
 		viewer_player_id,
-		turn_action_state
+		turn_action_state,
+		player_clock_seconds
 	)
 
 func should_skip_visual_animations() -> bool:

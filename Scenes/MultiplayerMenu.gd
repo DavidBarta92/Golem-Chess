@@ -28,7 +28,7 @@ func _on_host_button_pressed():
 	GameConfig.set_multiplayer_provider(GameConfig.MULTIPLAYER_PROVIDER_CUSTOM_SERVER)
 	GameConfig.set_matchmaking_mode(GameConfig.MATCHMAKING_MODE_DIRECT_CONNECT)
 	GameConfig.reset_multiplayer_controllers()
-	get_tree().change_scene_to_file("res://Scenes/main.tscn")
+	SceneTransition.change_scene("res://Scenes/main.tscn")
 
 func _on_join_button_pressed():
 	_save_selected_deck()
@@ -39,7 +39,7 @@ func _on_join_button_pressed():
 	GameConfig.set_multiplayer_provider(GameConfig.MULTIPLAYER_PROVIDER_CUSTOM_SERVER)
 	GameConfig.set_matchmaking_mode(GameConfig.MATCHMAKING_MODE_DIRECT_CONNECT)
 	GameConfig.reset_multiplayer_controllers()
-	get_tree().change_scene_to_file("res://Scenes/JoinMenu.tscn")
+	SceneTransition.change_scene("res://Scenes/JoinMenu.tscn")
 
 func _on_server_rooms_button_pressed():
 	_save_selected_deck()
@@ -54,10 +54,10 @@ func _on_server_rooms_button_pressed():
 	GameConfig.set_multiplayer_provider(GameConfig.MULTIPLAYER_PROVIDER_CUSTOM_SERVER)
 	GameConfig.set_matchmaking_mode(GameConfig.MATCHMAKING_MODE_ROOM_LIST)
 	GameConfig.reset_multiplayer_controllers()
-	get_tree().change_scene_to_file("res://Scenes/main.tscn")
+	SceneTransition.change_scene("res://Scenes/main.tscn")
 
 func _on_back_button_pressed():
-	get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")
+	SceneTransition.change_scene("res://Scenes/MainMenu.tscn")
 
 func show_status_message(message: String) -> void:
 	if status_label == null:

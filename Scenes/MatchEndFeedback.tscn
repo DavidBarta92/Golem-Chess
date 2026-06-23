@@ -1,0 +1,93 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scenes/MatchEndFeedback.gd" id="1_feedback"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.94, 0.93, 0.89, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.28, 0.24, 0.2, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 28
+content_margin_top = 24
+content_margin_right = 28
+content_margin_bottom = 24
+
+[node name="MatchEndFeedback" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_feedback")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.17, 0.17, 1)
+
+[node name="ContentPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(560, 260)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -130.0
+offset_right = 280.0
+offset_bottom = 130.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ContentPanel"]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="ContentPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.08, 0.07, 0.055, 1)
+theme_override_font_sizes/font_size = 30
+text = "Thank you for playing!"
+horizontal_alignment = 1
+
+[node name="MessageLabel" type="Label" parent="ContentPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11, 0.095, 0.075, 1)
+theme_override_font_sizes/font_size = 18
+text = "If you have not filled out the questionnaire yet, please take two minutes to do it. It would help a lot as I continue improving the game and the overall experience."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ButtonRow" type="HBoxContainer" parent="ContentPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="MainMenuButton" type="Button" parent="ContentPanel/VBoxContainer/ButtonRow"]
+custom_minimum_size = Vector2(150, 42)
+layout_mode = 2
+focus_mode = 0
+text = "Main Menu"
+
+[node name="FeedbackButton" type="Button" parent="ContentPanel/VBoxContainer/ButtonRow"]
+custom_minimum_size = Vector2(190, 42)
+layout_mode = 2
+focus_mode = 0
+text = "Open Questionnaire"
+
+[connection signal="pressed" from="ContentPanel/VBoxContainer/ButtonRow/MainMenuButton" to="." method="_on_main_menu_button_pressed"]
+[connection signal="pressed" from="ContentPanel/VBoxContainer/ButtonRow/FeedbackButton" to="." method="_on_feedback_button_pressed"]

@@ -174,10 +174,12 @@ func request_end_turn(emit_tutorial_rejection: bool, expected_turn_color: int = 
 func end_current_turn_locally() -> void:
 	match_board.local_auto_end_turn_pending = false
 	var ending_color: int = match_board.get_current_turn_color()
+	var ending_player_id: int = match_board.get_player_id_for_color(ending_color)
 	match_board.refill_played_cards_locally(ending_color)
 	match_board.get_card_hand_state_controller().clear_exchanged_card_names_this_turn(ending_color)
 	match_board.get_local_state_mutator().tick_board_effects()
 	match_board.get_local_state_mutator().clear_piece_exhaustion_for_color(ending_color)
+	match_board.completed_turn_counts[ending_player_id] = int(match_board.completed_turn_counts.get(ending_player_id, 0)) + 1
 	match_board.white = !match_board.white
 	match_board.get_turn_action_state_controller().reset_current_turn_card_attach()
 	match_board.state = false

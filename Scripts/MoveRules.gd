@@ -159,6 +159,8 @@ static func can_attach_any_card(pieces: Dictionary, player_color: int, hand_card
 
 static func get_valid_turn_moves(pieces: Dictionary, player_color: int, hand_cards: Array[Card], can_attach_card: bool, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
 	var valid_moves: Array[Dictionary] = get_existing_card_moves(pieces, player_color, board_size, board_effects)
+	if can_attach_card:
+		valid_moves.append_array(get_attach_card_moves(pieces, player_color, hand_cards, board_size, board_effects))
 	return valid_moves
 
 static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
@@ -172,15 +174,26 @@ static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_si
 			return true
 	return false
 
+static func has_frozen_movable_piece(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
+	var player_id: int = BoardConfig.get_player_id_for_color(player_color)
+	for position_value: Vector2 in pieces:
+		var piece_position: Vector2 = position_value
+		var piece: Piece = get_piece_at(pieces, piece_position)
+		if piece == null || !CardEffectResolver.can_player_control_piece(piece, player_id) || !piece.can_move():
+			continue
+		if CardEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
+			return true
+	return false
+
 static func has_valid_attachment_move(pieces: Dictionary, player_color: int, hand_cards: Array[Card], board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
 	return can_attach_any_card(pieces, player_color, hand_cards)
 
 static func has_valid_turn_action(pieces: Dictionary, player_color: int, hand_cards: Array[Card], can_attach_card: bool, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
 	if has_valid_piece_move(pieces, player_color, board_size, board_effects):
 		return true
-	if !can_attach_card:
-		return false
-	return has_valid_attachment_move(pieces, player_color, hand_cards, board_size, board_effects)
+	if can_attach_card && has_valid_attachment_move(pieces, player_color, hand_cards, board_size, board_effects):
+		return true
+	return has_frozen_movable_piece(pieces, player_color, board_size, board_effects)
 
 static func is_valid_move(pieces: Dictionary, from_pos: Vector2, to_pos: Vector2, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
 	var valid_moves: Array[Vector2] = get_piece_moves(pieces, from_pos, board_size, board_effects)

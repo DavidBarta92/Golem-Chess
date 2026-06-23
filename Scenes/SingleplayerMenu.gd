@@ -21,10 +21,10 @@ func _on_start_button_pressed() -> void:
 	GameConfig.is_hosting = true
 	GameConfig.server_ip = ""
 	GameConfig.set_singleplayer_controllers(GameConfig.CONTROLLER_HUMAN, GameConfig.CONTROLLER_AI)
-	get_tree().change_scene_to_file("res://Scenes/main.tscn")
+	SceneTransition.change_scene("res://Scenes/main.tscn")
 
 func _on_back_button_pressed() -> void:
-	get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")
+	SceneTransition.change_scene("res://Scenes/MainMenu.tscn")
 
 func _populate_deck_options() -> void:
 	deck_option_button.clear()
