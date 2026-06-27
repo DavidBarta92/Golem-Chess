@@ -38,6 +38,7 @@ func begin_tutorial() -> void:
 func connect_board_signals() -> void:
 	board.card_attached.connect(_on_card_attached)
 	board.card_exchanged.connect(_on_card_exchanged)
+	board.codex_page_turned.connect(_on_codex_page_turned)
 	board.piece_moved.connect(_on_piece_moved)
 	board.turn_ended.connect(_on_turn_ended)
 	board.tutorial_action_rejected.connect(_on_tutorial_action_rejected)
@@ -83,7 +84,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "From your next turn onward, moving is mandatory and immediately ends your turn. Switch and attach before moving. Select the ready piece, then move it to a highlighted square.",
+			"text": "From your next turn onward, moving is mandatory and immediately ends your turn. Turn Codex pages and attach before moving. Select the ready piece, then move it to a highlighted square.",
 			"completion": "piece_moved",
 			"setup": {
 				"board": starting_board(),
@@ -128,7 +129,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Good. Now move the piece that was already ready. A successful move ends the turn and refills the stamps you played from your deck.",
+			"text": "Good. Now move the piece that was already ready. A successful move ends the turn. Spent non-Nexus stamps stay out of the Codex.",
 			"completion": "piece_moved",
 			"constraints": {
 				"allowed_actions": ["select_piece", "move_piece"],
@@ -138,20 +139,20 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Once per turn, you may switch a hand stamp. Drag a stamp from your hand onto your deck to replace it.",
-			"completion": "card_exchanged",
+			"text": "Once per turn, before attaching any stamp, you may turn the Codex to the next non-empty page. Press Turn Page.",
+			"completion": "codex_page_turned",
 			"continue_after_completion": true,
-			"post_completion_text": "The switched stamp returned to the deck, and a replacement stamp flew into your hand. Press Continue when you are ready.",
+			"post_completion_text": "The new page is now open, and only that page's stamps are usable. Press Continue when you are ready.",
 			"setup": {
 				"board": starting_board(),
-				"white_hand": ["Numero_4", "Numero_5", "Numero_6"],
-				"white_deck": ["Training Seal", "Crown", "Numero_1"],
+				"white_hand": ["Numero_4"],
+				"white_deck": ["Numero_5", "Numero_6", "Training Seal"],
 				"black_hand": [],
 				"black_deck": [],
 				"turn_color": PLAYER_COLOR,
 			},
 			"constraints": {
-				"allowed_actions": ["exchange_card"],
+				"allowed_actions": ["turn_page"],
 				"allow_auto_end_turn": false,
 			},
 		},
@@ -219,7 +220,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Nexus stamps are special. Attach Crown to a piece. If a Nexus is captured, it returns to its owner's deck.",
+			"text": "Nexus stamps are special. Attach Crown to a piece. If a Nexus is captured, it returns to its original Codex page.",
 			"completion": "card_attached",
 			"expected_card_name": "Crown",
 			"setup": {
@@ -372,6 +373,13 @@ func _on_card_exchanged(card_name: String, owner_color: int, _hand_index: int) -
 	if !expected_card_name.is_empty() and card_name != expected_card_name:
 		return
 
+	complete_current_action_step()
+
+func _on_codex_page_turned(owner_color: int, _page_index: int) -> void:
+	if !is_current_completion("codex_page_turned"):
+		return
+	if owner_color != PLAYER_COLOR:
+		return
 	complete_current_action_step()
 
 func _on_piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int) -> void:

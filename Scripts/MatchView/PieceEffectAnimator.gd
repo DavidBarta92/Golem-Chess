@@ -779,6 +779,32 @@ func play_invisibility_exit(holder: Sprite2D) -> void:
 	if is_instance_valid(holder):
 		holder.queue_free()
 
+func play_invisibility_reveal(holder: Sprite2D) -> void:
+	if holder == null or !is_instance_valid(holder) or piece_invisibility_refract_shader == null:
+		return
+	if !is_tween_owner_inside_tree():
+		return
+
+	holder.self_modulate.a = 0.0
+	var refract_material := ShaderMaterial.new()
+	refract_material.shader = piece_invisibility_refract_shader
+	refract_material.set_shader_parameter("dist", piece_invisibility_refract_distance)
+	refract_material.set_shader_parameter("alpha", 1.0)
+	holder.material = refract_material
+
+	var reveal_tween: Tween = create_animation_tween()
+	if reveal_tween == null:
+		holder.self_modulate.a = 1.0
+		holder.material = null
+		return
+	reveal_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	reveal_tween.tween_property(holder, "self_modulate:a", 1.0, piece_invisibility_refract_in_duration)
+	reveal_tween.parallel().tween_property(refract_material, "shader_parameter/alpha", 0.0, piece_invisibility_refract_in_duration)
+	await reveal_tween.finished
+	if is_instance_valid(holder):
+		holder.material = null
+		holder.self_modulate.a = 1.0
+
 func play_capture_flash(board_pos: Vector2) -> void:
 	if capture_flash_texture == null or !has_effect_parent():
 		return

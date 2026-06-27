@@ -20,6 +20,7 @@ var card_deck_provider: Callable
 var current_turn_color_provider: Callable
 var moved_piece_this_turn_provider: Callable
 var can_exchange_card_provider: Callable
+var can_turn_page_provider: Callable
 var create_board_tiles_callback: Callable
 
 func configure(config: Dictionary) -> void:
@@ -42,6 +43,7 @@ func configure(config: Dictionary) -> void:
 	current_turn_color_provider = config.get("current_turn_color_provider", current_turn_color_provider)
 	moved_piece_this_turn_provider = config.get("moved_piece_this_turn_provider", moved_piece_this_turn_provider)
 	can_exchange_card_provider = config.get("can_exchange_card_provider", can_exchange_card_provider)
+	can_turn_page_provider = config.get("can_turn_page_provider", can_turn_page_provider)
 	create_board_tiles_callback = config.get("create_board_tiles_callback", create_board_tiles_callback)
 
 func move_piece_on_board(start_pos: Vector2, end_pos: Vector2) -> Dictionary:
@@ -71,21 +73,25 @@ func apply_piece_move(start_pos: Vector2, end_pos: Vector2) -> Dictionary:
 	var move_state: Dictionary = move_piece_on_board(start_pos, end_pos)
 	var moving_color: int = int(move_state.get("moving_color", 0))
 	var moving_piece_visible_to_enemy: bool = bool(move_state.get("moving_piece_visible_to_enemy", true))
-	move_state["last_move"] = create_last_move_record(moving_color, start_pos, end_pos, moving_piece_visible_to_enemy)
+	move_state["last_move"] = create_last_move_record(moving_color, start_pos, end_pos, moving_piece_visible_to_enemy, move_state.get("captured_piece", null) as Piece)
 	move_state["winner_color"] = get_winner_after_move(moving_color, end_pos)
 	return move_state
 
-func create_last_move_record(moving_color: int, from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool) -> Dictionary:
+func create_last_move_record(moving_color: int, from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool, captured_piece: Piece = null) -> Dictionary:
 	if from_pos == to_pos:
 		return {}
 
-	return {
+	var last_move := {
 		"from": from_pos,
 		"to": to_pos,
 		"player_id": get_player_id_for_color(moving_color),
 		"piece_color": moving_color,
 		"visible_to_enemy": visible_to_enemy,
 	}
+	if captured_piece != null:
+		last_move["captured_piece_color"] = captured_piece.color
+		last_move["captured_card_name"] = captured_piece.attached_card.card_name if captured_piece.attached_card != null else ""
+	return last_move
 
 func record_played_card_hand_slot(owner_color: int, current_hand_index: int) -> void:
 	if current_hand_index < 0:
@@ -295,6 +301,7 @@ func add_board_zone_effect(source_pos: Vector2, piece: Piece, card: Card) -> voi
 		"target_player_id": int(card.effect_settings.get("target_player_id", -1)),
 		"squares": squares,
 		"turns_remaining": turns_remaining,
+		"skip_next_tick": card.effect_type == CardEffect.TYPE_FROZEN_SQUARES,
 	})
 
 func tick_board_effects() -> void:
@@ -306,6 +313,11 @@ func tick_board_effects() -> void:
 		var effect: Dictionary = effect_value
 		var turns_remaining: int = int(effect.get("turns_remaining", -1))
 		if turns_remaining == -1:
+			remaining_effects.append(effect)
+			continue
+
+		if bool(effect.get("skip_next_tick", false)):
+			effect.erase("skip_next_tick")
 			remaining_effects.append(effect)
 			continue
 
@@ -395,7 +407,7 @@ func current_player_has_valid_turn_action() -> bool:
 		return true
 	if current_player_can_end_turn_due_to_frozen_piece():
 		return true
-	if can_exchange_card(current_color):
+	if can_turn_page(current_color):
 		return true
 	return false
 
@@ -434,6 +446,11 @@ func has_moved_piece_this_turn(owner_color: int) -> bool:
 func can_exchange_card(owner_color: int) -> bool:
 	if can_exchange_card_provider.is_valid():
 		return bool(can_exchange_card_provider.call(owner_color))
+	return false
+
+func can_turn_page(owner_color: int) -> bool:
+	if can_turn_page_provider.is_valid():
+		return bool(can_turn_page_provider.call(owner_color))
 	return false
 
 func get_player_id_for_color(owner_color: int) -> int:

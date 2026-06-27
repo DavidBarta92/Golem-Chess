@@ -72,7 +72,7 @@ func _populate_deck_options() -> void:
 	var all_decks: Array = PlayerDeckStore.list_decks()
 	var decks: Array = PlayerDeckStore.list_playable_decks()
 	if decks.is_empty():
-		var empty_text: String = "No saved decks" if all_decks.is_empty() else "No complete decks"
+		var empty_text: String = "No saved codexes" if all_decks.is_empty() else "No complete codexes"
 		deck_option_button.add_item(empty_text)
 		deck_option_button.disabled = true
 		host_button.disabled = true
@@ -93,7 +93,7 @@ func _populate_deck_options() -> void:
 
 		var deck_id: String = str(deck.get("deck_id", ""))
 		deck_ids.append(deck_id)
-		deck_option_button.add_item(str(deck.get("name", "Unnamed deck")))
+		deck_option_button.add_item(str(deck.get("name", "Unnamed codex")))
 		if deck_id == current_deck_id:
 			selected_index = deck_ids.size() - 1
 

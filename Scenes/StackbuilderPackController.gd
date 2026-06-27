@@ -1,9 +1,10 @@
 extends RefCounted
-class_name DeckbuilderPackController
+class_name StackbuilderPackController
 
-const CARD_BACK_TEXTURE = preload("res://Assets/stamp_back.svg")
+const BOOSTER_PACK_TEXTURE = preload("res://Assets/booster.png")
 const PACK_REWARD_CARD_COUNT: int = 3
-const PACK_ICON_SIZE: Vector2 = Vector2(72, 100)
+const PACK_ICON_SIZE: Vector2 = Vector2(54, 75)
+const PACK_ICON_OVERLAP: float = 18.0
 const MAX_VISIBLE_PACK_ICONS: int = 4
 
 var buy_packs_button: Button
@@ -80,13 +81,14 @@ func refresh_pack_inventory_ui() -> void:
 		return
 
 	var visible_count: int = mini(pack_count, MAX_VISIBLE_PACK_ICONS)
-	var start_x: float = maxf(18.0, (pack_inventory.size.x - PACK_ICON_SIZE.x - float(visible_count - 1) * 32.0) * 0.5)
+	var start_x: float = 8.0
+	var start_y: float = maxf(4.0, (pack_inventory.size.y - PACK_ICON_SIZE.y - float(visible_count - 1) * 3.0) * 0.5)
 	for i in range(visible_count):
 		var pack_button := _create_pack_button()
 		pack_inventory.add_child(pack_button)
 		pack_button.size = PACK_ICON_SIZE
-		pack_button.position = Vector2(start_x + float(i) * 32.0, 8.0 + float(i) * 7.0)
-		pack_button.rotation = deg_to_rad(-7.0 + float(i) * 4.0)
+		pack_button.position = Vector2(start_x + float(i) * PACK_ICON_OVERLAP, start_y + float(i) * 3.0)
+		pack_button.rotation = deg_to_rad(-4.0 + float(i) * 3.0)
 
 func populate_editor_pack_preview() -> void:
 	if pack_inventory == null:
@@ -99,12 +101,13 @@ func populate_editor_pack_preview() -> void:
 	for i in range(3):
 		var pack_card := TextureRect.new()
 		pack_inventory.add_child(pack_card)
-		pack_card.texture = CARD_BACK_TEXTURE
+		pack_card.texture = BOOSTER_PACK_TEXTURE
 		pack_card.custom_minimum_size = PACK_ICON_SIZE
 		pack_card.size = PACK_ICON_SIZE
+		pack_card.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		pack_card.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		pack_card.position = Vector2(58.0 + float(i) * 32.0, 8.0 + float(i) * 7.0)
-		pack_card.rotation = deg_to_rad(-7.0 + float(i) * 4.0)
+		pack_card.position = Vector2(8.0 + float(i) * PACK_ICON_OVERLAP, 4.0 + float(i) * 3.0)
+		pack_card.rotation = deg_to_rad(-4.0 + float(i) * 3.0)
 
 func _create_pack_button() -> Button:
 	var pack_button := Button.new()
@@ -112,6 +115,7 @@ func _create_pack_button() -> Button:
 	pack_button.size = PACK_ICON_SIZE
 	pack_button.tooltip_text = "Open pack"
 	pack_button.focus_mode = Control.FOCUS_NONE
+	pack_button.clip_contents = false
 	pack_button.pressed.connect(open_pack)
 
 	var pack_art := TextureRect.new()
@@ -121,7 +125,8 @@ func _create_pack_button() -> Button:
 	pack_art.offset_top = 4.0
 	pack_art.offset_right = -4.0
 	pack_art.offset_bottom = -4.0
-	pack_art.texture = CARD_BACK_TEXTURE
+	pack_art.texture = BOOSTER_PACK_TEXTURE
+	pack_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pack_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	pack_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return pack_button

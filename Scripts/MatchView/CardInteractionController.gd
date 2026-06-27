@@ -143,13 +143,7 @@ func get_card_drop_piece_position(card_visual: CardVisual) -> Vector2:
 	return INVALID_BOARD_POS
 
 func can_drop_card_on_deck(card_visual: CardVisual) -> bool:
-	if card_visual == null or !is_instance_valid(card_visual):
-		return false
-	if card_visual.card == null:
-		return false
-	if !can_exchange_card_locally(card_visual.owner_color):
-		return false
-	return is_mouse_over_deck(card_visual.owner_color)
+	return false
 
 func exchange_card_visual_with_deck(card_visual: CardVisual) -> void:
 	if card_visual == null or !is_instance_valid(card_visual) or card_visual.card == null:

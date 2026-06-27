@@ -1,19 +1,18 @@
 [gd_scene format=3 uid="uid://ckgpomhljdak2"]
 
-[ext_resource type="Script" uid="uid://cngqle2h6g57n" path="res://Scenes/Deckbuilder.gd" id="1_deckbuilder"]
-[ext_resource type="Texture2D" path="res://Assets/stamp_back.svg" id="2_cardback"]
+[ext_resource type="Script" uid="uid://cngqle2h6g57n" path="res://Scenes/Stackbuilder.gd" id="1_stackbuilder"]
+[ext_resource type="Shader" path="res://Shaders/stackbuilder_grid_background.gdshader" id="2_grid_bg"]
+[ext_resource type="Texture2D" uid="uid://dspxsiid41buh" path="res://Assets/booster.png" id="2_kbw0k"]
+[ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="4_u2t3u"]
+[ext_resource type="Texture2D" uid="uid://bdyr3etvetn3o" path="res://Assets/magnifying_glass_case_closed.png" id="5_case_closed"]
+[ext_resource type="Texture2D" uid="uid://bthcwpocferx0" path="res://Assets/magnifying_glass_case_opened.png" id="6_case_opened"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_coin"]
-bg_color = Color(1, 0.82, 0.12, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.58, 0.42, 0.02, 1)
-corner_radius_top_left = 9
-corner_radius_top_right = 9
-corner_radius_bottom_right = 9
-corner_radius_bottom_left = 9
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_grid_bg"]
+shader = ExtResource("2_grid_bg")
+shader_parameter/base_color = Color(0.9764706, 0.90588236, 0.80784315, 1)
+shader_parameter/line_color = Color(0.8509804, 0.8156863, 0.8352941, 1)
+shader_parameter/cell_size = 32.0
+shader_parameter/line_width = 0.65
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_light"]
 content_margin_left = 14.0
@@ -28,6 +27,8 @@ border_width_bottom = 1
 border_color = Color(0.1, 0.1, 0.1, 0.65)
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_browser"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
 bg_color = Color(0.98, 0.98, 0.96, 1)
@@ -55,14 +56,25 @@ border_color = Color(1, 1, 1, 0.18)
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
 
-[node name="Deckbuilder" type="Control" unique_id=1188233061]
+[node name="Stackbuilder" type="Control" unique_id=1188233061]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_deckbuilder")
+script = ExtResource("1_stackbuilder")
+
+[node name="GridBackground" type="ColorRect" parent="." unique_id=1487340471]
+material = SubResource("ShaderMaterial_grid_bg")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.9764706, 0.90588236, 0.80784315, 1)
 
 [node name="TopBackground" type="ColorRect" parent="." unique_id=2090701836]
 layout_mode = 1
@@ -71,7 +83,7 @@ anchor_right = 1.0
 offset_bottom = 60.0
 grow_horizontal = 2
 mouse_filter = 2
-color = Color(0.36, 0.32, 0.32, 1)
+color = Color(0.9366637, 0.9330646, 0.89437205, 1)
 
 [node name="TopBar" type="HBoxContainer" parent="." unique_id=792694485]
 layout_mode = 1
@@ -100,22 +112,29 @@ layout_mode = 2
 focus_mode = 0
 text = "Buy Packs"
 
-[node name="PointsContainer" type="HBoxContainer" parent="TopBar" unique_id=986436859]
+[node name="PointsContainer" type="Control" parent="TopBar" unique_id=986436859]
 custom_minimum_size = Vector2(116, 38)
 layout_mode = 2
-theme_override_constants/separation = 8
-alignment = 2
 
-[node name="PointIcon" type="PanelContainer" parent="TopBar/PointsContainer" unique_id=1229436934]
-custom_minimum_size = Vector2(18, 18)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_styles/panel = SubResource("StyleBoxFlat_coin")
+[node name="PointIcon" type="TextureRect" parent="TopBar/PointsContainer" unique_id=1229436934]
+texture_filter = 2
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 0
+offset_top = 7.0
+offset_right = 24.0
+offset_bottom = 31.0
+texture = ExtResource("4_u2t3u")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="PointsLabel" type="Label" parent="TopBar/PointsContainer" unique_id=1540626825]
-custom_minimum_size = Vector2(78, 32)
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.96, 0.82, 1)
+custom_minimum_size = Vector2(70, 32)
+layout_mode = 0
+offset_left = 32.0
+offset_top = 3.0
+offset_right = 116.0
+offset_bottom = 35.0
+theme_override_colors/font_color = Color(0.06666667, 0.05490196, 0.09411765, 1)
 theme_override_font_sizes/font_size = 20
 text = "0"
 vertical_alignment = 1
@@ -140,66 +159,17 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="MainLayout" type="HBoxContainer" parent="RootMargin/MainCenter" unique_id=1223238522]
-custom_minimum_size = Vector2(1128, 0)
+custom_minimum_size = Vector2(894, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 3
 theme_override_constants/separation = 14
 
 [node name="LeftColumn" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout" unique_id=1105168593]
-custom_minimum_size = Vector2(260, 0)
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 18
-
-[node name="CardDescriptionPanel" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/LeftColumn" unique_id=741197776]
-custom_minimum_size = Vector2(260, 420)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_light")
-
-[node name="InfoRoot" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/LeftColumn/CardDescriptionPanel" unique_id=661203065]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 10
-
-[node name="InfoTitle" type="Label" parent="RootMargin/MainCenter/MainLayout/LeftColumn/CardDescriptionPanel/InfoRoot" unique_id=1548116759]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 20
-text = "Card Info"
-horizontal_alignment = 1
-
-[node name="PreviewCardHolder" type="Control" parent="RootMargin/MainCenter/MainLayout/LeftColumn/CardDescriptionPanel/InfoRoot" unique_id=1279443373]
-custom_minimum_size = Vector2(0, 260)
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PreviewPlaceholder" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/LeftColumn/CardDescriptionPanel/InfoRoot/PreviewCardHolder" unique_id=1803443168]
-custom_minimum_size = Vector2(112, 156)
-layout_mode = 0
-offset_left = 60.0
-offset_top = 44.0
-offset_right = 172.0
-offset_bottom = 200.0
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
-
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/LeftColumn/CardDescriptionPanel/InfoRoot/PreviewCardHolder/PreviewPlaceholder" unique_id=1414475439]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
-text = "Hovered Card"
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 2
-
-[node name="CardDescriptionLabel" type="Label" parent="RootMargin/MainCenter/MainLayout/LeftColumn/CardDescriptionPanel/InfoRoot" unique_id=1428667298]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 16
-text = "Card descriptions appear here when the mouse is over a card."
-autowrap_mode = 2
 
 [node name="PackPanel" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/LeftColumn" unique_id=55291129]
 custom_minimum_size = Vector2(260, 170)
@@ -215,6 +185,7 @@ size_flags_vertical = 3
 theme_override_constants/separation = 8
 
 [node name="PackTitle" type="Label" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot" unique_id=1765962648]
+visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
 theme_override_font_sizes/font_size = 20
@@ -236,52 +207,57 @@ size_flags_vertical = 3
 
 [node name="PackPreview1" type="TextureRect" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot/PackInventory" unique_id=265380200]
 layout_mode = 0
-offset_left = 58.0
-offset_top = 8.0
-offset_right = 130.0
-offset_bottom = 108.0
-rotation = -0.122173
-texture = ExtResource("2_cardback")
+offset_left = 84.0
+offset_top = 26.0
+offset_right = 138.0
+offset_bottom = 101.0
+rotation = -0.0698132
+texture = ExtResource("2_kbw0k")
+expand_mode = 1
 stretch_mode = 5
 
 [node name="PackPreview2" type="TextureRect" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot/PackInventory" unique_id=859556305]
 layout_mode = 0
-offset_left = 90.0
-offset_top = 15.0
-offset_right = 162.0
-offset_bottom = 115.0
-rotation = -0.0523599
-texture = ExtResource("2_cardback")
+offset_left = 102.0
+offset_top = 29.0
+offset_right = 156.0
+offset_bottom = 104.0
+rotation = -0.0174533
+texture = ExtResource("2_kbw0k")
+expand_mode = 1
 stretch_mode = 5
 
 [node name="PackPreview3" type="TextureRect" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot/PackInventory" unique_id=1412845816]
 layout_mode = 0
-offset_left = 122.0
-offset_top = 22.0
-offset_right = 194.0
-offset_bottom = 122.0
-rotation = 0.0174533
-texture = ExtResource("2_cardback")
+offset_left = 120.0
+offset_top = 32.0
+offset_right = 174.0
+offset_bottom = 107.0
+rotation = 0.0349066
+texture = ExtResource("2_kbw0k")
+expand_mode = 1
 stretch_mode = 5
 
 [node name="MiddleColumn" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout" unique_id=274786036]
 custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 10
 
 [node name="BrowserFrame" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn" unique_id=759912158]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_light")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_browser")
 
 [node name="Browser" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame" unique_id=885763059]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 
 [node name="BrowserTitle" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=2132303748]
+visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
 theme_override_font_sizes/font_size = 20
@@ -310,9 +286,8 @@ placeholder_text = "Search"
 [node name="CardGrid" type="GridContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=648111285]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/h_separation = 20
-theme_override_constants/v_separation = 8
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 2
 columns = 3
 
 [node name="CardSlot1" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=1212306153]
@@ -437,13 +412,13 @@ layout_mode = 2
 text = ">"
 
 [node name="DeckPanelFrame" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout" unique_id=376321816]
-custom_minimum_size = Vector2(320, 0)
+custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_light")
 
 [node name="RightColumn" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame" unique_id=369780059]
-custom_minimum_size = Vector2(320, 0)
+custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
@@ -452,19 +427,19 @@ theme_override_constants/separation = 12
 layout_mode = 2
 theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
 theme_override_font_sizes/font_size = 22
-text = "My decks"
+text = "My codexes"
 horizontal_alignment = 1
 
 [node name="NewDeckButton" type="Button" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=520008270]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
-text = "New deck"
+text = "New codex"
 
 [node name="DeckNameEdit" type="LineEdit" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=943958489]
 visible = false
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
-placeholder_text = "Deck name"
+placeholder_text = "Codex name"
 
 [node name="DeckListScroll" type="ScrollContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=1487729421]
 layout_mode = 2
@@ -485,7 +460,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_dark")
 [node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckListScroll/DeckList/DeckPreview" unique_id=1271999219]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.94, 0.94, 0.9, 1)
-text = "Deck 1     15/15"
+text = "Codex 1     15/15"
 vertical_alignment = 1
 
 [node name="DeckCardScroll" type="ScrollContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=1430687519]
@@ -582,6 +557,54 @@ text = "Cancel"
 custom_minimum_size = Vector2(76, 30)
 layout_mode = 2
 text = "Buy"
+
+[node name="MagnifierCaseButton" type="Control" parent="." unique_id=1656206030]
+anchors_preset = 0
+offset_left = -77.0
+offset_top = 71.0
+offset_right = 174.61465
+offset_bottom = 634.8032
+rotation = 0.5235988
+pivot_offset = Vector2(27, 60.5)
+mouse_filter = 2
+
+[node name="ClosedImage" type="TextureRect" parent="MagnifierCaseButton" unique_id=610992149]
+texture_filter = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5_case_closed")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="OpenedImage" type="TextureRect" parent="MagnifierCaseButton" unique_id=2063781119]
+visible = false
+texture_filter = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("6_case_opened")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ClickArea" type="Button" parent="MagnifierCaseButton" unique_id=1102366857]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+tooltip_text = "Magnifier"
+focus_mode = 0
+flat = true
 
 [node name="PackResultDialog" type="AcceptDialog" parent="." unique_id=1024448397]
 title = "Pack Opened"

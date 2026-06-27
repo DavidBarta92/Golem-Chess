@@ -12,6 +12,7 @@ func update_from_server_state(
 	server_game_over: bool = false,
 	winner_player: int = -1,
 	player_deck_sizes: Dictionary = {},
+	player_codex_state: Dictionary = {},
 	hidden_cards: Array = [],
 	player_base_fields: Dictionary = {},
 	board_effects: Array = [],
@@ -27,7 +28,7 @@ func update_from_server_state(
 	turn_action_state: Dictionary = {},
 	player_clock_seconds: Dictionary = {}
 ) -> void:
-	await wait_for_active_piece_move_animation()
+	await wait_for_active_state_visual_animations()
 
 	var previous_piece_visual_state: Dictionary = match_board.get_piece_visual_state_snapshot()
 	var previous_hidden_card_counts: Dictionary = match_board.hidden_card_counts.duplicate()
@@ -52,6 +53,8 @@ func update_from_server_state(
 	if !player_deck_sizes.is_empty():
 		match_board.white_deck_count_override = match_board.get_match_state_sync_controller().get_int_from_state_dict(player_deck_sizes, 0, match_board.white_card_deck.size())
 		match_board.black_deck_count_override = match_board.get_match_state_sync_controller().get_int_from_state_dict(player_deck_sizes, 1, match_board.black_card_deck.size())
+	if !player_codex_state.is_empty():
+		match_board.apply_codex_state_from_server(player_codex_state)
 	match_board.current_player_base_fields = match_board.get_match_state_sync_controller().parse_player_base_fields(player_base_fields)
 	match_board.current_board_effects = match_board.get_match_state_sync_controller().parse_board_effects(board_effects)
 	match_board.current_player_names = match_board.get_match_state_sync_controller().parse_player_names(player_names, match_board.current_player_names)
@@ -94,6 +97,7 @@ func update_from_server_state(
 		match_board.piece_objects,
 		recent_bomb_effects,
 		recent_pending_respawn_queues,
+		match_board.current_last_move,
 		match_board.has_received_server_state,
 		match_board.should_skip_visual_animations()
 	)
@@ -141,9 +145,12 @@ func update_from_server_state(
 
 	match_board.finish_server_state_visual_update(visual_context)
 
-func wait_for_active_piece_move_animation() -> void:
-	while match_board != null and match_board.is_inside_tree() and match_board.active_piece_move_animation_count > 0:
+func wait_for_active_state_visual_animations() -> void:
+	while match_board != null and match_board.is_inside_tree() and has_active_state_visual_animations():
 		await match_board.get_tree().process_frame
+
+func has_active_state_visual_animations() -> bool:
+	return match_board.active_piece_move_animation_count > 0 or match_board.active_state_card_attach_animation_count > 0
 
 func apply_viewer_player_id(viewer_player_id: int) -> void:
 	if viewer_player_id != 0 and viewer_player_id != 1:
@@ -163,6 +170,7 @@ func apply_turn_action_state_from_server(turn_action_state: Dictionary) -> bool:
 		match_board.attached_card_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "attached_card_this_turn", player_id)
 		match_board.moved_piece_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "moved_piece_this_turn", player_id)
 		match_board.exchanged_card_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "exchanged_card_this_turn", player_id)
+		match_board.has_turned_page_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "has_turned_page_this_turn", player_id)
 		match_board.attached_card_count_this_turn[player_id] = get_turn_action_int(turn_action_state, "attached_card_count_this_turn", player_id)
 		match_board.completed_turn_counts[player_id] = get_turn_action_int(turn_action_state, "completed_turn_counts", player_id)
 	return true
@@ -170,6 +178,7 @@ func apply_turn_action_state_from_server(turn_action_state: Dictionary) -> bool:
 func apply_missing_turn_action_state_fallback() -> void:
 	var current_color: int = match_board.get_current_turn_color()
 	match_board.moved_piece_this_turn[current_color] = false
+	match_board.has_turned_page_this_turn[current_color] = false
 
 func get_turn_action_flag(turn_action_state: Dictionary, flag_name: String, player_id: int) -> bool:
 	var flags_value = turn_action_state.get(flag_name, {})

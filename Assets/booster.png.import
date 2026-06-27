@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://swngco41mla"
-path="res://.godot/imported/Rajztábla 1deckbuilder_sketch_all_decks.svg-4997dce8ea82067e0c945176289d4210.ctex"
+uid="uid://dspxsiid41buh"
+path="res://.godot/imported/booster.png-5e8550b12b0668cb9499d2fe8b6a287e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Rajztábla 1deckbuilder_sketch_all_decks.svg"
-dest_files=["res://.godot/imported/Rajztábla 1deckbuilder_sketch_all_decks.svg-4997dce8ea82067e0c945176289d4210.ctex"]
+source_file="res://Assets/booster.png"
+dest_files=["res://.godot/imported/booster.png-5e8550b12b0668cb9499d2fe8b6a287e.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

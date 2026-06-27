@@ -176,6 +176,7 @@ func reset_turn_state() -> void:
 		match_board.attached_card_count_this_turn[match_board.get_player_id_for_color(owner_color)] = 0
 		match_board.moved_piece_this_turn[owner_color] = false
 		match_board.exchanged_card_this_turn[owner_color] = false
+		match_board.has_turned_page_this_turn[owner_color] = false
 		match_board.played_card_hand_slots_this_turn[owner_color] = []
 		match_board.exchanged_card_names_this_turn[owner_color] = []
 	match_board.local_auto_end_turn_pending = false
@@ -187,9 +188,13 @@ func set_card_hand(owner_color: int, card_names: Array) -> void:
 	if owner_color == 1:
 		match_board.white_card_hand = cards
 		match_board.white_card_visuals = match_board.populate_card_hand(match_board.white_pieces, match_board.white_card_hand, 1)
+		match_board.set_codex_page_index(1, 0)
+		match_board.set_codex_pages(1, DeckManager.create_codex_pages(card_names))
 	else:
 		match_board.black_card_hand = cards
 		match_board.black_card_visuals = match_board.populate_card_hand(match_board.black_pieces, match_board.black_card_hand, -1)
+		match_board.set_codex_page_index(-1, 0)
+		match_board.set_codex_pages(-1, DeckManager.create_codex_pages(card_names))
 	match_board.setup_deck_visuals()
 
 func set_card_deck(owner_color: int, card_names: Array) -> void:
@@ -197,11 +202,24 @@ func set_card_deck(owner_color: int, card_names: Array) -> void:
 	for card_name_value in card_names:
 		deck_names.append(str(card_name_value))
 
+	var pages: Array = match_board.get_codex_pages(owner_color)
+	while pages.size() < DeckManager.CODEX_PAGE_COUNT:
+		pages.append([])
+	var card_index: int = 0
+	for page_index in range(1, DeckManager.CODEX_PAGE_COUNT):
+		var page: Array[String] = []
+		for _slot_index in range(DeckManager.CODEX_STAMPS_PER_PAGE):
+			if card_index >= deck_names.size():
+				break
+			page.append(deck_names[card_index])
+			card_index += 1
+		pages[page_index] = page
+
 	if owner_color == 1:
-		match_board.white_card_deck = deck_names
+		match_board.set_codex_pages(1, pages)
 		match_board.white_deck_count_override = -1
 	else:
-		match_board.black_card_deck = deck_names
+		match_board.set_codex_pages(-1, pages)
 		match_board.black_deck_count_override = -1
 	match_board.setup_deck_visuals()
 

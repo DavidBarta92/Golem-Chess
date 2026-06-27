@@ -10,10 +10,11 @@
 script = ExtResource("2_oqh5j")
 card_name = "Numero_2"
 card_code = "numero_2"
+duration = 2
 card_art = ExtResource("2_uba6f")
 piece_visuals = ExtResource("3_uba6f")
 white_piece_texture = ExtResource("3_oqh5j")
 black_piece_texture = ExtResource("1_0yhid")
 description = "No special effect."
-movement_pattern = Array[Array]([[1, 0, 0, 0, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])
+movement_pattern = [[0, 0, 0, 0, 0], [0, 0, 3, 0, 0], [2, 2, 0, 2, 2], [0, 0, 3, 0, 0], [0, 0, 0, 0, 0]]
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

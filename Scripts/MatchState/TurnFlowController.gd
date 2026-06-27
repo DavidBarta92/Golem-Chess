@@ -25,12 +25,8 @@ func wait_for_pending_visual_processes() -> void:
 		await match_board.get_tree().process_frame
 
 func can_switch_action_now() -> bool:
-	if !match_board.can_control_current_turn():
-		return false
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_EXCHANGE_CARD):
-		return false
 	var owner_color: int = match_board.get_controllable_color()
-	return match_board.can_exchange_card_locally(owner_color) and has_tutorial_allowed_exchange_card(owner_color)
+	return match_board.can_turn_page_locally(owner_color)
 
 func has_tutorial_allowed_exchange_card(owner_color: int) -> bool:
 	if !match_board.tutorial_constraints_enabled:
@@ -175,7 +171,6 @@ func end_current_turn_locally() -> void:
 	match_board.local_auto_end_turn_pending = false
 	var ending_color: int = match_board.get_current_turn_color()
 	var ending_player_id: int = match_board.get_player_id_for_color(ending_color)
-	match_board.refill_played_cards_locally(ending_color)
 	match_board.get_card_hand_state_controller().clear_exchanged_card_names_this_turn(ending_color)
 	match_board.get_local_state_mutator().tick_board_effects()
 	match_board.get_local_state_mutator().clear_piece_exhaustion_for_color(ending_color)

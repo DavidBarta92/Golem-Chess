@@ -9,6 +9,7 @@ var fragment_group_bottom: String = "bottom"
 var fragment_group_top: String = "top"
 var fragment_group_pending: String = "pending"
 var default_piece_texture_provider: Callable
+var card_piece_texture_provider: Callable
 
 func configure(config: Dictionary) -> void:
 	board_size = int(config.get("board_size", board_size))
@@ -20,6 +21,7 @@ func configure(config: Dictionary) -> void:
 	fragment_group_top = str(config.get("fragment_group_top", fragment_group_top))
 	fragment_group_pending = str(config.get("fragment_group_pending", fragment_group_pending))
 	default_piece_texture_provider = config.get("default_piece_texture_provider", default_piece_texture_provider)
+	card_piece_texture_provider = config.get("card_piece_texture_provider", card_piece_texture_provider)
 
 func get_hand_names_from_state(player_hands: Dictionary, player_id: int) -> Array:
 	if player_hands.has(player_id):
@@ -129,6 +131,8 @@ func parse_last_move(last_move: Dictionary) -> Dictionary:
 		"piece_color": int(last_move.get("piece_color", 0)),
 		"visible_to_enemy": bool(last_move.get("visible_to_enemy", true)),
 		"show_arrow": bool(last_move.get("show_arrow", true)),
+		"captured_piece_color": int(last_move.get("captured_piece_color", 0)),
+		"captured_card_name": str(last_move.get("captured_card_name", "")),
 	}
 
 func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
@@ -345,7 +349,29 @@ func collect_state_piece_move_animation(previous_snapshot: Dictionary, piece_obj
 		var captured_color: int = int(captured_state.get("color", 0))
 		if captured_color != 0 and captured_color != previous_color:
 			move_animation["captured_texture"] = get_previous_state_texture(captured_state, captured_color)
+	else:
+		var hidden_captured_texture: Texture2D = get_hidden_captured_piece_texture(current_last_move)
+		if hidden_captured_texture != null:
+			move_animation["captured_texture"] = hidden_captured_texture
+			move_animation["captured_reveal_from_invisibility"] = true
 	return move_animation
+
+func get_hidden_captured_piece_texture(current_last_move: Dictionary) -> Texture2D:
+	var captured_color: int = int(current_last_move.get("captured_piece_color", 0))
+	if captured_color == 0:
+		return null
+
+	var captured_card_name: String = str(current_last_move.get("captured_card_name", ""))
+	if !captured_card_name.is_empty() and card_piece_texture_provider.is_valid():
+		var captured_card: Card = CardLibrary.get_card(captured_card_name)
+		if captured_card != null:
+			var card_texture: Texture2D = card_piece_texture_provider.call(captured_card, captured_color) as Texture2D
+			if card_texture != null:
+				return card_texture
+
+	if default_piece_texture_provider.is_valid():
+		return default_piece_texture_provider.call(captured_color) as Texture2D
+	return null
 
 func get_hidden_card_counts_from_state(hidden_cards: Array) -> Dictionary:
 	var counts: Dictionary = {}
@@ -504,7 +530,7 @@ func collect_bomb_warning_animations(recent_bomb_effects: Array, previous_snapsh
 
 	return animations
 
-func collect_piece_shatter_animations(previous_snapshot: Dictionary, piece_objects: Dictionary, recent_bomb_effects: Array, recent_pending_respawn_queues: Array, has_received_state: bool, skip_visual_animations: bool) -> Array[Dictionary]:
+func collect_piece_shatter_animations(previous_snapshot: Dictionary, piece_objects: Dictionary, recent_bomb_effects: Array, recent_pending_respawn_queues: Array, current_last_move: Dictionary, has_received_state: bool, skip_visual_animations: bool) -> Array[Dictionary]:
 	var animations: Array[Dictionary] = []
 	if !has_received_state or skip_visual_animations:
 		return animations
@@ -550,7 +576,57 @@ func collect_piece_shatter_animations(previous_snapshot: Dictionary, piece_objec
 			"fragment_group": fragment_group,
 		})
 
+	append_hidden_capture_shatter_animation(
+		animations,
+		current_last_move,
+		previous_snapshot,
+		piece_objects,
+		respawn_targets_by_color,
+		release_targets_by_color,
+		used_respawn_targets,
+		used_release_targets,
+		pending_respawn_source_positions
+	)
 	return animations
+
+func append_hidden_capture_shatter_animation(
+	animations: Array[Dictionary],
+	current_last_move: Dictionary,
+	previous_snapshot: Dictionary,
+	piece_objects: Dictionary,
+	respawn_targets_by_color: Dictionary,
+	release_targets_by_color: Dictionary,
+	used_respawn_targets: Dictionary,
+	used_release_targets: Dictionary,
+	pending_respawn_source_positions: Dictionary
+) -> void:
+	if current_last_move.is_empty():
+		return
+	var source_pos: Vector2 = value_to_vector2(current_last_move.get("to", invalid_board_pos), invalid_board_pos)
+	if !is_valid_position(source_pos) or previous_snapshot.has(source_pos):
+		return
+
+	var captured_color: int = int(current_last_move.get("captured_piece_color", 0))
+	if captured_color == 0:
+		return
+	var current_piece: Piece = piece_objects.get(source_pos, null) as Piece
+	if current_piece == null or current_piece.color == captured_color:
+		return
+
+	var respawn_pos: Vector2 = get_unused_respawn_target_for_color(respawn_targets_by_color, used_respawn_targets, captured_color)
+	var fragment_group: String = fragment_group_bottom
+	if respawn_pos == invalid_board_pos:
+		respawn_pos = get_unused_respawn_target_for_color(release_targets_by_color, used_release_targets, captured_color)
+		fragment_group = fragment_group_top
+	if respawn_pos == invalid_board_pos:
+		fragment_group = fragment_group_pending if pending_respawn_source_positions.has(source_pos) else fragment_group_none
+
+	animations.append({
+		"source_pos": source_pos,
+		"respawn_pos": respawn_pos,
+		"piece_color": captured_color,
+		"fragment_group": fragment_group,
+	})
 
 func collect_new_respawn_targets_by_color(previous_snapshot: Dictionary, piece_objects: Dictionary) -> Dictionary:
 	var targets_by_color: Dictionary = {}

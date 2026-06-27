@@ -159,8 +159,6 @@ static func can_attach_any_card(pieces: Dictionary, player_color: int, hand_card
 
 static func get_valid_turn_moves(pieces: Dictionary, player_color: int, hand_cards: Array[Card], can_attach_card: bool, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
 	var valid_moves: Array[Dictionary] = get_existing_card_moves(pieces, player_color, board_size, board_effects)
-	if can_attach_card:
-		valid_moves.append_array(get_attach_card_moves(pieces, player_color, hand_cards, board_size, board_effects))
 	return valid_moves
 
 static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
@@ -179,9 +177,11 @@ static func has_frozen_movable_piece(pieces: Dictionary, player_color: int, boar
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || !CardEffectResolver.can_player_control_piece(piece, player_id) || !piece.can_move():
+		if piece == null || !CardEffectResolver.can_player_control_piece(piece, player_id):
 			continue
-		if CardEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
+		if piece.attached_card != null and piece.exhausted_this_turn:
+			return true
+		if piece.can_move() and CardEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
 			return true
 	return false
 

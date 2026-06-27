@@ -14,8 +14,12 @@ func configure(config: Dictionary) -> void:
 func setup_player_card_hands() -> void:
 	match_board.white_card_deck = DeckManager.create_starting_deck()
 	match_board.black_card_deck = DeckManager.create_starting_deck()
-	match_board.white_card_hand = draw_starting_cards_from_deck(1)
-	match_board.black_card_hand = draw_starting_cards_from_deck(-1)
+	match_board.set_codex_pages(1, DeckManager.create_codex_pages(match_board.white_card_deck))
+	match_board.set_codex_pages(-1, DeckManager.create_codex_pages(match_board.black_card_deck))
+	match_board.set_codex_page_index(1, 0)
+	match_board.set_codex_page_index(-1, 0)
+	match_board.white_card_hand = create_card_hand_from_names(match_board.white_codex_pages[0])
+	match_board.black_card_hand = create_card_hand_from_names(match_board.black_codex_pages[0])
 
 	match_board.white_card_visuals = populate_card_hand(match_board.white_pieces, match_board.white_card_hand, 1)
 	match_board.black_card_visuals = populate_card_hand(match_board.black_pieces, match_board.black_card_hand, -1)
@@ -43,8 +47,8 @@ func populate_card_hand(hand_node: Control, cards: Array[Card], owner_color: int
 func setup_deck_visuals() -> void:
 	match_board.get_card_hud_controller().free_existing_deck_visual(match_board.white_deck_visual)
 	match_board.get_card_hud_controller().free_existing_deck_visual(match_board.black_deck_visual)
-	match_board.white_deck_visual = match_board.get_card_hud_controller().create_deck_visual(match_board.white_pieces, 1)
-	match_board.black_deck_visual = match_board.get_card_hud_controller().create_deck_visual(match_board.black_pieces, -1)
+	match_board.white_deck_visual = null
+	match_board.black_deck_visual = null
 
 func get_card_home_position(index: int) -> Vector2:
 	return match_board.get_card_hud_controller().get_card_home_position(index)
@@ -60,8 +64,14 @@ func get_card_deck(owner_color: int) -> Array[String]:
 
 func get_card_deck_count(owner_color: int) -> int:
 	if owner_color == 1:
-		return match_board.white_deck_count_override if match_board.white_deck_count_override >= 0 else match_board.white_card_deck.size()
-	return match_board.black_deck_count_override if match_board.black_deck_count_override >= 0 else match_board.black_card_deck.size()
+		return match_board.white_deck_count_override if match_board.white_deck_count_override >= 0 else get_codex_remaining_count(owner_color)
+	return match_board.black_deck_count_override if match_board.black_deck_count_override >= 0 else get_codex_remaining_count(owner_color)
+
+func get_codex_remaining_count(owner_color: int) -> int:
+	var total: int = 0
+	for page_count in match_board.get_codex_page_counts(owner_color):
+		total += int(page_count)
+	return total
 
 func get_card_hand_node(owner_color: int) -> Control:
 	return match_board.white_pieces if owner_color == 1 else match_board.black_pieces
@@ -73,6 +83,8 @@ func get_card_draw_start_position(owner_color: int) -> Vector2:
 	var deck_visual: CardVisual = get_deck_visual(owner_color)
 	if deck_visual and is_instance_valid(deck_visual):
 		return deck_visual.global_position
+	if match_board.codex_panel != null and is_instance_valid(match_board.codex_panel):
+		return match_board.codex_panel.get_global_rect().get_center()
 
 	var hand_node: Control = get_card_hand_node(owner_color)
 	return hand_node.global_position + match_board.get_card_hud_controller().get_deck_home_position()
@@ -82,6 +94,8 @@ func get_card_return_to_deck_target_position(owner_color: int, target_scale: flo
 	var deck_visual: CardVisual = get_deck_visual(owner_color)
 	if deck_visual != null and is_instance_valid(deck_visual):
 		return deck_visual.get_global_rect().get_center() - target_size * 0.5
+	if match_board.codex_panel != null and is_instance_valid(match_board.codex_panel):
+		return match_board.codex_panel.get_global_rect().get_center() - target_size * 0.5
 
 	return get_card_draw_start_position(owner_color)
 
@@ -96,6 +110,7 @@ func update_card_presentation() -> void:
 	match_board.update_end_turn_button()
 	match_board.get_turn_hud_controller().update_rules_info_ui()
 	match_board.get_turn_hud_controller().update_action_status_ui()
+	match_board.update_codex_ui()
 
 func update_card_drag_permissions() -> void:
 	var active_color: int = match_board.get_controllable_color()
@@ -118,7 +133,7 @@ func can_drag_card_visual_now(card_visual: CardVisual, active_color: int, can_dr
 		"card_name": card_visual.card.card_name,
 		"hand_index": match_board.get_card_visual_index(card_visual),
 	}
-	return match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_CARD, context) or match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_EXCHANGE_CARD, context)
+	return match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_CARD, context)
 
 func remove_card_from_hand(card_visual: CardVisual) -> String:
 	return remove_card_from_hand_index(card_visual.owner_color, get_card_visual_index(card_visual), false)
@@ -140,6 +155,8 @@ func remove_card_from_hand_index(owner_color: int, hand_index: int, should_draw_
 	var removed_visual: CardVisual = visuals[hand_index]
 	visuals.remove_at(hand_index)
 	cards.remove_at(hand_index)
+	if !GameController.current_game_host:
+		match_board.remove_local_codex_stamp(owner_color, hand_index)
 
 	if removed_visual and is_instance_valid(removed_visual):
 		removed_visual.assign_and_hide()

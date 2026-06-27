@@ -35,7 +35,7 @@ func _populate_deck_options() -> void:
 	var all_decks: Array = PlayerDeckStore.list_decks()
 	var decks: Array = PlayerDeckStore.list_playable_decks()
 	if decks.is_empty():
-		var empty_text: String = "No saved decks" if all_decks.is_empty() else "No complete decks"
+		var empty_text: String = "No saved codexes" if all_decks.is_empty() else "No complete codexes"
 		deck_option_button.add_item(empty_text)
 		ai_deck_option_button.add_item(empty_text)
 		deck_option_button.disabled = true
@@ -56,7 +56,7 @@ func _populate_deck_options() -> void:
 			continue
 
 		var deck_id: String = str(deck.get("deck_id", ""))
-		var deck_name: String = str(deck.get("name", "Unnamed deck"))
+		var deck_name: String = str(deck.get("name", "Unnamed codex"))
 		deck_ids.append(deck_id)
 		ai_deck_ids.append(deck_id)
 		deck_option_button.add_item(deck_name)

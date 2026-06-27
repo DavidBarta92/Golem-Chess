@@ -5,8 +5,8 @@ var match_board
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
 
-func has_attached_card_this_turn(_owner_color: int) -> bool:
-	return false
+func has_attached_card_this_turn(owner_color: int) -> bool:
+	return bool(match_board.attached_card_this_turn.get(owner_color, false))
 
 func mark_card_attached_this_turn(owner_color: int) -> void:
 	var player_id: int = match_board.get_player_id_for_color(owner_color)
@@ -23,10 +23,13 @@ func reset_current_turn_card_attach() -> void:
 	match_board.attached_card_count_this_turn[match_board.get_player_id_for_color(current_color)] = 0
 	match_board.moved_piece_this_turn[current_color] = false
 	match_board.exchanged_card_this_turn[current_color] = false
+	match_board.has_turned_page_this_turn[current_color] = false
 	match_board.played_card_hand_slots_this_turn[current_color] = []
 	match_board.exchanged_card_names_this_turn[current_color] = []
+	match_board.advance_empty_codex_page_at_turn_start(current_color)
 	match_board.update_end_turn_button()
 	match_board.get_turn_hud_controller().update_action_status_ui()
+	match_board.update_codex_ui()
 
 func has_moved_piece_this_turn(owner_color: int) -> bool:
 	return bool(match_board.moved_piece_this_turn.get(owner_color, false))

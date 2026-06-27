@@ -221,6 +221,12 @@ static func build_card_transfer_result(source_player_id: int, target_player_id: 
 	}
 
 static func take_card_from_player_zone(game_state: GameStateData, source_player_id: int, source: String) -> String:
+	if game_state != null and game_state.has_codex_for_player(source_player_id):
+		var from_deck_zone: bool = source == "enemy_deck" or source == "deck"
+		if from_deck_zone:
+			return game_state.remove_stamp_from_codex_zone(source_player_id, "", false)
+		return game_state.remove_stamp_from_current_page(source_player_id)
+
 	var source_cards: Array = []
 	if source == "enemy_deck" or source == "deck":
 		source_cards = game_state.player_decks.get(source_player_id, [])
@@ -242,6 +248,9 @@ static func take_card_from_player_zone(game_state: GameStateData, source_player_
 	return stolen_card_name
 
 static func take_named_card_from_player_deck(game_state: GameStateData, player_id: int, card_name: String) -> bool:
+	if game_state != null and game_state.has_codex_for_player(player_id):
+		return !game_state.remove_stamp_from_codex_zone(player_id, card_name, false).is_empty()
+
 	if !game_state.player_decks.has(player_id):
 		return false
 
@@ -255,6 +264,11 @@ static func take_named_card_from_player_deck(game_state: GameStateData, player_i
 	return true
 
 static func give_card_to_player(game_state: GameStateData, player_id: int, card_name: String, max_hand_size: int) -> String:
+	if game_state != null and game_state.has_codex_for_player(player_id):
+		if game_state.add_stamp_to_current_page(player_id, card_name, max_hand_size):
+			return "hand"
+		return "deleted"
+
 	var hand: Array = game_state.player_hands.get(player_id, [])
 	if hand.size() < max_hand_size:
 		hand.append(card_name)
@@ -333,6 +347,7 @@ static func resolve_board_zone_effect(game_state: GameStateData, player_id: int,
 		"target_player_id": target_player_id,
 		"squares": squares,
 		"turns_remaining": turns_remaining,
+		"skip_next_tick": card.effect_type == CardEffect.TYPE_FROZEN_SQUARES,
 	})
 	DebugLog.info("Board effect added: type=%s, squares=%d" % [card.effect_type, squares.size()])
 	return {
@@ -500,7 +515,7 @@ static func expire_piece_card_due_to_duration_adjustment(game_state: GameStateDa
 
 	if MoveRules.is_nexus_card(expired_card):
 		clear_nexus_position_if_needed(game_state, piece_owner_player_id, true)
-		return_card_to_owner_deck(game_state, piece_owner_player_id, expired_card.card_name, piece_pos, "expired_nexus")
+		return_card_to_owner_deck(game_state, piece_owner_player_id, expired_card.card_name, piece_pos, "expired_nexus", expired_card)
 		return
 
 	register_card_expiration(game_state, piece_owner_player_id, expired_card.card_name, piece_pos)
@@ -533,7 +548,7 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 
 	if target_card != null:
 		if target_was_nexus:
-			return_card_to_owner_deck(game_state, target_player_id, target_card.card_name, target_pos)
+			return_card_to_owner_deck(game_state, target_player_id, target_card.card_name, target_pos, "effect_capture", target_card)
 
 	target_piece.detach_card()
 	game_state.remove_piece(target_pos)
@@ -674,7 +689,22 @@ static func is_base_field_for_other_player(game_state: GameStateData, pos: Vecto
 			return true
 	return false
 
-static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id: int, card_name: String, source_pos: Vector2 = Vector2(-1, -1), reason: String = "effect_capture") -> void:
+static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id: int, card_name: String, source_pos: Vector2 = Vector2(-1, -1), reason: String = "effect_capture", card: Card = null) -> void:
+	if game_state != null and game_state.has_codex_for_player(owner_player_id):
+		var page_index: int = int(card.get_meta("codex_page_index", -1)) if card != null else -1
+		var stamp_index: int = int(card.get_meta("codex_stamp_index", -1)) if card != null else -1
+		game_state.return_stamp_to_codex_page(owner_player_id, card_name, page_index, stamp_index)
+		register_card_transfer(game_state, owner_player_id, owner_player_id, card_name, "piece", "codex", source_pos)
+		if game_state.match_logger != null:
+			game_state.match_logger.log_card_event(game_state, "return_to_deck", {
+				"player_id": owner_player_id,
+				"card_name": card_name,
+				"returned_card": card_name,
+				"target_zone": "codex",
+				"reason": reason,
+			})
+		return
+
 	var deck: Array[String] = []
 	if game_state.player_decks.has(owner_player_id):
 		deck.assign(game_state.player_decks[owner_player_id])
@@ -709,6 +739,11 @@ static func tick_board_effects(game_state: GameStateData) -> void:
 		var effect: Dictionary = effect_value
 		var turns_remaining: int = int(effect.get("turns_remaining", -1))
 		if turns_remaining == -1:
+			remaining_effects.append(effect)
+			continue
+
+		if bool(effect.get("skip_next_tick", false)):
+			effect.erase("skip_next_tick")
 			remaining_effects.append(effect)
 			continue
 

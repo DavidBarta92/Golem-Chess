@@ -25,26 +25,10 @@ func initialize_game(board_data: Array):
 				var piece = Piece.new(pos, color)
 				game_state.set_piece(pos, piece)
 
-	var white_deck: Array[String] = create_starting_deck_for_player_id(0)
-	var black_deck: Array[String] = create_starting_deck_for_player_id(1)
-	var white_initial_deck: Array[String] = []
-	white_initial_deck.assign(white_deck)
-	var black_initial_deck: Array[String] = []
-	black_initial_deck.assign(black_deck)
-
-	game_state.player_initial_decks[0] = white_initial_deck
-	game_state.player_initial_decks[1] = black_initial_deck
-	game_state.player_decks[0] = white_deck
-	game_state.player_decks[1] = black_deck
-
-	var white_hand: Array[String] = []
-	var black_hand: Array[String] = []
-
-	DeckManager.draw_starting_hand(white_deck, white_hand)
-	DeckManager.draw_starting_hand(black_deck, black_hand)
-
-	game_state.player_hands[0] = white_hand
-	game_state.player_hands[1] = black_hand
+	var white_codex_cards: Array[String] = create_starting_deck_for_player_id(0)
+	var black_codex_cards: Array[String] = create_starting_deck_for_player_id(1)
+	game_state.initialize_player_codex(0, white_codex_cards)
+	game_state.initialize_player_codex(1, black_codex_cards)
 	setup_match_logging()
 
 	DebugLog.info("NetworkGameHost: game state initialized")
@@ -75,8 +59,7 @@ func create_starting_deck_for_player_id(player_id: int) -> Array[String]:
 	if multiplayer_node != null && multiplayer_node.has_method("get_starting_deck_for_player_id"):
 		var selected_deck: Array[String] = multiplayer_node.get_starting_deck_for_player_id(player_id)
 		if !selected_deck.is_empty():
-			selected_deck.shuffle()
-			DebugLog.info("Player %d selected deck: %s" % [player_id, selected_deck])
+			DebugLog.info("Player %d selected codex: %s" % [player_id, selected_deck])
 			return selected_deck
 
 	return DeckManager.create_starting_deck()
@@ -109,6 +92,8 @@ func on_player_action(action: Dictionary):
 	match action.type:
 		"attach_card":
 			handle_attach_card(action)
+		"turn_page":
+			return handle_turn_page(action)
 		"exchange_card":
 			return handle_exchange_card(action)
 		"move_piece":
@@ -152,19 +137,21 @@ func handle_attach_card(action: Dictionary):
 		push_warning("This piece cannot receive a card right now.")
 		return
 
-	var card = CardLibrary.get_card(card_name)
+	var card: Card = CardLibrary.duplicate_card(card_name)
 	if card:
 		var hand_before: Array = duplicate_player_card_list(game_state.player_hands[player_id])
 		var deck_before: Array = duplicate_player_card_list(game_state.player_decks[player_id])
 		var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
 		var piece_card_before: String = piece.attached_card.card_name if piece.attached_card != null else ""
 		var piece_turns_before: int = piece.turns_remaining
-		piece.attach_card(card, is_first_turn_for_player(player_id))
-
-		if !play_card_from_player_hand(player_id, card_name, hand_index):
-			piece.detach_card()
-			push_warning("Card could not be removed from hand.")
+		var consumed_stamp: Dictionary = game_state.consume_current_page_stamp_by_name(player_id, card_name, hand_index)
+		if consumed_stamp.is_empty():
+			push_warning("Stamp could not be removed from current Codex page.")
 			return
+		card.set_meta("codex_owner_player_id", player_id)
+		card.set_meta("codex_page_index", int(consumed_stamp.get("page_index", game_state.get_current_page_index(player_id))))
+		card.set_meta("codex_stamp_index", int(consumed_stamp.get("stamp_index", hand_index)))
+		piece.attach_card(card, true)
 		game_state.attached_card_this_turn[player_id] = true
 		game_state.attached_card_count_this_turn[player_id] = int(game_state.attached_card_count_this_turn.get(player_id, 0)) + 1
 		if MoveRules.is_nexus_card(card):
@@ -197,6 +184,22 @@ func handle_attach_card(action: Dictionary):
 			return
 		broadcast_full_state()
 
+func handle_turn_page(action: Dictionary) -> bool:
+	var player_id: int = int(action.player_id)
+	DebugLog.info("Turn Codex page: player=%s" % player_id)
+
+	if game_state.game_over:
+		return false
+	if game_state.current_turn_player != player_id:
+		return false
+	if !game_state.turn_page(player_id):
+		push_warning("This player cannot turn the Codex page now.")
+		return false
+
+	log_turn_snapshot("after_turn_page")
+	broadcast_full_state()
+	return true
+
 func handle_exchange_card(action: Dictionary):
 	var player_id: int = int(action.player_id)
 	var card_name: String = str(action.get("card_name", ""))
@@ -204,58 +207,8 @@ func handle_exchange_card(action: Dictionary):
 
 	DebugLog.info("Exchange card: player=%s, card=%s, hand_index=%s" % [player_id, card_name, hand_index])
 
-	if game_state.game_over:
-		return false
-	if game_state.current_turn_player != player_id:
-		return false
-	if !can_exchange_card_for_player(player_id):
-		push_warning("This player cannot exchange a card now.")
-		return false
-	if !game_state.player_hands.has(player_id) or !game_state.player_decks.has(player_id):
-		return false
-
-	var hand: Array = game_state.player_hands[player_id]
-	var deck: Array = game_state.player_decks[player_id]
-	if deck.is_empty():
-		push_warning("Deck is empty, cannot exchange card.")
-		return false
-
-	var remove_index: int = get_exchange_card_hand_index(hand, card_name, hand_index)
-	if remove_index == -1:
-		push_warning("Card exchange rejected: card is not in hand.")
-		return false
-
-	var returned_card_name: String = str(hand[remove_index])
-	var hand_before: Array = duplicate_player_card_list(hand)
-	var deck_before: Array = duplicate_player_card_list(deck)
-	var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
-	hand.remove_at(remove_index)
-	var drawn_card_name: String = draw_exchange_replacement_card(deck, returned_card_name)
-	if drawn_card_name.is_empty():
-		hand.insert(remove_index, returned_card_name)
-		game_state.player_hands[player_id] = hand
-		game_state.player_decks[player_id] = deck
-		return false
-
-	DeckManager.return_card_to_deck(deck, returned_card_name)
-	record_exchanged_card_name_this_turn(player_id, returned_card_name)
-	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, returned_card_name, "hand", "deck")
-
-	var insert_index: int = clampi(remove_index, 0, hand.size())
-	hand.insert(insert_index, drawn_card_name)
-	game_state.player_hands[player_id] = hand
-	game_state.player_decks[player_id] = deck
-	game_state.exchanged_card_this_turn[player_id] = true
-	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", "hand")
-
-	var returned_card: Card = CardLibrary.get_card(returned_card_name)
-	if returned_card != null:
-		log_card_returned_to_deck(player_id, returned_card, Vector2(-1, -1), "hand_exchange")
-	log_card_drawn(player_id, drawn_card_name, hand_before, deck_before, deck_top_before, "hand", "hand_exchange")
-	log_turn_snapshot("after_exchange")
-
-	broadcast_full_state()
-	return true
+	push_warning("Card exchange is disabled. Use turn_page instead.")
+	return false
 
 func get_exchange_card_hand_index(hand: Array, card_name: String, hand_index: int) -> int:
 	if hand_index >= 0 && hand_index < hand.size():
@@ -333,7 +286,7 @@ func handle_move_piece(action: Dictionary):
 	game_state.remove_piece(from_pos)
 	piece.position = to_pos
 	game_state.set_piece(to_pos, piece)
-	record_last_move(player_id, from_pos, to_pos, moving_piece_visible_to_enemy)
+	record_last_move(player_id, from_pos, to_pos, moving_piece_visible_to_enemy, captured_piece)
 
 	if MoveRules.is_nexus_card(piece.attached_card):
 		var moved_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(piece.color)
@@ -417,7 +370,8 @@ func end_current_turn():
 		return
 
 	var ending_player_id: int = game_state.current_turn_player
-	refill_played_cards_for_player(ending_player_id)
+	game_state.played_card_hand_slots_this_turn[ending_player_id] = []
+	clear_exchanged_card_names_this_turn(ending_player_id)
 	clear_piece_exhaustion_for_player(ending_player_id)
 	game_state.completed_turn_counts[ending_player_id] = int(game_state.completed_turn_counts.get(ending_player_id, 0)) + 1
 	game_state.switch_turn()
@@ -482,7 +436,7 @@ func player_has_remaining_turn_action(player_id: int) -> bool:
 		return true
 	if can_move_any_piece_for_player(player_id):
 		return true
-	if should_hold_turn_for_optional_exchange(player_id):
+	if can_turn_page_for_player(player_id):
 		return true
 	return false
 
@@ -535,10 +489,12 @@ func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 
 func player_has_valid_turn_action(player_id: int) -> bool:
 	if is_first_turn_for_player(player_id):
-		return int(game_state.attached_card_count_this_turn.get(player_id, 0)) > 0 or can_attach_any_card_for_player(player_id)
+		return int(game_state.attached_card_count_this_turn.get(player_id, 0)) > 0 or can_attach_any_card_for_player(player_id) or can_turn_page_for_player(player_id)
 	if can_move_any_piece_for_player(player_id):
 		return true
 	if can_attach_any_card_for_player(player_id):
+		return true
+	if can_turn_page_for_player(player_id):
 		return true
 	if can_end_turn_due_to_frozen_piece(player_id):
 		return true
@@ -556,14 +512,12 @@ func can_end_turn_due_to_frozen_piece(player_id: int) -> bool:
 	return MoveRules.has_frozen_movable_piece(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects)
 
 func can_exchange_card_for_player(player_id: int) -> bool:
-	if bool(game_state.exchanged_card_this_turn.get(player_id, false)):
-		return false
-	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
-		return false
+	return false
 
-	var player_deck: Array = game_state.player_decks[player_id]
-	var player_hand: Array = game_state.player_hands[player_id]
-	return !player_deck.is_empty() && !player_hand.is_empty()
+func can_turn_page_for_player(player_id: int) -> bool:
+	if game_state == null:
+		return false
+	return game_state.can_turn_page(player_id)
 
 func draw_exchange_replacement_card(deck: Array, returned_card_name: String) -> String:
 	return draw_card_from_deck_avoiding_names(deck, [returned_card_name])
@@ -598,11 +552,7 @@ func clear_exchanged_card_names_this_turn(player_id: int) -> void:
 	game_state.exchanged_card_names_this_turn[player_id] = []
 
 func should_hold_turn_for_optional_exchange(player_id: int) -> bool:
-	if !can_exchange_card_for_player(player_id):
-		return false
-	if GameConfig.is_singleplayer && GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_AI:
-		return false
-	return true
+	return false
 
 func is_nexus_piece(piece: Piece) -> bool:
 	return piece != null && MoveRules.is_nexus_card(piece.attached_card)
@@ -658,6 +608,7 @@ func broadcast_full_state():
 			local_state_data.game_over,
 			local_state_data.winner_player,
 			local_state_data.player_decks_size,
+			local_state_data.player_codex_state,
 			local_state_data.hidden_cards,
 			local_state_data.player_base_fields,
 			local_state_data.board_effects,
@@ -703,9 +654,10 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"hidden_cards": [],
 		"player_hands": game_state.player_hands,
 		"player_decks_size": {
-			0: game_state.player_decks[0].size(),
-			1: game_state.player_decks[1].size()
+			0: game_state.get_remaining_codex_stamp_count(0),
+			1: game_state.get_remaining_codex_stamp_count(1)
 		},
+		"player_codex_state": serialize_player_codex_state(),
 		"current_turn": game_state.current_turn_player,
 		"game_over": game_state.game_over,
 		"winner_player": game_state.winner_player,
@@ -745,9 +697,37 @@ func serialize_turn_action_state() -> Dictionary:
 		"attached_card_this_turn": duplicate_bool_dictionary(game_state.attached_card_this_turn),
 		"moved_piece_this_turn": duplicate_bool_dictionary(game_state.moved_piece_this_turn),
 		"exchanged_card_this_turn": duplicate_bool_dictionary(game_state.exchanged_card_this_turn),
+		"has_turned_page_this_turn": duplicate_bool_dictionary(game_state.has_turned_page_this_turn),
 		"attached_card_count_this_turn": game_state.attached_card_count_this_turn.duplicate(),
 		"completed_turn_counts": game_state.completed_turn_counts.duplicate(),
 	}
+
+func serialize_player_codex_state() -> Dictionary:
+	return {
+		0: {
+			"current_page_index": game_state.get_current_page_index(0),
+			"page_counts": game_state.get_page_stamp_counts(0),
+			"pages": serialize_codex_pages_for_player(0),
+			"has_turned_page_this_turn": bool(game_state.has_turned_page_this_turn.get(0, false)),
+		},
+		1: {
+			"current_page_index": game_state.get_current_page_index(1),
+			"page_counts": game_state.get_page_stamp_counts(1),
+			"pages": serialize_codex_pages_for_player(1),
+			"has_turned_page_this_turn": bool(game_state.has_turned_page_this_turn.get(1, false)),
+		},
+	}
+
+func serialize_codex_pages_for_player(player_id: int) -> Array:
+	var serialized_pages: Array = []
+	var pages: Array = game_state.get_codex_pages(player_id)
+	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
+		var serialized_page: Array[String] = []
+		if page_index < pages.size() and pages[page_index] is Array:
+			for card_name_value in pages[page_index]:
+				serialized_page.append(str(card_name_value))
+		serialized_pages.append(serialized_page)
+	return serialized_pages
 
 func duplicate_bool_dictionary(source: Dictionary) -> Dictionary:
 	var output: Dictionary = {}
@@ -853,7 +833,7 @@ func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 	if viewer_player_id != -1 && !is_mover_viewer && !CardEffectResolver.is_piece_visible_to_player(moving_piece, viewer_player_id):
 		return {}
 
-	return {
+	var serialized_last_move := {
 		"from": vector2_to_array(from_pos),
 		"to": vector2_to_array(to_pos),
 		"player_id": mover_player_id,
@@ -861,6 +841,10 @@ func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 		"visible_to_enemy": bool(game_state.last_move.get("visible_to_enemy", true)),
 		"show_arrow": !is_mover_viewer,
 	}
+	if int(game_state.last_move.get("captured_piece_color", 0)) != 0:
+		serialized_last_move["captured_piece_color"] = int(game_state.last_move.get("captured_piece_color", 0))
+		serialized_last_move["captured_card_name"] = str(game_state.last_move.get("captured_card_name", ""))
+	return serialized_last_move
 
 func append_hidden_card_data(hidden_cards: Array, piece: Piece) -> void:
 	if piece == null or piece.attached_card == null:
@@ -932,7 +916,7 @@ func duplicate_player_card_list(source) -> Array:
 			output.append(str(card_name_value))
 	return output
 
-func record_last_move(player_id: int, from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool) -> void:
+func record_last_move(player_id: int, from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool, captured_piece: Piece = null) -> void:
 	if from_pos == to_pos:
 		game_state.last_move = {}
 		return
@@ -944,6 +928,9 @@ func record_last_move(player_id: int, from_pos: Vector2, to_pos: Vector2, visibl
 		"piece_color": CardEffectResolver.get_color_for_player_id(player_id),
 		"visible_to_enemy": visible_to_enemy,
 	}
+	if captured_piece != null:
+		game_state.last_move["captured_piece_color"] = captured_piece.color
+		game_state.last_move["captured_card_name"] = captured_piece.attached_card.card_name if captured_piece.attached_card != null else ""
 
 func play_card_from_player_hand(player_id: int, card_name: String, hand_index: int) -> bool:
 	if !game_state.player_hands.has(player_id):
@@ -1018,13 +1005,10 @@ func refill_played_cards_for_player(player_id: int) -> void:
 func return_card_to_player_deck(player_id: int, card: Card, reason: String, piece_pos: Vector2 = Vector2(-1, -1)) -> void:
 	if card == null:
 		return
-	if !game_state.player_decks.has(player_id):
-		game_state.player_decks[player_id] = []
-
-	var deck: Array = game_state.player_decks[player_id]
-	DeckManager.return_card_to_deck(deck, card.card_name)
-	game_state.player_decks[player_id] = deck
-	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, card.card_name, "piece", "deck", piece_pos)
+	var page_index: int = int(card.get_meta("codex_page_index", -1))
+	var stamp_index: int = int(card.get_meta("codex_stamp_index", -1))
+	game_state.return_stamp_to_codex_page(player_id, card.card_name, page_index, stamp_index)
+	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, card.card_name, "piece", "codex", piece_pos)
 	log_card_returned_to_deck(player_id, card, piece_pos, reason)
 
 func player_has_available_nexus_card(player_id: int) -> bool:
@@ -1073,7 +1057,7 @@ func log_card_returned_to_deck(player_id: int, card: Card, piece_pos: Vector2, r
 		"card": card,
 		"piece_pos": piece_pos,
 		"returned_card": card.card_name if card != null else "",
-		"target_zone": "deck",
+		"target_zone": "codex",
 		"reason": reason,
 	})
 

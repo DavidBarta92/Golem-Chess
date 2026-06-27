@@ -1,19 +1,8 @@
 [gd_scene format=3 uid="uid://b2oed0tahffou"]
 
 [ext_resource type="Script" uid="uid://cef2ndnwft8t1" path="res://Scenes/MainMenu.gd" id="1_tt5f1"]
+[ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="2_8saeu"]
 [ext_resource type="Texture2D" uid="uid://cn5e1f7amlgkn" path="res://Assets/golem_painted_vector_transparent_2.svg" id="2_853f1"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_coin"]
-bg_color = Color(1, 0.82, 0.12, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.58, 0.42, 0.02, 1)
-corner_radius_top_left = 9
-corner_radius_top_right = 9
-corner_radius_bottom_right = 9
-corner_radius_bottom_left = 9
 
 [node name="MainMenu" type="Control" unique_id=683751200]
 layout_mode = 3
@@ -59,21 +48,28 @@ layout_mode = 2
 focus_mode = 0
 text = "Exit"
 
-[node name="PointsHud" type="HBoxContainer" parent="TopBar" unique_id=1733465618]
+[node name="PointsHud" type="Control" parent="TopBar" unique_id=1733465618]
 custom_minimum_size = Vector2(116, 38)
 layout_mode = 2
-theme_override_constants/separation = 8
-alignment = 2
 
-[node name="PointIcon" type="PanelContainer" parent="TopBar/PointsHud" unique_id=731680785]
-custom_minimum_size = Vector2(18, 18)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_styles/panel = SubResource("StyleBoxFlat_coin")
+[node name="Coin" type="TextureRect" parent="TopBar/PointsHud" unique_id=1062072344]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 0
+offset_top = 7.0
+offset_right = 24.0
+offset_bottom = 31.0
+texture_filter = 2
+texture = ExtResource("2_8saeu")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="PointsLabel" type="Label" parent="TopBar/PointsHud" unique_id=1471077960]
-custom_minimum_size = Vector2(78, 32)
-layout_mode = 2
+custom_minimum_size = Vector2(70, 32)
+layout_mode = 0
+offset_left = 32.0
+offset_top = 3.0
+offset_right = 116.0
+offset_bottom = 35.0
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 20
 text = "0"
@@ -114,9 +110,9 @@ text = "Tutorial"
 layout_mode = 2
 text = "Multiplayer"
 
-[node name="DeckbuilderButton" type="Button" parent="VBoxContainer" unique_id=464422607]
+[node name="StackbuilderButton" type="Button" parent="VBoxContainer" unique_id=464422607]
 layout_mode = 2
-text = "Deckbuilder"
+text = "Codex Builder"
 
 [node name="ExitButton" type="Button" parent="VBoxContainer" unique_id=1409857597]
 visible = false
@@ -140,9 +136,9 @@ grow_vertical = 0
 [node name="Label" type="Label" parent="." unique_id=1540343529]
 layout_mode = 0
 offset_left = 178.0
-offset_top = 30.0
+offset_top = 33.0
 offset_right = 283.0
-offset_bottom = 61.0
+offset_bottom = 64.0
 theme_override_colors/font_color = Color(0.61960787, 0.6039216, 0.6862745, 1)
 theme_override_font_sizes/font_size = 12
 text = "v0.0.8 alpha"
@@ -213,7 +209,7 @@ placeholder_text = "CSV/log folder"
 [node name="AIDeckOptionButton" type="OptionButton" parent="DevToolsWindow/DevToolsRoot/AIVsAISection" unique_id=1185455417]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
-tooltip_text = "Both AI players use this saved deck."
+tooltip_text = "Both AI players use this saved codex."
 
 [node name="Separator" type="HSeparator" parent="DevToolsWindow/DevToolsRoot" unique_id=2072885197]
 layout_mode = 2
@@ -259,5 +255,5 @@ texture = ExtResource("2_853f1")
 [connection signal="pressed" from="VBoxContainer/SingleplayerButton" to="." method="_on_singleplayer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/TutorialButton" to="." method="_on_tutorial_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MultiplayerButton" to="." method="_on_multiplayer_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/DeckbuilderButton" to="." method="_on_deckbuilder_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/StackbuilderButton" to="." method="_on_stackbuilder_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ExitButton" to="." method="_on_exit_button_pressed"]

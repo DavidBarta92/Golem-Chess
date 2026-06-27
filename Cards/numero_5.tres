@@ -10,6 +10,7 @@
 script = ExtResource("2_vqbu2")
 card_name = "Numero_5"
 card_code = "numero_5"
+duration = 2
 card_art = ExtResource("2_5j7x2")
 piece_visuals = ExtResource("3_5j7x2")
 white_piece_texture = ExtResource("3_vqbu2")

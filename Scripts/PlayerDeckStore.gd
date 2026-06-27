@@ -336,7 +336,7 @@ func _normalize_deck(raw_deck: Dictionary) -> Dictionary:
 	return {
 		"deck_id": str(raw_deck.get("deck_id", raw_deck.get("id", _generate_deck_id()))),
 		"provider": str(raw_deck.get("provider", LOCAL_PROVIDER)),
-		"name": str(raw_deck.get("name", "Unnamed deck")),
+		"name": str(raw_deck.get("name", "Unnamed codex")),
 		"cards": _normalize_deck_cards(raw_deck.get("cards", [])),
 		"created_at": str(raw_deck.get("created_at", now)),
 		"updated_at": str(raw_deck.get("updated_at", now)),

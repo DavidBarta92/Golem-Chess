@@ -28,6 +28,10 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.player_decks = duplicate_card_list_dictionary(source_state.player_decks)
 	cloned_state.player_initial_decks = duplicate_card_list_dictionary(source_state.player_initial_decks)
 	cloned_state.player_hands = duplicate_card_list_dictionary(source_state.player_hands)
+	cloned_state.player_codex_pages = duplicate_codex_pages_dictionary(source_state.player_codex_pages)
+	cloned_state.current_page_index = source_state.current_page_index.duplicate()
+	cloned_state.has_turned_page_this_turn = source_state.has_turned_page_this_turn.duplicate()
+	cloned_state.spent_stamps = duplicate_spent_stamps_dictionary(source_state.spent_stamps)
 	cloned_state.current_turn_player = source_state.current_turn_player
 	cloned_state.completed_turn_counts = source_state.completed_turn_counts.duplicate()
 	cloned_state.player_clock_seconds = source_state.player_clock_seconds.duplicate()
@@ -64,6 +68,31 @@ static func duplicate_card_list_dictionary(source: Dictionary) -> Dictionary:
 		output[key] = duplicated_list
 	return output
 
+static func duplicate_codex_pages_dictionary(source: Dictionary) -> Dictionary:
+	var output: Dictionary = {}
+	for key in source:
+		var pages: Array = source[key]
+		var duplicated_pages: Array = []
+		for page_value in pages:
+			var duplicated_page: Array = []
+			if page_value is Array:
+				for card_name_value in page_value:
+					duplicated_page.append(str(card_name_value))
+			duplicated_pages.append(duplicated_page)
+		output[key] = duplicated_pages
+	return output
+
+static func duplicate_spent_stamps_dictionary(source: Dictionary) -> Dictionary:
+	var output: Dictionary = {}
+	for key in source:
+		var source_list: Array = source[key]
+		var duplicated_list: Array = []
+		for value in source_list:
+			if value is Dictionary:
+				duplicated_list.append((value as Dictionary).duplicate(true))
+		output[key] = duplicated_list
+	return output
+
 static func duplicate_int_list_dictionary(source: Dictionary) -> Dictionary:
 	var output: Dictionary = {}
 	for key in source:
@@ -89,13 +118,16 @@ static func duplicate_board_effects(source_effects: Array) -> Array:
 		for square_value in squares:
 			duplicated_squares.append(CardEffectResolver.as_vector2(square_value, Vector2(-1, -1)))
 
-		output.append({
+		var duplicated_effect: Dictionary = {
 			"effect_type": str(effect.get("effect_type", "")),
 			"owner_player_id": int(effect.get("owner_player_id", -1)),
 			"target_player_id": int(effect.get("target_player_id", -1)),
 			"squares": duplicated_squares,
 			"turns_remaining": int(effect.get("turns_remaining", -1)),
-		})
+		}
+		if bool(effect.get("skip_next_tick", false)):
+			duplicated_effect["skip_next_tick"] = true
+		output.append(duplicated_effect)
 	return output
 
 static func duplicate_pending_respawns(source: Dictionary) -> Dictionary:
@@ -125,6 +157,8 @@ static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: D
 		match str(action.get("type", "")):
 			"attach_card":
 				apply_attach_action(simulated_state, player_id, action, board_size)
+			"turn_page":
+				apply_turn_page_action(simulated_state, player_id)
 			"exchange_card":
 				apply_exchange_action(simulated_state, player_id, action)
 			"move_piece":
@@ -153,52 +187,33 @@ static func apply_attach_action(game_state: GameStateData, player_id: int, actio
 	if piece.color != player_color or !MoveRules.can_attach_card_for_turn(game_state.pieces, player_color, card):
 		return
 
-	var removed_hand_index: int = remove_card_name_from_hand(game_state, player_id, card_name)
-	if removed_hand_index == -1:
+	var consumed_stamp: Dictionary = game_state.consume_current_page_stamp_by_name(player_id, card_name, int(action.get("hand_index", -1)))
+	if consumed_stamp.is_empty():
 		return
+	var removed_hand_index: int = int(consumed_stamp.get("stamp_index", int(action.get("hand_index", -1))))
 	record_played_card_hand_slot(game_state, player_id, removed_hand_index)
 	game_state.attached_card_this_turn[player_id] = true
 	game_state.attached_card_count_this_turn[player_id] = int(game_state.attached_card_count_this_turn.get(player_id, 0)) + 1
-	piece.attached_card = card
+	var attached_card: Card = card.duplicate()
+	attached_card.set_meta("codex_owner_player_id", player_id)
+	attached_card.set_meta("codex_page_index", int(consumed_stamp.get("page_index", game_state.get_current_page_index(player_id))))
+	attached_card.set_meta("codex_stamp_index", int(consumed_stamp.get("stamp_index", removed_hand_index)))
+	piece.attached_card = attached_card
 	piece.turns_remaining = card.duration
-	piece.exhausted_this_turn = int(game_state.completed_turn_counts.get(player_id, 0)) == 0
-	simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_ATTACH, player_id, piece, piece_pos, card, board_size)
+	piece.exhausted_this_turn = true
+	simulate_trigger_effect(game_state, CardEffect.TRIGGER_ON_ATTACH, player_id, piece, piece_pos, attached_card, board_size)
 	if game_state.game_over:
 		return
-	CardEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, card, board_size)
+	CardEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, attached_card, board_size)
 	_refresh_nexus_positions(game_state)
 
+static func apply_turn_page_action(game_state: GameStateData, player_id: int) -> void:
+	if game_state == null:
+		return
+	game_state.turn_page(player_id)
+
 static func apply_exchange_action(game_state: GameStateData, player_id: int, action: Dictionary) -> void:
-	if bool(game_state.exchanged_card_this_turn.get(player_id, false)):
-		return
-	if !game_state.player_hands.has(player_id) or !game_state.player_decks.has(player_id):
-		return
-
-	var hand: Array = game_state.player_hands[player_id]
-	var deck: Array = game_state.player_decks[player_id]
-	if hand.is_empty() or deck.is_empty():
-		return
-
-	var card_name: String = str(action.get("card_name", ""))
-	var hand_index: int = int(action.get("hand_index", -1))
-	var remove_index: int = get_exchange_card_index(hand, card_name, hand_index)
-	if remove_index == -1:
-		return
-
-	var returned_card_name: String = str(hand[remove_index])
-	var drawn_card_name: String = draw_card_from_deck_avoiding_names(deck, [returned_card_name])
-	if drawn_card_name.is_empty():
-		return
-
-	hand.remove_at(remove_index)
-	deck.append(returned_card_name)
-	hand.insert(clampi(remove_index, 0, hand.size()), drawn_card_name)
-	game_state.player_hands[player_id] = hand
-	game_state.player_decks[player_id] = deck
-	game_state.exchanged_card_this_turn[player_id] = true
-	var exchanged_names: Array = game_state.exchanged_card_names_this_turn.get(player_id, [])
-	exchanged_names.append(returned_card_name)
-	game_state.exchanged_card_names_this_turn[player_id] = exchanged_names
+	return
 
 static func get_exchange_card_index(hand: Array, card_name: String, hand_index: int) -> int:
 	if hand_index >= 0 and hand_index < hand.size():
@@ -329,7 +344,8 @@ static func end_simulated_turn(game_state: GameStateData, player_id: int, board_
 		return
 
 	game_state.current_turn_player = player_id
-	refill_played_cards_for_player(game_state, player_id)
+	game_state.played_card_hand_slots_this_turn[player_id] = []
+	game_state.exchanged_card_names_this_turn[player_id] = []
 	clear_piece_exhaustion_for_player(game_state, player_id)
 	game_state.completed_turn_counts[player_id] = int(game_state.completed_turn_counts.get(player_id, 0)) + 1
 	game_state.switch_turn()
@@ -394,7 +410,7 @@ static func refill_played_cards_for_player(game_state: GameStateData, player_id:
 
 static func handle_expired_nexus_card(game_state: GameStateData, player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
 	CardEffectResolver.clear_nexus_position_if_needed(game_state, player_id, true)
-	CardEffectResolver.return_card_to_owner_deck(game_state, player_id, expired_card.card_name, piece_pos, "expired_nexus")
+	CardEffectResolver.return_card_to_owner_deck(game_state, player_id, expired_card.card_name, piece_pos, "expired_nexus", expired_card)
 
 static func handle_captured_piece_card(game_state: GameStateData, captured_piece: Piece, captured_player_id: int, piece_pos: Vector2) -> void:
 	if captured_piece == null or captured_piece.attached_card == null:
@@ -403,7 +419,7 @@ static func handle_captured_piece_card(game_state: GameStateData, captured_piece
 	var captured_card: Card = captured_piece.attached_card
 	var captured_was_nexus: bool = CardEffectResolver.is_nexus_piece(captured_piece)
 	if captured_was_nexus:
-		CardEffectResolver.return_card_to_owner_deck(game_state, captured_player_id, captured_card.card_name, piece_pos)
+		CardEffectResolver.return_card_to_owner_deck(game_state, captured_player_id, captured_card.card_name, piece_pos, "effect_capture", captured_card)
 
 	captured_piece.detach_card()
 	if captured_was_nexus:

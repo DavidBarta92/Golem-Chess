@@ -4,6 +4,7 @@ const AI_VS_AI_UNLOCK_KEY: Key = KEY_A
 const AI_VS_AI_UNLOCK_PRESS_COUNT: int = 3
 const MAX_AI_VS_AI_MATCH_COUNT: int = 9999
 const TOP_BAR_HEIGHT: int = 60
+const COIN_TEXTURE: Texture2D = preload("res://Assets/coin.svg")
 const FILM_GRAIN_SLIDER_MIN: float = 0.0
 const FILM_GRAIN_SLIDER_MAX: float = 0.16
 const FILM_GRAIN_SLIDER_STEP: float = 0.005
@@ -34,7 +35,7 @@ var film_grain_intensity_slider: HSlider
 var film_grain_intensity_value_label: Label
 var last_move_arrow_check: CheckBox
 var enemy_attack_markers_check: CheckBox
-var points_hud: HBoxContainer
+var points_hud: Control
 var points_label: Label
 var resolution_options: Array[Vector2i] = []
 var fps_limit_options: Array[int] = []
@@ -53,6 +54,7 @@ func _ready():
 	hide_legacy_player_name_controls()
 	hide_legacy_exit_button()
 	_bind_top_bar()
+	_bind_main_menu_buttons()
 	create_settings_dialog()
 	sync_dev_tools_from_config()
 	_populate_ai_vs_ai_deck_options()
@@ -127,6 +129,14 @@ func _bind_top_bar() -> void:
 	_connect_once($TopBar/ExitButton.pressed, Callable(self, "_on_exit_button_pressed"))
 	update_points_hud()
 
+func _bind_main_menu_buttons() -> void:
+	var stackbuilder_button := get_node_or_null("VBoxContainer/StackbuilderButton") as Button
+	if stackbuilder_button == null:
+		stackbuilder_button = get_node_or_null("VBoxContainer/DeckbuilderButton") as Button
+	if stackbuilder_button != null:
+		stackbuilder_button.text = "Codex Builder"
+		_connect_once(stackbuilder_button.pressed, Callable(self, "_on_stackbuilder_button_pressed"))
+
 func hide_legacy_player_name_controls() -> void:
 	var legacy_name_label: Label = get_node_or_null("VBoxContainer/NameLabel") as Label
 	var legacy_name_field: LineEdit = get_node_or_null("VBoxContainer/PlayerNameField") as LineEdit
@@ -188,32 +198,25 @@ func create_settings_button() -> void:
 	exit_button.pressed.connect(_on_exit_button_pressed)
 
 func create_points_hud() -> void:
-	points_hud = HBoxContainer.new()
-	top_bar.add_child(points_hud)
-	points_hud.custom_minimum_size = Vector2(116, 38)
-	points_hud.alignment = BoxContainer.ALIGNMENT_END
-	points_hud.add_theme_constant_override("separation", 8)
+	var points_hud_container := HBoxContainer.new()
+	points_hud = points_hud_container
+	top_bar.add_child(points_hud_container)
+	points_hud_container.custom_minimum_size = Vector2(116, 38)
+	points_hud_container.alignment = BoxContainer.ALIGNMENT_END
+	points_hud_container.add_theme_constant_override("separation", 8)
 
-	var point_icon := PanelContainer.new()
-	points_hud.add_child(point_icon)
-	point_icon.custom_minimum_size = Vector2(18, 18)
+	var point_icon := TextureRect.new()
+	points_hud_container.add_child(point_icon)
+	point_icon.custom_minimum_size = Vector2(24, 24)
 	point_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var icon_style := StyleBoxFlat.new()
-	icon_style.bg_color = Color(1.0, 0.82, 0.12)
-	icon_style.border_color = Color(0.58, 0.42, 0.02)
-	icon_style.border_width_left = 1
-	icon_style.border_width_top = 1
-	icon_style.border_width_right = 1
-	icon_style.border_width_bottom = 1
-	icon_style.corner_radius_top_left = 9
-	icon_style.corner_radius_top_right = 9
-	icon_style.corner_radius_bottom_left = 9
-	icon_style.corner_radius_bottom_right = 9
-	point_icon.add_theme_stylebox_override("panel", icon_style)
+	point_icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	point_icon.texture = COIN_TEXTURE
+	point_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	point_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 
 	points_label = Label.new()
-	points_hud.add_child(points_label)
-	points_label.custom_minimum_size = Vector2(78, 28)
+	points_hud_container.add_child(points_label)
+	points_label.custom_minimum_size = Vector2(70, 28)
 	points_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	points_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	points_label.add_theme_font_size_override("font_size", 20)
@@ -462,7 +465,7 @@ func _populate_ai_vs_ai_deck_options() -> void:
 	var all_decks: Array = PlayerDeckStore.list_decks()
 	var playable_decks: Array = PlayerDeckStore.list_playable_decks()
 	if playable_decks.is_empty():
-		var empty_text: String = "No saved decks" if all_decks.is_empty() else "No complete decks"
+		var empty_text: String = "No saved codexes" if all_decks.is_empty() else "No complete codexes"
 		ai_deck_option_button.add_item(empty_text)
 		ai_deck_option_button.disabled = true
 		return
@@ -476,7 +479,7 @@ func _populate_ai_vs_ai_deck_options() -> void:
 		if deck_id.is_empty():
 			continue
 		ai_deck_ids.append(deck_id)
-		ai_deck_option_button.add_item(str(deck.get("name", "Unnamed deck")))
+		ai_deck_option_button.add_item(str(deck.get("name", "Unnamed codex")))
 		if deck_id == current_deck_id:
 			selected_index = ai_deck_ids.size() - 1
 
@@ -503,9 +506,9 @@ func _update_ai_vs_ai_deck_controls() -> void:
 		return
 	ai_deck_option_button.disabled = ai_random_deck_check.button_pressed or ai_deck_ids.is_empty()
 	if ai_random_deck_check.button_pressed:
-		ai_deck_option_button.tooltip_text = "Random database decks are enabled."
+		ai_deck_option_button.tooltip_text = "Random database codexes are enabled."
 	else:
-		ai_deck_option_button.tooltip_text = "Both AI players use this saved deck."
+		ai_deck_option_button.tooltip_text = "Both AI players use this saved codex."
 
 func save_player_name() -> void:
 	PlayerSettingsStore.set_player_name(PlayerSettingsStore.get_player_name())
@@ -514,9 +517,12 @@ func _on_multiplayer_button_pressed():
 	save_player_name()
 	SceneTransition.change_scene("res://Scenes/MultiplayerMenu.tscn")
 
-func _on_deckbuilder_button_pressed():
+func _on_stackbuilder_button_pressed():
 	save_player_name()
-	SceneTransition.change_scene("res://Scenes/Deckbuilder.tscn")
+	SceneTransition.change_scene("res://Scenes/Stackbuilder.tscn")
+
+func _on_deckbuilder_button_pressed():
+	_on_stackbuilder_button_pressed()
 
 func _on_exit_button_pressed():
 	get_tree().quit()

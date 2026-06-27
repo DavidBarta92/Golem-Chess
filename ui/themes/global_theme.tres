@@ -1,8 +1,12 @@
 [gd_resource type="Theme" format=3 uid="uid://dicvefuprprvl"]
 
-[ext_resource type="FontFile" uid="uid://b1beq61l8rupp" path="res://Fonts/Rosemartin.otf" id="1_font"]
-[ext_resource type="Texture2D" path="res://ui/themes/icons/window_close.svg" id="2_window_close"]
-[ext_resource type="Texture2D" path="res://ui/themes/icons/slider_grabber.svg" id="3_slider_grabber"]
+[ext_resource type="FontFile" uid="uid://dstemihojnahd" path="res://Fonts/ElmsSans-ExtraBold.ttf" id="1_iwqts"]
+[ext_resource type="FontFile" uid="uid://cd4q42ir08yo" path="res://Fonts/ElmsSans-Bold.ttf" id="2_820ue"]
+[ext_resource type="Texture2D" uid="uid://dgs68qe2fy2l8" path="res://ui/themes/icons/window_close.svg" id="2_window_close"]
+[ext_resource type="FontFile" uid="uid://cb3g1csqcjdkg" path="res://Fonts/ElmsSans-Regular.ttf" id="3_820ue"]
+[ext_resource type="Texture2D" uid="uid://cr4mwul1ppsqc" path="res://ui/themes/icons/slider_grabber.svg" id="3_slider_grabber"]
+[ext_resource type="FontFile" uid="uid://bjtukmh5u0umu" path="res://Fonts/ElmsSans-Italic.ttf" id="4_dialogue_italic"]
+[ext_resource type="FontFile" uid="uid://c6ek3bb3qj55l" path="res://Fonts/ElmsSans-BoldItalic.ttf" id="5_dialogue_bold_italic"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_popup"]
 content_margin_left = 16.0
@@ -22,26 +26,6 @@ corner_radius_bottom_left = 5
 shadow_color = Color(0, 0, 0, 0.22)
 shadow_size = 10
 shadow_offset = Vector2(0, 4)
-
-[sub_resource type="StyleBoxFlat" id="StyleBox_window"]
-content_margin_left = 1.0
-content_margin_top = 1.0
-content_margin_right = 1.0
-content_margin_bottom = 1.0
-bg_color = Color(0.984314, 0.980392, 0.968627, 1)
-border_width_left = 1
-border_width_top = 46
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.070588, 0.070588, 0.070588, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-expand_margin_top = 46.0
-shadow_color = Color(0, 0, 0, 0.28)
-shadow_size = 12
-shadow_offset = Vector2(0, 5)
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_button_disabled"]
 content_margin_left = 18.0
@@ -288,6 +272,32 @@ corner_radius_top_right = 2
 corner_radius_bottom_right = 2
 corner_radius_bottom_left = 2
 
+[sub_resource type="StyleBoxFlat" id="StyleBox_tab_disabled"]
+content_margin_left = 16.0
+content_margin_top = 9.0
+content_margin_right = 16.0
+content_margin_bottom = 9.0
+bg_color = Color(0.740196, 0.732353, 0.708824, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_color = Color(0.520588, 0.512745, 0.489216, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_tab_hovered"]
+content_margin_left = 16.0
+content_margin_top = 9.0
+content_margin_right = 16.0
+content_margin_bottom = 9.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 2
+border_width_right = 1
+border_color = Color(0.086275, 0.086275, 0.086275, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+
 [sub_resource type="StyleBoxFlat" id="StyleBox_tab_selected"]
 content_margin_left = 16.0
 content_margin_top = 9.0
@@ -314,8 +324,28 @@ border_color = Color(0.596078, 0.588235, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 
+[sub_resource type="StyleBoxFlat" id="StyleBox_window"]
+content_margin_left = 1.0
+content_margin_top = 1.0
+content_margin_right = 1.0
+content_margin_bottom = 1.0
+bg_color = Color(0.984314, 0.980392, 0.968627, 1)
+border_width_left = 1
+border_width_top = 46
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.070588, 0.070588, 0.070588, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+expand_margin_top = 46.0
+shadow_color = Color(0, 0, 0, 0.28)
+shadow_size = 12
+shadow_offset = Vector2(0, 5)
+
 [resource]
-default_font = ExtResource("1_font")
+default_font = ExtResource("2_820ue")
 default_font_size = 16
 AcceptDialog/constants/buttons_min_height = 38
 AcceptDialog/constants/buttons_min_width = 96
@@ -332,6 +362,7 @@ Button/colors/icon_pressed_color = Color(0.980392, 0.980392, 0.968627, 1)
 Button/constants/icon_max_width = 24
 Button/constants/outline_size = 0
 Button/font_sizes/font_size = 15
+Button/fonts/font = ExtResource("1_iwqts")
 Button/styles/disabled = SubResource("StyleBox_button_disabled")
 Button/styles/focus = SubResource("StyleBox_focus")
 Button/styles/hover = SubResource("StyleBox_button_hover")
@@ -347,6 +378,7 @@ CheckBox/colors/font_pressed_color = Color(0.145098, 0.145098, 0.145098, 1)
 CheckBox/constants/check_v_offset = 0
 CheckBox/constants/h_separation = 9
 CheckBox/font_sizes/font_size = 15
+CheckBox/fonts/font = ExtResource("2_820ue")
 CheckBox/styles/disabled = SubResource("StyleBox_transparent")
 CheckBox/styles/focus = SubResource("StyleBox_focus")
 CheckBox/styles/hover = SubResource("StyleBox_subtle_hover")
@@ -361,6 +393,7 @@ CheckButton/colors/font_hover_color = Color(0.062745, 0.062745, 0.062745, 1)
 CheckButton/colors/font_pressed_color = Color(0.145098, 0.145098, 0.145098, 1)
 CheckButton/constants/h_separation = 9
 CheckButton/font_sizes/font_size = 15
+CheckButton/fonts/font = ExtResource("2_820ue")
 CheckButton/styles/disabled = SubResource("StyleBox_transparent")
 CheckButton/styles/focus = SubResource("StyleBox_focus")
 CheckButton/styles/hover = SubResource("StyleBox_subtle_hover")
@@ -376,12 +409,12 @@ HScrollBar/styles/scroll = SubResource("StyleBox_track")
 HScrollBar/styles/scroll_focus = SubResource("StyleBox_track")
 HSeparator/constants/separation = 12
 HSeparator/styles/separator = SubResource("StyleBox_separator")
-HSlider/styles/grabber_area = SubResource("StyleBox_track_fill")
-HSlider/styles/grabber_area_highlight = SubResource("StyleBox_track_fill")
-HSlider/styles/slider = SubResource("StyleBox_track")
 HSlider/icons/grabber = ExtResource("3_slider_grabber")
 HSlider/icons/grabber_disabled = ExtResource("3_slider_grabber")
 HSlider/icons/grabber_highlight = ExtResource("3_slider_grabber")
+HSlider/styles/grabber_area = SubResource("StyleBox_track_fill")
+HSlider/styles/grabber_area_highlight = SubResource("StyleBox_track_fill")
+HSlider/styles/slider = SubResource("StyleBox_track")
 ItemList/colors/font_color = Color(0.145098, 0.145098, 0.145098, 1)
 ItemList/colors/font_hovered_color = Color(0.062745, 0.062745, 0.062745, 1)
 ItemList/colors/font_selected_color = Color(1, 1, 1, 1)
@@ -391,6 +424,7 @@ ItemList/constants/icon_margin = 8
 ItemList/constants/line_separation = 5
 ItemList/constants/v_separation = 8
 ItemList/font_sizes/font_size = 15
+ItemList/fonts/font = ExtResource("3_820ue")
 ItemList/styles/cursor = SubResource("StyleBox_list_selected")
 ItemList/styles/cursor_unfocused = SubResource("StyleBox_subtle_hover")
 ItemList/styles/focus = SubResource("StyleBox_focus")
@@ -405,6 +439,7 @@ Label/colors/font_shadow_color = Color(0, 0, 0, 0)
 Label/constants/line_spacing = 4
 Label/constants/outline_size = 0
 Label/font_sizes/font_size = 16
+Label/fonts/font = ExtResource("3_820ue")
 Label/styles/normal = SubResource("StyleBox_transparent")
 LineEdit/colors/caret_color = Color(0.12549, 0.12549, 0.12549, 1)
 LineEdit/colors/clear_button_color = Color(0.352941, 0.345098, 0.32549, 1)
@@ -416,6 +451,7 @@ LineEdit/colors/font_uneditable_color = Color(0.419608, 0.411765, 0.388235, 1)
 LineEdit/colors/selection_color = Color(0.270588, 0.270588, 0.270588, 0.88)
 LineEdit/constants/minimum_character_width = 6
 LineEdit/font_sizes/font_size = 16
+LineEdit/fonts/font = ExtResource("3_820ue")
 LineEdit/styles/focus = SubResource("StyleBox_control_focus")
 LineEdit/styles/normal = SubResource("StyleBox_control_normal")
 LineEdit/styles/read_only = SubResource("StyleBox_control_read_only")
@@ -424,6 +460,7 @@ MenuButton/colors/font_disabled_color = Color(0.462745, 0.454902, 0.431373, 0.72
 MenuButton/colors/font_hover_color = Color(0.062745, 0.062745, 0.062745, 1)
 MenuButton/colors/font_pressed_color = Color(0.980392, 0.980392, 0.968627, 1)
 MenuButton/font_sizes/font_size = 15
+MenuButton/fonts/font = ExtResource("2_820ue")
 MenuButton/styles/disabled = SubResource("StyleBox_button_disabled")
 MenuButton/styles/focus = SubResource("StyleBox_focus")
 MenuButton/styles/hover = SubResource("StyleBox_button_hover")
@@ -437,6 +474,7 @@ OptionButton/colors/font_pressed_color = Color(0.980392, 0.980392, 0.968627, 1)
 OptionButton/constants/arrow_margin = 12
 OptionButton/constants/modulate_arrow = 1
 OptionButton/font_sizes/font_size = 15
+OptionButton/fonts/font = ExtResource("2_820ue")
 OptionButton/styles/disabled = SubResource("StyleBox_button_disabled")
 OptionButton/styles/focus = SubResource("StyleBox_focus")
 OptionButton/styles/hover = SubResource("StyleBox_button_hover")
@@ -455,6 +493,7 @@ PopupMenu/constants/item_end_padding = 10
 PopupMenu/constants/item_start_padding = 10
 PopupMenu/constants/v_separation = 6
 PopupMenu/font_sizes/font_size = 15
+PopupMenu/fonts/font = ExtResource("2_820ue")
 PopupMenu/styles/hover = SubResource("StyleBox_list_selected")
 PopupMenu/styles/panel = SubResource("StyleBox_popup")
 PopupMenu/styles/separator = SubResource("StyleBox_separator")
@@ -463,6 +502,7 @@ ProgressBar/colors/font_color = Color(1, 1, 1, 1)
 ProgressBar/colors/font_outline_color = Color(0, 0, 0, 0.7)
 ProgressBar/constants/outline_size = 1
 ProgressBar/font_sizes/font_size = 14
+ProgressBar/fonts/font = ExtResource("2_820ue")
 ProgressBar/styles/background = SubResource("StyleBox_progress_background")
 ProgressBar/styles/fill = SubResource("StyleBox_progress_fill")
 RichTextLabel/colors/default_color = Color(0.145098, 0.145098, 0.145098, 1)
@@ -470,18 +510,23 @@ RichTextLabel/colors/font_selected_color = Color(1, 1, 1, 1)
 RichTextLabel/colors/selection_color = Color(0.270588, 0.270588, 0.270588, 0.88)
 RichTextLabel/constants/line_separation = 4
 RichTextLabel/font_sizes/normal_font_size = 16
+RichTextLabel/fonts/bold_font = ExtResource("2_820ue")
+RichTextLabel/fonts/bold_italics_font = ExtResource("5_dialogue_bold_italic")
+RichTextLabel/fonts/italics_font = ExtResource("4_dialogue_italic")
+RichTextLabel/fonts/mono_font = ExtResource("2_820ue")
+RichTextLabel/fonts/normal_font = ExtResource("4_dialogue_italic")
 RichTextLabel/styles/normal = SubResource("StyleBox_transparent")
 ScrollBar/styles/grabber = SubResource("StyleBox_grabber")
 ScrollBar/styles/grabber_highlight = SubResource("StyleBox_grabber_hover")
 ScrollBar/styles/grabber_pressed = SubResource("StyleBox_grabber_hover")
 ScrollBar/styles/scroll = SubResource("StyleBox_track")
 ScrollBar/styles/scroll_focus = SubResource("StyleBox_track")
-Slider/styles/grabber_area = SubResource("StyleBox_track_fill")
-Slider/styles/grabber_area_highlight = SubResource("StyleBox_track_fill")
-Slider/styles/slider = SubResource("StyleBox_track")
 Slider/icons/grabber = ExtResource("3_slider_grabber")
 Slider/icons/grabber_disabled = ExtResource("3_slider_grabber")
 Slider/icons/grabber_highlight = ExtResource("3_slider_grabber")
+Slider/styles/grabber_area = SubResource("StyleBox_track_fill")
+Slider/styles/grabber_area_highlight = SubResource("StyleBox_track_fill")
+Slider/styles/slider = SubResource("StyleBox_track")
 SpinBox/colors/down_disabled_icon_modulate = Color(0.462745, 0.454902, 0.431373, 0.6)
 SpinBox/colors/down_hover_icon_modulate = Color(0.062745, 0.062745, 0.062745, 1)
 SpinBox/colors/down_icon_modulate = Color(0.145098, 0.145098, 0.145098, 1)
@@ -492,6 +537,7 @@ SpinBox/colors/up_icon_modulate = Color(0.145098, 0.145098, 0.145098, 1)
 SpinBox/colors/up_pressed_icon_modulate = Color(0.062745, 0.062745, 0.062745, 1)
 SpinBox/constants/buttons_vertical_separation = 1
 SpinBox/constants/field_and_buttons_separation = 4
+SpinBox/fonts/font = ExtResource("2_820ue")
 SpinBox/styles/down_background = SubResource("StyleBox_button_normal")
 SpinBox/styles/down_background_disabled = SubResource("StyleBox_button_disabled")
 SpinBox/styles/down_background_hovered = SubResource("StyleBox_button_hover")
@@ -508,9 +554,10 @@ TabContainer/constants/icon_max_width = 24
 TabContainer/constants/outline_size = 0
 TabContainer/constants/side_margin = 8
 TabContainer/font_sizes/font_size = 15
+TabContainer/fonts/font = ExtResource("2_820ue")
 TabContainer/styles/panel = SubResource("StyleBox_panel")
-TabContainer/styles/tab_disabled = SubResource("StyleBox_button_disabled")
-TabContainer/styles/tab_hovered = SubResource("StyleBox_button_hover")
+TabContainer/styles/tab_disabled = SubResource("StyleBox_tab_disabled")
+TabContainer/styles/tab_hovered = SubResource("StyleBox_tab_hovered")
 TabContainer/styles/tab_selected = SubResource("StyleBox_tab_selected")
 TabContainer/styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 TextEdit/colors/background_color = Color(0, 0, 0, 0)
@@ -522,6 +569,7 @@ TextEdit/colors/font_readonly_color = Color(0.419608, 0.411765, 0.388235, 1)
 TextEdit/colors/font_selected_color = Color(1, 1, 1, 1)
 TextEdit/colors/selection_color = Color(0.270588, 0.270588, 0.270588, 0.88)
 TextEdit/font_sizes/font_size = 16
+TextEdit/fonts/font = ExtResource("2_820ue")
 TextEdit/styles/focus = SubResource("StyleBox_control_focus")
 TextEdit/styles/normal = SubResource("StyleBox_control_normal")
 TextEdit/styles/read_only = SubResource("StyleBox_control_read_only")
@@ -536,6 +584,7 @@ Tree/constants/inner_item_margin_right = 6
 Tree/constants/item_margin = 10
 Tree/constants/v_separation = 6
 Tree/font_sizes/font_size = 15
+Tree/fonts/font = ExtResource("2_820ue")
 Tree/styles/cursor = SubResource("StyleBox_list_selected")
 Tree/styles/cursor_unfocused = SubResource("StyleBox_subtle_hover")
 Tree/styles/focus = SubResource("StyleBox_focus")
@@ -552,12 +601,12 @@ VScrollBar/styles/scroll = SubResource("StyleBox_track")
 VScrollBar/styles/scroll_focus = SubResource("StyleBox_track")
 VSeparator/constants/separation = 12
 VSeparator/styles/separator = SubResource("StyleBox_separator")
-VSlider/styles/grabber_area = SubResource("StyleBox_track_fill")
-VSlider/styles/grabber_area_highlight = SubResource("StyleBox_track_fill")
-VSlider/styles/slider = SubResource("StyleBox_track")
 VSlider/icons/grabber = ExtResource("3_slider_grabber")
 VSlider/icons/grabber_disabled = ExtResource("3_slider_grabber")
 VSlider/icons/grabber_highlight = ExtResource("3_slider_grabber")
+VSlider/styles/grabber_area = SubResource("StyleBox_track_fill")
+VSlider/styles/grabber_area_highlight = SubResource("StyleBox_track_fill")
+VSlider/styles/slider = SubResource("StyleBox_track")
 Window/colors/title_color = Color(1, 1, 1, 1)
 Window/colors/title_outline_modulate = Color(0, 0, 0, 0)
 Window/constants/close_h_offset = 32
@@ -565,6 +614,7 @@ Window/constants/close_v_offset = 32
 Window/constants/resize_margin = 6
 Window/constants/title_height = 46
 Window/font_sizes/title_font_size = 17
+Window/fonts/title_font = ExtResource("3_820ue")
 Window/icons/close = ExtResource("2_window_close")
 Window/icons/close_pressed = ExtResource("2_window_close")
 Window/styles/embedded_border = SubResource("StyleBox_window")

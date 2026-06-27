@@ -118,6 +118,7 @@ func build_codex_state(host, event_type: String) -> Dictionary:
 		"pieces": serialize_pieces(game_state),
 		"player_hands": serialize_player_card_lists(game_state.player_hands, true),
 		"player_decks": serialize_player_card_lists(game_state.player_decks, false),
+		"player_codexes": serialize_player_codexes(game_state),
 		"turn_flags": serialize_turn_flags(game_state),
 		"board_effects": host.serialize_board_effects(),
 		"last_move": host.serialize_last_move_for_player(-1),
@@ -190,7 +191,7 @@ func serialize_legal_actions(host) -> Dictionary:
 		"player_id": player_id,
 		"attach_card": [],
 		"move_piece": [],
-		"exchange_card": [],
+		"turn_page": [],
 		"end_turn": [{
 			"type": "end_turn",
 			"player_id": player_id,
@@ -229,15 +230,30 @@ func serialize_legal_actions(host) -> Dictionary:
 				"card_name": get_move_card_name(move),
 			})
 
-	if host.can_exchange_card_for_player(player_id):
-		for hand_index in range(hand_card_names.size()):
-			legal_actions["exchange_card"].append({
-				"type": "exchange_card",
-				"player_id": player_id,
-				"card_name": str(hand_card_names[hand_index]),
-				"hand_index": hand_index,
-			})
+	if host.can_turn_page_for_player(player_id):
+		legal_actions["turn_page"].append({
+			"type": "turn_page",
+			"player_id": player_id,
+		})
 	return legal_actions
+
+func serialize_player_codexes(game_state: GameStateData) -> Dictionary:
+	var output: Dictionary = {}
+	for player_id in [0, 1]:
+		var pages: Array = []
+		for page in game_state.get_codex_pages(player_id):
+			var page_cards: Array = []
+			if page is Array:
+				for card_name_value in page:
+					page_cards.append(serialize_card(CardLibrary.get_card(str(card_name_value))))
+			pages.append(page_cards)
+		output[str(player_id)] = {
+			"current_page_index": game_state.get_current_page_index(player_id),
+			"page_counts": game_state.get_page_stamp_counts(player_id),
+			"pages": pages,
+			"has_turned_page_this_turn": bool(game_state.has_turned_page_this_turn.get(player_id, false)),
+		}
+	return output
 
 func serialize_base_fields(game_state: GameStateData) -> Dictionary:
 	return {
@@ -250,6 +266,7 @@ func serialize_turn_flags(game_state: GameStateData) -> Dictionary:
 		"attached_card_this_turn": stringify_key_dictionary(game_state.attached_card_this_turn),
 		"moved_piece_this_turn": stringify_key_dictionary(game_state.moved_piece_this_turn),
 		"exchanged_card_this_turn": stringify_key_dictionary(game_state.exchanged_card_this_turn),
+		"has_turned_page_this_turn": stringify_key_dictionary(game_state.has_turned_page_this_turn),
 	}
 
 func stringify_key_dictionary(source: Dictionary) -> Dictionary:
@@ -269,6 +286,8 @@ func normalize_action(action_value: Dictionary) -> Dictionary:
 			action["to"] = array_to_vector2(action.get("to", Vector2(-1, -1)))
 		"exchange_card":
 			action["hand_index"] = int(action.get("hand_index", -1))
+		"turn_page":
+			pass
 	action["player_id"] = int(action.get("player_id", -1))
 	return action
 
@@ -293,6 +312,10 @@ func create_action_snapshot(host, action: Dictionary) -> Dictionary:
 			snapshot["hand"] = duplicate_card_names(game_state.player_hands.get(int(action.get("player_id", -1)), []))
 			snapshot["deck"] = duplicate_card_names(game_state.player_decks.get(int(action.get("player_id", -1)), []))
 			snapshot["exchanged"] = bool(game_state.exchanged_card_this_turn.get(int(action.get("player_id", -1)), false))
+		"turn_page":
+			var player_id: int = int(action.get("player_id", -1))
+			snapshot["page_index"] = game_state.get_current_page_index(player_id)
+			snapshot["turned"] = bool(game_state.has_turned_page_this_turn.get(player_id, false))
 	return snapshot
 
 func was_action_applied(host, action: Dictionary, before_snapshot: Dictionary) -> bool:
@@ -315,6 +338,11 @@ func was_action_applied(host, action: Dictionary, before_snapshot: Dictionary) -
 		"exchange_card":
 			var player_id: int = int(action.get("player_id", -1))
 			return bool(game_state.exchanged_card_this_turn.get(player_id, false)) and !bool(before_snapshot.get("exchanged", false))
+		"turn_page":
+			var player_id: int = int(action.get("player_id", -1))
+			return bool(game_state.has_turned_page_this_turn.get(player_id, false)) \
+				and !bool(before_snapshot.get("turned", false)) \
+				and game_state.get_current_page_index(player_id) != int(before_snapshot.get("page_index", -1))
 		"end_turn":
 			return int(game_state.current_turn_player) != int(before_snapshot.get("turn", -1))
 		_:

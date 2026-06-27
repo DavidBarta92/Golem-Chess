@@ -126,7 +126,7 @@ func _process(_delta: float) -> void:
 		update_drag_paper_motion(target_global_position, _delta)
 		global_position = target_global_position
 		drag_moved.emit(self)
-	elif is_hovered:
+	elif is_hovered and hover_raise_enabled:
 		update_tilt_from_mouse()
 	elif ambient_motion_enabled:
 		update_ambient_motion(_delta)
@@ -259,6 +259,7 @@ func set_drop_target_active(active: bool) -> void:
 	_tween_scale(target_scale, DROP_TARGET_SCALE_IN_DURATION if active else DROP_TARGET_SCALE_OUT_DURATION)
 
 func fly_home() -> void:
+	_restore_default_cursor()
 	is_dragging = false
 	drop_target_active = false
 	z_index = 0
@@ -273,6 +274,7 @@ func fly_home() -> void:
 	tween_move.parallel().tween_property(shadow, "self_modulate:a", normal_shadow_alpha, 0.22)
 
 func fly_from_global_position(start_global_position: Vector2) -> void:
+	_restore_default_cursor()
 	is_dragging = false
 	drop_target_active = false
 	_kill_hover_tweens()
@@ -301,6 +303,7 @@ func _finish_draw_fly() -> void:
 	z_index = 0
 
 func assign_and_hide() -> void:
+	_restore_default_cursor()
 	is_assigned = true
 	is_dragging = false
 	drop_target_active = false
@@ -309,6 +312,7 @@ func assign_and_hide() -> void:
 	visible = false
 
 func play_burn_away_and_free() -> void:
+	_restore_default_cursor()
 	is_assigned = true
 	is_dragging = false
 	is_hovered = false
@@ -346,6 +350,7 @@ func play_burn_away_and_free() -> void:
 	tween_burn.tween_callback(Callable(self, "_finish_burn_away"))
 
 func play_return_to_deck_and_free(target_global_position: Vector2, target_scale: Vector2, duration: float = 0.62) -> void:
+	_restore_default_cursor()
 	is_assigned = true
 	is_dragging = false
 	is_hovered = false
@@ -658,6 +663,8 @@ func _on_gui_input(event: InputEvent) -> void:
 		return
 	if is_dragging:
 		return
+	if !hover_raise_enabled:
+		return
 
 	update_tilt_from_mouse()
 
@@ -678,19 +685,36 @@ func start_drag() -> void:
 	last_drag_global_position = global_position
 	drag_motion_velocity = Vector2.ZERO
 	scale = rest_scale * drag_scale
+	_set_stamp_drag_cursor()
 	drag_started.emit(self)
 
 func finish_drag() -> void:
+	_restore_default_cursor()
 	is_dragging = false
 	drag_motion_velocity = Vector2.ZERO
 	reset_drag_paper_motion()
 	drag_released.emit(self)
+
+func _set_stamp_drag_cursor() -> void:
+	var cursor_manager := get_node_or_null("/root/CursorManager")
+	if cursor_manager != null and cursor_manager.has_method("set_stamp_drag_cursor"):
+		cursor_manager.call("set_stamp_drag_cursor")
+
+func _restore_default_cursor() -> void:
+	if !is_dragging:
+		return
+
+	var cursor_manager := get_node_or_null("/root/CursorManager")
+	if cursor_manager != null and cursor_manager.has_method("set_default_cursor"):
+		cursor_manager.call("set_default_cursor")
 
 func _on_mouse_entered() -> void:
 	if is_dragging or is_assigned or face_down or !collection_owned:
 		return
 
 	is_hovered = true
+	if !hover_raise_enabled:
+		return
 	if hover_raise_enabled:
 		move_to_front()
 		z_index = 50
@@ -707,6 +731,9 @@ func _on_mouse_exited() -> void:
 		return
 
 	is_hovered = false
+	if !hover_raise_enabled:
+		reset_tilt_without_scale()
+		return
 	if hover_raise_enabled:
 		z_index = 0
 	reset_tilt_and_scale()
@@ -777,6 +804,18 @@ func reset_tilt_and_scale() -> void:
 	if face_material:
 		tween_reset.parallel().tween_property(face_material, "shader_parameter/x_rot", 0.0, 0.24)
 		tween_reset.parallel().tween_property(face_material, "shader_parameter/y_rot", 0.0, 0.24)
+
+func reset_tilt_without_scale() -> void:
+	if tween_hover and tween_hover.is_running():
+		tween_hover.kill()
+	if tween_reset and tween_reset.is_running():
+		tween_reset.kill()
+	scale = rest_scale
+	rotation = 0.0
+	shadow.self_modulate.a = normal_shadow_alpha
+	if face_material:
+		face_material.set_shader_parameter("x_rot", 0.0)
+		face_material.set_shader_parameter("y_rot", 0.0)
 
 func _tween_scale(target_scale: Vector2, duration: float) -> void:
 	if tween_hover and tween_hover.is_running():

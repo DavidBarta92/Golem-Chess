@@ -3,6 +3,8 @@ class_name DeckManager
 const DECK_SIZE = 15
 const HAND_SIZE = 3
 const STARTING_HAND_SIZE = 3
+const CODEX_PAGE_COUNT = 5
+const CODEX_STAMPS_PER_PAGE = 3
 const DEFAULT_NEXUS_CARD_NAME = "Prince"
 const RANDOM_DATABASE_EXCLUDED_CARD_NAMES: Array[String] = [
 	"Training Seal",
@@ -29,8 +31,7 @@ const STARTING_DECK: Array[String] = [
 static func create_starting_deck() -> Array[String]:
 	var deck: Array[String] = []
 	deck.assign(STARTING_DECK)
-	deck.shuffle()
-	DebugLog.info("Deck created: %s" % [deck])
+	DebugLog.info("Codex created: %s" % [deck])
 	return deck
 
 static func create_random_database_deck() -> Array[String]:
@@ -56,8 +57,33 @@ static func create_random_database_deck() -> Array[String]:
 		deck.append(str(remaining_cards.pop_front()))
 
 	deck.shuffle()
-	DebugLog.info("Random database deck created: %s" % [deck])
+	DebugLog.info("Random database codex created: %s" % [deck])
 	return deck
+
+static func create_codex_pages(card_names: Array) -> Array:
+	var pages: Array = []
+	var card_index: int = 0
+	for page_index in range(CODEX_PAGE_COUNT):
+		var page: Array[String] = []
+		for _slot_index in range(CODEX_STAMPS_PER_PAGE):
+			if card_index >= card_names.size():
+				break
+			page.append(str(card_names[card_index]))
+			card_index += 1
+		pages.append(page)
+	return pages
+
+static func flatten_codex_pages(pages: Array, excluded_page_index: int = -1) -> Array[String]:
+	var card_names: Array[String] = []
+	for page_index in range(pages.size()):
+		if page_index == excluded_page_index:
+			continue
+		var page = pages[page_index]
+		if !(page is Array):
+			continue
+		for card_name_value in page:
+			card_names.append(str(card_name_value))
+	return card_names
 
 static func get_database_card_names_by_nexus_role(wants_nexus: bool) -> Array[String]:
 	var card_names: Array[String] = []

@@ -14,6 +14,12 @@ var drop_duration: float = 0.18
 var wobble_step_duration: float = 0.12
 var wobble_rotation_degrees: float = 2.4
 var movement_tilt_degrees: float = 1.4
+var capture_approach_edge_ratio: float = 0.42
+var capture_approach_hold_duration: float = 0.25
+var capture_push_duration: float = 0.14
+var capture_recoil_duration: float = 0.12
+var capture_center_settle_duration: float = 0.24
+var capture_push_rotation_degrees: float = 8.0
 var movement_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.30)
 var movement_shadow_radius_scale: Vector2 = Vector2(0.92, 0.72)
 var movement_shadow_ground_edge_softness: float = 0.10
@@ -51,6 +57,12 @@ func configure(config: Dictionary) -> void:
 	wobble_step_duration = float(config.get("wobble_step_duration", wobble_step_duration))
 	wobble_rotation_degrees = float(config.get("wobble_rotation_degrees", wobble_rotation_degrees))
 	movement_tilt_degrees = float(config.get("movement_tilt_degrees", movement_tilt_degrees))
+	capture_approach_edge_ratio = float(config.get("capture_approach_edge_ratio", capture_approach_edge_ratio))
+	capture_approach_hold_duration = float(config.get("capture_approach_hold_duration", capture_approach_hold_duration))
+	capture_push_duration = float(config.get("capture_push_duration", capture_push_duration))
+	capture_recoil_duration = float(config.get("capture_recoil_duration", capture_recoil_duration))
+	capture_center_settle_duration = float(config.get("capture_center_settle_duration", capture_center_settle_duration))
+	capture_push_rotation_degrees = float(config.get("capture_push_rotation_degrees", capture_push_rotation_degrees))
 	movement_shadow_color = config.get("movement_shadow_color", movement_shadow_color)
 	movement_shadow_radius_scale = config.get("movement_shadow_radius_scale", movement_shadow_radius_scale)
 	movement_shadow_ground_edge_softness = float(config.get("movement_shadow_ground_edge_softness", movement_shadow_ground_edge_softness))
@@ -80,7 +92,8 @@ func play_move_sequence(
 	start_scale: Vector2,
 	end_scale: Vector2,
 	start_offset: Vector2,
-	end_offset: Vector2
+	end_offset: Vector2,
+	capture_impact_callback: Callable = Callable()
 ) -> bool:
 	if holder == null or !is_instance_valid(holder) or !_is_valid_position(from_pos) or !_is_valid_position(to_pos):
 		return false
@@ -88,10 +101,15 @@ func play_move_sequence(
 		return false
 
 	var route_points: Array[Vector2] = get_smoothed_route_points(get_route_points(from_pos, to_pos, holder))
-	var travel_duration: float = get_animation_duration(route_points, from_pos, to_pos)
 	var start_ground_pos: Vector2 = get_position_local(from_pos)
 	var end_ground_pos: Vector2 = get_position_local(to_pos)
 	var perspective_scale: float = piece_visuals.get_perspective_scale(from_pos) if piece_visuals != null else 1.0
+	var has_capture_impact: bool = capture_impact_callback.is_valid()
+	var capture_approach_ground_pos: Vector2 = end_ground_pos
+	if has_capture_impact:
+		capture_approach_ground_pos = get_capture_approach_ground_position(route_points, end_ground_pos, perspective_scale)
+	var travel_route_points: Array[Vector2] = get_capture_approach_route_points(route_points, capture_approach_ground_pos) if has_capture_impact else route_points
+	var travel_duration: float = get_animation_duration(travel_route_points, from_pos, to_pos)
 	var lift_height: float = float(cell_width) * move_lift_ratio * perspective_scale
 	var resting_rotation: float = holder.rotation
 	var movement_shadow: Sprite2D = create_movement_shadow(holder, from_pos)
@@ -123,7 +141,7 @@ func play_move_sequence(
 	travel_tween.tween_method(
 		func(progress: float): update_holder_travel(
 			holder,
-			route_points,
+			travel_route_points,
 			to_pos,
 			start_scale,
 			end_scale,
@@ -132,7 +150,7 @@ func play_move_sequence(
 			lift_height,
 			movement_shadow,
 			resting_rotation,
-			get_arrival_progress(progress, route_points, from_pos, to_pos)
+			get_arrival_progress(progress, travel_route_points, from_pos, to_pos)
 		),
 		0.0,
 		1.0,
@@ -142,6 +160,20 @@ func play_move_sequence(
 	if !is_move_holder_active(holder):
 		cleanup_movement_shadow(movement_shadow)
 		return false
+
+	if has_capture_impact:
+		var capture_result: bool = await play_capture_impact_sequence(
+			holder,
+			capture_approach_ground_pos,
+			end_ground_pos,
+			lift_height,
+			movement_shadow,
+			resting_rotation,
+			capture_impact_callback
+		)
+		if !capture_result:
+			cleanup_movement_shadow(movement_shadow)
+			return false
 
 	var drop_tween: Tween = create_animation_tween()
 	if drop_tween == null:
@@ -184,6 +216,123 @@ func play_move_sequence(
 	if is_instance_valid(holder):
 		holder.rotation = resting_rotation
 	return is_move_holder_active(holder)
+
+func play_capture_impact_sequence(
+	holder: Sprite2D,
+	approach_ground_pos: Vector2,
+	end_ground_pos: Vector2,
+	lift_height: float,
+	movement_shadow: Sprite2D,
+	resting_rotation: float,
+	capture_impact_callback: Callable
+) -> bool:
+	if !is_move_holder_active(holder):
+		return false
+
+	var approach_lifted_pos: Vector2 = approach_ground_pos + Vector2(0.0, -lift_height)
+	holder.position = approach_lifted_pos
+	update_movement_shadow_position(movement_shadow, holder, lift_height)
+
+	if capture_approach_hold_duration > 0.0:
+		var hold_tween: Tween = create_animation_tween()
+		if hold_tween == null:
+			return false
+		hold_tween.tween_interval(capture_approach_hold_duration)
+		await hold_tween.finished
+		if !is_move_holder_active(holder):
+			return false
+
+	var push_direction: Vector2 = (end_ground_pos - approach_ground_pos).normalized()
+	if push_direction.length_squared() <= 0.0001:
+		push_direction = Vector2(0.0, -float(view_color))
+	var push_rotation: float = resting_rotation + get_capture_push_rotation(push_direction)
+
+	var push_tween: Tween = create_animation_tween()
+	if push_tween == null:
+		return false
+	push_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	push_tween.tween_method(
+		func(progress: float): update_capture_impact_motion(
+			holder,
+			approach_ground_pos.lerp(end_ground_pos, progress),
+			lift_height,
+			movement_shadow,
+			lerpf(resting_rotation, push_rotation, progress)
+		),
+		0.0,
+		1.0,
+		capture_push_duration
+	)
+	await push_tween.finished
+	if !is_move_holder_active(holder):
+		return false
+
+	if capture_impact_callback.is_valid():
+		capture_impact_callback.call()
+
+	var recoil_tween: Tween = create_animation_tween()
+	if recoil_tween == null:
+		return false
+	recoil_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	recoil_tween.tween_method(
+		func(progress: float): update_capture_impact_motion(
+			holder,
+			end_ground_pos.lerp(approach_ground_pos, progress),
+			lift_height,
+			movement_shadow,
+			lerpf(push_rotation, resting_rotation - (push_rotation - resting_rotation) * 0.38, progress)
+		),
+		0.0,
+		1.0,
+		capture_recoil_duration
+	)
+	await recoil_tween.finished
+	if !is_move_holder_active(holder):
+		return false
+
+	var recoil_rotation: float = holder.rotation
+	var settle_tween: Tween = create_animation_tween()
+	if settle_tween == null:
+		return false
+	settle_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	settle_tween.tween_method(
+		func(progress: float): update_capture_impact_motion(
+			holder,
+			approach_ground_pos.lerp(end_ground_pos, progress),
+			lift_height,
+			movement_shadow,
+			lerpf(recoil_rotation, resting_rotation, progress)
+		),
+		0.0,
+		1.0,
+		capture_center_settle_duration
+	)
+	await settle_tween.finished
+	if is_instance_valid(holder):
+		holder.rotation = resting_rotation
+	return is_move_holder_active(holder)
+
+func update_capture_impact_motion(
+	holder: Sprite2D,
+	ground_pos: Vector2,
+	lift_height: float,
+	movement_shadow: Sprite2D,
+	rotation_value: float
+) -> void:
+	if holder == null or !is_instance_valid(holder):
+		return
+	holder.position = ground_pos + Vector2(0.0, -lift_height)
+	holder.rotation = rotation_value
+	holder.z_index = get_z_index_for_local_position(ground_pos, holder) + lifted_z_offset
+	update_movement_shadow_position(movement_shadow, holder, lift_height)
+
+func get_capture_push_rotation(push_direction: Vector2) -> float:
+	var rotation_direction: float = push_direction.x
+	if absf(rotation_direction) < 0.16:
+		rotation_direction = -push_direction.y * 0.55 * float(view_color)
+	if absf(rotation_direction) < 0.16:
+		rotation_direction = 1.0
+	return deg_to_rad(capture_push_rotation_degrees) * clampf(rotation_direction, -1.0, 1.0)
 
 func create_movement_shadow(holder: Sprite2D, from_pos: Vector2) -> Sprite2D:
 	if holder == null or !is_instance_valid(holder) or pieces_node == null or !is_instance_valid(pieces_node):
@@ -281,6 +430,92 @@ func get_animation_duration(route_points: Array[Vector2], from_pos: Vector2, to_
 		return move_duration
 
 	return maxf(move_duration, move_duration * route_length / reference_distance)
+
+func get_capture_approach_ground_position(route_points: Array[Vector2], end_ground_pos: Vector2, perspective_scale: float) -> Vector2:
+	if route_points.size() < 2:
+		return end_ground_pos
+	var target_distance: float = get_capture_approach_path_distance(route_points, perspective_scale)
+	return get_polyline_position_at_distance(route_points, target_distance)
+
+func get_capture_approach_route_points(route_points: Array[Vector2], approach_ground_pos: Vector2) -> Array[Vector2]:
+	if route_points.size() < 2:
+		return route_points
+	var target_distance: float = get_polyline_distance_to_point(route_points, approach_ground_pos)
+	return get_route_points_until_distance(route_points, target_distance)
+
+func get_capture_approach_path_distance(route_points: Array[Vector2], perspective_scale: float) -> float:
+	var route_length: float = get_route_length(route_points)
+	if route_length <= 0.001:
+		return 0.0
+	var edge_distance: float = maxf(4.0, float(cell_width) * capture_approach_edge_ratio * perspective_scale)
+	return clampf(route_length - edge_distance, route_length * 0.34, route_length)
+
+func get_polyline_position_at_distance(route_points: Array[Vector2], target_distance: float) -> Vector2:
+	if route_points.is_empty():
+		return Vector2.ZERO
+	if route_points.size() == 1:
+		return route_points[0]
+
+	var clamped_distance: float = clampf(target_distance, 0.0, get_route_length(route_points))
+	var traversed_distance: float = 0.0
+	for index in range(route_points.size() - 1):
+		var segment_start: Vector2 = route_points[index]
+		var segment_end: Vector2 = route_points[index + 1]
+		var segment_length: float = segment_start.distance_to(segment_end)
+		if segment_length <= 0.0001:
+			continue
+		if traversed_distance + segment_length >= clamped_distance:
+			var segment_progress: float = (clamped_distance - traversed_distance) / segment_length
+			return segment_start.lerp(segment_end, segment_progress)
+		traversed_distance += segment_length
+
+	return route_points[route_points.size() - 1]
+
+func get_polyline_distance_to_point(route_points: Array[Vector2], point: Vector2) -> float:
+	if route_points.size() < 2:
+		return 0.0
+
+	var closest_distance: float = 0.0
+	var closest_score: float = INF
+	var traversed_distance: float = 0.0
+	for index in range(route_points.size() - 1):
+		var segment_start: Vector2 = route_points[index]
+		var segment_end: Vector2 = route_points[index + 1]
+		var segment_length: float = segment_start.distance_to(segment_end)
+		if segment_length <= 0.0001:
+			continue
+		var segment_progress: float = clampf((point - segment_start).dot(segment_end - segment_start) / maxf(0.0001, segment_length * segment_length), 0.0, 1.0)
+		var closest_point: Vector2 = segment_start.lerp(segment_end, segment_progress)
+		var score: float = point.distance_squared_to(closest_point)
+		if score < closest_score:
+			closest_score = score
+			closest_distance = traversed_distance + segment_length * segment_progress
+		traversed_distance += segment_length
+	return closest_distance
+
+func get_route_points_until_distance(route_points: Array[Vector2], target_distance: float) -> Array[Vector2]:
+	var clipped_points: Array[Vector2] = []
+	if route_points.is_empty():
+		return clipped_points
+
+	var clamped_distance: float = clampf(target_distance, 0.0, get_route_length(route_points))
+	append_route_point(clipped_points, route_points[0])
+	var traversed_distance: float = 0.0
+	for index in range(route_points.size() - 1):
+		var segment_start: Vector2 = route_points[index]
+		var segment_end: Vector2 = route_points[index + 1]
+		var segment_length: float = segment_start.distance_to(segment_end)
+		if segment_length <= 0.0001:
+			continue
+		if traversed_distance + segment_length >= clamped_distance:
+			var segment_progress: float = (clamped_distance - traversed_distance) / segment_length
+			append_route_point(clipped_points, segment_start.lerp(segment_end, segment_progress))
+			return clipped_points
+		append_route_point(clipped_points, segment_end)
+		traversed_distance += segment_length
+
+	append_route_point(clipped_points, route_points[route_points.size() - 1])
+	return clipped_points
 
 func get_smoothed_route_points(route_points: Array[Vector2]) -> Array[Vector2]:
 	if route_points.size() <= 2:

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsofnx64f00ld"
-path="res://.godot/imported/Rajztábla 1deckbuilder_sketch_one_opened_deck.svg-429592030803067530db299f528bdaad.ctex"
+uid="uid://bdyr3etvetn3o"
+path="res://.godot/imported/magnifying_glass_case_closed.png-f880480f81dff4a274fa0cb09ed122ac.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Rajztábla 1deckbuilder_sketch_one_opened_deck.svg"
-dest_files=["res://.godot/imported/Rajztábla 1deckbuilder_sketch_one_opened_deck.svg-429592030803067530db299f528bdaad.ctex"]
+source_file="res://Assets/magnifying_glass_case_closed.png"
+dest_files=["res://.godot/imported/magnifying_glass_case_closed.png-f880480f81dff4a274fa0cb09ed122ac.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

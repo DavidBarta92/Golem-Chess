@@ -22,6 +22,8 @@ func finish_if_current_player_has_no_valid_turn() -> bool:
 	return true
 
 func finish_game(winner_color: int) -> void:
+	if match_board == null or !is_instance_valid(match_board):
+		return
 	if match_board.game_over:
 		return
 
@@ -37,10 +39,16 @@ func finish_game(winner_color: int) -> void:
 
 	var result_wait_seconds: float = 0.05 if match_board.should_skip_visual_animations() else 8.0
 	await match_board.get_tree().create_timer(result_wait_seconds).timeout
+	if match_board == null or !is_instance_valid(match_board):
+		return
+
 	var next_scene: String = get_next_scene_after_game(winner_color)
-	if match_board.get_parent().has_method("close_game_connection"):
-		match_board.get_parent().close_game_connection()
-	if match_board.get_tree():
+	var match_parent: Node = match_board.get_parent()
+	if match_parent != null and is_instance_valid(match_parent) and match_parent.has_method("close_game_connection"):
+		match_parent.close_game_connection()
+
+	var scene_tree: SceneTree = match_board.get_tree()
+	if scene_tree != null:
 		SceneTransition.change_scene(next_scene)
 
 func get_next_scene_after_game(winner_color: int) -> String:

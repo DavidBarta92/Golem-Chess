@@ -3,7 +3,7 @@ class_name AITurnPlanner
 
 const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const ACTION_ATTACH_CARD: String = "attach_card"
-const ACTION_EXCHANGE_CARD: String = "exchange_card"
+const ACTION_TURN_PAGE: String = "turn_page"
 const ACTION_MOVE_PIECE: String = "move_piece"
 const ACTION_END_TURN: String = "end_turn"
 const MAX_SEQUENTIAL_ATTACH_ACTIONS: int = DeckManager.HAND_SIZE
@@ -82,7 +82,7 @@ func execute_sequential_turn(
 	var setup_attach_actions: Array[Dictionary] = []
 	var selected_move: Dictionary = {}
 	var profile: Dictionary = evaluator.create_profile(0) if evaluator != null else {}
-	var exchanged_card: bool = false
+	var turned_page: bool = false
 	var attach_actions_played: int = 0
 	var best_score_seen: float = -INF
 
@@ -104,12 +104,11 @@ func execute_sequential_turn(
 				attach_actions_played += 1
 				continue
 
-		if !exchanged_card and host.can_exchange_card_for_player(player_id) and has_free_attach_piece(host.game_state, player_id):
-			var exchange_action: Dictionary = find_exchange_action_for_worst_card(host.game_state, player_id, evaluator, board_size, profile)
-			if !exchange_action.is_empty():
-				await execute_ai_action(host, tree, exchange_action, action_delay, selected_actions)
-				exchanged_card = true
-				continue
+		if !turned_page and host.can_turn_page_for_player(player_id) and has_free_attach_piece(host.game_state, player_id):
+			var turn_page_action: Dictionary = make_turn_page_action(player_id)
+			await execute_ai_action(host, tree, turn_page_action, action_delay, selected_actions)
+			turned_page = true
+			continue
 
 		break
 
@@ -118,7 +117,7 @@ func execute_sequential_turn(
 		if !selected_move.is_empty():
 			await execute_ai_action(host, tree, make_move_action(player_id, selected_move), action_delay, selected_actions)
 
-	if can_continue_sequential_turn(host, player_id) and int(host.game_state.completed_turn_counts.get(player_id, 0)) == 0 and int(host.game_state.attached_card_count_this_turn.get(player_id, 0)) > 0:
+	if can_continue_sequential_turn(host, player_id) and host.can_end_turn_by_button(player_id):
 		await execute_ai_action(host, tree, make_end_turn_action(player_id), action_delay, selected_actions)
 
 	return create_sequential_plan(selected_actions, selected_move, setup_attach_actions, best_score_seen, profile)
@@ -343,23 +342,18 @@ func add_sequential_turn_plan_branches(
 	if plans.size() >= MAX_GENERATED_TURN_PLANS:
 		return
 
-	if can_exchange_in_plan(game_state, player_id) and prefix_actions.is_empty():
-		var exchange_actions: Array[Dictionary] = get_exchange_actions_for_state(game_state, player_id, board_size)
-		for exchange_action: Dictionary in exchange_actions:
-			if plans.size() >= MAX_GENERATED_TURN_PLANS:
-				return
-			var exchange_state: GameStateData = AIStateSimulator.clone_game_state(game_state)
-			AIStateSimulator.apply_exchange_action(exchange_state, player_id, exchange_action)
-			if !bool(exchange_state.exchanged_card_this_turn.get(player_id, false)):
-				continue
-
-			var exchange_prefix: Array[Dictionary] = duplicate_actions(prefix_actions)
-			exchange_prefix.append(exchange_action)
+	if can_turn_page_in_plan(game_state, player_id) and prefix_actions.is_empty():
+		var turn_page_state: GameStateData = AIStateSimulator.clone_game_state(game_state)
+		var turn_page_action: Dictionary = make_turn_page_action(player_id)
+		AIStateSimulator.apply_turn_page_action(turn_page_state, player_id)
+		if bool(turn_page_state.has_turned_page_this_turn.get(player_id, false)):
+			var turn_page_prefix: Array[Dictionary] = duplicate_actions(prefix_actions)
+			turn_page_prefix.append(turn_page_action)
 			add_sequential_turn_plan_branches(
 				plans,
-				exchange_state,
+				turn_page_state,
 				player_id,
-				exchange_prefix,
+				turn_page_prefix,
 				duplicate_actions(setup_attach_actions),
 				attach_depth,
 				board_size
@@ -472,14 +466,10 @@ func get_exchange_actions_for_state(game_state: GameStateData, player_id: int, b
 	return exchange_actions
 
 func can_exchange_in_plan(game_state: GameStateData, player_id: int) -> bool:
-	if bool(game_state.exchanged_card_this_turn.get(player_id, false)):
-		return false
-	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
-		return false
+	return false
 
-	var deck: Array = game_state.player_decks[player_id]
-	var hand: Array = game_state.player_hands[player_id]
-	return !deck.is_empty() and !hand.is_empty()
+func can_turn_page_in_plan(game_state: GameStateData, player_id: int) -> bool:
+	return game_state != null and game_state.can_turn_page(player_id)
 
 func sort_scored_action_desc(left: Dictionary, right: Dictionary) -> bool:
 	return float(left.get("score", 0.0)) > float(right.get("score", 0.0))
@@ -584,6 +574,9 @@ func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, p
 		if tree != null and delay > 0.0:
 			await tree.create_timer(delay).timeout
 
+	if can_continue_sequential_turn(host, player_id) and host.can_end_turn_by_button(player_id):
+		host.on_player_action(make_executable_action(make_end_turn_action(player_id)))
+
 	return true
 
 func create_plan(actions: Array[Dictionary], move: Dictionary, setup_attach_actions: Array, plan_type: String) -> Dictionary:
@@ -606,10 +599,14 @@ func make_attach_action(player_id: int, card: Card, piece_pos: Vector2, hand_ind
 
 func make_exchange_action(player_id: int, card_name: String, hand_index: int) -> Dictionary:
 	return {
-		"type": ACTION_EXCHANGE_CARD,
+		"type": ACTION_TURN_PAGE,
 		"player_id": player_id,
-		"card_name": card_name,
-		"hand_index": hand_index,
+	}
+
+func make_turn_page_action(player_id: int) -> Dictionary:
+	return {
+		"type": ACTION_TURN_PAGE,
+		"player_id": player_id,
 	}
 
 func make_move_action(player_id: int, move: Dictionary) -> Dictionary:

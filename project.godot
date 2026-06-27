@@ -31,6 +31,7 @@ GameConfig="*res://GameConfig.gd"
 PlayerSettingsStore="*res://Scripts/PlayerSettingsStore.gd"
 GameController="*res://Scripts/GameController.gd"
 SceneTransition="*res://Scripts/SceneTransition.gd"
+CursorManager="*res://Scripts/CursorManager.gd"
 
 [display]
 
@@ -40,6 +41,10 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/size/min_width=1024
 window/size/min_height=576
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/card_pattern_editor/plugin.cfg")
 
 [gui]
 

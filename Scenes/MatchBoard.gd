@@ -4,6 +4,7 @@ signal piece_selected(piece_pos: Vector2, player_id: int)
 signal card_attached(piece_pos: Vector2, card_name: String, owner_color: int, hand_index: int)
 signal piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int)
 signal card_exchanged(card_name: String, owner_color: int, hand_index: int)
+signal codex_page_turned(owner_color: int, page_index: int)
 signal turn_ended(ending_color: int, next_color: int)
 signal tutorial_action_rejected(action_name: String, context: Dictionary)
 
@@ -196,6 +197,8 @@ const HIDDEN_CARD_MARGIN = 24
 const HIDDEN_CARD_GAP = 10
 const HIDDEN_CARD_SCALE = 0.70 * 0.75
 const HIDDEN_CARD_PREVIEW_ALPHA: float = 0.70
+const CODEX_PANEL_SIZE: Vector2 = Vector2(244, 116)
+const CODEX_PANEL_MARGIN: Vector2 = Vector2(22, 24)
 const BOARD_MARKER_LINE_WIDTH = 1.8
 const CARD_ATTACH_TARGET_FILL_COLOR = Color(1.0, 0.92, 0.58, 0.24)
 const CARD_ATTACH_TARGET_FILL_INSET: float = 1.0
@@ -330,8 +333,9 @@ const TUTORIAL_ACTION_SELECT_PIECE = "select_piece"
 const TUTORIAL_ACTION_ATTACH_CARD = "attach_card"
 const TUTORIAL_ACTION_MOVE_PIECE = "move_piece"
 const TUTORIAL_ACTION_EXCHANGE_CARD = "exchange_card"
+const TUTORIAL_ACTION_TURN_PAGE = "turn_page"
 const TUTORIAL_ACTION_END_TURN = "end_turn"
-const RULES_INFO_TEXT: String = "Goal: attach a Nexus stamp to one of your pieces, then move that Nexus onto the opponent's base square.\n\nTurn flow:\n1. On your first turn, attach at least one stamp, then press End Turn. Attaching all 3 stamps ends it automatically.\n2. On later turns, switch and attach before moving.\n3. Moving is mandatory and immediately ends the turn. If a frozen stamped piece leaves you with no legal move, press End Turn.\n\nStamps:\n- Your hand holds up to 3 stamps.\n- Once per turn, drag a hand stamp onto your deck to replace it.\n- Duration drops only when that piece moves.\n\nMultiplayer:\n- Each player has five minutes for the match. Only the active player's clock runs.\n\nCaptures:\n- The first captured piece respawns locked on an empty non-base home-row square. The next capture unlocks it.\n- Its attached stamp is removed. Nexus stamps return to their owner's deck."
+const RULES_INFO_TEXT: String = "Goal: attach a Nexus stamp to one of your pieces, then move that Nexus onto the opponent's base square.\n\nCodex:\n- Your codex has 5 pages with up to 3 stamps per page.\n- You may use only the currently open page.\n- Before attaching a stamp, you may turn once to the next non-empty page.\n- Empty pages are skipped, and a depleted page leaves the rotation.\n\nTurn flow:\n1. On your first turn, attach at least one stamp, then press End Turn. Attaching all 3 stamps ends it automatically.\n2. On later turns, optionally turn the page, attach stamps, then move.\n3. A newly stamped piece is frozen for that turn.\n4. Moving is mandatory and immediately ends the turn. If frozen stamped pieces leave you with no legal move, press End Turn.\n\nCaptures:\n- The first captured piece respawns locked on an empty non-base home-row square. The next capture unlocks it.\n- Its attached stamp is removed. Nexus stamps return to their original codex page."
 const PIECE_SHATTER_FRAGMENT_GROUP_NONE: String = ""
 const PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM: String = "bottom"
 const PIECE_SHATTER_FRAGMENT_GROUP_TOP: String = "top"
@@ -379,6 +383,12 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @export_range(0.03, 0.3, 0.01) var piece_move_wobble_step_duration: float = 0.12
 @export_range(0.0, 8.0, 0.1) var piece_move_wobble_rotation_degrees: float = 2.4
 @export_range(0.0, 5.0, 0.1) var piece_move_travel_tilt_degrees: float = 1.4
+@export_range(0.2, 0.55, 0.01) var piece_move_capture_approach_edge_ratio: float = 0.42
+@export_range(0.0, 0.6, 0.01) var piece_move_capture_approach_hold_duration: float = 0.25
+@export_range(0.05, 0.35, 0.01) var piece_move_capture_push_duration: float = 0.14
+@export_range(0.05, 0.35, 0.01) var piece_move_capture_recoil_duration: float = 0.12
+@export_range(0.05, 0.5, 0.01) var piece_move_capture_center_settle_duration: float = 0.24
+@export_range(0.0, 18.0, 0.5) var piece_move_capture_push_rotation_degrees: float = 8.0
 @export var piece_move_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.30)
 @export var piece_move_shadow_radius_scale: Vector2 = Vector2(0.92, 0.72)
 @export_range(0.01, 0.9, 0.01) var piece_move_shadow_ground_edge_softness: float = 0.10
@@ -449,12 +459,17 @@ var exchanged_card_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
+var has_turned_page_this_turn: Dictionary = {
+	1: false,
+	-1: false,
+}
 var played_card_hand_slots_this_turn: Dictionary = {
 	1: [],
 	-1: [],
 }
 var pending_card_attach_positions: Dictionary = {}
 var active_card_attach_process_count: int = 0
+var active_state_card_attach_animation_count: int = 0
 var exchanged_card_names_this_turn: Dictionary = {
 	1: [],
 	-1: [],
@@ -470,6 +485,17 @@ var has_received_server_state: bool = false
 var quit_confirmation_dialog: ConfirmationDialog
 var white_deck_count_override: int = -1
 var black_deck_count_override: int = -1
+var white_codex_page_index: int = 0
+var black_codex_page_index: int = 0
+var white_codex_page_counts: Array[int] = [0, 0, 0, 0, 0]
+var black_codex_page_counts: Array[int] = [0, 0, 0, 0, 0]
+var white_codex_pages: Array = []
+var black_codex_pages: Array = []
+var codex_panel: PanelContainer
+var codex_page_label: Label
+var codex_counts_row: HBoxContainer
+var codex_turn_page_button: Button
+var codex_count_labels: Array[Label] = []
 var hidden_card_counts: Dictionary = {}
 var board_geometry
 var board_visuals
@@ -714,6 +740,7 @@ func sync_match_state_sync_controller() -> void:
 		"fragment_group_top": PIECE_SHATTER_FRAGMENT_GROUP_TOP,
 		"fragment_group_pending": PIECE_SHATTER_FRAGMENT_GROUP_PENDING,
 		"default_piece_texture_provider": Callable(self, "get_default_piece_texture"),
+		"card_piece_texture_provider": Callable(self, "get_card_piece_texture_for_color"),
 	})
 
 func get_match_state_sync_controller():
@@ -764,6 +791,7 @@ func sync_local_state_mutator() -> void:
 		"current_turn_color_provider": Callable(self, "get_current_turn_color"),
 		"moved_piece_this_turn_provider": Callable(get_turn_action_state_controller(), "has_moved_piece_this_turn"),
 		"can_exchange_card_provider": Callable(self, "can_exchange_card_locally"),
+		"can_turn_page_provider": Callable(self, "can_turn_page_locally"),
 		"create_board_tiles_callback": Callable(self, "create_board_tiles"),
 	})
 
@@ -942,6 +970,12 @@ func sync_piece_move_animator() -> void:
 		"wobble_step_duration": piece_move_wobble_step_duration,
 		"wobble_rotation_degrees": piece_move_wobble_rotation_degrees,
 		"movement_tilt_degrees": piece_move_travel_tilt_degrees,
+		"capture_approach_edge_ratio": piece_move_capture_approach_edge_ratio,
+		"capture_approach_hold_duration": piece_move_capture_approach_hold_duration,
+		"capture_push_duration": piece_move_capture_push_duration,
+		"capture_recoil_duration": piece_move_capture_recoil_duration,
+		"capture_center_settle_duration": piece_move_capture_center_settle_duration,
+		"capture_push_rotation_degrees": piece_move_capture_push_rotation_degrees,
 		"movement_shadow_color": piece_move_shadow_color,
 		"movement_shadow_radius_scale": piece_move_shadow_radius_scale,
 		"movement_shadow_ground_edge_softness": piece_move_shadow_ground_edge_softness,
@@ -1884,7 +1918,7 @@ func end_current_turn_locally():
 
 func handle_expired_nexus_card_locally(owner_color: int, expired_card: Card, piece_pos: Vector2) -> void:
 	get_card_animation_controller().queue_nexus_card_return_to_deck_animation(owner_color, expired_card, piece_pos)
-	DeckManager.return_card_to_deck(get_card_deck(owner_color), expired_card.card_name)
+	return_local_nexus_stamp(owner_color, expired_card)
 
 func update_card_face_visibility(local_color: int):
 	for card_visual in white_card_visuals:
@@ -1934,26 +1968,10 @@ func show_hover_card_description(card: Card) -> void:
 	get_card_hover_preview_controller().show_description(description)
 
 func can_exchange_card_locally(owner_color: int) -> bool:
-	if !can_control_current_turn():
-		return false
-	if owner_color != get_controllable_color():
-		return false
-	if !is_tutorial_action_allowed(TUTORIAL_ACTION_EXCHANGE_CARD, {
-		"owner_color": owner_color,
-	}):
-		return false
-	if get_turn_action_state_controller().has_exchanged_card_this_turn(owner_color):
-		return false
-	if get_card_hand(owner_color).is_empty():
-		return false
-	return get_card_deck_count(owner_color) > 0
+	return false
 
 func is_tutorial_exchange_card_allowed(owner_color: int, card_name: String, hand_index: int, emit_rejection: bool) -> bool:
-	return is_tutorial_action_allowed(TUTORIAL_ACTION_EXCHANGE_CARD, {
-		"owner_color": owner_color,
-		"card_name": card_name,
-		"hand_index": hand_index,
-	}, emit_rejection)
+	return false
 
 func complete_card_exchange(owner_color: int, card_name: String, hand_index: int, should_record_name: bool, source_global_position = null) -> void:
 	if should_record_name:
@@ -1972,12 +1990,7 @@ func complete_card_exchange(owner_color: int, card_name: String, hand_index: int
 	card_exchanged.emit(card_name, owner_color, hand_index)
 
 func send_card_exchange_action(owner_color: int, card_name: String, hand_index: int) -> bool:
-	return bool(GameController.send_action({
-		"type": "exchange_card",
-		"player_id": get_player_id_for_color(owner_color),
-		"card_name": card_name,
-		"hand_index": hand_index,
-	}))
+	return false
 
 func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector2) -> void:
 	if card_visual == null or !is_instance_valid(card_visual):
@@ -2079,7 +2092,15 @@ func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 		return false
 
 	var owner_player_id: int = get_player_id_for_color(piece.color)
-	piece.attach_card(card, int(completed_turn_counts.get(owner_player_id, 0)) == 0)
+	var local_codex_page_index: int = get_codex_page_index(piece.color)
+	var local_codex_page: Array = []
+	var local_codex_pages: Array = get_codex_pages(piece.color)
+	if local_codex_page_index >= 0 and local_codex_page_index < local_codex_pages.size() and local_codex_pages[local_codex_page_index] is Array:
+		local_codex_page = local_codex_pages[local_codex_page_index]
+	card.set_meta("codex_owner_player_id", owner_player_id)
+	card.set_meta("codex_page_index", local_codex_page_index)
+	card.set_meta("codex_stamp_index", local_codex_page.find(card_name))
+	piece.attach_card(card, true)
 	var pending_respawn_arrivals: Array[Dictionary] = []
 	if !GameController.current_game_host:
 		pending_respawn_arrivals = get_local_state_mutator().apply_card_effect_trigger(CardEffect.TRIGGER_ON_ATTACH, piece_position, piece, card)
@@ -2162,6 +2183,299 @@ func get_card_hand_source_position(owner_color: int) -> Vector2:
 
 func arrange_card_visuals(visuals: Array[CardVisual], animate: bool):
 	get_card_interaction_controller().arrange_card_visuals(visuals, animate)
+
+func create_codex_ui() -> void:
+	if canvas_layer == null or codex_panel != null:
+		return
+
+	codex_panel = PanelContainer.new()
+	codex_panel.name = "CodexPanel"
+	codex_panel.anchor_left = 0.0
+	codex_panel.anchor_right = 0.0
+	codex_panel.anchor_top = 1.0
+	codex_panel.anchor_bottom = 1.0
+	codex_panel.offset_left = CODEX_PANEL_MARGIN.x
+	codex_panel.offset_right = CODEX_PANEL_MARGIN.x + CODEX_PANEL_SIZE.x
+	codex_panel.offset_top = -CODEX_PANEL_MARGIN.y - CODEX_PANEL_SIZE.y
+	codex_panel.offset_bottom = -CODEX_PANEL_MARGIN.y
+	codex_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	codex_panel.z_index = 920
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.045, 0.042, 0.038, 0.88)
+	panel_style.border_color = Color(1.0, 0.92, 0.72, 0.34)
+	panel_style.border_width_left = 1
+	panel_style.border_width_top = 1
+	panel_style.border_width_right = 1
+	panel_style.border_width_bottom = 1
+	panel_style.corner_radius_top_left = 6
+	panel_style.corner_radius_top_right = 6
+	panel_style.corner_radius_bottom_left = 6
+	panel_style.corner_radius_bottom_right = 6
+	panel_style.content_margin_left = 12
+	panel_style.content_margin_top = 10
+	panel_style.content_margin_right = 12
+	panel_style.content_margin_bottom = 10
+	codex_panel.add_theme_stylebox_override("panel", panel_style)
+	canvas_layer.add_child(codex_panel)
+
+	var root := VBoxContainer.new()
+	codex_panel.add_child(root)
+	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_theme_constant_override("separation", 8)
+
+	codex_page_label = Label.new()
+	root.add_child(codex_page_label)
+	codex_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	codex_page_label.add_theme_font_size_override("font_size", 16)
+	codex_page_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.82))
+
+	codex_counts_row = HBoxContainer.new()
+	root.add_child(codex_counts_row)
+	codex_counts_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	codex_counts_row.add_theme_constant_override("separation", 6)
+	codex_count_labels.clear()
+	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
+		var count_label := Label.new()
+		codex_counts_row.add_child(count_label)
+		count_label.custom_minimum_size = Vector2(34, 24)
+		count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		count_label.add_theme_font_size_override("font_size", 14)
+		codex_count_labels.append(count_label)
+
+	codex_turn_page_button = Button.new()
+	root.add_child(codex_turn_page_button)
+	codex_turn_page_button.text = "Turn Page"
+	codex_turn_page_button.custom_minimum_size = Vector2(0, 34)
+	codex_turn_page_button.pressed.connect(_on_turn_page_pressed)
+	update_codex_ui()
+
+func update_codex_ui() -> void:
+	if codex_panel == null:
+		return
+
+	var owner_color: int = get_codex_display_color()
+	var page_index: int = get_codex_page_index(owner_color)
+	var page_counts: Array[int] = get_codex_page_counts(owner_color)
+	codex_page_label.text = "%d. oldal / %d" % [page_index + 1, DeckManager.CODEX_PAGE_COUNT]
+	for index in range(codex_count_labels.size()):
+		var count_label: Label = codex_count_labels[index]
+		var page_count: int = int(page_counts[index]) if index < page_counts.size() else 0
+		count_label.text = "%d:%d" % [index + 1, page_count]
+		count_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.44) if index == page_index else Color(0.82, 0.80, 0.74))
+	if codex_turn_page_button != null:
+		codex_turn_page_button.disabled = !can_turn_page_locally(owner_color)
+
+func get_codex_display_color() -> int:
+	if can_control_current_turn():
+		return get_controllable_color()
+	return get_local_view_color()
+
+func get_codex_page_index(owner_color: int) -> int:
+	return white_codex_page_index if owner_color == 1 else black_codex_page_index
+
+func get_codex_page_counts(owner_color: int) -> Array[int]:
+	return white_codex_page_counts if owner_color == 1 else black_codex_page_counts
+
+func get_codex_pages(owner_color: int) -> Array:
+	return white_codex_pages if owner_color == 1 else black_codex_pages
+
+func set_codex_page_index(owner_color: int, page_index: int) -> void:
+	if owner_color == 1:
+		white_codex_page_index = clampi(page_index, 0, DeckManager.CODEX_PAGE_COUNT - 1)
+	else:
+		black_codex_page_index = clampi(page_index, 0, DeckManager.CODEX_PAGE_COUNT - 1)
+	sync_deck_from_local_codex(owner_color)
+
+func set_codex_pages(owner_color: int, pages: Array) -> void:
+	if owner_color == 1:
+		white_codex_pages = pages
+		white_codex_page_counts = get_counts_from_codex_pages(pages)
+	else:
+		black_codex_pages = pages
+		black_codex_page_counts = get_counts_from_codex_pages(pages)
+	sync_deck_from_local_codex(owner_color)
+
+func get_counts_from_codex_pages(pages: Array) -> Array[int]:
+	var counts: Array[int] = []
+	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
+		if page_index < pages.size() and pages[page_index] is Array:
+			counts.append((pages[page_index] as Array).size())
+		else:
+			counts.append(0)
+	return counts
+
+func apply_codex_state_from_server(player_codex_state: Dictionary) -> void:
+	for player_id in [0, 1]:
+		var state_value = player_codex_state.get(player_id, player_codex_state.get(str(player_id), {}))
+		if !(state_value is Dictionary):
+			continue
+		var state: Dictionary = state_value
+		var owner_color: int = get_color_for_player_id(player_id)
+		set_codex_page_index(owner_color, int(state.get("current_page_index", 0)))
+		var pages_value = state.get("pages", [])
+		if pages_value is Array:
+			set_codex_pages(owner_color, parse_codex_pages_from_state(pages_value))
+		var counts_value = state.get("page_counts", [])
+		var parsed_counts: Array[int] = [0, 0, 0, 0, 0]
+		if counts_value is Array:
+			for index in range(mini(parsed_counts.size(), (counts_value as Array).size())):
+				parsed_counts[index] = int((counts_value as Array)[index])
+		if owner_color == 1:
+			white_codex_page_counts = parsed_counts
+			has_turned_page_this_turn[1] = bool(state.get("has_turned_page_this_turn", false))
+		else:
+			black_codex_page_counts = parsed_counts
+			has_turned_page_this_turn[-1] = bool(state.get("has_turned_page_this_turn", false))
+	update_codex_ui()
+
+func parse_codex_pages_from_state(pages_value: Array) -> Array:
+	var pages: Array = []
+	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
+		var page: Array[String] = []
+		if page_index < pages_value.size() and pages_value[page_index] is Array:
+			for stamp_value in pages_value[page_index]:
+				var card_name: String = ""
+				if stamp_value is Dictionary:
+					card_name = str((stamp_value as Dictionary).get("card_name", ""))
+				else:
+					card_name = str(stamp_value)
+				if !card_name.is_empty():
+					page.append(card_name)
+		pages.append(page)
+	return pages
+
+func can_turn_page_locally(owner_color: int) -> bool:
+	if !can_control_current_turn():
+		return false
+	if owner_color != get_controllable_color():
+		return false
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_TURN_PAGE, {
+		"owner_color": owner_color,
+	}):
+		return false
+	if bool(has_turned_page_this_turn.get(owner_color, false)):
+		return false
+	if bool(attached_card_this_turn.get(owner_color, false)):
+		return false
+	return count_non_empty_codex_pages(owner_color) > 1
+
+func count_non_empty_codex_pages(owner_color: int) -> int:
+	var count: int = 0
+	for page_count in get_codex_page_counts(owner_color):
+		if int(page_count) > 0:
+			count += 1
+	return count
+
+func _on_turn_page_pressed() -> void:
+	var owner_color: int = get_controllable_color()
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_TURN_PAGE, {
+		"owner_color": owner_color,
+	}, true):
+		update_codex_ui()
+		return
+	if !can_turn_page_locally(owner_color):
+		update_codex_ui()
+		return
+	if GameController.current_game_host:
+		send_turn_page_action(owner_color)
+		return
+	turn_codex_page_locally(owner_color)
+
+func send_turn_page_action(owner_color: int) -> bool:
+	return bool(GameController.send_action({
+		"type": "turn_page",
+		"player_id": get_player_id_for_color(owner_color),
+	}))
+
+func turn_codex_page_locally(owner_color: int) -> void:
+	var next_page_index: int = find_next_non_empty_codex_page(owner_color, get_codex_page_index(owner_color))
+	if next_page_index == -1:
+		return
+	set_codex_page_index(owner_color, next_page_index)
+	has_turned_page_this_turn[owner_color] = true
+	sync_hand_from_local_codex(owner_color)
+	codex_page_turned.emit(owner_color, next_page_index)
+	update_card_presentation()
+
+func find_next_non_empty_codex_page(owner_color: int, start_index: int) -> int:
+	var counts: Array[int] = get_codex_page_counts(owner_color)
+	for offset in range(1, DeckManager.CODEX_PAGE_COUNT + 1):
+		var candidate_index: int = (start_index + offset) % DeckManager.CODEX_PAGE_COUNT
+		if candidate_index < counts.size() and int(counts[candidate_index]) > 0:
+			return candidate_index
+	return -1
+
+func advance_empty_codex_page_at_turn_start(owner_color: int) -> void:
+	var page_index: int = get_codex_page_index(owner_color)
+	var counts: Array[int] = get_codex_page_counts(owner_color)
+	if page_index < counts.size() and int(counts[page_index]) > 0:
+		return
+	var next_page_index: int = find_next_non_empty_codex_page(owner_color, page_index)
+	if next_page_index == -1:
+		return
+	set_codex_page_index(owner_color, next_page_index)
+	sync_hand_from_local_codex(owner_color)
+
+func remove_local_codex_stamp(owner_color: int, stamp_index: int) -> void:
+	var pages: Array = get_codex_pages(owner_color)
+	var page_index: int = get_codex_page_index(owner_color)
+	if page_index < 0 or page_index >= pages.size() or !(pages[page_index] is Array):
+		return
+	var page: Array = pages[page_index]
+	if stamp_index < 0 or stamp_index >= page.size():
+		return
+	page.remove_at(stamp_index)
+	pages[page_index] = page
+	set_codex_pages(owner_color, pages)
+	update_codex_ui()
+
+func return_local_nexus_stamp(owner_color: int, card: Card) -> void:
+	if card == null:
+		return
+	var pages: Array = get_codex_pages(owner_color)
+	var page_index: int = int(card.get_meta("codex_page_index", get_codex_page_index(owner_color)))
+	var stamp_index: int = int(card.get_meta("codex_stamp_index", -1))
+	page_index = clampi(page_index, 0, DeckManager.CODEX_PAGE_COUNT - 1)
+	while pages.size() < DeckManager.CODEX_PAGE_COUNT:
+		pages.append([])
+	var page = pages[page_index]
+	if !(page is Array):
+		page = []
+	var stamps: Array = page
+	var insert_index: int = clampi(stamp_index, 0, stamps.size()) if stamp_index >= 0 else stamps.size()
+	stamps.insert(insert_index, card.card_name)
+	pages[page_index] = stamps
+	set_codex_pages(owner_color, pages)
+	if page_index == get_codex_page_index(owner_color):
+		sync_hand_from_local_codex(owner_color)
+	else:
+		update_codex_ui()
+
+func sync_hand_from_local_codex(owner_color: int) -> void:
+	var pages: Array = get_codex_pages(owner_color)
+	var page_index: int = get_codex_page_index(owner_color)
+	var page_names: Array = []
+	if page_index >= 0 and page_index < pages.size() and pages[page_index] is Array:
+		page_names = pages[page_index]
+	var cards: Array[Card] = create_card_hand_from_names(page_names)
+	if owner_color == 1:
+		white_card_hand = cards
+		white_card_visuals = populate_card_hand(white_pieces, white_card_hand, 1)
+	else:
+		black_card_hand = cards
+		black_card_visuals = populate_card_hand(black_pieces, black_card_hand, -1)
+	sync_deck_from_local_codex(owner_color)
+	setup_deck_visuals()
+
+func sync_deck_from_local_codex(owner_color: int) -> void:
+	var pages: Array = get_codex_pages(owner_color)
+	var closed_page_names: Array[String] = DeckManager.flatten_codex_pages(pages, get_codex_page_index(owner_color))
+	if owner_color == 1:
+		white_card_deck = closed_page_names
+	else:
+		black_card_deck = closed_page_names
 
 func _process(delta):
 	get_match_input_controller().process(delta)
@@ -2395,6 +2709,7 @@ func get_piece_visual_state_snapshot() -> Dictionary:
 	return snapshot
 
 func play_state_attach_animations(animations: Array[Dictionary]) -> void:
+	active_state_card_attach_animation_count += 1
 	for animation: Dictionary in animations:
 		var board_pos: Vector2 = value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
 		var card: Card = animation.get("card", null) as Card
@@ -2412,6 +2727,7 @@ func play_state_attach_animations(animations: Array[Dictionary]) -> void:
 		else:
 			await play_piece_card_attach_animation(board_pos, card, start_texture)
 		finish_card_attach_process(board_pos)
+	active_state_card_attach_animation_count = maxi(0, active_state_card_attach_animation_count - 1)
 
 func get_piece_holder_at(board_pos: Vector2) -> Sprite2D:
 	return get_piece_visuals().get_holder_at(pieces_node, board_pos, INVALID_BOARD_POS)
@@ -2607,6 +2923,7 @@ func finish_server_state_visual_update(visual_context: Dictionary) -> void:
 	display_board()
 
 	var state_piece_move_animation: Dictionary = visual_context.get("state_piece_move_animation", {})
+	var state_piece_shatter_animations: Array = visual_context.get("state_piece_shatter_animations", [])
 	if !state_piece_move_animation.is_empty():
 		var move_to_pos: Vector2 = value_to_vector2(state_piece_move_animation.get("to", INVALID_BOARD_POS), INVALID_BOARD_POS)
 		var move_from_pos: Vector2 = value_to_vector2(state_piece_move_animation.get("from", INVALID_BOARD_POS), INVALID_BOARD_POS)
@@ -2615,11 +2932,29 @@ func finish_server_state_visual_update(visual_context: Dictionary) -> void:
 			move_to_pos,
 			state_piece_move_animation.get("captured_texture", null) as Texture2D
 		)
+		if capture_placeholder != null and bool(state_piece_move_animation.get("captured_reveal_from_invisibility", false)):
+			play_capture_invisibility_reveal(capture_placeholder)
+		var capture_shatter_animation_index: int = get_piece_shatter_animation_index_for_source(state_piece_shatter_animations, move_to_pos) if capture_placeholder != null else -1
+		var capture_shatter_animation: Dictionary = state_piece_shatter_animations[capture_shatter_animation_index] if capture_shatter_animation_index >= 0 else {}
+		var capture_impact_callback: Callable = Callable()
+		if capture_placeholder != null:
+			capture_impact_callback = func() -> void:
+				if is_instance_valid(capture_placeholder):
+					capture_placeholder.queue_free()
+				if !capture_shatter_animation.is_empty():
+					remove_piece_shatter_animation_from_list(state_piece_shatter_animations, capture_shatter_animation, capture_shatter_animation_index)
+					play_piece_shatter_animation(
+						move_to_pos,
+						value_to_vector2(capture_shatter_animation.get("respawn_pos", INVALID_BOARD_POS), INVALID_BOARD_POS),
+						int(capture_shatter_animation.get("piece_color", 0)),
+						str(capture_shatter_animation.get("fragment_group", PIECE_SHATTER_FRAGMENT_GROUP_NONE))
+					)
 		await play_piece_move_animation(
 			move_from_pos,
 			move_to_pos,
 			state_piece_move_animation.get("start_texture", null) as Texture2D,
-			bool(state_piece_move_animation.get("visible_to_enemy", true))
+			bool(state_piece_move_animation.get("visible_to_enemy", true)),
+			capture_impact_callback
 		)
 		if is_instance_valid(capture_placeholder):
 			capture_placeholder.queue_free()
@@ -2631,10 +2966,9 @@ func finish_server_state_visual_update(visual_context: Dictionary) -> void:
 
 	var state_attach_animations: Array = visual_context.get("state_attach_animations", [])
 	var state_piece_revert_animations: Array = visual_context.get("state_piece_revert_animations", [])
-	var state_piece_shatter_animations: Array = visual_context.get("state_piece_shatter_animations", [])
 	var pending_respawn_arrival_animations: Array = visual_context.get("pending_respawn_arrival_animations", [])
 	if !state_attach_animations.is_empty():
-		call_deferred("play_state_attach_animations", state_attach_animations)
+		await play_state_attach_animations(state_attach_animations)
 	if !state_piece_revert_animations.is_empty():
 		call_deferred("play_piece_revert_animations", state_piece_revert_animations)
 	if !state_piece_shatter_animations.is_empty():
@@ -2660,7 +2994,32 @@ func finish_server_state_visual_update(visual_context: Dictionary) -> void:
 	has_received_server_state = true
 
 	if bool(visual_context.get("server_game_over", false)) && int(visual_context.get("winner_player", -1)) != -1:
+		reveal_hidden_last_move_arrow_for_game_over()
 		finish_game(get_color_for_player_id(int(visual_context.get("winner_player", -1))))
+
+func reveal_hidden_last_move_arrow_for_game_over() -> void:
+	if current_last_move.is_empty() or bool(current_last_move.get("visible_to_enemy", true)):
+		return
+
+	var revealed_last_move: Dictionary = current_last_move.duplicate()
+	revealed_last_move["visible_to_enemy"] = true
+	current_last_move = revealed_last_move
+	update_board_markers()
+
+func get_piece_shatter_animation_index_for_source(animations: Array, source_pos: Vector2) -> int:
+	for index in range(animations.size()):
+		var animation: Dictionary = animations[index]
+		var animation_source_pos: Vector2 = value_to_vector2(animation.get("source_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		if animation_source_pos != source_pos:
+			continue
+		return index
+	return -1
+
+func remove_piece_shatter_animation_from_list(animations: Array, animation: Dictionary, preferred_index: int) -> void:
+	if preferred_index >= 0 and preferred_index < animations.size() and animations[preferred_index] == animation:
+		animations.remove_at(preferred_index)
+		return
+	animations.erase(animation)
 
 func prepare_piece_shatter_respawn_reveals(animations: Array[Dictionary]) -> void:
 	get_piece_respawn_fragment_coordinator().prepare_piece_shatter_respawn_reveals(animations)
@@ -2714,7 +3073,13 @@ func should_play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, visibl
 		return false
 	return from_pos != to_pos
 
-func play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, start_texture: Texture2D = null, visible_to_enemy: bool = true) -> void:
+func play_piece_move_animation(
+	from_pos: Vector2,
+	to_pos: Vector2,
+	start_texture: Texture2D = null,
+	visible_to_enemy: bool = true,
+	capture_impact_callback: Callable = Callable()
+) -> void:
 	if !should_play_piece_move_animation(from_pos, to_pos, visible_to_enemy):
 		return
 
@@ -2746,7 +3111,8 @@ func play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, start_texture
 		start_scale,
 		end_scale,
 		start_offset,
-		end_offset
+		end_offset,
+		capture_impact_callback
 	)
 
 	if is_instance_valid(holder):
@@ -2763,6 +3129,9 @@ func create_piece_move_capture_placeholder(board_pos: Vector2, texture_value: Te
 		return null
 	placeholder.z_index = pieces_node.z_index + get_piece_depth_z_index(board_pos)
 	return placeholder
+
+func play_capture_invisibility_reveal(capture_placeholder: Sprite2D) -> void:
+	get_piece_effect_animator().play_invisibility_reveal(capture_placeholder)
 
 func play_piece_shatter_animations(animations: Array[Dictionary]) -> void:
 	get_piece_respawn_fragment_coordinator().play_piece_shatter_animations(animations)
@@ -2956,7 +3325,7 @@ func can_control_current_turn() -> bool:
 		return GameConfig.is_singleplayer or tutorial_mode_active
 	return side == white
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}, viewer_player_id: int = -1, turn_action_state: Dictionary = {}, player_clock_seconds: Dictionary = {}):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, player_codex_state: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}, viewer_player_id: int = -1, turn_action_state: Dictionary = {}, player_clock_seconds: Dictionary = {}):
 	get_server_state_update_controller().update_from_server_state(
 		pieces_data,
 		player_hands,
@@ -2964,6 +3333,7 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 		server_game_over,
 		winner_player,
 		player_deck_sizes,
+		player_codex_state,
 		hidden_cards,
 		player_base_fields,
 		board_effects,

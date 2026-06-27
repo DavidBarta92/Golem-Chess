@@ -62,6 +62,7 @@ func ready() -> void:
 	match_board.get_turn_hud_controller().create_result_ui()
 	match_board.get_deck_counter_controller().create_deck_count_ui()
 	match_board.get_deck_counter_controller().create_deck_counter_ui()
+	match_board.create_codex_ui()
 	match_board.get_turn_hud_controller().initialize_player_portraits()
 	match_board.current_player_portraits = match_board.get_turn_hud_controller().current_player_portraits
 	match_board.get_turn_hud_controller().create_player_portrait_ui()

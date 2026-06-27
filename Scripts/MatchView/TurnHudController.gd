@@ -207,11 +207,11 @@ func create_action_status_ui() -> void:
 	label_settings.outline_size = 0
 
 	var action_letters: Dictionary = {
-		"Switch": "S",
+		"Page": "P",
 		"Attach": "A",
 		"Move": "M",
 	}
-	for action_name in ["Switch", "Attach", "Move"]:
+	for action_name in ["Page", "Attach", "Move"]:
 		var action_cell := PanelContainer.new()
 		action_status_container.add_child(action_cell)
 		action_cell.custom_minimum_size = action_status_cell_size
@@ -496,7 +496,7 @@ func update_action_status_ui() -> void:
 		return
 
 	action_status_container.visible = !is_game_over()
-	set_action_status_label("Switch", get_bool(can_switch_action_provider, false))
+	set_action_status_label("Page", get_bool(can_switch_action_provider, false))
 	set_action_status_label("Attach", get_bool(can_attach_action_provider, false))
 	set_action_status_label("Move", get_bool(can_move_action_provider, false))
 
@@ -677,6 +677,8 @@ func get_action_status_letter(action_name: String) -> String:
 	match action_name:
 		"Switch":
 			return "S"
+		"Page":
+			return "P"
 		"Attach":
 			return "A"
 		"Move":

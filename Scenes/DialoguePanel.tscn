@@ -1,26 +1,27 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://7r8rqxo7x633"]
 
-[ext_resource type="Script" path="res://Scenes/DialoguePanel.gd" id="1_dialogue_script"]
+[ext_resource type="Script" uid="uid://cx7pbapjpsu1i" path="res://Scenes/DialoguePanel.gd" id="1_dialogue_script"]
+[ext_resource type="FontFile" uid="uid://b1beq61l8rupp" path="res://Fonts/Rosemartin.otf" id="2_rosemartin"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_dialogue_panel"]
-content_margin_left = 14.0
-content_margin_top = 14.0
-content_margin_right = 14.0
-content_margin_bottom = 14.0
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_portrait"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_text_panel"]
-content_margin_left = 12.0
-content_margin_top = 10.0
-content_margin_right = 12.0
-content_margin_bottom = 10.0
-
 [sub_resource type="LabelSettings" id="LabelSettings_portrait_initial"]
-font_size = 52
+font_size = 44
 font_color = Color(0.22, 0.22, 0.22, 1)
 
-[node name="DialoguePanel" type="Control"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_text_panel"]
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[node name="DialoguePanel" type="Control" unique_id=70927568]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -30,69 +31,87 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_dialogue_script")
 
-[node name="DialogueRoot" type="PanelContainer" parent="."]
+[node name="DialogueRoot" type="PanelContainer" parent="." unique_id=2071373806]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
 offset_left = 24.0
-offset_top = -176.0
-offset_right = 380.0
-offset_bottom = 176.0
+offset_top = -150.0
+offset_right = 392.0
+offset_bottom = 150.0
 grow_vertical = 2
-mouse_filter = 0
 theme_override_styles/panel = SubResource("StyleBoxEmpty_dialogue_panel")
 
-[node name="DialogueLayout" type="VBoxContainer" parent="DialogueRoot"]
+[node name="DialogueLayout" type="VBoxContainer" parent="DialogueRoot" unique_id=1989048071]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 7
 
-[node name="SpeakerLabel" type="Label" parent="DialogueRoot/DialogueLayout"]
+[node name="SpeakerLabel" type="Label" parent="DialogueRoot/DialogueLayout" unique_id=1434806248]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_fonts/font = ExtResource("2_rosemartin")
+theme_override_font_sizes/font_size = 21
 text = "Mentor"
 
-[node name="PortraitFrame" type="PanelContainer" parent="DialogueRoot/DialogueLayout"]
-custom_minimum_size = Vector2(0, 150)
+[node name="PortraitFrame" type="PanelContainer" parent="DialogueRoot/DialogueLayout" unique_id=604472728]
+custom_minimum_size = Vector2(0, 128)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_portrait")
 
-[node name="PortraitInitial" type="Label" parent="DialogueRoot/DialogueLayout/PortraitFrame"]
+[node name="PortraitInitial" type="Label" parent="DialogueRoot/DialogueLayout/PortraitFrame" unique_id=203310120]
 layout_mode = 2
-label_settings = SubResource("LabelSettings_portrait_initial")
 text = "M"
+label_settings = SubResource("LabelSettings_portrait_initial")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PortraitTexture" type="TextureRect" parent="DialogueRoot/DialogueLayout/PortraitFrame"]
+[node name="PortraitTexture" type="TextureRect" parent="DialogueRoot/DialogueLayout/PortraitFrame" unique_id=1080600603]
 visible = false
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="TextPanel" type="PanelContainer" parent="DialogueRoot/DialogueLayout"]
-custom_minimum_size = Vector2(0, 110)
+[node name="TextPanel" type="PanelContainer" parent="DialogueRoot/DialogueLayout" unique_id=1943794251]
+custom_minimum_size = Vector2(0, 94)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxEmpty_text_panel")
 
-[node name="DialogueText" type="RichTextLabel" parent="DialogueRoot/DialogueLayout/TextPanel"]
+[node name="DialogueTextRow" type="HBoxContainer" parent="DialogueRoot/DialogueLayout/TextPanel" unique_id=1641118775]
 layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DialogueLineBox" type="Control" parent="DialogueRoot/DialogueLayout/TextPanel/DialogueTextRow" unique_id=1213502820]
+custom_minimum_size = Vector2(1.5, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="DialogueLine" type="ColorRect" parent="DialogueRoot/DialogueLayout/TextPanel/DialogueTextRow/DialogueLineBox" unique_id=834343070]
+visible = false
+custom_minimum_size = Vector2(1.5, 0)
+layout_mode = 1
+offset_right = 1.5
+offset_bottom = 1.0
+mouse_filter = 2
+color = Color(0.08, 0.08, 0.08, 1)
+
+[node name="DialogueText" type="RichTextLabel" parent="DialogueRoot/DialogueLayout/TextPanel/DialogueTextRow" unique_id=1966913033]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/default_color = Color(0.22, 0.22, 0.22, 1)
-theme_override_font_sizes/normal_font_size = 17
+theme_override_font_sizes/normal_font_size = 15
 bbcode_enabled = true
 text = "Dialogue text appears here."
 fit_content = true
 scroll_active = false
-autowrap_mode = 3
 
-[node name="ButtonRow" type="HBoxContainer" parent="DialogueRoot/DialogueLayout"]
+[node name="ButtonRow" type="HBoxContainer" parent="DialogueRoot/DialogueLayout" unique_id=2044962100]
 layout_mode = 2
 alignment = 2
 
-[node name="ContinueButton" type="Button" parent="DialogueRoot/DialogueLayout/ButtonRow"]
-custom_minimum_size = Vector2(112, 34)
+[node name="ContinueButton" type="Button" parent="DialogueRoot/DialogueLayout/ButtonRow" unique_id=948320463]
+custom_minimum_size = Vector2(95, 29)
 layout_mode = 2
 focus_mode = 0
 text = "Continue"

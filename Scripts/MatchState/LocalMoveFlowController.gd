@@ -120,15 +120,19 @@ func play_local_move_transition(move_context: Dictionary) -> void:
 
 	match_board.display_board()
 	var capture_placeholder: Sprite2D = match_board.create_piece_move_capture_placeholder(end_pos, captured_start_texture) if should_play_capture_shatter else null
-	await match_board.play_piece_move_animation(start_pos, end_pos, moving_start_texture, moving_piece_visible_to_enemy)
-	if is_instance_valid(capture_placeholder):
-		capture_placeholder.queue_free()
+	var capture_impact_callback: Callable = Callable()
 	if should_play_capture_shatter:
 		var captured_piece: Piece = move_context.get("captured_piece", null) as Piece
 		var captured_color: int = captured_piece.color if captured_piece != null else 0
 		var shatter_respawn_pos: Vector2 = match_board.value_to_vector2(move_context.get("shatter_respawn_pos", invalid_board_pos), invalid_board_pos)
 		var shatter_fragment_group: String = str(move_context.get("shatter_fragment_group", fragment_group_none))
-		match_board.play_piece_shatter_animation(end_pos, shatter_respawn_pos, captured_color, shatter_fragment_group)
+		capture_impact_callback = func() -> void:
+			if is_instance_valid(capture_placeholder):
+				capture_placeholder.queue_free()
+			match_board.play_piece_shatter_animation(end_pos, shatter_respawn_pos, captured_color, shatter_fragment_group)
+	await match_board.play_piece_move_animation(start_pos, end_pos, moving_start_texture, moving_piece_visible_to_enemy, capture_impact_callback)
+	if is_instance_valid(capture_placeholder):
+		capture_placeholder.queue_free()
 	var pending_respawn_arrivals: Array = move_context.get("pending_respawn_arrivals", [])
 	if !pending_respawn_arrivals.is_empty():
 		match_board.play_pending_edge_respawn_arrival_animations(pending_respawn_arrivals)
@@ -146,7 +150,7 @@ func return_captured_nexus_card_to_deck(captured_piece: Piece) -> void:
 	if captured_piece == null or captured_piece.attached_card == null:
 		return
 	match_board.get_card_animation_controller().queue_nexus_card_return_to_deck_animation(captured_piece.color, captured_piece.attached_card, captured_piece.position)
-	DeckManager.return_card_to_deck(match_board.get_card_deck(captured_piece.color), captured_piece.attached_card.card_name)
+	match_board.return_local_nexus_stamp(captured_piece.color, captured_piece.attached_card)
 
 func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> void:
 	if piece == null or piece.attached_card == null:
