@@ -65,8 +65,8 @@ func apply_local_move_state(move_context: Dictionary) -> void:
 	var captured_piece: Piece = move_state.get("captured_piece", null) as Piece
 	var moving_piece_visible_to_enemy: bool = bool(move_state.get("moving_piece_visible_to_enemy", true))
 
-	if bool(move_state.get("captured_nexus", false)):
-		return_captured_nexus_card_to_deck(captured_piece)
+	if bool(move_state.get("captured_seeker", false)):
+		return_captured_seeker_card_to_deck(captured_piece)
 	if captured_piece != null:
 		captured_piece.detach_card()
 
@@ -146,11 +146,11 @@ func restore_local_move_selection(move_context: Dictionary) -> void:
 		match_board.show_options()
 		match_board.state = true
 
-func return_captured_nexus_card_to_deck(captured_piece: Piece) -> void:
+func return_captured_seeker_card_to_deck(captured_piece: Piece) -> void:
 	if captured_piece == null or captured_piece.attached_card == null:
 		return
-	match_board.get_card_animation_controller().queue_nexus_card_return_to_deck_animation(captured_piece.color, captured_piece.attached_card, captured_piece.position)
-	match_board.return_local_nexus_stamp(captured_piece.color, captured_piece.attached_card)
+	match_board.get_card_animation_controller().queue_seeker_card_return_to_deck_animation(captured_piece.color, captured_piece.attached_card, captured_piece.position)
+	match_board.return_local_seeker_stamp(captured_piece.color, captured_piece.attached_card)
 
 func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> void:
 	if piece == null or piece.attached_card == null:
@@ -163,8 +163,8 @@ func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> v
 		return
 
 	match_board.queue_piece_revert_animation(piece_pos, expiring_piece_texture)
-	if MoveRules.is_nexus_card(expired_card):
-		match_board.handle_expired_nexus_card_locally(owner_color, expired_card, piece_pos)
+	if MoveRules.is_seeker_card(expired_card):
+		match_board.handle_expired_seeker_card_locally(owner_color, expired_card, piece_pos)
 		return
 
 	match_board.get_card_animation_controller().queue_card_expire_animation(piece_pos, expired_card)

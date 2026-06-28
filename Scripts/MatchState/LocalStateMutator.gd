@@ -65,7 +65,7 @@ func move_piece_on_board(start_pos: Vector2, end_pos: Vector2) -> Dictionary:
 	return {
 		"moving_color": moving_color,
 		"captured_piece": captured_piece,
-		"captured_nexus": is_nexus_piece(captured_piece),
+		"captured_seeker": is_seeker_piece(captured_piece),
 		"moving_piece_visible_to_enemy": moving_piece_visible_to_enemy,
 	}
 
@@ -346,20 +346,20 @@ func filter_base_fields_from_effect_squares(squares: Array[Vector2]) -> Array[Ve
 			filtered_squares.append(square_pos)
 	return filtered_squares
 
-func player_has_available_nexus_card(owner_color: int) -> bool:
+func player_has_available_seeker_card(owner_color: int) -> bool:
 	for card: Card in get_card_hand(owner_color):
-		if MoveRules.is_nexus_card(card):
+		if MoveRules.is_seeker_card(card):
 			return true
-	if DeckManager.has_nexus_card(get_card_deck(owner_color)):
+	if DeckManager.has_seeker_card(get_card_deck(owner_color)):
 		return true
 	for position_value in piece_objects:
 		var piece: Piece = piece_objects[position_value] as Piece
-		if piece != null and piece.color == owner_color and MoveRules.is_nexus_card(piece.attached_card):
+		if piece != null and piece.color == owner_color and MoveRules.is_seeker_card(piece.attached_card):
 			return true
 	return false
 
 func get_winner_after_move(moving_color: int, end_pos: Vector2) -> int:
-	if is_opponent_base_field(moving_color, end_pos) and is_nexus_piece_at(end_pos):
+	if is_opponent_base_field(moving_color, end_pos) and is_seeker_piece_at(end_pos):
 		return moving_color
 	return 0
 
@@ -390,13 +390,13 @@ func is_base_field_for_other_player(pos: Vector2, owner_player_id: int) -> bool:
 func has_any_piece(owner_color: int) -> bool:
 	return MoveRules.has_any_piece(piece_objects, owner_color)
 
-func is_nexus_piece(piece: Piece) -> bool:
-	return piece != null and MoveRules.is_nexus_card(piece.attached_card)
+func is_seeker_piece(piece: Piece) -> bool:
+	return piece != null and MoveRules.is_seeker_card(piece.attached_card)
 
-func is_nexus_piece_at(piece_position: Vector2) -> bool:
+func is_seeker_piece_at(piece_position: Vector2) -> bool:
 	if !piece_objects.has(piece_position):
 		return false
-	return is_nexus_piece(piece_objects[piece_position] as Piece)
+	return is_seeker_piece(piece_objects[piece_position] as Piece)
 
 func current_player_has_valid_turn_action() -> bool:
 	var current_color: int = get_current_turn_color()

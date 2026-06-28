@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="Card" format=3]
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://mwgyk7o2sixs"]
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_black"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_card"]
@@ -8,10 +8,10 @@
 script = ExtResource("2_card")
 card_name = "Warlord"
 card_code = "warlord"
+Set = "Curt"
 duration = 4
-description = "No special effect."
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
-effect_type = "none"
+description = "No special effect."
 movement_pattern = Array[Array]([[0, 1, 0, 1, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

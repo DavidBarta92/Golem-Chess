@@ -2,7 +2,7 @@ extends RefCounted
 
 var canvas_layer: CanvasLayer
 var card_visual_scene: PackedScene
-var card_ui_size: Vector2 = Vector2(164, 229)
+var card_ui_size: Vector2 = Vector2(168.7, 229)
 var card_base_texture: Texture2D
 var hover_card_margin: float = 24.0
 var hover_card_preview_scale: float = 0.82

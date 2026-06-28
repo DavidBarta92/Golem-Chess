@@ -29,11 +29,12 @@ func load_all_prints() -> void:
 
 func get_print(print_id: String) -> CardPrint:
 	ensure_loaded()
-	return all_prints.get(print_id)
+	return all_prints.get(resolve_print_id_alias(print_id))
 
 func get_prints_for_card_code(card_code: String) -> Array:
 	ensure_loaded()
-	var prints: Array = prints_by_card_code.get(card_code, [])
+	var normalized_card_code: String = CardLibrary.resolve_card_code_alias(card_code)
+	var prints: Array = prints_by_card_code.get(normalized_card_code, [])
 	return prints.duplicate()
 
 func get_all_prints() -> Array:
@@ -51,8 +52,22 @@ func get_default_print_id_for_card_code(card_code: String) -> String:
 	return get_print_id(card_code, STANDARD_VARIANT_ID)
 
 func get_print_id(card_code: String, variant_id: String) -> String:
+	var normalized_card_code: String = CardLibrary.resolve_card_code_alias(card_code)
 	var normalized_variant_id: String = normalize_variant_id(variant_id)
-	return "%s.%s" % [card_code.strip_edges(), normalized_variant_id]
+	return "%s.%s" % [normalized_card_code, normalized_variant_id]
+
+func resolve_print_id_alias(print_id: String) -> String:
+	var normalized_print_id: String = print_id.strip_edges()
+	if normalized_print_id.is_empty():
+		return ""
+
+	var parts: PackedStringArray = normalized_print_id.split(".", false, 1)
+	if parts.size() < 2:
+		return CardLibrary.resolve_card_code_alias(normalized_print_id)
+
+	var normalized_card_code: String = CardLibrary.resolve_card_code_alias(parts[0])
+	var normalized_variant_id: String = normalize_variant_id(parts[1])
+	return get_print_id(normalized_card_code, normalized_variant_id)
 
 func normalize_variant_id(variant_id: String) -> String:
 	var normalized: String = variant_id.strip_edges()
@@ -100,18 +115,24 @@ func _load_explicit_prints() -> void:
 	dir.list_dir_end()
 
 func _prepare_explicit_print(card_print: CardPrint) -> void:
-	card_print.card_code = card_print.card_code.strip_edges()
+	card_print.card_code = CardLibrary.resolve_card_code_alias(card_print.card_code)
 	card_print.variant_id = normalize_variant_id(card_print.variant_id)
 	if card_print.variant_name.strip_edges().is_empty():
 		card_print.variant_name = get_variant_name(card_print.variant_id)
 	if card_print.print_id.strip_edges().is_empty():
 		card_print.print_id = get_print_id(card_print.card_code, card_print.variant_id)
+	else:
+		card_print.print_id = resolve_print_id_alias(card_print.print_id)
 
 func _register_print(card_print: CardPrint) -> void:
 	if card_print == null or card_print.card_code.strip_edges().is_empty():
 		return
+	card_print.card_code = CardLibrary.resolve_card_code_alias(card_print.card_code)
+	card_print.variant_id = normalize_variant_id(card_print.variant_id)
 	if card_print.print_id.strip_edges().is_empty():
 		card_print.print_id = get_print_id(card_print.card_code, card_print.variant_id)
+	else:
+		card_print.print_id = resolve_print_id_alias(card_print.print_id)
 
 	all_prints[card_print.print_id] = card_print
 	var card_prints: Array = prints_by_card_code.get(card_print.card_code, [])

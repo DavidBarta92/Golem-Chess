@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CardPrint" format=3 uid="uid://b2opyl24tnvja"]
+
+[ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="1_3t6jk"]
+[ext_resource type="Texture2D" uid="uid://gt5lmh5jnebo" path="res://Assets/anime.png" id="1_w5our"]
+[ext_resource type="Script" uid="uid://jywk3em8fjkn" path="res://Scripts/CardPrint.gd" id="2_w5our"]
+
+[resource]
+script = ExtResource("2_w5our")
+print_id = "pathfinder.full_art"
+card_code = "pathfinder"
+variant_id = "full_art"
+variant_name = "Full Art"
+card_art = ExtResource("1_w5our")
+card_art_mask = ExtResource("1_3t6jk")
+card_shimmer_enabled = true
+grant_in_default_collection = true

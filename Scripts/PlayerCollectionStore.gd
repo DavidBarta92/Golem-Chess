@@ -17,7 +17,7 @@ const DEFAULT_COLLECTION_CARD_NAMES: Array[String] = [
 	"Prince",
 	"Rajah",
 	"Khan",
-	"Jester",
+	"Debater",
 ]
 
 var collection_data: Dictionary = {}
@@ -75,7 +75,7 @@ func get_owned_count_for_card(card: Card) -> int:
 	var card_code: String = get_card_code(card)
 	var owned_count: int = 0
 	for item in _get_items():
-		if item is Dictionary && str(item.get("card_code", "")) == card_code:
+		if item is Dictionary && _resolve_card_code(str(item.get("card_code", ""))) == card_code:
 			owned_count += int(item.get("quantity", 0))
 	return owned_count
 
@@ -91,12 +91,12 @@ func get_owned_count_for_card_code(card_code: String) -> int:
 	return owned_count
 
 func get_owned_count_for_print_id(print_id: String) -> int:
-	var normalized_print_id: String = print_id.strip_edges()
+	var normalized_print_id: String = _resolve_print_id(print_id)
 	if normalized_print_id.is_empty():
 		return 0
 
 	for item in _get_items():
-		if item is Dictionary && str(item.get("print_id", "")) == normalized_print_id:
+		if item is Dictionary && _resolve_print_id(str(item.get("print_id", ""))) == normalized_print_id:
 			return int(item.get("quantity", 0))
 	return 0
 
@@ -106,7 +106,7 @@ func get_first_owned_item_for_card(card: Card) -> Dictionary:
 
 	var card_code: String = get_card_code(card)
 	for item in _get_items():
-		if item is Dictionary && str(item.get("card_code", "")) == card_code && int(item.get("quantity", 0)) > 0:
+		if item is Dictionary && _resolve_card_code(str(item.get("card_code", ""))) == card_code && int(item.get("quantity", 0)) > 0:
 			return item.duplicate(true)
 	return {}
 
@@ -116,8 +116,9 @@ func get_owned_item_for_print(card_print: CardPrint) -> Dictionary:
 	return get_owned_item_for_print_id(card_print.print_id)
 
 func get_owned_item_for_print_id(print_id: String) -> Dictionary:
+	var normalized_print_id: String = _resolve_print_id(print_id)
 	for item in _get_items():
-		if item is Dictionary && str(item.get("print_id", "")) == print_id && int(item.get("quantity", 0)) > 0:
+		if item is Dictionary && _resolve_print_id(str(item.get("print_id", ""))) == normalized_print_id && int(item.get("quantity", 0)) > 0:
 			return item.duplicate(true)
 	return {}
 
@@ -140,7 +141,7 @@ func add_local_print_copy(print_id: String, amount: int = 1) -> Dictionary:
 	var items: Array = _get_items()
 	for index in range(items.size()):
 		var item = items[index]
-		if item is Dictionary && str(item.get("print_id", "")) == card_print.print_id:
+		if item is Dictionary && _resolve_print_id(str(item.get("print_id", ""))) == card_print.print_id:
 			item["quantity"] = maxi(0, int(item.get("quantity", 0))) + maxi(1, amount)
 			items[index] = item
 			collection_data["items"] = items
@@ -200,7 +201,22 @@ func _resolve_card_code(card_code_or_name: String) -> String:
 	if card_by_name != null:
 		return get_card_code(card_by_name)
 
+	var alias_card_code: String = CardLibrary.resolve_card_code_alias(normalized_value)
+	if alias_card_code != normalized_value.to_lower():
+		return alias_card_code
+
 	return normalized_value
+
+func _resolve_print_id(print_id: String) -> String:
+	var normalized_print_id: String = print_id.strip_edges()
+	if normalized_print_id.is_empty():
+		return ""
+
+	var card_print: CardPrint = CardPrintLibrary.get_print(normalized_print_id)
+	if card_print != null:
+		return card_print.print_id
+
+	return CardPrintLibrary.resolve_print_id_alias(normalized_print_id)
 
 func get_item_def_key(card_code: String, variant_id: String) -> String:
 	return CardPrintLibrary.get_print_id(card_code, variant_id)
@@ -231,18 +247,21 @@ func _normalize_collection_item(raw_item: Dictionary) -> Dictionary:
 	var print_id: String = str(raw_item.get("print_id", ""))
 	var card_code: String = str(raw_item.get("card_code", ""))
 	var card_name: String = str(raw_item.get("card_name", ""))
+	var variant_id: String = CardPrintLibrary.normalize_variant_id(str(raw_item.get("variant_id", DEFAULT_VARIANT_ID)))
 
 	if card_code.is_empty() && !card_name.is_empty():
-		var card_by_name: Card = CardLibrary.get_card(card_name)
-		if card_by_name != null:
-			card_code = get_card_code(card_by_name)
+		card_code = _resolve_card_code(card_name)
+	else:
+		card_code = _resolve_card_code(card_code)
 
-	var variant_id: String = CardPrintLibrary.normalize_variant_id(str(raw_item.get("variant_id", DEFAULT_VARIANT_ID)))
+	if !print_id.is_empty():
+		print_id = _resolve_print_id(print_id)
 	if print_id.is_empty() && !card_code.is_empty():
 		print_id = CardPrintLibrary.get_print_id(card_code, variant_id)
 
 	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
 	if card_print != null:
+		print_id = card_print.print_id
 		card_code = card_print.card_code
 		variant_id = card_print.variant_id
 	else:
@@ -284,7 +303,7 @@ func _add_missing_default_collection_prints() -> void:
 	for index in range(items.size()):
 		var item = items[index]
 		if item is Dictionary:
-			item_index_by_print_id[str(item.get("print_id", ""))] = index
+			item_index_by_print_id[_resolve_print_id(str(item.get("print_id", "")))] = index
 
 	var default_prints: Array = _get_default_collection_prints()
 	for card_print_value in default_prints:
@@ -314,7 +333,7 @@ func _add_missing_saved_deck_prints() -> void:
 	for index in range(items.size()):
 		var item = items[index]
 		if item is Dictionary:
-			item_index_by_print_id[str(item.get("print_id", ""))] = index
+			item_index_by_print_id[_resolve_print_id(str(item.get("print_id", "")))] = index
 
 	for card_print_value in _get_saved_deck_prints():
 		var card_print: CardPrint = card_print_value as CardPrint
@@ -379,6 +398,8 @@ func _get_saved_deck_card_print(deck_card) -> CardPrint:
 		var card_code: String = str(deck_card.get("card_code", "")).strip_edges()
 		if card_code.is_empty():
 			card_code = _get_card_code_for_name(str(deck_card.get("card_name", "")))
+		else:
+			card_code = _resolve_card_code(card_code)
 		if card_code.is_empty():
 			return null
 
@@ -453,10 +474,10 @@ func _create_collection_item(card_print: CardPrint, quantity: int = 1, instance_
 	}
 
 func _add_or_merge_item(items: Array, new_item: Dictionary) -> void:
-	var print_id: String = str(new_item.get("print_id", ""))
+	var print_id: String = _resolve_print_id(str(new_item.get("print_id", "")))
 	for index in range(items.size()):
 		var item = items[index]
-		if item is Dictionary && str(item.get("print_id", "")) == print_id:
+		if item is Dictionary && _resolve_print_id(str(item.get("print_id", ""))) == print_id:
 			item["quantity"] = int(item.get("quantity", 0)) + int(new_item.get("quantity", 0))
 			items[index] = item
 			return

@@ -14,7 +14,7 @@ The safest path is not a rewrite. The first goal should be to turn `MatchBoard.g
 | --- | ---: | ---: | --- |
 | `Scenes/MatchBoard.gd` | 8226 | 507 | Highest priority. Mixed view, input, animation, state parsing, and local game flow. |
 | `Scripts/AIMoveEvaluator.gd` | 3127 | 157 | Very large but domain-focused. Refactor after match scene is safer. |
-| `Scenes/Stackbuilder.gd` | 1800 | 85 | Still large, but improved since pack/progress extraction. |
+| `Scenes/Collection.gd` | 1800 | 85 | Still large, but improved since pack/progress extraction. |
 | `Scripts/NetworkGameHost.gd` | 1086 | 72 | Authoritative game flow plus serialization/logging. High-risk refactor target. |
 | `Scripts/CardEffectResolver.gd` | 813 | 55 | Good central rules/effect layer, but broad. Should become more service-like over time. |
 | `Scripts/CardVisual.gd` | 799 | 56 | Mostly isolated card visual behavior. |
@@ -372,7 +372,7 @@ Run after each extraction chunk:
 9. Move-base effect does nothing if target already has another base.
 10. Nexus card returns to deck instead of burning.
 11. Hidden/invisible card preview shader appears.
-12. Stackbuilder still opens and saved decks load.
+12. Collection still opens and saved decks load.
 
 ## Recommended Next Work Item
 

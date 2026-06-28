@@ -5,7 +5,7 @@ const INVALID_BOARD_POS = Vector2(-1, -1)
 var canvas_layer: CanvasLayer
 var tween_owner: Node
 var card_visual_scene: PackedScene
-var card_ui_size: Vector2 = Vector2(164, 229)
+var card_ui_size: Vector2 = Vector2(168.7, 229)
 var card_burn_sequence_gap: float = 0.08
 var return_to_deck_start_scale: float = 0.555
 var return_to_deck_end_scale: float = 0.324
@@ -160,7 +160,7 @@ func animate_recent_card_expirations(recent_card_expirations: Array) -> void:
 		var expired_card: Card = CardLibrary.duplicate_card(card_name)
 		if expired_card == null:
 			continue
-		if MoveRules.is_nexus_card(expired_card):
+		if MoveRules.is_seeker_card(expired_card):
 			continue
 		if expired_card.effect_type == CardEffect.TYPE_GIVE_CARD && expired_card.effect_trigger == CardEffect.TRIGGER_ON_EXPIRE:
 			continue
@@ -196,7 +196,7 @@ func queue_card_return_to_deck_animation(transfer: Dictionary) -> void:
 	})
 	process_card_burn_animation_queue()
 
-func queue_nexus_card_return_to_deck_animation(owner_color: int, card: Card, piece_pos: Vector2) -> void:
+func queue_seeker_card_return_to_deck_animation(owner_color: int, card: Card, piece_pos: Vector2) -> void:
 	if card == null:
 		return
 

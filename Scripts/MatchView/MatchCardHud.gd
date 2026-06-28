@@ -1,7 +1,7 @@
 extends RefCounted
 
 var card_visual_scene: PackedScene
-var card_ui_size: Vector2 = Vector2(164, 229)
+var card_ui_size: Vector2 = Vector2(168.7, 229)
 var player_hand_size: int = DeckManager.HAND_SIZE
 var card_hand_scale: float = 0.648
 var deck_card_scale: float = 0.648

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="Card" format=3]
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://8rvwi7jj14be"]
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_black"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_card"]
@@ -8,10 +8,11 @@
 script = ExtResource("2_card")
 card_name = "War Drummer"
 card_code = "war_drummer"
-duration = 4
-description = "No special effect."
+Set = "Curt"
+duration = 2
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
-effect_type = "none"
-movement_pattern = Array[Array]([[0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+description = "No special effect."
+effect_type = "increase_own_durations"
+movement_pattern = [[0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0]]
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

@@ -6,7 +6,7 @@ const SESSION_FOLDER_NAME: String = "balance_sessions"
 const SESSION_FILE_EXTENSION: String = ".tres"
 
 const INT_STAT_KEYS: Array[String] = [
-	"seen", "attach", "move", "move_win", "capture", "nexus_capture", "base_entry",
+	"seen", "attach", "move", "move_win", "capture", "seeker_capture", "base_entry",
 	"expire", "return_deck", "return_hand", "effect", "base_effect",
 	"effect_cards_moved", "effect_affected", "win_slots", "lose_slots",
 ]
@@ -19,7 +19,7 @@ const FLOAT_STAT_KEYS: Array[String] = [
 const WIN_CONDITION_KEYS: Array[String] = [
 	"base_reached",
 	"no_valid_move",
-	"nexus_card_lost",
+	"seeker_card_lost",
 	"unknown",
 ]
 
@@ -121,7 +121,7 @@ static func row_to_stats(row: Dictionary) -> Dictionary:
 		"move": parse_int(row.get("move_count", 0)),
 		"move_win": parse_int(row.get("move_win_count", 0)),
 		"capture": parse_int(row.get("capture_count", 0)),
-		"nexus_capture": parse_int(row.get("nexus_capture_count", 0)),
+		"seeker_capture": parse_int(row.get("seeker_capture_count", 0)),
 		"base_entry": parse_int(row.get("base_entry_count", 0)),
 		"progress": parse_float(row.get("progress_sum", 0.0)),
 		"expire": parse_int(row.get("expire_count", 0)),
@@ -210,7 +210,7 @@ static func stats_to_row(card_name: String, stats: Dictionary, source_match_coun
 		"move_win_rate": safe_div(float(move_win_count), float(move_count)),
 		"capture_count": capture_count,
 		"capture_rate": safe_div(float(capture_count), float(move_count)),
-		"nexus_capture_count": int(stats.get("nexus_capture", 0)),
+		"seeker_capture_count": int(stats.get("seeker_capture", 0)),
 		"base_entry_count": int(stats.get("base_entry", 0)),
 		"progress_sum": progress_sum,
 		"avg_progress_per_move": safe_div(progress_sum, float(move_count)),
@@ -239,7 +239,7 @@ static func stats_to_row(card_name: String, stats: Dictionary, source_match_coun
 		"matches_analyzed": source_match_count,
 		"base_reached_match_count": int(win_condition_counts.get("base_reached", 0)),
 		"no_valid_move_match_count": int(win_condition_counts.get("no_valid_move", 0)),
-		"nexus_card_lost_match_count": int(win_condition_counts.get("nexus_card_lost", 0)),
+		"seeker_card_lost_match_count": int(win_condition_counts.get("seeker_card_lost", 0)),
 		"unknown_win_condition_match_count": int(win_condition_counts.get("unknown", 0)),
 	}
 
@@ -247,7 +247,7 @@ static func get_win_condition_counts_from_rows(raw_rows: Array[Dictionary]) -> D
 	var counts: Dictionary = {
 		"base_reached": 0,
 		"no_valid_move": 0,
-		"nexus_card_lost": 0,
+		"seeker_card_lost": 0,
 		"unknown": 0,
 	}
 	if raw_rows.is_empty():
@@ -256,7 +256,7 @@ static func get_win_condition_counts_from_rows(raw_rows: Array[Dictionary]) -> D
 	var first_row: Dictionary = raw_rows[0]
 	counts["base_reached"] = parse_int(first_row.get("base_reached_match_count", 0))
 	counts["no_valid_move"] = parse_int(first_row.get("no_valid_move_match_count", 0))
-	counts["nexus_card_lost"] = parse_int(first_row.get("nexus_card_lost_match_count", 0))
+	counts["seeker_card_lost"] = parse_int(first_row.get("seeker_card_lost_match_count", 0))
 	counts["unknown"] = parse_int(first_row.get("unknown_win_condition_match_count", 0))
 	return counts
 

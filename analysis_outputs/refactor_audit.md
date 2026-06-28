@@ -7,9 +7,9 @@ Date: 2026-05-10
 Az elso audit alapjan nem egy nagy, mindent atiro refaktor lenne a leghatekonyabb, hanem egy kis lepesekben vegzett tisztitas. A legfontosabb teendok:
 
 1. `Scenes/chess.gd`: tul sok felelosseget visz egyszerre, erdemes belole eloszor a board/piece renderelest, majd a kartya-hand UI-t es a szerverallapot-parse logikat kivenni.
-2. `Scenes/Stackbuilder.gd`: a masik fo refaktorcelpont. Egy fajlban van a scene binding, generated UI, deck editing, card browser, pack vasarlas/nyitas es progress UI.
+2. `Scenes/Collection.gd`: a masik fo refaktorcelpont. Egy fajlban van a scene binding, generated UI, deck editing, card browser, pack vasarlas/nyitas es progress UI.
 3. Het darab tracked `*.tmp` scene fajl van a repoban; ezek valoszinuleg torolheto editor-maradvanyok.
-4. Van konkret regi/halott kod: `_create_saved_deck_row_old()` a `Stackbuilder.gd`-ben, illetve `if false && ...` blokkok a `NetworkGameHost.gd`-ben.
+4. Van konkret regi/halott kod: `_create_saved_deck_row_old()` a `Collection.gd`-ben, illetve `if false && ...` blokkok a `NetworkGameHost.gd`-ben.
 5. Sok unconditional `print()` maradt aktiv gameplay/network pathokon; ezeket erdemes debug flag moge tenni.
 6. A legnagyobb architekturaris kockazat, hogy a valodi host logika es az AI simulator hasonlo szabalyokat kulon implemental. Hosszu tavon a tiszta szabalylogikat kozos helperbe kell vinni.
 
@@ -21,12 +21,12 @@ Completed in the current cleanup pass:
 
 - Removed the seven tracked `*.tmp` scene files.
 - Added `*.tmp` to `.gitignore`.
-- Removed `_create_saved_deck_row_old()` from `Scenes/Stackbuilder.gd`.
-- Removed the no-op `_mark_generated_ui()` functions and calls from `Scenes/Stackbuilder.gd` and `Scenes/MainMenu.gd`.
+- Removed `_create_saved_deck_row_old()` from `Scenes/Collection.gd`.
+- Removed the no-op `_mark_generated_ui()` functions and calls from `Scenes/Collection.gd` and `Scenes/MainMenu.gd`.
 - Removed the disabled starting Nexus setup blocks from `Scripts/NetworkGameHost.gd`.
 - Added `Scripts/DebugLog.gd` and routed direct debug `print()` calls through it. Direct prints now remain only inside `DebugLog`.
 - Manual Godot smoke test was run by the project owner after the cleanup pass, and it passed.
-- Started the first Stackbuilder split by extracting pack/progress behavior into `Scenes/StackbuilderPackController.gd`. `Scenes/Stackbuilder.gd` now delegates pack purchase/opening, point display, pack inventory refresh, reward rolling, and pack result dialog behavior to that controller.
+- Started the first Collection split by extracting pack/progress behavior into `Scenes/CollectionPackController.gd`. `Scenes/Collection.gd` now delegates pack purchase/opening, point display, pack inventory refresh, reward rolling, and pack result dialog behavior to that controller.
 
 Not committed yet by project owner choice.
 
@@ -39,7 +39,7 @@ The codebase is still compact enough to refactor safely, but several scripts hav
 Top priorities:
 
 1. Split `Scenes/chess.gd` responsibilities. It is 2706 lines with 208 functions and contains board rendering, UI, input, local game flow, server-state parsing, card animation, and move helpers.
-2. Split `Scenes/Stackbuilder.gd` responsibilities. It is 1975 lines with 89 functions and now mixes scene binding, generated UI, card browsing, deck editing, pack purchase/opening, progress display, and layout behavior.
+2. Split `Scenes/Collection.gd` responsibilities. It is 1975 lines with 89 functions and now mixes scene binding, generated UI, card browsing, deck editing, pack purchase/opening, progress display, and layout behavior.
 3. Remove tracked temporary scene files. Seven `*.tmp` files are currently tracked by git.
 4. Remove or gate runtime debug prints. Network/gameplay paths still emit many unconditional `print()` calls.
 5. Consolidate duplicated turn/card/state logic between `NetworkGameHost.gd`, `AIStateSimulator.gd`, `MoveRules.gd`, and `Scenes/chess.gd`.
@@ -51,7 +51,7 @@ Godot CLI validation could not be run from this environment because `godot` is n
 | File | Lines | Functions | Risk | Notes |
 | --- | ---: | ---: | --- | --- |
 | `Scenes/chess.gd` | 2706 | 208 | High | Central gameplay scene with too many responsibilities. |
-| `Scenes/Stackbuilder.gd` | 1975 | 89 | High | UI, data operations, pack economy, deck editing, and responsive layout are mixed. |
+| `Scenes/Collection.gd` | 1975 | 89 | High | UI, data operations, pack economy, deck editing, and responsive layout are mixed. |
 | `Scripts/AIMoveEvaluator.gd` | 1182 | 60 | Medium/High | Scoring logic is large, but domain focused. Refactor after behavior checks. |
 | `Scripts/NetworkGameHost.gd` | 1133 | 72 | High | Authoritative game flow, serialization, logging, and card lifecycle logic are mixed. |
 | `Scripts/CardEffectResolver.gd` | 723 | 47 | Medium/High | Effect handling is domain focused but shares logic with host/simulator. |
@@ -81,9 +81,9 @@ Recommended action:
 - Remove them from git.
 - Add an ignore rule for `*.tmp` if Godot keeps producing these.
 
-### 2. Dead/old code in `Stackbuilder.gd`
+### 2. Dead/old code in `Collection.gd`
 
-`Scenes/Stackbuilder.gd` contains both:
+`Scenes/Collection.gd` contains both:
 
 - `_create_saved_deck_row()` at line 1627
 - `_create_saved_deck_row_old()` at line 1763
@@ -152,7 +152,7 @@ Risk notes:
 - `update_from_server_state()` is a good boundary: split parsing from rendering/animation, but keep behavior identical first.
 - Many helper functions convert between `Vector2`, arrays, dictionaries, player ids, and colors. Move these only after tests/smoke checks exist.
 
-### `Scenes/Stackbuilder.gd`
+### `Scenes/Collection.gd`
 
 Current responsibilities observed:
 
@@ -169,8 +169,8 @@ Current responsibilities observed:
 Recommended extraction order:
 
 1. Done: remove `_create_saved_deck_row_old()` and decide `_mark_generated_ui()` fate.
-2. Done: extract pack/progress behavior into `StackbuilderPackController.gd`. This is fairly isolated around `PlayerProgressStore` and `PlayerCollectionStore`.
-3. Extract card browser pagination/filtering into `StackbuilderCardBrowser.gd`.
+2. Done: extract pack/progress behavior into `CollectionPackController.gd`. This is fairly isolated around `PlayerProgressStore` and `PlayerCollectionStore`.
+3. Extract card browser pagination/filtering into `CollectionCardBrowser.gd`.
 4. Extract saved deck list and selected deck editor into separate components.
 
 Risk notes:
@@ -264,13 +264,13 @@ Goal: make refactors less scary.
 
 1. Remove tracked `*.tmp` scene files.
 2. Remove `_create_saved_deck_row_old()`.
-3. Remove or implement no-op `_mark_generated_ui()` calls in `Stackbuilder.gd` and `MainMenu.gd`.
+3. Remove or implement no-op `_mark_generated_ui()` calls in `Collection.gd` and `MainMenu.gd`.
 4. Remove `if false && ...` branches in `NetworkGameHost.gd`.
 5. Gate debug prints.
 
-### Phase 2: Stackbuilder split
+### Phase 2: Collection split
 
-Start here because the active editor tab is `Stackbuilder.gd`, and its risks are mostly UI/data-flow rather than core move rules.
+Start here because the active editor tab is `Collection.gd`, and its risks are mostly UI/data-flow rather than core move rules.
 
 1. Extract pack purchase/opening UI.
 2. Extract card browser filtering/pagination.

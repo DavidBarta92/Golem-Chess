@@ -7,11 +7,15 @@ const CARD_ART_MASK_SHADER = preload("res://Shaders/card_art_mask.gdshader")
 const CARD_FRONT_TEXTURE = preload("res://Assets/stamp_base.svg")
 const CARD_BACK_TEXTURE = preload("res://Assets/stamp_back.svg")
 const BASIC_TYPE_FRAME_TEXTURE = preload("res://Assets/basic_frame.svg")
-const NEXUS_TYPE_FRAME_TEXTURE = preload("res://Assets/nexus_frame.svg")
 const SHARED_TYPE_FRAME_TEXTURE = preload("res://Assets/shared_frame.svg")
+const SEEKER_TYPE_FRAME_TEXTURE = preload("res://Assets/seeker_frame.svg")
+const SE_TENANT_TYPE_FRAME_TEXTURE = preload("res://Assets/se_tenant_frame.svg")
+const OVERSEAL_TYPE_FRAME_TEXTURE = preload("res://Assets/overseal_frame.svg")
 const BASIC_TYPE_MASK_TEXTURE = preload("res://Assets/basic_mask.svg")
-const NEXUS_TYPE_MASK_TEXTURE = preload("res://Assets/nexus_mask.svg")
 const SHARED_TYPE_MASK_TEXTURE = preload("res://Assets/shared_mask.svg")
+const SEEKER_TYPE_MASK_TEXTURE = preload("res://Assets/seeker_mask.svg")
+const SE_TENANT_TYPE_MASK_TEXTURE = preload("res://Assets/se_tenant_mask.svg")
+const OVERSEAL_TYPE_MASK_TEXTURE = preload("res://Assets/overseal_mask.svg")
 const CARD_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR
 const CARD_ART_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 const CARD_SHIMMER_ENABLED: bool = false
@@ -47,7 +51,7 @@ signal burn_finished(card_visual: CardVisual)
 @onready var duration_label: Label = $DurationLabel
 @onready var effect_icon_texture: TextureRect = $EffectIconTexture
 @onready var effect_icon_label: Label = $EffectIconLabel
-@onready var nexus_icon_label: Label = $NexusIconLabel
+@onready var seeker_icon_label: Label = $SeekerIconLabel
 @onready var name_label: Label = $NameLabel
 @onready var description_label: RichTextLabel = get_node_or_null("DescriptionLabel") as RichTextLabel
 @onready var pattern_view: CardPatternView = $PatternView
@@ -98,6 +102,7 @@ func _ready() -> void:
 	card_art_material = ShaderMaterial.new()
 	card_art_material.shader = CARD_ART_MASK_SHADER
 	card_art.material = card_art_material
+	resized.connect(_on_card_visual_resized)
 	shimmer_material = shimmer.material.duplicate() as ShaderMaterial
 	shimmer.material = shimmer_material
 	shimmer.visible = _is_card_shimmer_enabled() && !face_down
@@ -118,7 +123,30 @@ func _apply_texture_filter() -> void:
 	card_face.texture_filter = CARD_TEXTURE_FILTER
 	type_frame.texture_filter = CARD_ART_TEXTURE_FILTER
 	card_art.texture_filter = CARD_ART_TEXTURE_FILTER
+	card_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	card_art.stretch_mode = TextureRect.STRETCH_SCALE
 	effect_icon_texture.texture_filter = CARD_TEXTURE_FILTER
+
+func _on_card_visual_resized() -> void:
+	pivot_offset = size * 0.5
+	_update_card_art_sampling_uniforms(_get_card_art_texture())
+
+func _update_card_art_sampling_uniforms(art_texture: Texture2D) -> void:
+	if card_art_material == null:
+		return
+
+	var texture_size: Vector2 = Vector2.ONE
+	if art_texture != null:
+		texture_size = art_texture.get_size()
+
+	var target_size: Vector2 = card_art.size
+	if target_size.x <= 0.0 or target_size.y <= 0.0:
+		target_size = size
+	if target_size.x <= 0.0 or target_size.y <= 0.0:
+		target_size = Vector2.ONE
+
+	card_art_material.set_shader_parameter("art_texture_size", texture_size)
+	card_art_material.set_shader_parameter("art_target_size", target_size)
 
 func _process(_delta: float) -> void:
 	if is_dragging:
@@ -524,7 +552,7 @@ func set_card_content_visible(value: bool) -> void:
 	duration_label.visible = value && !face_down
 	effect_icon_texture.visible = value && !face_down && card != null && card.has_effect() && card.effect_icon != null
 	effect_icon_label.visible = value && !face_down && card != null && card.has_effect() && card.effect_icon == null
-	nexus_icon_label.visible = false
+	seeker_icon_label.visible = false
 	name_label.visible = value && !face_down
 	pattern_view.visible = value && !face_down
 
@@ -534,7 +562,7 @@ func _apply_card() -> void:
 		duration_label.text = ""
 		effect_icon_texture.texture = null
 		effect_icon_label.text = ""
-		nexus_icon_label.visible = false
+		seeker_icon_label.visible = false
 		pattern_view.set_card(null)
 	else:
 		name_label.text = card.card_name
@@ -563,12 +591,15 @@ func _apply_art_state() -> void:
 
 	card_art.texture = art_texture if has_card_art else null
 	card_art.visible = !face_down && has_card_art
+	_update_card_art_sampling_uniforms(art_texture)
 	if uses_masked_art && card_art_material != null:
+		card_art.stretch_mode = TextureRect.STRETCH_SCALE
 		card_art.material = card_art_material
 		card_art_material.set_shader_parameter("type_mask_texture", type_mask_texture)
 		card_art_material.set_shader_parameter("card_mask_texture", card_mask_texture if has_card_mask else type_mask_texture)
 		card_art_material.set_shader_parameter("has_card_mask", has_card_mask)
 	else:
+		card_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		card_art.material = null
 
 func _get_card_art_texture() -> Texture2D:
@@ -598,18 +629,26 @@ func _is_card_shimmer_enabled() -> bool:
 	return card_print != null && card_print.card_shimmer_enabled
 
 func _get_type_frame_texture() -> Texture2D:
-	if card != null && MoveRules.is_nexus_card(card):
-		return NEXUS_TYPE_FRAME_TEXTURE
 	if card != null && MoveRules.is_shared_card(card):
 		return SHARED_TYPE_FRAME_TEXTURE
+	if card != null && MoveRules.is_seeker_card(card):
+		return SEEKER_TYPE_FRAME_TEXTURE
+	if card != null && MoveRules.is_se_tenant_card(card):
+		return SE_TENANT_TYPE_FRAME_TEXTURE
+	if card != null && MoveRules.is_overseal_card(card):
+		return OVERSEAL_TYPE_FRAME_TEXTURE
 
 	return BASIC_TYPE_FRAME_TEXTURE
 
 func _get_type_mask_texture() -> Texture2D:
-	if card != null && MoveRules.is_nexus_card(card):
-		return NEXUS_TYPE_MASK_TEXTURE
 	if card != null && MoveRules.is_shared_card(card):
 		return SHARED_TYPE_MASK_TEXTURE
+	if card != null && MoveRules.is_seeker_card(card):
+		return SEEKER_TYPE_MASK_TEXTURE
+	if card != null && MoveRules.is_se_tenant_card(card):
+		return SE_TENANT_TYPE_MASK_TEXTURE
+	if card != null && MoveRules.is_overseal_card(card):
+		return OVERSEAL_TYPE_MASK_TEXTURE
 
 	return BASIC_TYPE_MASK_TEXTURE
 
@@ -619,7 +658,7 @@ func _apply_face_state() -> void:
 	duration_label.visible = !face_down
 	effect_icon_texture.visible = !face_down && has_effect_icon && card.effect_icon != null
 	effect_icon_label.visible = !face_down && has_effect_icon && card.effect_icon == null
-	nexus_icon_label.visible = false
+	seeker_icon_label.visible = false
 	pattern_view.visible = !face_down
 	shimmer.visible = _is_card_shimmer_enabled() && !face_down
 	_apply_art_state()
@@ -645,10 +684,10 @@ func _apply_collection_state() -> void:
 	grayscale_material.set_shader_parameter("darken", 0.24)
 	card_face.texture = CARD_FRONT_TEXTURE
 	card_face.material = grayscale_material
-	self_modulate = Color(0.72, 0.72, 0.72, 1.0)
+	self_modulate = Color.WHITE
 	shimmer.visible = false
 	draggable = false
-	disabled = true
+	disabled = false
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _on_gui_input(event: InputEvent) -> void:

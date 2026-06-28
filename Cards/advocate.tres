@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://cqtlnjwnlv7x7"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_c80hc"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="2_6ensw"]
+[ext_resource type="Texture2D" uid="uid://cjy3tfi2ipgav" path="res://Assets/card_base-1.png" id="2_apyhl"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_6ensw"]
+
+[resource]
+script = ExtResource("2_6ensw")
+card_name = "Advocate"
+card_code = "advocate"
+duration = 5
+card_art = ExtResource("2_apyhl")
+white_piece_texture = ExtResource("3_6ensw")
+black_piece_texture = ExtResource("1_c80hc")
+description = "When this card expires, take a Seeker card from your deck and add it to your hand."
+effect_type = "grant_card"
+effect_trigger = "on_expire"
+effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+effect_settings = {
+"card_name": "King"
+}
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 3, 1, 0], [0, 3, 0, 1, 0], [0, 3, 1, 3, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

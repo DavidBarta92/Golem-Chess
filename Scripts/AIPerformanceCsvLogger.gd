@@ -16,7 +16,7 @@ const HEADERS: Array = [
 	"best_plan_score", "best_plan_type", "best_plan_actions", "selected_action_count",
 	"strategy_mode", "opening_completed", "best_plan_move_score", "best_plan_setup_score",
 	"best_plan_action_count_score", "best_plan_economy_score", "best_plan_threat_score",
-	"best_plan_nexus_route_score", "best_plan_strategy_score", "best_plan_hard_rule_score",
+	"best_plan_seeker_route_score", "best_plan_strategy_score", "best_plan_hard_rule_score",
 	"white_hand_count", "black_hand_count", "white_deck_count", "black_deck_count",
 	"white_piece_count", "black_piece_count", "board_effect_count"
 ]
@@ -72,7 +72,7 @@ static func log_decision(game_state: GameStateData, player_id: int, profile: Dic
 		"best_plan_action_count_score": format_float(float(profile.get("best_plan_action_count_score", 0.0))),
 		"best_plan_economy_score": format_float(float(profile.get("best_plan_economy_score", 0.0))),
 		"best_plan_threat_score": format_float(float(profile.get("best_plan_threat_score", 0.0))),
-		"best_plan_nexus_route_score": format_float(float(profile.get("best_plan_nexus_route_score", 0.0))),
+		"best_plan_seeker_route_score": format_float(float(profile.get("best_plan_seeker_route_score", 0.0))),
 		"best_plan_strategy_score": format_float(float(profile.get("best_plan_strategy_score", 0.0))),
 		"best_plan_hard_rule_score": format_float(float(profile.get("best_plan_hard_rule_score", 0.0))),
 		"white_hand_count": get_hand_count(game_state, 0),

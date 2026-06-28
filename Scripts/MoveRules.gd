@@ -21,16 +21,22 @@ static func has_any_piece(pieces: Dictionary, player_color: int) -> bool:
 static func card_can_be_used(card: Card) -> bool:
 	return card != null && (card.duration > 0 || card.duration == -1)
 
-static func is_nexus_card(card: Card) -> bool:
-	return card != null && card.role == Card.Role.NEXUS
+static func is_seeker_card(card: Card) -> bool:
+	return card != null && card.role == Card.Role.SEEKER
 
 static func is_shared_card(card: Card) -> bool:
 	return card != null && card.role == Card.Role.SHARED
 
-static func has_attached_nexus(pieces: Dictionary, player_color: int) -> bool:
+static func is_se_tenant_card(card: Card) -> bool:
+	return card != null && card.role == Card.Role.SE_TENANT
+
+static func is_overseal_card(card: Card) -> bool:
+	return card != null && card.role == Card.Role.OVERSEAL
+
+static func has_attached_seeker(pieces: Dictionary, player_color: int) -> bool:
 	for position_value: Vector2 in pieces:
 		var piece: Piece = get_piece_at(pieces, position_value)
-		if piece != null && piece.color == player_color && is_nexus_card(piece.attached_card):
+		if piece != null && piece.color == player_color && is_seeker_card(piece.attached_card):
 			return true
 	return false
 

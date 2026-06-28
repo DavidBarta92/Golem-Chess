@@ -513,9 +513,9 @@ static func expire_piece_card_due_to_duration_adjustment(game_state: GameStateDa
 
 	piece.detach_card()
 
-	if MoveRules.is_nexus_card(expired_card):
-		clear_nexus_position_if_needed(game_state, piece_owner_player_id, true)
-		return_card_to_owner_deck(game_state, piece_owner_player_id, expired_card.card_name, piece_pos, "expired_nexus", expired_card)
+	if MoveRules.is_seeker_card(expired_card):
+		clear_seeker_position_if_needed(game_state, piece_owner_player_id, true)
+		return_card_to_owner_deck(game_state, piece_owner_player_id, expired_card.card_name, piece_pos, "expired_seeker", expired_card)
 		return
 
 	register_card_expiration(game_state, piece_owner_player_id, expired_card.card_name, piece_pos)
@@ -544,19 +544,19 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 
 	var target_player_id: int = get_player_id_for_color(target_piece.color)
 	var target_card: Card = target_piece.attached_card
-	var target_was_nexus: bool = is_nexus_piece(target_piece)
+	var target_was_seeker: bool = is_seeker_piece(target_piece)
 
 	if target_card != null:
-		if target_was_nexus:
+		if target_was_seeker:
 			return_card_to_owner_deck(game_state, target_player_id, target_card.card_name, target_pos, "effect_capture", target_card)
 
 	target_piece.detach_card()
 	game_state.remove_piece(target_pos)
 	respawn_captured_piece(game_state, target_piece, target_player_id)
-	clear_nexus_position_if_needed(game_state, target_player_id, target_was_nexus)
+	clear_seeker_position_if_needed(game_state, target_player_id, target_was_seeker)
 
-	if target_was_nexus:
-		DebugLog.info("Nexus removed by effect. Nexus card returned to player=%d deck. Effect owner=%d" % [target_player_id, effect_owner_player_id])
+	if target_was_seeker:
+		DebugLog.info("Seeker removed by effect. Seeker card returned to player=%d deck. Effect owner=%d" % [target_player_id, effect_owner_player_id])
 
 static func respawn_captured_piece(game_state: GameStateData, captured_piece: Piece, player_id: int) -> bool:
 	if captured_piece == null or player_id < 0:
@@ -720,16 +720,16 @@ static func return_card_to_owner_deck(game_state: GameStateData, owner_player_id
 			"reason": reason,
 		})
 
-static func player_has_available_nexus_card(game_state: GameStateData, player_id: int) -> bool:
-	if game_state.player_hands.has(player_id) && DeckManager.has_nexus_card(game_state.player_hands[player_id]):
+static func player_has_available_seeker_card(game_state: GameStateData, player_id: int) -> bool:
+	if game_state.player_hands.has(player_id) && DeckManager.has_seeker_card(game_state.player_hands[player_id]):
 		return true
-	if game_state.player_decks.has(player_id) && DeckManager.has_nexus_card(game_state.player_decks[player_id]):
+	if game_state.player_decks.has(player_id) && DeckManager.has_seeker_card(game_state.player_decks[player_id]):
 		return true
 
 	var player_color: int = get_color_for_player_id(player_id)
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && MoveRules.is_nexus_card(piece.attached_card):
+		if piece != null && piece.color == player_color && MoveRules.is_seeker_card(piece.attached_card):
 			return true
 	return false
 
@@ -809,16 +809,16 @@ static func count_symbol_pieces_for_player(game_state: GameStateData, player_id:
 			count += 1
 	return count
 
-static func is_nexus_piece(piece: Piece) -> bool:
-	return piece != null && MoveRules.is_nexus_card(piece.attached_card)
+static func is_seeker_piece(piece: Piece) -> bool:
+	return piece != null && MoveRules.is_seeker_card(piece.attached_card)
 
-static func clear_nexus_position_if_needed(game_state: GameStateData, player_id: int, was_nexus: bool) -> void:
-	if !was_nexus:
+static func clear_seeker_position_if_needed(game_state: GameStateData, player_id: int, was_seeker: bool) -> void:
+	if !was_seeker:
 		return
 	if player_id == 0:
-		game_state.white_nexus_position = Vector2(-1, -1)
+		game_state.white_seeker_position = Vector2(-1, -1)
 	else:
-		game_state.black_nexus_position = Vector2(-1, -1)
+		game_state.black_seeker_position = Vector2(-1, -1)
 
 static func get_base_field_for_player(game_state: GameStateData, player_id: int) -> Vector2:
 	if game_state.player_base_fields.has(player_id):

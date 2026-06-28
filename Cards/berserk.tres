@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="Card" format=3 uid="uid://ufbrx8m22qtk"]
+
+[ext_resource type="Texture2D" uid="uid://c1hoxdtpqrkg1" path="res://Assets/10b.png" id="1_3ead7"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="2_djcgj"]
+[ext_resource type="Resource" uid="uid://dcr8hlxa5fthy" path="res://PieceVisualSets/king.tres" id="3_du4xl"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Card.gd" id="4_nyud8"]
+[ext_resource type="Texture2D" uid="uid://crbfhk5qpqbmo" path="res://Assets/10w.png" id="5_d7ph4"]
+
+[resource]
+script = ExtResource("4_nyud8")
+card_name = "Berserk"
+card_code = "berserk"
+duration = 1
+card_art = ExtResource("2_djcgj")
+piece_visuals = ExtResource("3_du4xl")
+white_piece_texture = ExtResource("5_d7ph4")
+black_piece_texture = ExtResource("1_3ead7")
+description = "No special effect."
+effect_type = "increase_self_duration"
+effect_trigger = "on_capture"
+movement_pattern = [[0, 0, 1, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0]]
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

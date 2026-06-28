@@ -5,7 +5,7 @@ const HAND_SIZE = 3
 const STARTING_HAND_SIZE = 3
 const CODEX_PAGE_COUNT = 5
 const CODEX_STAMPS_PER_PAGE = 3
-const DEFAULT_NEXUS_CARD_NAME = "Prince"
+const DEFAULT_SEEKER_CARD_NAME = "Prince"
 const RANDOM_DATABASE_EXCLUDED_CARD_NAMES: Array[String] = [
 	"Training Seal",
 	"Test_001",
@@ -18,10 +18,10 @@ const STARTING_DECK: Array[String] = [
 	"Numero_5",
 	"Numero_6",
 	"Numero_7",
-	DEFAULT_NEXUS_CARD_NAME,
+	DEFAULT_SEEKER_CARD_NAME,
 	"Rajah",
 	"Khan",
-	"Jester",
+	"Debater",
 	"Numero_1",
 	"Numero_2",
 	"Numero_3",
@@ -38,21 +38,21 @@ static func create_random_database_deck() -> Array[String]:
 	if CardLibrary.all_cards.is_empty():
 		CardLibrary.load_all_cards()
 
-	var nexus_names: Array[String] = get_database_card_names_by_nexus_role(true)
-	var non_nexus_names: Array[String] = get_database_card_names_by_nexus_role(false)
-	if nexus_names.is_empty() or non_nexus_names.is_empty():
+	var seeker_names: Array[String] = get_database_card_names_by_seeker_role(true)
+	var non_seeker_names: Array[String] = get_database_card_names_by_seeker_role(false)
+	if seeker_names.is_empty() or non_seeker_names.is_empty():
 		return create_starting_deck()
 
-	nexus_names.shuffle()
+	seeker_names.shuffle()
 	var deck: Array[String] = []
-	deck.append(nexus_names[0])
+	deck.append(seeker_names[0])
 	var remaining_cards: Array[String] = []
-	remaining_cards.assign(non_nexus_names)
+	remaining_cards.assign(non_seeker_names)
 	remaining_cards.shuffle()
 
 	while deck.size() < DECK_SIZE:
 		if remaining_cards.is_empty():
-			remaining_cards.assign(non_nexus_names)
+			remaining_cards.assign(non_seeker_names)
 			remaining_cards.shuffle()
 		deck.append(str(remaining_cards.pop_front()))
 
@@ -85,7 +85,7 @@ static func flatten_codex_pages(pages: Array, excluded_page_index: int = -1) -> 
 			card_names.append(str(card_name_value))
 	return card_names
 
-static func get_database_card_names_by_nexus_role(wants_nexus: bool) -> Array[String]:
+static func get_database_card_names_by_seeker_role(wants_seeker: bool) -> Array[String]:
 	var card_names: Array[String] = []
 	for card_value in CardLibrary.all_cards.values():
 		var card: Card = card_value as Card
@@ -95,7 +95,7 @@ static func get_database_card_names_by_nexus_role(wants_nexus: bool) -> Array[St
 			continue
 		if !MoveRules.card_can_be_used(card):
 			continue
-		if MoveRules.is_nexus_card(card) == wants_nexus:
+		if MoveRules.is_seeker_card(card) == wants_seeker:
 			card_names.append(card.card_name)
 	card_names.sort()
 	return card_names
@@ -133,18 +133,18 @@ static func return_card_to_deck(deck: Array, card_name: String):
 	deck.append(card_name)
 	DebugLog.info("Card returned to deck: %s" % card_name)
 
-static func find_nexus_card_index(deck: Array) -> int:
+static func find_seeker_card_index(deck: Array) -> int:
 	for i in deck.size():
-		if is_nexus_card_name(deck[i]):
+		if is_seeker_card_name(deck[i]):
 			return i
 	return -1
 
-static func is_nexus_card_name(card_name: String) -> bool:
+static func is_seeker_card_name(card_name: String) -> bool:
 	var card: Card = CardLibrary.get_card(card_name)
-	return MoveRules.is_nexus_card(card)
+	return MoveRules.is_seeker_card(card)
 
-static func has_nexus_card(card_names: Array) -> bool:
+static func has_seeker_card(card_names: Array) -> bool:
 	for card_name_value in card_names:
-		if is_nexus_card_name(str(card_name_value)):
+		if is_seeker_card_name(str(card_name_value)):
 			return true
 	return false

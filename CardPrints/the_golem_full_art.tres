@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CardPrint" format=3 uid="uid://ccklo8c5choqm"]
+
+[ext_resource type="Texture2D" uid="uid://sfwcypqfn1i8" path="res://Assets/golem.png" id="1_dwf5f"]
+[ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="2_a5vrx"]
+[ext_resource type="Script" uid="uid://jywk3em8fjkn" path="res://Scripts/CardPrint.gd" id="3_ue2dc"]
+
+[resource]
+script = ExtResource("3_ue2dc")
+print_id = "the_golem.full_art"
+card_code = "the_golem"
+variant_id = "full_art"
+variant_name = "Full Art"
+card_art = ExtResource("1_dwf5f")
+card_art_mask = ExtResource("2_a5vrx")
+card_shimmer_enabled = true
+grant_in_default_collection = true

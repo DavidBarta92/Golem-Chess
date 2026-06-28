@@ -164,7 +164,7 @@ func serialize_card(card: Card) -> Dictionary:
 		"name": card.card_name,
 		"code": card.card_code,
 		"role": card.role,
-		"is_nexus": MoveRules.is_nexus_card(card),
+		"is_seeker": MoveRules.is_seeker_card(card),
 		"duration": card.duration,
 		"symbol": card.symbol,
 		"description": card.description,

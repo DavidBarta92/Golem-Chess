@@ -43,7 +43,7 @@ func find_immediate_base_win_move(game_state: GameStateData, player_id: int, boa
 	for move: Dictionary in valid_moves:
 		if AIStateSimulator.get_move_to(move) != opponent_base:
 			continue
-		if AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
+		if AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
 			return move
 	return {}
 
@@ -144,8 +144,8 @@ func find_base_staging_capture_move(
 func get_base_staging_positions(game_state: GameStateData, player_id: int, board_size: int) -> Array[Vector2]:
 	var positions: Array[Vector2] = []
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var nexus_cards: Array[Card] = get_nexus_cards_in_hand(game_state, player_id)
-	if nexus_cards.is_empty():
+	var seeker_cards: Array[Card] = get_seeker_cards_in_hand(game_state, player_id)
+	if seeker_cards.is_empty():
 		return positions
 
 	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
@@ -155,27 +155,27 @@ func get_base_staging_positions(game_state: GameStateData, player_id: int, board
 		if piece == null or piece.color != player_color or piece.attached_card != null:
 			continue
 
-		for nexus_card: Card in nexus_cards:
-			var nexus_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
+		for seeker_card: Card in seeker_cards:
+			var seeker_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
 				game_state.pieces,
 				piece_pos,
 				player_color,
-				nexus_card,
+				seeker_card,
 				board_size,
 				game_state.board_effects
 			)
-			if nexus_moves.has(opponent_base):
+			if seeker_moves.has(opponent_base):
 				positions.append(piece_pos)
 				break
 	return positions
 
-func get_nexus_cards_in_hand(game_state: GameStateData, player_id: int) -> Array[Card]:
-	var nexus_cards: Array[Card] = []
+func get_seeker_cards_in_hand(game_state: GameStateData, player_id: int) -> Array[Card]:
+	var seeker_cards: Array[Card] = []
 	var hand_cards: Array[Card] = AIStateSimulator.get_hand_cards_from_state(game_state, player_id)
 	for card: Card in hand_cards:
-		if MoveRules.is_nexus_card(card):
-			nexus_cards.append(card)
-	return nexus_cards
+		if MoveRules.is_seeker_card(card):
+			seeker_cards.append(card)
+	return seeker_cards
 
 func create_move_plan(player_id: int, move: Dictionary, plan_type: String) -> Dictionary:
 	return {

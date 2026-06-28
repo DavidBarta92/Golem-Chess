@@ -1,4 +1,4 @@
-﻿extends Sprite2D
+extends Sprite2D
 
 signal piece_selected(piece_pos: Vector2, player_id: int)
 signal card_attached(piece_pos: Vector2, card_name: String, owner_color: int, hand_index: int)
@@ -171,7 +171,7 @@ const AMBIENT_BOARD_LIGHT_COLOR = Color(1.0, 0.86, 0.58, 1.0)
 const AMBIENT_BOARD_LIGHT_SHADOW_COLOR = Color(0.0, 0.0, 0.0, 0.50)
 const AMBIENT_BOARD_LIGHT_SHADOW_SMOOTH: float = 2.0
 const PLAYER_HAND_SIZE = DeckManager.HAND_SIZE
-const CARD_UI_SIZE = Vector2(164, 229)
+const CARD_UI_SIZE = Vector2(168.7, 229)
 const CARD_HAND_SCALE = 0.648
 const DECK_CARD_SCALE = CARD_HAND_SCALE
 const DECK_EXTRA_LEFT_OFFSET: float = 200.0
@@ -335,7 +335,7 @@ const TUTORIAL_ACTION_MOVE_PIECE = "move_piece"
 const TUTORIAL_ACTION_EXCHANGE_CARD = "exchange_card"
 const TUTORIAL_ACTION_TURN_PAGE = "turn_page"
 const TUTORIAL_ACTION_END_TURN = "end_turn"
-const RULES_INFO_TEXT: String = "Goal: attach a Nexus stamp to one of your pieces, then move that Nexus onto the opponent's base square.\n\nCodex:\n- Your codex has 5 pages with up to 3 stamps per page.\n- You may use only the currently open page.\n- Before attaching a stamp, you may turn once to the next non-empty page.\n- Empty pages are skipped, and a depleted page leaves the rotation.\n\nTurn flow:\n1. On your first turn, attach at least one stamp, then press End Turn. Attaching all 3 stamps ends it automatically.\n2. On later turns, optionally turn the page, attach stamps, then move.\n3. A newly stamped piece is frozen for that turn.\n4. Moving is mandatory and immediately ends the turn. If frozen stamped pieces leave you with no legal move, press End Turn.\n\nCaptures:\n- The first captured piece respawns locked on an empty non-base home-row square. The next capture unlocks it.\n- Its attached stamp is removed. Nexus stamps return to their original codex page."
+const RULES_INFO_TEXT: String = "Goal: attach a Seeker stamp to one of your pieces, then move that Seeker onto the opponent's base square.\n\nCodex:\n- Your codex has 5 pages with up to 3 stamps per page.\n- You may use only the currently open page.\n- Before attaching a stamp, you may turn once to the next non-empty page.\n- Empty pages are skipped, and a depleted page leaves the rotation.\n\nTurn flow:\n1. On your first turn, attach at least one stamp, then press End Turn. Attaching all 3 stamps ends it automatically.\n2. On later turns, optionally turn the page, attach stamps, then move.\n3. A newly stamped piece is frozen for that turn.\n4. Moving is mandatory and immediately ends the turn. If frozen stamped pieces leave you with no legal move, press End Turn.\n\nCaptures:\n- The first captured piece respawns locked on an empty non-base home-row square. The next capture unlocks it.\n- Its attached stamp is removed. Seeker stamps return to their original codex page."
 const PIECE_SHATTER_FRAGMENT_GROUP_NONE: String = ""
 const PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM: String = "bottom"
 const PIECE_SHATTER_FRAGMENT_GROUP_TOP: String = "top"
@@ -1916,9 +1916,9 @@ func request_end_turn(emit_tutorial_rejection: bool, expected_turn_color: int = 
 func end_current_turn_locally():
 	get_turn_flow_controller().end_current_turn_locally()
 
-func handle_expired_nexus_card_locally(owner_color: int, expired_card: Card, piece_pos: Vector2) -> void:
-	get_card_animation_controller().queue_nexus_card_return_to_deck_animation(owner_color, expired_card, piece_pos)
-	return_local_nexus_stamp(owner_color, expired_card)
+func handle_expired_seeker_card_locally(owner_color: int, expired_card: Card, piece_pos: Vector2) -> void:
+	get_card_animation_controller().queue_seeker_card_return_to_deck_animation(owner_color, expired_card, piece_pos)
+	return_local_seeker_stamp(owner_color, expired_card)
 
 func update_card_face_visibility(local_color: int):
 	for card_visual in white_card_visuals:
@@ -2431,7 +2431,7 @@ func remove_local_codex_stamp(owner_color: int, stamp_index: int) -> void:
 	set_codex_pages(owner_color, pages)
 	update_codex_ui()
 
-func return_local_nexus_stamp(owner_color: int, card: Card) -> void:
+func return_local_seeker_stamp(owner_color: int, card: Card) -> void:
 	if card == null:
 		return
 	var pages: Array = get_codex_pages(owner_color)

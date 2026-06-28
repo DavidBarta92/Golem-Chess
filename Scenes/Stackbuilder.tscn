@@ -1,32 +1,11 @@
-[gd_scene format=3 uid="uid://ckgpomhljdak2"]
+[gd_scene format=3 uid="uid://dgpxr5dpcsa84"]
 
-[ext_resource type="Script" uid="uid://cngqle2h6g57n" path="res://Scenes/Stackbuilder.gd" id="1_stackbuilder"]
-[ext_resource type="Shader" path="res://Shaders/stackbuilder_grid_background.gdshader" id="2_grid_bg"]
 [ext_resource type="Texture2D" uid="uid://dspxsiid41buh" path="res://Assets/booster.png" id="2_kbw0k"]
 [ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="4_u2t3u"]
 [ext_resource type="Texture2D" uid="uid://bdyr3etvetn3o" path="res://Assets/magnifying_glass_case_closed.png" id="5_case_closed"]
 [ext_resource type="Texture2D" uid="uid://bthcwpocferx0" path="res://Assets/magnifying_glass_case_opened.png" id="6_case_opened"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_grid_bg"]
-shader = ExtResource("2_grid_bg")
-shader_parameter/base_color = Color(0.9764706, 0.90588236, 0.80784315, 1)
-shader_parameter/line_color = Color(0.8509804, 0.8156863, 0.8352941, 1)
-shader_parameter/cell_size = 32.0
-shader_parameter/line_width = 0.65
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_light"]
-content_margin_left = 14.0
-content_margin_top = 12.0
-content_margin_right = 14.0
-content_margin_bottom = 12.0
-bg_color = Color(0.93, 0.93, 0.9, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.1, 0.1, 0.1, 0.65)
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_browser"]
 
@@ -41,6 +20,20 @@ corner_radius_top_left = 7
 corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_light"]
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+bg_color = Color(0.93, 0.93, 0.9, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.1, 0.1, 0.1, 0.65)
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dark"]
 content_margin_left = 14.0
@@ -63,7 +56,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_stackbuilder")
 
 [node name="GridBackground" type="ColorRect" parent="." unique_id=1487340471]
 material = SubResource("ShaderMaterial_grid_bg")
@@ -139,6 +131,81 @@ theme_override_font_sizes/font_size = 20
 text = "0"
 vertical_alignment = 1
 
+[node name="PackNoticePanel" type="Control" parent="." unique_id=1286602706]
+z_index = 25
+z_as_relative = false
+anchors_preset = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -216.0
+offset_top = 112.0
+offset_right = 24.0
+offset_bottom = 440.0
+grow_horizontal = 0
+mouse_filter = 2
+
+[node name="PackNoticeRoot" type="Control" parent="PackNoticePanel" unique_id=1230641858]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PackInventory" type="Control" parent="PackNoticePanel/PackNoticeRoot" unique_id=217821980]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PackPreview1" type="TextureRect" parent="PackNoticePanel/PackNoticeRoot/PackInventory" unique_id=265380200]
+layout_mode = 0
+offset_left = 120.86885
+offset_top = 6.95149
+offset_right = 228.94653
+offset_bottom = 157.75755
+rotation = 0.575959
+texture = ExtResource("2_kbw0k")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PackPreview2" type="TextureRect" parent="PackNoticePanel/PackNoticeRoot/PackInventory" unique_id=859556305]
+layout_mode = 0
+offset_left = 130.42532
+offset_top = 68.61668
+offset_right = 231.06808
+offset_bottom = 209.04842
+rotation = 0.890118
+texture = ExtResource("2_kbw0k")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PackPreview3" type="TextureRect" parent="PackNoticePanel/PackNoticeRoot/PackInventory" unique_id=1412845816]
+layout_mode = 0
+offset_left = 69.51006
+offset_top = 160.73503
+offset_right = 168.28877
+offset_bottom = 298.56577
+rotation = -0.48171088
+texture = ExtResource("2_kbw0k")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PackPreview4" type="TextureRect" parent="PackNoticePanel/PackNoticeRoot/PackInventory" unique_id=977433472]
+layout_mode = 0
+offset_left = 72.68129
+offset_top = 184.9739
+offset_right = 167.69286
+offset_bottom = 317.54816
+rotation = 0.47822022
+texture = ExtResource("2_kbw0k")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="RootMargin" type="MarginContainer" parent="." unique_id=549132960]
 layout_mode = 1
 anchors_preset = 15
@@ -170,73 +237,6 @@ visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 18
-
-[node name="PackPanel" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/LeftColumn" unique_id=55291129]
-custom_minimum_size = Vector2(260, 170)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_light")
-
-[node name="PackRoot" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel" unique_id=991051719]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 8
-
-[node name="PackTitle" type="Label" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot" unique_id=1765962648]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 20
-text = "Packs"
-horizontal_alignment = 1
-
-[node name="PackInventoryLabel" type="Label" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot" unique_id=900268957]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 14
-text = "3 unopened"
-horizontal_alignment = 1
-
-[node name="PackInventory" type="Control" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot" unique_id=217821980]
-custom_minimum_size = Vector2(0, 116)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="PackPreview1" type="TextureRect" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot/PackInventory" unique_id=265380200]
-layout_mode = 0
-offset_left = 84.0
-offset_top = 26.0
-offset_right = 138.0
-offset_bottom = 101.0
-rotation = -0.0698132
-texture = ExtResource("2_kbw0k")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="PackPreview2" type="TextureRect" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot/PackInventory" unique_id=859556305]
-layout_mode = 0
-offset_left = 102.0
-offset_top = 29.0
-offset_right = 156.0
-offset_bottom = 104.0
-rotation = -0.0174533
-texture = ExtResource("2_kbw0k")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="PackPreview3" type="TextureRect" parent="RootMargin/MainCenter/MainLayout/LeftColumn/PackPanel/PackRoot/PackInventory" unique_id=1412845816]
-layout_mode = 0
-offset_left = 120.0
-offset_top = 32.0
-offset_right = 174.0
-offset_bottom = 107.0
-rotation = 0.0349066
-texture = ExtResource("2_kbw0k")
-expand_mode = 1
-stretch_mode = 5
 
 [node name="MiddleColumn" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout" unique_id=274786036]
 custom_minimum_size = Vector2(520, 0)

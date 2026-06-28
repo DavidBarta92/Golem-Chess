@@ -110,9 +110,9 @@ text = "Tutorial"
 layout_mode = 2
 text = "Multiplayer"
 
-[node name="StackbuilderButton" type="Button" parent="VBoxContainer" unique_id=464422607]
+[node name="CollectionButton" type="Button" parent="VBoxContainer" unique_id=464422607]
 layout_mode = 2
-text = "Codex Builder"
+text = "Collection"
 
 [node name="ExitButton" type="Button" parent="VBoxContainer" unique_id=1409857597]
 visible = false
@@ -255,5 +255,5 @@ texture = ExtResource("2_853f1")
 [connection signal="pressed" from="VBoxContainer/SingleplayerButton" to="." method="_on_singleplayer_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/TutorialButton" to="." method="_on_tutorial_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/MultiplayerButton" to="." method="_on_multiplayer_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/StackbuilderButton" to="." method="_on_stackbuilder_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/CollectionButton" to="." method="_on_collection_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ExitButton" to="." method="_on_exit_button_pressed"]

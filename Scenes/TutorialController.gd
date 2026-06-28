@@ -129,7 +129,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Good. Now move the piece that was already ready. A successful move ends the turn. Spent non-Nexus stamps stay out of the Codex.",
+			"text": "Good. Now move the piece that was already ready. A successful move ends the turn. Spent non-Seeker stamps stay out of the Codex.",
 			"completion": "piece_moved",
 			"constraints": {
 				"allowed_actions": ["select_piece", "move_piece"],
@@ -220,7 +220,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Nexus stamps are special. Attach Crown to a piece. If a Nexus is captured, it returns to its original Codex page.",
+			"text": "Seeker stamps are special. Attach Crown to a piece. If a Seeker is captured, it returns to its original Codex page.",
 			"completion": "card_attached",
 			"expected_card_name": "Crown",
 			"setup": {
@@ -239,7 +239,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "To win, a piece with a Nexus must move onto the opponent's base. Make the winning move.",
+			"text": "To win, a piece with a Seeker must move onto the opponent's base. Make the winning move.",
 			"completion": "piece_moved",
 			"expected_from": Vector2(5, 3),
 			"expected_to": Vector2(6, 3),

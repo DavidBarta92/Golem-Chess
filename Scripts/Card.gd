@@ -4,13 +4,16 @@ class_name Card
 
 enum Role {
 	UNIT,
-	NEXUS,
+	SEEKER,
 	SHARED,
+	SE_TENANT,
+	OVERSEAL,
 }
 
 @export var card_name: String = "New Card"
 @export var card_code: String = "New Card"
-@export_enum("Unit", "Nexus", "Shared") var role: int = Role.UNIT
+@export_enum("Unit", "Seeker", "Shared", "Se-tenant", "Overseal") var role: int = Role.UNIT
+@export_enum("Animals", "Flora", "Celestials", "Archetypes", "Curt", "Fortifications") var Set: String = "Archetypes"
 @export var duration: int = 3
 @export var texture: Texture2D
 @export var card_art: Texture2D

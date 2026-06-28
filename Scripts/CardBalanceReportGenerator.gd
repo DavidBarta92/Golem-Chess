@@ -20,7 +20,7 @@ const REPORT_HEADERS: Array[String] = [
 	"generated_unix",
 	"base_reached_match_count",
 	"no_valid_move_match_count",
-	"nexus_card_lost_match_count",
+	"seeker_card_lost_match_count",
 	"unknown_win_condition_match_count",
 	"seen_count",
 	"attach_count",
@@ -30,7 +30,7 @@ const REPORT_HEADERS: Array[String] = [
 	"move_win_rate",
 	"capture_count",
 	"capture_rate",
-	"nexus_capture_count",
+	"seeker_capture_count",
 	"base_entry_count",
 	"progress_sum",
 	"avg_progress_per_move",
@@ -151,7 +151,7 @@ func build_raw_report_rows(
 
 	var moves_by_card: Dictionary = {}
 	var captures_by_card: Dictionary = {}
-	var nexus_captures_by_card: Dictionary = {}
+	var seeker_captures_by_card: Dictionary = {}
 	var base_entries_by_card: Dictionary = {}
 	var progress_by_card: Dictionary = {}
 	var move_wins_by_card: Dictionary = {}
@@ -179,8 +179,8 @@ func build_raw_report_rows(
 		if str(move_row.get("was_capture", "")) == "true":
 			increment_count(captures_by_card, move_card_name)
 			increment_count(capture_by_slot_card, move_slot_key)
-		if str(move_row.get("captured_nexus", "")) == "true":
-			increment_count(nexus_captures_by_card, move_card_name)
+		if str(move_row.get("captured_seeker", "")) == "true":
+			increment_count(seeker_captures_by_card, move_card_name)
 		if str(move_row.get("did_enter_enemy_base", "")) == "true":
 			increment_count(base_entries_by_card, move_card_name)
 
@@ -232,7 +232,7 @@ func build_raw_report_rows(
 			"move_win_rate": safe_div(float(move_win_count), float(move_count)),
 			"capture_count": capture_count,
 			"capture_rate": safe_div(float(capture_count), float(move_count)),
-			"nexus_capture_count": int(nexus_captures_by_card.get(card_name_string, 0)),
+			"seeker_capture_count": int(seeker_captures_by_card.get(card_name_string, 0)),
 			"base_entry_count": int(base_entries_by_card.get(card_name_string, 0)),
 			"progress_sum": progress_sum,
 			"avg_progress_per_move": safe_div(progress_sum, float(move_count)),
@@ -261,7 +261,7 @@ func build_raw_report_rows(
 			"matches_analyzed": match_ids.size(),
 			"base_reached_match_count": int(win_condition_counts.get("base_reached", 0)),
 			"no_valid_move_match_count": int(win_condition_counts.get("no_valid_move", 0)),
-			"nexus_card_lost_match_count": int(win_condition_counts.get("nexus_card_lost", 0)),
+			"seeker_card_lost_match_count": int(win_condition_counts.get("seeker_card_lost", 0)),
 			"unknown_win_condition_match_count": int(win_condition_counts.get("unknown", 0)),
 		})
 
@@ -273,7 +273,7 @@ func count_win_conditions(matches: Array[Dictionary]) -> Dictionary:
 	var counts: Dictionary = {
 		"base_reached": 0,
 		"no_valid_move": 0,
-		"nexus_card_lost": 0,
+		"seeker_card_lost": 0,
 		"unknown": 0,
 	}
 	for match_row: Dictionary in matches:
@@ -339,7 +339,7 @@ func calculate_card_association(
 func add_card_values(rows: Array[Dictionary]) -> void:
 	var progress_values: Array[float] = collect_float_values(rows, "avg_progress_per_move")
 	var capture_values: Array[float] = collect_float_values(rows, "capture_rate")
-	var nexus_capture_values: Array[float] = collect_float_values(rows, "nexus_capture_count")
+	var seeker_capture_values: Array[float] = collect_float_values(rows, "seeker_capture_count")
 	var base_entry_values: Array[float] = collect_float_values(rows, "base_entry_count")
 	var win_delta_values: Array[float] = collect_float_values(rows, "delta_progress_per_player_match")
 	var move_count_values: Array[float] = collect_float_values(rows, "move_count")
@@ -348,8 +348,8 @@ func add_card_values(rows: Array[Dictionary]) -> void:
 	for row: Dictionary in rows:
 		var progress_component: float = minmax_value(float(row.get("avg_progress_per_move", 0.0)), progress_values)
 		var capture_component: float = minmax_value(float(row.get("capture_rate", 0.0)), capture_values)
-		var nexus_pressure_component: float = (
-			0.55 * minmax_value(float(row.get("nexus_capture_count", 0.0)), nexus_capture_values)
+		var seeker_pressure_component: float = (
+			0.55 * minmax_value(float(row.get("seeker_capture_count", 0.0)), seeker_capture_values)
 			+ 0.45 * minmax_value(float(row.get("base_entry_count", 0.0)), base_entry_values)
 		)
 		var win_association_component: float = minmax_value(float(row.get("delta_progress_per_player_match", 0.0)), win_delta_values)
@@ -357,7 +357,7 @@ func add_card_values(rows: Array[Dictionary]) -> void:
 		var raw_score: float = 100.0 * (
 			0.38 * progress_component
 			+ 0.22 * capture_component
-			+ 0.20 * nexus_pressure_component
+			+ 0.20 * seeker_pressure_component
 			+ 0.20 * win_association_component
 		)
 		var trend_score: float = 50.0 + (raw_score - 50.0) * usage_confidence

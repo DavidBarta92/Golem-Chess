@@ -130,12 +130,10 @@ func _bind_top_bar() -> void:
 	update_points_hud()
 
 func _bind_main_menu_buttons() -> void:
-	var stackbuilder_button := get_node_or_null("VBoxContainer/StackbuilderButton") as Button
-	if stackbuilder_button == null:
-		stackbuilder_button = get_node_or_null("VBoxContainer/DeckbuilderButton") as Button
-	if stackbuilder_button != null:
-		stackbuilder_button.text = "Codex Builder"
-		_connect_once(stackbuilder_button.pressed, Callable(self, "_on_stackbuilder_button_pressed"))
+	var collection_button := get_node_or_null("VBoxContainer/CollectionButton") as Button
+	if collection_button != null:
+		collection_button.text = "Collection"
+		_connect_once(collection_button.pressed, Callable(self, "_on_collection_button_pressed"))
 
 func hide_legacy_player_name_controls() -> void:
 	var legacy_name_label: Label = get_node_or_null("VBoxContainer/NameLabel") as Label
@@ -517,12 +515,9 @@ func _on_multiplayer_button_pressed():
 	save_player_name()
 	SceneTransition.change_scene("res://Scenes/MultiplayerMenu.tscn")
 
-func _on_stackbuilder_button_pressed():
+func _on_collection_button_pressed():
 	save_player_name()
-	SceneTransition.change_scene("res://Scenes/Stackbuilder.tscn")
-
-func _on_deckbuilder_button_pressed():
-	_on_stackbuilder_button_pressed()
+	SceneTransition.change_scene("res://Scenes/Collection.tscn")
 
 func _on_exit_button_pressed():
 	get_tree().quit()

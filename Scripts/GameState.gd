@@ -24,8 +24,8 @@ var spent_stamps: Dictionary = {
 var current_turn_player: int = 0  # 0 = white, 1 = black
 var completed_turn_counts: Dictionary = {0: 0, 1: 0}
 var player_clock_seconds: Dictionary = {0: 300.0, 1: 300.0}
-var white_nexus_position: Vector2 = Vector2(-1, -1)
-var black_nexus_position: Vector2 = Vector2(-1, -1)
+var white_seeker_position: Vector2 = Vector2(-1, -1)
+var black_seeker_position: Vector2 = Vector2(-1, -1)
 var player_base_fields: Dictionary = {
 	0: BoardConfig.WHITE_BASE_FIELD,
 	1: BoardConfig.BLACK_BASE_FIELD,

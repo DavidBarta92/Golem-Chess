@@ -3,8 +3,10 @@ extends CanvasLayer
 const TRANSITION_COLOR := Color("f4f0e6")
 const FADE_TO_COLOR_DURATION := 0.35
 const FADE_FROM_COLOR_DURATION := 0.45
+const FADE_FROM_COLOR_START_SCALE := 0.97
 
 var _overlay: ColorRect
+var _scene_base_canvas_transform := Transform2D.IDENTITY
 var _transition_in_progress := false
 
 
@@ -40,7 +42,7 @@ func change_scene(scene_path: String) -> void:
 
 	# Let the new scene finish entering the tree while the screen is fully covered.
 	await get_tree().process_frame
-	await _fade_to(0.0, FADE_FROM_COLOR_DURATION)
+	await _fade_from_color_with_zoom()
 	_finish_transition()
 
 
@@ -51,6 +53,38 @@ func _fade_to(target_alpha: float, duration: float) -> void:
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(_overlay, "color:a", target_alpha, duration)
 	await tween.finished
+
+
+func _fade_from_color_with_zoom() -> void:
+	_scene_base_canvas_transform = get_viewport().canvas_transform
+	_set_scene_zoom(FADE_FROM_COLOR_START_SCALE)
+
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.set_parallel(true)
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(_overlay, "color:a", 0.0, FADE_FROM_COLOR_DURATION)
+	tween.tween_method(
+		Callable(self, "_set_scene_zoom"),
+		FADE_FROM_COLOR_START_SCALE,
+		1.0,
+		FADE_FROM_COLOR_DURATION
+	)
+	await tween.finished
+
+	get_viewport().canvas_transform = _scene_base_canvas_transform
+
+
+func _set_scene_zoom(scale: float) -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var zoom_offset := viewport_size * (1.0 - scale) * 0.5
+	var zoom_transform := Transform2D(
+		Vector2(scale, 0.0),
+		Vector2(0.0, scale),
+		zoom_offset
+	)
+	get_viewport().canvas_transform = zoom_transform * _scene_base_canvas_transform
 
 
 func _finish_transition() -> void:

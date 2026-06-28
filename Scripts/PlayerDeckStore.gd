@@ -376,17 +376,27 @@ func _normalize_deck_card(raw_card: Dictionary, index: int) -> Dictionary:
 	var card_name: String = str(raw_card.get("card_name", card_code))
 	if card_code.is_empty():
 		card_code = _get_card_code_for_name(card_name)
+	else:
+		card_code = PlayerCollectionStore._resolve_card_code(card_code)
 	var variant_id: String = CardPrintLibrary.normalize_variant_id(str(raw_card.get("variant_id", PlayerCollectionStore.DEFAULT_VARIANT_ID)))
 	var print_id: String = str(raw_card.get("print_id", ""))
+	if !print_id.is_empty():
+		print_id = CardPrintLibrary.resolve_print_id_alias(print_id)
 	if print_id.is_empty():
 		print_id = PlayerCollectionStore.get_item_def_key(card_code, variant_id)
 	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
 	if card_print != null:
+		print_id = card_print.print_id
 		card_code = card_print.card_code
 		variant_id = card_print.variant_id
 		var card_from_print: Card = CardPrintLibrary.get_card_for_print(card_print)
 		if card_from_print != null:
 			card_name = card_from_print.card_name
+	var item_def_key: String = str(raw_card.get("item_def_key", "")).strip_edges()
+	if item_def_key.is_empty():
+		item_def_key = print_id
+	else:
+		item_def_key = CardPrintLibrary.resolve_print_id_alias(item_def_key)
 
 	return {
 		"slot": int(raw_card.get("slot", index)),
@@ -396,7 +406,7 @@ func _normalize_deck_card(raw_card: Dictionary, index: int) -> Dictionary:
 		"variant_id": variant_id,
 		"variant_name": str(raw_card.get("variant_name", CardPrintLibrary.get_variant_name(variant_id))),
 		"collection_instance_id": str(raw_card.get("collection_instance_id", raw_card.get("instance_id", ""))),
-		"item_def_key": str(raw_card.get("item_def_key", print_id)),
+		"item_def_key": item_def_key,
 		"steam_item_instance_id": str(raw_card.get("steam_item_instance_id", "")),
 		"steam_item_def_id": str(raw_card.get("steam_item_def_id", "")),
 	}
@@ -427,7 +437,7 @@ func _get_deck_card_code(deck_card) -> String:
 		var card_code: String = str(deck_card.get("card_code", "")).strip_edges()
 		if !card_code.is_empty():
 			var card_by_code: Card = CardLibrary.get_card_by_code(card_code)
-			return PlayerCollectionStore.get_card_code(card_by_code) if card_by_code != null else card_code
+			return PlayerCollectionStore.get_card_code(card_by_code) if card_by_code != null else CardLibrary.resolve_card_code_alias(card_code)
 
 		return _get_card_code_for_name(str(deck_card.get("card_name", "")))
 
@@ -442,5 +452,5 @@ func _get_card_code_for_name(card_name: String) -> String:
 
 	var card: Card = CardLibrary.get_card(card_name)
 	if card == null:
-		return card_name
+		return CardLibrary.resolve_card_code_alias(card_name)
 	return PlayerCollectionStore.get_card_code(card)

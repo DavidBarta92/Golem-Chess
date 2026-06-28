@@ -93,14 +93,14 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 }
 
 const SCORE_WIN: float = 100000.0
-const SCORE_CAPTURE_NEXUS: float = 160.0
-const SCORE_ATTACH_NEXUS: float = 35.0
-const SCORE_THREATEN_NEXUS: float = 420.0
-const SCORE_NEXUS_BASE_ENTRY_THREAT: float = 900.0
+const SCORE_CAPTURE_SEEKER: float = 160.0
+const SCORE_ATTACH_SEEKER: float = 35.0
+const SCORE_THREATEN_SEEKER: float = 420.0
+const SCORE_SEEKER_BASE_ENTRY_THREAT: float = 900.0
 const SCORE_CAPTURE_BASE_STAGING_PIECE: float = 180.0
 const SCORE_CAPTURE_PIECE: float = 45.0
 const SCORE_CAPTURE_CARD: float = 75.0
-const SCORE_NEXUS_BASE_PROGRESS: float = 35.0
+const SCORE_SEEKER_BASE_PROGRESS: float = 35.0
 const SCORE_ATTACH_CARD: float = 10.0
 const SCORE_CENTER: float = 4.0
 const SCORE_USE_EXISTING_CARD: float = 4.0
@@ -117,7 +117,7 @@ const PENALTY_SHARED_FUTURE_THREAT_MULTIPLIER: float = 0.35
 const SCORE_MOVE_BASE_MIN_DISTANCE: float = 24.0
 const SCORE_MOVE_BASE_AVG_DISTANCE: float = 8.0
 const PENALTY_MOVE_BASE_NOOP: float = 20.0
-const PENALTY_NEXUS_THREATENED: float = 1400.0
+const PENALTY_SEEKER_THREATENED: float = 1400.0
 const PENALTY_PIECE_THREATENED: float = 35.0
 const DEFAULT_OPPONENT_RESPONSE_WEIGHT: float = 0.62
 const DEEP_ROOT_BEAM_WIDTH: int = 4
@@ -137,48 +137,48 @@ const SCORE_FORCE_DEFENSE: float = 120.0
 const SCORE_THREAT_MAP_OWN_ATTACK: float = 14.0
 const PENALTY_THREAT_MAP_EXPOSURE: float = 18.0
 const SCORE_HAND_SYNERGY: float = 18.0
-const SCORE_NEXUS_ROUTE_STAGING: float = 32.0
-const SCORE_NEXUS_ATTACH_IN_ROUTE: float = 220.0
-const PENALTY_NEXUS_ATTACH_OUT_OF_ROUTE: float = 180.0
-const PENALTY_EARLY_NEXUS_COMMITMENT: float = 520.0
-const PENALTY_NEXUS_CAPTURE_DISTRACTION: float = 650.0
-const SCORE_ACTIVE_NEXUS_PUSH: float = 75.0
-const SCORE_ACTIVE_NEXUS_CLEAR_ROUTE: float = 95.0
-const PENALTY_ACTIVE_NEXUS_DANGER: float = 60.0
-const SCORE_ACTIVE_NEXUS_FINISH: float = 850.0
-const PENALTY_ACTIVE_NEXUS_RETREAT: float = 360.0
-const PENALTY_ACTIVE_NEXUS_STALL: float = 140.0
-const PENALTY_IGNORE_ACTIVE_NEXUS_PUSH: float = 380.0
+const SCORE_SEEKER_ROUTE_STAGING: float = 32.0
+const SCORE_SEEKER_ATTACH_IN_ROUTE: float = 220.0
+const PENALTY_SEEKER_ATTACH_OUT_OF_ROUTE: float = 180.0
+const PENALTY_EARLY_SEEKER_COMMITMENT: float = 520.0
+const PENALTY_SEEKER_CAPTURE_DISTRACTION: float = 650.0
+const SCORE_ACTIVE_SEEKER_PUSH: float = 75.0
+const SCORE_ACTIVE_SEEKER_CLEAR_ROUTE: float = 95.0
+const PENALTY_ACTIVE_SEEKER_DANGER: float = 60.0
+const SCORE_ACTIVE_SEEKER_FINISH: float = 850.0
+const PENALTY_ACTIVE_SEEKER_RETREAT: float = 360.0
+const PENALTY_ACTIVE_SEEKER_STALL: float = 140.0
+const PENALTY_IGNORE_ACTIVE_SEEKER_PUSH: float = 380.0
 const SCORE_FORCED_CLOSING_ROUTE_PROGRESS: float = 240.0
-const SCORE_HOLD_NEXUS_STAGING_SQUARE: float = 620.0
-const PENALTY_LEAVE_NEXUS_STAGING_SQUARE: float = 780.0
+const SCORE_HOLD_SEEKER_STAGING_SQUARE: float = 620.0
+const PENALTY_LEAVE_SEEKER_STAGING_SQUARE: float = 780.0
 const PENALTY_ENDGAME_NON_CLOSING_CAPTURE: float = 520.0
-const PENALTY_NON_NEXUS_BASE_ENTRY_WHILE_NEXUS_ACTIVE: float = 520.0
-const PENALTY_NON_NEXUS_BASE_BLOCKS_NEXUS_PLAN: float = 420.0
-const SCORE_CLEAR_OWN_NON_NEXUS_FROM_ENEMY_BASE: float = 360.0
+const PENALTY_NON_SEEKER_BASE_ENTRY_WHILE_SEEKER_ACTIVE: float = 520.0
+const PENALTY_NON_SEEKER_BASE_BLOCKS_SEEKER_PLAN: float = 420.0
+const SCORE_CLEAR_OWN_NON_SEEKER_FROM_ENEMY_BASE: float = 360.0
 const PENALTY_REPEAT_LAST_MOVE: float = 170.0
-const MAX_NEXUS_ROUTE_DISTANCE: int = 8
+const MAX_SEEKER_ROUTE_DISTANCE: int = 8
 const SCORE_OPENING_CENTER_ENTRY: float = 130.0
 const SCORE_OPENING_CENTER_COUNT: float = 46.0
 const SCORE_OPENING_COMPLETED: float = 180.0
 const SCORE_DEFENSE_THREAT_REDUCTION: float = 120.0
-const SCORE_DEFENSE_CAPTURE_NEXUS: float = 1800.0
+const SCORE_DEFENSE_CAPTURE_SEEKER: float = 1800.0
 const SCORE_DEFENSE_BASE_GUARD: float = 52.0
-const SCORE_DEFENSE_PUSH_NEXUS_BACK: float = 420.0
-const PENALTY_IGNORE_ENEMY_NEXUS_PUSH: float = 2600.0
+const SCORE_DEFENSE_PUSH_SEEKER_BACK: float = 420.0
+const PENALTY_IGNORE_ENEMY_SEEKER_PUSH: float = 2600.0
 const SCORE_MOVE_BASE_PIECE_ESCAPE: float = 950.0
-const PENALTY_MOVE_BASE_PIECE_THREATENED_BY_NEXUS: float = 1800.0
+const PENALTY_MOVE_BASE_PIECE_THREATENED_BY_SEEKER: float = 1800.0
 const SCORE_MATERIAL_ADVANTAGE_FINISH: float = 360.0
 const PENALTY_AHEAD_NON_CLOSING_CAPTURE: float = 380.0
-const SCORE_ENDGAME_NEXUS_ROUTE: float = 95.0
-const SCORE_ENDGAME_NEXUS_ATTACH_READY: float = 520.0
-const SCORE_ENDGAME_NEXUS_ATTACH_NEAR: float = 260.0
-const PENALTY_ENDGAME_NON_NEXUS_ATTACH: float = 75.0
-const PENALTY_ENDGAME_EXCHANGE_NEXUS_PLAN: float = 420.0
+const SCORE_ENDGAME_SEEKER_ROUTE: float = 95.0
+const SCORE_ENDGAME_SEEKER_ATTACH_READY: float = 520.0
+const SCORE_ENDGAME_SEEKER_ATTACH_NEAR: float = 260.0
+const PENALTY_ENDGAME_NON_SEEKER_ATTACH: float = 75.0
+const PENALTY_ENDGAME_EXCHANGE_SEEKER_PLAN: float = 420.0
 const SCORE_EMERGENCY_PREVENT_BASE_WIN: float = 50000.0
 const PENALTY_ALLOW_IMMEDIATE_BASE_WIN: float = 65000.0
-const PENALTY_EXCHANGE_LAST_NEXUS: float = 900.0
-const PENALTY_MOVE_OFF_ENEMY_BASE_WITHOUT_NEXUS: float = 450.0
+const PENALTY_EXCHANGE_LAST_SEEKER: float = 900.0
+const PENALTY_MOVE_OFF_ENEMY_BASE_WITHOUT_SEEKER: float = 450.0
 
 var difficulty_level: int = DEFAULT_DIFFICULTY_LEVEL
 var search_depth: int = 1
@@ -192,7 +192,7 @@ var full_score_cache: Dictionary = {}
 var move_score_cache: Dictionary = {}
 var response_score_cache: Dictionary = {}
 var card_cache: Dictionary = {}
-var nexus_route_cache: Dictionary = {}
+var seeker_route_cache: Dictionary = {}
 var strategy_context: Dictionary = {}
 
 func _init(new_difficulty_level = DEFAULT_DIFFICULTY_LEVEL):
@@ -350,7 +350,7 @@ func add_best_plan_breakdown_to_profile(profile: Dictionary, game_state: GameSta
 	profile["best_plan_action_count_score"] = float(breakdown.get("action_count", 0.0))
 	profile["best_plan_economy_score"] = float(breakdown.get("economy", 0.0))
 	profile["best_plan_threat_score"] = float(breakdown.get("threat", 0.0))
-	profile["best_plan_nexus_route_score"] = float(breakdown.get("nexus_route", 0.0))
+	profile["best_plan_seeker_route_score"] = float(breakdown.get("seeker_route", 0.0))
 	profile["best_plan_strategy_score"] = float(breakdown.get("strategy", 0.0))
 	profile["best_plan_hard_rule_score"] = float(breakdown.get("hard_rules", 0.0))
 
@@ -752,7 +752,7 @@ func reset_decision_caches() -> void:
 	move_score_cache.clear()
 	response_score_cache.clear()
 	card_cache.clear()
-	nexus_route_cache.clear()
+	seeker_route_cache.clear()
 
 func order_plans_for_full_scoring(
 	game_state: GameStateData,
@@ -851,10 +851,10 @@ func get_state_hash(game_state: GameStateData) -> String:
 
 	return "t%d|w%d,%d|b%d,%d|p%s|h%s|d%s|fx%s" % [
 		game_state.current_turn_player,
-		int(game_state.white_nexus_position.x),
-		int(game_state.white_nexus_position.y),
-		int(game_state.black_nexus_position.x),
-		int(game_state.black_nexus_position.y),
+		int(game_state.white_seeker_position.x),
+		int(game_state.white_seeker_position.y),
+		int(game_state.black_seeker_position.x),
+		int(game_state.black_seeker_position.y),
 		";".join(piece_parts),
 		get_card_list_dictionary_hash(game_state.player_hands),
 		get_card_list_dictionary_hash(game_state.player_decks),
@@ -992,22 +992,22 @@ func score_attach_setup_fast(game_state: GameStateData, player_id: int, attach_a
 		"card": card,
 		"requires_attach": true,
 	}
-	var is_nexus_card: bool = MoveRules.is_nexus_card(card)
-	var nexus_ready: bool = !is_nexus_card or is_nexus_attach_in_timing_window(game_state, player_id, card, piece_pos, board_size)
+	var is_seeker_card: bool = MoveRules.is_seeker_card(card)
+	var seeker_ready: bool = !is_seeker_card or is_seeker_attach_in_timing_window(game_state, player_id, card, piece_pos, board_size)
 	var score: float = SCORE_ATTACH_CARD + max(0, card.duration) * 2.0
-	if is_nexus_card:
-		if nexus_ready:
-			score += SCORE_ATTACH_NEXUS * 0.85
+	if is_seeker_card:
+		if seeker_ready:
+			score += SCORE_ATTACH_SEEKER * 0.85
 		else:
-			score -= PENALTY_EARLY_NEXUS_COMMITMENT
+			score -= PENALTY_EARLY_SEEKER_COMMITMENT
 	score += float(card.get_directions().size()) * 2.5
 	score += get_card_balance_value(card) * CARD_VALUE_ATTACH_PLAY_WEIGHT
-	if is_nexus_card:
-		score += score_nexus_attach_timing(game_state, player_id, card, piece_pos, piece_pos, board_size) * 0.75
-		var nexus_effect_weight: float = 0.45 if nexus_ready else 0.05
-		score += score_card_effect_fast(game_state, player_id, piece, card, piece_pos, piece_pos, null, move, board_size) * nexus_effect_weight
+	if is_seeker_card:
+		score += score_seeker_attach_timing(game_state, player_id, card, piece_pos, piece_pos, board_size) * 0.75
+		var seeker_effect_weight: float = 0.45 if seeker_ready else 0.05
+		score += score_card_effect_fast(game_state, player_id, piece, card, piece_pos, piece_pos, null, move, board_size) * seeker_effect_weight
 	else:
-		score += score_nexus_base_entry_threat(game_state, player_id, piece_pos, card, board_size)
+		score += score_seeker_base_entry_threat(game_state, player_id, piece_pos, card, board_size)
 		score += score_card_effect_fast(game_state, player_id, piece, card, piece_pos, piece_pos, null, move, board_size) * 0.65
 	score -= score_attachment_danger(game_state, player_id, attach_action, board_size, false)
 	return score
@@ -1027,11 +1027,11 @@ func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary
 	if bool(move.get("requires_attach", false)):
 		if card != null:
 			score += SCORE_ATTACH_CARD + max(0, card.duration) * 2.0
-			if MoveRules.is_nexus_card(card):
-				if is_nexus_attach_in_timing_window(game_state, player_id, card, from_pos, board_size):
-					score += SCORE_ATTACH_NEXUS * 0.85
+			if MoveRules.is_seeker_card(card):
+				if is_seeker_attach_in_timing_window(game_state, player_id, card, from_pos, board_size):
+					score += SCORE_ATTACH_SEEKER * 0.85
 				else:
-					score -= PENALTY_EARLY_NEXUS_COMMITMENT
+					score -= PENALTY_EARLY_SEEKER_COMMITMENT
 			score += get_card_balance_value(card) * CARD_VALUE_ATTACH_PLAY_WEIGHT
 	else:
 		score += SCORE_USE_EXISTING_CARD
@@ -1039,17 +1039,17 @@ func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary
 	if captured_piece != null:
 		score += score_capture(captured_piece) * 0.9
 		score += score_base_staging_capture(game_state, player_id, captured_piece, to_pos, board_size) * 0.9
-		score += score_nexus_capture_discipline(game_state, player_id, move, captured_piece, board_size) * 0.9
-		if has_active_nexus_near_finish(game_state, player_id, board_size) and !AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
+		score += score_seeker_capture_discipline(game_state, player_id, move, captured_piece, board_size) * 0.9
+		if has_active_seeker_near_finish(game_state, player_id, board_size) and !AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
 			score -= PENALTY_ENDGAME_NON_CLOSING_CAPTURE * 0.9
 
-	if AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
-		score += score_nexus_base_progress(game_state, player_id, from_pos, to_pos)
+	if AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
+		score += score_seeker_base_progress(game_state, player_id, from_pos, to_pos)
 		var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, opponent_player_id)
 		if moving_piece.color == player_color && to_pos == opponent_base:
 			score += SCORE_WIN
 	else:
-		score += score_non_nexus_base_entry_penalty(game_state, player_id, move)
+		score += score_non_seeker_base_entry_penalty(game_state, player_id, move)
 
 	score += score_center_control(to_pos, board_size) * 0.7
 	score += score_repeat_last_move_penalty(game_state, player_id, move)
@@ -1077,7 +1077,7 @@ func score_card_effect_fast(
 			score += score_shared_control_effect_fast(card)
 		CardEffect.TYPE_INVISIBLE_TO_ENEMY:
 			score += 32.0
-			if MoveRules.is_nexus_card(card):
+			if MoveRules.is_seeker_card(card):
 				score += 80.0
 		CardEffect.TYPE_STEAL_CARD:
 			score += 50.0
@@ -1212,27 +1212,27 @@ func score_hand_deck_economy_for_plan(game_state: GameStateData, player_id: int,
 				var exchanged_card: Card = get_cached_card(str(action.get("card_name", "")))
 				if exchanged_card != null:
 					score -= get_card_balance_value(exchanged_card) * 0.35
-					if MoveRules.is_nexus_card(exchanged_card):
-						score -= get_nexus_exchange_penalty(game_state, player_id)
+					if MoveRules.is_seeker_card(exchanged_card):
+						score -= get_seeker_exchange_penalty(game_state, player_id)
 					score += score_deck_draw_quality(game_state, player_id, str(action.get("card_name", ""))) * 0.35
 
 	score += score_remaining_hand_quality(game_state, player_id, actions) * HAND_DECK_ECONOMY_WEIGHT
 	score += score_remaining_deck_quality(game_state, player_id) * HAND_DECK_ECONOMY_WEIGHT * 0.35
 	score += score_hand_synergy(game_state, player_id) * HAND_DECK_ECONOMY_WEIGHT
-	if has_non_nexus_attach_action(actions):
+	if has_non_seeker_attach_action(actions):
 		score += SCORE_ATTACH_CARD * 1.5
 	return score
 
-func get_nexus_exchange_penalty(game_state: GameStateData, player_id: int) -> float:
+func get_seeker_exchange_penalty(game_state: GameStateData, player_id: int) -> float:
 	if game_state == null:
-		return PENALTY_EXCHANGE_LAST_NEXUS
+		return PENALTY_EXCHANGE_LAST_SEEKER
 
-	var active_nexus_count: int = get_active_nexus_pieces_for_player(game_state, player_id).size()
-	if active_nexus_count <= 0:
-		return PENALTY_EXCHANGE_LAST_NEXUS
-	return PENALTY_EXCHANGE_LAST_NEXUS * 0.35
+	var active_seeker_count: int = get_active_seeker_pieces_for_player(game_state, player_id).size()
+	if active_seeker_count <= 0:
+		return PENALTY_EXCHANGE_LAST_SEEKER
+	return PENALTY_EXCHANGE_LAST_SEEKER * 0.35
 
-func has_non_nexus_attach_action(actions: Array) -> bool:
+func has_non_seeker_attach_action(actions: Array) -> bool:
 	for action_value in actions:
 		if !(action_value is Dictionary):
 			continue
@@ -1240,7 +1240,7 @@ func has_non_nexus_attach_action(actions: Array) -> bool:
 		if str(action.get("type", "")) != "attach_card":
 			continue
 		var card: Card = get_cached_card(str(action.get("card_name", "")))
-		if card != null and !MoveRules.is_nexus_card(card):
+		if card != null and !MoveRules.is_seeker_card(card):
 			return true
 	return false
 
@@ -1253,16 +1253,16 @@ func score_card_synergy_for_attach(game_state: GameStateData, player_id: int, ac
 	var distance_to_base: float = get_manhattan_distance(piece_pos, opponent_base)
 	var movement_count: int = card.get_directions().size()
 	var score: float = 0.0
-	if MoveRules.is_nexus_card(card):
-		var route_distance: int = get_nexus_route_distance(game_state, player_id, card, piece_pos, BoardConfig.BOARD_SIZE)
+	if MoveRules.is_seeker_card(card):
+		var route_distance: int = get_seeker_route_distance(game_state, player_id, card, piece_pos, BoardConfig.BOARD_SIZE)
 		var allowed_steps: int = max(1, card.duration)
-		if is_nexus_attach_in_timing_window(game_state, player_id, card, piece_pos, BoardConfig.BOARD_SIZE):
-			score += SCORE_NEXUS_ATTACH_IN_ROUTE + float(allowed_steps - route_distance) * 24.0
+		if is_seeker_attach_in_timing_window(game_state, player_id, card, piece_pos, BoardConfig.BOARD_SIZE):
+			score += SCORE_SEEKER_ATTACH_IN_ROUTE + float(allowed_steps - route_distance) * 24.0
 			score += maxf(0.0, float(BoardConfig.BOARD_SIZE) - distance_to_base) * 4.0
 			if card.effect_type == CardEffect.TYPE_INVISIBLE_TO_ENEMY or card.effect_type == CardEffect.TYPE_UNCAPTURABLE:
 				score += SCORE_HAND_SYNERGY * 1.5
 		else:
-			score -= get_early_nexus_attach_penalty(game_state, player_id, card, piece_pos)
+			score -= get_early_seeker_attach_penalty(game_state, player_id, card, piece_pos)
 	if card.effect_type == CardEffect.TYPE_SHARED_CONTROL:
 		score += float(movement_count) * 2.0
 	if card.effect_type == CardEffect.TYPE_FROZEN_SQUARES or card.effect_type == CardEffect.TYPE_INVALID_SQUARES:
@@ -1273,19 +1273,19 @@ func score_card_synergy_for_attach(game_state: GameStateData, player_id: int, ac
 		score += SCORE_HAND_SYNERGY * 0.75
 	return score
 
-func get_early_nexus_attach_penalty(game_state: GameStateData, player_id: int, card: Card, piece_pos: Vector2) -> float:
+func get_early_seeker_attach_penalty(game_state: GameStateData, player_id: int, card: Card, piece_pos: Vector2) -> float:
 	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var distance_to_base: float = get_manhattan_distance(piece_pos, opponent_base)
-	var penalty: float = PENALTY_NEXUS_ATTACH_OUT_OF_ROUTE + PENALTY_EARLY_NEXUS_COMMITMENT
+	var penalty: float = PENALTY_SEEKER_ATTACH_OUT_OF_ROUTE + PENALTY_EARLY_SEEKER_COMMITMENT
 	if distance_to_base <= float(max(2, card.duration + 1)):
 		penalty *= 0.78
-	if is_endgame_nexus_finish_mode():
+	if is_endgame_seeker_finish_mode():
 		penalty *= 0.5
 	if card.effect_type == CardEffect.TYPE_INVISIBLE_TO_ENEMY or card.effect_type == CardEffect.TYPE_UNCAPTURABLE:
 		penalty *= 0.9
 	return penalty
 
-func score_nexus_route_strategy_for_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
+func score_seeker_route_strategy_for_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
 	if game_state == null or plan.is_empty():
 		return 0.0
 
@@ -1295,14 +1295,14 @@ func score_nexus_route_strategy_for_plan(game_state: GameStateData, player_id: i
 
 	var move: Dictionary = plan.get("move", {})
 	var score: float = 0.0
-	if should_push_active_board_nexus(game_state, player_id):
+	if should_push_active_board_seeker(game_state, player_id):
 		if !move.is_empty():
-			score += score_active_nexus_push_plan(game_state, simulated_state, player_id, move, board_size)
+			score += score_active_seeker_push_plan(game_state, simulated_state, player_id, move, board_size)
 		return score
 
 	if !move.is_empty():
-		score += score_move_toward_nexus_routes(game_state, simulated_state, player_id, move, board_size)
-		score += score_force_nexus_closing_plan(game_state, simulated_state, player_id, plan, board_size)
+		score += score_move_toward_seeker_routes(game_state, simulated_state, player_id, move, board_size)
+		score += score_force_seeker_closing_plan(game_state, simulated_state, player_id, plan, board_size)
 
 	var setup_attach_actions: Array = plan.get("setup_attach_actions", [])
 	for action_value in setup_attach_actions:
@@ -1312,26 +1312,26 @@ func score_nexus_route_strategy_for_plan(game_state: GameStateData, player_id: i
 		if str(action.get("type", "")) != "attach_card":
 			continue
 		var card: Card = get_cached_card(str(action.get("card_name", "")))
-		if card != null and MoveRules.is_nexus_card(card):
+		if card != null and MoveRules.is_seeker_card(card):
 			var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
-			var distance: int = get_nexus_route_distance(game_state, player_id, card, piece_pos, board_size)
-			if is_nexus_attach_in_timing_window(game_state, player_id, card, piece_pos, board_size):
-				score += SCORE_NEXUS_ATTACH_IN_ROUTE
+			var distance: int = get_seeker_route_distance(game_state, player_id, card, piece_pos, board_size)
+			if is_seeker_attach_in_timing_window(game_state, player_id, card, piece_pos, board_size):
+				score += SCORE_SEEKER_ATTACH_IN_ROUTE
 			else:
-				score -= get_early_nexus_attach_penalty(game_state, player_id, card, piece_pos)
+				score -= get_early_seeker_attach_penalty(game_state, player_id, card, piece_pos)
 
 	return score
 
-func score_force_nexus_closing_plan(
+func score_force_seeker_closing_plan(
 	before_state: GameStateData,
 	after_state: GameStateData,
 	player_id: int,
 	plan: Dictionary,
 	board_size: int
 ) -> float:
-	if before_state == null or after_state == null or should_push_active_board_nexus(before_state, player_id):
+	if before_state == null or after_state == null or should_push_active_board_seeker(before_state, player_id):
 		return 0.0
-	if get_available_nexus_cards_for_player(before_state, player_id).is_empty():
+	if get_available_seeker_cards_for_player(before_state, player_id).is_empty():
 		return 0.0
 
 	var move: Dictionary = plan.get("move", {})
@@ -1340,18 +1340,18 @@ func score_force_nexus_closing_plan(
 
 	var from_pos: Vector2 = AIStateSimulator.get_move_from(move)
 	var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
-	var before_distance: int = get_best_available_nexus_route_distance(before_state, player_id, from_pos, board_size)
-	var after_distance: int = get_best_available_nexus_route_distance(after_state, player_id, to_pos, board_size)
+	var before_distance: int = get_best_available_seeker_route_distance(before_state, player_id, from_pos, board_size)
+	var after_distance: int = get_best_available_seeker_route_distance(after_state, player_id, to_pos, board_size)
 	if after_distance < 0:
-		return -PENALTY_LEAVE_NEXUS_STAGING_SQUARE
+		return -PENALTY_LEAVE_SEEKER_STAGING_SQUARE
 
 	var score: float = 0.0
-	var ready_before: bool = is_any_available_nexus_ready_on_piece(before_state, player_id, from_pos, board_size)
-	var ready_after: bool = is_any_available_nexus_ready_on_piece(after_state, player_id, to_pos, board_size)
+	var ready_before: bool = is_any_available_seeker_ready_on_piece(before_state, player_id, from_pos, board_size)
+	var ready_after: bool = is_any_available_seeker_ready_on_piece(after_state, player_id, to_pos, board_size)
 	if ready_before and !ready_after:
-		score -= PENALTY_LEAVE_NEXUS_STAGING_SQUARE
+		score -= PENALTY_LEAVE_SEEKER_STAGING_SQUARE
 	if ready_after:
-		score += SCORE_HOLD_NEXUS_STAGING_SQUARE
+		score += SCORE_HOLD_SEEKER_STAGING_SQUARE
 	if before_distance >= 0:
 		var delta: int = before_distance - after_distance
 		score += float(delta) * SCORE_FORCED_CLOSING_ROUTE_PROGRESS
@@ -1364,30 +1364,30 @@ func score_force_nexus_closing_plan(
 	if captured_piece != null and !ready_after:
 		score -= PENALTY_ENDGAME_NON_CLOSING_CAPTURE
 	if !ready_after:
-		score += score_nexus_staging_card_block(after_state, player_id, to_pos, board_size)
+		score += score_seeker_staging_card_block(after_state, player_id, to_pos, board_size)
 	return score
 
-func should_push_active_board_nexus(game_state: GameStateData, player_id: int) -> bool:
-	return !get_active_nexus_pieces_for_player(game_state, player_id).is_empty()
+func should_push_active_board_seeker(game_state: GameStateData, player_id: int) -> bool:
+	return !get_active_seeker_pieces_for_player(game_state, player_id).is_empty()
 
-func get_active_nexus_pieces_for_player(game_state: GameStateData, player_id: int) -> Array[Dictionary]:
-	var active_nexus_pieces: Array[Dictionary] = []
+func get_active_seeker_pieces_for_player(game_state: GameStateData, player_id: int) -> Array[Dictionary]:
+	var active_seeker_pieces: Array[Dictionary] = []
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	for position_value in game_state.pieces:
 		var pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
 		if piece == null or piece.color != player_color:
 			continue
-		if !MoveRules.is_nexus_card(piece.attached_card):
+		if !MoveRules.is_seeker_card(piece.attached_card):
 			continue
-		active_nexus_pieces.append({
+		active_seeker_pieces.append({
 			"position": pos,
 			"piece": piece,
 			"card": piece.attached_card,
 		})
-	return active_nexus_pieces
+	return active_seeker_pieces
 
-func score_active_nexus_push_plan(
+func score_active_seeker_push_plan(
 	before_state: GameStateData,
 	after_state: GameStateData,
 	player_id: int,
@@ -1398,48 +1398,48 @@ func score_active_nexus_push_plan(
 	var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
 	var moving_piece: Piece = before_state.get_piece(from_pos)
 	var score: float = 0.0
-	if moving_piece != null and MoveRules.is_nexus_card(moving_piece.attached_card):
-		score += score_active_nexus_direct_progress(before_state, after_state, player_id, moving_piece.attached_card, from_pos, to_pos, board_size)
+	if moving_piece != null and MoveRules.is_seeker_card(moving_piece.attached_card):
+		score += score_active_seeker_direct_progress(before_state, after_state, player_id, moving_piece.attached_card, from_pos, to_pos, board_size)
 	else:
 		var clearing_score: float = score_route_clearing_move(before_state, player_id, move, board_size)
 		score += clearing_score
 		if clearing_score <= 0.0:
-			score -= PENALTY_IGNORE_ACTIVE_NEXUS_PUSH
+			score -= PENALTY_IGNORE_ACTIVE_SEEKER_PUSH
 	return score
 
-func score_active_nexus_direct_progress(
+func score_active_seeker_direct_progress(
 	before_state: GameStateData,
 	after_state: GameStateData,
 	player_id: int,
-	nexus_card: Card,
+	seeker_card: Card,
 	from_pos: Vector2,
 	to_pos: Vector2,
 	board_size: int
 ) -> float:
-	var before_distance: int = get_nexus_route_distance(before_state, player_id, nexus_card, from_pos, board_size)
-	var after_distance: int = get_nexus_route_distance(after_state, player_id, nexus_card, to_pos, board_size)
+	var before_distance: int = get_seeker_route_distance(before_state, player_id, seeker_card, from_pos, board_size)
+	var after_distance: int = get_seeker_route_distance(after_state, player_id, seeker_card, to_pos, board_size)
 	if after_distance < 0:
-		return -SCORE_ACTIVE_NEXUS_PUSH
+		return -SCORE_ACTIVE_SEEKER_PUSH
 
 	var score: float = 0.0
 	if before_distance >= 0:
 		var distance_delta: int = before_distance - after_distance
-		score += float(distance_delta) * SCORE_ACTIVE_NEXUS_PUSH
+		score += float(distance_delta) * SCORE_ACTIVE_SEEKER_PUSH
 		if distance_delta < 0:
-			score -= float(abs(distance_delta)) * PENALTY_ACTIVE_NEXUS_RETREAT
+			score -= float(abs(distance_delta)) * PENALTY_ACTIVE_SEEKER_RETREAT
 		elif distance_delta == 0 and after_distance > 0:
-			score -= PENALTY_ACTIVE_NEXUS_STALL + float(after_distance) * 55.0
+			score -= PENALTY_ACTIVE_SEEKER_STALL + float(after_distance) * 55.0
 	else:
-		score += SCORE_ACTIVE_NEXUS_PUSH * 0.5
+		score += SCORE_ACTIVE_SEEKER_PUSH * 0.5
 	if after_distance == 0:
-		score += SCORE_WIN + SCORE_ACTIVE_NEXUS_FINISH
+		score += SCORE_WIN + SCORE_ACTIVE_SEEKER_FINISH
 	elif after_distance <= 2:
-		score += SCORE_ACTIVE_NEXUS_FINISH * 0.45
-	score -= score_square_danger_for_player(after_state, player_id, to_pos, board_size) * PENALTY_ACTIVE_NEXUS_DANGER
+		score += SCORE_ACTIVE_SEEKER_FINISH * 0.45
+	score -= score_square_danger_for_player(after_state, player_id, to_pos, board_size) * PENALTY_ACTIVE_SEEKER_DANGER
 	return score
 
-func has_active_nexus_near_finish(game_state: GameStateData, player_id: int, board_size: int, max_distance: int = 2) -> bool:
-	var best_distance: int = get_best_active_nexus_route_distance(game_state, player_id, board_size)
+func has_active_seeker_near_finish(game_state: GameStateData, player_id: int, board_size: int, max_distance: int = 2) -> bool:
+	var best_distance: int = get_best_active_seeker_route_distance(game_state, player_id, board_size)
 	return best_distance >= 0 and best_distance <= max_distance
 
 func score_route_clearing_move(before_state: GameStateData, player_id: int, move: Dictionary, board_size: int) -> float:
@@ -1452,48 +1452,48 @@ func score_route_clearing_move(before_state: GameStateData, player_id: int, move
 		return 0.0
 
 	var capture_pos: Vector2 = AIStateSimulator.get_move_to(move)
-	var best_route_distance: int = get_best_active_nexus_route_distance_to_square(before_state, player_id, capture_pos, board_size)
+	var best_route_distance: int = get_best_active_seeker_route_distance_to_square(before_state, player_id, capture_pos, board_size)
 	if best_route_distance < 0:
 		return 0.0
 
-	var score: float = SCORE_ACTIVE_NEXUS_CLEAR_ROUTE
-	score += maxf(0.0, float(MAX_NEXUS_ROUTE_DISTANCE - best_route_distance)) * 12.0
+	var score: float = SCORE_ACTIVE_SEEKER_CLEAR_ROUTE
+	score += maxf(0.0, float(MAX_SEEKER_ROUTE_DISTANCE - best_route_distance)) * 12.0
 	score += get_piece_target_score(captured_piece) * 0.8
 	return score
 
-func get_best_active_nexus_route_distance_to_square(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> int:
+func get_best_active_seeker_route_distance_to_square(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> int:
 	var best_distance: int = 999
-	for entry: Dictionary in get_active_nexus_pieces_for_player(game_state, player_id):
+	for entry: Dictionary in get_active_seeker_pieces_for_player(game_state, player_id):
 		var card: Card = entry.get("card", null) as Card
 		if card == null:
 			continue
-		var distance: int = get_nexus_route_distance(game_state, player_id, card, square, board_size)
+		var distance: int = get_seeker_route_distance(game_state, player_id, card, square, board_size)
 		if distance >= 0:
 			best_distance = mini(best_distance, distance)
 	return best_distance if best_distance != 999 else -1
 
-func get_best_available_nexus_route_distance(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> int:
+func get_best_available_seeker_route_distance(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> int:
 	var best_distance: int = 999
-	for card in get_available_nexus_cards_for_player(game_state, player_id):
+	for card in get_available_seeker_cards_for_player(game_state, player_id):
 		if card == null:
 			continue
-		var distance: int = get_nexus_route_distance(game_state, player_id, card, square, board_size)
+		var distance: int = get_seeker_route_distance(game_state, player_id, card, square, board_size)
 		if distance >= 0:
 			best_distance = mini(best_distance, distance)
 	return best_distance if best_distance != 999 else -1
 
-func is_any_available_nexus_ready_from_square(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> bool:
-	for card in get_available_nexus_cards_for_player(game_state, player_id):
-		if card != null and is_nexus_attach_in_timing_window(game_state, player_id, card, square, board_size):
+func is_any_available_seeker_ready_from_square(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> bool:
+	for card in get_available_seeker_cards_for_player(game_state, player_id):
+		if card != null and is_seeker_attach_in_timing_window(game_state, player_id, card, square, board_size):
 			return true
 	return false
 
-func is_any_available_nexus_ready_on_piece(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> bool:
-	if !can_piece_receive_nexus_at(game_state, player_id, square):
+func is_any_available_seeker_ready_on_piece(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> bool:
+	if !can_piece_receive_seeker_at(game_state, player_id, square):
 		return false
-	return is_any_available_nexus_ready_from_square(game_state, player_id, square, board_size)
+	return is_any_available_seeker_ready_from_square(game_state, player_id, square, board_size)
 
-func can_piece_receive_nexus_at(game_state: GameStateData, player_id: int, square: Vector2) -> bool:
+func can_piece_receive_seeker_at(game_state: GameStateData, player_id: int, square: Vector2) -> bool:
 	if game_state == null:
 		return false
 	var piece: Piece = game_state.get_piece(square)
@@ -1503,17 +1503,17 @@ func can_piece_receive_nexus_at(game_state: GameStateData, player_id: int, squar
 		return false
 	return piece.can_receive_card()
 
-func score_nexus_staging_card_block(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> float:
+func score_seeker_staging_card_block(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> float:
 	if game_state == null:
 		return 0.0
-	if !is_any_available_nexus_ready_from_square(game_state, player_id, square, board_size):
+	if !is_any_available_seeker_ready_from_square(game_state, player_id, square, board_size):
 		return 0.0
-	if can_piece_receive_nexus_at(game_state, player_id, square):
+	if can_piece_receive_seeker_at(game_state, player_id, square):
 		return 0.0
 	var piece: Piece = game_state.get_piece(square)
 	if piece == null or piece.attached_card == null:
 		return 0.0
-	return -minf(PENALTY_LEAVE_NEXUS_STAGING_SQUARE * 0.55, 180.0 + float(maxi(0, piece.turns_remaining)) * 70.0)
+	return -minf(PENALTY_LEAVE_SEEKER_STAGING_SQUARE * 0.55, 180.0 + float(maxi(0, piece.turns_remaining)) * 70.0)
 
 func score_square_danger_for_player(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> float:
 	var opponent_player_id: int = 1 - player_id
@@ -1531,7 +1531,7 @@ func score_square_danger_for_player(game_state: GameStateData, player_id: int, s
 			danger += get_piece_target_score(moving_piece) if moving_piece != null else 1.0
 	return danger
 
-func score_move_toward_nexus_routes(
+func score_move_toward_seeker_routes(
 	before_state: GameStateData,
 	after_state: GameStateData,
 	player_id: int,
@@ -1544,18 +1544,18 @@ func score_move_toward_nexus_routes(
 	if moving_piece == null:
 		return 0.0
 
-	var nexus_cards: Array = get_available_nexus_cards_for_player(before_state, player_id)
-	if nexus_cards.is_empty():
+	var seeker_cards: Array = get_available_seeker_cards_for_player(before_state, player_id)
+	if seeker_cards.is_empty():
 		return 0.0
 
 	var best_before: int = 999
 	var best_after: int = 999
 	var best_duration: int = 1
-	for card in nexus_cards:
+	for card in seeker_cards:
 		if card == null:
 			continue
-		var before_distance: int = get_nexus_route_distance(before_state, player_id, card, from_pos, board_size)
-		var after_distance: int = get_nexus_route_distance(after_state, player_id, card, to_pos, board_size)
+		var before_distance: int = get_seeker_route_distance(before_state, player_id, card, from_pos, board_size)
+		var after_distance: int = get_seeker_route_distance(after_state, player_id, card, to_pos, board_size)
 		if before_distance >= 0:
 			best_before = mini(best_before, before_distance)
 		if after_distance >= 0:
@@ -1567,14 +1567,14 @@ func score_move_toward_nexus_routes(
 
 	var score: float = 0.0
 	if best_before != 999:
-		score += float(best_before - best_after) * SCORE_NEXUS_ROUTE_STAGING
+		score += float(best_before - best_after) * SCORE_SEEKER_ROUTE_STAGING
 	else:
-		score += SCORE_NEXUS_ROUTE_STAGING * 0.5
+		score += SCORE_SEEKER_ROUTE_STAGING * 0.5
 	if best_after <= best_duration:
-		score += SCORE_NEXUS_ATTACH_IN_ROUTE * 0.45
+		score += SCORE_SEEKER_ATTACH_IN_ROUTE * 0.45
 	return score
 
-func get_available_nexus_cards_for_player(game_state: GameStateData, player_id: int) -> Array:
+func get_available_seeker_cards_for_player(game_state: GameStateData, player_id: int) -> Array:
 	var cards: Array = []
 	var seen: Dictionary = {}
 	var card_names: Array = []
@@ -1587,25 +1587,25 @@ func get_available_nexus_cards_for_player(game_state: GameStateData, player_id: 
 			continue
 		seen[card_name] = true
 		var card: Card = get_cached_card(card_name)
-		if card != null and MoveRules.is_nexus_card(card):
+		if card != null and MoveRules.is_seeker_card(card):
 			cards.append(card)
 	return cards
 
-func get_nexus_route_distance(game_state: GameStateData, player_id: int, nexus_card: Card, from_pos: Vector2, board_size: int) -> int:
-	if game_state == null or nexus_card == null:
+func get_seeker_route_distance(game_state: GameStateData, player_id: int, seeker_card: Card, from_pos: Vector2, board_size: int) -> int:
+	if game_state == null or seeker_card == null:
 		return -1
 
-	var route_map: Dictionary = get_nexus_route_map(game_state, player_id, nexus_card, board_size)
+	var route_map: Dictionary = get_seeker_route_map(game_state, player_id, seeker_card, board_size)
 	var key: String = vector_hash(from_pos)
 	if !route_map.has(key):
 		return -1
 	return int(route_map[key])
 
-func get_best_distance_to_nexus_route(game_state: GameStateData, player_id: int, nexus_card: Card, from_pos: Vector2, board_size: int) -> int:
-	if game_state == null or nexus_card == null:
+func get_best_distance_to_seeker_route(game_state: GameStateData, player_id: int, seeker_card: Card, from_pos: Vector2, board_size: int) -> int:
+	if game_state == null or seeker_card == null:
 		return -1
 
-	var route_map: Dictionary = get_nexus_route_map(game_state, player_id, nexus_card, board_size)
+	var route_map: Dictionary = get_seeker_route_map(game_state, player_id, seeker_card, board_size)
 	var best_distance: int = 999
 	for x in range(board_size):
 		for y in range(board_size):
@@ -1616,16 +1616,16 @@ func get_best_distance_to_nexus_route(game_state: GameStateData, player_id: int,
 			best_distance = mini(best_distance, distance)
 	return best_distance if best_distance != 999 else -1
 
-func get_nexus_route_map(game_state: GameStateData, player_id: int, nexus_card: Card, board_size: int) -> Dictionary:
+func get_seeker_route_map(game_state: GameStateData, player_id: int, seeker_card: Card, board_size: int) -> Dictionary:
 	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var cache_key: String = "%s|p%d|base%s|fx%s" % [
-		nexus_card.card_name,
+		seeker_card.card_name,
 		player_id,
 		vector_hash(opponent_base),
 		get_board_effects_hash(game_state.board_effects),
 	]
-	if nexus_route_cache.has(cache_key):
-		return nexus_route_cache[cache_key]
+	if seeker_route_cache.has(cache_key):
+		return seeker_route_cache[cache_key]
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	var route_map: Dictionary = {}
@@ -1633,7 +1633,7 @@ func get_nexus_route_map(game_state: GameStateData, player_id: int, nexus_card: 
 	route_map[vector_hash(opponent_base)] = 0
 
 	var depth: int = 0
-	while !frontier.is_empty() and depth < MAX_NEXUS_ROUTE_DISTANCE:
+	while !frontier.is_empty() and depth < MAX_SEEKER_ROUTE_DISTANCE:
 		var next_frontier: Array = []
 		for target_pos in frontier:
 			for x in range(board_size):
@@ -1642,19 +1642,19 @@ func get_nexus_route_map(game_state: GameStateData, player_id: int, nexus_card: 
 					var candidate_key: String = vector_hash(candidate_pos)
 					if route_map.has(candidate_key):
 						continue
-					if nexus_route_candidate_reaches_target(game_state, player_color, nexus_card, candidate_pos, target_pos, board_size):
+					if seeker_route_candidate_reaches_target(game_state, player_color, seeker_card, candidate_pos, target_pos, board_size):
 						route_map[candidate_key] = depth + 1
 						next_frontier.append(candidate_pos)
 		frontier = next_frontier
 		depth += 1
 
-	nexus_route_cache[cache_key] = route_map
+	seeker_route_cache[cache_key] = route_map
 	return route_map
 
-func nexus_route_candidate_reaches_target(
+func seeker_route_candidate_reaches_target(
 	game_state: GameStateData,
 	player_color: int,
-	nexus_card: Card,
+	seeker_card: Card,
 	candidate_pos: Vector2,
 	target_pos: Vector2,
 	board_size: int
@@ -1663,14 +1663,14 @@ func nexus_route_candidate_reaches_target(
 		game_state.pieces,
 		candidate_pos,
 		player_color,
-		nexus_card,
+		seeker_card,
 		board_size,
 		game_state.board_effects
 	)
 	if moves.has(target_pos):
 		return true
 
-	for direction_value in nexus_card.get_directions():
+	for direction_value in seeker_card.get_directions():
 		var direction: Vector2 = CardEffectResolver.as_vector2(direction_value, Vector2.ZERO)
 		if direction == Vector2.ZERO:
 			continue
@@ -1698,7 +1698,7 @@ func score_hand_synergy(game_state: GameStateData, player_id: int) -> float:
 	if hand.size() < 2:
 		return 0.0
 
-	var has_nexus: bool = false
+	var has_seeker: bool = false
 	var has_protection: bool = false
 	var has_control: bool = false
 	var has_duration: bool = false
@@ -1707,20 +1707,20 @@ func score_hand_synergy(game_state: GameStateData, player_id: int) -> float:
 		var card: Card = get_cached_card(str(card_name_value))
 		if card == null:
 			continue
-		has_nexus = has_nexus or MoveRules.is_nexus_card(card)
+		has_seeker = has_seeker or MoveRules.is_seeker_card(card)
 		has_protection = has_protection or card.effect_type == CardEffect.TYPE_INVISIBLE_TO_ENEMY or card.effect_type == CardEffect.TYPE_UNCAPTURABLE
 		has_control = has_control or card.effect_type == CardEffect.TYPE_FROZEN_SQUARES or card.effect_type == CardEffect.TYPE_INVALID_SQUARES or card.effect_type == CardEffect.TYPE_MOVE_BASE
 		has_duration = has_duration or card.effect_type == CardEffect.TYPE_INCREASE_SELF_DURATION or card.effect_type == CardEffect.TYPE_INCREASE_OWN_DURATIONS
 		mobility_total += card.get_directions().size()
 
 	var score: float = 0.0
-	if has_nexus and has_protection:
+	if has_seeker and has_protection:
 		score += SCORE_HAND_SYNERGY * 2.0
-	if has_nexus and has_control:
+	if has_seeker and has_control:
 		score += SCORE_HAND_SYNERGY
 	if has_duration and mobility_total >= hand.size() * 3:
 		score += SCORE_HAND_SYNERGY * 0.75
-	if !has_nexus:
+	if !has_seeker:
 		score -= 8.0
 	return score
 
@@ -1747,7 +1747,7 @@ func score_remaining_hand_quality(game_state: GameStateData, player_id: int, act
 		if card == null:
 			continue
 		score += get_card_balance_value(card)
-		if MoveRules.is_nexus_card(card):
+		if MoveRules.is_seeker_card(card):
 			score += 12.0
 		remaining_count += 1
 
@@ -1767,7 +1767,7 @@ func score_remaining_deck_quality(game_state: GameStateData, player_id: int) -> 
 		if card == null:
 			continue
 		score += get_card_balance_value(card)
-		if MoveRules.is_nexus_card(card):
+		if MoveRules.is_seeker_card(card):
 			score += 8.0
 	return score / float(sample_count)
 
@@ -1784,7 +1784,7 @@ func score_deck_draw_quality(game_state: GameStateData, player_id: int, avoided_
 		if card == null:
 			continue
 		var score: float = get_card_balance_value(card)
-		if MoveRules.is_nexus_card(card):
+		if MoveRules.is_seeker_card(card):
 			score += 10.0
 		return score
 	return -5.0
@@ -1819,13 +1819,13 @@ func score_two_turn_base_pressure(game_state: GameStateData, player_id: int, boa
 	var best_pressure: float = 0.0
 	for move: Dictionary in valid_moves:
 		var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
-		if AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id) and to_pos == opponent_base:
+		if AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id) and to_pos == opponent_base:
 			best_pressure = maxf(best_pressure, SCORE_WIN * 0.25)
 			continue
 
 		var distance_after: float = get_manhattan_distance(to_pos, opponent_base)
 		var pressure: float = maxf(0.0, float(board_size) - distance_after) * 8.0
-		if AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
+		if AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
 			pressure += SCORE_TWO_TURN_BASE_THREAT
 		var simulated_plan: Dictionary = {
 			"actions": [{
@@ -1854,7 +1854,7 @@ func has_immediate_base_win(game_state: GameStateData, player_id: int, board_siz
 		game_state.board_effects
 	)
 	for move: Dictionary in valid_moves:
-		if AIStateSimulator.get_move_to(move) == opponent_base and AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
+		if AIStateSimulator.get_move_to(move) == opponent_base and AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
 			return true
 	return false
 
@@ -1907,7 +1907,7 @@ func score_turn_plan_breakdown(game_state: GameStateData, player_id: int, plan: 
 	action_score = -float(maxi(0, actions.size() - 1)) * 0.8
 	var economy_score: float = score_hand_deck_economy_for_plan(game_state, player_id, plan)
 	var threat_score: float = score_threat_map_for_plan(game_state, player_id, plan, board_size)
-	var route_score: float = score_nexus_route_strategy_for_plan(game_state, player_id, plan, board_size)
+	var route_score: float = score_seeker_route_strategy_for_plan(game_state, player_id, plan, board_size)
 	var strategy_score: float = score_strategy_mode_for_plan(game_state, player_id, plan, board_size)
 	var hard_rule_score: float = score_hard_tactical_rules_for_plan(game_state, player_id, plan, board_size)
 	var total_score: float = move_score + setup_score + action_score + economy_score + threat_score + route_score + strategy_score + hard_rule_score
@@ -1917,7 +1917,7 @@ func score_turn_plan_breakdown(game_state: GameStateData, player_id: int, plan: 
 		"action_count": action_score,
 		"economy": economy_score,
 		"threat": threat_score,
-		"nexus_route": route_score,
+		"seeker_route": route_score,
 		"strategy": strategy_score,
 		"hard_rules": hard_rule_score,
 		"total": total_score,
@@ -1938,14 +1938,14 @@ func score_hard_tactical_rules_for_plan(game_state: GameStateData, player_id: in
 	elif opponent_has_immediate_base_win_after:
 		score -= PENALTY_ALLOW_IMMEDIATE_BASE_WIN
 
-	score += score_active_nexus_finish_rule(game_state, simulated_state, player_id, plan, board_size)
-	score += score_opponent_active_nexus_defense_rule(game_state, simulated_state, player_id, plan, board_size)
+	score += score_active_seeker_finish_rule(game_state, simulated_state, player_id, plan, board_size)
+	score += score_opponent_active_seeker_defense_rule(game_state, simulated_state, player_id, plan, board_size)
 	score += score_move_base_piece_escape_rule(game_state, simulated_state, player_id, plan, board_size)
 	score += score_material_advantage_finish_rule(game_state, simulated_state, player_id, plan, board_size)
 	score += score_move_off_enemy_base_rule(game_state, player_id, plan)
 	return score
 
-func score_opponent_active_nexus_defense_rule(
+func score_opponent_active_seeker_defense_rule(
 	before_state: GameStateData,
 	after_state: GameStateData,
 	player_id: int,
@@ -1953,28 +1953,28 @@ func score_opponent_active_nexus_defense_rule(
 	board_size: int
 ) -> float:
 	var opponent_player_id: int = 1 - player_id
-	var before_distance: int = get_best_active_nexus_route_distance(before_state, opponent_player_id, board_size)
+	var before_distance: int = get_best_active_seeker_route_distance(before_state, opponent_player_id, board_size)
 	if before_distance < 0:
 		return 0.0
 	if after_state.game_over:
 		return -SCORE_WIN if after_state.winner_player == opponent_player_id else SCORE_WIN
 
-	var after_distance: int = get_best_active_nexus_route_distance(after_state, opponent_player_id, board_size)
+	var after_distance: int = get_best_active_seeker_route_distance(after_state, opponent_player_id, board_size)
 	var score: float = 0.0
 	if after_distance < 0:
-		return SCORE_DEFENSE_CAPTURE_NEXUS * 2.0
+		return SCORE_DEFENSE_CAPTURE_SEEKER * 2.0
 
-	score += float(after_distance - before_distance) * SCORE_DEFENSE_PUSH_NEXUS_BACK
+	score += float(after_distance - before_distance) * SCORE_DEFENSE_PUSH_SEEKER_BACK
 	if before_distance <= 2 and after_distance <= before_distance:
-		score -= PENALTY_IGNORE_ENEMY_NEXUS_PUSH
+		score -= PENALTY_IGNORE_ENEMY_SEEKER_PUSH
 	if before_distance <= 1 and after_distance <= 1:
 		score -= PENALTY_ALLOW_IMMEDIATE_BASE_WIN * 0.35
 
 	var move: Dictionary = plan.get("move", {})
 	if !move.is_empty():
 		var captured_piece: Piece = AIStateSimulator.get_captured_piece(before_state.pieces, move)
-		if captured_piece != null and MoveRules.is_nexus_card(captured_piece.attached_card):
-			score += SCORE_DEFENSE_CAPTURE_NEXUS * 1.5
+		if captured_piece != null and MoveRules.is_seeker_card(captured_piece.attached_card):
+			score += SCORE_DEFENSE_CAPTURE_SEEKER * 1.5
 	return score
 
 func score_material_advantage_finish_rule(
@@ -1991,17 +1991,17 @@ func score_material_advantage_finish_rule(
 		return 0.0
 
 	var score: float = 0.0
-	if should_push_active_board_nexus(before_state, player_id):
-		score += score_active_nexus_finish_rule(before_state, after_state, player_id, plan, board_size) * 0.8
+	if should_push_active_board_seeker(before_state, player_id):
+		score += score_active_seeker_finish_rule(before_state, after_state, player_id, plan, board_size) * 0.8
 	else:
-		score += score_force_nexus_closing_plan(before_state, after_state, player_id, plan, board_size) * 0.9
+		score += score_force_seeker_closing_plan(before_state, after_state, player_id, plan, board_size) * 0.9
 
 	var move: Dictionary = plan.get("move", {})
 	if !move.is_empty():
 		var captured_piece: Piece = AIStateSimulator.get_captured_piece(before_state.pieces, move)
 		var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
-		var closing_ready: bool = is_any_available_nexus_ready_on_piece(after_state, player_id, to_pos, board_size)
-		if captured_piece != null and !closing_ready and !AIStateSimulator.is_own_nexus_candidate(before_state.pieces, move, player_id):
+		var closing_ready: bool = is_any_available_seeker_ready_on_piece(after_state, player_id, to_pos, board_size)
+		if captured_piece != null and !closing_ready and !AIStateSimulator.is_own_seeker_candidate(before_state.pieces, move, player_id):
 			score -= PENALTY_AHEAD_NON_CLOSING_CAPTURE
 	score += float(maxi(0, material_advantage)) * SCORE_MATERIAL_ADVANTAGE_FINISH
 	return score
@@ -2013,14 +2013,14 @@ func score_move_base_piece_escape_rule(
 	plan: Dictionary,
 	board_size: int
 ) -> float:
-	var before_risk: float = score_move_base_piece_nexus_risk(before_state, player_id, board_size)
+	var before_risk: float = score_move_base_piece_seeker_risk(before_state, player_id, board_size)
 	if before_risk <= 0.0:
 		return 0.0
 
-	var after_risk: float = score_move_base_piece_nexus_risk(after_state, player_id, board_size)
+	var after_risk: float = score_move_base_piece_seeker_risk(after_state, player_id, board_size)
 	var score: float = (before_risk - after_risk) * SCORE_MOVE_BASE_PIECE_ESCAPE
 	if after_risk >= before_risk:
-		score -= PENALTY_MOVE_BASE_PIECE_THREATENED_BY_NEXUS
+		score -= PENALTY_MOVE_BASE_PIECE_THREATENED_BY_SEEKER
 
 	var move: Dictionary = plan.get("move", {})
 	if !move.is_empty():
@@ -2030,7 +2030,7 @@ func score_move_base_piece_escape_rule(
 			score += SCORE_MOVE_BASE_PIECE_ESCAPE * 0.75
 	return score
 
-func score_move_base_piece_nexus_risk(game_state: GameStateData, player_id: int, board_size: int) -> float:
+func score_move_base_piece_seeker_risk(game_state: GameStateData, player_id: int, board_size: int) -> float:
 	if game_state == null:
 		return 0.0
 
@@ -2043,21 +2043,21 @@ func score_move_base_piece_nexus_risk(game_state: GameStateData, player_id: int,
 		if piece == null or piece.color != player_color or !is_move_base_piece(piece):
 			continue
 
-		if can_opponent_nexus_capture_square(game_state, opponent_player_id, pos, board_size):
+		if can_opponent_seeker_capture_square(game_state, opponent_player_id, pos, board_size):
 			risk += 3.0
 			continue
 
-		var nearest_nexus_distance: float = get_nearest_active_nexus_distance(game_state, opponent_player_id, pos)
-		if nearest_nexus_distance <= 1.0:
+		var nearest_seeker_distance: float = get_nearest_active_seeker_distance(game_state, opponent_player_id, pos)
+		if nearest_seeker_distance <= 1.0:
 			risk += 2.0
-		elif nearest_nexus_distance <= 2.0:
+		elif nearest_seeker_distance <= 2.0:
 			risk += 1.0
 	return risk
 
 func is_move_base_piece(piece: Piece) -> bool:
 	return piece != null and piece.attached_card != null and piece.attached_card.effect_type == CardEffect.TYPE_MOVE_BASE
 
-func can_opponent_nexus_capture_square(game_state: GameStateData, opponent_player_id: int, square: Vector2, board_size: int) -> bool:
+func can_opponent_seeker_capture_square(game_state: GameStateData, opponent_player_id: int, square: Vector2, board_size: int) -> bool:
 	var opponent_color: int = CardEffectResolver.get_color_for_player_id(opponent_player_id)
 	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
 		game_state.pieces,
@@ -2066,48 +2066,48 @@ func can_opponent_nexus_capture_square(game_state: GameStateData, opponent_playe
 		game_state.board_effects
 	)
 	for move: Dictionary in valid_moves:
-		if AIStateSimulator.get_move_to(move) == square and AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, opponent_player_id):
+		if AIStateSimulator.get_move_to(move) == square and AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, opponent_player_id):
 			return true
 	return false
 
-func get_nearest_active_nexus_distance(game_state: GameStateData, player_id: int, square: Vector2) -> float:
+func get_nearest_active_seeker_distance(game_state: GameStateData, player_id: int, square: Vector2) -> float:
 	var best_distance: float = 999.0
-	for entry: Dictionary in get_active_nexus_pieces_for_player(game_state, player_id):
+	for entry: Dictionary in get_active_seeker_pieces_for_player(game_state, player_id):
 		var pos: Vector2 = CardEffectResolver.as_vector2(entry.get("position", Vector2(-1, -1)), Vector2(-1, -1))
 		best_distance = minf(best_distance, get_manhattan_distance(pos, square))
 	return best_distance
 
-func score_active_nexus_finish_rule(before_state: GameStateData, after_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
-	if !should_push_active_board_nexus(before_state, player_id):
+func score_active_seeker_finish_rule(before_state: GameStateData, after_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
+	if !should_push_active_board_seeker(before_state, player_id):
 		return 0.0
 	if after_state.game_over:
 		return SCORE_WIN if after_state.winner_player == player_id else -SCORE_WIN
 
-	var before_distance: int = get_best_active_nexus_route_distance(before_state, player_id, board_size)
-	var after_distance: int = get_best_active_nexus_route_distance(after_state, player_id, board_size)
+	var before_distance: int = get_best_active_seeker_route_distance(before_state, player_id, board_size)
+	var after_distance: int = get_best_active_seeker_route_distance(after_state, player_id, board_size)
 	if before_distance < 0:
 		return 0.0
 	if after_distance < 0:
-		return -PENALTY_ACTIVE_NEXUS_RETREAT
+		return -PENALTY_ACTIVE_SEEKER_RETREAT
 
 	var move: Dictionary = plan.get("move", {})
 	var route_clear_score: float = score_route_clearing_move(before_state, player_id, move, board_size) if !move.is_empty() else 0.0
 	if after_distance < before_distance:
-		return float(before_distance - after_distance) * SCORE_ACTIVE_NEXUS_FINISH
+		return float(before_distance - after_distance) * SCORE_ACTIVE_SEEKER_FINISH
 	if route_clear_score > 0.0:
 		return route_clear_score * 1.8
 	if after_distance == before_distance:
-		return -PENALTY_IGNORE_ACTIVE_NEXUS_PUSH
-	return -PENALTY_ACTIVE_NEXUS_RETREAT * float(after_distance - before_distance)
+		return -PENALTY_IGNORE_ACTIVE_SEEKER_PUSH
+	return -PENALTY_ACTIVE_SEEKER_RETREAT * float(after_distance - before_distance)
 
-func get_best_active_nexus_route_distance(game_state: GameStateData, player_id: int, board_size: int) -> int:
+func get_best_active_seeker_route_distance(game_state: GameStateData, player_id: int, board_size: int) -> int:
 	var best_distance: int = 999
-	for entry: Dictionary in get_active_nexus_pieces_for_player(game_state, player_id):
+	for entry: Dictionary in get_active_seeker_pieces_for_player(game_state, player_id):
 		var pos: Vector2 = CardEffectResolver.as_vector2(entry.get("position", Vector2(-1, -1)), Vector2(-1, -1))
 		var card: Card = entry.get("card", null) as Card
 		if card == null:
 			continue
-		var distance: int = get_nexus_route_distance(game_state, player_id, card, pos, board_size)
+		var distance: int = get_seeker_route_distance(game_state, player_id, card, pos, board_size)
 		if distance >= 0:
 			best_distance = mini(best_distance, distance)
 	return best_distance if best_distance < 999 else -1
@@ -2124,13 +2124,13 @@ func score_move_off_enemy_base_rule(game_state: GameStateData, player_id: int, p
 		return 0.0
 
 	var moving_piece: Piece = game_state.get_piece(from_pos)
-	if moving_piece != null and MoveRules.is_nexus_card(moving_piece.attached_card):
+	if moving_piece != null and MoveRules.is_seeker_card(moving_piece.attached_card):
 		return 0.0
-	if player_has_nexus_win_plan(game_state, player_id):
-		return SCORE_CLEAR_OWN_NON_NEXUS_FROM_ENEMY_BASE
+	if player_has_seeker_win_plan(game_state, player_id):
+		return SCORE_CLEAR_OWN_NON_SEEKER_FROM_ENEMY_BASE
 	return 0.0
 
-func score_non_nexus_base_entry_penalty(game_state: GameStateData, player_id: int, move: Dictionary) -> float:
+func score_non_seeker_base_entry_penalty(game_state: GameStateData, player_id: int, move: Dictionary) -> float:
 	if game_state == null or move.is_empty():
 		return 0.0
 
@@ -2138,16 +2138,16 @@ func score_non_nexus_base_entry_penalty(game_state: GameStateData, player_id: in
 	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	if to_pos != opponent_base:
 		return 0.0
-	if AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
+	if AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
 		return 0.0
-	if should_push_active_board_nexus(game_state, player_id):
-		return -PENALTY_NON_NEXUS_BASE_ENTRY_WHILE_NEXUS_ACTIVE
-	if !get_available_nexus_cards_for_player(game_state, player_id).is_empty():
-		return -PENALTY_NON_NEXUS_BASE_BLOCKS_NEXUS_PLAN
-	return -PENALTY_MOVE_OFF_ENEMY_BASE_WITHOUT_NEXUS * 0.35
+	if should_push_active_board_seeker(game_state, player_id):
+		return -PENALTY_NON_SEEKER_BASE_ENTRY_WHILE_SEEKER_ACTIVE
+	if !get_available_seeker_cards_for_player(game_state, player_id).is_empty():
+		return -PENALTY_NON_SEEKER_BASE_BLOCKS_SEEKER_PLAN
+	return -PENALTY_MOVE_OFF_ENEMY_BASE_WITHOUT_SEEKER * 0.35
 
-func player_has_nexus_win_plan(game_state: GameStateData, player_id: int) -> bool:
-	return should_push_active_board_nexus(game_state, player_id) or !get_available_nexus_cards_for_player(game_state, player_id).is_empty()
+func player_has_seeker_win_plan(game_state: GameStateData, player_id: int) -> bool:
+	return should_push_active_board_seeker(game_state, player_id) or !get_available_seeker_cards_for_player(game_state, player_id).is_empty()
 
 func score_repeat_last_move_penalty(game_state: GameStateData, player_id: int, move: Dictionary) -> float:
 	if game_state == null or game_state.last_move.is_empty() or move.is_empty():
@@ -2170,16 +2170,16 @@ func score_strategy_mode_for_plan(game_state: GameStateData, player_id: int, pla
 	match str(strategy_context.get("mode", "")):
 		"opening":
 			return score_opening_strategy_plan(game_state, player_id, plan, board_size)
-		"active_nexus_push":
-			return score_active_nexus_strategy_plan(game_state, player_id, plan, board_size)
-		"endgame_nexus_finish":
-			return score_endgame_nexus_finish_strategy_plan(game_state, player_id, plan, board_size)
+		"active_seeker_push":
+			return score_active_seeker_strategy_plan(game_state, player_id, plan, board_size)
+		"endgame_seeker_finish":
+			return score_endgame_seeker_finish_strategy_plan(game_state, player_id, plan, board_size)
 		"soft_defense":
 			return score_defense_strategy_plan(game_state, player_id, plan, board_size, 1.0)
 		"emergency_defense":
 			return score_defense_strategy_plan(game_state, player_id, plan, board_size, 2.0)
 		"route_setup":
-			return score_nexus_route_strategy_for_plan(game_state, player_id, plan, board_size) * 0.35
+			return score_seeker_route_strategy_for_plan(game_state, player_id, plan, board_size) * 0.35
 		_:
 			return 0.0
 
@@ -2213,20 +2213,20 @@ func score_opening_strategy_plan(game_state: GameStateData, player_id: int, plan
 			continue
 		var action: Dictionary = action_value
 		var card: Card = get_cached_card(str(action.get("card_name", "")))
-		if card != null and MoveRules.is_nexus_card(card):
+		if card != null and MoveRules.is_seeker_card(card):
 			score -= 95.0
 	return score
 
-func score_active_nexus_strategy_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
+func score_active_seeker_strategy_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
 	var move: Dictionary = plan.get("move", {})
 	if move.is_empty():
 		return 0.0
 	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
 	if simulated_state.game_over:
 		return SCORE_WIN * 0.25
-	return score_active_nexus_push_plan(game_state, simulated_state, player_id, move, board_size) * 2.6
+	return score_active_seeker_push_plan(game_state, simulated_state, player_id, move, board_size) * 2.6
 
-func score_endgame_nexus_finish_strategy_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
+func score_endgame_seeker_finish_strategy_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
 	if game_state == null or plan.is_empty():
 		return 0.0
 
@@ -2236,14 +2236,14 @@ func score_endgame_nexus_finish_strategy_plan(game_state: GameStateData, player_
 
 	var score: float = 0.0
 	var move: Dictionary = plan.get("move", {})
-	if should_push_active_board_nexus(game_state, player_id):
+	if should_push_active_board_seeker(game_state, player_id):
 		if !move.is_empty():
-			score += score_active_nexus_push_plan(game_state, simulated_state, player_id, move, board_size) * 3.4
+			score += score_active_seeker_push_plan(game_state, simulated_state, player_id, move, board_size) * 3.4
 		return score
 
 	if !move.is_empty():
-		score += score_endgame_move_toward_nexus_finish(game_state, simulated_state, player_id, move, board_size)
-		score += score_force_nexus_closing_plan(game_state, simulated_state, player_id, plan, board_size)
+		score += score_endgame_move_toward_seeker_finish(game_state, simulated_state, player_id, move, board_size)
+		score += score_force_seeker_closing_plan(game_state, simulated_state, player_id, plan, board_size)
 
 	var actions: Array = plan.get("actions", [])
 	for action_value in actions:
@@ -2255,11 +2255,11 @@ func score_endgame_nexus_finish_strategy_plan(game_state: GameStateData, player_
 				score += score_endgame_attach_action(game_state, player_id, action, board_size)
 			"exchange_card":
 				var exchanged_card: Card = get_cached_card(str(action.get("card_name", "")))
-				if exchanged_card != null and MoveRules.is_nexus_card(exchanged_card):
-					score -= PENALTY_ENDGAME_EXCHANGE_NEXUS_PLAN
+				if exchanged_card != null and MoveRules.is_seeker_card(exchanged_card):
+					score -= PENALTY_ENDGAME_EXCHANGE_SEEKER_PLAN
 	return score
 
-func score_endgame_move_toward_nexus_finish(
+func score_endgame_move_toward_seeker_finish(
 	before_state: GameStateData,
 	after_state: GameStateData,
 	player_id: int,
@@ -2268,18 +2268,18 @@ func score_endgame_move_toward_nexus_finish(
 ) -> float:
 	var from_pos: Vector2 = AIStateSimulator.get_move_from(move)
 	var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
-	var nexus_cards: Array = get_available_nexus_cards_for_player(before_state, player_id)
-	if nexus_cards.is_empty():
+	var seeker_cards: Array = get_available_seeker_cards_for_player(before_state, player_id)
+	if seeker_cards.is_empty():
 		return 0.0
 
 	var best_before: int = 999
 	var best_after: int = 999
 	var best_allowed_steps: int = 1
-	for card in nexus_cards:
+	for card in seeker_cards:
 		if card == null:
 			continue
-		var before_distance: int = get_nexus_route_distance(before_state, player_id, card, from_pos, board_size)
-		var after_distance: int = get_nexus_route_distance(after_state, player_id, card, to_pos, board_size)
+		var before_distance: int = get_seeker_route_distance(before_state, player_id, card, from_pos, board_size)
+		var after_distance: int = get_seeker_route_distance(after_state, player_id, card, to_pos, board_size)
 		if before_distance >= 0:
 			best_before = mini(best_before, before_distance)
 		if after_distance >= 0:
@@ -2287,23 +2287,23 @@ func score_endgame_move_toward_nexus_finish(
 			best_allowed_steps = max(1, card.duration)
 
 	if best_after == 999:
-		return -SCORE_ENDGAME_NEXUS_ROUTE * 0.5
+		return -SCORE_ENDGAME_SEEKER_ROUTE * 0.5
 
 	var score: float = 0.0
 	if best_before != 999:
 		var delta: int = best_before - best_after
-		score += float(delta) * SCORE_ENDGAME_NEXUS_ROUTE
+		score += float(delta) * SCORE_ENDGAME_SEEKER_ROUTE
 		if delta < 0:
-			score += float(delta) * SCORE_ENDGAME_NEXUS_ROUTE
+			score += float(delta) * SCORE_ENDGAME_SEEKER_ROUTE
 	else:
-		score += SCORE_ENDGAME_NEXUS_ROUTE * 0.35
-	var can_attach_after_move: bool = can_piece_receive_nexus_at(after_state, player_id, to_pos)
+		score += SCORE_ENDGAME_SEEKER_ROUTE * 0.35
+	var can_attach_after_move: bool = can_piece_receive_seeker_at(after_state, player_id, to_pos)
 	if best_after <= best_allowed_steps and can_attach_after_move:
-		score += SCORE_ENDGAME_NEXUS_ATTACH_READY + SCORE_HOLD_NEXUS_STAGING_SQUARE
+		score += SCORE_ENDGAME_SEEKER_ATTACH_READY + SCORE_HOLD_SEEKER_STAGING_SQUARE
 	elif best_after <= best_allowed_steps + 2:
-		score += SCORE_ENDGAME_NEXUS_ATTACH_NEAR
+		score += SCORE_ENDGAME_SEEKER_ATTACH_NEAR
 	if !can_attach_after_move:
-		score += score_nexus_staging_card_block(after_state, player_id, to_pos, board_size)
+		score += score_seeker_staging_card_block(after_state, player_id, to_pos, board_size)
 	return score
 
 func score_endgame_attach_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> float:
@@ -2312,16 +2312,16 @@ func score_endgame_attach_action(game_state: GameStateData, player_id: int, acti
 		return 0.0
 
 	var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
-	if !MoveRules.is_nexus_card(card):
-		return -PENALTY_ENDGAME_NON_NEXUS_ATTACH
+	if !MoveRules.is_seeker_card(card):
+		return -PENALTY_ENDGAME_NON_SEEKER_ATTACH
 
-	var route_distance: int = get_nexus_route_distance(game_state, player_id, card, piece_pos, board_size)
+	var route_distance: int = get_seeker_route_distance(game_state, player_id, card, piece_pos, board_size)
 	var allowed_steps: int = max(1, card.duration)
 	if route_distance >= 0 and route_distance <= allowed_steps:
-		return SCORE_ENDGAME_NEXUS_ATTACH_READY + float(allowed_steps - route_distance) * 55.0
+		return SCORE_ENDGAME_SEEKER_ATTACH_READY + float(allowed_steps - route_distance) * 55.0
 	if route_distance >= 0 and route_distance <= allowed_steps + 2:
-		return SCORE_ENDGAME_NEXUS_ATTACH_NEAR - float(route_distance - allowed_steps) * 45.0
-	return -PENALTY_NEXUS_ATTACH_OUT_OF_ROUTE
+		return SCORE_ENDGAME_SEEKER_ATTACH_NEAR - float(route_distance - allowed_steps) * 45.0
+	return -PENALTY_SEEKER_ATTACH_OUT_OF_ROUTE
 
 func score_defense_strategy_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int, urgency: float) -> float:
 	if game_state == null or plan.is_empty():
@@ -2336,8 +2336,8 @@ func score_defense_strategy_plan(game_state: GameStateData, player_id: int, plan
 	if !move.is_empty():
 		var captured_piece: Piece = AIStateSimulator.get_captured_piece(game_state.pieces, move)
 		if captured_piece != null and CardEffectResolver.get_player_id_for_color(captured_piece.color) != player_id:
-			if MoveRules.is_nexus_card(captured_piece.attached_card):
-				score += SCORE_DEFENSE_CAPTURE_NEXUS * urgency
+			if MoveRules.is_seeker_card(captured_piece.attached_card):
+				score += SCORE_DEFENSE_CAPTURE_SEEKER * urgency
 			else:
 				score += get_piece_target_score(captured_piece) * 0.8 * urgency
 
@@ -2364,7 +2364,7 @@ func score_base_threat_against_player(game_state: GameStateData, player_id: int,
 		var distance: float = get_manhattan_distance(pos, own_base)
 		if distance <= 3.0:
 			threat += float(board_size) - distance
-		if MoveRules.is_nexus_card(piece.attached_card):
+		if MoveRules.is_seeker_card(piece.attached_card):
 			threat += 18.0
 			if distance <= 3.0:
 				threat += 24.0
@@ -2423,14 +2423,14 @@ func score_attach_setup_with_card_value_weight(
 	if card == null:
 		return 0.0
 
-	var is_nexus_card: bool = MoveRules.is_nexus_card(card)
-	var nexus_ready: bool = !is_nexus_card or is_nexus_attach_in_timing_window(game_state, player_id, card, piece_pos, board_size)
+	var is_seeker_card: bool = MoveRules.is_seeker_card(card)
+	var seeker_ready: bool = !is_seeker_card or is_seeker_attach_in_timing_window(game_state, player_id, card, piece_pos, board_size)
 	var score: float = SCORE_ATTACH_CARD
-	if is_nexus_card:
-		if nexus_ready:
-			score += SCORE_ATTACH_NEXUS
+	if is_seeker_card:
+		if seeker_ready:
+			score += SCORE_ATTACH_SEEKER
 		else:
-			score -= PENALTY_EARLY_NEXUS_COMMITMENT
+			score -= PENALTY_EARLY_SEEKER_COMMITMENT
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	var setup_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
@@ -2445,10 +2445,10 @@ func score_attach_setup_with_card_value_weight(
 	if setup_moves.is_empty():
 		score -= PENALTY_ATTACH_SETUP_NO_MOVE
 	score += get_card_balance_value(card) * card_value_weight
-	if is_nexus_card:
-		score += score_nexus_attach_timing(game_state, player_id, card, piece_pos, piece_pos, board_size)
+	if is_seeker_card:
+		score += score_seeker_attach_timing(game_state, player_id, card, piece_pos, piece_pos, board_size)
 	else:
-		score += score_nexus_base_entry_threat(game_state, player_id, piece_pos, card, board_size)
+		score += score_seeker_base_entry_threat(game_state, player_id, piece_pos, card, board_size)
 
 	var setup_move: Dictionary = {
 		"from": piece_pos,
@@ -2457,7 +2457,7 @@ func score_attach_setup_with_card_value_weight(
 		"requires_attach": true,
 	}
 	var card_effect_weight: float = 0.65
-	if is_nexus_card and !nexus_ready:
+	if is_seeker_card and !seeker_ready:
 		card_effect_weight = 0.05
 	score += score_card_effect(game_state, player_id, piece, card, piece_pos, piece_pos, null, setup_move, board_size) * card_effect_weight
 	score -= score_attachment_danger(game_state, player_id, attach_action, board_size, true)
@@ -2475,7 +2475,7 @@ func score_move(game_state: GameStateData, player_id: int, move: Dictionary, boa
 
 	var card: Card = AIStateSimulator.get_card_for_candidate(game_state.pieces, move)
 	var captured_piece: Piece = AIStateSimulator.get_captured_piece(game_state.pieces, move)
-	var is_own_nexus_move: bool = AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id)
+	var is_own_seeker_move: bool = AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id)
 
 	if bool(move.get("requires_attach", false)):
 		score += score_attached_card(game_state, player_id, moving_piece, card, from_pos, to_pos, captured_piece, move, board_size)
@@ -2485,20 +2485,20 @@ func score_move(game_state: GameStateData, player_id: int, move: Dictionary, boa
 	if captured_piece != null:
 		score += score_capture(captured_piece)
 		score += score_base_staging_capture(game_state, player_id, captured_piece, to_pos, board_size)
-		score += score_nexus_capture_discipline(game_state, player_id, move, captured_piece, board_size)
-		if has_active_nexus_near_finish(game_state, player_id, board_size) and !is_own_nexus_move:
+		score += score_seeker_capture_discipline(game_state, player_id, move, captured_piece, board_size)
+		if has_active_seeker_near_finish(game_state, player_id, board_size) and !is_own_seeker_move:
 			score -= PENALTY_ENDGAME_NON_CLOSING_CAPTURE
 
-	if is_own_nexus_move:
-		score += score_nexus_base_progress(game_state, player_id, from_pos, to_pos)
+	if is_own_seeker_move:
+		score += score_seeker_base_progress(game_state, player_id, from_pos, to_pos)
 		var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, opponent_player_id)
 		if moving_piece.color == player_color && to_pos == opponent_base:
 			score += SCORE_WIN
 	else:
-		score += score_non_nexus_base_entry_penalty(game_state, player_id, move)
+		score += score_non_seeker_base_entry_penalty(game_state, player_id, move)
 
 	score += score_center_control(to_pos, board_size)
-	score += score_nexus_threat(game_state, player_id, move, board_size)
+	score += score_seeker_threat(game_state, player_id, move, board_size)
 	score += score_repeat_last_move_penalty(game_state, player_id, move)
 	score -= score_danger_after_move(game_state, player_id, move, board_size)
 	return score
@@ -2518,39 +2518,39 @@ func score_attached_card(
 		return 0.0
 
 	var score: float = SCORE_ATTACH_CARD
-	var is_nexus_card: bool = MoveRules.is_nexus_card(card)
-	var nexus_ready: bool = !is_nexus_card or is_nexus_attach_in_timing_window(game_state, player_id, card, to_pos, board_size)
-	if is_nexus_card:
-		if nexus_ready:
-			score += SCORE_ATTACH_NEXUS
+	var is_seeker_card: bool = MoveRules.is_seeker_card(card)
+	var seeker_ready: bool = !is_seeker_card or is_seeker_attach_in_timing_window(game_state, player_id, card, to_pos, board_size)
+	if is_seeker_card:
+		if seeker_ready:
+			score += SCORE_ATTACH_SEEKER
 		else:
-			score -= PENALTY_EARLY_NEXUS_COMMITMENT
+			score -= PENALTY_EARLY_SEEKER_COMMITMENT
 
 	score += max(0, card.duration) * 3.0
 	score += get_card_balance_value(card) * CARD_VALUE_ATTACH_PLAY_WEIGHT
-	if is_nexus_card:
-		score += score_nexus_attach_timing(game_state, player_id, card, from_pos, to_pos, board_size)
+	if is_seeker_card:
+		score += score_seeker_attach_timing(game_state, player_id, card, from_pos, to_pos, board_size)
 	var card_effect_weight: float = 1.0
-	if is_nexus_card and !nexus_ready:
+	if is_seeker_card and !seeker_ready:
 		card_effect_weight = 0.05
 	score += score_card_effect(game_state, player_id, moving_piece, card, from_pos, to_pos, captured_piece, move, board_size) * card_effect_weight
 	return score
 
-func is_nexus_attach_in_timing_window(game_state: GameStateData, player_id: int, card: Card, pos: Vector2, board_size: int) -> bool:
-	if game_state == null or !MoveRules.is_nexus_card(card):
+func is_seeker_attach_in_timing_window(game_state: GameStateData, player_id: int, card: Card, pos: Vector2, board_size: int) -> bool:
+	if game_state == null or !MoveRules.is_seeker_card(card):
 		return false
-	var route_distance: int = get_nexus_route_distance(game_state, player_id, card, pos, board_size)
+	var route_distance: int = get_seeker_route_distance(game_state, player_id, card, pos, board_size)
 	if route_distance < 0:
 		return false
 	var allowed_steps: int = max(1, card.duration)
 	if route_distance <= max(1, allowed_steps - 1):
 		return true
-	return is_endgame_nexus_finish_mode() and route_distance <= allowed_steps
+	return is_endgame_seeker_finish_mode() and route_distance <= allowed_steps
 
-func is_endgame_nexus_finish_mode() -> bool:
-	return str(strategy_context.get("mode", "")) == "endgame_nexus_finish"
+func is_endgame_seeker_finish_mode() -> bool:
+	return str(strategy_context.get("mode", "")) == "endgame_seeker_finish"
 
-func score_nexus_attach_timing(
+func score_seeker_attach_timing(
 	game_state: GameStateData,
 	player_id: int,
 	card: Card,
@@ -2558,23 +2558,23 @@ func score_nexus_attach_timing(
 	to_pos: Vector2,
 	board_size: int
 ) -> float:
-	if game_state == null or !MoveRules.is_nexus_card(card):
+	if game_state == null or !MoveRules.is_seeker_card(card):
 		return 0.0
 
 	var allowed_steps: int = max(1, card.duration)
-	var route_distance: int = get_nexus_route_distance(game_state, player_id, card, to_pos, board_size)
-	if is_nexus_attach_in_timing_window(game_state, player_id, card, to_pos, board_size):
-		return SCORE_NEXUS_ATTACH_IN_ROUTE + float(allowed_steps - route_distance) * 32.0
+	var route_distance: int = get_seeker_route_distance(game_state, player_id, card, to_pos, board_size)
+	if is_seeker_attach_in_timing_window(game_state, player_id, card, to_pos, board_size):
+		return SCORE_SEEKER_ATTACH_IN_ROUTE + float(allowed_steps - route_distance) * 32.0
 
-	var penalty: float = get_early_nexus_attach_penalty(game_state, player_id, card, from_pos)
-	var distance_to_route: int = get_best_distance_to_nexus_route(game_state, player_id, card, to_pos, board_size)
+	var penalty: float = get_early_seeker_attach_penalty(game_state, player_id, card, from_pos)
+	var distance_to_route: int = get_best_distance_to_seeker_route(game_state, player_id, card, to_pos, board_size)
 	if distance_to_route >= 0:
 		penalty += float(distance_to_route) * 28.0
 	else:
 		penalty += 90.0
 	return -penalty
 
-func score_nexus_capture_discipline(
+func score_seeker_capture_discipline(
 	game_state: GameStateData,
 	player_id: int,
 	move: Dictionary,
@@ -2583,9 +2583,9 @@ func score_nexus_capture_discipline(
 ) -> float:
 	if game_state == null or captured_piece == null:
 		return 0.0
-	if !AIStateSimulator.is_own_nexus_candidate(game_state.pieces, move, player_id):
+	if !AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
 		return 0.0
-	if CardEffectResolver.is_nexus_piece(captured_piece):
+	if CardEffectResolver.is_seeker_piece(captured_piece):
 		return 0.0
 
 	var from_pos: Vector2 = AIStateSimulator.get_move_from(move)
@@ -2595,23 +2595,23 @@ func score_nexus_capture_discipline(
 		return 0.0
 
 	var card: Card = AIStateSimulator.get_card_for_candidate(game_state.pieces, move)
-	if card == null or !MoveRules.is_nexus_card(card):
+	if card == null or !MoveRules.is_seeker_card(card):
 		return 0.0
 
-	var before_route_distance: int = get_nexus_route_distance(game_state, player_id, card, from_pos, board_size)
-	var after_route_distance: int = get_nexus_route_distance(game_state, player_id, card, to_pos, board_size)
-	var penalty: float = PENALTY_NEXUS_CAPTURE_DISTRACTION
+	var before_route_distance: int = get_seeker_route_distance(game_state, player_id, card, from_pos, board_size)
+	var after_route_distance: int = get_seeker_route_distance(game_state, player_id, card, to_pos, board_size)
+	var penalty: float = PENALTY_SEEKER_CAPTURE_DISTRACTION
 	if after_route_distance >= 0 and (before_route_distance < 0 or after_route_distance < before_route_distance):
 		penalty *= 0.35
-	if is_endgame_nexus_finish_mode():
+	if is_endgame_seeker_finish_mode():
 		penalty *= 0.5
 	return -penalty
 
 func score_capture(captured_piece: Piece) -> float:
 	if captured_piece == null:
 		return 0.0
-	if CardEffectResolver.is_nexus_piece(captured_piece):
-		return SCORE_CAPTURE_NEXUS
+	if CardEffectResolver.is_seeker_piece(captured_piece):
+		return SCORE_CAPTURE_SEEKER
 
 	var score: float = SCORE_CAPTURE_PIECE
 	if captured_piece.attached_card != null:
@@ -2620,19 +2620,19 @@ func score_capture(captured_piece: Piece) -> float:
 		score += get_card_balance_value(captured_piece.attached_card) * CARD_VALUE_CAPTURE_WEIGHT
 	return score
 
-func score_nexus_base_progress(game_state: GameStateData, player_id: int, from_pos: Vector2, to_pos: Vector2) -> float:
+func score_seeker_base_progress(game_state: GameStateData, player_id: int, from_pos: Vector2, to_pos: Vector2) -> float:
 	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var distance_before: float = abs(from_pos.x - opponent_base.x) + abs(from_pos.y - opponent_base.y)
 	var distance_after: float = abs(to_pos.x - opponent_base.x) + abs(to_pos.y - opponent_base.y)
-	return (distance_before - distance_after) * SCORE_NEXUS_BASE_PROGRESS
+	return (distance_before - distance_after) * SCORE_SEEKER_BASE_PROGRESS
 
-func score_nexus_base_entry_threat(game_state: GameStateData, player_id: int, piece_pos: Vector2, card: Card, board_size: int) -> float:
-	if game_state == null or !MoveRules.is_nexus_card(card):
+func score_seeker_base_entry_threat(game_state: GameStateData, player_id: int, piece_pos: Vector2, card: Card, board_size: int) -> float:
+	if game_state == null or !MoveRules.is_seeker_card(card):
 		return 0.0
 
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
-	var nexus_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
+	var seeker_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
 		game_state.pieces,
 		piece_pos,
 		player_color,
@@ -2640,8 +2640,8 @@ func score_nexus_base_entry_threat(game_state: GameStateData, player_id: int, pi
 		board_size,
 		game_state.board_effects
 	)
-	if nexus_moves.has(opponent_base):
-		return SCORE_NEXUS_BASE_ENTRY_THREAT
+	if seeker_moves.has(opponent_base):
+		return SCORE_SEEKER_BASE_ENTRY_THREAT
 	return 0.0
 
 func score_base_staging_capture(game_state: GameStateData, player_id: int, captured_piece: Piece, captured_pos: Vector2, board_size: int) -> float:
@@ -2651,18 +2651,18 @@ func score_base_staging_capture(game_state: GameStateData, player_id: int, captu
 	var opponent_player_id: int = 1 - player_id
 	if CardEffectResolver.get_player_id_for_color(captured_piece.color) != opponent_player_id:
 		return 0.0
-	if !player_has_nexus_base_entry_from_hand(game_state, opponent_player_id, captured_pos, board_size):
+	if !player_has_seeker_base_entry_from_hand(game_state, opponent_player_id, captured_pos, board_size):
 		return 0.0
 	return SCORE_CAPTURE_BASE_STAGING_PIECE
 
-func player_has_nexus_base_entry_from_hand(game_state: GameStateData, player_id: int, piece_pos: Vector2, board_size: int) -> bool:
+func player_has_seeker_base_entry_from_hand(game_state: GameStateData, player_id: int, piece_pos: Vector2, board_size: int) -> bool:
 	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
 	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var hand_cards: Array[Card] = AIStateSimulator.get_hand_cards_from_state(game_state, player_id)
 	for card: Card in hand_cards:
-		if !MoveRules.is_nexus_card(card):
+		if !MoveRules.is_seeker_card(card):
 			continue
-		var nexus_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
+		var seeker_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
 			game_state.pieces,
 			piece_pos,
 			player_color,
@@ -2670,7 +2670,7 @@ func player_has_nexus_base_entry_from_hand(game_state: GameStateData, player_id:
 			board_size,
 			game_state.board_effects
 		)
-		if nexus_moves.has(opponent_base):
+		if seeker_moves.has(opponent_base):
 			return true
 	return false
 
@@ -2679,11 +2679,11 @@ func score_center_control(pos: Vector2, board_size: int) -> float:
 	var distance: float = abs(pos.x - center.x) + abs(pos.y - center.y)
 	return max(0.0, float(board_size) - distance) * SCORE_CENTER
 
-func score_nexus_threat(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int) -> float:
+func score_seeker_threat(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int) -> float:
 	var simulated_pieces: Dictionary = AIStateSimulator.apply_candidate_to_pieces(game_state.pieces, move)
 	var moved_to: Vector2 = AIStateSimulator.get_move_to(move)
-	var opponent_nexus_pos: Vector2 = AIStateSimulator.find_nexus_position(simulated_pieces, 1 - player_id)
-	if opponent_nexus_pos == Vector2(-1, -1):
+	var opponent_seeker_pos: Vector2 = AIStateSimulator.find_seeker_position(simulated_pieces, 1 - player_id)
+	if opponent_seeker_pos == Vector2(-1, -1):
 		return 0.0
 
 	var next_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(
@@ -2693,8 +2693,8 @@ func score_nexus_threat(game_state: GameStateData, player_id: int, move: Diction
 		board_size,
 		game_state.board_effects
 	)
-	if next_moves.has(opponent_nexus_pos):
-		return SCORE_THREATEN_NEXUS
+	if next_moves.has(opponent_seeker_pos):
+		return SCORE_THREATEN_SEEKER
 	return 0.0
 
 func score_danger_after_move(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int) -> float:
@@ -2779,8 +2779,8 @@ func score_attachment_danger(
 func score_threatened_piece_loss(piece: Piece) -> float:
 	if piece == null:
 		return 0.0
-	if CardEffectResolver.is_nexus_piece(piece):
-		return PENALTY_NEXUS_THREATENED
+	if CardEffectResolver.is_seeker_piece(piece):
+		return PENALTY_SEEKER_THREATENED
 	return maxf(PENALTY_PIECE_THREATENED, score_capture(piece))
 
 func score_card_effect(
@@ -2804,7 +2804,7 @@ func score_card_effect(
 			score += score_shared_control_effect(game_state, player_id, card, move, to_pos, board_size)
 		CardEffect.TYPE_INVISIBLE_TO_ENEMY:
 			score += 32.0
-			if MoveRules.is_nexus_card(card):
+			if MoveRules.is_seeker_card(card):
 				score += 80.0
 		CardEffect.TYPE_STEAL_CARD:
 			score += 50.0
@@ -2863,8 +2863,8 @@ func score_bomb_effect(game_state: GameStateData, player_id: int, moving_piece: 
 
 		var target_player_id: int = CardEffectResolver.get_player_id_for_color(target_piece.color)
 		var target_score: float = SCORE_CAPTURE_PIECE
-		if CardEffectResolver.is_nexus_piece(target_piece):
-			target_score = SCORE_CAPTURE_NEXUS
+		if CardEffectResolver.is_seeker_piece(target_piece):
+			target_score = SCORE_CAPTURE_SEEKER
 		elif target_piece.attached_card != null:
 			target_score += SCORE_CAPTURE_CARD
 
@@ -3014,8 +3014,8 @@ func get_effect_source_pos(card: Card, from_pos: Vector2, to_pos: Vector2) -> Ve
 
 func get_frozen_piece_score(game_state: GameStateData, piece: Piece, piece_pos: Vector2, target_player_id: int, board_size: int) -> float:
 	var score: float = SCORE_FROZEN_ENEMY_PIECE
-	if CardEffectResolver.is_nexus_piece(piece):
-		score += SCORE_CAPTURE_NEXUS * 0.65
+	if CardEffectResolver.is_seeker_piece(piece):
+		score += SCORE_CAPTURE_SEEKER * 0.65
 	elif piece.attached_card != null:
 		score += SCORE_CAPTURE_CARD * 0.45
 		score += max(0, piece.turns_remaining) * 4.0
@@ -3036,7 +3036,7 @@ func card_effect_targets_player(card: Card, target_player_id: int) -> bool:
 
 func score_uncapturable_effect(card: Card) -> float:
 	var score: float = 46.0
-	if MoveRules.is_nexus_card(card):
+	if MoveRules.is_seeker_card(card):
 		score += 120.0
 	return score
 
@@ -3050,7 +3050,7 @@ func score_duration_adjustment_effect(game_state: GameStateData, player_id: int,
 			continue
 
 		var piece_value: float = 16.0 + float(piece.turns_remaining) * 2.0
-		if CardEffectResolver.is_nexus_piece(piece):
+		if CardEffectResolver.is_seeker_piece(piece):
 			piece_value += 110.0
 
 		if delta > 0:
