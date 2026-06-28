@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://cnrq2nxx6icrb"]
+
+[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_gux7p"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_e2whl"]
+[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_gx4e3"]
+
+[resource]
+script = ExtResource("2_e2whl")
+stamp_name = "Logician"
+stamp_code = "logician"
+duration = 5
+description = "When the linked piece captures, take a Seeker stamp from your deck and add it to your hand."
+white_piece_texture = ExtResource("3_gx4e3")
+black_piece_texture = ExtResource("1_gux7p")
+effect_type = "grant_stamp"
+effect_trigger = "on_capture"
+effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+effect_settings = {
+"stamp_name": "King"
+}
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 3, 3, 1, 0], [0, 1, 0, 3, 0], [0, 3, 1, 1, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

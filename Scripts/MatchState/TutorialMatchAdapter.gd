@@ -23,7 +23,7 @@ func clear_constraints() -> void:
 	refresh_dependent_ui()
 
 func refresh_dependent_ui() -> void:
-	match_board.update_card_drag_permissions()
+	match_board.update_stamp_drag_permissions()
 	match_board.update_end_turn_button()
 	match_board.get_turn_hud_controller().update_action_status_ui()
 	if match_board.state:
@@ -40,19 +40,19 @@ func is_action_allowed(action_name: String, context: Dictionary = {}, emit_rejec
 		match_board.TUTORIAL_ACTION_SELECT_PIECE:
 			if context.has("piece_pos"):
 				allowed = vector_allowed(["allowed_select_piece_positions", "allowed_move_sources", "allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
-		match_board.TUTORIAL_ACTION_ATTACH_CARD:
+		match_board.TUTORIAL_ACTION_ATTACH_STAMP:
 			if context.has("piece_pos"):
 				allowed = allowed and vector_allowed(["allowed_attach_piece_positions", "allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
-			if context.has("card_name"):
-				allowed = allowed and string_allowed(["allowed_attach_card_names", "allowed_card_names", "allowed_cards"], str(context.get("card_name", "")))
+			if context.has("stamp_name"):
+				allowed = allowed and string_allowed(["allowed_attach_stamp_names", "allowed_stamp_names", "allowed_stamps"], str(context.get("stamp_name", "")))
 		match_board.TUTORIAL_ACTION_MOVE_PIECE:
 			if context.has("from_pos"):
 				allowed = allowed and vector_allowed(["allowed_move_sources", "allowed_piece_positions", "allowed_pieces"], context.get("from_pos"))
 			if context.has("to_pos"):
 				allowed = allowed and vector_allowed(["allowed_move_targets"], context.get("to_pos"))
-		match_board.TUTORIAL_ACTION_EXCHANGE_CARD:
-			if context.has("card_name"):
-				allowed = allowed and string_allowed(["allowed_exchange_card_names", "allowed_card_names", "allowed_cards"], str(context.get("card_name", "")))
+		match_board.TUTORIAL_ACTION_EXCHANGE_STAMP:
+			if context.has("stamp_name"):
+				allowed = allowed and string_allowed(["allowed_exchange_stamp_names", "allowed_stamp_names", "allowed_stamps"], str(context.get("stamp_name", "")))
 
 	if !allowed:
 		return reject_action(action_name, context, emit_rejection)
@@ -115,22 +115,22 @@ func can_auto_end_turn_now() -> bool:
 func apply_setup(setup: Dictionary) -> void:
 	if setup.has("board"):
 		set_board_from_array(setup.get("board", []))
-	if setup.has("attached_cards"):
-		set_attached_cards(setup.get("attached_cards", []))
+	if setup.has("attached_stamps"):
+		set_attached_stamps(setup.get("attached_stamps", []))
 	if setup.has("white_hand"):
-		set_card_hand(1, setup.get("white_hand", []))
+		set_stamp_hand(1, setup.get("white_hand", []))
 	if setup.has("black_hand"):
-		set_card_hand(-1, setup.get("black_hand", []))
+		set_stamp_hand(-1, setup.get("black_hand", []))
 	if setup.has("white_deck"):
-		set_card_deck(1, setup.get("white_deck", []))
+		set_stamp_deck(1, setup.get("white_deck", []))
 	if setup.has("black_deck"):
-		set_card_deck(-1, setup.get("black_deck", []))
+		set_stamp_deck(-1, setup.get("black_deck", []))
 	if setup.has("turn_color"):
 		set_turn(int(setup.get("turn_color", 1)))
 	if bool(setup.get("reset_turn_state", true)):
 		reset_turn_state()
 
-	match_board.update_card_presentation()
+	match_board.update_stamp_presentation()
 	match_board.display_board()
 
 func set_board_from_array(board_data: Array) -> void:
@@ -150,8 +150,8 @@ func set_board_from_array(board_data: Array) -> void:
 	match_board.state = false
 	match_board.delete_dots()
 
-func set_attached_cards(attached_cards: Array) -> void:
-	for entry_value in attached_cards:
+func set_attached_stamps(attached_stamps: Array) -> void:
+	for entry_value in attached_stamps:
 		if !(entry_value is Dictionary):
 			continue
 
@@ -160,59 +160,59 @@ func set_attached_cards(attached_cards: Array) -> void:
 		if !match_board.piece_objects.has(piece_pos):
 			continue
 
-		var card_name: String = str(entry.get("card_name", ""))
-		var card: Card = CardLibrary.duplicate_card(card_name)
-		if card == null:
-			push_warning("Tutorial attached card not found: %s" % card_name)
+		var stamp_name: String = str(entry.get("stamp_name", ""))
+		var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
+		if stamp == null:
+			push_warning("Tutorial attached stamp not found: %s" % stamp_name)
 			continue
 
 		var piece: Piece = match_board.piece_objects[piece_pos] as Piece
-		piece.attach_card(card, bool(entry.get("exhausted", false)))
-		piece.turns_remaining = int(entry.get("turns_remaining", card.duration))
+		piece.attach_stamp(stamp, bool(entry.get("exhausted", false)))
+		piece.turns_remaining = int(entry.get("turns_remaining", stamp.duration))
 
 func reset_turn_state() -> void:
 	for owner_color in [1, -1]:
-		match_board.attached_card_this_turn[owner_color] = false
-		match_board.attached_card_count_this_turn[match_board.get_player_id_for_color(owner_color)] = 0
+		match_board.attached_stamp_this_turn[owner_color] = false
+		match_board.attached_stamp_count_this_turn[match_board.get_player_id_for_color(owner_color)] = 0
 		match_board.moved_piece_this_turn[owner_color] = false
-		match_board.exchanged_card_this_turn[owner_color] = false
+		match_board.exchanged_stamp_this_turn[owner_color] = false
 		match_board.has_turned_page_this_turn[owner_color] = false
-		match_board.played_card_hand_slots_this_turn[owner_color] = []
-		match_board.exchanged_card_names_this_turn[owner_color] = []
+		match_board.played_stamp_hand_slots_this_turn[owner_color] = []
+		match_board.exchanged_stamp_names_this_turn[owner_color] = []
 	match_board.local_auto_end_turn_pending = false
 	match_board.state = false
 	match_board.delete_dots()
 
-func set_card_hand(owner_color: int, card_names: Array) -> void:
-	var cards: Array[Card] = match_board.create_card_hand_from_names(card_names)
+func set_stamp_hand(owner_color: int, stamp_names: Array) -> void:
+	var stamps: Array[Stamp] = match_board.create_stamp_hand_from_names(stamp_names)
 	if owner_color == 1:
-		match_board.white_card_hand = cards
-		match_board.white_card_visuals = match_board.populate_card_hand(match_board.white_pieces, match_board.white_card_hand, 1)
+		match_board.white_stamp_hand = stamps
+		match_board.white_stamp_visuals = match_board.populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
 		match_board.set_codex_page_index(1, 0)
-		match_board.set_codex_pages(1, DeckManager.create_codex_pages(card_names))
+		match_board.set_codex_pages(1, DeckManager.create_codex_pages(stamp_names))
 	else:
-		match_board.black_card_hand = cards
-		match_board.black_card_visuals = match_board.populate_card_hand(match_board.black_pieces, match_board.black_card_hand, -1)
+		match_board.black_stamp_hand = stamps
+		match_board.black_stamp_visuals = match_board.populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
 		match_board.set_codex_page_index(-1, 0)
-		match_board.set_codex_pages(-1, DeckManager.create_codex_pages(card_names))
+		match_board.set_codex_pages(-1, DeckManager.create_codex_pages(stamp_names))
 	match_board.setup_deck_visuals()
 
-func set_card_deck(owner_color: int, card_names: Array) -> void:
+func set_stamp_deck(owner_color: int, stamp_names: Array) -> void:
 	var deck_names: Array[String] = []
-	for card_name_value in card_names:
-		deck_names.append(str(card_name_value))
+	for stamp_name_value in stamp_names:
+		deck_names.append(str(stamp_name_value))
 
 	var pages: Array = match_board.get_codex_pages(owner_color)
 	while pages.size() < DeckManager.CODEX_PAGE_COUNT:
 		pages.append([])
-	var card_index: int = 0
+	var stamp_index: int = 0
 	for page_index in range(1, DeckManager.CODEX_PAGE_COUNT):
 		var page: Array[String] = []
 		for _slot_index in range(DeckManager.CODEX_STAMPS_PER_PAGE):
-			if card_index >= deck_names.size():
+			if stamp_index >= deck_names.size():
 				break
-			page.append(deck_names[card_index])
-			card_index += 1
+			page.append(deck_names[stamp_index])
+			stamp_index += 1
 		pages[page_index] = page
 
 	if owner_color == 1:
@@ -227,4 +227,4 @@ func set_turn(owner_color: int) -> void:
 	var was_white_turn: bool = match_board.white
 	match_board.white = owner_color == 1
 	if was_white_turn != match_board.white:
-		match_board.get_turn_action_state_controller().reset_current_turn_card_attach()
+		match_board.get_turn_action_state_controller().reset_current_turn_stamp_attach()

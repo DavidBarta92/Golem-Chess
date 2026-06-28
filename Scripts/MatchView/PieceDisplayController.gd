@@ -21,8 +21,8 @@ func configure(config: Dictionary) -> void:
 
 func display_board() -> void:
 	DebugLog.info("display_board() called: white=%s side=%s" % [match_board.white, match_board.side])
-	match_board.get_card_interaction_controller().clear_card_attach_target_feedback()
-	match_board.clear_resolved_pending_card_attach_positions()
+	match_board.get_stamp_interaction_controller().clear_stamp_attach_target_feedback()
+	match_board.clear_resolved_pending_stamp_attach_positions()
 	match_board.update_board_markers()
 	for child in match_board.pieces_node.get_children():
 		child.queue_free()

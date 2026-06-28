@@ -32,7 +32,7 @@ func finish_game(winner_color: int) -> void:
 	match_board.hovered_piece = Vector2(-1, -1)
 	match_board.delete_dots()
 	match_board.hide_hover_piece_details()
-	match_board.update_card_drag_permissions()
+	match_board.update_stamp_drag_permissions()
 	match_board.update_end_turn_button()
 	award_win_points_if_applicable(winner_color)
 	show_result_message(winner_color)

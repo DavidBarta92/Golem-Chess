@@ -23,7 +23,7 @@ var deck_counter_shadow_texture: Texture2D
 var deck_counter_digit_shader: Shader
 
 var deck_visual_provider: Callable
-var card_deck_count_provider: Callable
+var stamp_deck_count_provider: Callable
 var game_over_provider: Callable
 
 var deck_count_label: Label
@@ -58,7 +58,7 @@ func configure(config: Dictionary) -> void:
 	deck_counter_shadow_texture = config.get("deck_counter_shadow_texture", deck_counter_shadow_texture)
 	deck_counter_digit_shader = config.get("deck_counter_digit_shader", deck_counter_digit_shader)
 	deck_visual_provider = config.get("deck_visual_provider", deck_visual_provider)
-	card_deck_count_provider = config.get("card_deck_count_provider", card_deck_count_provider)
+	stamp_deck_count_provider = config.get("stamp_deck_count_provider", stamp_deck_count_provider)
 	game_over_provider = config.get("game_over_provider", game_over_provider)
 
 func create_deck_count_ui() -> void:
@@ -194,7 +194,7 @@ func update_deck_counter_ui(animate: bool = true) -> void:
 		if counter_container == null:
 			continue
 
-		var deck_visual: CardVisual = get_deck_visual(owner_color)
+		var deck_visual: StampVisual = get_deck_visual(owner_color)
 		if is_game_over() or deck_visual == null or !is_instance_valid(deck_visual) or !deck_visual.visible:
 			counter_container.visible = false
 			continue
@@ -202,7 +202,7 @@ func update_deck_counter_ui(animate: bool = true) -> void:
 		var deck_rect: Rect2 = deck_visual.get_global_rect()
 		counter_container.global_position = deck_rect.get_center() - deck_counter_size * 0.5 + deck_counter_offset
 		counter_container.visible = true
-		set_deck_counter_value(owner_color, get_card_deck_count(owner_color), animate)
+		set_deck_counter_value(owner_color, get_stamp_deck_count(owner_color), animate)
 
 func set_deck_counter_value(owner_color: int, count: int, animate: bool) -> void:
 	var digit_nodes: Array = deck_counter_digit_nodes.get(owner_color, [])
@@ -282,7 +282,7 @@ func update_deck_count_hover() -> void:
 		deck_count_label.visible = false
 		return
 
-	var deck_visual: CardVisual = get_deck_visual(hovered_deck_color)
+	var deck_visual: StampVisual = get_deck_visual(hovered_deck_color)
 	if deck_visual == null or !is_instance_valid(deck_visual):
 		deck_count_label.visible = false
 		return
@@ -292,7 +292,7 @@ func update_deck_count_hover() -> void:
 	if label_y < 0.0:
 		label_y = deck_rect.end.y + deck_count_label_gap
 
-	deck_count_label.text = "%d cards" % get_card_deck_count(hovered_deck_color)
+	deck_count_label.text = "%d stamps" % get_stamp_deck_count(hovered_deck_color)
 	deck_count_label.global_position = Vector2(
 		deck_rect.get_center().x - deck_count_label.size.x * 0.5,
 		label_y
@@ -306,7 +306,7 @@ func get_hovered_deck_color() -> int:
 	return 0
 
 func is_mouse_over_deck(owner_color: int) -> bool:
-	var deck_visual: CardVisual = get_deck_visual(owner_color)
+	var deck_visual: StampVisual = get_deck_visual(owner_color)
 	if deck_visual == null or !is_instance_valid(deck_visual) or !deck_visual.visible:
 		return false
 	if canvas_layer == null or !is_instance_valid(canvas_layer):
@@ -331,14 +331,14 @@ func positive_mod_int(value: int, divisor: int) -> int:
 		result += divisor
 	return result
 
-func get_deck_visual(owner_color: int) -> CardVisual:
+func get_deck_visual(owner_color: int) -> StampVisual:
 	if deck_visual_provider.is_valid():
-		return deck_visual_provider.call(owner_color) as CardVisual
+		return deck_visual_provider.call(owner_color) as StampVisual
 	return null
 
-func get_card_deck_count(owner_color: int) -> int:
-	if card_deck_count_provider.is_valid():
-		return int(card_deck_count_provider.call(owner_color))
+func get_stamp_deck_count(owner_color: int) -> int:
+	if stamp_deck_count_provider.is_valid():
+		return int(stamp_deck_count_provider.call(owner_color))
 	return 0
 
 func is_game_over() -> bool:

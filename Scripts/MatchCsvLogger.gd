@@ -9,48 +9,48 @@ const MATCH_HEADERS: Array = [
 	"winner_player", "win_condition", "turn_count", "action_count",
 	"white_initial_deck", "black_initial_deck", "white_starting_hand", "black_starting_hand",
 	"white_final_hand", "black_final_hand", "white_final_deck_count", "black_final_deck_count",
-	"white_remaining_pieces", "black_remaining_pieces", "white_active_cards", "black_active_cards",
+	"white_remaining_pieces", "black_remaining_pieces", "white_active_stamps", "black_active_stamps",
 	"white_wins_in_batch", "black_wins_in_batch"
 ]
 
 const TURN_HEADERS: Array = [
 	"session_id", "match_id", "event_index", "turn_index", "event_type", "current_player",
 	"white_hand", "black_hand", "white_deck_count", "black_deck_count",
-	"white_piece_count", "black_piece_count", "white_active_cards", "black_active_cards",
-	"board_effects", "white_base", "black_base", "attached_card_this_turn",
+	"white_piece_count", "black_piece_count", "white_active_stamps", "black_active_stamps",
+	"board_effects", "white_base", "black_base", "attached_stamp_this_turn",
 	"valid_moves_current_player", "game_over", "winner_player"
 ]
 
-const CARD_HEADERS: Array = [
+const STAMP_HEADERS: Array = [
 	"session_id", "match_id", "event_index", "turn_index", "active_player", "event_type",
-	"player_id", "card_name", "card_code", "duration", "effect_type", "effect_trigger",
+	"player_id", "stamp_name", "stamp_code", "duration", "effect_type", "effect_trigger",
 	"effect_params", "effect_settings", "movement_pattern", "piece_pos", "piece_owner_player",
-	"piece_card_before", "piece_turns_before", "piece_card_after", "piece_turns_after",
+	"piece_stamp_before", "piece_turns_before", "piece_stamp_after", "piece_turns_after",
 	"hand_before", "hand_after", "deck_count_before", "deck_count_after", "deck_top_before",
-	"deck_top_after", "drawn_card", "returned_card", "source_player_id", "target_player_id",
+	"deck_top_after", "drawn_stamp", "returned_stamp", "source_player_id", "target_player_id",
 	"source_zone", "target_zone", "reason", "game_over", "winner_player", "board_effect_count",
-	"active_cards_snapshot"
+	"active_stamps_snapshot"
 ]
 
 const MOVE_HEADERS: Array = [
 	"session_id", "match_id", "event_index", "turn_index", "player_id", "controller_type",
 	"ai_difficulty", "from_pos", "to_pos", "move_direction", "piece_owner_player", "piece_color",
-	"card_name", "card_code", "card_duration", "turns_remaining_before", "turns_remaining_after",
-	"effect_type", "effect_trigger", "was_capture", "captured_piece_owner", "captured_card_name",
-	"captured_card_code", "captured_card_duration", "captured_turns_remaining", "captured_seeker",
+	"stamp_name", "stamp_code", "stamp_duration", "turns_remaining_before", "turns_remaining_after",
+	"effect_type", "effect_trigger", "was_capture", "captured_piece_owner", "captured_stamp_name",
+	"captured_stamp_code", "captured_stamp_duration", "captured_turns_remaining", "captured_seeker",
 	"was_moving_seeker", "distance_to_enemy_base_before", "distance_to_enemy_base_after",
 	"base_progress", "did_enter_enemy_base", "win_condition_after", "valid_moves_from_before",
 	"hand_snapshot", "deck_count", "board_effects_before", "board_effects_after",
-	"active_cards_before", "active_cards_after", "white_piece_count_before", "black_piece_count_before",
+	"active_stamps_before", "active_stamps_after", "white_piece_count_before", "black_piece_count_before",
 	"white_piece_count_after", "black_piece_count_after"
 ]
 
 const EFFECT_HEADERS: Array = [
 	"session_id", "match_id", "event_index", "turn_index", "trigger", "player_id",
-	"card_name", "card_code", "effect_type", "effect_trigger", "piece_pos", "source_pos",
+	"stamp_name", "stamp_code", "effect_type", "effect_trigger", "piece_pos", "source_pos",
 	"target_player_id", "source_player_id", "source_zone", "target_zone", "squares",
 	"affected_positions", "affected_count", "own_pieces_affected", "enemy_pieces_affected",
-	"cards_moved", "card_names", "base_player_id", "base_before", "base_after",
+	"stamps_moved", "stamp_names", "base_player_id", "base_before", "base_after",
 	"board_effect_turns_remaining", "hand_before", "hand_after", "deck_count_before",
 	"deck_count_after", "game_over", "winner_player", "context"
 ]
@@ -96,8 +96,8 @@ func start_match(game_state: GameStateData) -> void:
 	}
 
 	log_turn_snapshot(game_state, "match_start")
-	log_starting_cards(game_state, 0)
-	log_starting_cards(game_state, 1)
+	log_starting_stamps(game_state, 0)
+	log_starting_stamps(game_state, 1)
 
 func log_match_end(game_state: GameStateData, win_condition: String) -> void:
 	if !enabled or game_state == null or match_finished:
@@ -133,8 +133,8 @@ func log_match_end(game_state: GameStateData, win_condition: String) -> void:
 		"black_final_deck_count": get_deck_count(game_state, 1),
 		"white_remaining_pieces": count_pieces(game_state, 0),
 		"black_remaining_pieces": count_pieces(game_state, 1),
-		"white_active_cards": get_active_cards(game_state, 0),
-		"black_active_cards": get_active_cards(game_state, 1),
+		"white_active_stamps": get_active_stamps(game_state, 0),
+		"black_active_stamps": get_active_stamps(game_state, 1),
 		"white_wins_in_batch": get_batch_wins_including_current(game_state, 0),
 		"black_wins_in_batch": get_batch_wins_including_current(game_state, 1),
 	}
@@ -147,7 +147,7 @@ func log_match_end(game_state: GameStateData, win_condition: String) -> void:
 		row["game_version"] = GameConfig.get_game_version()
 	append_row(match_file_name, match_headers, row)
 	log_turn_snapshot(game_state, "match_end")
-	refresh_card_balance_report()
+	refresh_stamp_balance_report()
 
 func log_turn_snapshot(game_state: GameStateData, event_type: String) -> void:
 	if !enabled or game_state == null or match_id.is_empty():
@@ -167,28 +167,28 @@ func log_turn_snapshot(game_state: GameStateData, event_type: String) -> void:
 		"black_deck_count": get_deck_count(game_state, 1),
 		"white_piece_count": count_pieces(game_state, 0),
 		"black_piece_count": count_pieces(game_state, 1),
-		"white_active_cards": get_active_cards(game_state, 0),
-		"black_active_cards": get_active_cards(game_state, 1),
+		"white_active_stamps": get_active_stamps(game_state, 0),
+		"black_active_stamps": get_active_stamps(game_state, 1),
 		"board_effects": game_state.board_effects,
-		"white_base": CardEffectResolver.get_base_field_for_player(game_state, 0),
-		"black_base": CardEffectResolver.get_base_field_for_player(game_state, 1),
-		"attached_card_this_turn": game_state.attached_card_this_turn,
+		"white_base": StampEffectResolver.get_base_field_for_player(game_state, 0),
+		"black_base": StampEffectResolver.get_base_field_for_player(game_state, 1),
+		"attached_stamp_this_turn": game_state.attached_stamp_this_turn,
 		"valid_moves_current_player": count_valid_turn_moves(game_state, current_player),
 		"game_over": game_state.game_over,
 		"winner_player": game_state.winner_player,
 	}
 	append_row("turn_events.csv", TURN_HEADERS, row)
 
-func log_card_event(game_state: GameStateData, event_type: String, details: Dictionary = {}) -> void:
+func log_stamp_event(game_state: GameStateData, event_type: String, details: Dictionary = {}) -> void:
 	if !enabled or game_state == null or match_id.is_empty():
 		return
 
 	var player_id: int = int(details.get("player_id", game_state.current_turn_player))
-	var card: Card = details.get("card", null) as Card
-	if card == null:
-		var card_name: String = str(details.get("card_name", ""))
-		if !card_name.is_empty():
-			card = CardLibrary.get_card(card_name)
+	var stamp: Stamp = details.get("stamp", null) as Stamp
+	if stamp == null:
+		var stamp_name: String = str(details.get("stamp_name", ""))
+		if !stamp_name.is_empty():
+			stamp = StampLibrary.get_stamp(stamp_name)
 
 	var piece: Piece = details.get("piece", null) as Piece
 	var row: Dictionary = {
@@ -199,19 +199,19 @@ func log_card_event(game_state: GameStateData, event_type: String, details: Dict
 		"active_player": game_state.current_turn_player,
 		"event_type": event_type,
 		"player_id": player_id,
-		"card_name": get_card_name(card, details),
-		"card_code": get_card_code(card),
-		"duration": card.duration if card != null else int(details.get("duration", 0)),
-		"effect_type": card.effect_type if card != null else str(details.get("effect_type", "")),
-		"effect_trigger": card.effect_trigger if card != null else str(details.get("effect_trigger", "")),
-		"effect_params": card.effect_params if card != null else details.get("effect_params", []),
-		"effect_settings": card.effect_settings if card != null else details.get("effect_settings", {}),
-		"movement_pattern": card.movement_pattern if card != null else details.get("movement_pattern", []),
+		"stamp_name": get_stamp_name(stamp, details),
+		"stamp_code": get_stamp_code(stamp),
+		"duration": stamp.duration if stamp != null else int(details.get("duration", 0)),
+		"effect_type": stamp.effect_type if stamp != null else str(details.get("effect_type", "")),
+		"effect_trigger": stamp.effect_trigger if stamp != null else str(details.get("effect_trigger", "")),
+		"effect_params": stamp.effect_params if stamp != null else details.get("effect_params", []),
+		"effect_settings": stamp.effect_settings if stamp != null else details.get("effect_settings", {}),
+		"movement_pattern": stamp.movement_pattern if stamp != null else details.get("movement_pattern", []),
 		"piece_pos": details.get("piece_pos", piece.position if piece != null else Vector2(-1, -1)),
-		"piece_owner_player": int(details.get("piece_owner_player", CardEffectResolver.get_player_id_for_color(piece.color) if piece != null else -1)),
-		"piece_card_before": details.get("piece_card_before", ""),
+		"piece_owner_player": int(details.get("piece_owner_player", StampEffectResolver.get_player_id_for_color(piece.color) if piece != null else -1)),
+		"piece_stamp_before": details.get("piece_stamp_before", ""),
 		"piece_turns_before": int(details.get("piece_turns_before", 0)),
-		"piece_card_after": piece.attached_card.card_name if piece != null and piece.attached_card != null else str(details.get("piece_card_after", "")),
+		"piece_stamp_after": piece.attached_stamp.stamp_name if piece != null and piece.attached_stamp != null else str(details.get("piece_stamp_after", "")),
 		"piece_turns_after": piece.turns_remaining if piece != null else int(details.get("piece_turns_after", 0)),
 		"hand_before": details.get("hand_before", []),
 		"hand_after": details.get("hand_after", game_state.player_hands.get(player_id, [])),
@@ -219,8 +219,8 @@ func log_card_event(game_state: GameStateData, event_type: String, details: Dict
 		"deck_count_after": get_deck_count(game_state, player_id),
 		"deck_top_before": details.get("deck_top_before", ""),
 		"deck_top_after": get_deck_top(game_state, player_id),
-		"drawn_card": details.get("drawn_card", ""),
-		"returned_card": details.get("returned_card", ""),
+		"drawn_stamp": details.get("drawn_stamp", ""),
+		"returned_stamp": details.get("returned_stamp", ""),
 		"source_player_id": int(details.get("source_player_id", -1)),
 		"target_player_id": int(details.get("target_player_id", -1)),
 		"source_zone": details.get("source_zone", ""),
@@ -229,28 +229,28 @@ func log_card_event(game_state: GameStateData, event_type: String, details: Dict
 		"game_over": game_state.game_over,
 		"winner_player": game_state.winner_player,
 		"board_effect_count": game_state.board_effects.size(),
-		"active_cards_snapshot": get_active_cards(game_state, player_id),
+		"active_stamps_snapshot": get_active_stamps(game_state, player_id),
 	}
-	append_row("card_events.csv", CARD_HEADERS, row)
+	append_row("stamp_events.csv", STAMP_HEADERS, row)
 
 func create_move_context(game_state: GameStateData, player_id: int, from_pos: Vector2, to_pos: Vector2, piece: Piece, captured_piece: Piece) -> Dictionary:
-	var card: Card = piece.attached_card if piece != null else null
+	var stamp: Stamp = piece.attached_stamp if piece != null else null
 	var opponent_player_id: int = 1 - player_id
-	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, opponent_player_id)
+	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, opponent_player_id)
 	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(game_state.pieces, from_pos, player_id, BoardConfig.BOARD_SIZE, game_state.board_effects)
 	return {
 		"player_id": player_id,
 		"from_pos": from_pos,
 		"to_pos": to_pos,
-		"piece_owner_player": CardEffectResolver.get_player_id_for_color(piece.color) if piece != null else -1,
+		"piece_owner_player": StampEffectResolver.get_player_id_for_color(piece.color) if piece != null else -1,
 		"piece_color": piece.color if piece != null else 0,
-		"card": card,
+		"stamp": stamp,
 		"turns_remaining_before": piece.turns_remaining if piece != null else 0,
-		"captured_piece_owner": CardEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1,
-		"captured_card": captured_piece.attached_card if captured_piece != null else null,
+		"captured_piece_owner": StampEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1,
+		"captured_stamp": captured_piece.attached_stamp if captured_piece != null else null,
 		"captured_turns_remaining": captured_piece.turns_remaining if captured_piece != null else 0,
-		"captured_seeker": CardEffectResolver.is_seeker_piece(captured_piece),
-		"was_moving_seeker": CardEffectResolver.is_seeker_piece(piece),
+		"captured_seeker": StampEffectResolver.is_seeker_piece(captured_piece),
+		"was_moving_seeker": StampEffectResolver.is_seeker_piece(piece),
 		"distance_to_enemy_base_before": manhattan_distance(from_pos, opponent_base),
 		"distance_to_enemy_base_after": manhattan_distance(to_pos, opponent_base),
 		"did_enter_enemy_base": to_pos == opponent_base,
@@ -258,7 +258,7 @@ func create_move_context(game_state: GameStateData, player_id: int, from_pos: Ve
 		"hand_snapshot": game_state.player_hands.get(player_id, []),
 		"deck_count": get_deck_count(game_state, player_id),
 		"board_effects_before": duplicate_array(game_state.board_effects),
-		"active_cards_before": get_active_cards(game_state, player_id),
+		"active_stamps_before": get_active_stamps(game_state, player_id),
 		"white_piece_count_before": count_pieces(game_state, 0),
 		"black_piece_count_before": count_pieces(game_state, 1),
 	}
@@ -269,10 +269,10 @@ func log_move_event(game_state: GameStateData, context: Dictionary, win_conditio
 
 	action_count += 1
 	var player_id: int = int(context.get("player_id", game_state.current_turn_player))
-	var from_pos: Vector2 = CardEffectResolver.as_vector2(context.get("from_pos", Vector2(-1, -1)), Vector2(-1, -1))
-	var to_pos: Vector2 = CardEffectResolver.as_vector2(context.get("to_pos", Vector2(-1, -1)), Vector2(-1, -1))
-	var card: Card = context.get("card", null) as Card
-	var captured_card: Card = context.get("captured_card", null) as Card
+	var from_pos: Vector2 = StampEffectResolver.as_vector2(context.get("from_pos", Vector2(-1, -1)), Vector2(-1, -1))
+	var to_pos: Vector2 = StampEffectResolver.as_vector2(context.get("to_pos", Vector2(-1, -1)), Vector2(-1, -1))
+	var stamp: Stamp = context.get("stamp", null) as Stamp
+	var captured_stamp: Stamp = context.get("captured_stamp", null) as Stamp
 	var moving_piece_after: Piece = game_state.get_piece(to_pos)
 	var turns_after: int = moving_piece_after.turns_remaining if moving_piece_after != null else 0
 	var before_distance: int = int(context.get("distance_to_enemy_base_before", 0))
@@ -290,18 +290,18 @@ func log_move_event(game_state: GameStateData, context: Dictionary, win_conditio
 		"move_direction": to_pos - from_pos,
 		"piece_owner_player": int(context.get("piece_owner_player", -1)),
 		"piece_color": int(context.get("piece_color", 0)),
-		"card_name": card.card_name if card != null else "",
-		"card_code": get_card_code(card),
-		"card_duration": card.duration if card != null else 0,
+		"stamp_name": stamp.stamp_name if stamp != null else "",
+		"stamp_code": get_stamp_code(stamp),
+		"stamp_duration": stamp.duration if stamp != null else 0,
 		"turns_remaining_before": int(context.get("turns_remaining_before", 0)),
 		"turns_remaining_after": turns_after,
-		"effect_type": card.effect_type if card != null else "",
-		"effect_trigger": card.effect_trigger if card != null else "",
+		"effect_type": stamp.effect_type if stamp != null else "",
+		"effect_trigger": stamp.effect_trigger if stamp != null else "",
 		"was_capture": int(context.get("captured_piece_owner", -1)) != -1,
 		"captured_piece_owner": int(context.get("captured_piece_owner", -1)),
-		"captured_card_name": captured_card.card_name if captured_card != null else "",
-		"captured_card_code": get_card_code(captured_card),
-		"captured_card_duration": captured_card.duration if captured_card != null else 0,
+		"captured_stamp_name": captured_stamp.stamp_name if captured_stamp != null else "",
+		"captured_stamp_code": get_stamp_code(captured_stamp),
+		"captured_stamp_duration": captured_stamp.duration if captured_stamp != null else 0,
 		"captured_turns_remaining": int(context.get("captured_turns_remaining", 0)),
 		"captured_seeker": bool(context.get("captured_seeker", false)),
 		"was_moving_seeker": bool(context.get("was_moving_seeker", false)),
@@ -315,8 +315,8 @@ func log_move_event(game_state: GameStateData, context: Dictionary, win_conditio
 		"deck_count": int(context.get("deck_count", -1)),
 		"board_effects_before": context.get("board_effects_before", []),
 		"board_effects_after": game_state.board_effects,
-		"active_cards_before": context.get("active_cards_before", []),
-		"active_cards_after": get_active_cards(game_state, player_id),
+		"active_stamps_before": context.get("active_stamps_before", []),
+		"active_stamps_after": get_active_stamps(game_state, player_id),
 		"white_piece_count_before": int(context.get("white_piece_count_before", 0)),
 		"black_piece_count_before": int(context.get("black_piece_count_before", 0)),
 		"white_piece_count_after": count_pieces(game_state, 0),
@@ -324,16 +324,16 @@ func log_move_event(game_state: GameStateData, context: Dictionary, win_conditio
 	}
 	append_row("move_events.csv", MOVE_HEADERS, row)
 
-func create_effect_context(game_state: GameStateData, trigger: String, player_id: int, card: Card, source_pos: Vector2, context: Dictionary) -> Dictionary:
+func create_effect_context(game_state: GameStateData, trigger: String, player_id: int, stamp: Stamp, source_pos: Vector2, context: Dictionary) -> Dictionary:
 	return {
 		"trigger": trigger,
 		"player_id": player_id,
-		"card": card,
+		"stamp": stamp,
 		"source_pos": source_pos,
 		"piece_pos": context.get("piece_pos", source_pos),
 		"hand_before": game_state.player_hands.get(player_id, []),
 		"deck_count_before": get_deck_count(game_state, player_id),
-		"base_before": CardEffectResolver.get_base_field_for_player(game_state, player_id),
+		"base_before": StampEffectResolver.get_base_field_for_player(game_state, player_id),
 		"context": context,
 	}
 
@@ -342,7 +342,7 @@ func log_effect_event(game_state: GameStateData, before: Dictionary, result: Dic
 		return
 
 	var player_id: int = int(before.get("player_id", game_state.current_turn_player))
-	var card: Card = before.get("card", null) as Card
+	var stamp: Stamp = before.get("stamp", null) as Stamp
 	var row: Dictionary = {
 		"session_id": session_id,
 		"match_id": match_id,
@@ -350,10 +350,10 @@ func log_effect_event(game_state: GameStateData, before: Dictionary, result: Dic
 		"turn_index": turn_index,
 		"trigger": before.get("trigger", ""),
 		"player_id": player_id,
-		"card_name": card.card_name if card != null else "",
-		"card_code": get_card_code(card),
-		"effect_type": card.effect_type if card != null else "",
-		"effect_trigger": card.effect_trigger if card != null else "",
+		"stamp_name": stamp.stamp_name if stamp != null else "",
+		"stamp_code": get_stamp_code(stamp),
+		"effect_type": stamp.effect_type if stamp != null else "",
+		"effect_trigger": stamp.effect_trigger if stamp != null else "",
 		"piece_pos": before.get("piece_pos", Vector2(-1, -1)),
 		"source_pos": before.get("source_pos", Vector2(-1, -1)),
 		"target_player_id": int(result.get("target_player_id", -1)),
@@ -365,11 +365,11 @@ func log_effect_event(game_state: GameStateData, before: Dictionary, result: Dic
 		"affected_count": int(result.get("affected_count", 0)),
 		"own_pieces_affected": int(result.get("own_pieces_affected", 0)),
 		"enemy_pieces_affected": int(result.get("enemy_pieces_affected", 0)),
-		"cards_moved": int(result.get("cards_moved", 0)),
-		"card_names": result.get("card_names", []),
+		"stamps_moved": int(result.get("stamps_moved", 0)),
+		"stamp_names": result.get("stamp_names", []),
 		"base_player_id": int(result.get("base_player_id", -1)),
 		"base_before": result.get("base_before", before.get("base_before", Vector2(-1, -1))),
-		"base_after": result.get("base_after", CardEffectResolver.get_base_field_for_player(game_state, player_id)),
+		"base_after": result.get("base_after", StampEffectResolver.get_base_field_for_player(game_state, player_id)),
 		"board_effect_turns_remaining": int(result.get("board_effect_turns_remaining", -1)),
 		"hand_before": before.get("hand_before", []),
 		"hand_after": game_state.player_hands.get(player_id, []),
@@ -388,12 +388,12 @@ func next_event_index() -> int:
 	event_index += 1
 	return event_index
 
-func log_starting_cards(game_state: GameStateData, player_id: int) -> void:
+func log_starting_stamps(game_state: GameStateData, player_id: int) -> void:
 	var hand: Array = game_state.player_hands.get(player_id, [])
-	for card_name_value in hand:
-		log_card_event(game_state, "starting_hand", {
+	for stamp_name_value in hand:
+		log_stamp_event(game_state, "starting_hand", {
 			"player_id": player_id,
-			"card_name": str(card_name_value),
+			"stamp_name": str(stamp_name_value),
 			"hand_after": hand,
 			"deck_count_after": get_deck_count(game_state, player_id),
 			"reason": "initial_draw",
@@ -460,15 +460,15 @@ func normalize_value(value):
 	if value is Vector2i:
 		var vector_i_value: Vector2i = value
 		return [vector_i_value.x, vector_i_value.y]
-	if value is Card:
-		var card: Card = value
-		return card.card_name
+	if value is Stamp:
+		var stamp: Stamp = value
+		return stamp.stamp_name
 	if value is Piece:
 		var piece: Piece = value
 		return {
 			"position": normalize_value(piece.position),
-			"player_id": CardEffectResolver.get_player_id_for_color(piece.color),
-			"card_name": piece.attached_card.card_name if piece.attached_card != null else "",
+			"player_id": StampEffectResolver.get_player_id_for_color(piece.color),
+			"stamp_name": piece.attached_stamp.stamp_name if piece.attached_stamp != null else "",
 			"turns_remaining": piece.turns_remaining,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
 		}
@@ -538,7 +538,7 @@ func get_deck_top(game_state: GameStateData, player_id: int) -> String:
 	return str(deck[0])
 
 func count_pieces(game_state: GameStateData, player_id: int) -> int:
-	var expected_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var expected_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var count: int = 0
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
@@ -546,42 +546,42 @@ func count_pieces(game_state: GameStateData, player_id: int) -> int:
 			count += 1
 	return count
 
-func get_active_cards(game_state: GameStateData, player_id: int) -> Array:
-	var expected_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var active_cards: Array = []
+func get_active_stamps(game_state: GameStateData, player_id: int) -> Array:
+	var expected_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var active_stamps: Array = []
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != expected_color or piece.attached_card == null:
+		if piece == null or piece.color != expected_color or piece.attached_stamp == null:
 			continue
-		active_cards.append({
+		active_stamps.append({
 			"position": normalize_value(position_value),
-			"card_name": piece.attached_card.card_name,
+			"stamp_name": piece.attached_stamp.stamp_name,
 			"turns_remaining": piece.turns_remaining,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
-			"effect_type": piece.attached_card.effect_type,
+			"effect_type": piece.attached_stamp.effect_type,
 		})
-	return active_cards
+	return active_stamps
 
 func count_valid_turn_moves(game_state: GameStateData, player_id: int) -> int:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var can_attach_card: bool = true
-	var hand_cards: Array[Card] = []
-	var hand_card_names: Array = game_state.player_hands.get(player_id, [])
-	for card_name_value in hand_card_names:
-		var card: Card = CardLibrary.get_card(str(card_name_value))
-		if card != null:
-			hand_cards.append(card)
-	return MoveRules.get_valid_turn_moves(game_state.pieces, player_color, hand_cards, can_attach_card, BoardConfig.BOARD_SIZE, game_state.board_effects).size()
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var can_attach_stamp: bool = true
+	var hand_stamps: Array[Stamp] = []
+	var hand_stamp_names: Array = game_state.player_hands.get(player_id, [])
+	for stamp_name_value in hand_stamp_names:
+		var stamp: Stamp = StampLibrary.get_stamp(str(stamp_name_value))
+		if stamp != null:
+			hand_stamps.append(stamp)
+	return MoveRules.get_valid_turn_moves(game_state.pieces, player_color, hand_stamps, can_attach_stamp, BoardConfig.BOARD_SIZE, game_state.board_effects).size()
 
-func get_card_name(card: Card, details: Dictionary) -> String:
-	if card != null:
-		return card.card_name
-	return str(details.get("card_name", ""))
+func get_stamp_name(stamp: Stamp, details: Dictionary) -> String:
+	if stamp != null:
+		return stamp.stamp_name
+	return str(details.get("stamp_name", ""))
 
-func get_card_code(card: Card) -> String:
-	if card == null:
+func get_stamp_code(stamp: Stamp) -> String:
+	if stamp == null:
 		return ""
-	return card.card_code
+	return stamp.stamp_code
 
 func manhattan_distance(a: Vector2, b: Vector2) -> int:
 	return int(abs(a.x - b.x) + abs(a.y - b.y))
@@ -592,12 +592,12 @@ func get_batch_wins_including_current(game_state: GameStateData, player_id: int)
 		wins += 1
 	return wins
 
-func refresh_card_balance_report() -> void:
+func refresh_stamp_balance_report() -> void:
 	if !GameConfig.is_ai_vs_ai_batch:
 		return
 
-	var generator := CardBalanceReportGenerator.new()
+	var generator := StampBalanceReportGenerator.new()
 	if !generator.refresh_report(get_log_dir()):
-		push_warning("Card balance report could not be refreshed.")
+		push_warning("Stamp balance report could not be refreshed.")
 	if !generator.refresh_session_balance(get_log_dir(), GameConfig.ai_vs_ai_log_session_id):
-		push_warning("Card balance session data could not be refreshed.")
+		push_warning("Stamp balance session data could not be refreshed.")

@@ -4,7 +4,7 @@ var board: Array
 var piece_objects: Dictionary
 var local_pending_respawns: Dictionary
 var moved_piece_this_turn: Dictionary
-var played_card_hand_slots_this_turn: Dictionary
+var played_stamp_hand_slots_this_turn: Dictionary
 var player_base_fields: Dictionary
 var board_effects: Array
 var board_size: int = BoardConfig.BOARD_SIZE
@@ -15,11 +15,11 @@ var fragment_group_top: String = "top"
 var fragment_group_pending: String = "pending"
 
 var player_id_for_color_provider: Callable
-var card_hand_provider: Callable
-var card_deck_provider: Callable
+var stamp_hand_provider: Callable
+var stamp_deck_provider: Callable
 var current_turn_color_provider: Callable
 var moved_piece_this_turn_provider: Callable
-var can_exchange_card_provider: Callable
+var can_exchange_stamp_provider: Callable
 var can_turn_page_provider: Callable
 var create_board_tiles_callback: Callable
 
@@ -28,7 +28,7 @@ func configure(config: Dictionary) -> void:
 	piece_objects = config.get("piece_objects", piece_objects)
 	local_pending_respawns = config.get("local_pending_respawns", local_pending_respawns)
 	moved_piece_this_turn = config.get("moved_piece_this_turn", moved_piece_this_turn)
-	played_card_hand_slots_this_turn = config.get("played_card_hand_slots_this_turn", played_card_hand_slots_this_turn)
+	played_stamp_hand_slots_this_turn = config.get("played_stamp_hand_slots_this_turn", played_stamp_hand_slots_this_turn)
 	player_base_fields = config.get("player_base_fields", player_base_fields)
 	board_effects = config.get("board_effects", board_effects)
 	board_size = int(config.get("board_size", board_size))
@@ -38,11 +38,11 @@ func configure(config: Dictionary) -> void:
 	fragment_group_top = str(config.get("fragment_group_top", fragment_group_top))
 	fragment_group_pending = str(config.get("fragment_group_pending", fragment_group_pending))
 	player_id_for_color_provider = config.get("player_id_for_color_provider", player_id_for_color_provider)
-	card_hand_provider = config.get("card_hand_provider", card_hand_provider)
-	card_deck_provider = config.get("card_deck_provider", card_deck_provider)
+	stamp_hand_provider = config.get("stamp_hand_provider", stamp_hand_provider)
+	stamp_deck_provider = config.get("stamp_deck_provider", stamp_deck_provider)
 	current_turn_color_provider = config.get("current_turn_color_provider", current_turn_color_provider)
 	moved_piece_this_turn_provider = config.get("moved_piece_this_turn_provider", moved_piece_this_turn_provider)
-	can_exchange_card_provider = config.get("can_exchange_card_provider", can_exchange_card_provider)
+	can_exchange_stamp_provider = config.get("can_exchange_stamp_provider", can_exchange_stamp_provider)
 	can_turn_page_provider = config.get("can_turn_page_provider", can_turn_page_provider)
 	create_board_tiles_callback = config.get("create_board_tiles_callback", create_board_tiles_callback)
 
@@ -53,7 +53,7 @@ func move_piece_on_board(start_pos: Vector2, end_pos: Vector2) -> Dictionary:
 
 	if piece_objects.has(start_pos):
 		var piece: Piece = piece_objects[start_pos] as Piece
-		moving_piece_visible_to_enemy = !CardEffectResolver.piece_has_attached_effect(piece, CardEffect.TYPE_INVISIBLE_TO_ENEMY)
+		moving_piece_visible_to_enemy = !StampEffectResolver.piece_has_attached_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
 		piece.position = end_pos
 		piece_objects.erase(start_pos)
 		piece_objects[end_pos] = piece
@@ -90,18 +90,18 @@ func create_last_move_record(moving_color: int, from_pos: Vector2, to_pos: Vecto
 	}
 	if captured_piece != null:
 		last_move["captured_piece_color"] = captured_piece.color
-		last_move["captured_card_name"] = captured_piece.attached_card.card_name if captured_piece.attached_card != null else ""
+		last_move["captured_stamp_name"] = captured_piece.attached_stamp.stamp_name if captured_piece.attached_stamp != null else ""
 	return last_move
 
-func record_played_card_hand_slot(owner_color: int, current_hand_index: int) -> void:
+func record_played_stamp_hand_slot(owner_color: int, current_hand_index: int) -> void:
 	if current_hand_index < 0:
 		return
-	var played_slots: Array = played_card_hand_slots_this_turn.get(owner_color, [])
+	var played_slots: Array = played_stamp_hand_slots_this_turn.get(owner_color, [])
 	played_slots.append(get_original_hand_slot_for_play(owner_color, current_hand_index))
-	played_card_hand_slots_this_turn[owner_color] = played_slots
+	played_stamp_hand_slots_this_turn[owner_color] = played_slots
 
 func get_original_hand_slot_for_play(owner_color: int, current_hand_index: int) -> int:
-	var played_slots: Array = played_card_hand_slots_this_turn.get(owner_color, [])
+	var played_slots: Array = played_stamp_hand_slots_this_turn.get(owner_color, [])
 	for candidate in range(current_hand_index, DeckManager.HAND_SIZE):
 		if played_slots.has(candidate):
 			continue
@@ -245,12 +245,12 @@ func get_random_empty_home_position(owner_color: int) -> Vector2:
 
 	return empty_positions[randi() % empty_positions.size()]
 
-func move_base_effect(source_pos: Vector2, piece: Piece, card: Card) -> Array[Dictionary]:
+func move_base_effect(source_pos: Vector2, piece: Piece, stamp: Stamp) -> Array[Dictionary]:
 	var pending_respawn_arrivals: Array[Dictionary] = []
-	if piece == null or card == null:
+	if piece == null or stamp == null:
 		return pending_respawn_arrivals
 
-	var raw_target_squares: Array[Vector2] = CardEffectResolver.get_effect_squares_unfiltered(card, source_pos, piece.color)
+	var raw_target_squares: Array[Vector2] = StampEffectResolver.get_effect_squares_unfiltered(stamp, source_pos, piece.color)
 	if raw_target_squares.is_empty():
 		return pending_respawn_arrivals
 
@@ -269,39 +269,39 @@ func move_base_effect(source_pos: Vector2, piece: Piece, card: Card) -> Array[Di
 		create_board_tiles_callback.call()
 	return pending_respawn_arrivals
 
-func apply_card_effect_trigger(trigger: String, source_pos: Vector2, piece: Piece, card: Card) -> Array[Dictionary]:
+func apply_stamp_effect_trigger(trigger: String, source_pos: Vector2, piece: Piece, stamp: Stamp) -> Array[Dictionary]:
 	var pending_respawn_arrivals: Array[Dictionary] = []
-	if piece == null or card == null or !card.has_effect() or card.effect_trigger != trigger:
+	if piece == null or stamp == null or !stamp.has_effect() or stamp.effect_trigger != trigger:
 		return pending_respawn_arrivals
 
-	match card.effect_type:
-		CardEffect.TYPE_MOVE_BASE:
-			pending_respawn_arrivals.append_array(move_base_effect(source_pos, piece, card))
-		CardEffect.TYPE_INVALID_SQUARES, CardEffect.TYPE_FROZEN_SQUARES:
-			add_board_zone_effect(source_pos, piece, card)
+	match stamp.effect_type:
+		StampEffect.TYPE_MOVE_BASE:
+			pending_respawn_arrivals.append_array(move_base_effect(source_pos, piece, stamp))
+		StampEffect.TYPE_INVALID_SQUARES, StampEffect.TYPE_FROZEN_SQUARES:
+			add_board_zone_effect(source_pos, piece, stamp)
 	return pending_respawn_arrivals
 
-func add_board_zone_effect(source_pos: Vector2, piece: Piece, card: Card) -> void:
-	if piece == null or card == null:
+func add_board_zone_effect(source_pos: Vector2, piece: Piece, stamp: Stamp) -> void:
+	if piece == null or stamp == null:
 		return
 
-	var squares: Array[Vector2] = CardEffectResolver.get_effect_squares(card, source_pos, board_size, piece.color)
-	if card.effect_type == CardEffect.TYPE_INVALID_SQUARES or card.effect_type == CardEffect.TYPE_FROZEN_SQUARES:
+	var squares: Array[Vector2] = StampEffectResolver.get_effect_squares(stamp, source_pos, board_size, piece.color)
+	if stamp.effect_type == StampEffect.TYPE_INVALID_SQUARES or stamp.effect_type == StampEffect.TYPE_FROZEN_SQUARES:
 		squares = filter_base_fields_from_effect_squares(squares)
 	if squares.is_empty():
 		return
 
-	var turns_remaining: int = int(card.effect_settings.get("turns_remaining", card.duration))
+	var turns_remaining: int = int(stamp.effect_settings.get("turns_remaining", stamp.duration))
 	if turns_remaining == 0:
 		turns_remaining = 1
 
 	board_effects.append({
-		"effect_type": card.effect_type,
+		"effect_type": stamp.effect_type,
 		"owner_player_id": get_player_id_for_color(piece.color),
-		"target_player_id": int(card.effect_settings.get("target_player_id", -1)),
+		"target_player_id": int(stamp.effect_settings.get("target_player_id", -1)),
 		"squares": squares,
 		"turns_remaining": turns_remaining,
-		"skip_next_tick": card.effect_type == CardEffect.TYPE_FROZEN_SQUARES,
+		"skip_next_tick": stamp.effect_type == StampEffect.TYPE_FROZEN_SQUARES,
 	})
 
 func tick_board_effects() -> void:
@@ -346,15 +346,15 @@ func filter_base_fields_from_effect_squares(squares: Array[Vector2]) -> Array[Ve
 			filtered_squares.append(square_pos)
 	return filtered_squares
 
-func player_has_available_seeker_card(owner_color: int) -> bool:
-	for card: Card in get_card_hand(owner_color):
-		if MoveRules.is_seeker_card(card):
+func player_has_available_seeker_stamp(owner_color: int) -> bool:
+	for stamp: Stamp in get_stamp_hand(owner_color):
+		if MoveRules.is_seeker_stamp(stamp):
 			return true
-	if DeckManager.has_seeker_card(get_card_deck(owner_color)):
+	if DeckManager.has_seeker_stamp(get_stamp_deck(owner_color)):
 		return true
 	for position_value in piece_objects:
 		var piece: Piece = piece_objects[position_value] as Piece
-		if piece != null and piece.color == owner_color and MoveRules.is_seeker_card(piece.attached_card):
+		if piece != null and piece.color == owner_color and MoveRules.is_seeker_stamp(piece.attached_stamp):
 			return true
 	return false
 
@@ -391,7 +391,7 @@ func has_any_piece(owner_color: int) -> bool:
 	return MoveRules.has_any_piece(piece_objects, owner_color)
 
 func is_seeker_piece(piece: Piece) -> bool:
-	return piece != null and MoveRules.is_seeker_card(piece.attached_card)
+	return piece != null and MoveRules.is_seeker_stamp(piece.attached_stamp)
 
 func is_seeker_piece_at(piece_position: Vector2) -> bool:
 	if !piece_objects.has(piece_position):
@@ -400,10 +400,10 @@ func is_seeker_piece_at(piece_position: Vector2) -> bool:
 
 func current_player_has_valid_turn_action() -> bool:
 	var current_color: int = get_current_turn_color()
-	var hand_cards: Array[Card] = get_card_hand(current_color)
+	var hand_stamps: Array[Stamp] = get_stamp_hand(current_color)
 	if !has_moved_piece_this_turn(current_color) and MoveRules.has_valid_piece_move(piece_objects, current_color, board_size, board_effects):
 		return true
-	if MoveRules.has_valid_attachment_move(piece_objects, current_color, hand_cards, board_size, board_effects):
+	if MoveRules.has_valid_attachment_move(piece_objects, current_color, hand_stamps, board_size, board_effects):
 		return true
 	if current_player_can_end_turn_due_to_frozen_piece():
 		return true
@@ -419,16 +419,16 @@ func current_player_can_end_turn_due_to_frozen_piece() -> bool:
 		return false
 	return MoveRules.has_frozen_movable_piece(piece_objects, current_color, board_size, board_effects)
 
-func get_card_hand(owner_color: int) -> Array[Card]:
-	if card_hand_provider.is_valid():
-		var value = card_hand_provider.call(owner_color)
+func get_stamp_hand(owner_color: int) -> Array[Stamp]:
+	if stamp_hand_provider.is_valid():
+		var value = stamp_hand_provider.call(owner_color)
 		if value is Array:
 			return value
 	return []
 
-func get_card_deck(owner_color: int) -> Array[String]:
-	if card_deck_provider.is_valid():
-		var value = card_deck_provider.call(owner_color)
+func get_stamp_deck(owner_color: int) -> Array[String]:
+	if stamp_deck_provider.is_valid():
+		var value = stamp_deck_provider.call(owner_color)
 		if value is Array:
 			return value
 	return []
@@ -443,9 +443,9 @@ func has_moved_piece_this_turn(owner_color: int) -> bool:
 		return bool(moved_piece_this_turn_provider.call(owner_color))
 	return false
 
-func can_exchange_card(owner_color: int) -> bool:
-	if can_exchange_card_provider.is_valid():
-		return bool(can_exchange_card_provider.call(owner_color))
+func can_exchange_stamp(owner_color: int) -> bool:
+	if can_exchange_stamp_provider.is_valid():
+		return bool(can_exchange_stamp_provider.call(owner_color))
 	return false
 
 func can_turn_page(owner_color: int) -> bool:

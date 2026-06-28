@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StampPrint" format=3 uid="uid://dxsvvbysyw3l"]
+
+[ext_resource type="Texture2D" uid="uid://dldrp44edfxoj" path="res://Assets/archer.png" id="1_dnk50"]
+[ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="2_2wthy"]
+[ext_resource type="Script" uid="uid://jywk3em8fjkn" path="res://Scripts/StampPrint.gd" id="3_dpnex"]
+
+[resource]
+script = ExtResource("3_dpnex")
+print_id = "pikeman.full_art"
+stamp_code = "pikeman"
+variant_id = "full_art"
+variant_name = "Full Art"
+stamp_art = ExtResource("1_dnk50")
+stamp_art_mask = ExtResource("2_2wthy")
+stamp_shimmer_enabled = true
+grant_in_default_collection = true

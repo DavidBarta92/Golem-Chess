@@ -116,8 +116,8 @@ func build_codex_state(host, event_type: String) -> Dictionary:
 		"win_condition": str(game_state.win_condition),
 		"player_base_fields": serialize_base_fields(game_state),
 		"pieces": serialize_pieces(game_state),
-		"player_hands": serialize_player_card_lists(game_state.player_hands, true),
-		"player_decks": serialize_player_card_lists(game_state.player_decks, false),
+		"player_hands": serialize_player_stamp_lists(game_state.player_hands, true),
+		"player_decks": serialize_player_stamp_lists(game_state.player_decks, false),
 		"player_codexes": serialize_player_codexes(game_state),
 		"turn_flags": serialize_turn_flags(game_state),
 		"board_effects": host.serialize_board_effects(),
@@ -128,68 +128,68 @@ func build_codex_state(host, event_type: String) -> Dictionary:
 func serialize_pieces(game_state: GameStateData) -> Array:
 	var pieces: Array = []
 	for position_value in game_state.pieces:
-		var pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
 		if piece == null:
 			continue
 		pieces.append({
 			"position": vector2_to_array(pos),
 			"color": piece.color,
-			"player_id": CardEffectResolver.get_player_id_for_color(piece.color),
-			"card": serialize_card(piece.attached_card),
-			"card_name": piece.attached_card.card_name if piece.attached_card != null else "",
+			"player_id": StampEffectResolver.get_player_id_for_color(piece.color),
+			"stamp": serialize_stamp(piece.attached_stamp),
+			"stamp_name": piece.attached_stamp.stamp_name if piece.attached_stamp != null else "",
 			"turns_remaining": piece.turns_remaining,
 			"exhausted_this_turn": piece.exhausted_this_turn,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
 		})
 	return pieces
 
-func serialize_player_card_lists(card_lists: Dictionary, include_card_details: bool) -> Dictionary:
+func serialize_player_stamp_lists(stamp_lists: Dictionary, include_stamp_details: bool) -> Dictionary:
 	var output: Dictionary = {}
-	for player_id in card_lists:
-		var cards: Array = []
-		for card_name_value in card_lists[player_id]:
-			var card_name: String = str(card_name_value)
-			if include_card_details:
-				cards.append(serialize_card(CardLibrary.get_card(card_name)))
+	for player_id in stamp_lists:
+		var stamps: Array = []
+		for stamp_name_value in stamp_lists[player_id]:
+			var stamp_name: String = str(stamp_name_value)
+			if include_stamp_details:
+				stamps.append(serialize_stamp(StampLibrary.get_stamp(stamp_name)))
 			else:
-				cards.append(card_name)
-		output[str(player_id)] = cards
+				stamps.append(stamp_name)
+		output[str(player_id)] = stamps
 	return output
 
-func serialize_card(card: Card) -> Dictionary:
-	if card == null:
+func serialize_stamp(stamp: Stamp) -> Dictionary:
+	if stamp == null:
 		return {}
 	return {
-		"name": card.card_name,
-		"code": card.card_code,
-		"role": card.role,
-		"is_seeker": MoveRules.is_seeker_card(card),
-		"duration": card.duration,
-		"symbol": card.symbol,
-		"description": card.description,
-		"effect_type": card.effect_type,
-		"effect_trigger": card.effect_trigger,
-		"directions": serialize_vector_array(card.get_directions()),
-		"movement_options": serialize_movement_options(card.get_movement_options()),
+		"name": stamp.stamp_name,
+		"code": stamp.stamp_code,
+		"role": stamp.role,
+		"is_seeker": MoveRules.is_seeker_stamp(stamp),
+		"duration": stamp.duration,
+		"symbol": stamp.symbol,
+		"description": stamp.description,
+		"effect_type": stamp.effect_type,
+		"effect_trigger": stamp.effect_trigger,
+		"directions": serialize_vector_array(stamp.get_directions()),
+		"movement_options": serialize_movement_options(stamp.get_movement_options()),
 	}
 
 func serialize_movement_options(options: Array[Dictionary]) -> Array:
 	var output: Array = []
 	for option in options:
 		output.append({
-			"offset": vector2_to_array(CardEffectResolver.as_vector2(option.get("offset", Vector2.ZERO), Vector2.ZERO)),
-			"movement_type": int(option.get("movement_type", CardEffect.MOVEMENT_MOVE_AND_CAPTURE)),
+			"offset": vector2_to_array(StampEffectResolver.as_vector2(option.get("offset", Vector2.ZERO), Vector2.ZERO)),
+			"movement_type": int(option.get("movement_type", StampEffect.MOVEMENT_MOVE_AND_CAPTURE)),
 		})
 	return output
 
 func serialize_legal_actions(host) -> Dictionary:
 	var game_state: GameStateData = host.game_state
 	var player_id: int = int(game_state.current_turn_player)
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var legal_actions: Dictionary = {
 		"player_id": player_id,
-		"attach_card": [],
+		"attach_stamp": [],
 		"move_piece": [],
 		"turn_page": [],
 		"end_turn": [{
@@ -198,36 +198,36 @@ func serialize_legal_actions(host) -> Dictionary:
 		}],
 	}
 
-	var hand_card_names: Array = game_state.player_hands.get(player_id, [])
+	var hand_stamp_names: Array = game_state.player_hands.get(player_id, [])
 	for position_value in game_state.pieces:
-		var pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_card != null:
+		if piece == null or piece.color != player_color or piece.attached_stamp != null:
 			continue
-		for hand_index in range(hand_card_names.size()):
-			var card_name: String = str(hand_card_names[hand_index])
-			var card: Card = CardLibrary.get_card(card_name)
-			if !MoveRules.card_can_be_used(card) or !MoveRules.can_attach_card_for_turn(game_state.pieces, player_color, card):
+		for hand_index in range(hand_stamp_names.size()):
+			var stamp_name: String = str(hand_stamp_names[hand_index])
+			var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
+			if !MoveRules.stamp_can_be_used(stamp) or !MoveRules.can_attach_stamp_for_turn(game_state.pieces, player_color, stamp):
 				continue
-			legal_actions["attach_card"].append({
-				"type": "attach_card",
+			legal_actions["attach_stamp"].append({
+				"type": "attach_stamp",
 				"player_id": player_id,
-				"card_name": card_name,
+				"stamp_name": stamp_name,
 				"hand_index": hand_index,
 				"piece_pos": vector2_to_array(pos),
-				"next_turn_moves_after_attach": serialize_vector_array(MoveRules.get_card_moves_for_piece(game_state.pieces, pos, player_color, card, BoardConfig.BOARD_SIZE, game_state.board_effects)),
+				"next_turn_moves_after_attach": serialize_vector_array(MoveRules.get_stamp_moves_for_piece(game_state.pieces, pos, player_color, stamp, BoardConfig.BOARD_SIZE, game_state.board_effects)),
 				"note": "Attach exhausts the piece this turn; these moves are for later turns.",
 			})
 
 	if !bool(game_state.moved_piece_this_turn.get(player_id, false)):
-		var existing_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects)
+		var existing_moves: Array[Dictionary] = MoveRules.get_existing_stamp_moves(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects)
 		for move in existing_moves:
 			legal_actions["move_piece"].append({
 				"type": "move_piece",
 				"player_id": player_id,
 				"from": vector2_to_array(AIStateSimulator.get_move_from(move)),
 				"to": vector2_to_array(AIStateSimulator.get_move_to(move)),
-				"card_name": get_move_card_name(move),
+				"stamp_name": get_move_stamp_name(move),
 			})
 
 	if host.can_turn_page_for_player(player_id):
@@ -242,11 +242,11 @@ func serialize_player_codexes(game_state: GameStateData) -> Dictionary:
 	for player_id in [0, 1]:
 		var pages: Array = []
 		for page in game_state.get_codex_pages(player_id):
-			var page_cards: Array = []
+			var page_stamps: Array = []
 			if page is Array:
-				for card_name_value in page:
-					page_cards.append(serialize_card(CardLibrary.get_card(str(card_name_value))))
-			pages.append(page_cards)
+				for stamp_name_value in page:
+					page_stamps.append(serialize_stamp(StampLibrary.get_stamp(str(stamp_name_value))))
+			pages.append(page_stamps)
 		output[str(player_id)] = {
 			"current_page_index": game_state.get_current_page_index(player_id),
 			"page_counts": game_state.get_page_stamp_counts(player_id),
@@ -257,15 +257,15 @@ func serialize_player_codexes(game_state: GameStateData) -> Dictionary:
 
 func serialize_base_fields(game_state: GameStateData) -> Dictionary:
 	return {
-		"0": vector2_to_array(CardEffectResolver.get_base_field_for_player(game_state, 0)),
-		"1": vector2_to_array(CardEffectResolver.get_base_field_for_player(game_state, 1)),
+		"0": vector2_to_array(StampEffectResolver.get_base_field_for_player(game_state, 0)),
+		"1": vector2_to_array(StampEffectResolver.get_base_field_for_player(game_state, 1)),
 	}
 
 func serialize_turn_flags(game_state: GameStateData) -> Dictionary:
 	return {
-		"attached_card_this_turn": stringify_key_dictionary(game_state.attached_card_this_turn),
+		"attached_stamp_this_turn": stringify_key_dictionary(game_state.attached_stamp_this_turn),
 		"moved_piece_this_turn": stringify_key_dictionary(game_state.moved_piece_this_turn),
-		"exchanged_card_this_turn": stringify_key_dictionary(game_state.exchanged_card_this_turn),
+		"exchanged_stamp_this_turn": stringify_key_dictionary(game_state.exchanged_stamp_this_turn),
 		"has_turned_page_this_turn": stringify_key_dictionary(game_state.has_turned_page_this_turn),
 	}
 
@@ -278,13 +278,13 @@ func stringify_key_dictionary(source: Dictionary) -> Dictionary:
 func normalize_action(action_value: Dictionary) -> Dictionary:
 	var action: Dictionary = action_value.duplicate()
 	match str(action.get("type", "")):
-		"attach_card":
+		"attach_stamp":
 			action["piece_pos"] = array_to_vector2(action.get("piece_pos", Vector2(-1, -1)))
 			action["hand_index"] = int(action.get("hand_index", -1))
 		"move_piece":
 			action["from"] = array_to_vector2(action.get("from", Vector2(-1, -1)))
 			action["to"] = array_to_vector2(action.get("to", Vector2(-1, -1)))
-		"exchange_card":
+		"exchange_stamp":
 			action["hand_index"] = int(action.get("hand_index", -1))
 		"turn_page":
 			pass
@@ -298,20 +298,20 @@ func create_action_snapshot(host, action: Dictionary) -> Dictionary:
 		"game_over": bool(game_state.game_over),
 	}
 	match str(action.get("type", "")):
-		"attach_card":
-			var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+		"attach_stamp":
+			var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 			var piece: Piece = game_state.get_piece(piece_pos)
-			snapshot["piece_card_name"] = piece.attached_card.card_name if piece != null and piece.attached_card != null else ""
-			snapshot["hand"] = duplicate_card_names(game_state.player_hands.get(int(action.get("player_id", -1)), []))
+			snapshot["piece_stamp_name"] = piece.attached_stamp.stamp_name if piece != null and piece.attached_stamp != null else ""
+			snapshot["hand"] = duplicate_stamp_names(game_state.player_hands.get(int(action.get("player_id", -1)), []))
 		"move_piece":
-			var from_pos: Vector2 = CardEffectResolver.as_vector2(action.get("from", Vector2(-1, -1)), Vector2(-1, -1))
-			var to_pos: Vector2 = CardEffectResolver.as_vector2(action.get("to", Vector2(-1, -1)), Vector2(-1, -1))
+			var from_pos: Vector2 = StampEffectResolver.as_vector2(action.get("from", Vector2(-1, -1)), Vector2(-1, -1))
+			var to_pos: Vector2 = StampEffectResolver.as_vector2(action.get("to", Vector2(-1, -1)), Vector2(-1, -1))
 			snapshot["from_has_piece"] = game_state.get_piece(from_pos) != null
-			snapshot["to_card_name"] = get_piece_card_name(game_state.get_piece(to_pos))
-		"exchange_card":
-			snapshot["hand"] = duplicate_card_names(game_state.player_hands.get(int(action.get("player_id", -1)), []))
-			snapshot["deck"] = duplicate_card_names(game_state.player_decks.get(int(action.get("player_id", -1)), []))
-			snapshot["exchanged"] = bool(game_state.exchanged_card_this_turn.get(int(action.get("player_id", -1)), false))
+			snapshot["to_stamp_name"] = get_piece_stamp_name(game_state.get_piece(to_pos))
+		"exchange_stamp":
+			snapshot["hand"] = duplicate_stamp_names(game_state.player_hands.get(int(action.get("player_id", -1)), []))
+			snapshot["deck"] = duplicate_stamp_names(game_state.player_decks.get(int(action.get("player_id", -1)), []))
+			snapshot["exchanged"] = bool(game_state.exchanged_stamp_this_turn.get(int(action.get("player_id", -1)), false))
 		"turn_page":
 			var player_id: int = int(action.get("player_id", -1))
 			snapshot["page_index"] = game_state.get_current_page_index(player_id)
@@ -324,20 +324,20 @@ func was_action_applied(host, action: Dictionary, before_snapshot: Dictionary) -
 		return true
 
 	match str(action.get("type", "")):
-		"attach_card":
-			var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+		"attach_stamp":
+			var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 			var piece: Piece = game_state.get_piece(piece_pos)
 			return piece != null \
-				&& piece.attached_card != null \
-				&& piece.attached_card.card_name == str(action.get("card_name", "")) \
-				&& str(before_snapshot.get("piece_card_name", "")) != piece.attached_card.card_name
+				&& piece.attached_stamp != null \
+				&& piece.attached_stamp.stamp_name == str(action.get("stamp_name", "")) \
+				&& str(before_snapshot.get("piece_stamp_name", "")) != piece.attached_stamp.stamp_name
 		"move_piece":
-			var from_pos: Vector2 = CardEffectResolver.as_vector2(action.get("from", Vector2(-1, -1)), Vector2(-1, -1))
-			var to_pos: Vector2 = CardEffectResolver.as_vector2(action.get("to", Vector2(-1, -1)), Vector2(-1, -1))
+			var from_pos: Vector2 = StampEffectResolver.as_vector2(action.get("from", Vector2(-1, -1)), Vector2(-1, -1))
+			var to_pos: Vector2 = StampEffectResolver.as_vector2(action.get("to", Vector2(-1, -1)), Vector2(-1, -1))
 			return game_state.get_piece(from_pos) == null and game_state.get_piece(to_pos) != null
-		"exchange_card":
+		"exchange_stamp":
 			var player_id: int = int(action.get("player_id", -1))
-			return bool(game_state.exchanged_card_this_turn.get(player_id, false)) and !bool(before_snapshot.get("exchanged", false))
+			return bool(game_state.exchanged_stamp_this_turn.get(player_id, false)) and !bool(before_snapshot.get("exchanged", false))
 		"turn_page":
 			var player_id: int = int(action.get("player_id", -1))
 			return bool(game_state.has_turned_page_this_turn.get(player_id, false)) \
@@ -348,41 +348,41 @@ func was_action_applied(host, action: Dictionary, before_snapshot: Dictionary) -
 		_:
 			return false
 
-func duplicate_card_names(source) -> Array:
+func duplicate_stamp_names(source) -> Array:
 	var output: Array = []
 	if source is Array:
-		for card_name_value in source:
-			output.append(str(card_name_value))
+		for stamp_name_value in source:
+			output.append(str(stamp_name_value))
 	return output
 
-func get_piece_card_name(piece: Piece) -> String:
-	return piece.attached_card.card_name if piece != null and piece.attached_card != null else ""
+func get_piece_stamp_name(piece: Piece) -> String:
+	return piece.attached_stamp.stamp_name if piece != null and piece.attached_stamp != null else ""
 
 func action_to_json(action: Dictionary) -> Dictionary:
 	var output: Dictionary = action.duplicate()
 	if output.has("piece_pos"):
-		output["piece_pos"] = vector2_to_array(CardEffectResolver.as_vector2(output["piece_pos"], Vector2(-1, -1)))
+		output["piece_pos"] = vector2_to_array(StampEffectResolver.as_vector2(output["piece_pos"], Vector2(-1, -1)))
 	if output.has("from"):
-		output["from"] = vector2_to_array(CardEffectResolver.as_vector2(output["from"], Vector2(-1, -1)))
+		output["from"] = vector2_to_array(StampEffectResolver.as_vector2(output["from"], Vector2(-1, -1)))
 	if output.has("to"):
-		output["to"] = vector2_to_array(CardEffectResolver.as_vector2(output["to"], Vector2(-1, -1)))
+		output["to"] = vector2_to_array(StampEffectResolver.as_vector2(output["to"], Vector2(-1, -1)))
 	return output
 
-func get_move_card_name(move: Dictionary) -> String:
-	var card: Card = AIStateSimulator.get_card_for_candidate({}, move)
-	return card.card_name if card != null else str(move.get("card_name", ""))
+func get_move_stamp_name(move: Dictionary) -> String:
+	var stamp: Stamp = AIStateSimulator.get_stamp_for_candidate({}, move)
+	return stamp.stamp_name if stamp != null else str(move.get("stamp_name", ""))
 
 func serialize_vector_array(values: Array) -> Array:
 	var output: Array = []
 	for value in values:
-		output.append(vector2_to_array(CardEffectResolver.as_vector2(value, Vector2.ZERO)))
+		output.append(vector2_to_array(StampEffectResolver.as_vector2(value, Vector2.ZERO)))
 	return output
 
 func vector2_to_array(value: Vector2) -> Array:
 	return [int(value.x), int(value.y)]
 
 func array_to_vector2(value, fallback: Vector2 = Vector2(-1, -1)) -> Vector2:
-	return CardEffectResolver.as_vector2(value, fallback)
+	return StampEffectResolver.as_vector2(value, fallback)
 
 func write_command_result(command_id: String, success: bool, message: String, actions: Array) -> void:
 	write_json(RESULT_PATH, {

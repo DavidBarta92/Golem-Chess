@@ -16,8 +16,8 @@ The safest path is not a rewrite. The first goal should be to turn `MatchBoard.g
 | `Scripts/AIMoveEvaluator.gd` | 3127 | 157 | Very large but domain-focused. Refactor after match scene is safer. |
 | `Scenes/Collection.gd` | 1800 | 85 | Still large, but improved since pack/progress extraction. |
 | `Scripts/NetworkGameHost.gd` | 1086 | 72 | Authoritative game flow plus serialization/logging. High-risk refactor target. |
-| `Scripts/CardEffectResolver.gd` | 813 | 55 | Good central rules/effect layer, but broad. Should become more service-like over time. |
-| `Scripts/CardVisual.gd` | 799 | 56 | Mostly isolated card visual behavior. |
+| `Scripts/StampEffectResolver.gd` | 813 | 55 | Good central rules/effect layer, but broad. Should become more service-like over time. |
+| `Scripts/StampVisual.gd` | 799 | 56 | Mostly isolated stamp visual behavior. |
 | `Scenes/PortraitView.gd` | 639 | 51 | Domain-focused and acceptable for now. |
 | `Scripts/AIStateSimulator.gd` | 565 | 39 | Mirrors host behavior; divergence risk. |
 
@@ -29,11 +29,11 @@ Observed groups:
 - Board geometry, perspective projection, tile polygons, board frame, special tiles.
 - Piece sprite creation, scaling, z-order, shadows, light occluders.
 - Move dots, selected piece glow, last move markers, enemy attack markers.
-- Card hand/deck UI, card hover preview, card description card, drag/drop/reorder.
-- Hidden card preview UI and shader snapshot behavior.
+- Stamp hand/deck UI, stamp hover preview, stamp description stamp, drag/drop/reorder.
+- Hidden stamp preview UI and shader snapshot behavior.
 - Player portraits, timer UI, action status UI, end-turn indicator, result overlay.
 - Input handling and local user actions.
-- Local optimistic card attach/move/exchange/refill behavior.
+- Local optimistic stamp attach/move/exchange/refill behavior.
 - Local versions of move-base, board-zone, respawn, duration, and winner helpers.
 - Server state parsing, diffing previous/current visual state, and queueing animations.
 - Piece movement pathing and occlusion.
@@ -58,7 +58,7 @@ This confirms the file is mostly a large visual/state orchestration layer rather
 Current good foundations:
 
 - `MoveRules.gd` is mostly pure movement/valid-action logic.
-- `CardEffectResolver.gd` already owns many effect decisions, including base movement, bomb, board effects, card return, respawn queues, and visibility helpers.
+- `StampEffectResolver.gd` already owns many effect decisions, including base movement, bomb, board effects, stamp return, respawn queues, and visibility helpers.
 - `GameState.gd` provides `GameStateData`, a shared state model.
 
 Current risks:
@@ -70,7 +70,7 @@ Current risks:
 Target direction:
 
 - View controllers should not decide rules.
-- Authoritative gameplay decisions should live in `NetworkGameHost`, `CardEffectResolver`, `MoveRules`, or new shared services.
+- Authoritative gameplay decisions should live in `NetworkGameHost`, `StampEffectResolver`, `MoveRules`, or new shared services.
 - The match scene should render a state and emit user intents.
 
 ## Chess-Era Names To Remove
@@ -92,11 +92,11 @@ Completed stale chess cleanup in `MatchBoard.gd`:
 Higher-risk content/resource names:
 
 - `Assets/white_knight.png`, `black_rook.png`, etc.
-- `Cards/king_card.tres`, `rook_card.tres`, `pawn_card.tres`, etc.
+- `Stamps/king_stamp.tres`, `rook_stamp.tres`, `pawn_stamp.tres`, etc.
 - `PieceVisualSets/king.tres`
 - main scene style resources still reference old chess piece textures.
 
-Recommendation: do technical renames first. Asset/card resource renames should be a separate migration because `.tres`, `.tscn`, `.import`, card codes, saves, and collection/deck data may reference them.
+Recommendation: do technical renames first. Asset/stamp resource renames should be a separate migration because `.tres`, `.tscn`, `.import`, stamp codes, saves, and collection/deck data may reference them.
 
 ## Suspected Cleanup Candidates
 
@@ -104,14 +104,14 @@ Static reference scan found these likely review candidates. Do not delete blindl
 
 `Scenes/MatchBoard.gd`:
 
-- `has_attached_card_this_turn`
-- `apply_remote_card_attach`
+- `has_attached_stamp_this_turn`
+- `apply_remote_stamp_attach`
 
 Other scripts:
 
 - `GameState._init()` only contains `pass`.
 - `Piece.tick_respawn_cooldown()` currently only contains `pass`.
-- `AIStateSimulator.respawn_captured_piece_in_pieces()` and related helpers look like legacy/simple simulation paths; compare with `CardEffectResolver` before removing.
+- `AIStateSimulator.respawn_captured_piece_in_pieces()` and related helpers look like legacy/simple simulation paths; compare with `StampEffectResolver` before removing.
 - Several `DebugLog.info` calls are still very chatty in gameplay/network paths. Keep diagnostics, but gate verbose logs behind categories or flags.
 
 ## Proposed Extraction Sequence
@@ -138,7 +138,7 @@ Goal: make refactors less scary.
 4. First pure tests should cover:
    - `BoardConfig`
    - `MoveRules`
-   - `CardEffectResolver` base move / bomb / respawn queue / visibility helpers
+   - `StampEffectResolver` base move / bomb / respawn queue / visibility helpers
    - `GameStateData` serialization helpers once extracted
 
 ### Phase 1: Rename Without Behavior Change
@@ -220,13 +220,13 @@ Created:
 - `Scripts/MatchView/PieceMoveAnimator.gd`
 - `Scripts/MatchView/PieceShatterAnimator.gd`
 - `Scripts/MatchView/PieceEffectAnimator.gd`
-- `Scripts/MatchView/MatchCardHud.gd`
-- `Scripts/MatchView/CardHoverPreviewController.gd`
-- `Scripts/MatchView/HiddenCardPreviewController.gd`
+- `Scripts/MatchView/MatchStampHud.gd`
+- `Scripts/MatchView/StampHoverPreviewController.gd`
+- `Scripts/MatchView/HiddenStampPreviewController.gd`
 
 Still planned:
 
-- `Scripts/MatchView/CardAnimationController.gd`
+- `Scripts/MatchView/StampAnimationController.gd`
 
 Moved/delegated in the piece-move passes:
 
@@ -276,39 +276,39 @@ Still intentionally left in `MatchBoard.gd` until a later animator pass:
 Move later:
 
 - remaining attach/expire/freeze visual orchestration
-- card draw/return/burn animations
+- stamp draw/return/burn animations
 
-Moved/delegated in the first card-HUD pass:
+Moved/delegated in the first stamp-HUD pass:
 
-- card hand container layout helpers
-- card hand visual creation and signal-connector callback
+- stamp hand container layout helpers
+- stamp hand visual creation and signal-connector callback
 - deck visual creation and cleanup
-- shared card/deck home-position calculations
-- hover card/description/piece/duration preview UI construction
+- shared stamp/deck home-position calculations
+- hover stamp/description/piece/duration preview UI construction
 - hover preview show/hide/update helpers
-- hidden card preview container creation
-- hidden card preview card creation, layout, ambient motion setup, and cleanup
+- hidden stamp preview container creation
+- hidden stamp preview stamp creation, layout, ambient motion setup, and cleanup
 - hidden invisibility preview noise/material creation
 - hidden invisibility snapshot shader application
 
 Important: each animator should receive board geometry and scene nodes as dependencies instead of reaching into the whole match scene.
 
-### Phase 5: Extract Card HUD
+### Phase 5: Extract Stamp HUD
 
 Create:
 
-- `Scripts/MatchView/MatchCardHud.gd`
-- `Scripts/MatchView/CardHoverPreviewController.gd`
-- `Scripts/MatchView/HiddenCardPreviewController.gd`
+- `Scripts/MatchView/MatchStampHud.gd`
+- `Scripts/MatchView/StampHoverPreviewController.gd`
+- `Scripts/MatchView/HiddenStampPreviewController.gd`
 
 Move:
 
 - hand/deck UI creation
-- card visual arrangement
-- hover preview and description card
-- hidden card preview list and shader snapshot
+- stamp visual arrangement
+- hover preview and description stamp
+- hidden stamp preview list and shader snapshot
 - deck counter UI
-- card drag/drop/reorder signals
+- stamp drag/drop/reorder signals
 
 Risk: medium. This touches a lot of UI and input behavior.
 
@@ -336,20 +336,20 @@ Goal: `update_from_server_state()` should become orchestration, not parsing plus
 
 Create only after tests exist:
 
-- `Scripts/Rules/CardLifecycleService.gd`
+- `Scripts/Rules/StampLifecycleService.gd`
 - `Scripts/Rules/TurnLifecycleService.gd`
 - maybe `Scripts/State/GameStateSerializer.gd`
 
 Move/share:
 
-- played card slot tracking
-- refill/exchange/card return
+- played stamp slot tracking
+- refill/exchange/stamp return
 - duration consumption
 - captured piece respawn handling
 - base-field validation
 - winner/no-valid-action checks
 
-Goal: reduce divergence between `NetworkGameHost.gd`, `AIStateSimulator.gd`, `CardEffectResolver.gd`, and the local match scene.
+Goal: reduce divergence between `NetworkGameHost.gd`, `AIStateSimulator.gd`, `StampEffectResolver.gd`, and the local match scene.
 
 ### Phase 8: Host/AI Convergence
 
@@ -363,15 +363,15 @@ Run after each extraction chunk:
 
 1. Player vs player local match loads.
 2. Player vs AI match loads and turn timer does not appear.
-3. Card attach animation works, including occlusion.
+3. Stamp attach animation works, including occlusion.
 4. Move dots show active/passive state correctly.
 5. Piece movement animation works for own and enemy pieces.
 6. Capture triggers flash and shatter.
 7. Respawn fragments go to home row or edge queue.
 8. Bomb warning appears only on occupied bomb targets.
 9. Move-base effect does nothing if target already has another base.
-10. Nexus card returns to deck instead of burning.
-11. Hidden/invisible card preview shader appears.
+10. Nexus stamp returns to deck instead of burning.
+11. Hidden/invisible stamp preview shader appears.
 12. Collection still opens and saved decks load.
 
 ## Recommended Next Work Item

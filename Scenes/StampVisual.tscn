@@ -1,0 +1,204 @@
+[gd_scene format=3 uid="uid://67s030mxf45n"]
+
+[ext_resource type="Script" uid="uid://dgl5umdn6mctq" path="res://Scripts/StampVisual.gd" id="1"]
+[ext_resource type="Script" uid="uid://b4rbx66i3ardt" path="res://Scripts/StampPatternView.gd" id="2"]
+[ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="3"]
+[ext_resource type="Shader" uid="uid://2w0ypeypns36" path="res://Shaders/stamp_tilt.gdshader" id="5"]
+[ext_resource type="FontFile" uid="uid://qkd6nyfjtoyf" path="res://Fonts/OLDENGL.TTF" id="5_7hptf"]
+[ext_resource type="Shader" uid="uid://cmkftqqcjg2yk" path="res://Shaders/stamp_shimmer.gdshader" id="6"]
+[ext_resource type="FontFile" uid="uid://b1beq61l8rupp" path="res://Fonts/Rosemartin.otf" id="8_5weds"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_face"]
+resource_local_to_scene = true
+shader = ExtResource("5")
+shader_parameter/x_rot = 0.0
+shader_parameter/y_rot = 0.0
+shader_parameter/warp_strength = 0.045
+shader_parameter/shine_strength = 0.18
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_shimmer"]
+resource_local_to_scene = true
+shader = ExtResource("6")
+shader_parameter/strength = 0.16
+shader_parameter/speed = 0.65
+shader_parameter/band_scale = 14.0
+shader_parameter/corner_radius = 0.075
+shader_parameter/shimmer_time = 0.0
+
+[node name="StampVisual" type="Button" unique_id=377554225]
+custom_minimum_size = Vector2(168.7, 229)
+offset_right = 168.7
+offset_bottom = 229.0
+pivot_offset = Vector2(84.35, 114.5)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_button")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_button")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_button")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_button")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_button")
+script = ExtResource("1")
+
+[node name="Shadow" type="TextureRect" parent="." unique_id=1270621679]
+self_modulate = Color(0, 0, 0, 0)
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 9.0
+offset_right = 7.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3")
+expand_mode = 1
+
+[node name="StampFace" type="TextureRect" parent="." unique_id=1569871325]
+material = SubResource("ShaderMaterial_face")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3")
+expand_mode = 1
+
+[node name="StampArt" type="TextureRect" parent="." unique_id=1315429242]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+
+[node name="TypeFrame" type="TextureRect" parent="." unique_id=372516518]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+
+[node name="Shimmer" type="ColorRect" parent="." unique_id=195997734]
+visible = false
+material = SubResource("ShaderMaterial_shimmer")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 7.0
+offset_right = -5.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="DurationLabel" type="Label" parent="." unique_id=336129338]
+layout_mode = 1
+offset_left = 17.2
+offset_top = 4.0
+offset_right = 72.0
+offset_bottom = 69.0
+theme_override_colors/font_color = Color(0.8745098, 0.85882354, 0.81960785, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_fonts/font = ExtResource("5_7hptf")
+theme_override_font_sizes/font_size = 47
+text = "1"
+horizontal_alignment = 0
+vertical_alignment = 1
+
+[node name="EffectIconTexture" type="TextureRect" parent="." unique_id=970024804]
+visible = false
+layout_mode = 1
+offset_left = 124.7
+offset_top = 13.0
+offset_right = 155.7
+offset_bottom = 44.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="EffectIconLabel" type="Label" parent="." unique_id=991651344]
+visible = false
+layout_mode = 1
+offset_left = 121.7
+offset_top = 13.0
+offset_right = 157.7
+offset_bottom = 44.0
+theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.75)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 16
+text = "FX"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SeekerIconLabel" type="Label" parent="." unique_id=220777662]
+visible = false
+layout_mode = 1
+offset_left = 64.0
+offset_top = 9.0
+offset_right = 100.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(0.88, 0.62, 0.08, 1)
+theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.85)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 29
+text = "♛"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PatternView" type="Control" parent="." unique_id=824120483]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 22.3
+offset_top = 32.9
+offset_right = 146.3
+offset_bottom = 156.9
+mouse_filter = 2
+script = ExtResource("2")
+active_color = Color(0.8502264, 0.79584396, 0.9886561, 1)
+move_only_color = Color(0.8015804, 0.95878893, 0.9925092, 1)
+capture_only_color = Color(1, 0.85782367, 0.83689725, 1)
+invalid_color = Color(1, 0.85882354, 0.8352941, 1)
+frozen_color = Color(0.83576155, 0.9007987, 1, 1)
+base_color = Color(1, 0.9397981, 0.7224909, 1)
+bomb_color = Color(1, 0.88448834, 0.84586585, 1)
+guide_color = Color(0.41960785, 0.47843137, 0.45882353, 0.3882353)
+
+[node name="NameLabel" type="Label" parent="." unique_id=312057828]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -61.0
+offset_right = -20.0
+offset_bottom = -21.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.8745098, 0.85882354, 0.81960785, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_fonts/font = ExtResource("8_5weds")
+theme_override_font_sizes/font_size = 16
+text = "Stamp"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3

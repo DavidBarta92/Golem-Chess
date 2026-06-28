@@ -9,8 +9,8 @@ func configure(config: Dictionary) -> void:
 
 func set_turn(turn_value) -> void:
 	match_board.side = turn_value
-	match_board.get_turn_action_state_controller().reset_current_turn_card_attach()
-	match_board.update_card_presentation()
+	match_board.get_turn_action_state_controller().reset_current_turn_stamp_attach()
+	match_board.update_stamp_presentation()
 	match_board.get_board_tile_controller().create_board_tiles()
 	match_board.display_board()
 	match_board.create_board_shader_overlay()
@@ -39,12 +39,12 @@ func ready() -> void:
 	match_board.get_board_tile_controller().create_board_tiles()
 	match_board.create_board_markers_node()
 	match_board.initialize_board_marker_controller()
-	match_board.initialize_card_interaction_controller()
-	match_board.initialize_card_animation_controller()
+	match_board.initialize_stamp_interaction_controller()
+	match_board.initialize_stamp_animation_controller()
 	match_board.initialize_deck_counter_controller()
 	match_board.initialize_turn_hud_controller()
 	match_board.initialize_match_input_controller()
-	match_board.initialize_card_hand_state_controller()
+	match_board.initialize_stamp_hand_state_controller()
 	match_board.create_piece_effects_node()
 	match_board.initialize_piece_shatter_animator()
 	match_board.initialize_piece_respawn_fragment_coordinator()
@@ -56,9 +56,9 @@ func ready() -> void:
 
 	match_board.create_pieces_from_board()
 	match_board.create_board_shader_overlay()
-	match_board.setup_player_card_hands()
+	match_board.setup_player_stamp_hands()
 	match_board.create_hover_piece_ui()
-	match_board.get_hidden_card_preview_controller().create_ui()
+	match_board.get_hidden_stamp_preview_controller().create_ui()
 	match_board.get_turn_hud_controller().create_result_ui()
 	match_board.get_deck_counter_controller().create_deck_count_ui()
 	match_board.get_deck_counter_controller().create_deck_counter_ui()

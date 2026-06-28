@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://726segua6wat"]
+
+[ext_resource type="Texture2D" uid="uid://cu2ali7umjgo3" path="res://Assets/8b.png" id="1_fr16u"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="2_5j7x2"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_vqbu2"]
+[ext_resource type="Resource" uid="uid://cg5fbchvkapmm" path="res://PieceVisualSets/soldier.tres" id="3_5j7x2"]
+[ext_resource type="Texture2D" uid="uid://b0d5umtb1h1c5" path="res://Assets/8w.png" id="3_vqbu2"]
+
+[resource]
+script = ExtResource("2_vqbu2")
+stamp_name = "Numero_5"
+stamp_code = "numero_5"
+duration = 2
+stamp_art = ExtResource("2_5j7x2")
+piece_visuals = ExtResource("3_5j7x2")
+white_piece_texture = ExtResource("3_vqbu2")
+black_piece_texture = ExtResource("1_fr16u")
+description = "No special effect."
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [3, 3, 1, 3, 3], [0, 0, 0, 0, 0], [0, 0, 2, 0, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

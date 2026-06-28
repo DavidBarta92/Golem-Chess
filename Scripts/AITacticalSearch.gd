@@ -32,9 +32,9 @@ func find_forced_tactical_plan(
 	return {}
 
 func find_immediate_base_win_move(game_state: GameStateData, player_id: int, board_size: int) -> Dictionary:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
-	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_stamp_moves(
 		game_state.pieces,
 		player_color,
 		board_size,
@@ -56,8 +56,8 @@ func find_immediate_base_defense_move(
 	if find_immediate_base_win_move(game_state, 1 - player_id, board_size).is_empty():
 		return {}
 
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_stamp_moves(
 		game_state.pieces,
 		player_color,
 		board_size,
@@ -87,8 +87,8 @@ func find_two_turn_base_threat_move(
 	evaluator: AIMoveEvaluator,
 	board_size: int
 ) -> Dictionary:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_stamp_moves(
 		game_state.pieces,
 		player_color,
 		board_size,
@@ -122,8 +122,8 @@ func find_base_staging_capture_move(
 	if staging_positions.is_empty():
 		return {}
 
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_stamp_moves(
 		game_state.pieces,
 		player_color,
 		board_size,
@@ -143,24 +143,24 @@ func find_base_staging_capture_move(
 
 func get_base_staging_positions(game_state: GameStateData, player_id: int, board_size: int) -> Array[Vector2]:
 	var positions: Array[Vector2] = []
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var seeker_cards: Array[Card] = get_seeker_cards_in_hand(game_state, player_id)
-	if seeker_cards.is_empty():
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var seeker_stamps: Array[Stamp] = get_seeker_stamps_in_hand(game_state, player_id)
+	if seeker_stamps.is_empty():
 		return positions
 
-	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
+	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	for position_value in game_state.pieces:
-		var piece_pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_card != null:
+		if piece == null or piece.color != player_color or piece.attached_stamp != null:
 			continue
 
-		for seeker_card: Card in seeker_cards:
-			var seeker_moves: Array[Vector2] = MoveRules.get_card_moves_for_piece(
+		for seeker_stamp: Stamp in seeker_stamps:
+			var seeker_moves: Array[Vector2] = MoveRules.get_stamp_moves_for_piece(
 				game_state.pieces,
 				piece_pos,
 				player_color,
-				seeker_card,
+				seeker_stamp,
 				board_size,
 				game_state.board_effects
 			)
@@ -169,13 +169,13 @@ func get_base_staging_positions(game_state: GameStateData, player_id: int, board
 				break
 	return positions
 
-func get_seeker_cards_in_hand(game_state: GameStateData, player_id: int) -> Array[Card]:
-	var seeker_cards: Array[Card] = []
-	var hand_cards: Array[Card] = AIStateSimulator.get_hand_cards_from_state(game_state, player_id)
-	for card: Card in hand_cards:
-		if MoveRules.is_seeker_card(card):
-			seeker_cards.append(card)
-	return seeker_cards
+func get_seeker_stamps_in_hand(game_state: GameStateData, player_id: int) -> Array[Stamp]:
+	var seeker_stamps: Array[Stamp] = []
+	var hand_stamps: Array[Stamp] = AIStateSimulator.get_hand_stamps_from_state(game_state, player_id)
+	for stamp: Stamp in hand_stamps:
+		if MoveRules.is_seeker_stamp(stamp):
+			seeker_stamps.append(stamp)
+	return seeker_stamps
 
 func create_move_plan(player_id: int, move: Dictionary, plan_type: String) -> Dictionary:
 	return {

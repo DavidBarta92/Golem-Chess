@@ -9,7 +9,7 @@
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_browser"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamp"]
 bg_color = Color(0.98, 0.98, 0.96, 1)
 border_width_left = 2
 border_width_top = 2
@@ -283,109 +283,109 @@ custom_minimum_size = Vector2(150, 34)
 layout_mode = 2
 placeholder_text = "Search"
 
-[node name="CardGrid" type="GridContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=648111285]
+[node name="StampGrid" type="GridContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=648111285]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 2
 columns = 3
 
-[node name="CardSlot1" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=1212306153]
+[node name="StampSlot1" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=1212306153]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid/CardSlot1" unique_id=1138657806]
+[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot1" unique_id=1138657806]
 layout_mode = 2
-text = "Card"
+text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CardSlot2" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=762343269]
+[node name="StampSlot2" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=762343269]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid/CardSlot2" unique_id=1360077366]
+[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot2" unique_id=1360077366]
 layout_mode = 2
-text = "Card"
+text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CardSlot3" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=2064679408]
+[node name="StampSlot3" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=2064679408]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid/CardSlot3" unique_id=877574140]
+[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot3" unique_id=877574140]
 layout_mode = 2
-text = "Card"
+text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CardSlot4" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=593379074]
+[node name="StampSlot4" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=593379074]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid/CardSlot4" unique_id=2112585396]
+[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot4" unique_id=2112585396]
 layout_mode = 2
-text = "Card"
+text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CardSlot5" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=822588496]
+[node name="StampSlot5" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=822588496]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid/CardSlot5" unique_id=1337036446]
+[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot5" unique_id=1337036446]
 layout_mode = 2
-text = "Card"
+text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CardSlot6" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=1321099513]
+[node name="StampSlot6" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=1321099513]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid/CardSlot6" unique_id=433779682]
+[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot6" unique_id=433779682]
 layout_mode = 2
-text = "Card"
+text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CardSlot7" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=1860503650]
+[node name="StampSlot7" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=1860503650]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid/CardSlot7" unique_id=465229182]
+[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot7" unique_id=465229182]
 layout_mode = 2
-text = "Card"
+text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CardSlot8" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=138440234]
+[node name="StampSlot8" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=138440234]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid/CardSlot8" unique_id=1169370107]
+[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot8" unique_id=1169370107]
 layout_mode = 2
-text = "Card"
+text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CardSlot9" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid" unique_id=60431776]
+[node name="StampSlot9" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=60431776]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid/CardSlot9" unique_id=711051637]
+[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot9" unique_id=711051637]
 layout_mode = 2
-text = "Card"
+text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -463,14 +463,14 @@ theme_override_colors/font_color = Color(0.94, 0.94, 0.9, 1)
 text = "Codex 1     15/15"
 vertical_alignment = 1
 
-[node name="DeckCardScroll" type="ScrollContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=1430687519]
+[node name="DeckStampScroll" type="ScrollContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=1430687519]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="DeckCardList" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckCardScroll" unique_id=464413624]
+[node name="DeckStampList" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckStampScroll" unique_id=464413624]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
@@ -615,14 +615,14 @@ size_flags_vertical = 3
 text = "You opened:"
 autowrap_mode = 2
 
-[node name="RemoveCardButton" type="Button" parent="." unique_id=1601937654]
+[node name="RemoveStampButton" type="Button" parent="." unique_id=1601937654]
 visible = false
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 0
 offset_right = 30.0
 offset_bottom = 30.0
-tooltip_text = "Remove card"
+tooltip_text = "Remove stamp"
 text = "X"
 
-[node name="RemoveCardTimer" type="Timer" parent="." unique_id=951392258]
+[node name="RemoveStampTimer" type="Timer" parent="." unique_id=951392258]
 one_shot = true

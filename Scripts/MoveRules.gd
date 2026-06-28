@@ -18,47 +18,47 @@ static func has_any_piece(pieces: Dictionary, player_color: int) -> bool:
 			return true
 	return false
 
-static func card_can_be_used(card: Card) -> bool:
-	return card != null && (card.duration > 0 || card.duration == -1)
+static func stamp_can_be_used(stamp: Stamp) -> bool:
+	return stamp != null && (stamp.duration > 0 || stamp.duration == -1)
 
-static func is_seeker_card(card: Card) -> bool:
-	return card != null && card.role == Card.Role.SEEKER
+static func is_seeker_stamp(stamp: Stamp) -> bool:
+	return stamp != null && stamp.role == Stamp.Role.SEEKER
 
-static func is_shared_card(card: Card) -> bool:
-	return card != null && card.role == Card.Role.SHARED
+static func is_shared_stamp(stamp: Stamp) -> bool:
+	return stamp != null && stamp.role == Stamp.Role.SHARED
 
-static func is_se_tenant_card(card: Card) -> bool:
-	return card != null && card.role == Card.Role.SE_TENANT
+static func is_se_tenant_stamp(stamp: Stamp) -> bool:
+	return stamp != null && stamp.role == Stamp.Role.SE_TENANT
 
-static func is_overseal_card(card: Card) -> bool:
-	return card != null && card.role == Card.Role.OVERSEAL
+static func is_overseal_stamp(stamp: Stamp) -> bool:
+	return stamp != null && stamp.role == Stamp.Role.OVERSEAL
 
 static func has_attached_seeker(pieces: Dictionary, player_color: int) -> bool:
 	for position_value: Vector2 in pieces:
 		var piece: Piece = get_piece_at(pieces, position_value)
-		if piece != null && piece.color == player_color && is_seeker_card(piece.attached_card):
+		if piece != null && piece.color == player_color && is_seeker_stamp(piece.attached_stamp):
 			return true
 	return false
 
-static func can_attach_card_for_turn(pieces: Dictionary, player_color: int, card: Card) -> bool:
-	return card_can_be_used(card)
+static func can_attach_stamp_for_turn(pieces: Dictionary, player_color: int, stamp: Stamp) -> bool:
+	return stamp_can_be_used(stamp)
 
-static func get_card_moves_for_piece(pieces: Dictionary, piece_position: Vector2, piece_color: int, card: Card, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
+static func get_stamp_moves_for_piece(pieces: Dictionary, piece_position: Vector2, piece_color: int, stamp: Stamp, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
 	var valid_moves: Array[Vector2] = []
-	if card == null:
+	if stamp == null:
 		return valid_moves
 	var player_id: int = BoardConfig.get_player_id_for_color(piece_color)
-	if CardEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
+	if StampEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
 		return valid_moves
 
-	var movement_options: Array[Dictionary] = card.get_movement_options()
+	var movement_options: Array[Dictionary] = stamp.get_movement_options()
 	for movement_option: Dictionary in movement_options:
 		var direction: Vector2 = movement_option.get("offset", Vector2.ZERO)
-		var movement_type: int = int(movement_option.get("movement_type", CardEffect.MOVEMENT_MOVE_AND_CAPTURE))
+		var movement_type: int = int(movement_option.get("movement_type", StampEffect.MOVEMENT_MOVE_AND_CAPTURE))
 		var target_pos: Vector2 = piece_position + (direction * piece_color)
 		if !is_valid_position(target_pos, board_size):
 			continue
-		if CardEffectResolver.is_square_invalid(board_effects, target_pos, player_id):
+		if StampEffectResolver.is_square_invalid(board_effects, target_pos, player_id):
 			continue
 
 		var target_piece: Piece = get_piece_at(pieces, target_pos)
@@ -69,11 +69,11 @@ static func get_card_moves_for_piece(pieces: Dictionary, piece_position: Vector2
 
 static func is_target_allowed_by_movement_type(target_piece: Piece, piece_color: int, movement_type: int) -> bool:
 	match movement_type:
-		CardEffect.MOVEMENT_MOVE_ONLY:
+		StampEffect.MOVEMENT_MOVE_ONLY:
 			return target_piece == null
-		CardEffect.MOVEMENT_CAPTURE_ONLY:
+		StampEffect.MOVEMENT_CAPTURE_ONLY:
 			return can_capture_target_piece(target_piece, piece_color)
-		CardEffect.MOVEMENT_MOVE_AND_CAPTURE:
+		StampEffect.MOVEMENT_MOVE_AND_CAPTURE:
 			return target_piece == null || can_capture_target_piece(target_piece, piece_color)
 		_:
 			return false
@@ -81,7 +81,7 @@ static func is_target_allowed_by_movement_type(target_piece: Piece, piece_color:
 static func can_capture_target_piece(target_piece: Piece, piece_color: int) -> bool:
 	if target_piece == null or target_piece.color == piece_color:
 		return false
-	return !CardEffectResolver.piece_has_attached_effect(target_piece, CardEffect.TYPE_UNCAPTURABLE)
+	return !StampEffectResolver.piece_has_attached_effect(target_piece, StampEffect.TYPE_UNCAPTURABLE)
 
 static func get_piece_moves(pieces: Dictionary, piece_position: Vector2, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Vector2]:
 	var piece: Piece = get_piece_at(pieces, piece_position)
@@ -96,21 +96,21 @@ static func get_piece_moves_for_player(pieces: Dictionary, piece_position: Vecto
 	if piece == null || !piece.can_move():
 		var empty_moves: Array[Vector2] = []
 		return empty_moves
-	if !CardEffectResolver.can_player_control_piece(piece, player_id):
+	if !StampEffectResolver.can_player_control_piece(piece, player_id):
 		var empty_control_moves: Array[Vector2] = []
 		return empty_control_moves
 
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	return get_card_moves_for_piece(pieces, piece_position, player_color, piece.attached_card, board_size, board_effects)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	return get_stamp_moves_for_piece(pieces, piece_position, player_color, piece.attached_stamp, board_size, board_effects)
 
-static func get_existing_card_moves(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
+static func get_existing_stamp_moves(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
 	var valid_moves: Array[Dictionary] = []
 
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
 		var player_id: int = BoardConfig.get_player_id_for_color(player_color)
-		if piece == null || !CardEffectResolver.can_player_control_piece(piece, player_id) || !piece.can_move():
+		if piece == null || !StampEffectResolver.can_player_control_piece(piece, player_id) || !piece.can_move():
 			continue
 
 		var targets: Array[Vector2] = get_piece_moves_for_player(pieces, piece_position, player_id, board_size, board_effects)
@@ -118,53 +118,53 @@ static func get_existing_card_moves(pieces: Dictionary, player_color: int, board
 			valid_moves.append({
 				"from": piece_position,
 				"to": target_pos,
-				"card": piece.attached_card,
+				"stamp": piece.attached_stamp,
 				"requires_attach": false,
 			})
 
 	return valid_moves
 
-static func get_attach_card_moves(pieces: Dictionary, player_color: int, hand_cards: Array[Card], board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
+static func get_attach_stamp_moves(pieces: Dictionary, player_color: int, hand_stamps: Array[Stamp], board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
 	var valid_moves: Array[Dictionary] = []
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || piece.color != player_color || !piece.can_receive_card():
+		if piece == null || piece.color != player_color || !piece.can_receive_stamp():
 			continue
 
-		for card: Card in hand_cards:
-			if !card_can_be_used(card):
+		for stamp: Stamp in hand_stamps:
+			if !stamp_can_be_used(stamp):
 				continue
-			if !can_attach_card_for_turn(pieces, player_color, card):
+			if !can_attach_stamp_for_turn(pieces, player_color, stamp):
 				continue
-			var targets: Array[Vector2] = get_card_moves_for_piece(pieces, piece_position, player_color, card, board_size, board_effects)
+			var targets: Array[Vector2] = get_stamp_moves_for_piece(pieces, piece_position, player_color, stamp, board_size, board_effects)
 			for target_pos: Vector2 in targets:
 				valid_moves.append({
 					"from": piece_position,
 					"to": target_pos,
-					"card": card,
+					"stamp": stamp,
 					"requires_attach": true,
 				})
 
 	return valid_moves
 
-static func can_attach_any_card(pieces: Dictionary, player_color: int, hand_cards: Array[Card]) -> bool:
+static func can_attach_any_stamp(pieces: Dictionary, player_color: int, hand_stamps: Array[Stamp]) -> bool:
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || piece.color != player_color || !piece.can_receive_card():
+		if piece == null || piece.color != player_color || !piece.can_receive_stamp():
 			continue
 
-		for card: Card in hand_cards:
-			if !card_can_be_used(card):
+		for stamp: Stamp in hand_stamps:
+			if !stamp_can_be_used(stamp):
 				continue
-			if can_attach_card_for_turn(pieces, player_color, card):
+			if can_attach_stamp_for_turn(pieces, player_color, stamp):
 				return true
 
 	return false
 
-static func get_valid_turn_moves(pieces: Dictionary, player_color: int, hand_cards: Array[Card], can_attach_card: bool, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
-	var valid_moves: Array[Dictionary] = get_existing_card_moves(pieces, player_color, board_size, board_effects)
+static func get_valid_turn_moves(pieces: Dictionary, player_color: int, hand_stamps: Array[Stamp], can_attach_stamp: bool, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> Array[Dictionary]:
+	var valid_moves: Array[Dictionary] = get_existing_stamp_moves(pieces, player_color, board_size, board_effects)
 	return valid_moves
 
 static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
@@ -172,7 +172,7 @@ static func has_valid_piece_move(pieces: Dictionary, player_color: int, board_si
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || !CardEffectResolver.can_player_control_piece(piece, player_id) || !piece.can_move():
+		if piece == null || !StampEffectResolver.can_player_control_piece(piece, player_id) || !piece.can_move():
 			continue
 		if !get_piece_moves_for_player(pieces, piece_position, player_id, board_size, board_effects).is_empty():
 			return true
@@ -183,21 +183,21 @@ static func has_frozen_movable_piece(pieces: Dictionary, player_color: int, boar
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || !CardEffectResolver.can_player_control_piece(piece, player_id):
+		if piece == null || !StampEffectResolver.can_player_control_piece(piece, player_id):
 			continue
-		if piece.attached_card != null and piece.exhausted_this_turn:
+		if piece.attached_stamp != null and piece.exhausted_this_turn:
 			return true
-		if piece.can_move() and CardEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
+		if piece.can_move() and StampEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
 			return true
 	return false
 
-static func has_valid_attachment_move(pieces: Dictionary, player_color: int, hand_cards: Array[Card], board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
-	return can_attach_any_card(pieces, player_color, hand_cards)
+static func has_valid_attachment_move(pieces: Dictionary, player_color: int, hand_stamps: Array[Stamp], board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
+	return can_attach_any_stamp(pieces, player_color, hand_stamps)
 
-static func has_valid_turn_action(pieces: Dictionary, player_color: int, hand_cards: Array[Card], can_attach_card: bool, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
+static func has_valid_turn_action(pieces: Dictionary, player_color: int, hand_stamps: Array[Stamp], can_attach_stamp: bool, board_size: int = DEFAULT_BOARD_SIZE, board_effects: Array = []) -> bool:
 	if has_valid_piece_move(pieces, player_color, board_size, board_effects):
 		return true
-	if can_attach_card && has_valid_attachment_move(pieces, player_color, hand_cards, board_size, board_effects):
+	if can_attach_stamp && has_valid_attachment_move(pieces, player_color, hand_stamps, board_size, board_effects):
 		return true
 	return has_frozen_movable_piece(pieces, player_color, board_size, board_effects)
 
@@ -218,19 +218,19 @@ static func get_attacked_squares_for_player(pieces: Dictionary, attacking_color:
 		var piece: Piece = get_piece_at(pieces, piece_position)
 		if piece == null || piece.color != attacking_color || !piece.can_move():
 			continue
-		if CardEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
+		if StampEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
 			continue
 
-		for movement_option: Dictionary in piece.attached_card.get_movement_options():
-			var movement_type: int = int(movement_option.get("movement_type", CardEffect.MOVEMENT_MOVE_AND_CAPTURE))
-			if movement_type == CardEffect.MOVEMENT_MOVE_ONLY:
+		for movement_option: Dictionary in piece.attached_stamp.get_movement_options():
+			var movement_type: int = int(movement_option.get("movement_type", StampEffect.MOVEMENT_MOVE_AND_CAPTURE))
+			if movement_type == StampEffect.MOVEMENT_MOVE_ONLY:
 				continue
 
 			var offset: Vector2 = movement_option.get("offset", Vector2.ZERO)
 			var target_pos: Vector2 = piece_position + (offset * attacking_color)
 			if !is_valid_position(target_pos, board_size):
 				continue
-			if CardEffectResolver.is_square_invalid(board_effects, target_pos, player_id):
+			if StampEffectResolver.is_square_invalid(board_effects, target_pos, player_id):
 				continue
 
 			var target_piece: Piece = get_piece_at(pieces, target_pos)

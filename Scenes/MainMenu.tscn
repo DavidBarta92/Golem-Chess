@@ -221,16 +221,16 @@ theme_override_constants/separation = 8
 [node name="BalanceLabel" type="Label" parent="DevToolsWindow/DevToolsRoot/BalanceSection" unique_id=1449896305]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Card Balance"
+text = "Stamp Balance"
 
 [node name="BalanceButtons" type="HBoxContainer" parent="DevToolsWindow/DevToolsRoot/BalanceSection" unique_id=2098568448]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="PromoteCardValuesButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons" unique_id=1717250798]
+[node name="PromoteStampValuesButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons" unique_id=1717250798]
 custom_minimum_size = Vector2(180, 36)
 layout_mode = 2
-text = "Promote Card Values"
+text = "Promote Stamp Values"
 
 [node name="OpenLogsButton" type="Button" parent="DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons" unique_id=262609463]
 custom_minimum_size = Vector2(120, 36)

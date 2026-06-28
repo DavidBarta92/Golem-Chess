@@ -12,7 +12,7 @@ func refresh_lobbies() -> void:
 	push_warning("MatchmakingClient.refresh_lobbies() is not implemented by this provider.")
 	lobby_list_updated.emit([])
 
-func create_lobby(_player_name: String, _deck_card_names: Array[String]) -> void:
+func create_lobby(_player_name: String, _deck_stamp_names: Array[String]) -> void:
 	matchmaking_failed.emit("Lobby creation is not implemented by this provider.")
 
 func join_lobby(lobby: MultiplayerLobby) -> void:

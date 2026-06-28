@@ -1,9 +1,9 @@
 extends Sprite2D
 
 signal piece_selected(piece_pos: Vector2, player_id: int)
-signal card_attached(piece_pos: Vector2, card_name: String, owner_color: int, hand_index: int)
+signal stamp_attached(piece_pos: Vector2, stamp_name: String, owner_color: int, hand_index: int)
 signal piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int)
-signal card_exchanged(card_name: String, owner_color: int, hand_index: int)
+signal stamp_exchanged(stamp_name: String, owner_color: int, hand_index: int)
 signal codex_page_turned(owner_color: int, page_index: int)
 signal turn_ended(ending_color: int, next_color: int)
 signal tutorial_action_rejected(action_name: String, context: Dictionary)
@@ -12,7 +12,7 @@ const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const CELL_WIDTH: int = BoardConfig.CELL_WIDTH
 
 const TEXTURE_HOLDER = preload("res://Scenes/texture_holder.tscn")
-const CARD_VISUAL = preload("res://Scenes/CardVisual.tscn")
+const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
 const BOARD_GEOMETRY_SCRIPT = preload("res://Scripts/MatchView/BoardGeometry.gd")
 const BOARD_VISUAL_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/BoardVisualController.gd")
 const BOARD_TILE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/BoardTileController.gd")
@@ -32,18 +32,18 @@ const PIECE_RESPAWN_FRAGMENT_COORDINATOR_SCRIPT = preload("res://Scripts/MatchVi
 const PIECE_DISPLAY_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/PieceDisplayController.gd")
 const PIECE_EFFECT_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/PieceEffectAnimator.gd")
 const FREEZE_EFFECT_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/FreezeEffectAnimator.gd")
-const HIDDEN_CARD_PREVIEW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/HiddenCardPreviewController.gd")
-const MATCH_CARD_HUD_SCRIPT = preload("res://Scripts/MatchView/MatchCardHud.gd")
-const CARD_HOVER_PREVIEW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/CardHoverPreviewController.gd")
-const CARD_INTERACTION_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/CardInteractionController.gd")
-const CARD_ANIMATION_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/CardAnimationController.gd")
+const HIDDEN_STAMP_PREVIEW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/HiddenStampPreviewController.gd")
+const MATCH_STAMP_HUD_SCRIPT = preload("res://Scripts/MatchView/MatchStampHud.gd")
+const STAMP_HOVER_PREVIEW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampHoverPreviewController.gd")
+const STAMP_INTERACTION_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampInteractionController.gd")
+const STAMP_ANIMATION_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampAnimationController.gd")
 const TURN_HUD_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/TurnHudController.gd")
 const DECK_COUNTER_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/DeckCounterController.gd")
 const MATCH_INPUT_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchInputController.gd")
 const MATCH_BOARD_LIFECYCLE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchBoardLifecycleController.gd")
-const CARD_HAND_STATE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/CardHandStateController.gd")
+const STAMP_HAND_STATE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampHandStateController.gd")
 const RESPONSIVE_REFERENCE_VIEWPORT_SIZE = Vector2(1280.0, 720.0)
-const HOVER_DESCRIPTION_CARD_BASE_TEXTURE = preload("res://Assets/stamp_base.svg")
+const HOVER_DESCRIPTION_STAMP_BASE_TEXTURE = preload("res://Assets/stamp_base.svg")
 
 const BOARD_TILE_TEXTURE = preload("res://Assets/board_tile.svg")
 const BOARD_TILE_BASE_WHITE_TEXTURE = preload("res://Assets/board_tile_base_white.svg")
@@ -59,8 +59,8 @@ const GOLEM_FRAGMENT_TOP_RIGHT_TEXTURE = preload("res://Assets/golem_fragment_to
 const GOLEM_FRAGMENT_BOTTOM_LEFT_TEXTURE = preload("res://Assets/golem_fragment_bottom_left.svg")
 const GOLEM_FRAGMENT_BOTTOM_CENTER_TEXTURE = preload("res://Assets/golem_fragment_bottom_center.svg")
 const GOLEM_FRAGMENT_BOTTOM_RIGHT_TEXTURE = preload("res://Assets/golem_fragment_bottom_right.svg")
-const CAPTURE_FLASH_TEXTURE = preload("res://Assets/card_pattern_capture_only.svg")
-const BOMB_WARNING_TEXTURE = preload("res://Assets/card_pattern_bomb.svg")
+const CAPTURE_FLASH_TEXTURE = preload("res://Assets/stamp_pattern_capture_only.svg")
+const BOMB_WARNING_TEXTURE = preload("res://Assets/stamp_pattern_bomb.svg")
 
 const DECK_COUNTER_DIGITS_TEXTURE = preload("res://Assets/deck_counter_digits.png")
 const DECK_COUNTER_BACKGROUND_TEXTURE = preload("res://Assets/counter_backround.png")
@@ -76,7 +76,7 @@ const PIECE_TEXTURE_MORPH_SHADER = preload("res://Shaders/piece_texture_morph.gd
 const PIECE_INVISIBILITY_REFRACT_SHADER = preload("res://Shaders/piece_invisibility_refract.gdshader")
 const PIECE_EXPIRE_DISSOLVE_SHADER = preload("res://Shaders/piece_expire_dissolve.gdshader")
 const MOVE_OPTION_DOT_SHADER = preload("res://Shaders/move_option_dot.gdshader")
-const HIDDEN_CARD_INVISIBILITY_SHADER = preload("res://Shaders/hidden_card_invisibility.gdshader")
+const HIDDEN_STAMP_INVISIBILITY_SHADER = preload("res://Shaders/hidden_stamp_invisibility.gdshader")
 const BOARD_KUWAHARA_SHADER = preload("res://Shaders/board_kuwahara.gdshader")
 const PIECE_KUWAHARA_SHADER = preload("res://Shaders/piece_kuwahara.gdshader")
 const MOVE_OPTION_DOT_CELL_WIDTH_RATIO: float = 0.58
@@ -86,10 +86,10 @@ const MOVE_OPTION_DOT_SHADER_EDGE_SOFTNESS: float = 0.85
 const MOVE_OPTION_DOT_SHADER_PULSE_MIN_SCALE: float = 0.88
 const MOVE_OPTION_DOT_SHADER_PULSE_MAX_SCALE: float = 1.18
 const MOVE_OPTION_DOT_SHADER_COLOR = Color(1.0, 0.94, 0.78, 1.0)
-const HIDDEN_CARD_INVISIBILITY_RADIUS: float = 0.32
-const HIDDEN_CARD_INVISIBILITY_EFFECT_CONTROL: float = 0.76
-const HIDDEN_CARD_INVISIBILITY_BURN_SPEED: float = 0.0
-const HIDDEN_CARD_INVISIBILITY_SHAPE: float = 0.2
+const HIDDEN_STAMP_INVISIBILITY_RADIUS: float = 0.32
+const HIDDEN_STAMP_INVISIBILITY_EFFECT_CONTROL: float = 0.76
+const HIDDEN_STAMP_INVISIBILITY_BURN_SPEED: float = 0.0
+const HIDDEN_STAMP_INVISIBILITY_SHAPE: float = 0.2
 const BOARD_VISUAL_SCALE: float = 1.08
 # Adjust these values to tune the board-only perspective tilt.
 const BOARD_PERSPECTIVE_ENABLED: bool = true
@@ -171,21 +171,21 @@ const AMBIENT_BOARD_LIGHT_COLOR = Color(1.0, 0.86, 0.58, 1.0)
 const AMBIENT_BOARD_LIGHT_SHADOW_COLOR = Color(0.0, 0.0, 0.0, 0.50)
 const AMBIENT_BOARD_LIGHT_SHADOW_SMOOTH: float = 2.0
 const PLAYER_HAND_SIZE = DeckManager.HAND_SIZE
-const CARD_UI_SIZE = Vector2(168.7, 229)
-const CARD_HAND_SCALE = 0.648
-const DECK_CARD_SCALE = CARD_HAND_SCALE
+const STAMP_UI_SIZE = Vector2(168.7, 229)
+const STAMP_HAND_SCALE = 0.648
+const DECK_STAMP_SCALE = STAMP_HAND_SCALE
 const DECK_EXTRA_LEFT_OFFSET: float = 200.0
-const CARD_RETURN_TO_DECK_START_SCALE: float = 0.74 * 0.75
-const CARD_RETURN_TO_DECK_END_SCALE: float = DECK_CARD_SCALE * 0.50
-const CARD_RETURN_TO_DECK_DURATION: float = 0.62
-const CARD_UI_GAP = 10
-const TOP_CARD_HAND_MARGIN = -28
-const BOTTOM_CARD_HAND_MARGIN = 34
-const HOVER_CARD_MARGIN = 24
-const HOVER_CARD_PREVIEW_SCALE: float = 0.82
-const HOVER_CARD_VERTICAL_OFFSET: float = 54.0
-const HOVER_CARD_ROTATION_DEGREES: float = -4.0
-const HOVER_CARD_VISUAL_EDGE_OVERLAP: float = 12.0
+const STAMP_RETURN_TO_DECK_START_SCALE: float = 0.74 * 0.75
+const STAMP_RETURN_TO_DECK_END_SCALE: float = DECK_STAMP_SCALE * 0.50
+const STAMP_RETURN_TO_DECK_DURATION: float = 0.62
+const STAMP_UI_GAP = 10
+const TOP_STAMP_HAND_MARGIN = -28
+const BOTTOM_STAMP_HAND_MARGIN = 34
+const HOVER_STAMP_MARGIN = 24
+const HOVER_STAMP_PREVIEW_SCALE: float = 0.82
+const HOVER_STAMP_VERTICAL_OFFSET: float = 54.0
+const HOVER_STAMP_ROTATION_DEGREES: float = -4.0
+const HOVER_STAMP_VISUAL_EDGE_OVERLAP: float = 12.0
 const HOVER_PIECE_PREVIEW_SIZE = Vector2(188, 224)
 const HOVER_PIECE_PREVIEW_VERTICAL_OFFSET: float = -78.0
 const HOVER_DESCRIPTION_TEXT_MARGIN = Vector2(22, 30)
@@ -193,18 +193,18 @@ const HOVER_DESCRIPTION_FRAME_EDGE_COLOR = Color(0.12, 0.085, 0.055, 0.62)
 const HOVER_DESCRIPTION_FRAME_EDGE_THICKNESS: float = 2.0
 const HOVER_DESCRIPTION_FRAME_EDGE_HORIZONTAL_INSET: float = 18.0
 const HOVER_DESCRIPTION_FRAME_EDGE_VERTICAL_INSET: float = 19.0
-const HIDDEN_CARD_MARGIN = 24
-const HIDDEN_CARD_GAP = 10
-const HIDDEN_CARD_SCALE = 0.70 * 0.75
-const HIDDEN_CARD_PREVIEW_ALPHA: float = 0.70
+const HIDDEN_STAMP_MARGIN = 24
+const HIDDEN_STAMP_GAP = 10
+const HIDDEN_STAMP_SCALE = 0.70 * 0.75
+const HIDDEN_STAMP_PREVIEW_ALPHA: float = 0.70
 const CODEX_PANEL_SIZE: Vector2 = Vector2(244, 116)
 const CODEX_PANEL_MARGIN: Vector2 = Vector2(22, 24)
 const BOARD_MARKER_LINE_WIDTH = 1.8
-const CARD_ATTACH_TARGET_FILL_COLOR = Color(1.0, 0.92, 0.58, 0.24)
-const CARD_ATTACH_TARGET_FILL_INSET: float = 1.0
-const CARD_ATTACH_TARGET_WIGGLE_RISE: float = 2.2
-const CARD_ATTACH_TARGET_WIGGLE_ROTATION_DEGREES: float = 2.2
-const CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION: float = 0.105
+const STAMP_ATTACH_TARGET_FILL_COLOR = Color(1.0, 0.92, 0.58, 0.24)
+const STAMP_ATTACH_TARGET_FILL_INSET: float = 1.0
+const STAMP_ATTACH_TARGET_WIGGLE_RISE: float = 2.2
+const STAMP_ATTACH_TARGET_WIGGLE_ROTATION_DEGREES: float = 2.2
+const STAMP_ATTACH_TARGET_WIGGLE_STEP_DURATION: float = 0.105
 const SELECTED_PIECE_GLOW_NAME = "SelectedPieceGlow"
 const SELECTED_PIECE_GLOW_Z_INDEX = 24
 const SELECTED_PIECE_GLOW_STRENGTH: float = 1.0
@@ -328,11 +328,11 @@ const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const MATCH_END_FEEDBACK_SCENE = "res://Scenes/MatchEndFeedback.tscn"
-const CARD_BURN_SEQUENCE_GAP = 0.08
+const STAMP_BURN_SEQUENCE_GAP = 0.08
 const TUTORIAL_ACTION_SELECT_PIECE = "select_piece"
-const TUTORIAL_ACTION_ATTACH_CARD = "attach_card"
+const TUTORIAL_ACTION_ATTACH_STAMP = "attach_stamp"
 const TUTORIAL_ACTION_MOVE_PIECE = "move_piece"
-const TUTORIAL_ACTION_EXCHANGE_CARD = "exchange_card"
+const TUTORIAL_ACTION_EXCHANGE_STAMP = "exchange_stamp"
 const TUTORIAL_ACTION_TURN_PAGE = "turn_page"
 const TUTORIAL_ACTION_END_TURN = "end_turn"
 const RULES_INFO_TEXT: String = "Goal: attach a Seeker stamp to one of your pieces, then move that Seeker onto the opponent's base square.\n\nCodex:\n- Your codex has 5 pages with up to 3 stamps per page.\n- You may use only the currently open page.\n- Before attaching a stamp, you may turn once to the next non-empty page.\n- Empty pages are skipped, and a depleted page leaves the rotation.\n\nTurn flow:\n1. On your first turn, attach at least one stamp, then press End Turn. Attaching all 3 stamps ends it automatically.\n2. On later turns, optionally turn the page, attach stamps, then move.\n3. A newly stamped piece is frozen for that turn.\n4. Moving is mandatory and immediately ends the turn. If frozen stamped pieces leave you with no legal move, press End Turn.\n\nCaptures:\n- The first captured piece respawns locked on an empty non-base home-row square. The next capture unlocks it.\n- Its attached stamp is removed. Seeker stamps return to their original codex page."
@@ -437,25 +437,25 @@ var state : bool = false
 var moves = []
 var selected_piece : Vector2
 var hovered_piece : Vector2 = Vector2(-1, -1)
-var white_card_deck: Array[String] = []
-var black_card_deck: Array[String] = []
-var white_card_hand: Array[Card] = []
-var black_card_hand: Array[Card] = []
-var white_card_visuals: Array[CardVisual] = []
-var black_card_visuals: Array[CardVisual] = []
-var white_deck_visual: CardVisual
-var black_deck_visual: CardVisual
-var attached_card_this_turn: Dictionary = {
+var white_stamp_deck: Array[String] = []
+var black_stamp_deck: Array[String] = []
+var white_stamp_hand: Array[Stamp] = []
+var black_stamp_hand: Array[Stamp] = []
+var white_stamp_visuals: Array[StampVisual] = []
+var black_stamp_visuals: Array[StampVisual] = []
+var white_deck_visual: StampVisual
+var black_deck_visual: StampVisual
+var attached_stamp_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
-var attached_card_count_this_turn: Dictionary = {0: 0, 1: 0}
+var attached_stamp_count_this_turn: Dictionary = {0: 0, 1: 0}
 var completed_turn_counts: Dictionary = {0: 0, 1: 0}
 var moved_piece_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
-var exchanged_card_this_turn: Dictionary = {
+var exchanged_stamp_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
@@ -463,20 +463,20 @@ var has_turned_page_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
-var played_card_hand_slots_this_turn: Dictionary = {
+var played_stamp_hand_slots_this_turn: Dictionary = {
 	1: [],
 	-1: [],
 }
-var pending_card_attach_positions: Dictionary = {}
-var active_card_attach_process_count: int = 0
-var active_state_card_attach_animation_count: int = 0
-var exchanged_card_names_this_turn: Dictionary = {
+var pending_stamp_attach_positions: Dictionary = {}
+var active_stamp_attach_process_count: int = 0
+var active_state_stamp_attach_animation_count: int = 0
+var exchanged_stamp_names_this_turn: Dictionary = {
 	1: [],
 	-1: [],
 }
 var game_over: bool = false
-var hover_card_group: Control
-var hover_card_preview: CardVisual
+var hover_stamp_group: Control
+var hover_stamp_preview: StampVisual
 var hover_piece_preview: TextureRect
 var hover_duration_label: Label
 var hover_description_panel: Control
@@ -496,7 +496,7 @@ var codex_page_label: Label
 var codex_counts_row: HBoxContainer
 var codex_turn_page_button: Button
 var codex_count_labels: Array[Label] = []
-var hidden_card_counts: Dictionary = {}
+var hidden_stamp_counts: Dictionary = {}
 var board_geometry
 var board_visuals
 var board_tile_controller
@@ -516,16 +516,16 @@ var piece_respawn_fragment_coordinator
 var piece_display_controller
 var piece_effect_animator
 var freeze_effect_animator
-var hidden_card_preview_controller
-var card_hud_controller
-var card_hover_preview_controller
-var card_interaction_controller
-var card_animation_controller
+var hidden_stamp_preview_controller
+var stamp_hud_controller
+var stamp_hover_preview_controller
+var stamp_interaction_controller
+var stamp_animation_controller
 var turn_hud_controller
 var deck_counter_controller
 var match_input_controller
 var match_board_lifecycle_controller
-var card_hand_state_controller
+var stamp_hand_state_controller
 var board_markers_node: Node2D
 var board_frame_node: Node2D
 var board_base_tiles_node: Node2D
@@ -740,7 +740,7 @@ func sync_match_state_sync_controller() -> void:
 		"fragment_group_top": PIECE_SHATTER_FRAGMENT_GROUP_TOP,
 		"fragment_group_pending": PIECE_SHATTER_FRAGMENT_GROUP_PENDING,
 		"default_piece_texture_provider": Callable(self, "get_default_piece_texture"),
-		"card_piece_texture_provider": Callable(self, "get_card_piece_texture_for_color"),
+		"stamp_piece_texture_provider": Callable(self, "get_stamp_piece_texture_for_color"),
 	})
 
 func get_match_state_sync_controller():
@@ -776,7 +776,7 @@ func sync_local_state_mutator() -> void:
 		"piece_objects": piece_objects,
 		"local_pending_respawns": local_pending_respawns,
 		"moved_piece_this_turn": moved_piece_this_turn,
-		"played_card_hand_slots_this_turn": played_card_hand_slots_this_turn,
+		"played_stamp_hand_slots_this_turn": played_stamp_hand_slots_this_turn,
 		"player_base_fields": current_player_base_fields,
 		"board_effects": current_board_effects,
 		"board_size": BOARD_SIZE,
@@ -786,11 +786,11 @@ func sync_local_state_mutator() -> void:
 		"fragment_group_top": PIECE_SHATTER_FRAGMENT_GROUP_TOP,
 		"fragment_group_pending": PIECE_SHATTER_FRAGMENT_GROUP_PENDING,
 		"player_id_for_color_provider": Callable(self, "get_player_id_for_color"),
-		"card_hand_provider": Callable(self, "get_card_hand"),
-		"card_deck_provider": Callable(self, "get_card_deck"),
+		"stamp_hand_provider": Callable(self, "get_stamp_hand"),
+		"stamp_deck_provider": Callable(self, "get_stamp_deck"),
 		"current_turn_color_provider": Callable(self, "get_current_turn_color"),
 		"moved_piece_this_turn_provider": Callable(get_turn_action_state_controller(), "has_moved_piece_this_turn"),
-		"can_exchange_card_provider": Callable(self, "can_exchange_card_locally"),
+		"can_exchange_stamp_provider": Callable(self, "can_exchange_stamp_locally"),
 		"can_turn_page_provider": Callable(self, "can_turn_page_locally"),
 		"create_board_tiles_callback": Callable(self, "create_board_tiles"),
 	})
@@ -897,8 +897,8 @@ func get_current_board_effects() -> Array:
 func get_current_last_move() -> Dictionary:
 	return current_last_move
 
-func get_pending_card_attach_positions() -> Dictionary:
-	return pending_card_attach_positions
+func get_pending_stamp_attach_positions() -> Dictionary:
+	return pending_stamp_attach_positions
 
 func initialize_piece_visual_controller() -> void:
 	if piece_visuals == null:
@@ -1220,7 +1220,7 @@ func sync_freeze_effect_animator() -> void:
 		"sync_overlay_to_holder_callback": Callable(effect_animator, "sync_sprite_overlay_to_holder"),
 		"piece_holder_provider": Callable(self, "get_piece_holder_at"),
 		"should_skip_visual_animations_provider": Callable(self, "should_skip_visual_animations"),
-		"pending_attach_positions_provider": Callable(self, "get_pending_card_attach_positions"),
+		"pending_attach_positions_provider": Callable(self, "get_pending_stamp_attach_positions"),
 		"piece_objects_provider": Callable(self, "get_piece_objects"),
 		"board_effects_provider": Callable(self, "get_current_board_effects"),
 		"player_id_for_color_callback": Callable(self, "get_player_id_for_color"),
@@ -1252,78 +1252,78 @@ func get_freeze_effect_animator():
 	initialize_freeze_effect_animator()
 	return freeze_effect_animator
 
-func initialize_hidden_card_preview_controller() -> void:
-	if hidden_card_preview_controller == null:
-		hidden_card_preview_controller = HIDDEN_CARD_PREVIEW_CONTROLLER_SCRIPT.new()
-	sync_hidden_card_preview_controller()
+func initialize_hidden_stamp_preview_controller() -> void:
+	if hidden_stamp_preview_controller == null:
+		hidden_stamp_preview_controller = HIDDEN_STAMP_PREVIEW_CONTROLLER_SCRIPT.new()
+	sync_hidden_stamp_preview_controller()
 
-func sync_hidden_card_preview_controller() -> void:
-	if hidden_card_preview_controller == null:
+func sync_hidden_stamp_preview_controller() -> void:
+	if hidden_stamp_preview_controller == null:
 		return
-	hidden_card_preview_controller.configure({
+	hidden_stamp_preview_controller.configure({
 		"canvas_layer": canvas_layer,
-		"card_visual_scene": CARD_VISUAL,
-		"card_ui_size": CARD_UI_SIZE,
-		"hidden_card_margin": HIDDEN_CARD_MARGIN,
-		"hidden_card_gap": HIDDEN_CARD_GAP,
-		"hidden_card_scale": HIDDEN_CARD_SCALE,
-		"hidden_card_preview_alpha": HIDDEN_CARD_PREVIEW_ALPHA,
+		"stamp_visual_scene": STAMP_VISUAL,
+		"stamp_ui_size": STAMP_UI_SIZE,
+		"hidden_stamp_margin": HIDDEN_STAMP_MARGIN,
+		"hidden_stamp_gap": HIDDEN_STAMP_GAP,
+		"hidden_stamp_scale": HIDDEN_STAMP_SCALE,
+		"hidden_stamp_preview_alpha": HIDDEN_STAMP_PREVIEW_ALPHA,
 		"board_size": BOARD_SIZE,
 		"cell_width": CELL_WIDTH,
-		"hidden_card_invisibility_shader": HIDDEN_CARD_INVISIBILITY_SHADER,
-		"hidden_card_invisibility_radius": HIDDEN_CARD_INVISIBILITY_RADIUS,
-		"hidden_card_invisibility_effect_control": HIDDEN_CARD_INVISIBILITY_EFFECT_CONTROL,
-		"hidden_card_invisibility_burn_speed": HIDDEN_CARD_INVISIBILITY_BURN_SPEED,
-		"hidden_card_invisibility_shape": HIDDEN_CARD_INVISIBILITY_SHAPE,
+		"hidden_stamp_invisibility_shader": HIDDEN_STAMP_INVISIBILITY_SHADER,
+		"hidden_stamp_invisibility_radius": HIDDEN_STAMP_INVISIBILITY_RADIUS,
+		"hidden_stamp_invisibility_effect_control": HIDDEN_STAMP_INVISIBILITY_EFFECT_CONTROL,
+		"hidden_stamp_invisibility_burn_speed": HIDDEN_STAMP_INVISIBILITY_BURN_SPEED,
+		"hidden_stamp_invisibility_shape": HIDDEN_STAMP_INVISIBILITY_SHAPE,
 		"board_screen_scale_provider": Callable(self, "get_board_screen_scale"),
 	})
 
-func get_hidden_card_preview_controller():
-	initialize_hidden_card_preview_controller()
-	return hidden_card_preview_controller
+func get_hidden_stamp_preview_controller():
+	initialize_hidden_stamp_preview_controller()
+	return hidden_stamp_preview_controller
 
-func initialize_card_hud_controller() -> void:
-	if card_hud_controller == null:
-		card_hud_controller = MATCH_CARD_HUD_SCRIPT.new()
-	sync_card_hud_controller()
+func initialize_stamp_hud_controller() -> void:
+	if stamp_hud_controller == null:
+		stamp_hud_controller = MATCH_STAMP_HUD_SCRIPT.new()
+	sync_stamp_hud_controller()
 
-func sync_card_hud_controller() -> void:
-	if card_hud_controller == null:
+func sync_stamp_hud_controller() -> void:
+	if stamp_hud_controller == null:
 		return
-	card_hud_controller.configure({
-		"card_visual_scene": CARD_VISUAL,
-		"card_ui_size": CARD_UI_SIZE,
+	stamp_hud_controller.configure({
+		"stamp_visual_scene": STAMP_VISUAL,
+		"stamp_ui_size": STAMP_UI_SIZE,
 		"player_hand_size": PLAYER_HAND_SIZE,
-		"card_hand_scale": CARD_HAND_SCALE,
-		"deck_card_scale": DECK_CARD_SCALE,
+		"stamp_hand_scale": STAMP_HAND_SCALE,
+		"deck_stamp_scale": DECK_STAMP_SCALE,
 		"deck_extra_left_offset": DECK_EXTRA_LEFT_OFFSET,
-		"card_ui_gap": CARD_UI_GAP,
-		"top_card_hand_margin": TOP_CARD_HAND_MARGIN,
-		"bottom_card_hand_margin": BOTTOM_CARD_HAND_MARGIN,
+		"stamp_ui_gap": STAMP_UI_GAP,
+		"top_stamp_hand_margin": TOP_STAMP_HAND_MARGIN,
+		"bottom_stamp_hand_margin": BOTTOM_STAMP_HAND_MARGIN,
 	})
 
-func get_card_hud_controller():
-	initialize_card_hud_controller()
-	return card_hud_controller
+func get_stamp_hud_controller():
+	initialize_stamp_hud_controller()
+	return stamp_hud_controller
 
-func initialize_card_hover_preview_controller() -> void:
-	if card_hover_preview_controller == null:
-		card_hover_preview_controller = CARD_HOVER_PREVIEW_CONTROLLER_SCRIPT.new()
-	sync_card_hover_preview_controller()
+func initialize_stamp_hover_preview_controller() -> void:
+	if stamp_hover_preview_controller == null:
+		stamp_hover_preview_controller = STAMP_HOVER_PREVIEW_CONTROLLER_SCRIPT.new()
+	sync_stamp_hover_preview_controller()
 
-func sync_card_hover_preview_controller() -> void:
-	if card_hover_preview_controller == null:
+func sync_stamp_hover_preview_controller() -> void:
+	if stamp_hover_preview_controller == null:
 		return
-	card_hover_preview_controller.configure({
+	stamp_hover_preview_controller.configure({
 		"canvas_layer": canvas_layer,
-		"card_visual_scene": CARD_VISUAL,
-		"card_ui_size": CARD_UI_SIZE,
-		"card_base_texture": HOVER_DESCRIPTION_CARD_BASE_TEXTURE,
-		"hover_card_margin": HOVER_CARD_MARGIN,
-		"hover_card_preview_scale": HOVER_CARD_PREVIEW_SCALE,
-		"hover_card_vertical_offset": HOVER_CARD_VERTICAL_OFFSET,
-		"hover_card_rotation_degrees": HOVER_CARD_ROTATION_DEGREES,
-		"hover_card_visual_edge_overlap": HOVER_CARD_VISUAL_EDGE_OVERLAP,
+		"stamp_visual_scene": STAMP_VISUAL,
+		"stamp_ui_size": STAMP_UI_SIZE,
+		"stamp_base_texture": HOVER_DESCRIPTION_STAMP_BASE_TEXTURE,
+		"hover_stamp_margin": HOVER_STAMP_MARGIN,
+		"hover_stamp_preview_scale": HOVER_STAMP_PREVIEW_SCALE,
+		"hover_stamp_vertical_offset": HOVER_STAMP_VERTICAL_OFFSET,
+		"hover_stamp_rotation_degrees": HOVER_STAMP_ROTATION_DEGREES,
+		"hover_stamp_visual_edge_overlap": HOVER_STAMP_VISUAL_EDGE_OVERLAP,
 		"hover_piece_preview_size": HOVER_PIECE_PREVIEW_SIZE,
 		"hover_piece_preview_vertical_offset": HOVER_PIECE_PREVIEW_VERTICAL_OFFSET,
 		"description_text_margin": HOVER_DESCRIPTION_TEXT_MARGIN,
@@ -1333,90 +1333,90 @@ func sync_card_hover_preview_controller() -> void:
 		"description_frame_edge_vertical_inset": HOVER_DESCRIPTION_FRAME_EDGE_VERTICAL_INSET,
 	})
 
-func get_card_hover_preview_controller():
-	initialize_card_hover_preview_controller()
-	return card_hover_preview_controller
+func get_stamp_hover_preview_controller():
+	initialize_stamp_hover_preview_controller()
+	return stamp_hover_preview_controller
 
-func initialize_card_interaction_controller() -> void:
-	if card_interaction_controller == null:
-		card_interaction_controller = CARD_INTERACTION_CONTROLLER_SCRIPT.new()
-	sync_card_interaction_controller()
+func initialize_stamp_interaction_controller() -> void:
+	if stamp_interaction_controller == null:
+		stamp_interaction_controller = STAMP_INTERACTION_CONTROLLER_SCRIPT.new()
+	sync_stamp_interaction_controller()
 
-func sync_card_interaction_controller() -> void:
-	if card_interaction_controller == null:
+func sync_stamp_interaction_controller() -> void:
+	if stamp_interaction_controller == null:
 		return
-	card_interaction_controller.configure({
+	stamp_interaction_controller.configure({
 		"tween_owner": self,
 		"geometry": get_board_geometry(),
 		"visuals": get_board_visuals(),
 		"board_markers_node": board_markers_node,
-		"card_attach_target_fill_color": CARD_ATTACH_TARGET_FILL_COLOR,
-		"card_attach_target_fill_inset": CARD_ATTACH_TARGET_FILL_INSET,
-		"card_attach_target_wiggle_rise": CARD_ATTACH_TARGET_WIGGLE_RISE,
-		"card_attach_target_wiggle_rotation_degrees": CARD_ATTACH_TARGET_WIGGLE_ROTATION_DEGREES,
-		"card_attach_target_wiggle_step_duration": CARD_ATTACH_TARGET_WIGGLE_STEP_DURATION,
+		"stamp_attach_target_fill_color": STAMP_ATTACH_TARGET_FILL_COLOR,
+		"stamp_attach_target_fill_inset": STAMP_ATTACH_TARGET_FILL_INSET,
+		"stamp_attach_target_wiggle_rise": STAMP_ATTACH_TARGET_WIGGLE_RISE,
+		"stamp_attach_target_wiggle_rotation_degrees": STAMP_ATTACH_TARGET_WIGGLE_ROTATION_DEGREES,
+		"stamp_attach_target_wiggle_step_duration": STAMP_ATTACH_TARGET_WIGGLE_STEP_DURATION,
 		"hide_hover_callback": Callable(self, "hide_hover_piece_details"),
-		"show_hover_card_description_callback": Callable(self, "show_hover_card_description"),
+		"show_hover_stamp_description_callback": Callable(self, "show_hover_stamp_description"),
 		"can_control_current_turn_provider": Callable(self, "can_control_current_turn"),
 		"controllable_color_provider": Callable(self, "get_controllable_color"),
 		"is_mouse_out_provider": Callable(self, "is_mouse_out"),
 		"mouse_board_position_provider": Callable(self, "get_mouse_board_position"),
 		"is_valid_position_callback": Callable(self, "is_valid_position"),
 		"is_piece_owned_by_callback": Callable(self, "is_piece_owned_by"),
-		"can_attach_card_to_piece_callback": Callable(self, "can_attach_card_to_piece"),
-		"can_exchange_card_locally_callback": Callable(self, "can_exchange_card_locally"),
+		"can_attach_stamp_to_piece_callback": Callable(self, "can_attach_stamp_to_piece"),
+		"can_exchange_stamp_locally_callback": Callable(self, "can_exchange_stamp_locally"),
 		"is_mouse_over_deck_callback": Callable(self, "is_mouse_over_deck"),
-		"attach_card_visual_to_piece_callback": Callable(self, "attach_card_visual_to_piece"),
-		"card_visuals_provider": Callable(self, "get_card_visuals"),
-		"card_hand_provider": Callable(self, "get_card_hand"),
-		"card_home_position_provider": Callable(self, "get_card_home_position"),
+		"attach_stamp_visual_to_piece_callback": Callable(self, "attach_stamp_visual_to_piece"),
+		"stamp_visuals_provider": Callable(self, "get_stamp_visuals"),
+		"stamp_hand_provider": Callable(self, "get_stamp_hand"),
+		"stamp_home_position_provider": Callable(self, "get_stamp_home_position"),
 		"piece_holder_provider": Callable(self, "get_piece_holder_at"),
-		"card_visual_index_provider": Callable(self, "get_card_visual_index"),
-		"tutorial_exchange_allowed_callback": Callable(self, "is_tutorial_exchange_card_allowed"),
-		"send_card_exchange_callback": Callable(self, "send_card_exchange_action"),
-		"card_deck_provider": Callable(self, "get_card_deck"),
-		"remove_card_from_hand_index_callback": Callable(self, "remove_card_from_hand_index"),
-		"complete_card_exchange_callback": Callable(self, "complete_card_exchange"),
+		"stamp_visual_index_provider": Callable(self, "get_stamp_visual_index"),
+		"tutorial_exchange_allowed_callback": Callable(self, "is_tutorial_exchange_stamp_allowed"),
+		"send_stamp_exchange_callback": Callable(self, "send_stamp_exchange_action"),
+		"stamp_deck_provider": Callable(self, "get_stamp_deck"),
+		"remove_stamp_from_hand_index_callback": Callable(self, "remove_stamp_from_hand_index"),
+		"complete_stamp_exchange_callback": Callable(self, "complete_stamp_exchange"),
 	})
 
-func get_card_interaction_controller():
-	initialize_card_interaction_controller()
-	return card_interaction_controller
+func get_stamp_interaction_controller():
+	initialize_stamp_interaction_controller()
+	return stamp_interaction_controller
 
-func initialize_card_animation_controller() -> void:
-	if card_animation_controller == null:
-		card_animation_controller = CARD_ANIMATION_CONTROLLER_SCRIPT.new()
-	sync_card_animation_controller()
+func initialize_stamp_animation_controller() -> void:
+	if stamp_animation_controller == null:
+		stamp_animation_controller = STAMP_ANIMATION_CONTROLLER_SCRIPT.new()
+	sync_stamp_animation_controller()
 
-func sync_card_animation_controller() -> void:
-	if card_animation_controller == null:
+func sync_stamp_animation_controller() -> void:
+	if stamp_animation_controller == null:
 		return
-	card_animation_controller.configure({
+	stamp_animation_controller.configure({
 		"canvas_layer": canvas_layer,
 		"tween_owner": self,
-		"card_visual_scene": CARD_VISUAL,
-		"card_ui_size": CARD_UI_SIZE,
-		"card_burn_sequence_gap": CARD_BURN_SEQUENCE_GAP,
-		"return_to_deck_start_scale": CARD_RETURN_TO_DECK_START_SCALE,
-		"return_to_deck_end_scale": CARD_RETURN_TO_DECK_END_SCALE,
-		"return_to_deck_duration": CARD_RETURN_TO_DECK_DURATION,
+		"stamp_visual_scene": STAMP_VISUAL,
+		"stamp_ui_size": STAMP_UI_SIZE,
+		"stamp_burn_sequence_gap": STAMP_BURN_SEQUENCE_GAP,
+		"return_to_deck_start_scale": STAMP_RETURN_TO_DECK_START_SCALE,
+		"return_to_deck_end_scale": STAMP_RETURN_TO_DECK_END_SCALE,
+		"return_to_deck_duration": STAMP_RETURN_TO_DECK_DURATION,
 		"color_for_player_provider": Callable(self, "get_color_for_player_id"),
 		"player_id_for_color_provider": Callable(self, "get_player_id_for_color"),
 		"local_view_color_provider": Callable(self, "get_local_view_color"),
 		"is_valid_position_callback": Callable(self, "is_valid_position"),
 		"board_screen_position_provider": Callable(self, "get_board_position_screen_position"),
-		"card_draw_start_position_provider": Callable(self, "get_card_draw_start_position"),
-		"card_return_to_deck_target_position_provider": Callable(self, "get_card_return_to_deck_target_position"),
-		"card_hand_source_position_provider": Callable(self, "get_card_hand_source_position"),
+		"stamp_draw_start_position_provider": Callable(self, "get_stamp_draw_start_position"),
+		"stamp_return_to_deck_target_position_provider": Callable(self, "get_stamp_return_to_deck_target_position"),
+		"stamp_hand_source_position_provider": Callable(self, "get_stamp_hand_source_position"),
 		"deck_visual_provider": Callable(self, "get_deck_visual"),
 		"viewport_size_provider": Callable(self, "get_visible_viewport_size"),
 		"value_to_vector2_provider": Callable(self, "value_to_vector2"),
-		"card_visuals_provider": Callable(self, "get_card_visuals"),
+		"stamp_visuals_provider": Callable(self, "get_stamp_visuals"),
 	})
 
-func get_card_animation_controller():
-	initialize_card_animation_controller()
-	return card_animation_controller
+func get_stamp_animation_controller():
+	initialize_stamp_animation_controller()
+	return stamp_animation_controller
 
 func get_visible_viewport_size() -> Vector2:
 	return get_viewport().get_visible_rect().size
@@ -1461,7 +1461,7 @@ func sync_deck_counter_controller() -> void:
 		"deck_counter_shadow_texture": DECK_COUNTER_SHADOW_TEXTURE,
 		"deck_counter_digit_shader": DECK_COUNTER_DIGIT_SHADER,
 		"deck_visual_provider": Callable(self, "get_deck_visual"),
-		"card_deck_count_provider": Callable(self, "get_card_deck_count"),
+		"stamp_deck_count_provider": Callable(self, "get_stamp_deck_count"),
 		"game_over_provider": Callable(self, "is_game_over"),
 	})
 
@@ -1578,24 +1578,24 @@ func get_match_input_controller():
 	initialize_match_input_controller()
 	return match_input_controller
 
-func initialize_card_hand_state_controller() -> void:
-	if card_hand_state_controller == null:
-		card_hand_state_controller = CARD_HAND_STATE_CONTROLLER_SCRIPT.new()
-	sync_card_hand_state_controller()
+func initialize_stamp_hand_state_controller() -> void:
+	if stamp_hand_state_controller == null:
+		stamp_hand_state_controller = STAMP_HAND_STATE_CONTROLLER_SCRIPT.new()
+	sync_stamp_hand_state_controller()
 
-func sync_card_hand_state_controller() -> void:
-	if card_hand_state_controller == null:
+func sync_stamp_hand_state_controller() -> void:
+	if stamp_hand_state_controller == null:
 		return
-	card_hand_state_controller.configure({
+	stamp_hand_state_controller.configure({
 		"match_board": self,
-		"card_visual_scene": CARD_VISUAL,
-		"card_ui_size": CARD_UI_SIZE,
-		"card_hand_scale": CARD_HAND_SCALE,
+		"stamp_visual_scene": STAMP_VISUAL,
+		"stamp_ui_size": STAMP_UI_SIZE,
+		"stamp_hand_scale": STAMP_HAND_SCALE,
 	})
 
-func get_card_hand_state_controller():
-	initialize_card_hand_state_controller()
-	return card_hand_state_controller
+func get_stamp_hand_state_controller():
+	initialize_stamp_hand_state_controller()
+	return stamp_hand_state_controller
 
 func is_game_over() -> bool:
 	return game_over
@@ -1614,7 +1614,7 @@ func can_end_first_turn() -> bool:
 		return false
 	var player_id: int = get_player_id_for_color(get_current_turn_color())
 	if int(completed_turn_counts.get(player_id, 0)) == 0:
-		return int(attached_card_count_this_turn.get(player_id, 0)) >= 1
+		return int(attached_stamp_count_this_turn.get(player_id, 0)) >= 1
 	return get_local_state_mutator().current_player_can_end_turn_due_to_frozen_piece()
 
 func defer_turn_timer_timeout(expected_turn_color: int) -> void:
@@ -1644,17 +1644,17 @@ func apply_tutorial_setup(setup: Dictionary) -> void:
 func set_tutorial_board_from_array(board_data: Array) -> void:
 	get_tutorial_match_adapter().set_board_from_array(board_data)
 
-func set_tutorial_attached_cards(attached_cards: Array) -> void:
-	get_tutorial_match_adapter().set_attached_cards(attached_cards)
+func set_tutorial_attached_stamps(attached_stamps: Array) -> void:
+	get_tutorial_match_adapter().set_attached_stamps(attached_stamps)
 
 func reset_tutorial_turn_state() -> void:
 	get_tutorial_match_adapter().reset_turn_state()
 
-func set_tutorial_card_hand(owner_color: int, card_names: Array) -> void:
-	get_tutorial_match_adapter().set_card_hand(owner_color, card_names)
+func set_tutorial_stamp_hand(owner_color: int, stamp_names: Array) -> void:
+	get_tutorial_match_adapter().set_stamp_hand(owner_color, stamp_names)
 
-func set_tutorial_card_deck(owner_color: int, card_names: Array) -> void:
-	get_tutorial_match_adapter().set_card_deck(owner_color, card_names)
+func set_tutorial_stamp_deck(owner_color: int, stamp_names: Array) -> void:
+	get_tutorial_match_adapter().set_stamp_deck(owner_color, stamp_names)
 
 func set_tutorial_turn(owner_color: int) -> void:
 	get_tutorial_match_adapter().set_turn(owner_color)
@@ -1795,25 +1795,25 @@ func create_pieces_from_board():
 				piece_objects[pos] = piece
 				DebugLog.info("Piece created: pos=%s, color=%s" % [pos, "white" if color > 0 else "black"])
 
-	DebugLog.info("Pieces initialized without starting cards.")
+	DebugLog.info("Pieces initialized without starting stamps.")
 
-func setup_player_card_hands():
-	get_card_hand_state_controller().setup_player_card_hands()
+func setup_player_stamp_hands():
+	get_stamp_hand_state_controller().setup_player_stamp_hands()
 
-func create_card_hand_from_names(card_names: Array) -> Array[Card]:
-	return get_card_hand_state_controller().create_card_hand_from_names(card_names)
+func create_stamp_hand_from_names(stamp_names: Array) -> Array[Stamp]:
+	return get_stamp_hand_state_controller().create_stamp_hand_from_names(stamp_names)
 
-func populate_card_hand(hand_node: Control, cards: Array[Card], owner_color: int) -> Array[CardVisual]:
-	return get_card_hand_state_controller().populate_card_hand(hand_node, cards, owner_color)
+func populate_stamp_hand(hand_node: Control, stamps: Array[Stamp], owner_color: int) -> Array[StampVisual]:
+	return get_stamp_hand_state_controller().populate_stamp_hand(hand_node, stamps, owner_color)
 
 func setup_deck_visuals():
-	get_card_hand_state_controller().setup_deck_visuals()
+	get_stamp_hand_state_controller().setup_deck_visuals()
 
 func create_hover_piece_ui():
-	var hover_controller = get_card_hover_preview_controller()
+	var hover_controller = get_stamp_hover_preview_controller()
 	hover_controller.create_ui()
-	hover_card_group = hover_controller.hover_card_group
-	hover_card_preview = hover_controller.hover_card_preview
+	hover_stamp_group = hover_controller.hover_stamp_group
+	hover_stamp_preview = hover_controller.hover_stamp_preview
 	hover_piece_preview = hover_controller.hover_piece_preview
 	hover_duration_label = hover_controller.hover_duration_label
 	hover_description_panel = hover_controller.hover_description_panel
@@ -1829,55 +1829,55 @@ func create_quit_confirmation_ui():
 	quit_confirmation_dialog.exclusive = true
 	quit_confirmation_dialog.confirmed.connect(_on_quit_confirmed)
 
-func get_card_home_position(index: int) -> Vector2:
-	return get_card_hand_state_controller().get_card_home_position(index)
+func get_stamp_home_position(index: int) -> Vector2:
+	return get_stamp_hand_state_controller().get_stamp_home_position(index)
 
-func get_card_hand(owner_color: int) -> Array[Card]:
-	return get_card_hand_state_controller().get_card_hand(owner_color)
+func get_stamp_hand(owner_color: int) -> Array[Stamp]:
+	return get_stamp_hand_state_controller().get_stamp_hand(owner_color)
 
-func get_card_visuals(owner_color: int) -> Array[CardVisual]:
-	return get_card_hand_state_controller().get_card_visuals(owner_color)
+func get_stamp_visuals(owner_color: int) -> Array[StampVisual]:
+	return get_stamp_hand_state_controller().get_stamp_visuals(owner_color)
 
-func get_card_deck(owner_color: int) -> Array[String]:
-	return get_card_hand_state_controller().get_card_deck(owner_color)
+func get_stamp_deck(owner_color: int) -> Array[String]:
+	return get_stamp_hand_state_controller().get_stamp_deck(owner_color)
 
-func get_card_deck_count(owner_color: int) -> int:
-	return get_card_hand_state_controller().get_card_deck_count(owner_color)
+func get_stamp_deck_count(owner_color: int) -> int:
+	return get_stamp_hand_state_controller().get_stamp_deck_count(owner_color)
 
-func get_card_hand_node(owner_color: int) -> Control:
-	return get_card_hand_state_controller().get_card_hand_node(owner_color)
+func get_stamp_hand_node(owner_color: int) -> Control:
+	return get_stamp_hand_state_controller().get_stamp_hand_node(owner_color)
 
-func get_deck_visual(owner_color: int) -> CardVisual:
-	return get_card_hand_state_controller().get_deck_visual(owner_color)
+func get_deck_visual(owner_color: int) -> StampVisual:
+	return get_stamp_hand_state_controller().get_deck_visual(owner_color)
 
-func get_card_draw_start_position(owner_color: int) -> Vector2:
-	return get_card_hand_state_controller().get_card_draw_start_position(owner_color)
+func get_stamp_draw_start_position(owner_color: int) -> Vector2:
+	return get_stamp_hand_state_controller().get_stamp_draw_start_position(owner_color)
 
-func get_card_return_to_deck_target_position(owner_color: int, target_scale: float) -> Vector2:
-	return get_card_hand_state_controller().get_card_return_to_deck_target_position(owner_color, target_scale)
+func get_stamp_return_to_deck_target_position(owner_color: int, target_scale: float) -> Vector2:
+	return get_stamp_hand_state_controller().get_stamp_return_to_deck_target_position(owner_color, target_scale)
 
-func update_card_presentation():
-	get_card_hand_state_controller().update_card_presentation()
+func update_stamp_presentation():
+	get_stamp_hand_state_controller().update_stamp_presentation()
 
-func update_card_drag_permissions():
-	get_card_hand_state_controller().update_card_drag_permissions()
+func update_stamp_drag_permissions():
+	get_stamp_hand_state_controller().update_stamp_drag_permissions()
 
 func update_end_turn_button():
 	get_turn_hud_controller().update_end_turn_button()
 
-func begin_card_attach_process(piece_position: Vector2) -> void:
-	if !pending_card_attach_positions.has(piece_position):
-		active_card_attach_process_count += 1
-	pending_card_attach_positions[piece_position] = true
+func begin_stamp_attach_process(piece_position: Vector2) -> void:
+	if !pending_stamp_attach_positions.has(piece_position):
+		active_stamp_attach_process_count += 1
+	pending_stamp_attach_positions[piece_position] = true
 
-func finish_card_attach_process(piece_position: Vector2) -> void:
-	var had_pending_attach: bool = pending_card_attach_positions.has(piece_position)
-	if pending_card_attach_positions.has(piece_position):
-		pending_card_attach_positions.erase(piece_position)
-		active_card_attach_process_count = maxi(0, active_card_attach_process_count - 1)
+func finish_stamp_attach_process(piece_position: Vector2) -> void:
+	var had_pending_attach: bool = pending_stamp_attach_positions.has(piece_position)
+	if pending_stamp_attach_positions.has(piece_position):
+		pending_stamp_attach_positions.erase(piece_position)
+		active_stamp_attach_process_count = maxi(0, active_stamp_attach_process_count - 1)
 	if had_pending_attach:
 		refresh_piece_freeze_overlay(piece_position)
-	update_card_drag_permissions()
+	update_stamp_drag_permissions()
 	get_turn_hud_controller().update_action_status_ui()
 
 func has_pending_visual_processes() -> bool:
@@ -1916,15 +1916,15 @@ func request_end_turn(emit_tutorial_rejection: bool, expected_turn_color: int = 
 func end_current_turn_locally():
 	get_turn_flow_controller().end_current_turn_locally()
 
-func handle_expired_seeker_card_locally(owner_color: int, expired_card: Card, piece_pos: Vector2) -> void:
-	get_card_animation_controller().queue_seeker_card_return_to_deck_animation(owner_color, expired_card, piece_pos)
-	return_local_seeker_stamp(owner_color, expired_card)
+func handle_expired_seeker_stamp_locally(owner_color: int, expired_stamp: Stamp, piece_pos: Vector2) -> void:
+	get_stamp_animation_controller().queue_seeker_stamp_return_to_deck_animation(owner_color, expired_stamp, piece_pos)
+	return_local_seeker_stamp(owner_color, expired_stamp)
 
-func update_card_face_visibility(local_color: int):
-	for card_visual in white_card_visuals:
-		card_visual.set_face_down(card_visual.owner_color != local_color)
-	for card_visual in black_card_visuals:
-		card_visual.set_face_down(card_visual.owner_color != local_color)
+func update_stamp_face_visibility(local_color: int):
+	for stamp_visual in white_stamp_visuals:
+		stamp_visual.set_face_down(stamp_visual.owner_color != local_color)
+	for stamp_visual in black_stamp_visuals:
+		stamp_visual.set_face_down(stamp_visual.owner_color != local_color)
 
 func get_local_view_color() -> int:
 	if side == null:
@@ -1956,62 +1956,62 @@ func get_color_for_player_id(player_id: int) -> int:
 func get_own_player_id() -> int:
 	return get_player_id_for_color(get_own_color())
 
-func show_hover_card_description(card: Card) -> void:
-	if card == null:
+func show_hover_stamp_description(stamp: Stamp) -> void:
+	if stamp == null:
 		return
 
 	hide_hover_piece_details()
-	var description: String = card.description.strip_edges()
+	var description: String = stamp.description.strip_edges()
 	if description.is_empty():
 		return
 
-	get_card_hover_preview_controller().show_description(description)
+	get_stamp_hover_preview_controller().show_description(description)
 
-func can_exchange_card_locally(owner_color: int) -> bool:
+func can_exchange_stamp_locally(owner_color: int) -> bool:
 	return false
 
-func is_tutorial_exchange_card_allowed(owner_color: int, card_name: String, hand_index: int, emit_rejection: bool) -> bool:
+func is_tutorial_exchange_stamp_allowed(owner_color: int, stamp_name: String, hand_index: int, emit_rejection: bool) -> bool:
 	return false
 
-func complete_card_exchange(owner_color: int, card_name: String, hand_index: int, should_record_name: bool, source_global_position = null) -> void:
+func complete_stamp_exchange(owner_color: int, stamp_name: String, hand_index: int, should_record_name: bool, source_global_position = null) -> void:
 	if should_record_name:
-		get_card_hand_state_controller().record_exchanged_card_name_this_turn(owner_color, card_name)
+		get_stamp_hand_state_controller().record_exchanged_stamp_name_this_turn(owner_color, stamp_name)
 		var return_animation: Dictionary = {
 			"source_player_id": get_player_id_for_color(owner_color),
 			"target_player_id": get_player_id_for_color(owner_color),
-			"card_name": card_name,
+			"stamp_name": stamp_name,
 			"source_zone": "hand",
 			"target_zone": "deck",
 		}
 		if source_global_position is Vector2:
 			return_animation["source_global_position"] = source_global_position
-		get_card_animation_controller().queue_card_return_to_deck_animation(return_animation)
-	get_turn_action_state_controller().mark_card_exchanged_this_turn(owner_color)
-	card_exchanged.emit(card_name, owner_color, hand_index)
+		get_stamp_animation_controller().queue_stamp_return_to_deck_animation(return_animation)
+	get_turn_action_state_controller().mark_stamp_exchanged_this_turn(owner_color)
+	stamp_exchanged.emit(stamp_name, owner_color, hand_index)
 
-func send_card_exchange_action(owner_color: int, card_name: String, hand_index: int) -> bool:
+func send_stamp_exchange_action(owner_color: int, stamp_name: String, hand_index: int) -> bool:
 	return false
 
-func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector2) -> void:
-	if card_visual == null or !is_instance_valid(card_visual):
+func attach_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vector2) -> void:
+	if stamp_visual == null or !is_instance_valid(stamp_visual):
 		return
-	if not piece_objects.has(piece_position) or card_visual.card == null:
-		card_visual.fly_home()
+	if not piece_objects.has(piece_position) or stamp_visual.stamp == null:
+		stamp_visual.fly_home()
 		return
-	var attach_card: Card = card_visual.card
-	var card_name: String = attach_card.card_name
-	var owner_color: int = card_visual.owner_color
-	var hand_index: int = get_card_visual_index(card_visual)
-	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD, {
+	var attach_stamp: Stamp = stamp_visual.stamp
+	var stamp_name: String = attach_stamp.stamp_name
+	var owner_color: int = stamp_visual.owner_color
+	var hand_index: int = get_stamp_visual_index(stamp_visual)
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_STAMP, {
 		"owner_color": owner_color,
 		"piece_pos": piece_position,
-		"card_name": card_name,
+		"stamp_name": stamp_name,
 		"hand_index": hand_index,
 	}, true):
-		card_visual.fly_home()
+		stamp_visual.fly_home()
 		return
-	if !can_attach_card_to_piece(piece_position, card_name, owner_color):
-		card_visual.fly_home()
+	if !can_attach_stamp_to_piece(piece_position, stamp_name, owner_color):
+		stamp_visual.fly_home()
 		return
 
 	var start_texture: Texture2D = null
@@ -2019,76 +2019,76 @@ func attach_card_visual_to_piece(card_visual: CardVisual, piece_position: Vector
 	if holder != null and is_instance_valid(holder):
 		start_texture = holder.texture
 
-	begin_card_attach_process(piece_position)
+	begin_stamp_attach_process(piece_position)
 
 	if GameController.current_game_host:
-		get_local_state_mutator().record_played_card_hand_slot(owner_color, hand_index)
-		card_visual.assign_and_hide()
-		if !send_card_attach_action(owner_color, card_name, piece_position, hand_index):
-			finish_card_attach_process(piece_position)
+		get_local_state_mutator().record_played_stamp_hand_slot(owner_color, hand_index)
+		stamp_visual.assign_and_hide()
+		if !send_stamp_attach_action(owner_color, stamp_name, piece_position, hand_index):
+			finish_stamp_attach_process(piece_position)
 			return
-		get_turn_action_state_controller().mark_card_attached_this_turn(owner_color)
-		card_attached.emit(piece_position, card_name, owner_color, hand_index)
+		get_turn_action_state_controller().mark_stamp_attached_this_turn(owner_color)
+		stamp_attached.emit(piece_position, stamp_name, owner_color, hand_index)
 		return
 
-	if !apply_card_to_piece(piece_position, card_name):
-		finish_card_attach_process(piece_position)
-		if is_instance_valid(card_visual):
-			card_visual.fly_home()
+	if !apply_stamp_to_piece(piece_position, stamp_name):
+		finish_stamp_attach_process(piece_position)
+		if is_instance_valid(stamp_visual):
+			stamp_visual.fly_home()
 		return
 
-	get_local_state_mutator().record_played_card_hand_slot(owner_color, hand_index)
-	if is_instance_valid(card_visual):
-		remove_card_from_hand(card_visual)
+	get_local_state_mutator().record_played_stamp_hand_slot(owner_color, hand_index)
+	if is_instance_valid(stamp_visual):
+		remove_stamp_from_hand(stamp_visual)
 	else:
-		get_card_hand_state_controller().remove_card_from_hand_index(owner_color, hand_index, false)
-	get_turn_action_state_controller().mark_card_attached_this_turn(owner_color)
-	card_attached.emit(piece_position, card_name, owner_color, hand_index)
+		get_stamp_hand_state_controller().remove_stamp_from_hand_index(owner_color, hand_index, false)
+	get_turn_action_state_controller().mark_stamp_attached_this_turn(owner_color)
+	stamp_attached.emit(piece_position, stamp_name, owner_color, hand_index)
 
-	if get_parent().has_method("send_card_attach"):
-		get_parent().send_card_attach(piece_position, card_name, owner_color, hand_index, "")
+	if get_parent().has_method("send_stamp_attach"):
+		get_parent().send_stamp_attach(piece_position, stamp_name, owner_color, hand_index, "")
 
-	await play_piece_card_attach_animation(piece_position, attach_card, start_texture)
-	finish_card_attach_process(piece_position)
+	await play_piece_stamp_attach_animation(piece_position, attach_stamp, start_texture)
+	finish_stamp_attach_process(piece_position)
 
-func send_card_attach_action(owner_color: int, card_name: String, piece_position: Vector2, hand_index: int) -> bool:
+func send_stamp_attach_action(owner_color: int, stamp_name: String, piece_position: Vector2, hand_index: int) -> bool:
 	var action: Dictionary = {
-		"type": "attach_card",
+		"type": "attach_stamp",
 		"player_id": get_player_id_for_color(owner_color),
-		"card_name": card_name,
+		"stamp_name": stamp_name,
 		"piece_pos": piece_position,
 		"hand_index": hand_index,
 	}
 	return bool(GameController.send_action(action))
 
-func can_attach_card_to_piece(piece_position: Vector2, card_name: String = "", owner_color: int = 0) -> bool:
+func can_attach_stamp_to_piece(piece_position: Vector2, stamp_name: String = "", owner_color: int = 0) -> bool:
 	if not piece_objects.has(piece_position):
 		return false
-	if pending_card_attach_positions.has(piece_position):
+	if pending_stamp_attach_positions.has(piece_position):
 		return false
 	var action_owner_color: int = owner_color if owner_color != 0 else get_controllable_color()
-	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_CARD, {
+	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_STAMP, {
 		"owner_color": action_owner_color,
 		"piece_pos": piece_position,
-		"card_name": card_name,
+		"stamp_name": stamp_name,
 	}):
 		return false
 
 	var piece: Piece = piece_objects[piece_position] as Piece
-	return piece.can_receive_card()
+	return piece.can_receive_stamp()
 
-func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
+func apply_stamp_to_piece(piece_position: Vector2, stamp_name: String) -> bool:
 	if not piece_objects.has(piece_position):
 		return false
 
 	var piece: Piece = piece_objects[piece_position] as Piece
-	if !piece.can_receive_card():
-		push_warning("This piece cannot receive a card right now: %s" % piece_position)
+	if !piece.can_receive_stamp():
+		push_warning("This piece cannot receive a stamp right now: %s" % piece_position)
 		return false
 
-	var card: Card = CardLibrary.duplicate_card(card_name)
-	if card == null:
-		push_warning("Card not found for attach: %s" % card_name)
+	var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
+	if stamp == null:
+		push_warning("Stamp not found for attach: %s" % stamp_name)
 		return false
 
 	var owner_player_id: int = get_player_id_for_color(piece.color)
@@ -2097,40 +2097,40 @@ func apply_card_to_piece(piece_position: Vector2, card_name: String) -> bool:
 	var local_codex_pages: Array = get_codex_pages(piece.color)
 	if local_codex_page_index >= 0 and local_codex_page_index < local_codex_pages.size() and local_codex_pages[local_codex_page_index] is Array:
 		local_codex_page = local_codex_pages[local_codex_page_index]
-	card.set_meta("codex_owner_player_id", owner_player_id)
-	card.set_meta("codex_page_index", local_codex_page_index)
-	card.set_meta("codex_stamp_index", local_codex_page.find(card_name))
-	piece.attach_card(card, true)
+	stamp.set_meta("codex_owner_player_id", owner_player_id)
+	stamp.set_meta("codex_page_index", local_codex_page_index)
+	stamp.set_meta("codex_stamp_index", local_codex_page.find(stamp_name))
+	piece.attach_stamp(stamp, true)
 	var pending_respawn_arrivals: Array[Dictionary] = []
 	if !GameController.current_game_host:
-		pending_respawn_arrivals = get_local_state_mutator().apply_card_effect_trigger(CardEffect.TRIGGER_ON_ATTACH, piece_position, piece, card)
+		pending_respawn_arrivals = get_local_state_mutator().apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_ATTACH, piece_position, piece, stamp)
 	prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrivals)
 	display_board()
 	if !pending_respawn_arrivals.is_empty():
 		play_pending_edge_respawn_arrival_animations(pending_respawn_arrivals)
 	return true
 
-func apply_remote_card_attach(piece_position: Vector2, card_name: String, owner_color: int, hand_index: int, _replacement_card_name: String = ""):
-	if apply_card_to_piece(piece_position, card_name):
-		get_card_hand_state_controller().remove_card_from_hand_index(owner_color, hand_index, false, _replacement_card_name)
+func apply_remote_stamp_attach(piece_position: Vector2, stamp_name: String, owner_color: int, hand_index: int, _replacement_stamp_name: String = ""):
+	if apply_stamp_to_piece(piece_position, stamp_name):
+		get_stamp_hand_state_controller().remove_stamp_from_hand_index(owner_color, hand_index, false, _replacement_stamp_name)
 
-func remove_card_from_hand(card_visual: CardVisual) -> String:
-	return get_card_hand_state_controller().remove_card_from_hand(card_visual)
+func remove_stamp_from_hand(stamp_visual: StampVisual) -> String:
+	return get_stamp_hand_state_controller().remove_stamp_from_hand(stamp_visual)
 
-func remove_card_from_hand_index(owner_color: int, hand_index: int, should_draw_replacement: bool = false, replacement_card_name: String = "") -> String:
-	return get_card_hand_state_controller().remove_card_from_hand_index(owner_color, hand_index, should_draw_replacement, replacement_card_name)
+func remove_stamp_from_hand_index(owner_color: int, hand_index: int, should_draw_replacement: bool = false, replacement_stamp_name: String = "") -> String:
+	return get_stamp_hand_state_controller().remove_stamp_from_hand_index(owner_color, hand_index, should_draw_replacement, replacement_stamp_name)
 
-func get_card_visual_index(card_visual: CardVisual) -> int:
-	return get_card_hand_state_controller().get_card_visual_index(card_visual)
+func get_stamp_visual_index(stamp_visual: StampVisual) -> int:
+	return get_stamp_hand_state_controller().get_stamp_visual_index(stamp_visual)
 
-func insert_drawn_card(owner_color: int, hand_index: int, card_name: String):
-	get_card_hand_state_controller().insert_drawn_card(owner_color, hand_index, card_name)
+func insert_drawn_stamp(owner_color: int, hand_index: int, stamp_name: String):
+	get_stamp_hand_state_controller().insert_drawn_stamp(owner_color, hand_index, stamp_name)
 
-func get_card_names_from_hand(cards: Array[Card]) -> Array[String]:
-	return get_match_state_sync_controller().get_card_names_from_hand(cards)
+func get_stamp_names_from_hand(stamps: Array[Stamp]) -> Array[String]:
+	return get_match_state_sync_controller().get_stamp_names_from_hand(stamps)
 
-func get_state_card_expiration_events(previous_snapshot: Dictionary, recent_card_expirations: Array) -> Array[Dictionary]:
-	return get_match_state_sync_controller().get_state_card_expiration_events(previous_snapshot, recent_card_expirations, piece_objects)
+func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_stamp_expirations: Array) -> Array[Dictionary]:
+	return get_match_state_sync_controller().get_state_stamp_expiration_events(previous_snapshot, recent_stamp_expirations, piece_objects)
 
 func get_previous_state_texture(previous_state: Dictionary, piece_color: int) -> Texture2D:
 	var texture_value: Texture2D = previous_state.get("texture", null) as Texture2D
@@ -2169,20 +2169,20 @@ func play_piece_revert_animation(piece_position: Vector2, start_texture: Texture
 	await get_piece_effect_animator().play_piece_revert(piece_position, start_texture)
 	active_piece_revert_animation_count = maxi(0, active_piece_revert_animation_count - 1)
 
-func get_card_hand_source_position(owner_color: int) -> Vector2:
-	var visuals: Array[CardVisual] = get_card_visuals(owner_color)
-	for card_visual: CardVisual in visuals:
-		if card_visual != null and is_instance_valid(card_visual) and card_visual.visible:
-			return card_visual.global_position
+func get_stamp_hand_source_position(owner_color: int) -> Vector2:
+	var visuals: Array[StampVisual] = get_stamp_visuals(owner_color)
+	for stamp_visual: StampVisual in visuals:
+		if stamp_visual != null and is_instance_valid(stamp_visual) and stamp_visual.visible:
+			return stamp_visual.global_position
 
-	var hand_node: Control = get_card_hand_node(owner_color)
+	var hand_node: Control = get_stamp_hand_node(owner_color)
 	if hand_node == null:
 		return get_viewport().get_visible_rect().size * 0.5
 
-	return hand_node.global_position + get_card_home_position(maxi(0, visuals.size() - 1))
+	return hand_node.global_position + get_stamp_home_position(maxi(0, visuals.size() - 1))
 
-func arrange_card_visuals(visuals: Array[CardVisual], animate: bool):
-	get_card_interaction_controller().arrange_card_visuals(visuals, animate)
+func arrange_stamp_visuals(visuals: Array[StampVisual], animate: bool):
+	get_stamp_interaction_controller().arrange_stamp_visuals(visuals, animate)
 
 func create_codex_ui() -> void:
 	if canvas_layer == null or codex_panel != null:
@@ -2336,13 +2336,13 @@ func parse_codex_pages_from_state(pages_value: Array) -> Array:
 		var page: Array[String] = []
 		if page_index < pages_value.size() and pages_value[page_index] is Array:
 			for stamp_value in pages_value[page_index]:
-				var card_name: String = ""
+				var stamp_name: String = ""
 				if stamp_value is Dictionary:
-					card_name = str((stamp_value as Dictionary).get("card_name", ""))
+					stamp_name = str((stamp_value as Dictionary).get("stamp_name", ""))
 				else:
-					card_name = str(stamp_value)
-				if !card_name.is_empty():
-					page.append(card_name)
+					stamp_name = str(stamp_value)
+				if !stamp_name.is_empty():
+					page.append(stamp_name)
 		pages.append(page)
 	return pages
 
@@ -2357,7 +2357,7 @@ func can_turn_page_locally(owner_color: int) -> bool:
 		return false
 	if bool(has_turned_page_this_turn.get(owner_color, false)):
 		return false
-	if bool(attached_card_this_turn.get(owner_color, false)):
+	if bool(attached_stamp_this_turn.get(owner_color, false)):
 		return false
 	return count_non_empty_codex_pages(owner_color) > 1
 
@@ -2397,7 +2397,7 @@ func turn_codex_page_locally(owner_color: int) -> void:
 	has_turned_page_this_turn[owner_color] = true
 	sync_hand_from_local_codex(owner_color)
 	codex_page_turned.emit(owner_color, next_page_index)
-	update_card_presentation()
+	update_stamp_presentation()
 
 func find_next_non_empty_codex_page(owner_color: int, start_index: int) -> int:
 	var counts: Array[int] = get_codex_page_counts(owner_color)
@@ -2431,12 +2431,12 @@ func remove_local_codex_stamp(owner_color: int, stamp_index: int) -> void:
 	set_codex_pages(owner_color, pages)
 	update_codex_ui()
 
-func return_local_seeker_stamp(owner_color: int, card: Card) -> void:
-	if card == null:
+func return_local_seeker_stamp(owner_color: int, stamp: Stamp) -> void:
+	if stamp == null:
 		return
 	var pages: Array = get_codex_pages(owner_color)
-	var page_index: int = int(card.get_meta("codex_page_index", get_codex_page_index(owner_color)))
-	var stamp_index: int = int(card.get_meta("codex_stamp_index", -1))
+	var page_index: int = int(stamp.get_meta("codex_page_index", get_codex_page_index(owner_color)))
+	var stamp_index: int = int(stamp.get_meta("codex_stamp_index", -1))
 	page_index = clampi(page_index, 0, DeckManager.CODEX_PAGE_COUNT - 1)
 	while pages.size() < DeckManager.CODEX_PAGE_COUNT:
 		pages.append([])
@@ -2445,7 +2445,7 @@ func return_local_seeker_stamp(owner_color: int, card: Card) -> void:
 		page = []
 	var stamps: Array = page
 	var insert_index: int = clampi(stamp_index, 0, stamps.size()) if stamp_index >= 0 else stamps.size()
-	stamps.insert(insert_index, card.card_name)
+	stamps.insert(insert_index, stamp.stamp_name)
 	pages[page_index] = stamps
 	set_codex_pages(owner_color, pages)
 	if page_index == get_codex_page_index(owner_color):
@@ -2459,13 +2459,13 @@ func sync_hand_from_local_codex(owner_color: int) -> void:
 	var page_names: Array = []
 	if page_index >= 0 and page_index < pages.size() and pages[page_index] is Array:
 		page_names = pages[page_index]
-	var cards: Array[Card] = create_card_hand_from_names(page_names)
+	var stamps: Array[Stamp] = create_stamp_hand_from_names(page_names)
 	if owner_color == 1:
-		white_card_hand = cards
-		white_card_visuals = populate_card_hand(white_pieces, white_card_hand, 1)
+		white_stamp_hand = stamps
+		white_stamp_visuals = populate_stamp_hand(white_pieces, white_stamp_hand, 1)
 	else:
-		black_card_hand = cards
-		black_card_visuals = populate_card_hand(black_pieces, black_card_hand, -1)
+		black_stamp_hand = stamps
+		black_stamp_visuals = populate_stamp_hand(black_pieces, black_stamp_hand, -1)
 	sync_deck_from_local_codex(owner_color)
 	setup_deck_visuals()
 
@@ -2473,9 +2473,9 @@ func sync_deck_from_local_codex(owner_color: int) -> void:
 	var pages: Array = get_codex_pages(owner_color)
 	var closed_page_names: Array[String] = DeckManager.flatten_codex_pages(pages, get_codex_page_index(owner_color))
 	if owner_color == 1:
-		white_card_deck = closed_page_names
+		white_stamp_deck = closed_page_names
 	else:
-		black_card_deck = closed_page_names
+		black_stamp_deck = closed_page_names
 
 func _process(delta):
 	get_match_input_controller().process(delta)
@@ -2555,8 +2555,8 @@ func hide_hover_piece_details():
 func update_hover_duration_label_position():
 	get_match_input_controller().update_hover_duration_label_position()
 
-func show_hover_piece_preview(card: Card, piece_color: int) -> void:
-	get_match_input_controller().show_hover_piece_preview(card, piece_color)
+func show_hover_piece_preview(stamp: Stamp, piece_color: int) -> void:
+	get_match_input_controller().show_hover_piece_preview(stamp, piece_color)
 
 func get_board_position_screen_position(board_pos: Vector2) -> Vector2:
 	return get_global_transform_with_canvas() * get_board_position_local_position(board_pos)
@@ -2649,10 +2649,10 @@ func measure_piece_footprint_metrics(texture_value: Texture2D) -> Dictionary:
 func set_piece_light_occluder_enabled(holder: Sprite2D, is_enabled: bool) -> void:
 	get_piece_visuals().set_light_occluder_enabled(holder, is_enabled)
 
-func get_attached_card_piece_texture(piece: Piece) -> Texture2D:
-	if piece == null or piece.attached_card == null:
+func get_attached_stamp_piece_texture(piece: Piece) -> Texture2D:
+	if piece == null or piece.attached_stamp == null:
 		return null
-	return piece.attached_card.get_piece_texture(piece.color, get_piece_board_view(piece.color))
+	return piece.attached_stamp.get_piece_texture(piece.color, get_piece_board_view(piece.color))
 
 func get_piece_texture_for_position(board_pos: Vector2, piece_value: int) -> Texture2D:
 	var attached_texture: Texture2D = null
@@ -2660,20 +2660,20 @@ func get_piece_texture_for_position(board_pos: Vector2, piece_value: int) -> Tex
 		var piece: Piece = piece_objects[board_pos] as Piece
 		if piece != null and piece.hidden_from_viewer:
 			return null
-		attached_texture = get_attached_card_piece_texture(piece)
+		attached_texture = get_attached_stamp_piece_texture(piece)
 	if attached_texture != null:
 		return attached_texture
 	return get_default_piece_texture(piece_value)
 
-func get_card_piece_texture_for_color(card: Card, piece_color: int) -> Texture2D:
-	if card == null:
+func get_stamp_piece_texture_for_color(stamp: Stamp, piece_color: int) -> Texture2D:
+	if stamp == null:
 		return null
-	return card.get_piece_texture(piece_color, get_piece_board_view(piece_color))
+	return stamp.get_piece_texture(piece_color, get_piece_board_view(piece_color))
 
-func get_card_piece_preview_texture(card: Card, piece_color: int) -> Texture2D:
-	if card == null:
+func get_stamp_piece_preview_texture(stamp: Stamp, piece_color: int) -> Texture2D:
+	if stamp == null:
 		return null
-	return card.get_piece_preview_texture(piece_color)
+	return stamp.get_piece_preview_texture(piece_color)
 
 func get_piece_board_view(piece_color: int) -> String:
 	if piece_color * get_own_color() > 0:
@@ -2686,7 +2686,7 @@ func get_piece_visual_texture(piece: Piece) -> Texture2D:
 	if piece.hidden_from_viewer:
 		return null
 
-	var attached_texture: Texture2D = get_attached_card_piece_texture(piece)
+	var attached_texture: Texture2D = get_attached_stamp_piece_texture(piece)
 	if attached_texture != null:
 		return attached_texture
 	return get_default_piece_texture(piece.color)
@@ -2701,7 +2701,7 @@ func get_piece_visual_state_snapshot() -> Dictionary:
 
 		snapshot[board_pos] = {
 			"color": piece.color,
-			"card_name": piece.attached_card.card_name if piece.attached_card != null else "",
+			"stamp_name": piece.attached_stamp.stamp_name if piece.attached_stamp != null else "",
 			"texture": get_piece_visual_texture(piece),
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
 		}
@@ -2709,25 +2709,25 @@ func get_piece_visual_state_snapshot() -> Dictionary:
 	return snapshot
 
 func play_state_attach_animations(animations: Array[Dictionary]) -> void:
-	active_state_card_attach_animation_count += 1
+	active_state_stamp_attach_animation_count += 1
 	for animation: Dictionary in animations:
 		var board_pos: Vector2 = value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
-		var card: Card = animation.get("card", null) as Card
+		var stamp: Stamp = animation.get("stamp", null) as Stamp
 		var start_texture: Texture2D = animation.get("start_texture", null) as Texture2D
 		var hide_after_attach: bool = bool(animation.get("hide_after_attach", false))
-		if !is_valid_position(board_pos) or card == null:
-			finish_card_attach_process(board_pos)
+		if !is_valid_position(board_pos) or stamp == null:
+			finish_stamp_attach_process(board_pos)
 			continue
 
 		if hide_after_attach:
 			var piece_color: int = int(animation.get("piece_color", 0))
 			if piece_color == 0:
 				piece_color = get_color_for_player_id(1 - get_own_player_id())
-			await play_hidden_piece_invisibility_attach_animation(board_pos, card, start_texture, piece_color)
+			await play_hidden_piece_invisibility_attach_animation(board_pos, stamp, start_texture, piece_color)
 		else:
-			await play_piece_card_attach_animation(board_pos, card, start_texture)
-		finish_card_attach_process(board_pos)
-	active_state_card_attach_animation_count = maxi(0, active_state_card_attach_animation_count - 1)
+			await play_piece_stamp_attach_animation(board_pos, stamp, start_texture)
+		finish_stamp_attach_process(board_pos)
+	active_state_stamp_attach_animation_count = maxi(0, active_state_stamp_attach_animation_count - 1)
 
 func get_piece_holder_at(board_pos: Vector2) -> Sprite2D:
 	return get_piece_visuals().get_holder_at(pieces_node, board_pos, INVALID_BOARD_POS)
@@ -2814,17 +2814,17 @@ func get_sprite_texture_bounds_local(sprite: Sprite2D) -> Rect2:
 
 	return get_points_bounds_local(board_points)
 
-func play_piece_card_attach_animation(piece_position: Vector2, card: Card, start_texture: Texture2D = null) -> void:
+func play_piece_stamp_attach_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D = null) -> void:
 	if should_skip_visual_animations() or !is_inside_tree():
 		return
-	if card == null or !piece_objects.has(piece_position):
+	if stamp == null or !piece_objects.has(piece_position):
 		return
 
 	var piece: Piece = piece_objects[piece_position] as Piece
 	if piece == null:
 		return
 
-	var attached_texture: Texture2D = get_card_piece_texture_for_color(card, piece.color)
+	var attached_texture: Texture2D = get_stamp_piece_texture_for_color(stamp, piece.color)
 	if attached_texture == null:
 		return
 
@@ -2848,10 +2848,10 @@ func apply_visible_piece_attach_morph_result(holder: Sprite2D, piece_position: V
 	holder.texture = attached_texture
 	refresh_piece_holder_visual(holder, piece_position)
 
-func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, card: Card, start_texture: Texture2D, piece_color: int) -> void:
+func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D, piece_color: int) -> void:
 	if should_skip_visual_animations() or !is_inside_tree():
 		return
-	if card == null or !is_valid_position(piece_position):
+	if stamp == null or !is_valid_position(piece_position):
 		return
 	if start_texture == null:
 		start_texture = get_default_piece_texture(piece_color)
@@ -2862,7 +2862,7 @@ func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, ca
 	if holder == null:
 		return
 
-	var attached_texture: Texture2D = get_card_piece_texture_for_color(card, piece_color)
+	var attached_texture: Texture2D = get_stamp_piece_texture_for_color(stamp, piece_color)
 	if attached_texture == null:
 		attached_texture = start_texture
 
@@ -2962,7 +2962,7 @@ func finish_server_state_visual_update(visual_context: Dictionary) -> void:
 			piece_moved.emit(move_from_pos, move_to_pos, move_piece_color)
 
 	var animated_attach_positions: Dictionary = visual_context.get("animated_attach_positions", {})
-	finish_resolved_pending_card_attach_processes(animated_attach_positions)
+	finish_resolved_pending_stamp_attach_processes(animated_attach_positions)
 
 	var state_attach_animations: Array = visual_context.get("state_attach_animations", [])
 	var state_piece_revert_animations: Array = visual_context.get("state_piece_revert_animations", [])
@@ -2977,17 +2977,17 @@ func finish_server_state_visual_update(visual_context: Dictionary) -> void:
 		call_deferred("play_pending_edge_respawn_arrival_animations", pending_respawn_arrival_animations)
 
 	if bool(visual_context.get("should_play_post_state_animations", false)):
-		var recent_card_transfers: Array = visual_context.get("recent_card_transfers", [])
+		var recent_stamp_transfers: Array = visual_context.get("recent_stamp_transfers", [])
 		var previous_white_hand_names: Array = visual_context.get("previous_white_hand_names", [])
 		var current_white_hand_names: Array = visual_context.get("current_white_hand_names", [])
 		var previous_black_hand_names: Array = visual_context.get("previous_black_hand_names", [])
 		var current_black_hand_names: Array = visual_context.get("current_black_hand_names", [])
-		if recent_card_transfers.is_empty():
-			get_card_animation_controller().animate_state_draw_if_needed(1, previous_white_hand_names, current_white_hand_names)
-			get_card_animation_controller().animate_state_draw_if_needed(-1, previous_black_hand_names, current_black_hand_names)
+		if recent_stamp_transfers.is_empty():
+			get_stamp_animation_controller().animate_state_draw_if_needed(1, previous_white_hand_names, current_white_hand_names)
+			get_stamp_animation_controller().animate_state_draw_if_needed(-1, previous_black_hand_names, current_black_hand_names)
 		else:
-			get_card_animation_controller().animate_recent_card_transfers(recent_card_transfers, previous_white_hand_names, current_white_hand_names, previous_black_hand_names, current_black_hand_names)
-		get_card_animation_controller().animate_recent_card_expirations(visual_context.get("card_expiration_events", []))
+			get_stamp_animation_controller().animate_recent_stamp_transfers(recent_stamp_transfers, previous_white_hand_names, current_white_hand_names, previous_black_hand_names, current_black_hand_names)
+		get_stamp_animation_controller().animate_recent_stamp_expirations(visual_context.get("stamp_expiration_events", []))
 
 	if bool(visual_context.get("should_emit_turn_ended", false)):
 		turn_ended.emit(int(visual_context.get("server_ending_color", 0)), get_current_turn_color())
@@ -3171,22 +3171,22 @@ func get_attach_animation_positions(animations: Array[Dictionary]) -> Dictionary
 			positions[board_pos] = true
 	return positions
 
-func finish_resolved_pending_card_attach_processes(excluded_positions: Dictionary = {}) -> void:
-	for position_value in pending_card_attach_positions.keys():
+func finish_resolved_pending_stamp_attach_processes(excluded_positions: Dictionary = {}) -> void:
+	for position_value in pending_stamp_attach_positions.keys():
 		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
 		if excluded_positions.has(board_pos):
 			continue
 		if !piece_objects.has(board_pos):
-			finish_card_attach_process(position_value)
+			finish_stamp_attach_process(position_value)
 			continue
 
-		finish_card_attach_process(position_value)
+		finish_stamp_attach_process(position_value)
 
-func clear_resolved_pending_card_attach_positions() -> void:
-	for position_value in pending_card_attach_positions.keys():
+func clear_resolved_pending_stamp_attach_positions() -> void:
+	for position_value in pending_stamp_attach_positions.keys():
 		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
 		if !piece_objects.has(board_pos):
-			finish_card_attach_process(position_value)
+			finish_stamp_attach_process(position_value)
 
 func display_board():
 	get_piece_display_controller().display_board()
@@ -3227,23 +3227,23 @@ func delete_dots():
 func set_move(start_pos: Vector2, end_pos: Vector2) -> void:
 	await get_local_move_flow_controller().set_move(start_pos, end_pos)
 
-func refill_played_cards_locally(owner_color: int) -> void:
-	var played_slots: Array = played_card_hand_slots_this_turn.get(owner_color, [])
+func refill_played_stamps_locally(owner_color: int) -> void:
+	var played_slots: Array = played_stamp_hand_slots_this_turn.get(owner_color, [])
 	if played_slots.is_empty():
 		return
 
 	played_slots.sort()
 	for slot_value in played_slots:
-		var hand: Array[Card] = get_card_hand(owner_color)
+		var hand: Array[Stamp] = get_stamp_hand(owner_color)
 		if hand.size() >= DeckManager.HAND_SIZE:
 			break
 
-		var card_name: String = get_card_hand_state_controller().draw_refill_card_name(owner_color)
-		if card_name.is_empty():
+		var stamp_name: String = get_stamp_hand_state_controller().draw_refill_stamp_name(owner_color)
+		if stamp_name.is_empty():
 			break
-		insert_drawn_card(owner_color, int(slot_value), card_name)
+		insert_drawn_stamp(owner_color, int(slot_value), stamp_name)
 
-	played_card_hand_slots_this_turn[owner_color] = []
+	played_stamp_hand_slots_this_turn[owner_color] = []
 
 func finish_if_current_player_has_no_valid_turn() -> bool:
 	return get_game_result_controller().finish_if_current_player_has_no_valid_turn()
@@ -3267,10 +3267,10 @@ func get_moves(selected : Vector2):
 	if piece_objects.has(selected):
 		var piece: Piece = piece_objects[selected] as Piece
 		if piece.can_move():
-			DebugLog.info("Using card movement: %s" % piece.get_info())
-			return get_card_based_moves(selected, piece, get_move_preview_player_id(selected, piece))
+			DebugLog.info("Using stamp movement: %s" % piece.get_info())
+			return get_stamp_based_moves(selected, piece, get_move_preview_player_id(selected, piece))
 		else:
-			DebugLog.info("No usable card on this piece.")
+			DebugLog.info("No usable stamp on this piece.")
 			return []
 
 	return []
@@ -3281,7 +3281,7 @@ func get_move_preview_player_id(piece_position: Vector2, piece: Piece) -> int:
 		return own_player_id
 	return get_player_id_for_color(piece.color)
 
-func get_card_based_moves(piece_position: Vector2, piece: Piece, player_id: int) -> Array:
+func get_stamp_based_moves(piece_position: Vector2, piece: Piece, player_id: int) -> Array:
 	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(piece_objects, piece_position, player_id, BOARD_SIZE, current_board_effects)
 	valid_moves = filter_tutorial_move_targets(piece_position, valid_moves, piece.color)
 	DebugLog.info("  Valid moves: %s" % [valid_moves])
@@ -3316,7 +3316,7 @@ func can_player_control_piece_at(pos: Vector2, player_id: int) -> bool:
 	if !piece_objects.has(pos):
 		return false
 	var piece: Piece = piece_objects[pos] as Piece
-	return CardEffectResolver.can_player_control_piece(piece, player_id)
+	return StampEffectResolver.can_player_control_piece(piece, player_id)
 
 func can_control_current_turn() -> bool:
 	if game_over:
@@ -3325,7 +3325,7 @@ func can_control_current_turn() -> bool:
 		return GameConfig.is_singleplayer or tutorial_mode_active
 	return side == white
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, player_codex_state: Dictionary = {}, hidden_cards: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_card_transfers: Array = [], recent_card_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}, viewer_player_id: int = -1, turn_action_state: Dictionary = {}, player_clock_seconds: Dictionary = {}):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, player_codex_state: Dictionary = {}, hidden_stamps: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_stamp_transfers: Array = [], recent_stamp_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}, viewer_player_id: int = -1, turn_action_state: Dictionary = {}, player_clock_seconds: Dictionary = {}):
 	get_server_state_update_controller().update_from_server_state(
 		pieces_data,
 		player_hands,
@@ -3334,12 +3334,12 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 		winner_player,
 		player_deck_sizes,
 		player_codex_state,
-		hidden_cards,
+		hidden_stamps,
 		player_base_fields,
 		board_effects,
 		player_names,
-		recent_card_transfers,
-		recent_card_expirations,
+		recent_stamp_transfers,
+		recent_stamp_expirations,
 		recent_bomb_effects,
 		recent_pending_respawn_queues,
 		recent_pending_respawn_arrivals,

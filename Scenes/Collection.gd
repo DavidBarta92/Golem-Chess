@@ -1,11 +1,11 @@
 extends Control
 
-const CARD_VISUAL = preload("res://Scenes/CardVisual.tscn")
+const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
 const PACK_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionPackController.gd")
 const WINDOW_CLOSE_ICON: Texture2D = preload("res://ui/themes/icons/window_close.svg")
 const CODEX_TITLE_FONT: FontFile = preload("res://Fonts/ElmsSans-ExtraBold.ttf")
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
-const CARD_VISUAL_SIZE: Vector2 = Vector2(168.7, 229)
+const STAMP_VISUAL_SIZE: Vector2 = Vector2(168.7, 229)
 const TOP_BAR_HEIGHT: int = 60
 const LAYOUT_WIDTH: int = 894
 const LEFT_COLUMN_WIDTH: int = 260
@@ -16,16 +16,16 @@ const PACK_NOTICE_OFFSET_LEFT: float = -216.0
 const PACK_NOTICE_OFFSET_TOP: float = 112.0
 const PACK_NOTICE_OFFSET_RIGHT: float = 24.0
 const PACK_NOTICE_OFFSET_BOTTOM: float = 440.0
-const DESKTOP_CARDS_PER_PAGE: int = 9
-const DESKTOP_CARD_COLUMNS: int = 3
-const DESKTOP_CARD_SLOT_SIZE: Vector2 = Vector2(128, 142)
-const MEDIUM_CARDS_PER_PAGE: int = 6
-const MEDIUM_CARD_COLUMNS: int = 3
-const MEDIUM_CARD_SLOT_SIZE: Vector2 = Vector2(118, 140)
-const COMPACT_CARDS_PER_PAGE: int = 4
-const COMPACT_CARD_COLUMNS: int = 2
-const COMPACT_CARD_SLOT_SIZE: Vector2 = Vector2(120, 168)
-const DECK_EDIT_CARD_SLOT_SIZE: Vector2 = Vector2(100, 140)
+const DESKTOP_STAMPS_PER_PAGE: int = 9
+const DESKTOP_STAMP_COLUMNS: int = 3
+const DESKTOP_STAMP_SLOT_SIZE: Vector2 = Vector2(128, 142)
+const MEDIUM_STAMPS_PER_PAGE: int = 6
+const MEDIUM_STAMP_COLUMNS: int = 3
+const MEDIUM_STAMP_SLOT_SIZE: Vector2 = Vector2(118, 140)
+const COMPACT_STAMPS_PER_PAGE: int = 4
+const COMPACT_STAMP_COLUMNS: int = 2
+const COMPACT_STAMP_SLOT_SIZE: Vector2 = Vector2(120, 168)
+const DECK_EDIT_STAMP_SLOT_SIZE: Vector2 = Vector2(100, 140)
 const DECK_SLOT_REMOVE_BUTTON_SIZE: Vector2 = Vector2(20, 20)
 const CODEX_PAGE_TITLE_FONT_SIZE: int = 19
 const CODEX_PAGE_GRID_HORIZONTAL_GAP: int = 8
@@ -42,9 +42,9 @@ const CODEX_SCROLL_MAX_OVERSHOOT: float = 30.0
 const MAX_DECK_SIZE: int = 15
 const CODEX_PAGE_COUNT: int = 5
 const CODEX_STAMPS_PER_PAGE: int = 3
-const MAX_COPIES_PER_CARD: int = PlayerDeckStore.MAX_COPIES_PER_CARD
+const MAX_COPIES_PER_STAMP: int = PlayerDeckStore.MAX_COPIES_PER_STAMP
 const REMOVE_BUTTON_VISIBLE_SECONDS: float = 1.0
-const CARD_DESCRIPTION_HEIGHT: int = 76
+const STAMP_DESCRIPTION_HEIGHT: int = 76
 const GRID_BACKGROUND_SHADER = preload("res://Shaders/collection_grid_background.gdshader")
 const MAGNIFIER_SHADER = preload("res://Shaders/collection_magnifier.gdshader")
 const MAGNIFIER_GLASS_TEXTURE = preload("res://Assets/glass.png")
@@ -59,32 +59,32 @@ const MAGNIFIER_LENS_SIZE: Vector2 = Vector2(220, 220)
 const MAGNIFIER_Z_INDEX: int = 1800
 const MAGNIFIER_CASE_Z_INDEX: int = MAGNIFIER_Z_INDEX + 10
 const MAGNIFIER_LENS_Z_INDEX: int = MAGNIFIER_Z_INDEX + 30
-const DRAGGED_CARD_Z_INDEX: int = MAGNIFIER_LENS_Z_INDEX + 40
+const DRAGGED_STAMP_Z_INDEX: int = MAGNIFIER_LENS_Z_INDEX + 40
 const MAGNIFIER_GLASS_SOURCE_SIZE: Vector2 = Vector2(337, 570)
 const MAGNIFIER_GLASS_LENS_SOURCE_RECT: Rect2 = Rect2(15, 15, 305, 305)
 const MAGNIFIER_GLASS_ROTATION_DEGREES: float = -36.0
 const HOVER_DESCRIPTION_SIZE: Vector2 = Vector2(300, 132)
-const CARD_SLOT_SCALE_MULTIPLIER: float = 0.88
+const STAMP_SLOT_SCALE_MULTIPLIER: float = 0.88
 const STACKBUILDER_BACKGROUND_COLOR: Color = Color("#f9e7ce")
 const STACKBUILDER_GRID_LINE_COLOR: Color = Color("#d9d0d5")
 const TOP_BAR_BACKGROUND_COLOR: Color = Color(0.9366637, 0.9330646, 0.89437205, 1.0)
-const BROWSER_CARD_VERTICAL_OFFSET: float = -12.0
-const DECK_EDIT_CARD_VERTICAL_OFFSET: float = -8.0
+const BROWSER_STAMP_VERTICAL_OFFSET: float = -12.0
+const DECK_EDIT_STAMP_VERTICAL_OFFSET: float = -8.0
 
-var all_card_prints: Array = []
-var filtered_card_prints: Array = []
+var all_stamp_prints: Array = []
+var filtered_stamp_prints: Array = []
 var current_page: int = 0
 var is_creating_deck: bool = false
 var editing_deck_id: String = ""
-var selected_deck_cards: Array = []
+var selected_deck_stamps: Array = []
 var dragged_print_id: String = ""
-var hovered_deck_card_index: int = -1
-var hovered_browser_card_name: String = ""
-var editing_deck_has_missing_cards: bool = false
+var hovered_deck_stamp_index: int = -1
+var hovered_browser_stamp_name: String = ""
+var editing_deck_has_missing_stamps: bool = false
 var is_editing_deck_name: bool = false
-var current_cards_per_page: int = DESKTOP_CARDS_PER_PAGE
-var current_card_columns: int = DESKTOP_CARD_COLUMNS
-var current_card_slot_size: Vector2 = DESKTOP_CARD_SLOT_SIZE
+var current_stamps_per_page: int = DESKTOP_STAMPS_PER_PAGE
+var current_stamp_columns: int = DESKTOP_STAMP_COLUMNS
+var current_stamp_slot_size: Vector2 = DESKTOP_STAMP_SLOT_SIZE
 var codex_scroll_velocity: float = 0.0
 var codex_scroll_overshoot: float = 0.0
 var codex_scroll_overshoot_velocity: float = 0.0
@@ -100,7 +100,7 @@ var middle_column: VBoxContainer
 var right_column: VBoxContainer
 var browser: VBoxContainer
 var deck_panel_frame: PanelContainer
-var card_grid: GridContainer
+var stamp_grid: GridContainer
 var search_field: LineEdit
 var owned_only_check: CheckBox
 var previous_button: Button
@@ -113,16 +113,16 @@ var deck_name_display: Label
 var deck_name_edit: LineEdit
 var deck_list_scroll: ScrollContainer
 var deck_list: VBoxContainer
-var deck_card_scroll: ScrollContainer
-var deck_card_list: VBoxContainer
+var deck_stamp_scroll: ScrollContainer
+var deck_stamp_list: VBoxContainer
 var deck_count_label: Label
 var done_button: Button
-var remove_card_button: Button
-var remove_card_timer: Timer
-var card_description_panel: PanelContainer
-var card_description_label: Label
-var preview_card_holder: Control
-var preview_card_visual: CardVisual
+var remove_stamp_button: Button
+var remove_stamp_timer: Timer
+var stamp_description_panel: PanelContainer
+var stamp_description_label: Label
+var preview_stamp_holder: Control
+var preview_stamp_visual: StampVisual
 var top_bar: HBoxContainer
 var buy_packs_button: Button
 var points_label: Label
@@ -158,12 +158,12 @@ func _ready() -> void:
 	_setup_pack_controller()
 	_connect_viewport_resize()
 	_apply_responsive_layout(false)
-	_load_cards()
+	_load_stamps()
 	_populate_saved_decks_list()
 	_show_page(0)
 
 func _process(_delta: float) -> void:
-	_update_browser_card_description_hover()
+	_update_browser_stamp_description_hover()
 	_update_codex_scroll_inertia(_delta)
 	_update_deck_selector_scroll_inertia(_delta)
 	_update_magnifier_position()
@@ -217,11 +217,11 @@ func _bind_scene_ui() -> void:
 	deck_panel_frame = $RootMargin/MainCenter/MainLayout/DeckPanelFrame
 	deck_panel_frame.add_theme_stylebox_override("panel", _create_panel_style(Color(0.93, 0.93, 0.9), Color.TRANSPARENT, 0, 10))
 	right_column = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn
-	card_description_panel = get_node_or_null("RootMargin/MainCenter/MainLayout/LeftColumn/CardDescriptionPanel") as PanelContainer
-	preview_card_holder = get_node_or_null("RootMargin/MainCenter/MainLayout/LeftColumn/CardDescriptionPanel/InfoRoot/PreviewCardHolder") as Control
-	card_description_label = get_node_or_null("RootMargin/MainCenter/MainLayout/LeftColumn/CardDescriptionPanel/InfoRoot/CardDescriptionLabel") as Label
+	stamp_description_panel = get_node_or_null("RootMargin/MainCenter/MainLayout/LeftColumn/StampDescriptionPanel") as PanelContainer
+	preview_stamp_holder = get_node_or_null("RootMargin/MainCenter/MainLayout/LeftColumn/StampDescriptionPanel/InfoRoot/PreviewStampHolder") as Control
+	stamp_description_label = get_node_or_null("RootMargin/MainCenter/MainLayout/LeftColumn/StampDescriptionPanel/InfoRoot/StampDescriptionLabel") as Label
 	browser = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser
-	card_grid = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/CardGrid
+	stamp_grid = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid
 	owned_only_check = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTools/OwnedOnlyCheck
 	search_field = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTools/SearchField
 	previous_button = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager/PreviousButton
@@ -234,9 +234,9 @@ func _bind_scene_ui() -> void:
 	deck_list_scroll = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckListScroll
 	deck_list = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckListScroll/DeckList
 	deck_list.mouse_filter = Control.MOUSE_FILTER_PASS
-	deck_card_scroll = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckCardScroll
-	deck_card_list = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckCardScroll/DeckCardList
-	deck_card_list.add_theme_constant_override("separation", CODEX_EDITOR_LIST_SPACING)
+	deck_stamp_scroll = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckStampScroll
+	deck_stamp_list = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckStampScroll/DeckStampList
+	deck_stamp_list.add_theme_constant_override("separation", CODEX_EDITOR_LIST_SPACING)
 	deck_count_label = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter/DeckCountLabel
 	done_button = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter/DoneButton
 	top_bar = $TopBar
@@ -254,8 +254,8 @@ func _bind_scene_ui() -> void:
 	buy_packs_confirm_button = $BuyPacksPanel/BuyPacksRoot/ButtonRow/BuyButton
 	pack_result_dialog = $PackResultDialog
 	pack_result_label = $PackResultDialog/PackResultLabel
-	remove_card_button = $RemoveCardButton
-	remove_card_timer = $RemoveCardTimer
+	remove_stamp_button = $RemoveStampButton
+	remove_stamp_timer = $RemoveStampTimer
 	deck_title_label = get_node_or_null("RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckTitle") as Label
 	if deck_title_label != null:
 		deck_title_label.text = "My codexes"
@@ -263,7 +263,7 @@ func _bind_scene_ui() -> void:
 	deck_name_edit.placeholder_text = "Codex name"
 	_configure_inventory_block()
 	_configure_pack_notice_panel()
-	_remove_card_info_panel()
+	_remove_stamp_info_panel()
 	_setup_hover_description_panel()
 
 	_connect_once($TopBar/BackButton.pressed, Callable(self, "_on_back_pressed"))
@@ -278,23 +278,23 @@ func _bind_scene_ui() -> void:
 	_connect_once(deck_name_edit.text_submitted, Callable(self, "_on_deck_name_edit_submitted"))
 	_connect_once(deck_name_edit.focus_exited, Callable(self, "_finish_deck_name_edit"))
 	_connect_once(done_button.pressed, Callable(self, "_on_done_pressed"))
-	_connect_once(remove_card_button.pressed, Callable(self, "_on_remove_card_pressed"))
-	_connect_once(remove_card_timer.timeout, Callable(self, "_hide_remove_card_button"))
-	_connect_once(deck_card_scroll.resized, Callable(self, "_on_deck_card_scroll_resized"))
+	_connect_once(remove_stamp_button.pressed, Callable(self, "_on_remove_stamp_pressed"))
+	_connect_once(remove_stamp_timer.timeout, Callable(self, "_hide_remove_stamp_button"))
+	_connect_once(deck_stamp_scroll.resized, Callable(self, "_on_deck_stamp_scroll_resized"))
 	_connect_once(deck_list_scroll.gui_input, Callable(self, "_on_deck_selector_scroll_gui_input"))
-	_connect_once(deck_card_scroll.gui_input, Callable(self, "_on_codex_scroll_gui_input"))
+	_connect_once(deck_stamp_scroll.gui_input, Callable(self, "_on_codex_scroll_gui_input"))
 
 	buy_packs_panel.visible = false
 	deck_list_scroll.clip_contents = true
 	deck_list.clip_contents = false
-	deck_card_scroll.visible = false
-	deck_card_scroll.clip_contents = true
-	deck_card_list.clip_contents = false
+	deck_stamp_scroll.visible = false
+	deck_stamp_scroll.clip_contents = true
+	deck_stamp_list.clip_contents = false
 	deck_name_edit.visible = false
 	deck_editor_back_button.visible = false
 	deck_count_label.visible = false
 	done_button.visible = false
-	remove_card_button.visible = false
+	remove_stamp_button.visible = false
 	$TopBackground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$TopBackground.color = TOP_BAR_BACKGROUND_COLOR
 	$TopBackground.move_to_front()
@@ -314,8 +314,8 @@ func _configure_inventory_block() -> void:
 	if browser != null:
 		browser.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		browser.add_theme_constant_override("separation", 4)
-	if card_grid != null:
-		card_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	if stamp_grid != null:
+		stamp_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
 func _configure_pack_notice_panel() -> void:
 	if pack_panel == null:
@@ -338,16 +338,16 @@ func _configure_pack_notice_panel() -> void:
 		pack_inventory.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pack_inventory.clip_contents = false
 
-func _remove_card_info_panel() -> void:
-	if card_description_panel != null:
-		var panel_parent: Node = card_description_panel.get_parent()
+func _remove_stamp_info_panel() -> void:
+	if stamp_description_panel != null:
+		var panel_parent: Node = stamp_description_panel.get_parent()
 		if panel_parent != null:
-			panel_parent.remove_child(card_description_panel)
-		card_description_panel.queue_free()
-	card_description_panel = null
-	card_description_label = null
-	preview_card_holder = null
-	preview_card_visual = null
+			panel_parent.remove_child(stamp_description_panel)
+		stamp_description_panel.queue_free()
+	stamp_description_panel = null
+	stamp_description_label = null
+	preview_stamp_holder = null
+	preview_stamp_visual = null
 
 	if left_column != null:
 		left_column.visible = false
@@ -446,10 +446,10 @@ func _build_ui() -> void:
 	left_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left_column.add_theme_constant_override("separation", 18)
 
-	card_description_panel = null
-	card_description_label = null
-	preview_card_holder = null
-	preview_card_visual = null
+	stamp_description_panel = null
+	stamp_description_label = null
+	preview_stamp_holder = null
+	preview_stamp_visual = null
 
 	create_pack_inventory_ui()
 
@@ -500,13 +500,13 @@ func _build_ui() -> void:
 	search_field.custom_minimum_size = Vector2(150, 34)
 	search_field.text_changed.connect(_on_search_text_changed)
 
-	card_grid = GridContainer.new()
-	browser.add_child(card_grid)
-	card_grid.columns = current_card_columns
-	card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	card_grid.add_theme_constant_override("h_separation", 8)
-	card_grid.add_theme_constant_override("v_separation", 2)
+	stamp_grid = GridContainer.new()
+	browser.add_child(stamp_grid)
+	stamp_grid.columns = current_stamp_columns
+	stamp_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stamp_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	stamp_grid.add_theme_constant_override("h_separation", 8)
+	stamp_grid.add_theme_constant_override("v_separation", 2)
 
 	var pager := HBoxContainer.new()
 	browser.add_child(pager)
@@ -597,21 +597,21 @@ func _build_ui() -> void:
 	deck_list.mouse_filter = Control.MOUSE_FILTER_PASS
 	deck_list.add_theme_constant_override("separation", 8)
 
-	deck_card_scroll = ScrollContainer.new()
-	right_column.add_child(deck_card_scroll)
-	deck_card_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	deck_card_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	deck_card_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	deck_card_scroll.clip_contents = true
-	deck_card_scroll.visible = false
-	deck_card_scroll.resized.connect(_on_deck_card_scroll_resized)
-	deck_card_scroll.gui_input.connect(_on_codex_scroll_gui_input)
+	deck_stamp_scroll = ScrollContainer.new()
+	right_column.add_child(deck_stamp_scroll)
+	deck_stamp_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	deck_stamp_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	deck_stamp_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	deck_stamp_scroll.clip_contents = true
+	deck_stamp_scroll.visible = false
+	deck_stamp_scroll.resized.connect(_on_deck_stamp_scroll_resized)
+	deck_stamp_scroll.gui_input.connect(_on_codex_scroll_gui_input)
 
-	deck_card_list = VBoxContainer.new()
-	deck_card_scroll.add_child(deck_card_list)
-	deck_card_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	deck_card_list.clip_contents = false
-	deck_card_list.add_theme_constant_override("separation", CODEX_EDITOR_LIST_SPACING)
+	deck_stamp_list = VBoxContainer.new()
+	deck_stamp_scroll.add_child(deck_stamp_list)
+	deck_stamp_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	deck_stamp_list.clip_contents = false
+	deck_stamp_list.add_theme_constant_override("separation", CODEX_EDITOR_LIST_SPACING)
 
 	var deck_panel_spacer := Control.new()
 	right_column.add_child(deck_panel_spacer)
@@ -644,21 +644,21 @@ func _build_ui() -> void:
 	create_buy_packs_dialog()
 	create_pack_result_dialog()
 
-	remove_card_button = Button.new()
-	add_child(remove_card_button)
-	remove_card_button.text = "X"
-	remove_card_button.tooltip_text = "Remove card"
-	remove_card_button.custom_minimum_size = Vector2(30, 30)
-	remove_card_button.size = Vector2(30, 30)
-	remove_card_button.visible = false
-	remove_card_button.z_index = 20
-	remove_card_button.pressed.connect(_on_remove_card_pressed)
+	remove_stamp_button = Button.new()
+	add_child(remove_stamp_button)
+	remove_stamp_button.text = "X"
+	remove_stamp_button.tooltip_text = "Remove stamp"
+	remove_stamp_button.custom_minimum_size = Vector2(30, 30)
+	remove_stamp_button.size = Vector2(30, 30)
+	remove_stamp_button.visible = false
+	remove_stamp_button.z_index = 20
+	remove_stamp_button.pressed.connect(_on_remove_stamp_pressed)
 
-	remove_card_timer = Timer.new()
-	add_child(remove_card_timer)
-	remove_card_timer.one_shot = true
-	remove_card_timer.wait_time = REMOVE_BUTTON_VISIBLE_SECONDS
-	remove_card_timer.timeout.connect(_hide_remove_card_button)
+	remove_stamp_timer = Timer.new()
+	add_child(remove_stamp_timer)
+	remove_stamp_timer.one_shot = true
+	remove_stamp_timer.wait_time = REMOVE_BUTTON_VISIBLE_SECONDS
+	remove_stamp_timer.timeout.connect(_hide_remove_stamp_button)
 
 	if Engine.is_editor_hint():
 		_populate_editor_preview_content()
@@ -670,7 +670,7 @@ func _build_ui() -> void:
 		top_bar.move_to_front()
 	_configure_inventory_block()
 	_configure_pack_notice_panel()
-	_remove_card_info_panel()
+	_remove_stamp_info_panel()
 	_setup_hover_description_panel()
 	_setup_magnifier()
 
@@ -900,10 +900,10 @@ func _set_magnifier_enabled(is_enabled: bool) -> void:
 		if !was_enabled:
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 		_update_magnifier_position(true)
-		_update_browser_card_description_hover()
+		_update_browser_stamp_description_hover()
 	elif was_enabled:
 		Input.set_mouse_mode(magnifier_previous_mouse_mode)
-		_clear_browser_card_description()
+		_clear_browser_stamp_description()
 
 func _update_magnifier_position(force_update: bool = false) -> void:
 	if !magnifier_enabled && !force_update:
@@ -949,11 +949,11 @@ func _create_panel_style(bg_color: Color, border_color: Color, radius_top: int, 
 func _create_dark_panel_style(radius_top: int, radius_bottom: int) -> StyleBoxFlat:
 	return _create_panel_style(Color(0.035, 0.035, 0.04, 0.95), Color(1.0, 1.0, 1.0, 0.18), radius_top, radius_bottom)
 
-func _create_editor_card_placeholder(label_text: String) -> Control:
-	var card_panel := PanelContainer.new()
-	card_panel.custom_minimum_size = Vector2(112, 156)
-	card_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	card_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+func _create_editor_stamp_placeholder(label_text: String) -> Control:
+	var stamp_panel := PanelContainer.new()
+	stamp_panel.custom_minimum_size = Vector2(112, 156)
+	stamp_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	stamp_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.98, 0.98, 0.96, 1.0)
 	style.border_color = Color(0.08, 0.08, 0.08, 0.85)
@@ -965,25 +965,25 @@ func _create_editor_card_placeholder(label_text: String) -> Control:
 	style.corner_radius_top_right = 7
 	style.corner_radius_bottom_left = 7
 	style.corner_radius_bottom_right = 7
-	card_panel.add_theme_stylebox_override("panel", style)
+	stamp_panel.add_theme_stylebox_override("panel", style)
 
 	var label := Label.new()
-	card_panel.add_child(label)
+	stamp_panel.add_child(label)
 	label.text = label_text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
-	return card_panel
+	return stamp_panel
 
 func _populate_editor_preview_content() -> void:
 	_refresh_progress_ui()
-	if card_description_label != null:
-		card_description_label.text = "Card descriptions appear here when the mouse is over a card."
+	if stamp_description_label != null:
+		stamp_description_label.text = "Stamp descriptions appear here when the mouse is over a stamp."
 	if pack_controller != null:
 		pack_controller.populate_editor_pack_preview()
-	_populate_editor_card_grid_preview()
+	_populate_editor_stamp_grid_preview()
 	_populate_editor_deck_preview()
 	if page_label != null:
 		page_label.text = "1 / 3"
@@ -993,19 +993,19 @@ func _populate_editor_preview_content() -> void:
 		next_button.disabled = false
 	_update_deck_editor_state()
 
-func _populate_editor_card_grid_preview() -> void:
-	if card_grid == null:
+func _populate_editor_stamp_grid_preview() -> void:
+	if stamp_grid == null:
 		return
-	for child in card_grid.get_children():
-		card_grid.remove_child(child)
+	for child in stamp_grid.get_children():
+		stamp_grid.remove_child(child)
 		child.queue_free()
-	for i in range(DESKTOP_CARDS_PER_PAGE):
+	for i in range(DESKTOP_STAMPS_PER_PAGE):
 		var slot := Control.new()
-		card_grid.add_child(slot)
-		slot.custom_minimum_size = current_card_slot_size
-		var placeholder := _create_editor_card_placeholder("Card")
+		stamp_grid.add_child(slot)
+		slot.custom_minimum_size = current_stamp_slot_size
+		var placeholder := _create_editor_stamp_placeholder("Stamp")
 		slot.add_child(placeholder)
-		placeholder.position = (current_card_slot_size - placeholder.custom_minimum_size) * 0.5
+		placeholder.position = (current_stamp_slot_size - placeholder.custom_minimum_size) * 0.5
 
 func _populate_editor_deck_preview() -> void:
 	if deck_list == null:
@@ -1026,12 +1026,12 @@ func _create_editor_deck_row(deck_name: String) -> Control:
 	var preview_offsets: Array = [Vector2(76, -2), Vector2(126, -6), Vector2(176, -2)]
 	var preview_rotations: Array = [-8.0, 8.0, -4.0]
 	for i in range(3):
-		var preview_card := _create_editor_card_placeholder("Card")
-		row_frame.add_child(preview_card)
-		preview_card.custom_minimum_size = Vector2(60, 78)
-		preview_card.size = Vector2(60, 78)
-		preview_card.position = preview_offsets[i]
-		preview_card.rotation = deg_to_rad(preview_rotations[i])
+		var preview_stamp := _create_editor_stamp_placeholder("Stamp")
+		row_frame.add_child(preview_stamp)
+		preview_stamp.custom_minimum_size = Vector2(60, 78)
+		preview_stamp.size = Vector2(60, 78)
+		preview_stamp.position = preview_offsets[i]
+		preview_stamp.rotation = deg_to_rad(preview_rotations[i])
 
 	var front_panel := PanelContainer.new()
 	row_frame.add_child(front_panel)
@@ -1271,14 +1271,14 @@ func _refresh_pack_inventory_ui() -> void:
 	if pack_controller != null:
 		pack_controller.refresh_pack_inventory_ui()
 
-func _load_cards() -> void:
-	if CardLibrary.all_cards.is_empty():
-		CardLibrary.load_all_cards()
-	CardPrintLibrary.ensure_loaded()
+func _load_stamps() -> void:
+	if StampLibrary.all_stamps.is_empty():
+		StampLibrary.load_all_stamps()
+	StampPrintLibrary.ensure_loaded()
 	PlayerCollectionStore.ensure_loaded()
 	PlayerDeckStore.ensure_loaded()
-	all_card_prints = CardPrintLibrary.get_all_prints()
-	_refresh_card_filter(false)
+	all_stamp_prints = StampPrintLibrary.get_all_prints()
+	_refresh_stamp_filter(false)
 
 func _on_buy_packs_pressed() -> void:
 	if pack_controller != null:
@@ -1304,50 +1304,50 @@ func _on_pack_pressed() -> void:
 	if pack_controller != null:
 		pack_controller.open_pack()
 
-func _on_pack_opened(_rewards: Array[CardPrint]) -> void:
+func _on_pack_opened(_rewards: Array[StampPrint]) -> void:
 	_populate_saved_decks_list()
 	_update_deck_editor_state()
-	_refresh_card_filter(false)
+	_refresh_stamp_filter(false)
 
 func _show_page(page_index: int) -> void:
 	current_page = clampi(page_index, 0, max(0, _get_page_count() - 1))
-	_clear_browser_card_description()
-	for child in card_grid.get_children():
-		card_grid.remove_child(child)
+	_clear_browser_stamp_description()
+	for child in stamp_grid.get_children():
+		stamp_grid.remove_child(child)
 		child.queue_free()
 
-	var start_index: int = current_page * current_cards_per_page
-	var end_index: int = min(start_index + current_cards_per_page, filtered_card_prints.size())
-	if filtered_card_prints.is_empty():
+	var start_index: int = current_page * current_stamps_per_page
+	var end_index: int = min(start_index + current_stamps_per_page, filtered_stamp_prints.size())
+	if filtered_stamp_prints.is_empty():
 		var empty_label := Label.new()
-		card_grid.add_child(empty_label)
-		empty_label.text = "No cards found"
+		stamp_grid.add_child(empty_label)
+		empty_label.text = "No stamps found"
 		empty_label.custom_minimum_size = Vector2(0, 120)
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		empty_label.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
 
 	for index in range(start_index, end_index):
-		var card_print: CardPrint = filtered_card_prints[index] as CardPrint
-		if card_print == null:
+		var stamp_print: StampPrint = filtered_stamp_prints[index] as StampPrint
+		if stamp_print == null:
 			continue
-		var card: Card = CardPrintLibrary.get_card_for_print(card_print)
-		if card == null:
+		var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
+		if stamp == null:
 			continue
 
-		var card_visual: CardVisual = CARD_VISUAL.instantiate() as CardVisual
-		var owned_count: int = PlayerCollectionStore.get_owned_count_for_print_id(card_print.print_id)
-		var card_slot: Control = _create_browser_card_slot(card_visual, owned_count)
-		card_grid.add_child(card_slot)
-		card_visual.draggable = is_creating_deck
-		card_visual.set_hover_raise_enabled(false)
-		card_visual.set_card_print(card_print)
-		card_visual.set_face_down(false)
-		card_visual.set_collection_owned(owned_count > 0)
-		card_visual.mouse_entered.connect(_on_browser_card_mouse_entered.bind(card, card_print))
-		card_visual.mouse_exited.connect(_on_browser_card_mouse_exited.bind(card.card_name))
-		card_visual.drag_started.connect(_on_card_drag_started.bind(card_print.print_id))
-		card_visual.drag_released.connect(_on_card_drag_released.bind(card_print.print_id))
+		var stamp_visual: StampVisual = STAMP_VISUAL.instantiate() as StampVisual
+		var owned_count: int = PlayerCollectionStore.get_owned_count_for_print_id(stamp_print.print_id)
+		var stamp_slot: Control = _create_browser_stamp_slot(stamp_visual, owned_count)
+		stamp_grid.add_child(stamp_slot)
+		stamp_visual.draggable = is_creating_deck
+		stamp_visual.set_hover_raise_enabled(false)
+		stamp_visual.set_stamp_print(stamp_print)
+		stamp_visual.set_face_down(false)
+		stamp_visual.set_collection_owned(owned_count > 0)
+		stamp_visual.mouse_entered.connect(_on_browser_stamp_mouse_entered.bind(stamp, stamp_print))
+		stamp_visual.mouse_exited.connect(_on_browser_stamp_mouse_exited.bind(stamp.stamp_name))
+		stamp_visual.drag_started.connect(_on_stamp_drag_started.bind(stamp_print.print_id))
+		stamp_visual.drag_released.connect(_on_stamp_drag_released.bind(stamp_print.print_id))
 
 	page_label.text = "%d / %d" % [current_page + 1, max(1, _get_page_count())]
 	previous_button.disabled = current_page <= 0
@@ -1355,56 +1355,56 @@ func _show_page(page_index: int) -> void:
 	_update_deck_editor_state()
 
 func _get_page_count() -> int:
-	return int(ceil(float(filtered_card_prints.size()) / float(current_cards_per_page)))
+	return int(ceil(float(filtered_stamp_prints.size()) / float(current_stamps_per_page)))
 
-func _refresh_card_filter(reset_page: bool = true) -> void:
-	filtered_card_prints.clear()
+func _refresh_stamp_filter(reset_page: bool = true) -> void:
+	filtered_stamp_prints.clear()
 	var query: String = search_field.text.strip_edges().to_lower() if search_field != null else ""
 	var owned_only: bool = owned_only_check.button_pressed if owned_only_check != null else false
 
-	for card_print_value in all_card_prints:
-		var card_print: CardPrint = card_print_value as CardPrint
-		if card_print == null:
+	for stamp_print_value in all_stamp_prints:
+		var stamp_print: StampPrint = stamp_print_value as StampPrint
+		if stamp_print == null:
 			continue
-		var card: Card = CardPrintLibrary.get_card_for_print(card_print)
-		if card == null:
+		var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
+		if stamp == null:
 			continue
 
-		var owned_count: int = PlayerCollectionStore.get_owned_count_for_print_id(card_print.print_id)
+		var owned_count: int = PlayerCollectionStore.get_owned_count_for_print_id(stamp_print.print_id)
 		if owned_only && owned_count <= 0:
 			continue
 
-		var display_name: String = _get_deck_card_display_name(card, card_print).to_lower()
-		if !query.is_empty() && display_name.find(query) == -1 && card.card_name.to_lower().find(query) == -1:
+		var display_name: String = _get_deck_stamp_display_name(stamp, stamp_print).to_lower()
+		if !query.is_empty() && display_name.find(query) == -1 && stamp.stamp_name.to_lower().find(query) == -1:
 			continue
 
-		filtered_card_prints.append(card_print)
+		filtered_stamp_prints.append(stamp_print)
 
-	if card_grid != null:
+	if stamp_grid != null:
 		_show_page(0 if reset_page else current_page)
 
-func _create_browser_card_slot(card_visual: CardVisual, owned_count: int) -> Control:
-	var card_slot := Control.new()
-	card_slot.custom_minimum_size = current_card_slot_size
-	card_slot.mouse_filter = Control.MOUSE_FILTER_PASS
-	card_slot.clip_contents = false
-	card_slot.add_child(card_visual)
-	card_slot.add_child(_create_print_count_badge(owned_count))
-	card_slot.resized.connect(_on_browser_card_slot_resized.bind(card_slot, card_visual))
-	_configure_browser_card_layout(card_slot, card_visual)
-	return card_slot
+func _create_browser_stamp_slot(stamp_visual: StampVisual, owned_count: int) -> Control:
+	var stamp_slot := Control.new()
+	stamp_slot.custom_minimum_size = current_stamp_slot_size
+	stamp_slot.mouse_filter = Control.MOUSE_FILTER_PASS
+	stamp_slot.clip_contents = false
+	stamp_slot.add_child(stamp_visual)
+	stamp_slot.add_child(_create_print_count_badge(owned_count))
+	stamp_slot.resized.connect(_on_browser_stamp_slot_resized.bind(stamp_slot, stamp_visual))
+	_configure_browser_stamp_layout(stamp_slot, stamp_visual)
+	return stamp_slot
 
-func _configure_browser_card_layout(card_slot: Control, card_visual: CardVisual) -> void:
-	card_slot.custom_minimum_size = current_card_slot_size
-	card_visual.custom_minimum_size = CARD_VISUAL_SIZE
-	card_visual.size = CARD_VISUAL_SIZE
-	var scale_factor: float = _get_card_scale_for_slot_size(current_card_slot_size)
-	card_visual.set_rest_scale(Vector2.ONE * scale_factor)
-	var available_size: Vector2 = card_slot.size
+func _configure_browser_stamp_layout(stamp_slot: Control, stamp_visual: StampVisual) -> void:
+	stamp_slot.custom_minimum_size = current_stamp_slot_size
+	stamp_visual.custom_minimum_size = STAMP_VISUAL_SIZE
+	stamp_visual.size = STAMP_VISUAL_SIZE
+	var scale_factor: float = _get_stamp_scale_for_slot_size(current_stamp_slot_size)
+	stamp_visual.set_rest_scale(Vector2.ONE * scale_factor)
+	var available_size: Vector2 = stamp_slot.size
 	if available_size.x <= 0.0 or available_size.y <= 0.0:
-		available_size = current_card_slot_size
-	card_visual.position = (available_size - CARD_VISUAL_SIZE * scale_factor) * 0.5 + Vector2(0.0, BROWSER_CARD_VERTICAL_OFFSET)
-	_update_print_count_badge_layout(card_slot, card_visual)
+		available_size = current_stamp_slot_size
+	stamp_visual.position = (available_size - STAMP_VISUAL_SIZE * scale_factor) * 0.5 + Vector2(0.0, BROWSER_STAMP_VERTICAL_OFFSET)
+	_update_print_count_badge_layout(stamp_slot, stamp_visual)
 
 func _create_print_count_badge(owned_count: int) -> Control:
 	var badge := Control.new()
@@ -1448,55 +1448,55 @@ func _draw_print_count_badge_number(canvas: Control, text: String, font_size: in
 	)
 	canvas.draw_string(CODEX_TITLE_FONT, draw_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color.WHITE)
 
-func _update_print_count_badge_layout(card_slot: Control, card_visual: CardVisual) -> void:
-	var badge: Control = card_slot.get_node_or_null("CountBadge") as Control
+func _update_print_count_badge_layout(stamp_slot: Control, stamp_visual: StampVisual) -> void:
+	var badge: Control = stamp_slot.get_node_or_null("CountBadge") as Control
 	if badge == null:
 		return
 	badge.size = badge.custom_minimum_size
-	var scaled_card_size: Vector2 = CARD_VISUAL_SIZE * card_visual.rest_scale
-	var card_top_left: Vector2 = _get_card_visual_draw_top_left(card_visual)
-	badge.position = card_top_left + Vector2(scaled_card_size.x - badge.size.x - 2.0, 2.0)
+	var scaled_stamp_size: Vector2 = STAMP_VISUAL_SIZE * stamp_visual.rest_scale
+	var stamp_top_left: Vector2 = _get_stamp_visual_draw_top_left(stamp_visual)
+	badge.position = stamp_top_left + Vector2(scaled_stamp_size.x - badge.size.x - 2.0, 2.0)
 
-func _on_browser_card_slot_resized(card_slot: Control, card_visual: CardVisual) -> void:
-	if card_visual != null:
-		_configure_browser_card_layout(card_slot, card_visual)
+func _on_browser_stamp_slot_resized(stamp_slot: Control, stamp_visual: StampVisual) -> void:
+	if stamp_visual != null:
+		_configure_browser_stamp_layout(stamp_slot, stamp_visual)
 
-func _get_card_scale_for_slot_size(slot_size: Vector2) -> float:
+func _get_stamp_scale_for_slot_size(slot_size: Vector2) -> float:
 	if slot_size.x <= 0.0 or slot_size.y <= 0.0:
 		return 1.0
 
-	return minf(slot_size.x / CARD_VISUAL_SIZE.x, slot_size.y / CARD_VISUAL_SIZE.y) * CARD_SLOT_SCALE_MULTIPLIER
+	return minf(slot_size.x / STAMP_VISUAL_SIZE.x, slot_size.y / STAMP_VISUAL_SIZE.y) * STAMP_SLOT_SCALE_MULTIPLIER
 
-func _get_browser_card_visual(node: Node) -> CardVisual:
-	if node is CardVisual:
-		return node as CardVisual
+func _get_browser_stamp_visual(node: Node) -> StampVisual:
+	if node is StampVisual:
+		return node as StampVisual
 
 	for child in node.get_children():
-		if child is CardVisual:
-			return child as CardVisual
+		if child is StampVisual:
+			return child as StampVisual
 
 	return null
 
-func _get_hovered_card_visual(node: Node, mouse_position: Vector2) -> CardVisual:
-	if node is CardVisual:
-		var card_visual := node as CardVisual
-		if card_visual.card != null and !card_visual.face_down and card_visual.is_visible_in_tree() and _get_card_visual_screen_rect(card_visual).has_point(mouse_position):
-			return card_visual
+func _get_hovered_stamp_visual(node: Node, mouse_position: Vector2) -> StampVisual:
+	if node is StampVisual:
+		var stamp_visual := node as StampVisual
+		if stamp_visual.stamp != null and !stamp_visual.face_down and stamp_visual.is_visible_in_tree() and _get_stamp_visual_screen_rect(stamp_visual).has_point(mouse_position):
+			return stamp_visual
 		return null
 
 	for child in node.get_children():
-		var hovered_card_visual: CardVisual = _get_hovered_card_visual(child, mouse_position)
-		if hovered_card_visual != null:
-			return hovered_card_visual
+		var hovered_stamp_visual: StampVisual = _get_hovered_stamp_visual(child, mouse_position)
+		if hovered_stamp_visual != null:
+			return hovered_stamp_visual
 
 	return null
 
-func _get_card_visual_screen_rect(card_visual: CardVisual) -> Rect2:
-	var transform: Transform2D = card_visual.get_global_transform_with_canvas()
+func _get_stamp_visual_screen_rect(stamp_visual: StampVisual) -> Rect2:
+	var transform: Transform2D = stamp_visual.get_global_transform_with_canvas()
 	var corner_a: Vector2 = transform * Vector2.ZERO
-	var corner_b: Vector2 = transform * Vector2(card_visual.size.x, 0.0)
-	var corner_c: Vector2 = transform * card_visual.size
-	var corner_d: Vector2 = transform * Vector2(0.0, card_visual.size.y)
+	var corner_b: Vector2 = transform * Vector2(stamp_visual.size.x, 0.0)
+	var corner_c: Vector2 = transform * stamp_visual.size
+	var corner_d: Vector2 = transform * Vector2(0.0, stamp_visual.size.y)
 	var min_position := Vector2(
 		minf(minf(corner_a.x, corner_b.x), minf(corner_c.x, corner_d.x)),
 		minf(minf(corner_a.y, corner_b.y), minf(corner_c.y, corner_d.y))
@@ -1509,7 +1509,7 @@ func _get_card_visual_screen_rect(card_visual: CardVisual) -> Rect2:
 
 func _on_viewport_size_changed() -> void:
 	_apply_responsive_layout(true)
-	_sync_deck_card_list_width()
+	_sync_deck_stamp_list_width()
 	_layout_magnifier_case_button()
 	_update_magnifier_position(true)
 	_layout_hover_description_panel()
@@ -1517,9 +1517,9 @@ func _on_viewport_size_changed() -> void:
 func _apply_responsive_layout(refresh_page: bool) -> void:
 	var viewport_width: float = get_viewport_rect().size.x
 	var viewport_height: float = get_viewport_rect().size.y
-	var next_columns: int = DESKTOP_CARD_COLUMNS
-	var next_cards_per_page: int = DESKTOP_CARDS_PER_PAGE
-	var next_card_slot_size: Vector2 = DESKTOP_CARD_SLOT_SIZE
+	var next_columns: int = DESKTOP_STAMP_COLUMNS
+	var next_stamps_per_page: int = DESKTOP_STAMPS_PER_PAGE
+	var next_stamp_slot_size: Vector2 = DESKTOP_STAMP_SLOT_SIZE
 	var next_margin: int = 24
 	var next_h_gap: int = 8
 	var next_v_gap: int = 2
@@ -1530,9 +1530,9 @@ func _apply_responsive_layout(refresh_page: bool) -> void:
 	var next_deck_width: int = RIGHT_COLUMN_WIDTH
 
 	if viewport_width < 980.0:
-		next_columns = COMPACT_CARD_COLUMNS
-		next_cards_per_page = COMPACT_CARDS_PER_PAGE
-		next_card_slot_size = COMPACT_CARD_SLOT_SIZE
+		next_columns = COMPACT_STAMP_COLUMNS
+		next_stamps_per_page = COMPACT_STAMPS_PER_PAGE
+		next_stamp_slot_size = COMPACT_STAMP_SLOT_SIZE
 		next_margin = 16
 		next_h_gap = 6
 		next_v_gap = 3
@@ -1541,9 +1541,9 @@ func _apply_responsive_layout(refresh_page: bool) -> void:
 		next_deck_width = RIGHT_COLUMN_WIDTH
 		next_layout_width = next_middle_width + next_deck_width + next_layout_gap
 	elif viewport_width < 1180.0:
-		next_columns = MEDIUM_CARD_COLUMNS
-		next_cards_per_page = MEDIUM_CARDS_PER_PAGE
-		next_card_slot_size = MEDIUM_CARD_SLOT_SIZE
+		next_columns = MEDIUM_STAMP_COLUMNS
+		next_stamps_per_page = MEDIUM_STAMPS_PER_PAGE
+		next_stamp_slot_size = MEDIUM_STAMP_SLOT_SIZE
 		next_margin = 18
 		next_h_gap = 7
 		next_v_gap = 3
@@ -1552,10 +1552,10 @@ func _apply_responsive_layout(refresh_page: bool) -> void:
 		next_deck_width = RIGHT_COLUMN_WIDTH
 		next_layout_width = next_middle_width + next_deck_width + next_layout_gap
 
-	var layout_changed: bool = next_columns != current_card_columns or next_cards_per_page != current_cards_per_page
-	current_card_columns = next_columns
-	current_cards_per_page = next_cards_per_page
-	current_card_slot_size = next_card_slot_size
+	var layout_changed: bool = next_columns != current_stamp_columns or next_stamps_per_page != current_stamps_per_page
+	current_stamp_columns = next_columns
+	current_stamps_per_page = next_stamps_per_page
+	current_stamp_slot_size = next_stamp_slot_size
 
 	if root_margin != null:
 		root_margin.add_theme_constant_override("margin_left", next_margin)
@@ -1570,10 +1570,10 @@ func _apply_responsive_layout(refresh_page: bool) -> void:
 		left_column.visible = false
 	if middle_column != null:
 		middle_column.custom_minimum_size = Vector2(next_middle_width, 0)
-	if card_grid != null:
-		card_grid.columns = current_card_columns
-		card_grid.add_theme_constant_override("h_separation", next_h_gap)
-		card_grid.add_theme_constant_override("v_separation", next_v_gap)
+	if stamp_grid != null:
+		stamp_grid.columns = current_stamp_columns
+		stamp_grid.add_theme_constant_override("h_separation", next_h_gap)
+		stamp_grid.add_theme_constant_override("v_separation", next_v_gap)
 	if deck_panel_frame != null:
 		deck_panel_frame.custom_minimum_size = Vector2(next_deck_width, 0)
 	if right_column != null:
@@ -1583,37 +1583,37 @@ func _apply_responsive_layout(refresh_page: bool) -> void:
 		if layout_changed:
 			_show_page(current_page)
 		else:
-			_update_existing_card_sizes()
+			_update_existing_stamp_sizes()
 
-func _update_existing_card_sizes() -> void:
-	if card_grid == null:
+func _update_existing_stamp_sizes() -> void:
+	if stamp_grid == null:
 		return
-	for child in card_grid.get_children():
-		var card_visual: CardVisual = _get_browser_card_visual(child)
-		if card_visual != null && child is Control:
-			_configure_browser_card_layout(child as Control, card_visual)
+	for child in stamp_grid.get_children():
+		var stamp_visual: StampVisual = _get_browser_stamp_visual(child)
+		if stamp_visual != null && child is Control:
+			_configure_browser_stamp_layout(child as Control, stamp_visual)
 
-func _on_deck_card_scroll_resized() -> void:
-	_sync_deck_card_list_width()
+func _on_deck_stamp_scroll_resized() -> void:
+	_sync_deck_stamp_list_width()
 
-func _sync_deck_card_list_width() -> void:
-	if deck_card_scroll == null or deck_card_list == null:
+func _sync_deck_stamp_list_width() -> void:
+	if deck_stamp_scroll == null or deck_stamp_list == null:
 		return
-	var content_width: float = deck_card_scroll.size.x
+	var content_width: float = deck_stamp_scroll.size.x
 	if content_width <= 0.0:
 		content_width = right_column.size.x if right_column != null else float(RIGHT_COLUMN_WIDTH)
 	content_width = maxf(0.0, content_width)
-	deck_card_list.custom_minimum_size = Vector2(content_width, deck_card_list.custom_minimum_size.y)
-	for child in deck_card_list.get_children():
+	deck_stamp_list.custom_minimum_size = Vector2(content_width, deck_stamp_list.custom_minimum_size.y)
+	for child in deck_stamp_list.get_children():
 		if child is Control and child.has_meta("codex_page_grid_wrapper"):
 			var wrapper := child as Control
-			wrapper.custom_minimum_size = Vector2(content_width, DECK_EDIT_CARD_SLOT_SIZE.y)
+			wrapper.custom_minimum_size = Vector2(content_width, DECK_EDIT_STAMP_SLOT_SIZE.y)
 
 func _on_codex_scroll_gui_input(event: InputEvent) -> void:
-	if deck_card_scroll == null or !is_creating_deck or !deck_card_scroll.visible:
+	if deck_stamp_scroll == null or !is_creating_deck or !deck_stamp_scroll.visible:
 		return
 	if _handle_codex_scroll_wheel(event):
-		deck_card_scroll.accept_event()
+		deck_stamp_scroll.accept_event()
 
 func _on_deck_selector_scroll_gui_input(event: InputEvent) -> void:
 	if deck_list_scroll == null or is_creating_deck or !deck_list_scroll.visible:
@@ -1625,7 +1625,7 @@ func _handle_elastic_scroll_unhandled_input(event: InputEvent) -> bool:
 	if !(event is InputEventMouseButton):
 		return false
 	var mouse_position := get_viewport().get_mouse_position()
-	if is_creating_deck and deck_card_scroll != null and deck_card_scroll.visible and deck_card_scroll.get_global_rect().has_point(mouse_position):
+	if is_creating_deck and deck_stamp_scroll != null and deck_stamp_scroll.visible and deck_stamp_scroll.get_global_rect().has_point(mouse_position):
 		return _handle_codex_scroll_wheel(event)
 	if !is_creating_deck and deck_list_scroll != null and deck_list_scroll.visible and deck_list_scroll.get_global_rect().has_point(mouse_position):
 		return _handle_deck_selector_scroll_wheel(event)
@@ -1637,7 +1637,7 @@ func _handle_codex_scroll_wheel(event: InputEvent) -> bool:
 		return false
 
 	var max_scroll: float = _get_codex_scroll_max()
-	var current_scroll: float = float(deck_card_scroll.scroll_vertical)
+	var current_scroll: float = float(deck_stamp_scroll.scroll_vertical)
 	if max_scroll <= 0.0 or (current_scroll <= 0.0 and direction < 0.0) or (current_scroll >= max_scroll and direction > 0.0):
 		codex_scroll_overshoot_velocity += -direction * CODEX_SCROLL_EDGE_IMPULSE
 	else:
@@ -1678,9 +1678,9 @@ func _get_scroll_wheel_direction(event: InputEvent) -> float:
 	return 0.0
 
 func _update_codex_scroll_inertia(delta: float) -> void:
-	if deck_card_scroll == null or deck_card_list == null:
+	if deck_stamp_scroll == null or deck_stamp_list == null:
 		return
-	if !is_creating_deck or !deck_card_scroll.visible:
+	if !is_creating_deck or !deck_stamp_scroll.visible:
 		_reset_codex_scroll_motion()
 		return
 
@@ -1688,7 +1688,7 @@ func _update_codex_scroll_inertia(delta: float) -> void:
 	if max_scroll <= 0.0:
 		codex_scroll_velocity = 0.0
 	else:
-		var current_scroll: float = clampf(float(deck_card_scroll.scroll_vertical), 0.0, max_scroll)
+		var current_scroll: float = clampf(float(deck_stamp_scroll.scroll_vertical), 0.0, max_scroll)
 		if absf(codex_scroll_velocity) > 0.5:
 			var next_scroll: float = current_scroll + codex_scroll_velocity * delta
 			if next_scroll < 0.0:
@@ -1699,7 +1699,7 @@ func _update_codex_scroll_inertia(delta: float) -> void:
 				codex_scroll_overshoot_velocity -= (next_scroll - max_scroll) * CODEX_SCROLL_EDGE_SPRING
 				next_scroll = max_scroll
 				codex_scroll_velocity *= 0.16
-			deck_card_scroll.scroll_vertical = int(round(next_scroll))
+			deck_stamp_scroll.scroll_vertical = int(round(next_scroll))
 			var friction_weight: float = 1.0 - exp(-CODEX_SCROLL_FRICTION * delta)
 			codex_scroll_velocity = lerpf(codex_scroll_velocity, 0.0, friction_weight)
 		else:
@@ -1752,13 +1752,13 @@ func _update_deck_selector_scroll_inertia(delta: float) -> void:
 	_apply_deck_selector_scroll_elastic_visual()
 
 func _get_codex_scroll_max() -> float:
-	if deck_card_scroll == null or deck_card_list == null:
+	if deck_stamp_scroll == null or deck_stamp_list == null:
 		return 0.0
-	var scroll_bar := deck_card_scroll.get_v_scroll_bar()
+	var scroll_bar := deck_stamp_scroll.get_v_scroll_bar()
 	if scroll_bar != null:
 		return maxf(0.0, scroll_bar.max_value - scroll_bar.page)
-	var content_height: float = maxf(deck_card_list.size.y, deck_card_list.get_combined_minimum_size().y)
-	return maxf(0.0, content_height - deck_card_scroll.size.y)
+	var content_height: float = maxf(deck_stamp_list.size.y, deck_stamp_list.get_combined_minimum_size().y)
+	return maxf(0.0, content_height - deck_stamp_scroll.size.y)
 
 func _get_deck_selector_scroll_max() -> float:
 	if deck_list_scroll == null or deck_list == null:
@@ -1770,11 +1770,11 @@ func _get_deck_selector_scroll_max() -> float:
 	return maxf(0.0, content_height - deck_list_scroll.size.y)
 
 func _apply_codex_scroll_elastic_visual() -> void:
-	if deck_card_scroll == null or deck_card_list == null:
+	if deck_stamp_scroll == null or deck_stamp_list == null:
 		return
-	var scroll_y: float = float(deck_card_scroll.scroll_vertical)
-	deck_card_list.scale = Vector2.ONE
-	deck_card_list.position.y = round(-scroll_y + codex_scroll_overshoot)
+	var scroll_y: float = float(deck_stamp_scroll.scroll_vertical)
+	deck_stamp_list.scale = Vector2.ONE
+	deck_stamp_list.position.y = round(-scroll_y + codex_scroll_overshoot)
 
 func _apply_deck_selector_scroll_elastic_visual() -> void:
 	if deck_list_scroll == null or deck_list == null:
@@ -1787,10 +1787,10 @@ func _reset_codex_scroll_motion() -> void:
 	codex_scroll_velocity = 0.0
 	codex_scroll_overshoot = 0.0
 	codex_scroll_overshoot_velocity = 0.0
-	if deck_card_list != null:
-		deck_card_list.scale = Vector2.ONE
-		if deck_card_scroll != null:
-			deck_card_list.position.y = -float(deck_card_scroll.scroll_vertical)
+	if deck_stamp_list != null:
+		deck_stamp_list.scale = Vector2.ONE
+		if deck_stamp_scroll != null:
+			deck_stamp_list.position.y = -float(deck_stamp_scroll.scroll_vertical)
 
 func _reset_deck_selector_scroll_motion() -> void:
 	deck_selector_scroll_velocity = 0.0
@@ -1808,10 +1808,10 @@ func _on_next_pressed() -> void:
 	_show_page(current_page + 1)
 
 func _on_search_text_changed(_new_text: String) -> void:
-	_refresh_card_filter(true)
+	_refresh_stamp_filter(true)
 
 func _on_owned_only_toggled(_pressed: bool) -> void:
-	_refresh_card_filter(true)
+	_refresh_stamp_filter(true)
 
 func _ensure_deck_name_display() -> void:
 	if deck_name_edit == null:
@@ -1886,29 +1886,29 @@ func _on_deck_name_edit_submitted(_new_text: String) -> void:
 func _on_new_deck_pressed() -> void:
 	is_creating_deck = true
 	editing_deck_id = ""
-	editing_deck_has_missing_cards = false
+	editing_deck_has_missing_stamps = false
 	is_editing_deck_name = false
-	selected_deck_cards.clear()
+	selected_deck_stamps.clear()
 	_ensure_selected_deck_slots()
 	dragged_print_id = ""
-	hovered_deck_card_index = -1
+	hovered_deck_stamp_index = -1
 	deck_name_edit.text = ""
 	_sync_deck_name_display()
-	_hide_remove_card_button()
-	_refresh_selected_deck_cards()
+	_hide_remove_stamp_button()
+	_refresh_selected_deck_stamps()
 	_update_deck_editor_state()
 	_show_page(current_page)
 
 func _on_deck_editor_back_pressed() -> void:
 	is_creating_deck = false
 	editing_deck_id = ""
-	editing_deck_has_missing_cards = false
+	editing_deck_has_missing_stamps = false
 	is_editing_deck_name = false
-	selected_deck_cards.clear()
+	selected_deck_stamps.clear()
 	dragged_print_id = ""
-	hovered_deck_card_index = -1
-	_hide_remove_card_button()
-	_refresh_selected_deck_cards()
+	hovered_deck_stamp_index = -1
+	_hide_remove_stamp_button()
+	_refresh_selected_deck_stamps()
 	_update_deck_editor_state()
 	_show_page(current_page)
 
@@ -1916,64 +1916,64 @@ func _on_deck_name_changed(_new_text: String) -> void:
 	_sync_deck_name_display()
 	_update_deck_editor_state()
 
-func _on_browser_card_mouse_entered(card: Card, card_print: CardPrint = null) -> void:
-	if card == null:
+func _on_browser_stamp_mouse_entered(stamp: Stamp, stamp_print: StampPrint = null) -> void:
+	if stamp == null:
 		return
 	if !magnifier_enabled:
 		return
 
-	hovered_browser_card_name = card.card_name
-	_show_card_preview(card, card_print)
+	hovered_browser_stamp_name = stamp.stamp_name
+	_show_stamp_preview(stamp, stamp_print)
 
-func _on_browser_card_mouse_exited(card_name: String) -> void:
-	if hovered_browser_card_name != card_name:
+func _on_browser_stamp_mouse_exited(stamp_name: String) -> void:
+	if hovered_browser_stamp_name != stamp_name:
 		return
 
-	_clear_browser_card_description()
+	_clear_browser_stamp_description()
 
-func _update_browser_card_description_hover() -> void:
+func _update_browser_stamp_description_hover() -> void:
 	if !magnifier_enabled:
-		if !hovered_browser_card_name.is_empty() or (hover_description_panel != null and hover_description_panel.visible):
-			_clear_browser_card_description()
+		if !hovered_browser_stamp_name.is_empty() or (hover_description_panel != null and hover_description_panel.visible):
+			_clear_browser_stamp_description()
 		return
-	if card_grid == null or hover_description_label == null:
+	if stamp_grid == null or hover_description_label == null:
 		return
 
 	var mouse_position: Vector2 = get_viewport().get_mouse_position()
-	var hovered_card: Card = null
-	var hovered_card_visual: CardVisual = _get_hovered_card_visual(card_grid, mouse_position)
-	if hovered_card_visual != null:
-		hovered_card = hovered_card_visual.card
+	var hovered_stamp: Stamp = null
+	var hovered_stamp_visual: StampVisual = _get_hovered_stamp_visual(stamp_grid, mouse_position)
+	if hovered_stamp_visual != null:
+		hovered_stamp = hovered_stamp_visual.stamp
 
-	if hovered_card == null && deck_card_list != null:
-		hovered_card_visual = _get_hovered_card_visual(deck_card_list, mouse_position)
-		if hovered_card_visual != null:
-			hovered_card = hovered_card_visual.card
+	if hovered_stamp == null && deck_stamp_list != null:
+		hovered_stamp_visual = _get_hovered_stamp_visual(deck_stamp_list, mouse_position)
+		if hovered_stamp_visual != null:
+			hovered_stamp = hovered_stamp_visual.stamp
 
-	if hovered_card == null:
-		if !hovered_browser_card_name.is_empty():
-			_clear_browser_card_description()
+	if hovered_stamp == null:
+		if !hovered_browser_stamp_name.is_empty():
+			_clear_browser_stamp_description()
 		return
 
-	if hovered_browser_card_name == hovered_card.card_name:
+	if hovered_browser_stamp_name == hovered_stamp.stamp_name:
 		return
 
-	hovered_browser_card_name = hovered_card.card_name
-	_show_card_preview(hovered_card)
+	hovered_browser_stamp_name = hovered_stamp.stamp_name
+	_show_stamp_preview(hovered_stamp)
 
-func _clear_browser_card_description() -> void:
-	hovered_browser_card_name = ""
+func _clear_browser_stamp_description() -> void:
+	hovered_browser_stamp_name = ""
 	if hover_description_label != null:
 		hover_description_label.text = ""
 	if hover_description_panel != null:
 		hover_description_panel.visible = false
 
-func _show_card_preview(card: Card, card_print: CardPrint = null) -> void:
-	if card == null:
+func _show_stamp_preview(stamp: Stamp, stamp_print: StampPrint = null) -> void:
+	if stamp == null:
 		return
 
-	hovered_browser_card_name = card.card_name
-	var description: String = card.description.strip_edges()
+	hovered_browser_stamp_name = stamp.stamp_name
+	var description: String = stamp.description.strip_edges()
 	if hover_description_label != null:
 		hover_description_label.text = description
 	if hover_description_panel != null:
@@ -1981,47 +1981,47 @@ func _show_card_preview(card: Card, card_print: CardPrint = null) -> void:
 		if hover_description_panel.visible:
 			_layout_hover_description_panel()
 
-func _layout_preview_card() -> void:
-	if preview_card_holder == null or preview_card_visual == null:
+func _layout_preview_stamp() -> void:
+	if preview_stamp_holder == null or preview_stamp_visual == null:
 		return
 
-	var holder_size: Vector2 = preview_card_holder.size
+	var holder_size: Vector2 = preview_stamp_holder.size
 	if holder_size.x <= 0.0 or holder_size.y <= 0.0:
-		holder_size = preview_card_holder.custom_minimum_size
-	var scale_factor: float = minf(holder_size.x / CARD_VISUAL_SIZE.x, holder_size.y / CARD_VISUAL_SIZE.y) * 0.92
-	preview_card_visual.set_rest_scale(Vector2.ONE * scale_factor)
-	preview_card_visual.size = CARD_VISUAL_SIZE
-	preview_card_visual.position = (holder_size - CARD_VISUAL_SIZE * scale_factor) * 0.5
+		holder_size = preview_stamp_holder.custom_minimum_size
+	var scale_factor: float = minf(holder_size.x / STAMP_VISUAL_SIZE.x, holder_size.y / STAMP_VISUAL_SIZE.y) * 0.92
+	preview_stamp_visual.set_rest_scale(Vector2.ONE * scale_factor)
+	preview_stamp_visual.size = STAMP_VISUAL_SIZE
+	preview_stamp_visual.position = (holder_size - STAMP_VISUAL_SIZE * scale_factor) * 0.5
 
-func _on_card_drag_started(card_visual: CardVisual, print_id: String) -> void:
+func _on_stamp_drag_started(stamp_visual: StampVisual, print_id: String) -> void:
 	dragged_print_id = print_id
-	_set_card_drag_floating(card_visual, true)
+	_set_stamp_drag_floating(stamp_visual, true)
 
-func _on_card_drag_released(card_visual: CardVisual, print_id: String) -> void:
-	_set_card_drag_floating(card_visual, false)
+func _on_stamp_drag_released(stamp_visual: StampVisual, print_id: String) -> void:
+	_set_stamp_drag_floating(stamp_visual, false)
 	if !is_creating_deck:
 		return
 
 	var mouse_position := get_viewport().get_mouse_position()
-	if deck_card_scroll.get_global_rect().has_point(mouse_position) && _can_add_print_to_deck(print_id):
+	if deck_stamp_scroll.get_global_rect().has_point(mouse_position) && _can_add_print_to_deck(print_id):
 		var drop_index: int = _get_deck_drop_index(mouse_position)
 		if drop_index >= 0 && !_is_deck_slot_empty(drop_index):
 			drop_index = -1
 		if drop_index == -1:
 			drop_index = _get_first_empty_deck_slot()
 		if drop_index != -1:
-			_set_deck_slot(drop_index, _create_deck_card_entry(print_id, drop_index))
-		_reindex_selected_deck_cards()
-		_refresh_selected_deck_cards()
+			_set_deck_slot(drop_index, _create_deck_stamp_entry(print_id, drop_index))
+		_reindex_selected_deck_stamps()
+		_refresh_selected_deck_stamps()
 		_update_deck_editor_state()
 
 	dragged_print_id = ""
 	call_deferred("_show_page", current_page)
 
 func _get_deck_drop_index(mouse_position: Vector2) -> int:
-	if deck_card_list == null:
+	if deck_stamp_list == null:
 		return -1
-	return _find_deck_slot_index_at_position(deck_card_list, mouse_position)
+	return _find_deck_slot_index_at_position(deck_stamp_list, mouse_position)
 
 func _find_deck_slot_index_at_position(node: Node, mouse_position: Vector2) -> int:
 	for child in node.get_children():
@@ -2038,21 +2038,21 @@ func _on_done_pressed() -> void:
 	if !_can_complete_deck():
 		return
 
-	var cards_to_save: Array = _get_selected_deck_cards_for_save()
+	var stamps_to_save: Array = _get_selected_deck_stamps_for_save()
 	if editing_deck_id.is_empty():
-		PlayerDeckStore.save_new_deck(deck_name_edit.text, cards_to_save)
+		PlayerDeckStore.save_new_deck(deck_name_edit.text, stamps_to_save)
 	else:
-		PlayerDeckStore.save_existing_deck(editing_deck_id, deck_name_edit.text, cards_to_save)
+		PlayerDeckStore.save_existing_deck(editing_deck_id, deck_name_edit.text, stamps_to_save)
 	is_creating_deck = false
 	editing_deck_id = ""
-	editing_deck_has_missing_cards = false
+	editing_deck_has_missing_stamps = false
 	is_editing_deck_name = false
-	selected_deck_cards.clear()
+	selected_deck_stamps.clear()
 	deck_name_edit.text = ""
 	_sync_deck_name_display()
-	hovered_deck_card_index = -1
-	_hide_remove_card_button()
-	_refresh_selected_deck_cards()
+	hovered_deck_stamp_index = -1
+	_hide_remove_stamp_button()
+	_refresh_selected_deck_stamps()
 	_populate_saved_decks_list()
 	_update_deck_editor_state()
 	_show_page(current_page)
@@ -2074,108 +2074,108 @@ func _update_deck_editor_state() -> void:
 		deck_name_display.visible = is_creating_deck && !is_editing_deck_name
 	deck_name_edit.visible = is_creating_deck && is_editing_deck_name
 	deck_list_scroll.visible = !is_creating_deck
-	deck_card_scroll.visible = is_creating_deck
+	deck_stamp_scroll.visible = is_creating_deck
 	deck_count_label.visible = is_creating_deck
 	done_button.visible = is_creating_deck
-	_sync_deck_card_list_width()
-	deck_count_label.text = "%d/%d" % [_get_selected_deck_card_count(), MAX_DECK_SIZE]
+	_sync_deck_stamp_list_width()
+	deck_count_label.text = "%d/%d" % [_get_selected_deck_stamp_count(), MAX_DECK_SIZE]
 	done_button.disabled = !_can_complete_deck()
 
-	for child in card_grid.get_children():
-		var visual: CardVisual = _get_browser_card_visual(child)
+	for child in stamp_grid.get_children():
+		var visual: StampVisual = _get_browser_stamp_visual(child)
 		if visual != null:
-			visual.draggable = is_creating_deck && !editing_deck_has_missing_cards && visual.collection_owned && _can_add_card_to_deck(visual.card) && _get_selected_deck_card_count() < MAX_DECK_SIZE
+			visual.draggable = is_creating_deck && !editing_deck_has_missing_stamps && visual.collection_owned && _can_add_stamp_to_deck(visual.stamp) && _get_selected_deck_stamp_count() < MAX_DECK_SIZE
 			visual.disabled = false
 
 func _can_complete_deck() -> bool:
-	return is_creating_deck && !editing_deck_has_missing_cards && !deck_name_edit.text.strip_edges().is_empty() && _get_selected_deck_card_count() == MAX_DECK_SIZE && _has_selected_seeker_card() && !_has_too_many_card_copies()
+	return is_creating_deck && !editing_deck_has_missing_stamps && !deck_name_edit.text.strip_edges().is_empty() && _get_selected_deck_stamp_count() == MAX_DECK_SIZE && _has_selected_seeker_stamp() && !_has_too_many_stamp_copies()
 
 func _can_add_print_to_deck(print_id: String) -> bool:
-	if editing_deck_has_missing_cards:
+	if editing_deck_has_missing_stamps:
 		return false
 
-	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
-	var card: Card = CardPrintLibrary.get_card_for_print(card_print)
-	return card != null && PlayerCollectionStore.owns_print(card_print) && _can_add_card_to_deck(card) && _get_selected_deck_card_count() < MAX_DECK_SIZE
+	var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
+	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
+	return stamp != null && PlayerCollectionStore.owns_print(stamp_print) && _can_add_stamp_to_deck(stamp) && _get_selected_deck_stamp_count() < MAX_DECK_SIZE
 
-func _reindex_selected_deck_cards() -> void:
+func _reindex_selected_deck_stamps() -> void:
 	_ensure_selected_deck_slots()
-	for index in range(selected_deck_cards.size()):
-		if selected_deck_cards[index] is Dictionary:
-			var deck_card: Dictionary = selected_deck_cards[index]
-			deck_card["slot"] = index
-			selected_deck_cards[index] = deck_card
+	for index in range(selected_deck_stamps.size()):
+		if selected_deck_stamps[index] is Dictionary:
+			var deck_stamp: Dictionary = selected_deck_stamps[index]
+			deck_stamp["slot"] = index
+			selected_deck_stamps[index] = deck_stamp
 
 func _ensure_selected_deck_slots() -> void:
-	while selected_deck_cards.size() < MAX_DECK_SIZE:
-		selected_deck_cards.append(null)
-	if selected_deck_cards.size() > MAX_DECK_SIZE:
-		selected_deck_cards.resize(MAX_DECK_SIZE)
+	while selected_deck_stamps.size() < MAX_DECK_SIZE:
+		selected_deck_stamps.append(null)
+	if selected_deck_stamps.size() > MAX_DECK_SIZE:
+		selected_deck_stamps.resize(MAX_DECK_SIZE)
 
-func _get_selected_deck_card_count() -> int:
+func _get_selected_deck_stamp_count() -> int:
 	var count: int = 0
-	for deck_card in selected_deck_cards:
-		if deck_card is Dictionary:
+	for deck_stamp in selected_deck_stamps:
+		if deck_stamp is Dictionary:
 			count += 1
 	return count
 
 func _get_first_empty_deck_slot() -> int:
 	_ensure_selected_deck_slots()
-	for index in range(selected_deck_cards.size()):
+	for index in range(selected_deck_stamps.size()):
 		if _is_deck_slot_empty(index):
 			return index
 	return -1
 
-func _is_deck_slot_empty(deck_card_index: int) -> bool:
-	if deck_card_index < 0 or deck_card_index >= selected_deck_cards.size():
+func _is_deck_slot_empty(deck_stamp_index: int) -> bool:
+	if deck_stamp_index < 0 or deck_stamp_index >= selected_deck_stamps.size():
 		return true
-	return !(selected_deck_cards[deck_card_index] is Dictionary)
+	return !(selected_deck_stamps[deck_stamp_index] is Dictionary)
 
-func _set_deck_slot(deck_card_index: int, deck_card) -> void:
+func _set_deck_slot(deck_stamp_index: int, deck_stamp) -> void:
 	_ensure_selected_deck_slots()
-	if deck_card_index < 0 or deck_card_index >= selected_deck_cards.size():
+	if deck_stamp_index < 0 or deck_stamp_index >= selected_deck_stamps.size():
 		return
-	if deck_card is Dictionary:
-		var normalized_card: Dictionary = (deck_card as Dictionary).duplicate(true)
-		normalized_card["slot"] = deck_card_index
-		selected_deck_cards[deck_card_index] = normalized_card
+	if deck_stamp is Dictionary:
+		var normalized_stamp: Dictionary = (deck_stamp as Dictionary).duplicate(true)
+		normalized_stamp["slot"] = deck_stamp_index
+		selected_deck_stamps[deck_stamp_index] = normalized_stamp
 	else:
-		selected_deck_cards[deck_card_index] = null
+		selected_deck_stamps[deck_stamp_index] = null
 
 func _swap_or_move_deck_slots(source_index: int, target_index: int) -> void:
 	_ensure_selected_deck_slots()
-	if source_index < 0 or source_index >= selected_deck_cards.size():
+	if source_index < 0 or source_index >= selected_deck_stamps.size():
 		return
-	if target_index < 0 or target_index >= selected_deck_cards.size():
+	if target_index < 0 or target_index >= selected_deck_stamps.size():
 		return
 	if source_index == target_index:
 		return
-	if !(selected_deck_cards[source_index] is Dictionary):
+	if !(selected_deck_stamps[source_index] is Dictionary):
 		return
 
-	var source_card = selected_deck_cards[source_index]
-	var target_card = selected_deck_cards[target_index]
-	selected_deck_cards[target_index] = source_card
-	selected_deck_cards[source_index] = target_card if target_card is Dictionary else null
-	_reindex_selected_deck_cards()
+	var source_stamp = selected_deck_stamps[source_index]
+	var target_stamp = selected_deck_stamps[target_index]
+	selected_deck_stamps[target_index] = source_stamp
+	selected_deck_stamps[source_index] = target_stamp if target_stamp is Dictionary else null
+	_reindex_selected_deck_stamps()
 
-func _get_selected_deck_cards_for_save() -> Array:
-	var cards: Array = []
+func _get_selected_deck_stamps_for_save() -> Array:
+	var stamps: Array = []
 	_ensure_selected_deck_slots()
-	for index in range(selected_deck_cards.size()):
-		var deck_card = selected_deck_cards[index]
-		if !(deck_card is Dictionary):
+	for index in range(selected_deck_stamps.size()):
+		var deck_stamp = selected_deck_stamps[index]
+		if !(deck_stamp is Dictionary):
 			continue
-		var saved_card: Dictionary = (deck_card as Dictionary).duplicate(true)
-		saved_card["slot"] = index
-		cards.append(saved_card)
-	return cards
+		var saved_stamp: Dictionary = (deck_stamp as Dictionary).duplicate(true)
+		saved_stamp["slot"] = index
+		stamps.append(saved_stamp)
+	return stamps
 
-func _refresh_selected_deck_cards() -> void:
+func _refresh_selected_deck_stamps() -> void:
 	_ensure_selected_deck_slots()
-	_sync_deck_card_list_width()
-	for child in deck_card_list.get_children():
-		deck_card_list.remove_child(child)
+	_sync_deck_stamp_list_width()
+	for child in deck_stamp_list.get_children():
+		deck_stamp_list.remove_child(child)
 		child.queue_free()
 
 	for page_index in range(CODEX_PAGE_COUNT):
@@ -2183,7 +2183,7 @@ func _refresh_selected_deck_cards() -> void:
 
 func _add_selected_deck_section(title: String, page_index: int) -> void:
 	var section_title := Label.new()
-	deck_card_list.add_child(section_title)
+	deck_stamp_list.add_child(section_title)
 	section_title.text = title
 	section_title.custom_minimum_size = Vector2(0.0, 28.0)
 	section_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2192,12 +2192,12 @@ func _add_selected_deck_section(title: String, page_index: int) -> void:
 	section_title.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
 
 	var section_line := HSeparator.new()
-	deck_card_list.add_child(section_line)
+	deck_stamp_list.add_child(section_line)
 
 	var section_grid_wrapper := CenterContainer.new()
-	deck_card_list.add_child(section_grid_wrapper)
+	deck_stamp_list.add_child(section_grid_wrapper)
 	section_grid_wrapper.set_meta("codex_page_grid_wrapper", true)
-	section_grid_wrapper.custom_minimum_size = Vector2(_get_deck_card_list_content_width(), DECK_EDIT_CARD_SLOT_SIZE.y)
+	section_grid_wrapper.custom_minimum_size = Vector2(_get_deck_stamp_list_content_width(), DECK_EDIT_STAMP_SLOT_SIZE.y)
 	section_grid_wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	section_grid_wrapper.clip_contents = false
 
@@ -2210,121 +2210,121 @@ func _add_selected_deck_section(title: String, page_index: int) -> void:
 	section_grid.add_theme_constant_override("v_separation", 4)
 
 	for page_slot in range(CODEX_STAMPS_PER_PAGE):
-		var deck_card_index: int = page_index * CODEX_STAMPS_PER_PAGE + page_slot
-		if deck_card_index < selected_deck_cards.size() and selected_deck_cards[deck_card_index] is Dictionary:
-			var deck_card: Dictionary = selected_deck_cards[deck_card_index]
-			var card_print: CardPrint = _get_print_for_deck_card(deck_card)
-			var card: Card = CardPrintLibrary.get_card_for_print(card_print)
-			if card == null:
-				card = CardLibrary.duplicate_card(str(deck_card.get("card_name", "")))
-			if card != null:
-				section_grid.add_child(_create_selected_deck_card_slot(card, card_print, deck_card_index))
+		var deck_stamp_index: int = page_index * CODEX_STAMPS_PER_PAGE + page_slot
+		if deck_stamp_index < selected_deck_stamps.size() and selected_deck_stamps[deck_stamp_index] is Dictionary:
+			var deck_stamp: Dictionary = selected_deck_stamps[deck_stamp_index]
+			var stamp_print: StampPrint = _get_print_for_deck_stamp(deck_stamp)
+			var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
+			if stamp == null:
+				stamp = StampLibrary.duplicate_stamp(str(deck_stamp.get("stamp_name", "")))
+			if stamp != null:
+				section_grid.add_child(_create_selected_deck_stamp_slot(stamp, stamp_print, deck_stamp_index))
 				continue
-		section_grid.add_child(_create_empty_codex_slot(deck_card_index))
+		section_grid.add_child(_create_empty_codex_slot(deck_stamp_index))
 
 	var bottom_spacer := Control.new()
-	deck_card_list.add_child(bottom_spacer)
+	deck_stamp_list.add_child(bottom_spacer)
 	bottom_spacer.custom_minimum_size = Vector2(0.0, CODEX_PAGE_BOTTOM_SPACING)
 
-func _get_deck_card_list_content_width() -> float:
-	if deck_card_scroll != null and deck_card_scroll.size.x > 0.0:
-		return deck_card_scroll.size.x
-	if deck_card_list != null and deck_card_list.size.x > 0.0:
-		return deck_card_list.size.x
+func _get_deck_stamp_list_content_width() -> float:
+	if deck_stamp_scroll != null and deck_stamp_scroll.size.x > 0.0:
+		return deck_stamp_scroll.size.x
+	if deck_stamp_list != null and deck_stamp_list.size.x > 0.0:
+		return deck_stamp_list.size.x
 	if right_column != null and right_column.size.x > 0.0:
 		return right_column.size.x
 	return float(RIGHT_COLUMN_WIDTH)
 
-func _create_empty_codex_slot(deck_card_index: int) -> Control:
+func _create_empty_codex_slot(deck_stamp_index: int) -> Control:
 	var slot := Control.new()
-	slot.custom_minimum_size = DECK_EDIT_CARD_SLOT_SIZE
+	slot.custom_minimum_size = DECK_EDIT_STAMP_SLOT_SIZE
 	slot.mouse_filter = Control.MOUSE_FILTER_PASS
 	slot.clip_contents = false
-	slot.set_meta("deck_slot_index", deck_card_index)
+	slot.set_meta("deck_slot_index", deck_stamp_index)
 	return slot
 
-func _create_selected_deck_card_slot(card: Card, card_print: CardPrint, deck_card_index: int) -> Control:
-	var card_slot := Control.new()
-	card_slot.custom_minimum_size = DECK_EDIT_CARD_SLOT_SIZE
-	card_slot.mouse_filter = Control.MOUSE_FILTER_PASS
-	card_slot.clip_contents = false
-	card_slot.set_meta("deck_slot_index", deck_card_index)
-	if card != null:
-		card_slot.set_meta("card_name", card.card_name)
+func _create_selected_deck_stamp_slot(stamp: Stamp, stamp_print: StampPrint, deck_stamp_index: int) -> Control:
+	var stamp_slot := Control.new()
+	stamp_slot.custom_minimum_size = DECK_EDIT_STAMP_SLOT_SIZE
+	stamp_slot.mouse_filter = Control.MOUSE_FILTER_PASS
+	stamp_slot.clip_contents = false
+	stamp_slot.set_meta("deck_slot_index", deck_stamp_index)
+	if stamp != null:
+		stamp_slot.set_meta("stamp_name", stamp.stamp_name)
 
-	var card_visual := CARD_VISUAL.instantiate() as CardVisual
-	card_slot.add_child(card_visual)
-	card_visual.custom_minimum_size = CARD_VISUAL_SIZE
-	card_visual.size = CARD_VISUAL_SIZE
-	card_visual.set_hover_raise_enabled(false)
-	if card_print != null:
-		card_visual.set_card_print(card_print)
+	var stamp_visual := STAMP_VISUAL.instantiate() as StampVisual
+	stamp_slot.add_child(stamp_visual)
+	stamp_visual.custom_minimum_size = STAMP_VISUAL_SIZE
+	stamp_visual.size = STAMP_VISUAL_SIZE
+	stamp_visual.set_hover_raise_enabled(false)
+	if stamp_print != null:
+		stamp_visual.set_stamp_print(stamp_print)
 	else:
-		card_visual.set_card(card)
-	card_visual.set_face_down(false)
-	card_visual.set_collection_owned(true)
-	card_visual.draggable = is_creating_deck && !editing_deck_has_missing_cards
-	card_visual.disabled = false
-	card_visual.mouse_filter = Control.MOUSE_FILTER_PASS
-	card_visual.mouse_entered.connect(_on_browser_card_mouse_entered.bind(card, card_print))
-	card_visual.mouse_exited.connect(_on_browser_card_mouse_exited.bind(card.card_name if card != null else ""))
-	card_visual.drag_started.connect(_on_selected_deck_card_drag_started.bind(deck_card_index))
-	card_visual.drag_released.connect(_on_selected_deck_card_drag_released.bind(deck_card_index))
+		stamp_visual.set_stamp(stamp)
+	stamp_visual.set_face_down(false)
+	stamp_visual.set_collection_owned(true)
+	stamp_visual.draggable = is_creating_deck && !editing_deck_has_missing_stamps
+	stamp_visual.disabled = false
+	stamp_visual.mouse_filter = Control.MOUSE_FILTER_PASS
+	stamp_visual.mouse_entered.connect(_on_browser_stamp_mouse_entered.bind(stamp, stamp_print))
+	stamp_visual.mouse_exited.connect(_on_browser_stamp_mouse_exited.bind(stamp.stamp_name if stamp != null else ""))
+	stamp_visual.drag_started.connect(_on_selected_deck_stamp_drag_started.bind(deck_stamp_index))
+	stamp_visual.drag_released.connect(_on_selected_deck_stamp_drag_released.bind(deck_stamp_index))
 
 	var remove_button: Control = null
-	if !editing_deck_has_missing_cards:
-		remove_button = _create_deck_slot_remove_button(deck_card_index)
-		card_slot.add_child(remove_button)
-		card_slot.mouse_entered.connect(_set_slot_remove_button_visible.bind(remove_button, true))
-		card_slot.mouse_exited.connect(_queue_slot_remove_button_hover_update.bind(card_slot, remove_button))
-		card_visual.mouse_entered.connect(_set_slot_remove_button_visible.bind(remove_button, true))
-		card_visual.mouse_exited.connect(_queue_slot_remove_button_hover_update.bind(card_slot, remove_button))
+	if !editing_deck_has_missing_stamps:
+		remove_button = _create_deck_slot_remove_button(deck_stamp_index)
+		stamp_slot.add_child(remove_button)
+		stamp_slot.mouse_entered.connect(_set_slot_remove_button_visible.bind(remove_button, true))
+		stamp_slot.mouse_exited.connect(_queue_slot_remove_button_hover_update.bind(stamp_slot, remove_button))
+		stamp_visual.mouse_entered.connect(_set_slot_remove_button_visible.bind(remove_button, true))
+		stamp_visual.mouse_exited.connect(_queue_slot_remove_button_hover_update.bind(stamp_slot, remove_button))
 		remove_button.mouse_entered.connect(_set_slot_remove_button_visible.bind(remove_button, true))
-		remove_button.mouse_exited.connect(_queue_slot_remove_button_hover_update.bind(card_slot, remove_button))
+		remove_button.mouse_exited.connect(_queue_slot_remove_button_hover_update.bind(stamp_slot, remove_button))
 
-	card_slot.resized.connect(_layout_selected_deck_card_slot.bind(card_slot, card_visual, remove_button))
-	_layout_selected_deck_card_slot(card_slot, card_visual, remove_button)
+	stamp_slot.resized.connect(_layout_selected_deck_stamp_slot.bind(stamp_slot, stamp_visual, remove_button))
+	_layout_selected_deck_stamp_slot(stamp_slot, stamp_visual, remove_button)
 
-	return card_slot
+	return stamp_slot
 
-func _layout_selected_deck_card_slot(card_slot: Control, card_visual: CardVisual, remove_button: Control = null) -> void:
-	if card_slot == null or card_visual == null:
+func _layout_selected_deck_stamp_slot(stamp_slot: Control, stamp_visual: StampVisual, remove_button: Control = null) -> void:
+	if stamp_slot == null or stamp_visual == null:
 		return
 
-	card_slot.custom_minimum_size = DECK_EDIT_CARD_SLOT_SIZE
-	var slot_size: Vector2 = card_slot.size
+	stamp_slot.custom_minimum_size = DECK_EDIT_STAMP_SLOT_SIZE
+	var slot_size: Vector2 = stamp_slot.size
 	if slot_size.x <= 0.0 or slot_size.y <= 0.0:
-		slot_size = DECK_EDIT_CARD_SLOT_SIZE
-	var scale_factor: float = _get_card_scale_for_slot_size(DECK_EDIT_CARD_SLOT_SIZE)
-	card_visual.set_rest_scale(Vector2.ONE * scale_factor)
-	card_visual.size = CARD_VISUAL_SIZE
-	var scaled_card_size: Vector2 = CARD_VISUAL_SIZE * scale_factor
-	var desired_draw_top_left: Vector2 = (slot_size - scaled_card_size) * 0.5 + Vector2(0.0, DECK_EDIT_CARD_VERTICAL_OFFSET)
-	var home_position: Vector2 = _get_card_visual_position_for_draw_top_left(card_visual, desired_draw_top_left, scale_factor)
-	card_visual.set_home_position(home_position, false)
-	_layout_deck_slot_remove_button(card_visual, remove_button)
+		slot_size = DECK_EDIT_STAMP_SLOT_SIZE
+	var scale_factor: float = _get_stamp_scale_for_slot_size(DECK_EDIT_STAMP_SLOT_SIZE)
+	stamp_visual.set_rest_scale(Vector2.ONE * scale_factor)
+	stamp_visual.size = STAMP_VISUAL_SIZE
+	var scaled_stamp_size: Vector2 = STAMP_VISUAL_SIZE * scale_factor
+	var desired_draw_top_left: Vector2 = (slot_size - scaled_stamp_size) * 0.5 + Vector2(0.0, DECK_EDIT_STAMP_VERTICAL_OFFSET)
+	var home_position: Vector2 = _get_stamp_visual_position_for_draw_top_left(stamp_visual, desired_draw_top_left, scale_factor)
+	stamp_visual.set_home_position(home_position, false)
+	_layout_deck_slot_remove_button(stamp_visual, remove_button)
 
-func _get_card_visual_position_for_draw_top_left(card_visual: CardVisual, draw_top_left: Vector2, scale_factor: float) -> Vector2:
-	var pivot: Vector2 = card_visual.pivot_offset
+func _get_stamp_visual_position_for_draw_top_left(stamp_visual: StampVisual, draw_top_left: Vector2, scale_factor: float) -> Vector2:
+	var pivot: Vector2 = stamp_visual.pivot_offset
 	if pivot == Vector2.ZERO:
-		pivot = CARD_VISUAL_SIZE * 0.5
+		pivot = STAMP_VISUAL_SIZE * 0.5
 	return draw_top_left - pivot * (Vector2.ONE - Vector2.ONE * scale_factor)
 
-func _get_card_visual_draw_top_left(card_visual: CardVisual) -> Vector2:
-	var pivot: Vector2 = card_visual.pivot_offset
+func _get_stamp_visual_draw_top_left(stamp_visual: StampVisual) -> Vector2:
+	var pivot: Vector2 = stamp_visual.pivot_offset
 	if pivot == Vector2.ZERO:
-		pivot = CARD_VISUAL_SIZE * 0.5
-	return card_visual.position + pivot * (Vector2.ONE - card_visual.rest_scale)
+		pivot = STAMP_VISUAL_SIZE * 0.5
+	return stamp_visual.position + pivot * (Vector2.ONE - stamp_visual.rest_scale)
 
-func _create_deck_slot_remove_button(deck_card_index: int) -> Control:
+func _create_deck_slot_remove_button(deck_stamp_index: int) -> Control:
 	var root := Control.new()
-	root.tooltip_text = "Remove card"
+	root.tooltip_text = "Remove stamp"
 	root.custom_minimum_size = DECK_SLOT_REMOVE_BUTTON_SIZE
 	root.size = DECK_SLOT_REMOVE_BUTTON_SIZE
 	root.mouse_filter = Control.MOUSE_FILTER_STOP
 	root.visible = false
 	root.z_index = 80
-	root.gui_input.connect(_on_deck_slot_remove_button_gui_input.bind(deck_card_index))
+	root.gui_input.connect(_on_deck_slot_remove_button_gui_input.bind(deck_stamp_index))
 
 	var background := Panel.new()
 	root.add_child(background)
@@ -2345,14 +2345,14 @@ func _create_deck_slot_remove_button(deck_card_index: int) -> Control:
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return root
 
-func _on_deck_slot_remove_button_gui_input(event: InputEvent, deck_card_index: int) -> void:
+func _on_deck_slot_remove_button_gui_input(event: InputEvent, deck_stamp_index: int) -> void:
 	if !(event is InputEventMouseButton):
 		return
 	var mouse_button := event as InputEventMouseButton
 	if mouse_button.button_index != MOUSE_BUTTON_LEFT or !mouse_button.pressed:
 		return
 	accept_event()
-	_on_remove_selected_deck_card_pressed(deck_card_index)
+	_on_remove_selected_deck_stamp_pressed(deck_stamp_index)
 
 func _create_deck_slot_remove_button_style(bg_color: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -2372,85 +2372,85 @@ func _create_deck_slot_remove_button_style(bg_color: Color) -> StyleBoxFlat:
 	style.corner_radius_bottom_right = radius
 	return style
 
-func _layout_deck_slot_remove_button(card_visual: CardVisual, remove_button: Control) -> void:
-	if card_visual == null or remove_button == null or !is_instance_valid(remove_button):
+func _layout_deck_slot_remove_button(stamp_visual: StampVisual, remove_button: Control) -> void:
+	if stamp_visual == null or remove_button == null or !is_instance_valid(remove_button):
 		return
 
 	remove_button.custom_minimum_size = DECK_SLOT_REMOVE_BUTTON_SIZE
 	remove_button.size = DECK_SLOT_REMOVE_BUTTON_SIZE
-	var scaled_card_size: Vector2 = CARD_VISUAL_SIZE * card_visual.rest_scale
-	var card_top_left: Vector2 = _get_card_visual_draw_top_left(card_visual)
-	remove_button.position = card_top_left + Vector2(scaled_card_size.x - DECK_SLOT_REMOVE_BUTTON_SIZE.x - 2.0, 2.0)
+	var scaled_stamp_size: Vector2 = STAMP_VISUAL_SIZE * stamp_visual.rest_scale
+	var stamp_top_left: Vector2 = _get_stamp_visual_draw_top_left(stamp_visual)
+	remove_button.position = stamp_top_left + Vector2(scaled_stamp_size.x - DECK_SLOT_REMOVE_BUTTON_SIZE.x - 2.0, 2.0)
 
 func _set_slot_remove_button_visible(remove_button: Control, should_show: bool) -> void:
 	if remove_button == null or !is_instance_valid(remove_button):
 		return
-	remove_button.visible = should_show && is_creating_deck && !editing_deck_has_missing_cards
+	remove_button.visible = should_show && is_creating_deck && !editing_deck_has_missing_stamps
 
-func _queue_slot_remove_button_hover_update(card_slot: Control, remove_button: Control) -> void:
-	call_deferred("_update_slot_remove_button_hover", card_slot, remove_button)
+func _queue_slot_remove_button_hover_update(stamp_slot: Control, remove_button: Control) -> void:
+	call_deferred("_update_slot_remove_button_hover", stamp_slot, remove_button)
 
-func _update_slot_remove_button_hover(card_slot: Control, remove_button: Control) -> void:
-	if card_slot == null or remove_button == null or !is_instance_valid(card_slot) or !is_instance_valid(remove_button):
+func _update_slot_remove_button_hover(stamp_slot: Control, remove_button: Control) -> void:
+	if stamp_slot == null or remove_button == null or !is_instance_valid(stamp_slot) or !is_instance_valid(remove_button):
 		return
 	var mouse_position: Vector2 = get_viewport().get_mouse_position()
-	var is_hovered: bool = card_slot.get_global_rect().has_point(mouse_position)
+	var is_hovered: bool = stamp_slot.get_global_rect().has_point(mouse_position)
 	_set_slot_remove_button_visible(remove_button, is_hovered)
 
-func _on_selected_deck_card_drag_started(_card_visual: CardVisual, deck_card_index: int) -> void:
-	hovered_deck_card_index = deck_card_index
-	_hide_remove_card_button()
-	_set_card_drag_floating(_card_visual, true)
+func _on_selected_deck_stamp_drag_started(_stamp_visual: StampVisual, deck_stamp_index: int) -> void:
+	hovered_deck_stamp_index = deck_stamp_index
+	_hide_remove_stamp_button()
+	_set_stamp_drag_floating(_stamp_visual, true)
 
-func _on_selected_deck_card_drag_released(card_visual: CardVisual, deck_card_index: int) -> void:
-	_set_card_drag_floating(card_visual, false)
-	if !is_creating_deck or editing_deck_has_missing_cards:
-		if card_visual != null and is_instance_valid(card_visual):
-			card_visual.fly_home()
+func _on_selected_deck_stamp_drag_released(stamp_visual: StampVisual, deck_stamp_index: int) -> void:
+	_set_stamp_drag_floating(stamp_visual, false)
+	if !is_creating_deck or editing_deck_has_missing_stamps:
+		if stamp_visual != null and is_instance_valid(stamp_visual):
+			stamp_visual.fly_home()
 		return
 
 	var mouse_position := get_viewport().get_mouse_position()
-	if !deck_card_scroll.get_global_rect().has_point(mouse_position):
-		if card_visual != null and is_instance_valid(card_visual):
-			card_visual.fly_home()
+	if !deck_stamp_scroll.get_global_rect().has_point(mouse_position):
+		if stamp_visual != null and is_instance_valid(stamp_visual):
+			stamp_visual.fly_home()
 		return
 
 	var target_index: int = _get_deck_drop_index(mouse_position)
-	if target_index < 0 or target_index >= MAX_DECK_SIZE or target_index == deck_card_index:
-		if card_visual != null and is_instance_valid(card_visual):
-			card_visual.fly_home()
+	if target_index < 0 or target_index >= MAX_DECK_SIZE or target_index == deck_stamp_index:
+		if stamp_visual != null and is_instance_valid(stamp_visual):
+			stamp_visual.fly_home()
 		return
 
-	_swap_or_move_deck_slots(deck_card_index, target_index)
-	hovered_deck_card_index = -1
-	_hide_remove_card_button()
-	_refresh_selected_deck_cards()
+	_swap_or_move_deck_slots(deck_stamp_index, target_index)
+	hovered_deck_stamp_index = -1
+	_hide_remove_stamp_button()
+	_refresh_selected_deck_stamps()
 	_update_deck_editor_state()
 
-func _set_card_drag_floating(card_visual: CardVisual, floating: bool) -> void:
-	if card_visual == null or !is_instance_valid(card_visual):
+func _set_stamp_drag_floating(stamp_visual: StampVisual, floating: bool) -> void:
+	if stamp_visual == null or !is_instance_valid(stamp_visual):
 		return
-	var previous_global_position: Vector2 = card_visual.global_position
-	card_visual.top_level = floating
-	card_visual.global_position = previous_global_position
+	var previous_global_position: Vector2 = stamp_visual.global_position
+	stamp_visual.top_level = floating
+	stamp_visual.global_position = previous_global_position
 	if floating:
-		card_visual.z_as_relative = false
-		card_visual.z_index = DRAGGED_CARD_Z_INDEX
+		stamp_visual.z_as_relative = false
+		stamp_visual.z_index = DRAGGED_STAMP_Z_INDEX
 	else:
-		card_visual.z_as_relative = true
-		card_visual.z_index = 0
+		stamp_visual.z_as_relative = true
+		stamp_visual.z_index = 0
 
-func _on_remove_selected_deck_card_pressed(deck_card_index: int) -> void:
-	hovered_deck_card_index = deck_card_index
-	_on_remove_card_pressed()
+func _on_remove_selected_deck_stamp_pressed(deck_stamp_index: int) -> void:
+	hovered_deck_stamp_index = deck_stamp_index
+	_on_remove_stamp_pressed()
 
-func _create_deck_card_row(card: Card, card_print: CardPrint, deck_card_index: int) -> Control:
+func _create_deck_stamp_row(stamp: Stamp, stamp_print: StampPrint, deck_stamp_index: int) -> Control:
 	var row_frame := PanelContainer.new()
 	row_frame.custom_minimum_size = Vector2(0, 34)
 	row_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row_frame.mouse_filter = Control.MOUSE_FILTER_STOP
-	row_frame.set_meta("card_name", card.card_name)
-	row_frame.mouse_entered.connect(_on_deck_card_row_mouse_entered.bind(deck_card_index, row_frame))
+	row_frame.set_meta("stamp_name", stamp.stamp_name)
+	row_frame.mouse_entered.connect(_on_deck_stamp_row_mouse_entered.bind(deck_stamp_index, row_frame))
 
 	var row := HBoxContainer.new()
 	row_frame.add_child(row)
@@ -2462,29 +2462,29 @@ func _create_deck_card_row(card: Card, card_print: CardPrint, deck_card_index: i
 	duration_label.custom_minimum_size = Vector2(34, 0)
 	duration_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	duration_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	duration_label.text = "INF" if card.duration < 0 else str(card.duration)
+	duration_label.text = "INF" if stamp.duration < 0 else str(stamp.duration)
 
 	var name_label := Label.new()
 	row.add_child(name_label)
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.text = _get_deck_card_display_name(card, card_print)
+	name_label.text = _get_deck_stamp_display_name(stamp, stamp_print)
 	name_label.clip_text = true
 
-	if card.has_effect():
-		if card.effect_icon != null:
+	if stamp.has_effect():
+		if stamp.effect_icon != null:
 			var effect_texture := TextureRect.new()
 			row.add_child(effect_texture)
 			effect_texture.custom_minimum_size = Vector2(24, 24)
 			effect_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			effect_texture.texture = card.effect_icon
+			effect_texture.texture = stamp.effect_icon
 		else:
 			var effect_label := Label.new()
 			row.add_child(effect_label)
 			effect_label.custom_minimum_size = Vector2(32, 0)
 			effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			effect_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			effect_label.text = CardEffect.get_effect_label(card.effect_type)
+			effect_label.text = StampEffect.get_effect_label(stamp.effect_type)
 
 	return row_frame
 
@@ -2522,10 +2522,10 @@ func _create_saved_deck_row(deck_data: Dictionary) -> Control:
 	var preview_offsets: Array = [Vector2(76, -2), Vector2(126, -6), Vector2(176, -2)]
 	var preview_rotations: Array = [-8.0, 8.0, -4.0]
 	for index in range(preview_prints.size()):
-		var preview_print: CardPrint = preview_prints[index] as CardPrint
+		var preview_print: StampPrint = preview_prints[index] as StampPrint
 		if preview_print == null:
 			continue
-		var preview_visual := _create_small_deck_preview_card(preview_print)
+		var preview_visual := _create_small_deck_preview_stamp(preview_print)
 		row_frame.add_child(preview_visual)
 		preview_visual.position = preview_offsets[index]
 		preview_visual.rotation = deg_to_rad(preview_rotations[index])
@@ -2585,37 +2585,37 @@ func _create_saved_deck_row(deck_data: Dictionary) -> Control:
 
 func _get_deck_preview_prints(deck_data: Dictionary) -> Array:
 	var preview_prints: Array = []
-	var deck_cards = deck_data.get("cards", [])
-	if !(deck_cards is Array):
+	var deck_stamps = deck_data.get("stamps", [])
+	if !(deck_stamps is Array):
 		return preview_prints
 
-	var candidate_indexes: Array = [0, int(deck_cards.size() / 2), maxi(0, deck_cards.size() - 1)]
+	var candidate_indexes: Array = [0, int(deck_stamps.size() / 2), maxi(0, deck_stamps.size() - 1)]
 	for candidate_index in candidate_indexes:
-		if candidate_index < 0 or candidate_index >= deck_cards.size():
+		if candidate_index < 0 or candidate_index >= deck_stamps.size():
 			continue
-		var deck_card = deck_cards[candidate_index]
-		if !(deck_card is Dictionary):
+		var deck_stamp = deck_stamps[candidate_index]
+		if !(deck_stamp is Dictionary):
 			continue
-		var card_print: CardPrint = _get_print_for_deck_card(deck_card)
-		if card_print != null && !preview_prints.has(card_print):
-			preview_prints.append(card_print)
+		var stamp_print: StampPrint = _get_print_for_deck_stamp(deck_stamp)
+		if stamp_print != null && !preview_prints.has(stamp_print):
+			preview_prints.append(stamp_print)
 		if preview_prints.size() >= 3:
 			break
 	return preview_prints
 
-func _create_small_deck_preview_card(card_print: CardPrint) -> CardVisual:
-	var card_visual := CARD_VISUAL.instantiate() as CardVisual
-	card_visual.custom_minimum_size = CARD_VISUAL_SIZE
-	card_visual.size = CARD_VISUAL_SIZE
-	card_visual.set_hover_raise_enabled(false)
-	card_visual.set_card_print(card_print)
-	card_visual.set_face_down(false)
-	card_visual.set_collection_owned(true)
-	card_visual.set_rest_scale(Vector2.ONE * 0.38)
-	card_visual.draggable = false
-	card_visual.disabled = true
-	card_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return card_visual
+func _create_small_deck_preview_stamp(stamp_print: StampPrint) -> StampVisual:
+	var stamp_visual := STAMP_VISUAL.instantiate() as StampVisual
+	stamp_visual.custom_minimum_size = STAMP_VISUAL_SIZE
+	stamp_visual.size = STAMP_VISUAL_SIZE
+	stamp_visual.set_hover_raise_enabled(false)
+	stamp_visual.set_stamp_print(stamp_print)
+	stamp_visual.set_face_down(false)
+	stamp_visual.set_collection_owned(true)
+	stamp_visual.set_rest_scale(Vector2.ONE * 0.38)
+	stamp_visual.draggable = false
+	stamp_visual.disabled = true
+	stamp_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return stamp_visual
 
 func _create_circle_icon_button(text_value: String, tooltip: String) -> Button:
 	var button := Button.new()
@@ -2647,101 +2647,101 @@ func _on_delete_deck_pressed(deck_id: String) -> void:
 		_on_deck_editor_back_pressed()
 	_populate_saved_decks_list()
 
-func _get_print_for_deck_card(deck_card: Dictionary) -> CardPrint:
-	var print_id: String = str(deck_card.get("print_id", ""))
+func _get_print_for_deck_stamp(deck_stamp: Dictionary) -> StampPrint:
+	var print_id: String = str(deck_stamp.get("print_id", ""))
 	if !print_id.is_empty():
-		var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
-		if card_print != null:
-			return card_print
+		var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
+		if stamp_print != null:
+			return stamp_print
 
-	var card_code: String = str(deck_card.get("card_code", ""))
-	if card_code.is_empty():
-		var card: Card = CardLibrary.get_card(str(deck_card.get("card_name", "")))
-		if card != null:
-			card_code = PlayerCollectionStore.get_card_code(card)
+	var stamp_code: String = str(deck_stamp.get("stamp_code", ""))
+	if stamp_code.is_empty():
+		var stamp: Stamp = StampLibrary.get_stamp(str(deck_stamp.get("stamp_name", "")))
+		if stamp != null:
+			stamp_code = PlayerCollectionStore.get_stamp_code(stamp)
 
-	var variant_id: String = str(deck_card.get("variant_id", PlayerCollectionStore.DEFAULT_VARIANT_ID))
-	return CardPrintLibrary.get_print(CardPrintLibrary.get_print_id(card_code, variant_id))
+	var variant_id: String = str(deck_stamp.get("variant_id", PlayerCollectionStore.DEFAULT_VARIANT_ID))
+	return StampPrintLibrary.get_print(StampPrintLibrary.get_print_id(stamp_code, variant_id))
 
-func _get_deck_card_display_name(card: Card, card_print: CardPrint) -> String:
-	if card_print == null or card_print.variant_id == PlayerCollectionStore.DEFAULT_VARIANT_ID:
-		return card.card_name
-	return "%s - %s" % [card.card_name, card_print.get_display_name()]
+func _get_deck_stamp_display_name(stamp: Stamp, stamp_print: StampPrint) -> String:
+	if stamp_print == null or stamp_print.variant_id == PlayerCollectionStore.DEFAULT_VARIANT_ID:
+		return stamp.stamp_name
+	return "%s - %s" % [stamp.stamp_name, stamp_print.get_display_name()]
 
-func _create_deck_card_entry(print_id: String, slot: int) -> Dictionary:
-	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
-	var card: Card = CardPrintLibrary.get_card_for_print(card_print)
-	if card == null:
+func _create_deck_stamp_entry(print_id: String, slot: int) -> Dictionary:
+	var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
+	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
+	if stamp == null:
 		return {}
 
-	var owned_item: Dictionary = PlayerCollectionStore.get_owned_item_for_print(card_print)
-	var card_code: String = PlayerCollectionStore.get_card_code(card)
-	var variant_id: String = str(owned_item.get("variant_id", card_print.variant_id))
+	var owned_item: Dictionary = PlayerCollectionStore.get_owned_item_for_print(stamp_print)
+	var stamp_code: String = PlayerCollectionStore.get_stamp_code(stamp)
+	var variant_id: String = str(owned_item.get("variant_id", stamp_print.variant_id))
 	if variant_id.is_empty():
 		variant_id = PlayerCollectionStore.DEFAULT_VARIANT_ID
 
 	return {
 		"slot": slot,
-		"print_id": card_print.print_id,
-		"card_code": card_code,
-		"card_name": card.card_name,
+		"print_id": stamp_print.print_id,
+		"stamp_code": stamp_code,
+		"stamp_name": stamp.stamp_name,
 		"variant_id": variant_id,
-		"variant_name": str(owned_item.get("variant_name", card_print.get_display_name())),
+		"variant_name": str(owned_item.get("variant_name", stamp_print.get_display_name())),
 		"collection_instance_id": str(owned_item.get("instance_id", "")),
-		"item_def_key": str(owned_item.get("item_def_key", card_print.print_id)),
+		"item_def_key": str(owned_item.get("item_def_key", stamp_print.print_id)),
 		"steam_item_instance_id": str(owned_item.get("steam_item_instance_id", "")),
 		"steam_item_def_id": str(owned_item.get("steam_item_def_id", "")),
 	}
 
-func _can_add_card_to_deck(card: Card) -> bool:
-	if card == null:
+func _can_add_stamp_to_deck(stamp: Stamp) -> bool:
+	if stamp == null:
 		return false
 
-	return _get_selected_card_count(card) < MAX_COPIES_PER_CARD
+	return _get_selected_stamp_count(stamp) < MAX_COPIES_PER_STAMP
 
-func _get_selected_card_count(card: Card) -> int:
-	if card == null:
+func _get_selected_stamp_count(stamp: Stamp) -> int:
+	if stamp == null:
 		return 0
 
-	var card_code: String = PlayerCollectionStore.get_card_code(card)
+	var stamp_code: String = PlayerCollectionStore.get_stamp_code(stamp)
 	var count: int = 0
-	for deck_card in selected_deck_cards:
-		if deck_card is Dictionary && str(deck_card.get("card_code", "")) == card_code:
+	for deck_stamp in selected_deck_stamps:
+		if deck_stamp is Dictionary && str(deck_stamp.get("stamp_code", "")) == stamp_code:
 			count += 1
 	return count
 
-func _has_too_many_card_copies() -> bool:
-	var card_counts: Dictionary = {}
-	for deck_card in selected_deck_cards:
-		if !(deck_card is Dictionary):
+func _has_too_many_stamp_copies() -> bool:
+	var stamp_counts: Dictionary = {}
+	for deck_stamp in selected_deck_stamps:
+		if !(deck_stamp is Dictionary):
 			continue
 
-		var card_code: String = str(deck_card.get("card_code", "")).strip_edges()
-		if card_code.is_empty():
+		var stamp_code: String = str(deck_stamp.get("stamp_code", "")).strip_edges()
+		if stamp_code.is_empty():
 			continue
 
-		var next_count: int = int(card_counts.get(card_code, 0)) + 1
-		if next_count > MAX_COPIES_PER_CARD:
+		var next_count: int = int(stamp_counts.get(stamp_code, 0)) + 1
+		if next_count > MAX_COPIES_PER_STAMP:
 			return true
-		card_counts[card_code] = next_count
+		stamp_counts[stamp_code] = next_count
 	return false
 
-func _has_selected_seeker_card() -> bool:
-	for deck_card in selected_deck_cards:
-		if !(deck_card is Dictionary):
+func _has_selected_seeker_stamp() -> bool:
+	for deck_stamp in selected_deck_stamps:
+		if !(deck_stamp is Dictionary):
 			continue
 
-		var card_print: CardPrint = _get_print_for_deck_card(deck_card)
-		var print_card: Card = CardPrintLibrary.get_card_for_print(card_print)
-		if MoveRules.is_seeker_card(print_card):
+		var stamp_print: StampPrint = _get_print_for_deck_stamp(deck_stamp)
+		var print_stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
+		if MoveRules.is_seeker_stamp(print_stamp):
 			return true
 
-		var card: Card = CardLibrary.get_card(str(deck_card.get("card_name", "")))
-		if MoveRules.is_seeker_card(card):
+		var stamp: Stamp = StampLibrary.get_stamp(str(deck_stamp.get("stamp_name", "")))
+		if MoveRules.is_seeker_stamp(stamp):
 			return true
 
-		var card_by_code: Card = CardLibrary.get_card_by_code(str(deck_card.get("card_code", "")))
-		if MoveRules.is_seeker_card(card_by_code):
+		var stamp_by_code: Stamp = StampLibrary.get_stamp_by_code(str(deck_stamp.get("stamp_code", "")))
+		if MoveRules.is_seeker_stamp(stamp_by_code):
 			return true
 
 	return false
@@ -2752,70 +2752,70 @@ func _on_edit_deck_pressed(deck_data: Dictionary) -> void:
 	editing_deck_id = str(deck_data.get("deck_id", ""))
 	deck_name_edit.text = str(deck_data.get("name", ""))
 	_sync_deck_name_display()
-	selected_deck_cards.clear()
+	selected_deck_stamps.clear()
 	_ensure_selected_deck_slots()
 	var ownership_info: Dictionary = PlayerDeckStore.get_deck_ownership_info(deck_data)
-	editing_deck_has_missing_cards = int(ownership_info.get("missing_count", 0)) > 0
+	editing_deck_has_missing_stamps = int(ownership_info.get("missing_count", 0)) > 0
 
-	var cards: Array = []
-	if editing_deck_has_missing_cards:
-		cards = PlayerDeckStore.get_owned_cards_from_deck(deck_data)
+	var stamps: Array = []
+	if editing_deck_has_missing_stamps:
+		stamps = PlayerDeckStore.get_owned_stamps_from_deck(deck_data)
 	else:
-		var deck_cards = deck_data.get("cards", [])
-		if deck_cards is Array:
-			cards = deck_cards
+		var deck_stamps = deck_data.get("stamps", [])
+		if deck_stamps is Array:
+			stamps = deck_stamps
 
-	for index in range(cards.size()):
-		var deck_card = cards[index]
-		if deck_card is Dictionary:
-			var normalized_card: Dictionary = deck_card.duplicate(true)
-			var slot_index: int = int(normalized_card.get("slot", index))
+	for index in range(stamps.size()):
+		var deck_stamp = stamps[index]
+		if deck_stamp is Dictionary:
+			var normalized_stamp: Dictionary = deck_stamp.duplicate(true)
+			var slot_index: int = int(normalized_stamp.get("slot", index))
 			if slot_index < 0 or slot_index >= MAX_DECK_SIZE or !_is_deck_slot_empty(slot_index):
 				slot_index = _get_first_empty_deck_slot()
 			if slot_index == -1:
 				break
-			_set_deck_slot(slot_index, normalized_card)
+			_set_deck_slot(slot_index, normalized_stamp)
 
 	dragged_print_id = ""
-	hovered_deck_card_index = -1
-	_hide_remove_card_button()
-	_refresh_selected_deck_cards()
+	hovered_deck_stamp_index = -1
+	_hide_remove_stamp_button()
+	_refresh_selected_deck_stamps()
 	_update_deck_editor_state()
 	_show_page(current_page)
 
-func _on_deck_card_row_mouse_entered(deck_card_index: int, row_frame: Control) -> void:
-	if !is_creating_deck or editing_deck_has_missing_cards:
+func _on_deck_stamp_row_mouse_entered(deck_stamp_index: int, row_frame: Control) -> void:
+	if !is_creating_deck or editing_deck_has_missing_stamps:
 		return
 
-	hovered_deck_card_index = deck_card_index
+	hovered_deck_stamp_index = deck_stamp_index
 	var row_rect := row_frame.get_global_rect()
-	remove_card_button.global_position = Vector2(row_rect.end.x + 6.0, row_rect.position.y + row_rect.size.y * 0.5 - remove_card_button.size.y * 0.5)
-	remove_card_button.visible = true
-	remove_card_button.move_to_front()
-	remove_card_timer.start()
+	remove_stamp_button.global_position = Vector2(row_rect.end.x + 6.0, row_rect.position.y + row_rect.size.y * 0.5 - remove_stamp_button.size.y * 0.5)
+	remove_stamp_button.visible = true
+	remove_stamp_button.move_to_front()
+	remove_stamp_timer.start()
 
-func _on_remove_card_pressed() -> void:
-	if editing_deck_has_missing_cards:
-		_hide_remove_card_button()
+func _on_remove_stamp_pressed() -> void:
+	if editing_deck_has_missing_stamps:
+		_hide_remove_stamp_button()
 		return
 
-	if hovered_deck_card_index < 0 or hovered_deck_card_index >= selected_deck_cards.size():
-		_hide_remove_card_button()
+	if hovered_deck_stamp_index < 0 or hovered_deck_stamp_index >= selected_deck_stamps.size():
+		_hide_remove_stamp_button()
 		return
 
-	selected_deck_cards[hovered_deck_card_index] = null
-	_reindex_selected_deck_cards()
+	selected_deck_stamps[hovered_deck_stamp_index] = null
+	_reindex_selected_deck_stamps()
 
-	hovered_deck_card_index = -1
-	_hide_remove_card_button()
-	_refresh_selected_deck_cards()
+	hovered_deck_stamp_index = -1
+	_hide_remove_stamp_button()
+	_refresh_selected_deck_stamps()
 	_update_deck_editor_state()
 	_show_page(current_page)
 
-func _hide_remove_card_button() -> void:
-	if remove_card_button == null:
+func _hide_remove_stamp_button() -> void:
+	if remove_stamp_button == null:
 		return
 
-	remove_card_button.visible = false
-	if remove_card_timer != null && !remove_card_timer.is_stopped():
-		remove_card_timer.stop()
+	remove_stamp_button.visible = false
+	if remove_stamp_timer != null && !remove_stamp_timer.is_stopped():
+		remove_stamp_timer.stop()

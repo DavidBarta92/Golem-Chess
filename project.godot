@@ -22,8 +22,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-CardLibrary="*res://Scripts/CardLibrary.gd"
-CardPrintLibrary="*res://Scripts/CardPrintLibrary.gd"
+StampLibrary="*res://Scripts/StampLibrary.gd"
+StampPrintLibrary="*res://Scripts/StampPrintLibrary.gd"
 PlayerCollectionStore="*res://Scripts/PlayerCollectionStore.gd"
 PlayerDeckStore="*res://Scripts/PlayerDeckStore.gd"
 PlayerProgressStore="*res://Scripts/PlayerProgressStore.gd"
@@ -44,7 +44,7 @@ window/size/min_height=576
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/card_pattern_editor/plugin.cfg")
+enabled=PackedStringArray("res://addons/stamp_pattern_editor/plugin.cfg")
 
 [gui]
 

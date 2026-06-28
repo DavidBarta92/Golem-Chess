@@ -9,7 +9,7 @@ var fragment_group_bottom: String = "bottom"
 var fragment_group_top: String = "top"
 var fragment_group_pending: String = "pending"
 var default_piece_texture_provider: Callable
-var card_piece_texture_provider: Callable
+var stamp_piece_texture_provider: Callable
 
 func configure(config: Dictionary) -> void:
 	board_size = int(config.get("board_size", board_size))
@@ -21,7 +21,7 @@ func configure(config: Dictionary) -> void:
 	fragment_group_top = str(config.get("fragment_group_top", fragment_group_top))
 	fragment_group_pending = str(config.get("fragment_group_pending", fragment_group_pending))
 	default_piece_texture_provider = config.get("default_piece_texture_provider", default_piece_texture_provider)
-	card_piece_texture_provider = config.get("card_piece_texture_provider", card_piece_texture_provider)
+	stamp_piece_texture_provider = config.get("stamp_piece_texture_provider", stamp_piece_texture_provider)
 
 func get_hand_names_from_state(player_hands: Dictionary, player_id: int) -> Array:
 	if player_hands.has(player_id):
@@ -39,11 +39,11 @@ func get_int_from_state_dict(data: Dictionary, player_id: int, default_value: in
 		return int(data[string_key])
 	return default_value
 
-func get_card_names_from_hand(cards: Array[Card]) -> Array[String]:
+func get_stamp_names_from_hand(stamps: Array[Stamp]) -> Array[String]:
 	var names: Array[String] = []
-	for card: Card in cards:
-		if card:
-			names.append(card.card_name)
+	for stamp: Stamp in stamps:
+		if stamp:
+			names.append(stamp.stamp_name)
 	return names
 
 func parse_player_names(player_names: Dictionary, current_player_names: Dictionary) -> Dictionary:
@@ -132,7 +132,7 @@ func parse_last_move(last_move: Dictionary) -> Dictionary:
 		"visible_to_enemy": bool(last_move.get("visible_to_enemy", true)),
 		"show_arrow": bool(last_move.get("show_arrow", true)),
 		"captured_piece_color": int(last_move.get("captured_piece_color", 0)),
-		"captured_card_name": str(last_move.get("captured_card_name", "")),
+		"captured_stamp_name": str(last_move.get("captured_stamp_name", "")),
 	}
 
 func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
@@ -144,11 +144,11 @@ func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
 		var piece_position: Vector2 = value_to_vector2(data.position, invalid_board_pos)
 		var piece: Piece = Piece.new(piece_position, piece_color)
 		piece.hidden_from_viewer = bool(data.get("hidden_from_viewer", false))
-		var card_name: String = str(data.card_name)
-		if !card_name.is_empty():
-			var card: Card = CardLibrary.duplicate_card(card_name)
-			if card:
-				piece.attach_card(card)
+		var stamp_name: String = str(data.stamp_name)
+		if !stamp_name.is_empty():
+			var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
+			if stamp:
+				piece.attach_stamp(stamp)
 				piece.turns_remaining = int(data.turns_remaining)
 				piece.exhausted_this_turn = bool(data.get("exhausted_this_turn", false))
 		piece.respawn_cooldown_turns = int(data.get("respawn_cooldown_turns", 0))
@@ -194,22 +194,22 @@ func parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals: A
 		})
 	return animations
 
-func get_state_card_expiration_events(previous_snapshot: Dictionary, recent_card_expirations: Array, piece_objects: Dictionary) -> Array[Dictionary]:
+func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_stamp_expirations: Array, piece_objects: Dictionary) -> Array[Dictionary]:
 	var expiration_events: Array[Dictionary] = []
 	var known_expirations: Dictionary = {}
-	for expiration_value in recent_card_expirations:
+	for expiration_value in recent_stamp_expirations:
 		if !(expiration_value is Dictionary):
 			continue
 
 		var expiration: Dictionary = (expiration_value as Dictionary).duplicate(true)
 		var board_pos: Vector2 = value_to_vector2(expiration.get("piece_pos", invalid_board_pos), invalid_board_pos)
-		var card_name: String = str(expiration.get("card_name", ""))
-		if !is_valid_position(board_pos) or card_name.is_empty():
+		var stamp_name: String = str(expiration.get("stamp_name", ""))
+		if !is_valid_position(board_pos) or stamp_name.is_empty():
 			continue
 
 		expiration["piece_pos"] = board_pos
 		expiration_events.append(expiration)
-		known_expirations[get_card_expiration_signature(board_pos, card_name, int(expiration.get("player_id", -1)))] = true
+		known_expirations[get_stamp_expiration_signature(board_pos, stamp_name, int(expiration.get("player_id", -1)))] = true
 
 	for position_value in previous_snapshot:
 		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
@@ -217,40 +217,40 @@ func get_state_card_expiration_events(previous_snapshot: Dictionary, recent_card
 			continue
 
 		var previous_state: Dictionary = previous_snapshot[position_value]
-		var expired_card_name: String = str(previous_state.get("card_name", ""))
-		if expired_card_name.is_empty():
+		var expired_stamp_name: String = str(previous_state.get("stamp_name", ""))
+		if expired_stamp_name.is_empty():
 			continue
 
 		var piece: Piece = piece_objects[board_pos] as Piece
-		if piece == null or piece.attached_card != null:
+		if piece == null or piece.attached_stamp != null:
 			continue
 		if int(previous_state.get("color", 0)) != piece.color:
 			continue
 
 		var player_id: int = BoardConfig.get_player_id_for_color(piece.color)
-		var signature: String = get_card_expiration_signature(board_pos, expired_card_name, player_id)
+		var signature: String = get_stamp_expiration_signature(board_pos, expired_stamp_name, player_id)
 		if known_expirations.has(signature):
 			continue
 
 		expiration_events.append({
 			"player_id": player_id,
-			"card_name": expired_card_name,
+			"stamp_name": expired_stamp_name,
 			"piece_pos": board_pos,
 		})
 		known_expirations[signature] = true
 
 	return expiration_events
 
-func get_card_expiration_signature(piece_pos: Vector2, card_name: String, player_id: int) -> String:
-	return "%d,%d:%d:%s" % [int(piece_pos.x), int(piece_pos.y), player_id, card_name]
+func get_stamp_expiration_signature(piece_pos: Vector2, stamp_name: String, player_id: int) -> String:
+	return "%d,%d:%d:%s" % [int(piece_pos.x), int(piece_pos.y), player_id, stamp_name]
 
-func collect_piece_revert_animations(previous_snapshot: Dictionary, card_expiration_events: Array, piece_objects: Dictionary, has_received_state: bool, skip_visual_animations: bool) -> Array[Dictionary]:
+func collect_piece_revert_animations(previous_snapshot: Dictionary, stamp_expiration_events: Array, piece_objects: Dictionary, has_received_state: bool, skip_visual_animations: bool) -> Array[Dictionary]:
 	var animations: Array[Dictionary] = []
 	if !has_received_state or skip_visual_animations:
 		return animations
 
 	var used_previous_positions: Dictionary = {}
-	for expiration_value in card_expiration_events:
+	for expiration_value in stamp_expiration_events:
 		if !(expiration_value is Dictionary):
 			continue
 
@@ -259,12 +259,12 @@ func collect_piece_revert_animations(previous_snapshot: Dictionary, card_expirat
 		if !is_valid_position(board_pos) or !piece_objects.has(board_pos):
 			continue
 
-		var expired_card_name: String = str(expiration.get("card_name", ""))
-		if expired_card_name.is_empty():
+		var expired_stamp_name: String = str(expiration.get("stamp_name", ""))
+		if expired_stamp_name.is_empty():
 			continue
 
 		var piece: Piece = piece_objects[board_pos] as Piece
-		if piece == null or piece.attached_card != null:
+		if piece == null or piece.attached_stamp != null:
 			continue
 
 		var expiration_player_id: int = int(expiration.get("player_id", -1))
@@ -275,7 +275,7 @@ func collect_piece_revert_animations(previous_snapshot: Dictionary, card_expirat
 			previous_snapshot,
 			used_previous_positions,
 			piece.color,
-			expired_card_name,
+			expired_stamp_name,
 			board_pos
 		)
 		if previous_state.is_empty():
@@ -288,10 +288,10 @@ func collect_piece_revert_animations(previous_snapshot: Dictionary, card_expirat
 
 	return animations
 
-func find_previous_expiring_piece_state(previous_snapshot: Dictionary, used_previous_positions: Dictionary, piece_color: int, expired_card_name: String, preferred_pos: Vector2) -> Dictionary:
+func find_previous_expiring_piece_state(previous_snapshot: Dictionary, used_previous_positions: Dictionary, piece_color: int, expired_stamp_name: String, preferred_pos: Vector2) -> Dictionary:
 	if previous_snapshot.has(preferred_pos) and !used_previous_positions.has(preferred_pos):
 		var preferred_state: Dictionary = previous_snapshot[preferred_pos]
-		if int(preferred_state.get("color", 0)) == piece_color and str(preferred_state.get("card_name", "")) == expired_card_name:
+		if int(preferred_state.get("color", 0)) == piece_color and str(preferred_state.get("stamp_name", "")) == expired_stamp_name:
 			used_previous_positions[preferred_pos] = true
 			return preferred_state
 
@@ -303,7 +303,7 @@ func find_previous_expiring_piece_state(previous_snapshot: Dictionary, used_prev
 		var previous_state: Dictionary = previous_snapshot[position_value]
 		if int(previous_state.get("color", 0)) != piece_color:
 			continue
-		if str(previous_state.get("card_name", "")) != expired_card_name:
+		if str(previous_state.get("stamp_name", "")) != expired_stamp_name:
 			continue
 
 		used_previous_positions[previous_pos] = true
@@ -361,50 +361,50 @@ func get_hidden_captured_piece_texture(current_last_move: Dictionary) -> Texture
 	if captured_color == 0:
 		return null
 
-	var captured_card_name: String = str(current_last_move.get("captured_card_name", ""))
-	if !captured_card_name.is_empty() and card_piece_texture_provider.is_valid():
-		var captured_card: Card = CardLibrary.get_card(captured_card_name)
-		if captured_card != null:
-			var card_texture: Texture2D = card_piece_texture_provider.call(captured_card, captured_color) as Texture2D
-			if card_texture != null:
-				return card_texture
+	var captured_stamp_name: String = str(current_last_move.get("captured_stamp_name", ""))
+	if !captured_stamp_name.is_empty() and stamp_piece_texture_provider.is_valid():
+		var captured_stamp: Stamp = StampLibrary.get_stamp(captured_stamp_name)
+		if captured_stamp != null:
+			var stamp_texture: Texture2D = stamp_piece_texture_provider.call(captured_stamp, captured_color) as Texture2D
+			if stamp_texture != null:
+				return stamp_texture
 
 	if default_piece_texture_provider.is_valid():
 		return default_piece_texture_provider.call(captured_color) as Texture2D
 	return null
 
-func get_hidden_card_counts_from_state(hidden_cards: Array) -> Dictionary:
+func get_hidden_stamp_counts_from_state(hidden_stamps: Array) -> Dictionary:
 	var counts: Dictionary = {}
-	for hidden_card_value in hidden_cards:
-		if !(hidden_card_value is Dictionary):
+	for hidden_stamp_value in hidden_stamps:
+		if !(hidden_stamp_value is Dictionary):
 			continue
 
-		var hidden_card_data: Dictionary = hidden_card_value
-		var owner_player_id: int = int(hidden_card_data.get("owner_player_id", -1))
-		var card_name: String = str(hidden_card_data.get("card_name", ""))
-		if owner_player_id < 0 or card_name.is_empty():
+		var hidden_stamp_data: Dictionary = hidden_stamp_value
+		var owner_player_id: int = int(hidden_stamp_data.get("owner_player_id", -1))
+		var stamp_name: String = str(hidden_stamp_data.get("stamp_name", ""))
+		if owner_player_id < 0 or stamp_name.is_empty():
 			continue
 
-		var signature: String = get_hidden_card_signature(owner_player_id, card_name)
+		var signature: String = get_hidden_stamp_signature(owner_player_id, stamp_name)
 		counts[signature] = int(counts.get(signature, 0)) + 1
 
 	return counts
 
-func get_new_hidden_card_counts(hidden_cards: Array, previous_hidden_card_counts: Dictionary) -> Dictionary:
-	var current_counts: Dictionary = get_hidden_card_counts_from_state(hidden_cards)
+func get_new_hidden_stamp_counts(hidden_stamps: Array, previous_hidden_stamp_counts: Dictionary) -> Dictionary:
+	var current_counts: Dictionary = get_hidden_stamp_counts_from_state(hidden_stamps)
 	var new_counts: Dictionary = {}
 	for signature in current_counts:
 		var current_count: int = int(current_counts.get(signature, 0))
-		var previous_count: int = int(previous_hidden_card_counts.get(signature, 0))
+		var previous_count: int = int(previous_hidden_stamp_counts.get(signature, 0))
 		var added_count: int = current_count - previous_count
 		if added_count > 0:
 			new_counts[signature] = added_count
 	return new_counts
 
-func get_hidden_card_signature(owner_player_id: int, card_name: String) -> String:
-	return "%d:%s" % [owner_player_id, card_name]
+func get_hidden_stamp_signature(owner_player_id: int, stamp_name: String) -> String:
+	return "%d:%s" % [owner_player_id, stamp_name]
 
-func collect_state_attach_animations(previous_snapshot: Dictionary, piece_objects: Dictionary, hidden_cards: Array, previous_hidden_card_counts: Dictionary, own_player_id: int, has_received_state: bool, skip_visual_animations: bool) -> Array[Dictionary]:
+func collect_state_attach_animations(previous_snapshot: Dictionary, piece_objects: Dictionary, hidden_stamps: Array, previous_hidden_stamp_counts: Dictionary, own_player_id: int, has_received_state: bool, skip_visual_animations: bool) -> Array[Dictionary]:
 	var animations: Array[Dictionary] = []
 	if !has_received_state or skip_visual_animations:
 		return animations
@@ -416,18 +416,18 @@ func collect_state_attach_animations(previous_snapshot: Dictionary, piece_object
 			continue
 
 		var piece: Piece = piece_objects[position_value] as Piece
-		if piece == null or piece.attached_card == null:
+		if piece == null or piece.attached_stamp == null:
 			continue
 
 		var previous_state: Dictionary = previous_snapshot[board_pos]
 		if int(previous_state.get("color", 0)) != piece.color:
 			continue
-		if str(previous_state.get("card_name", "")) == piece.attached_card.card_name:
+		if str(previous_state.get("stamp_name", "")) == piece.attached_stamp.stamp_name:
 			continue
 
 		animations.append({
 			"position": board_pos,
-			"card": piece.attached_card,
+			"stamp": piece.attached_stamp,
 			"start_texture": get_previous_state_texture(previous_state, piece.color),
 		})
 		animated_positions[board_pos] = true
@@ -437,33 +437,33 @@ func collect_state_attach_animations(previous_snapshot: Dictionary, piece_object
 		animated_positions,
 		previous_snapshot,
 		piece_objects,
-		hidden_cards,
-		previous_hidden_card_counts,
+		hidden_stamps,
+		previous_hidden_stamp_counts,
 		own_player_id
 	)
 
 	return animations
 
-func append_hidden_invisibility_attach_animations(animations: Array[Dictionary], animated_positions: Dictionary, previous_snapshot: Dictionary, piece_objects: Dictionary, hidden_cards: Array, previous_hidden_card_counts: Dictionary, own_player_id: int) -> void:
+func append_hidden_invisibility_attach_animations(animations: Array[Dictionary], animated_positions: Dictionary, previous_snapshot: Dictionary, piece_objects: Dictionary, hidden_stamps: Array, previous_hidden_stamp_counts: Dictionary, own_player_id: int) -> void:
 	var used_positions: Dictionary = animated_positions.duplicate()
-	var new_hidden_card_counts: Dictionary = get_new_hidden_card_counts(hidden_cards, previous_hidden_card_counts)
-	for hidden_card_value in hidden_cards:
-		if !(hidden_card_value is Dictionary):
+	var new_hidden_stamp_counts: Dictionary = get_new_hidden_stamp_counts(hidden_stamps, previous_hidden_stamp_counts)
+	for hidden_stamp_value in hidden_stamps:
+		if !(hidden_stamp_value is Dictionary):
 			continue
 
-		var hidden_card_data: Dictionary = hidden_card_value
-		var owner_player_id: int = int(hidden_card_data.get("owner_player_id", -1))
+		var hidden_stamp_data: Dictionary = hidden_stamp_value
+		var owner_player_id: int = int(hidden_stamp_data.get("owner_player_id", -1))
 		if owner_player_id < 0 or owner_player_id == own_player_id:
 			continue
 
-		var card_name: String = str(hidden_card_data.get("card_name", ""))
-		var hidden_signature: String = get_hidden_card_signature(owner_player_id, card_name)
-		var new_count: int = int(new_hidden_card_counts.get(hidden_signature, 0))
+		var stamp_name: String = str(hidden_stamp_data.get("stamp_name", ""))
+		var hidden_signature: String = get_hidden_stamp_signature(owner_player_id, stamp_name)
+		var new_count: int = int(new_hidden_stamp_counts.get(hidden_signature, 0))
 		if new_count <= 0:
 			continue
 
-		var card: Card = CardLibrary.duplicate_card(card_name)
-		if card == null or card.effect_type != CardEffect.TYPE_INVISIBLE_TO_ENEMY:
+		var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
+		if stamp == null or stamp.effect_type != StampEffect.TYPE_INVISIBLE_TO_ENEMY:
 			continue
 
 		var piece_color: int = BoardConfig.get_color_for_player_id(owner_player_id)
@@ -474,13 +474,13 @@ func append_hidden_invisibility_attach_animations(animations: Array[Dictionary],
 		var previous_state: Dictionary = previous_snapshot[hidden_pos]
 		animations.append({
 			"position": hidden_pos,
-			"card": card,
+			"stamp": stamp,
 			"start_texture": get_previous_state_texture(previous_state, piece_color),
 			"piece_color": piece_color,
 			"hide_after_attach": true,
 		})
 		used_positions[hidden_pos] = true
-		new_hidden_card_counts[hidden_signature] = new_count - 1
+		new_hidden_stamp_counts[hidden_signature] = new_count - 1
 
 func find_recently_hidden_piece_position(previous_snapshot: Dictionary, piece_objects: Dictionary, used_positions: Dictionary, piece_color: int) -> Vector2:
 	for position_value in previous_snapshot:
@@ -497,8 +497,8 @@ func find_recently_hidden_piece_position(previous_snapshot: Dictionary, piece_ob
 		var previous_state: Dictionary = previous_snapshot[position_value]
 		if int(previous_state.get("color", 0)) != piece_color:
 			continue
-		var previous_card_name: String = str(previous_state.get("card_name", ""))
-		if !previous_card_name.is_empty():
+		var previous_stamp_name: String = str(previous_state.get("stamp_name", ""))
+		if !previous_stamp_name.is_empty():
 			continue
 		return board_pos
 

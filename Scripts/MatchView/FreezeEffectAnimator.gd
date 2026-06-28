@@ -216,19 +216,19 @@ func get_visual_signature(board_pos: Vector2) -> String:
 		return ""
 
 	var player_id: int = get_player_id_for_color(piece.color)
-	var is_frozen_square: bool = CardEffectResolver.is_square_frozen(get_board_effects(), board_pos, player_id)
+	var is_frozen_square: bool = StampEffectResolver.is_square_frozen(get_board_effects(), board_pos, player_id)
 	var is_exhausted_piece: bool = piece.exhausted_this_turn
 	if !is_frozen_square and !is_exhausted_piece:
 		return ""
 
-	var attached_card_name: String = ""
-	if piece.attached_card != null:
-		attached_card_name = piece.attached_card.card_name
+	var attached_stamp_name: String = ""
+	if piece.attached_stamp != null:
+		attached_stamp_name = piece.attached_stamp.stamp_name
 
 	return "%s:%s:%s:%s:%s" % [
 		board_pos,
 		piece.color,
-		attached_card_name,
+		attached_stamp_name,
 		is_exhausted_piece,
 		is_frozen_square,
 	]

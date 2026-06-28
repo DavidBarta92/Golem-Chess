@@ -149,19 +149,19 @@ func show_hover_piece_details(board_pos: Vector2) -> void:
 		return
 
 	var piece: Piece = match_board.piece_objects[board_pos] as Piece
-	if piece.attached_card == null:
+	if piece.attached_stamp == null:
 		return
 
-	var preview_card: Card = piece.attached_card.duplicate() as Card
-	if preview_card:
-		preview_card.duration = piece.turns_remaining
-		var preview_texture: Texture2D = match_board.get_card_piece_preview_texture(preview_card, piece.color)
+	var preview_stamp: Stamp = piece.attached_stamp.duplicate() as Stamp
+	if preview_stamp:
+		preview_stamp.duration = piece.turns_remaining
+		var preview_texture: Texture2D = match_board.get_stamp_piece_preview_texture(preview_stamp, piece.color)
 		var duration_text: String = "INF" if piece.turns_remaining < 0 else str(piece.turns_remaining)
-		match_board.get_card_hover_preview_controller().show_piece_details(preview_card, preview_texture, duration_text)
+		match_board.get_stamp_hover_preview_controller().show_piece_details(preview_stamp, preview_texture, duration_text)
 	update_hover_duration_label_position()
 
 func hide_hover_piece_details() -> void:
-	match_board.get_card_hover_preview_controller().hide()
+	match_board.get_stamp_hover_preview_controller().hide()
 
 func update_hover_duration_label_position() -> void:
 	if !match_board.hover_duration_label or !match_board.hover_duration_label.visible:
@@ -170,11 +170,11 @@ func update_hover_duration_label_position() -> void:
 		return
 
 	var piece_screen_position: Vector2 = match_board.get_board_position_screen_position(match_board.hovered_piece)
-	match_board.get_card_hover_preview_controller().update_duration_label_position(piece_screen_position)
+	match_board.get_stamp_hover_preview_controller().update_duration_label_position(piece_screen_position)
 
-func show_hover_piece_preview(card: Card, piece_color: int) -> void:
-	var preview_texture: Texture2D = match_board.get_card_piece_preview_texture(card, piece_color)
-	match_board.get_card_hover_preview_controller().show_piece_preview(preview_texture)
+func show_hover_piece_preview(stamp: Stamp, piece_color: int) -> void:
+	var preview_texture: Texture2D = match_board.get_stamp_piece_preview_texture(stamp, piece_color)
+	match_board.get_stamp_hover_preview_controller().show_piece_preview(preview_texture)
 
 func show_options() -> void:
 	match_board.moves = match_board.get_moves(match_board.selected_piece)

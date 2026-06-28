@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="StampPrint" format=3]
+
+[ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="1"]
+[ext_resource type="Texture2D" path="res://Assets/stamp_base-1.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+print_id = "advocate.foil"
+stamp_code = "advocate"
+variant_id = "foil"
+variant_name = "Foil"
+stamp_art = ExtResource("2")
+stamp_shimmer_enabled = true
+grant_in_default_collection = true
+default_collection_quantity = 2

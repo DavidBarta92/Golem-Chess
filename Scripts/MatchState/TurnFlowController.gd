@@ -11,12 +11,12 @@ func configure(config: Dictionary) -> void:
 
 func has_pending_visual_processes() -> bool:
 	return (
-		match_board.active_card_attach_process_count > 0
+		match_board.active_stamp_attach_process_count > 0
 		or match_board.active_piece_revert_animation_count > 0
 		or match_board.active_piece_move_animation_count > 0
 		or match_board.active_piece_shatter_animation_count > 0
 		or match_board.active_bomb_warning_animation_count > 0
-		or match_board.get_card_animation_controller().has_pending_animations()
+		or match_board.get_stamp_animation_controller().has_pending_animations()
 		or !match_board.pending_piece_revert_animations.is_empty()
 	)
 
@@ -28,17 +28,17 @@ func can_switch_action_now() -> bool:
 	var owner_color: int = match_board.get_controllable_color()
 	return match_board.can_turn_page_locally(owner_color)
 
-func has_tutorial_allowed_exchange_card(owner_color: int) -> bool:
+func has_tutorial_allowed_exchange_stamp(owner_color: int) -> bool:
 	if !match_board.tutorial_constraints_enabled:
 		return true
 
-	var hand_cards: Array[Card] = match_board.get_card_hand(owner_color)
-	for card: Card in hand_cards:
-		if card == null:
+	var hand_stamps: Array[Stamp] = match_board.get_stamp_hand(owner_color)
+	for stamp: Stamp in hand_stamps:
+		if stamp == null:
 			continue
-		if match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_EXCHANGE_CARD, {
+		if match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_EXCHANGE_STAMP, {
 			"owner_color": owner_color,
-			"card_name": card.card_name,
+			"stamp_name": stamp.stamp_name,
 		}):
 			return true
 	return false
@@ -46,29 +46,29 @@ func has_tutorial_allowed_exchange_card(owner_color: int) -> bool:
 func can_attach_action_now() -> bool:
 	if !match_board.can_control_current_turn():
 		return false
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_CARD):
+	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_STAMP):
 		return false
 
 	var owner_color: int = match_board.get_controllable_color()
-	var hand_cards: Array[Card] = match_board.get_card_hand(owner_color)
-	if hand_cards.is_empty():
+	var hand_stamps: Array[Stamp] = match_board.get_stamp_hand(owner_color)
+	if hand_stamps.is_empty():
 		return false
 
 	for position_value in match_board.piece_objects:
 		var piece: Piece = match_board.piece_objects[position_value] as Piece
-		if piece == null or piece.color != owner_color or piece.attached_card != null:
+		if piece == null or piece.color != owner_color or piece.attached_stamp != null:
 			continue
 
-		for card: Card in hand_cards:
-			if !MoveRules.card_can_be_used(card):
+		for stamp: Stamp in hand_stamps:
+			if !MoveRules.stamp_can_be_used(stamp):
 				continue
-			if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_CARD, {
+			if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_STAMP, {
 				"owner_color": owner_color,
 				"piece_pos": position_value,
-				"card_name": card.card_name,
+				"stamp_name": stamp.stamp_name,
 			}):
 				continue
-			if MoveRules.can_attach_card_for_turn(match_board.piece_objects, owner_color, card):
+			if MoveRules.can_attach_stamp_for_turn(match_board.piece_objects, owner_color, stamp):
 				return true
 
 	return false
@@ -171,16 +171,16 @@ func end_current_turn_locally() -> void:
 	match_board.local_auto_end_turn_pending = false
 	var ending_color: int = match_board.get_current_turn_color()
 	var ending_player_id: int = match_board.get_player_id_for_color(ending_color)
-	match_board.get_card_hand_state_controller().clear_exchanged_card_names_this_turn(ending_color)
+	match_board.get_stamp_hand_state_controller().clear_exchanged_stamp_names_this_turn(ending_color)
 	match_board.get_local_state_mutator().tick_board_effects()
 	match_board.get_local_state_mutator().clear_piece_exhaustion_for_color(ending_color)
 	match_board.completed_turn_counts[ending_player_id] = int(match_board.completed_turn_counts.get(ending_player_id, 0)) + 1
 	match_board.white = !match_board.white
-	match_board.get_turn_action_state_controller().reset_current_turn_card_attach()
+	match_board.get_turn_action_state_controller().reset_current_turn_stamp_attach()
 	match_board.state = false
 	match_board.delete_dots()
 	match_board.hide_hover_piece_details()
-	match_board.update_card_presentation()
+	match_board.update_stamp_presentation()
 	match_board.display_board()
 	match_board.turn_ended.emit(ending_color, match_board.get_current_turn_color())
 	match_board.finish_if_current_player_has_no_valid_turn()

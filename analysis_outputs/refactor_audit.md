@@ -7,7 +7,7 @@ Date: 2026-05-10
 Az elso audit alapjan nem egy nagy, mindent atiro refaktor lenne a leghatekonyabb, hanem egy kis lepesekben vegzett tisztitas. A legfontosabb teendok:
 
 1. `Scenes/chess.gd`: tul sok felelosseget visz egyszerre, erdemes belole eloszor a board/piece renderelest, majd a kartya-hand UI-t es a szerverallapot-parse logikat kivenni.
-2. `Scenes/Collection.gd`: a masik fo refaktorcelpont. Egy fajlban van a scene binding, generated UI, deck editing, card browser, pack vasarlas/nyitas es progress UI.
+2. `Scenes/Collection.gd`: a masik fo refaktorcelpont. Egy fajlban van a scene binding, generated UI, deck editing, stamp browser, pack vasarlas/nyitas es progress UI.
 3. Het darab tracked `*.tmp` scene fajl van a repoban; ezek valoszinuleg torolheto editor-maradvanyok.
 4. Van konkret regi/halott kod: `_create_saved_deck_row_old()` a `Collection.gd`-ben, illetve `if false && ...` blokkok a `NetworkGameHost.gd`-ben.
 5. Sok unconditional `print()` maradt aktiv gameplay/network pathokon; ezeket erdemes debug flag moge tenni.
@@ -38,11 +38,11 @@ The codebase is still compact enough to refactor safely, but several scripts hav
 
 Top priorities:
 
-1. Split `Scenes/chess.gd` responsibilities. It is 2706 lines with 208 functions and contains board rendering, UI, input, local game flow, server-state parsing, card animation, and move helpers.
-2. Split `Scenes/Collection.gd` responsibilities. It is 1975 lines with 89 functions and now mixes scene binding, generated UI, card browsing, deck editing, pack purchase/opening, progress display, and layout behavior.
+1. Split `Scenes/chess.gd` responsibilities. It is 2706 lines with 208 functions and contains board rendering, UI, input, local game flow, server-state parsing, stamp animation, and move helpers.
+2. Split `Scenes/Collection.gd` responsibilities. It is 1975 lines with 89 functions and now mixes scene binding, generated UI, stamp browsing, deck editing, pack purchase/opening, progress display, and layout behavior.
 3. Remove tracked temporary scene files. Seven `*.tmp` files are currently tracked by git.
 4. Remove or gate runtime debug prints. Network/gameplay paths still emit many unconditional `print()` calls.
-5. Consolidate duplicated turn/card/state logic between `NetworkGameHost.gd`, `AIStateSimulator.gd`, `MoveRules.gd`, and `Scenes/chess.gd`.
+5. Consolidate duplicated turn/stamp/state logic between `NetworkGameHost.gd`, `AIStateSimulator.gd`, `MoveRules.gd`, and `Scenes/chess.gd`.
 
 Godot CLI validation could not be run from this environment because `godot` is not on PATH.
 
@@ -53,10 +53,10 @@ Godot CLI validation could not be run from this environment because `godot` is n
 | `Scenes/chess.gd` | 2706 | 208 | High | Central gameplay scene with too many responsibilities. |
 | `Scenes/Collection.gd` | 1975 | 89 | High | UI, data operations, pack economy, deck editing, and responsive layout are mixed. |
 | `Scripts/AIMoveEvaluator.gd` | 1182 | 60 | Medium/High | Scoring logic is large, but domain focused. Refactor after behavior checks. |
-| `Scripts/NetworkGameHost.gd` | 1133 | 72 | High | Authoritative game flow, serialization, logging, and card lifecycle logic are mixed. |
-| `Scripts/CardEffectResolver.gd` | 723 | 47 | Medium/High | Effect handling is domain focused but shares logic with host/simulator. |
+| `Scripts/NetworkGameHost.gd` | 1133 | 72 | High | Authoritative game flow, serialization, logging, and stamp lifecycle logic are mixed. |
+| `Scripts/StampEffectResolver.gd` | 723 | 47 | Medium/High | Effect handling is domain focused but shares logic with host/simulator. |
 | `Scripts/MatchCsvLogger.gd` | 577 | 32 | Medium | Logging normalization overlaps with other serialization helpers. |
-| `Scripts/CardVisual.gd` | 561 | 45 | Medium | Visual behavior is sizeable but mostly isolated. |
+| `Scripts/StampVisual.gd` | 561 | 45 | Medium | Visual behavior is sizeable but mostly isolated. |
 | `Scripts/AIStateSimulator.gd` | 517 | 35 | Medium/High | Mirrors real game rules; divergence risk is important. |
 
 ## Immediate Cleanup Candidates
@@ -110,16 +110,16 @@ Unconditional prints remain in active runtime paths:
 - `Scenes/chess.gd`: 13 debug prints
 - `Scenes/Multiplayer.gd`: 26 debug prints
 - `Scripts/NetworkGameHost.gd`: 22 debug prints
-- `Scripts/CardEffectResolver.gd`: 10 debug prints
+- `Scripts/StampEffectResolver.gd`: 10 debug prints
 - `Scripts/DeckManager.gd`: 7 debug prints
 - `Scripts/Piece.gd`: 4 debug prints
-- smaller counts in `CardLibrary.gd`, `GameController.gd`, `JoinMenu.gd`, `CardPrintLibrary.gd`
+- smaller counts in `StampLibrary.gd`, `GameController.gd`, `JoinMenu.gd`, `StampPrintLibrary.gd`
 
 Recommended action:
 
 - Add a small `DebugLog` helper or `GameConfig.debug_logging_enabled`.
 - Keep warnings/errors for real failure cases.
-- Gate verbose per-move/per-card logs.
+- Gate verbose per-move/per-stamp logs.
 
 ## Main Refactor Targets
 
@@ -130,11 +130,11 @@ Current responsibilities observed:
 - Board setup and tile rendering
 - Piece rendering and marker rendering
 - Mouse/input handling
-- Card hand setup, drag/drop, reorder, hover, deck visual, hidden-card previews
+- Stamp hand setup, drag/drop, reorder, hover, deck visual, hidden-stamp previews
 - Local turn flow
 - Server action sending
 - Server state parsing
-- Card transfer/expiration animations
+- Stamp transfer/expiration animations
 - Winner/game-over handling
 - AI-vs-AI batch transition handling
 - Board effect and last-move marker rendering
@@ -142,7 +142,7 @@ Current responsibilities observed:
 Recommended extraction order:
 
 1. `BoardView.gd`: board tile rendering, piece rendering, move dots, selected/last-move markers.
-2. `CardHandView.gd`: hand/deck visuals, drag/drop signals, hover preview.
+2. `StampHandView.gd`: hand/deck visuals, drag/drop signals, hover preview.
 3. `GameStateViewAdapter.gd`: parse server state dictionaries into view-safe structures.
 4. `GameResultFlow.gd` or helper methods: winner handling, AI batch continuation, reward grant.
 
@@ -159,10 +159,10 @@ Current responsibilities observed:
 - Scene node binding
 - Generated UI construction
 - Responsive layout
-- Card browsing/filtering/pagination
-- Card preview and hover descriptions
+- Stamp browsing/filtering/pagination
+- Stamp preview and hover descriptions
 - Deck creation/edit/save/delete
-- Owned-card validation
+- Owned-stamp validation
 - Pack purchase/opening
 - Progress and pack inventory UI
 
@@ -170,13 +170,13 @@ Recommended extraction order:
 
 1. Done: remove `_create_saved_deck_row_old()` and decide `_mark_generated_ui()` fate.
 2. Done: extract pack/progress behavior into `CollectionPackController.gd`. This is fairly isolated around `PlayerProgressStore` and `PlayerCollectionStore`.
-3. Extract card browser pagination/filtering into `CollectionCardBrowser.gd`.
+3. Extract stamp browser pagination/filtering into `CollectionStampBrowser.gd`.
 4. Extract saved deck list and selected deck editor into separate components.
 
 Risk notes:
 
 - Keep `PlayerDeckStore` as the source of truth during the first refactor.
-- Avoid changing deck card dictionary shape during UI extraction.
+- Avoid changing deck stamp dictionary shape during UI extraction.
 - Pack rewards currently operate directly on print ids and collection store; preserve that contract.
 
 ### `Scripts/NetworkGameHost.gd`
@@ -185,22 +185,22 @@ Current responsibilities observed:
 
 - Owns authoritative `GameStateData`
 - Handles player actions
-- Applies card effects and turn transitions
+- Applies stamp effects and turn transitions
 - Serializes per-viewer state
-- Logs match/card/move events
+- Logs match/stamp/move events
 - Broadcasts state
-- Contains duplicate card/turn lifecycle helpers also mirrored in AI simulation
+- Contains duplicate stamp/turn lifecycle helpers also mirrored in AI simulation
 
 Recommended extraction order:
 
 1. Extract state serialization to `GameStateSerializer.gd`.
 2. Extract logging calls/context building to a host logger adapter.
-3. Consolidate card return/refill/expiration helpers with AI simulator or a shared rules service.
+3. Consolidate stamp return/refill/expiration helpers with AI simulator or a shared rules service.
 
 Risk notes:
 
 - This file is gameplay-authoritative. Refactor behind tests or repeated manual smoke checks.
-- Serialization changes can break multiplayer visibility and hidden-card behavior.
+- Serialization changes can break multiplayer visibility and hidden-stamp behavior.
 
 ### AI and Rules Layer
 
@@ -209,14 +209,14 @@ Risk notes:
 Recommended direction:
 
 - Treat `MoveRules.gd` as the shared pure-rules layer.
-- Move pure card lifecycle decisions into shared helpers where possible.
+- Move pure stamp lifecycle decisions into shared helpers where possible.
 - Keep AI scoring in `AIMoveEvaluator.gd`, but move reusable simulation mechanics out of scoring.
 
 Candidate duplication zones:
 
 - `duplicate_*` helper families in `AIStateSimulator.gd`, `MatchCsvLogger.gd`, `NetworkGameHost.gd`, and `Scenes/Multiplayer.gd`.
-- `Vector2` serialization/parsing in `NetworkGameHost.gd`, `Scenes/chess.gd`, `CardEffectResolver.gd`, and loggers.
-- Card hand/deck refill and return behavior in `NetworkGameHost.gd`, `AIStateSimulator.gd`, `DeckManager.gd`, and local UI code.
+- `Vector2` serialization/parsing in `NetworkGameHost.gd`, `Scenes/chess.gd`, `StampEffectResolver.gd`, and loggers.
+- Stamp hand/deck refill and return behavior in `NetworkGameHost.gd`, `AIStateSimulator.gd`, `DeckManager.gd`, and local UI code.
 
 ## Architecture Observations
 
@@ -224,8 +224,8 @@ Candidate duplication zones:
 
 Configured autoloads:
 
-- `CardLibrary`
-- `CardPrintLibrary`
+- `StampLibrary`
+- `StampPrintLibrary`
 - `PlayerCollectionStore`
 - `PlayerDeckStore`
 - `PlayerProgressStore`
@@ -235,8 +235,8 @@ Configured autoloads:
 
 This is reasonable for a small Godot project, but the stores are now strongly coupled:
 
-- `PlayerDeckStore` calls `CardLibrary`, `CardPrintLibrary`, and `PlayerCollectionStore`.
-- `PlayerCollectionStore` calls `CardLibrary` and `CardPrintLibrary`.
+- `PlayerDeckStore` calls `StampLibrary`, `StampPrintLibrary`, and `PlayerCollectionStore`.
+- `PlayerCollectionStore` calls `StampLibrary` and `StampPrintLibrary`.
 - `GameConfig` calls `PlayerDeckStore`.
 - UI scenes call most stores directly.
 
@@ -273,21 +273,21 @@ Goal: make refactors less scary.
 Start here because the active editor tab is `Collection.gd`, and its risks are mostly UI/data-flow rather than core move rules.
 
 1. Extract pack purchase/opening UI.
-2. Extract card browser filtering/pagination.
+2. Extract stamp browser filtering/pagination.
 3. Extract saved deck list rendering.
 4. Keep final deck save/load calls in the scene until the UI split stabilizes.
 
 ### Phase 3: Chess scene split
 
 1. Extract board/piece marker rendering.
-2. Extract card hand view behavior.
+2. Extract stamp hand view behavior.
 3. Extract server-state parsing helpers.
 4. Only after that, consider moving local gameplay helpers into shared rules/services.
 
 ### Phase 4: Host/simulator convergence
 
 1. Extract `GameStateSerializer`.
-2. Extract common card lifecycle helpers.
+2. Extract common stamp lifecycle helpers.
 3. Compare `NetworkGameHost` and `AIStateSimulator` behavior for capture, expiration, refill, nexus return, board effects, and last move.
 
 ## First Recommended Work Item

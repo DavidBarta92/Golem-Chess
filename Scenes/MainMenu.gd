@@ -17,7 +17,7 @@ const FILM_GRAIN_SLIDER_STEP: float = 0.005
 @onready var ai_random_deck_check: CheckBox = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/RandomDeckCheck
 @onready var ai_vs_ai_button: Button = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/AIVsAIButton
 @onready var ai_deck_option_button: OptionButton = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIDeckOptionButton
-@onready var promote_card_values_button: Button = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons/PromoteCardValuesButton
+@onready var promote_stamp_values_button: Button = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons/PromoteStampValuesButton
 @onready var open_ai_logs_button: Button = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons/OpenLogsButton
 @onready var reset_balance_sessions_button: Button = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons/ResetSessionsButton
 @onready var balance_status_label: Label = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceStatusLabel
@@ -61,7 +61,7 @@ func _ready():
 	_connect_once(ai_random_deck_check.toggled, Callable(self, "_on_ai_random_deck_toggled"))
 	_connect_once(ai_deck_option_button.item_selected, Callable(self, "_on_ai_deck_option_selected"))
 	_connect_once(ai_vs_ai_button.pressed, Callable(self, "_on_ai_vs_ai_button_pressed"))
-	_connect_once(promote_card_values_button.pressed, Callable(self, "_on_promote_card_values_button_pressed"))
+	_connect_once(promote_stamp_values_button.pressed, Callable(self, "_on_promote_stamp_values_button_pressed"))
 	_connect_once(open_ai_logs_button.pressed, Callable(self, "_on_open_ai_logs_button_pressed"))
 	_connect_once(reset_balance_sessions_button.pressed, Callable(self, "_on_reset_balance_sessions_button_pressed"))
 	_update_ai_vs_ai_deck_controls()
@@ -409,12 +409,12 @@ func _on_ai_vs_ai_button_pressed():
 	GameConfig.start_ai_vs_ai_batch(match_count)
 	SceneTransition.change_scene("res://Scenes/main.tscn")
 
-func _on_promote_card_values_button_pressed() -> void:
+func _on_promote_stamp_values_button_pressed() -> void:
 	if !is_dev_tools_available():
 		return
 
 	GameConfig.set_ai_vs_ai_csv_log_dir(ai_csv_log_dir_field.text)
-	var result: Dictionary = CardBalanceStore.promote_unpromoted_sessions(GameConfig.get_ai_vs_ai_csv_log_dir())
+	var result: Dictionary = StampBalanceStore.promote_unpromoted_sessions(GameConfig.get_ai_vs_ai_csv_log_dir())
 	var merged_sessions: Array = result.get("merged_sessions", [])
 	var skipped_sessions: Array = result.get("skipped_sessions", [])
 	var failed_sessions: Array = result.get("failed_sessions", [])
@@ -425,14 +425,14 @@ func _on_promote_card_values_button_pressed() -> void:
 			failed_sessions.size(),
 		]
 	else:
-		balance_status_label.text = "Could not save promoted card values."
+		balance_status_label.text = "Could not save promoted stamp values."
 
 func _on_open_ai_logs_button_pressed() -> void:
 	if !is_dev_tools_available():
 		return
 
 	GameConfig.set_ai_vs_ai_csv_log_dir(ai_csv_log_dir_field.text)
-	var absolute_path: String = CardBalanceStore.globalize_path(GameConfig.get_ai_vs_ai_csv_log_dir())
+	var absolute_path: String = StampBalanceStore.globalize_path(GameConfig.get_ai_vs_ai_csv_log_dir())
 	DirAccess.make_dir_recursive_absolute(absolute_path)
 	OS.shell_open(absolute_path)
 	balance_status_label.text = "Opened AI log folder."
@@ -442,7 +442,7 @@ func _on_reset_balance_sessions_button_pressed() -> void:
 		return
 
 	GameConfig.set_ai_vs_ai_csv_log_dir(ai_csv_log_dir_field.text)
-	var deleted_count: int = CardBalanceStore.delete_session_files(GameConfig.get_ai_vs_ai_csv_log_dir())
+	var deleted_count: int = StampBalanceStore.delete_session_files(GameConfig.get_ai_vs_ai_csv_log_dir())
 	balance_status_label.text = "Deleted %d balance session file(s). CSV logs were kept." % deleted_count
 
 func get_ai_vs_ai_match_count() -> int:

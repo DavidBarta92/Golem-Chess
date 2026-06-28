@@ -417,7 +417,7 @@ func update_opponent_panel() -> void:
 		return
 
 	for owner_color in [1, -1]:
-		if !is_card_hand_top(owner_color):
+		if !is_stamp_hand_top(owner_color):
 			continue
 
 		var player_id: int = get_player_id_for_color(owner_color)
@@ -706,12 +706,12 @@ func get_player_id_for_color(owner_color: int) -> int:
 		return int(player_id_for_color_provider.call(owner_color))
 	return 0
 
-func get_deck_visual(owner_color: int) -> CardVisual:
+func get_deck_visual(owner_color: int) -> StampVisual:
 	if deck_visual_provider.is_valid():
-		return deck_visual_provider.call(owner_color) as CardVisual
+		return deck_visual_provider.call(owner_color) as StampVisual
 	return null
 
-func is_card_hand_top(owner_color: int) -> bool:
+func is_stamp_hand_top(owner_color: int) -> bool:
 	return owner_color != get_local_view_color()
 
 func get_local_view_color() -> int:

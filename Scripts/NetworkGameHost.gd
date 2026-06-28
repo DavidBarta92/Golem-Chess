@@ -25,10 +25,10 @@ func initialize_game(board_data: Array):
 				var piece = Piece.new(pos, color)
 				game_state.set_piece(pos, piece)
 
-	var white_codex_cards: Array[String] = create_starting_deck_for_player_id(0)
-	var black_codex_cards: Array[String] = create_starting_deck_for_player_id(1)
-	game_state.initialize_player_codex(0, white_codex_cards)
-	game_state.initialize_player_codex(1, black_codex_cards)
+	var white_codex_stamps: Array[String] = create_starting_deck_for_player_id(0)
+	var black_codex_stamps: Array[String] = create_starting_deck_for_player_id(1)
+	game_state.initialize_player_codex(0, white_codex_stamps)
+	game_state.initialize_player_codex(1, black_codex_stamps)
 	setup_match_logging()
 
 	DebugLog.info("NetworkGameHost: game state initialized")
@@ -90,12 +90,12 @@ func on_player_action(action: Dictionary):
 	DebugLog.info("Action received: %s" % [action])
 
 	match action.type:
-		"attach_card":
-			handle_attach_card(action)
+		"attach_stamp":
+			handle_attach_stamp(action)
 		"turn_page":
 			return handle_turn_page(action)
-		"exchange_card":
-			return handle_exchange_card(action)
+		"exchange_stamp":
+			return handle_exchange_stamp(action)
 		"move_piece":
 			handle_move_piece(action)
 		"end_turn":
@@ -106,21 +106,21 @@ func on_player_action(action: Dictionary):
 
 	return true
 
-func handle_attach_card(action: Dictionary):
+func handle_attach_stamp(action: Dictionary):
 	var player_id: int = int(action.player_id)
-	var card_name: String = str(action.card_name)
-	var piece_pos: Vector2 = CardEffectResolver.as_vector2(action.piece_pos, Vector2(-1, -1))
+	var stamp_name: String = str(action.stamp_name)
+	var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.piece_pos, Vector2(-1, -1))
 	var hand_index: int = int(action.get("hand_index", -1))
 
-	DebugLog.info("Attach card: player=%s, card=%s, position=%s" % [player_id, card_name, piece_pos])
+	DebugLog.info("Attach stamp: player=%s, stamp=%s, position=%s" % [player_id, stamp_name, piece_pos])
 
 	if game_state.game_over:
 		return
 	if game_state.current_turn_player != player_id:
 		return
 
-	if !game_state.player_hands[player_id].has(card_name):
-		push_warning("Card is not in hand.")
+	if !game_state.player_hands[player_id].has(stamp_name):
+		push_warning("Stamp is not in hand.")
 		return
 
 	var piece = game_state.get_piece(piece_pos)
@@ -133,52 +133,52 @@ func handle_attach_card(action: Dictionary):
 		push_warning("This piece does not belong to the player.")
 		return
 
-	if !piece.can_receive_card():
-		push_warning("This piece cannot receive a card right now.")
+	if !piece.can_receive_stamp():
+		push_warning("This piece cannot receive a stamp right now.")
 		return
 
-	var card: Card = CardLibrary.duplicate_card(card_name)
-	if card:
-		var hand_before: Array = duplicate_player_card_list(game_state.player_hands[player_id])
-		var deck_before: Array = duplicate_player_card_list(game_state.player_decks[player_id])
+	var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
+	if stamp:
+		var hand_before: Array = duplicate_player_stamp_list(game_state.player_hands[player_id])
+		var deck_before: Array = duplicate_player_stamp_list(game_state.player_decks[player_id])
 		var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
-		var piece_card_before: String = piece.attached_card.card_name if piece.attached_card != null else ""
+		var piece_stamp_before: String = piece.attached_stamp.stamp_name if piece.attached_stamp != null else ""
 		var piece_turns_before: int = piece.turns_remaining
-		var consumed_stamp: Dictionary = game_state.consume_current_page_stamp_by_name(player_id, card_name, hand_index)
+		var consumed_stamp: Dictionary = game_state.consume_current_page_stamp_by_name(player_id, stamp_name, hand_index)
 		if consumed_stamp.is_empty():
 			push_warning("Stamp could not be removed from current Codex page.")
 			return
-		card.set_meta("codex_owner_player_id", player_id)
-		card.set_meta("codex_page_index", int(consumed_stamp.get("page_index", game_state.get_current_page_index(player_id))))
-		card.set_meta("codex_stamp_index", int(consumed_stamp.get("stamp_index", hand_index)))
-		piece.attach_card(card, true)
-		game_state.attached_card_this_turn[player_id] = true
-		game_state.attached_card_count_this_turn[player_id] = int(game_state.attached_card_count_this_turn.get(player_id, 0)) + 1
-		if MoveRules.is_seeker_card(card):
+		stamp.set_meta("codex_owner_player_id", player_id)
+		stamp.set_meta("codex_page_index", int(consumed_stamp.get("page_index", game_state.get_current_page_index(player_id))))
+		stamp.set_meta("codex_stamp_index", int(consumed_stamp.get("stamp_index", hand_index)))
+		piece.attach_stamp(stamp, true)
+		game_state.attached_stamp_this_turn[player_id] = true
+		game_state.attached_stamp_count_this_turn[player_id] = int(game_state.attached_stamp_count_this_turn.get(player_id, 0)) + 1
+		if MoveRules.is_seeker_stamp(stamp):
 			if player_id == 0:
 				game_state.white_seeker_position = piece_pos
 			else:
 				game_state.black_seeker_position = piece_pos
-		log_card_attached(player_id, card, piece, piece_pos, hand_before, deck_before, deck_top_before, piece_card_before, piece_turns_before)
-		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_ATTACH, game_state, {
+		log_stamp_attached(player_id, stamp, piece, piece_pos, hand_before, deck_before, deck_top_before, piece_stamp_before, piece_turns_before)
+		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_ATTACH, game_state, {
 			"player_id": player_id,
 			"piece": piece,
 			"piece_pos": piece_pos,
-			"card": card,
+			"stamp": stamp,
 		})
 		if game_state.game_over:
 			log_turn_snapshot("after_attach")
 			broadcast_full_state()
 			return
-		CardEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, card, BoardConfig.BOARD_SIZE)
+		StampEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, stamp, BoardConfig.BOARD_SIZE)
 		if game_state.game_over:
 			log_turn_snapshot("after_attach")
 			broadcast_full_state()
 			return
 		log_turn_snapshot("after_attach")
 
-		DebugLog.info("Card attached successfully")
-		if is_first_turn_for_player(player_id) and int(game_state.attached_card_count_this_turn.get(player_id, 0)) >= DeckManager.HAND_SIZE:
+		DebugLog.info("Stamp attached successfully")
+		if is_first_turn_for_player(player_id) and int(game_state.attached_stamp_count_this_turn.get(player_id, 0)) >= DeckManager.HAND_SIZE:
 			DebugLog.info("Three first-turn stamps attached. Ending turn for player: %d" % player_id)
 			end_current_turn()
 			return
@@ -200,28 +200,28 @@ func handle_turn_page(action: Dictionary) -> bool:
 	broadcast_full_state()
 	return true
 
-func handle_exchange_card(action: Dictionary):
+func handle_exchange_stamp(action: Dictionary):
 	var player_id: int = int(action.player_id)
-	var card_name: String = str(action.get("card_name", ""))
+	var stamp_name: String = str(action.get("stamp_name", ""))
 	var hand_index: int = int(action.get("hand_index", -1))
 
-	DebugLog.info("Exchange card: player=%s, card=%s, hand_index=%s" % [player_id, card_name, hand_index])
+	DebugLog.info("Exchange stamp: player=%s, stamp=%s, hand_index=%s" % [player_id, stamp_name, hand_index])
 
-	push_warning("Card exchange is disabled. Use turn_page instead.")
+	push_warning("Stamp exchange is disabled. Use turn_page instead.")
 	return false
 
-func get_exchange_card_hand_index(hand: Array, card_name: String, hand_index: int) -> int:
+func get_exchange_stamp_hand_index(hand: Array, stamp_name: String, hand_index: int) -> int:
 	if hand_index >= 0 && hand_index < hand.size():
-		if card_name.is_empty() or str(hand[hand_index]) == card_name:
+		if stamp_name.is_empty() or str(hand[hand_index]) == stamp_name:
 			return hand_index
-	if !card_name.is_empty():
-		return hand.find(card_name)
+	if !stamp_name.is_empty():
+		return hand.find(stamp_name)
 	return -1
 
 func handle_move_piece(action: Dictionary):
 	var player_id: int = int(action.player_id)
-	var from_pos: Vector2 = CardEffectResolver.as_vector2(action.from, Vector2(-1, -1))
-	var to_pos: Vector2 = CardEffectResolver.as_vector2(action.to, Vector2(-1, -1))
+	var from_pos: Vector2 = StampEffectResolver.as_vector2(action.from, Vector2(-1, -1))
+	var to_pos: Vector2 = StampEffectResolver.as_vector2(action.to, Vector2(-1, -1))
 
 	DebugLog.info("Move: player=%s, %s -> %s" % [player_id, from_pos, to_pos])
 
@@ -233,12 +233,12 @@ func handle_move_piece(action: Dictionary):
 		push_warning("No piece at the start position.")
 		return
 
-	if !CardEffectResolver.can_player_control_piece(piece, player_id):
+	if !StampEffectResolver.can_player_control_piece(piece, player_id):
 		push_warning("This piece does not belong to the player.")
 		return
 
 	if !piece.can_move():
-		push_warning("This piece has no usable card.")
+		push_warning("This piece has no usable stamp.")
 		return
 
 	if game_state.current_turn_player != player_id:
@@ -254,18 +254,18 @@ func handle_move_piece(action: Dictionary):
 
 	var captured_piece = game_state.get_piece(to_pos)
 	var captured_seeker: bool = is_seeker_piece(captured_piece)
-	var captured_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
+	var captured_piece_owner_player_id: int = StampEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
 	var move_log_context: Dictionary = create_move_log_context(player_id, from_pos, to_pos, piece, captured_piece)
-	var moving_piece_visible_to_enemy: bool = !CardEffectResolver.piece_has_attached_effect(piece, CardEffect.TYPE_INVISIBLE_TO_ENEMY)
+	var moving_piece_visible_to_enemy: bool = !StampEffectResolver.piece_has_attached_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
 
 	if captured_piece != null:
 		DebugLog.info("Piece captured at: %s" % to_pos)
-		if captured_piece.attached_card != null:
-			CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_CAPTURED, game_state, {
+		if captured_piece.attached_stamp != null:
+			StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_CAPTURED, game_state, {
 				"player_id": 1 - player_id,
 				"piece": captured_piece,
 				"piece_pos": to_pos,
-				"card": captured_piece.attached_card,
+				"stamp": captured_piece.attached_stamp,
 				"capturing_piece": piece,
 				"capturing_piece_pos": from_pos,
 			})
@@ -280,16 +280,16 @@ func handle_move_piece(action: Dictionary):
 				end_current_turn()
 				return
 
-		if captured_seeker && captured_piece.attached_card != null:
-			return_card_to_player_deck(captured_piece_owner_player_id, captured_piece.attached_card, "captured_seeker", to_pos)
+		if captured_seeker && captured_piece.attached_stamp != null:
+			return_stamp_to_player_deck(captured_piece_owner_player_id, captured_piece.attached_stamp, "captured_seeker", to_pos)
 
 	game_state.remove_piece(from_pos)
 	piece.position = to_pos
 	game_state.set_piece(to_pos, piece)
 	record_last_move(player_id, from_pos, to_pos, moving_piece_visible_to_enemy, captured_piece)
 
-	if MoveRules.is_seeker_card(piece.attached_card):
-		var moved_piece_owner_player_id: int = CardEffectResolver.get_player_id_for_color(piece.color)
+	if MoveRules.is_seeker_stamp(piece.attached_stamp):
+		var moved_piece_owner_player_id: int = StampEffectResolver.get_player_id_for_color(piece.color)
 		if moved_piece_owner_player_id == 0:
 			game_state.white_seeker_position = to_pos
 		else:
@@ -297,15 +297,15 @@ func handle_move_piece(action: Dictionary):
 
 	if captured_seeker:
 		var captured_player_id: int = captured_piece_owner_player_id
-		CardEffectResolver.clear_seeker_position_if_needed(game_state, captured_player_id, true)
-		DebugLog.info("Seeker piece captured. Seeker card returned to player %d deck." % captured_player_id)
+		StampEffectResolver.clear_seeker_position_if_needed(game_state, captured_player_id, true)
+		DebugLog.info("Seeker piece captured. Seeker stamp returned to player %d deck." % captured_player_id)
 
-	if captured_piece != null && piece.attached_card != null:
-		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_CAPTURE, game_state, {
+	if captured_piece != null && piece.attached_stamp != null:
+		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_CAPTURE, game_state, {
 			"player_id": player_id,
 			"piece": piece,
 			"piece_pos": to_pos,
-			"card": piece.attached_card,
+			"stamp": piece.attached_stamp,
 			"captured_piece": captured_piece,
 			"captured_piece_pos": to_pos,
 		})
@@ -315,13 +315,13 @@ func handle_move_piece(action: Dictionary):
 			return
 
 	if captured_piece != null:
-		captured_piece.detach_card()
+		captured_piece.detach_stamp()
 		respawn_captured_piece(captured_piece, captured_piece_owner_player_id)
-	CardEffectResolver.resolve_pending_respawns_for_all_players(game_state)
+	StampEffectResolver.resolve_pending_respawns_for_all_players(game_state)
 
-	var opponent_base_field: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
+	var opponent_base_field: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var entered_opponent_base: bool = to_pos == opponent_base_field
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	if is_seeker_piece(piece) && piece.color == player_color && entered_opponent_base:
 		DebugLog.info("Opponent base reached by Seeker. Player %d wins." % player_id)
 		finish_game(player_id, "base_reached")
@@ -329,12 +329,12 @@ func handle_move_piece(action: Dictionary):
 		broadcast_full_state()
 		return
 
-	if piece.attached_card != null:
-		CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_MOVE, game_state, {
+	if piece.attached_stamp != null:
+		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_MOVE, game_state, {
 			"player_id": player_id,
 			"piece": piece,
 			"piece_pos": to_pos,
-			"card": piece.attached_card,
+			"stamp": piece.attached_stamp,
 			"from_pos": from_pos,
 			"to_pos": to_pos,
 		})
@@ -370,20 +370,20 @@ func end_current_turn():
 		return
 
 	var ending_player_id: int = game_state.current_turn_player
-	game_state.played_card_hand_slots_this_turn[ending_player_id] = []
-	clear_exchanged_card_names_this_turn(ending_player_id)
+	game_state.played_stamp_hand_slots_this_turn[ending_player_id] = []
+	clear_exchanged_stamp_names_this_turn(ending_player_id)
 	clear_piece_exhaustion_for_player(ending_player_id)
 	game_state.completed_turn_counts[ending_player_id] = int(game_state.completed_turn_counts.get(ending_player_id, 0)) + 1
 	game_state.switch_turn()
 	advance_logged_turn()
-	CardEffectResolver.tick_board_effects(game_state)
+	StampEffectResolver.tick_board_effects(game_state)
 	finish_if_player_has_no_valid_turn(game_state.current_turn_player)
 	log_turn_snapshot("turn_end")
 	DebugLog.info("Turn ended. Next player: %s" % game_state.current_turn_player)
 	broadcast_full_state()
 
 func clear_piece_exhaustion_for_player(player_id: int) -> void:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
 		if piece != null && piece.color == player_color:
@@ -391,39 +391,39 @@ func clear_piece_exhaustion_for_player(player_id: int) -> void:
 				continue
 			piece.exhausted_this_turn = false
 
-func handle_expired_seeker_card(player_id: int, expired_card: Card, piece_pos: Vector2) -> void:
-	CardEffectResolver.clear_seeker_position_if_needed(game_state, player_id, true)
-	return_card_to_player_deck(player_id, expired_card, "expired_seeker", piece_pos)
+func handle_expired_seeker_stamp(player_id: int, expired_stamp: Stamp, piece_pos: Vector2) -> void:
+	StampEffectResolver.clear_seeker_position_if_needed(game_state, player_id, true)
+	return_stamp_to_player_deck(player_id, expired_stamp, "expired_seeker", piece_pos)
 
 func consume_moved_piece_duration(player_id: int, piece: Piece, piece_pos: Vector2) -> void:
-	if piece == null or piece.attached_card == null:
+	if piece == null or piece.attached_stamp == null:
 		return
 
-	var expired_card: Card = piece.use_turn()
-	if expired_card == null:
+	var expired_stamp: Stamp = piece.use_turn()
+	if expired_stamp == null:
 		return
 
-	if MoveRules.is_seeker_card(expired_card):
-		handle_expired_seeker_card(player_id, expired_card, piece_pos)
+	if MoveRules.is_seeker_stamp(expired_stamp):
+		handle_expired_seeker_stamp(player_id, expired_stamp, piece_pos)
 		return
 
-	register_card_expiration(player_id, expired_card, piece_pos)
-	log_card_expired(player_id, expired_card, piece, piece_pos)
-	CardEffectResolver.resolve_trigger(CardEffect.TRIGGER_ON_EXPIRE, game_state, {
+	register_stamp_expiration(player_id, expired_stamp, piece_pos)
+	log_stamp_expired(player_id, expired_stamp, piece, piece_pos)
+	StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_EXPIRE, game_state, {
 		"player_id": player_id,
 		"piece": piece,
 		"piece_pos": piece_pos,
-		"card": expired_card,
+		"stamp": expired_stamp,
 	})
 
 func respawn_captured_piece(captured_piece: Piece, player_id: int) -> bool:
-	return CardEffectResolver.respawn_captured_piece(game_state, captured_piece, player_id)
+	return StampEffectResolver.respawn_captured_piece(game_state, captured_piece, player_id)
 
 func release_pending_respawn_piece(player_id: int) -> bool:
-	return CardEffectResolver.release_pending_respawn_piece(game_state, player_id)
+	return StampEffectResolver.release_pending_respawn_piece(game_state, player_id)
 
 func get_random_empty_home_position(player_id: int) -> Vector2:
-	return CardEffectResolver.get_random_empty_home_position(game_state, player_id)
+	return StampEffectResolver.get_random_empty_home_position(game_state, player_id)
 
 func maybe_auto_end_turn(player_id: int) -> bool:
 	return false
@@ -432,7 +432,7 @@ func is_first_turn_for_player(player_id: int) -> bool:
 	return int(game_state.completed_turn_counts.get(player_id, 0)) == 0
 
 func player_has_remaining_turn_action(player_id: int) -> bool:
-	if can_attach_any_card_for_player(player_id):
+	if can_attach_any_stamp_for_player(player_id):
 		return true
 	if can_move_any_piece_for_player(player_id):
 		return true
@@ -440,24 +440,24 @@ func player_has_remaining_turn_action(player_id: int) -> bool:
 		return true
 	return false
 
-func can_attach_any_card_for_player(player_id: int) -> bool:
+func can_attach_any_stamp_for_player(player_id: int) -> bool:
 	if !game_state.player_hands.has(player_id):
 		return false
 
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var hand_cards: Array[Card] = get_hand_cards_for_player(player_id)
-	if hand_cards.is_empty():
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var hand_stamps: Array[Stamp] = get_hand_stamps_for_player(player_id)
+	if hand_stamps.is_empty():
 		return false
 
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_card != null:
+		if piece == null or piece.color != player_color or piece.attached_stamp != null:
 			continue
 
-		for card: Card in hand_cards:
-			if !MoveRules.card_can_be_used(card):
+		for stamp: Stamp in hand_stamps:
+			if !MoveRules.stamp_can_be_used(stamp):
 				continue
-			if MoveRules.can_attach_card_for_turn(game_state.pieces, player_color, card):
+			if MoveRules.can_attach_stamp_for_turn(game_state.pieces, player_color, stamp):
 				return true
 
 	return false
@@ -466,7 +466,7 @@ func can_move_any_piece_for_player(player_id: int) -> bool:
 	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
 		return false
 
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	return MoveRules.has_valid_piece_move(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects)
 
 func finish_game(winner_player: int, win_condition: String = "unknown"):
@@ -489,10 +489,10 @@ func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 
 func player_has_valid_turn_action(player_id: int) -> bool:
 	if is_first_turn_for_player(player_id):
-		return int(game_state.attached_card_count_this_turn.get(player_id, 0)) > 0 or can_attach_any_card_for_player(player_id) or can_turn_page_for_player(player_id)
+		return int(game_state.attached_stamp_count_this_turn.get(player_id, 0)) > 0 or can_attach_any_stamp_for_player(player_id) or can_turn_page_for_player(player_id)
 	if can_move_any_piece_for_player(player_id):
 		return true
-	if can_attach_any_card_for_player(player_id):
+	if can_attach_any_stamp_for_player(player_id):
 		return true
 	if can_turn_page_for_player(player_id):
 		return true
@@ -502,7 +502,7 @@ func player_has_valid_turn_action(player_id: int) -> bool:
 
 func can_end_turn_by_button(player_id: int) -> bool:
 	if is_first_turn_for_player(player_id):
-		return int(game_state.attached_card_count_this_turn.get(player_id, 0)) >= 1
+		return int(game_state.attached_stamp_count_this_turn.get(player_id, 0)) >= 1
 	return can_end_turn_due_to_frozen_piece(player_id)
 
 func can_end_turn_due_to_frozen_piece(player_id: int) -> bool:
@@ -511,7 +511,7 @@ func can_end_turn_due_to_frozen_piece(player_id: int) -> bool:
 	var player_color: int = BoardConfig.get_color_for_player_id(player_id)
 	return MoveRules.has_frozen_movable_piece(game_state.pieces, player_color, BoardConfig.BOARD_SIZE, game_state.board_effects)
 
-func can_exchange_card_for_player(player_id: int) -> bool:
+func can_exchange_stamp_for_player(player_id: int) -> bool:
 	return false
 
 func can_turn_page_for_player(player_id: int) -> bool:
@@ -519,57 +519,57 @@ func can_turn_page_for_player(player_id: int) -> bool:
 		return false
 	return game_state.can_turn_page(player_id)
 
-func draw_exchange_replacement_card(deck: Array, returned_card_name: String) -> String:
-	return draw_card_from_deck_avoiding_names(deck, [returned_card_name])
+func draw_exchange_replacement_stamp(deck: Array, returned_stamp_name: String) -> String:
+	return draw_stamp_from_deck_avoiding_names(deck, [returned_stamp_name])
 
-func draw_refill_card_for_player(player_id: int, deck: Array) -> String:
-	var protected_names: Array = game_state.exchanged_card_names_this_turn.get(player_id, [])
-	return draw_card_from_deck_avoiding_names(deck, protected_names)
+func draw_refill_stamp_for_player(player_id: int, deck: Array) -> String:
+	var protected_names: Array = game_state.exchanged_stamp_names_this_turn.get(player_id, [])
+	return draw_stamp_from_deck_avoiding_names(deck, protected_names)
 
-func draw_card_from_deck_avoiding_names(deck: Array, avoided_card_names: Array) -> String:
+func draw_stamp_from_deck_avoiding_names(deck: Array, avoided_stamp_names: Array) -> String:
 	if deck.is_empty():
 		return ""
 
 	var draw_index: int = -1
 	for i in deck.size():
 		var candidate_name: String = str(deck[i])
-		if !avoided_card_names.has(candidate_name):
+		if !avoided_stamp_names.has(candidate_name):
 			draw_index = i
 			break
 	if draw_index == -1:
 		draw_index = 0
 
-	var drawn_card_name: String = str(deck[draw_index])
+	var drawn_stamp_name: String = str(deck[draw_index])
 	deck.remove_at(draw_index)
-	return drawn_card_name
+	return drawn_stamp_name
 
-func record_exchanged_card_name_this_turn(player_id: int, card_name: String) -> void:
-	var exchanged_names: Array = game_state.exchanged_card_names_this_turn.get(player_id, [])
-	exchanged_names.append(card_name)
-	game_state.exchanged_card_names_this_turn[player_id] = exchanged_names
+func record_exchanged_stamp_name_this_turn(player_id: int, stamp_name: String) -> void:
+	var exchanged_names: Array = game_state.exchanged_stamp_names_this_turn.get(player_id, [])
+	exchanged_names.append(stamp_name)
+	game_state.exchanged_stamp_names_this_turn[player_id] = exchanged_names
 
-func clear_exchanged_card_names_this_turn(player_id: int) -> void:
-	game_state.exchanged_card_names_this_turn[player_id] = []
+func clear_exchanged_stamp_names_this_turn(player_id: int) -> void:
+	game_state.exchanged_stamp_names_this_turn[player_id] = []
 
 func should_hold_turn_for_optional_exchange(player_id: int) -> bool:
 	return false
 
 func is_seeker_piece(piece: Piece) -> bool:
-	return piece != null && MoveRules.is_seeker_card(piece.attached_card)
+	return piece != null && MoveRules.is_seeker_stamp(piece.attached_stamp)
 
-func get_hand_cards_for_player(player_id: int) -> Array[Card]:
-	var hand_cards: Array[Card] = []
+func get_hand_stamps_for_player(player_id: int) -> Array[Stamp]:
+	var hand_stamps: Array[Stamp] = []
 	if !game_state.player_hands.has(player_id):
-		return hand_cards
+		return hand_stamps
 
-	var hand_card_names: Array = game_state.player_hands[player_id]
-	for card_name_value in hand_card_names:
-		var card_name: String = str(card_name_value)
-		var card: Card = CardLibrary.get_card(card_name)
-		if card != null:
-			hand_cards.append(card)
+	var hand_stamp_names: Array = game_state.player_hands[player_id]
+	for stamp_name_value in hand_stamp_names:
+		var stamp_name: String = str(stamp_name_value)
+		var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
+		if stamp != null:
+			hand_stamps.append(stamp)
 
-	return hand_cards
+	return hand_stamps
 
 func has_any_piece(player_id: int) -> bool:
 	var expected_color: int = BoardConfig.get_color_for_player_id(player_id)
@@ -595,7 +595,7 @@ func broadcast_full_state():
 			pieces_data[pos] = {
 				"position": pos,
 				"color": piece_data.color,
-				"card_name": piece_data.card_name,
+				"stamp_name": piece_data.stamp_name,
 				"turns_remaining": piece_data.turns_remaining,
 				"exhausted_this_turn": piece_data.exhausted_this_turn,
 				"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0)),
@@ -609,12 +609,12 @@ func broadcast_full_state():
 			local_state_data.winner_player,
 			local_state_data.player_decks_size,
 			local_state_data.player_codex_state,
-			local_state_data.hidden_cards,
+			local_state_data.hidden_stamps,
 			local_state_data.player_base_fields,
 			local_state_data.board_effects,
 			local_state_data.player_names,
-			local_state_data.recent_card_transfers,
-			local_state_data.recent_card_expirations,
+			local_state_data.recent_stamp_transfers,
+			local_state_data.recent_stamp_expirations,
 			local_state_data.recent_bomb_effects,
 			local_state_data.recent_pending_respawn_queues,
 			local_state_data.recent_pending_respawn_arrivals,
@@ -637,8 +637,8 @@ func broadcast_full_state():
 	if codex_bridge != null:
 		codex_bridge.export_state(self, "broadcast")
 
-	game_state.recent_card_transfers.clear()
-	game_state.recent_card_expirations.clear()
+	game_state.recent_stamp_transfers.clear()
+	game_state.recent_stamp_expirations.clear()
 	game_state.recent_bomb_effects.clear()
 	game_state.recent_pending_respawn_queues.clear()
 	game_state.recent_pending_respawn_arrivals.clear()
@@ -651,7 +651,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 	var data = {
 		"viewer_player_id": viewer_player_id,
 		"pieces": [],
-		"hidden_cards": [],
+		"hidden_stamps": [],
 		"player_hands": game_state.player_hands,
 		"player_decks_size": {
 			0: game_state.get_remaining_codex_stamp_count(0),
@@ -665,8 +665,8 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"board_effects": serialize_board_effects(),
 		"player_names": get_serialized_player_names(),
 		"player_portraits": get_serialized_player_portraits(),
-		"recent_card_transfers": serialize_recent_card_transfers(viewer_player_id),
-		"recent_card_expirations": serialize_recent_card_expirations(),
+		"recent_stamp_transfers": serialize_recent_stamp_transfers(viewer_player_id),
+		"recent_stamp_expirations": serialize_recent_stamp_expirations(),
 		"recent_bomb_effects": serialize_recent_bomb_effects(),
 		"recent_pending_respawn_queues": serialize_recent_pending_respawn_queues(),
 		"recent_pending_respawn_arrivals": serialize_recent_pending_respawn_arrivals(),
@@ -677,13 +677,13 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 
 	for pos in game_state.pieces:
 		var piece: Piece = game_state.pieces[pos]
-		var hidden_from_viewer: bool = viewer_player_id != -1 && !CardEffectResolver.is_piece_visible_to_player(piece, viewer_player_id)
+		var hidden_from_viewer: bool = viewer_player_id != -1 && !StampEffectResolver.is_piece_visible_to_player(piece, viewer_player_id)
 		if hidden_from_viewer:
-			append_hidden_card_data(data["hidden_cards"], piece)
+			append_hidden_stamp_data(data["hidden_stamps"], piece)
 		data.pieces.append({
 			"position": [pos.x, pos.y],
 			"color": piece.color,
-			"card_name": "" if hidden_from_viewer else (piece.attached_card.card_name if piece.attached_card else ""),
+			"stamp_name": "" if hidden_from_viewer else (piece.attached_stamp.stamp_name if piece.attached_stamp else ""),
 			"turns_remaining": 0 if hidden_from_viewer else piece.turns_remaining,
 			"exhausted_this_turn": true if hidden_from_viewer else piece.exhausted_this_turn,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
@@ -694,11 +694,11 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 
 func serialize_turn_action_state() -> Dictionary:
 	return {
-		"attached_card_this_turn": duplicate_bool_dictionary(game_state.attached_card_this_turn),
+		"attached_stamp_this_turn": duplicate_bool_dictionary(game_state.attached_stamp_this_turn),
 		"moved_piece_this_turn": duplicate_bool_dictionary(game_state.moved_piece_this_turn),
-		"exchanged_card_this_turn": duplicate_bool_dictionary(game_state.exchanged_card_this_turn),
+		"exchanged_stamp_this_turn": duplicate_bool_dictionary(game_state.exchanged_stamp_this_turn),
 		"has_turned_page_this_turn": duplicate_bool_dictionary(game_state.has_turned_page_this_turn),
-		"attached_card_count_this_turn": game_state.attached_card_count_this_turn.duplicate(),
+		"attached_stamp_count_this_turn": game_state.attached_stamp_count_this_turn.duplicate(),
 		"completed_turn_counts": game_state.completed_turn_counts.duplicate(),
 	}
 
@@ -724,8 +724,8 @@ func serialize_codex_pages_for_player(player_id: int) -> Array:
 	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
 		var serialized_page: Array[String] = []
 		if page_index < pages.size() and pages[page_index] is Array:
-			for card_name_value in pages[page_index]:
-				serialized_page.append(str(card_name_value))
+			for stamp_name_value in pages[page_index]:
+				serialized_page.append(str(stamp_name_value))
 		serialized_pages.append(serialized_page)
 	return serialized_pages
 
@@ -735,15 +735,15 @@ func duplicate_bool_dictionary(source: Dictionary) -> Dictionary:
 		output[key] = bool(source[key])
 	return output
 
-func serialize_recent_card_transfers(_viewer_player_id: int) -> Array:
+func serialize_recent_stamp_transfers(_viewer_player_id: int) -> Array:
 	var serialized_transfers: Array = []
-	for transfer_value in game_state.recent_card_transfers:
+	for transfer_value in game_state.recent_stamp_transfers:
 		var transfer: Dictionary = transfer_value
-		var source_pos: Vector2 = CardEffectResolver.as_vector2(transfer.get("source_pos", [-1, -1]), Vector2(-1, -1))
+		var source_pos: Vector2 = StampEffectResolver.as_vector2(transfer.get("source_pos", [-1, -1]), Vector2(-1, -1))
 		serialized_transfers.append({
 			"source_player_id": int(transfer.get("source_player_id", -1)),
 			"target_player_id": int(transfer.get("target_player_id", -1)),
-			"card_name": str(transfer.get("card_name", "")),
+			"stamp_name": str(transfer.get("stamp_name", "")),
 			"source_zone": str(transfer.get("source_zone", "")),
 			"target_zone": str(transfer.get("target_zone", "")),
 			"source_pos": vector2_to_array(source_pos),
@@ -751,14 +751,14 @@ func serialize_recent_card_transfers(_viewer_player_id: int) -> Array:
 
 	return serialized_transfers
 
-func serialize_recent_card_expirations() -> Array:
+func serialize_recent_stamp_expirations() -> Array:
 	var serialized_expirations: Array = []
-	for expiration_value in game_state.recent_card_expirations:
+	for expiration_value in game_state.recent_stamp_expirations:
 		var expiration: Dictionary = expiration_value
-		var piece_pos: Vector2 = CardEffectResolver.as_vector2(expiration.get("piece_pos", [-1, -1]), Vector2(-1, -1))
+		var piece_pos: Vector2 = StampEffectResolver.as_vector2(expiration.get("piece_pos", [-1, -1]), Vector2(-1, -1))
 		serialized_expirations.append({
 			"player_id": int(expiration.get("player_id", -1)),
-			"card_name": str(expiration.get("card_name", "")),
+			"stamp_name": str(expiration.get("stamp_name", "")),
 			"piece_pos": vector2_to_array(piece_pos),
 		})
 
@@ -771,17 +771,17 @@ func serialize_recent_bomb_effects() -> Array:
 		var serialized_squares: Array = []
 		var squares: Array = effect.get("squares", [])
 		for square_value in squares:
-			serialized_squares.append(vector2_to_array(CardEffectResolver.as_vector2(square_value, Vector2(-1, -1))))
+			serialized_squares.append(vector2_to_array(StampEffectResolver.as_vector2(square_value, Vector2(-1, -1))))
 
 		var serialized_affected_positions: Array = []
 		var affected_positions: Array = effect.get("affected_positions", [])
 		for position_value in affected_positions:
-			serialized_affected_positions.append(vector2_to_array(CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))))
+			serialized_affected_positions.append(vector2_to_array(StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))))
 
 		serialized_effects.append({
 			"player_id": int(effect.get("player_id", -1)),
-			"card_name": str(effect.get("card_name", "")),
-			"source_pos": vector2_to_array(CardEffectResolver.as_vector2(effect.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
+			"stamp_name": str(effect.get("stamp_name", "")),
+			"source_pos": vector2_to_array(StampEffectResolver.as_vector2(effect.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
 			"squares": serialized_squares,
 			"affected_positions": serialized_affected_positions,
 		})
@@ -795,7 +795,7 @@ func serialize_recent_pending_respawn_queues() -> Array:
 		serialized_queues.append({
 			"player_id": int(queue_event.get("player_id", -1)),
 			"piece_color": int(queue_event.get("piece_color", 0)),
-			"source_pos": vector2_to_array(CardEffectResolver.as_vector2(queue_event.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
+			"source_pos": vector2_to_array(StampEffectResolver.as_vector2(queue_event.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
 		})
 
 	return serialized_queues
@@ -807,7 +807,7 @@ func serialize_recent_pending_respawn_arrivals() -> Array:
 		serialized_arrivals.append({
 			"player_id": int(arrival.get("player_id", -1)),
 			"piece_color": int(arrival.get("piece_color", 0)),
-			"respawn_pos": vector2_to_array(CardEffectResolver.as_vector2(arrival.get("respawn_pos", Vector2(-1, -1)), Vector2(-1, -1))),
+			"respawn_pos": vector2_to_array(StampEffectResolver.as_vector2(arrival.get("respawn_pos", Vector2(-1, -1)), Vector2(-1, -1))),
 			"respawn_cooldown_turns": int(arrival.get("respawn_cooldown_turns", 0)),
 		})
 
@@ -822,38 +822,38 @@ func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 	if viewer_player_id != -1 && !is_mover_viewer && !bool(game_state.last_move.get("visible_to_enemy", true)):
 		return {}
 
-	var from_pos: Vector2 = CardEffectResolver.as_vector2(game_state.last_move.get("from", Vector2(-1, -1)), Vector2(-1, -1))
-	var to_pos: Vector2 = CardEffectResolver.as_vector2(game_state.last_move.get("to", Vector2(-1, -1)), Vector2(-1, -1))
+	var from_pos: Vector2 = StampEffectResolver.as_vector2(game_state.last_move.get("from", Vector2(-1, -1)), Vector2(-1, -1))
+	var to_pos: Vector2 = StampEffectResolver.as_vector2(game_state.last_move.get("to", Vector2(-1, -1)), Vector2(-1, -1))
 	if from_pos == Vector2(-1, -1) or to_pos == Vector2(-1, -1) or from_pos == to_pos:
 		return {}
 
 	var moving_piece: Piece = game_state.get_piece(to_pos)
 	if moving_piece == null:
 		return {}
-	if viewer_player_id != -1 && !is_mover_viewer && !CardEffectResolver.is_piece_visible_to_player(moving_piece, viewer_player_id):
+	if viewer_player_id != -1 && !is_mover_viewer && !StampEffectResolver.is_piece_visible_to_player(moving_piece, viewer_player_id):
 		return {}
 
 	var serialized_last_move := {
 		"from": vector2_to_array(from_pos),
 		"to": vector2_to_array(to_pos),
 		"player_id": mover_player_id,
-		"piece_color": int(game_state.last_move.get("piece_color", CardEffectResolver.get_color_for_player_id(mover_player_id))),
+		"piece_color": int(game_state.last_move.get("piece_color", StampEffectResolver.get_color_for_player_id(mover_player_id))),
 		"visible_to_enemy": bool(game_state.last_move.get("visible_to_enemy", true)),
 		"show_arrow": !is_mover_viewer,
 	}
 	if int(game_state.last_move.get("captured_piece_color", 0)) != 0:
 		serialized_last_move["captured_piece_color"] = int(game_state.last_move.get("captured_piece_color", 0))
-		serialized_last_move["captured_card_name"] = str(game_state.last_move.get("captured_card_name", ""))
+		serialized_last_move["captured_stamp_name"] = str(game_state.last_move.get("captured_stamp_name", ""))
 	return serialized_last_move
 
-func append_hidden_card_data(hidden_cards: Array, piece: Piece) -> void:
-	if piece == null or piece.attached_card == null:
+func append_hidden_stamp_data(hidden_stamps: Array, piece: Piece) -> void:
+	if piece == null or piece.attached_stamp == null:
 		return
 
-	hidden_cards.append({
-		"card_name": piece.attached_card.card_name,
+	hidden_stamps.append({
+		"stamp_name": piece.attached_stamp.stamp_name,
 		"turns_remaining": piece.turns_remaining,
-		"owner_player_id": CardEffectResolver.get_player_id_for_color(piece.color),
+		"owner_player_id": StampEffectResolver.get_player_id_for_color(piece.color),
 	})
 
 func get_viewer_player_id_for_peer(peer_id: int) -> int:
@@ -865,8 +865,8 @@ func get_viewer_player_id_for_peer(peer_id: int) -> int:
 
 func serialize_player_base_fields() -> Dictionary:
 	return {
-		0: vector2_to_array(CardEffectResolver.get_base_field_for_player(game_state, 0)),
-		1: vector2_to_array(CardEffectResolver.get_base_field_for_player(game_state, 1)),
+		0: vector2_to_array(StampEffectResolver.get_base_field_for_player(game_state, 0)),
+		1: vector2_to_array(StampEffectResolver.get_base_field_for_player(game_state, 1)),
 	}
 
 func serialize_board_effects() -> Array:
@@ -876,7 +876,7 @@ func serialize_board_effects() -> Array:
 		var serialized_squares: Array = []
 		var squares: Array = effect.get("squares", [])
 		for square_value in squares:
-			serialized_squares.append(vector2_to_array(CardEffectResolver.as_vector2(square_value, Vector2(-1, -1))))
+			serialized_squares.append(vector2_to_array(StampEffectResolver.as_vector2(square_value, Vector2(-1, -1))))
 
 		serialized_effects.append({
 			"effect_type": str(effect.get("effect_type", "")),
@@ -909,11 +909,11 @@ func get_serialized_player_portraits() -> Dictionary:
 		1: PortraitLibrary.get_default_portrait_for_player_id(1).to_dict(),
 	}
 
-func duplicate_player_card_list(source) -> Array:
+func duplicate_player_stamp_list(source) -> Array:
 	var output: Array = []
 	if source is Array:
-		for card_name_value in source:
-			output.append(str(card_name_value))
+		for stamp_name_value in source:
+			output.append(str(stamp_name_value))
 	return output
 
 func record_last_move(player_id: int, from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool, captured_piece: Piece = null) -> void:
@@ -925,20 +925,20 @@ func record_last_move(player_id: int, from_pos: Vector2, to_pos: Vector2, visibl
 		"from": from_pos,
 		"to": to_pos,
 		"player_id": player_id,
-		"piece_color": CardEffectResolver.get_color_for_player_id(player_id),
+		"piece_color": StampEffectResolver.get_color_for_player_id(player_id),
 		"visible_to_enemy": visible_to_enemy,
 	}
 	if captured_piece != null:
 		game_state.last_move["captured_piece_color"] = captured_piece.color
-		game_state.last_move["captured_card_name"] = captured_piece.attached_card.card_name if captured_piece.attached_card != null else ""
+		game_state.last_move["captured_stamp_name"] = captured_piece.attached_stamp.stamp_name if captured_piece.attached_stamp != null else ""
 
-func play_card_from_player_hand(player_id: int, card_name: String, hand_index: int) -> bool:
+func play_stamp_from_player_hand(player_id: int, stamp_name: String, hand_index: int) -> bool:
 	if !game_state.player_hands.has(player_id):
 		return false
 
 	var hand: Array = game_state.player_hands[player_id]
-	var remove_index: int = hand.find(card_name)
-	if hand_index >= 0 && hand_index < hand.size() && str(hand[hand_index]) == card_name:
+	var remove_index: int = hand.find(stamp_name)
+	if hand_index >= 0 && hand_index < hand.size() && str(hand[hand_index]) == stamp_name:
 		remove_index = hand_index
 	if remove_index == -1:
 		return false
@@ -946,12 +946,12 @@ func play_card_from_player_hand(player_id: int, card_name: String, hand_index: i
 	var original_slot: int = get_original_hand_slot_for_play(player_id, remove_index)
 	hand.remove_at(remove_index)
 	game_state.player_hands[player_id] = hand
-	record_played_card_hand_slot(player_id, original_slot)
-	DebugLog.info("Card played: %s" % card_name)
+	record_played_stamp_hand_slot(player_id, original_slot)
+	DebugLog.info("Stamp played: %s" % stamp_name)
 	return true
 
 func get_original_hand_slot_for_play(player_id: int, current_hand_index: int) -> int:
-	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
+	var played_slots: Array = game_state.played_stamp_hand_slots_this_turn.get(player_id, [])
 	for candidate in range(current_hand_index, DeckManager.HAND_SIZE):
 		if played_slots.has(candidate):
 			continue
@@ -964,19 +964,19 @@ func get_original_hand_slot_for_play(player_id: int, current_hand_index: int) ->
 			return candidate
 	return clampi(current_hand_index, 0, DeckManager.HAND_SIZE - 1)
 
-func record_played_card_hand_slot(player_id: int, hand_slot: int) -> void:
-	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
+func record_played_stamp_hand_slot(player_id: int, hand_slot: int) -> void:
+	var played_slots: Array = game_state.played_stamp_hand_slots_this_turn.get(player_id, [])
 	played_slots.append(clampi(hand_slot, 0, DeckManager.HAND_SIZE - 1))
-	game_state.played_card_hand_slots_this_turn[player_id] = played_slots
+	game_state.played_stamp_hand_slots_this_turn[player_id] = played_slots
 
-func refill_played_cards_for_player(player_id: int) -> void:
-	var played_slots: Array = game_state.played_card_hand_slots_this_turn.get(player_id, [])
+func refill_played_stamps_for_player(player_id: int) -> void:
+	var played_slots: Array = game_state.played_stamp_hand_slots_this_turn.get(player_id, [])
 	if played_slots.is_empty():
-		clear_exchanged_card_names_this_turn(player_id)
+		clear_exchanged_stamp_names_this_turn(player_id)
 		return
 	if !game_state.player_decks.has(player_id) or !game_state.player_hands.has(player_id):
-		game_state.played_card_hand_slots_this_turn[player_id] = []
-		clear_exchanged_card_names_this_turn(player_id)
+		game_state.played_stamp_hand_slots_this_turn[player_id] = []
+		clear_exchanged_stamp_names_this_turn(player_id)
 		return
 
 	played_slots.sort()
@@ -986,118 +986,118 @@ func refill_played_cards_for_player(player_id: int) -> void:
 		if deck.is_empty() or hand.size() >= DeckManager.HAND_SIZE:
 			break
 
-		var hand_before: Array = duplicate_player_card_list(hand)
-		var deck_before: Array = duplicate_player_card_list(deck)
+		var hand_before: Array = duplicate_player_stamp_list(hand)
+		var deck_before: Array = duplicate_player_stamp_list(deck)
 		var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
-		var drawn_card_name: String = draw_refill_card_for_player(player_id, deck)
-		if drawn_card_name.is_empty():
+		var drawn_stamp_name: String = draw_refill_stamp_for_player(player_id, deck)
+		if drawn_stamp_name.is_empty():
 			break
 		var insert_index: int = clampi(int(slot_value), 0, hand.size())
-		hand.insert(insert_index, drawn_card_name)
-		CardEffectResolver.register_card_transfer(game_state, player_id, player_id, drawn_card_name, "deck", "hand")
-		log_card_drawn(player_id, drawn_card_name, hand_before, deck_before, deck_top_before, "hand", "turn_end_refill")
+		hand.insert(insert_index, drawn_stamp_name)
+		StampEffectResolver.register_stamp_transfer(game_state, player_id, player_id, drawn_stamp_name, "deck", "hand")
+		log_stamp_drawn(player_id, drawn_stamp_name, hand_before, deck_before, deck_top_before, "hand", "turn_end_refill")
 
 	game_state.player_decks[player_id] = deck
 	game_state.player_hands[player_id] = hand
-	game_state.played_card_hand_slots_this_turn[player_id] = []
-	clear_exchanged_card_names_this_turn(player_id)
+	game_state.played_stamp_hand_slots_this_turn[player_id] = []
+	clear_exchanged_stamp_names_this_turn(player_id)
 
-func return_card_to_player_deck(player_id: int, card: Card, reason: String, piece_pos: Vector2 = Vector2(-1, -1)) -> void:
-	if card == null:
+func return_stamp_to_player_deck(player_id: int, stamp: Stamp, reason: String, piece_pos: Vector2 = Vector2(-1, -1)) -> void:
+	if stamp == null:
 		return
-	var page_index: int = int(card.get_meta("codex_page_index", -1))
-	var stamp_index: int = int(card.get_meta("codex_stamp_index", -1))
-	game_state.return_stamp_to_codex_page(player_id, card.card_name, page_index, stamp_index)
-	CardEffectResolver.register_card_transfer(game_state, player_id, player_id, card.card_name, "piece", "codex", piece_pos)
-	log_card_returned_to_deck(player_id, card, piece_pos, reason)
+	var page_index: int = int(stamp.get_meta("codex_page_index", -1))
+	var stamp_index: int = int(stamp.get_meta("codex_stamp_index", -1))
+	game_state.return_stamp_to_codex_page(player_id, stamp.stamp_name, page_index, stamp_index)
+	StampEffectResolver.register_stamp_transfer(game_state, player_id, player_id, stamp.stamp_name, "piece", "codex", piece_pos)
+	log_stamp_returned_to_deck(player_id, stamp, piece_pos, reason)
 
-func player_has_available_seeker_card(player_id: int) -> bool:
-	if game_state.player_hands.has(player_id) && DeckManager.has_seeker_card(game_state.player_hands[player_id]):
+func player_has_available_seeker_stamp(player_id: int) -> bool:
+	if game_state.player_hands.has(player_id) && DeckManager.has_seeker_stamp(game_state.player_hands[player_id]):
 		return true
-	if game_state.player_decks.has(player_id) && DeckManager.has_seeker_card(game_state.player_decks[player_id]):
+	if game_state.player_decks.has(player_id) && DeckManager.has_seeker_stamp(game_state.player_decks[player_id]):
 		return true
 
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && MoveRules.is_seeker_card(piece.attached_card):
+		if piece != null && piece.color == player_color && MoveRules.is_seeker_stamp(piece.attached_stamp):
 			return true
 	return false
 
 func setup_logger_if_needed() -> MatchCsvLogger:
 	return game_state.match_logger
 
-func log_card_attached(player_id: int, card: Card, piece: Piece, piece_pos: Vector2, hand_before: Array, deck_before: Array, deck_top_before: String, piece_card_before: String, piece_turns_before: int) -> void:
+func log_stamp_attached(player_id: int, stamp: Stamp, piece: Piece, piece_pos: Vector2, hand_before: Array, deck_before: Array, deck_top_before: String, piece_stamp_before: String, piece_turns_before: int) -> void:
 	if game_state.match_logger == null:
 		return
 
-	var drawn_card: String = ""
+	var drawn_stamp: String = ""
 	if deck_before.size() > game_state.player_decks[player_id].size():
-		drawn_card = deck_top_before
-	game_state.match_logger.log_card_event(game_state, "attach_card", {
+		drawn_stamp = deck_top_before
+	game_state.match_logger.log_stamp_event(game_state, "attach_stamp", {
 		"player_id": player_id,
-		"card": card,
+		"stamp": stamp,
 		"piece": piece,
 		"piece_pos": piece_pos,
-		"piece_card_before": piece_card_before,
+		"piece_stamp_before": piece_stamp_before,
 		"piece_turns_before": piece_turns_before,
 		"hand_before": hand_before,
 		"deck_count_before": deck_before.size(),
 		"deck_top_before": deck_top_before,
-		"drawn_card": drawn_card,
+		"drawn_stamp": drawn_stamp,
 		"reason": "played_from_hand",
 	})
 
-func log_card_returned_to_deck(player_id: int, card: Card, piece_pos: Vector2, reason: String) -> void:
+func log_stamp_returned_to_deck(player_id: int, stamp: Stamp, piece_pos: Vector2, reason: String) -> void:
 	if game_state.match_logger == null:
 		return
 
-	game_state.match_logger.log_card_event(game_state, "return_to_deck", {
+	game_state.match_logger.log_stamp_event(game_state, "return_to_deck", {
 		"player_id": player_id,
-		"card": card,
+		"stamp": stamp,
 		"piece_pos": piece_pos,
-		"returned_card": card.card_name if card != null else "",
+		"returned_stamp": stamp.stamp_name if stamp != null else "",
 		"target_zone": "codex",
 		"reason": reason,
 	})
 
-func log_card_drawn(player_id: int, drawn_card_name: String, hand_before: Array, deck_before: Array, deck_top_before: String, target_zone: String = "hand", reason: String = "turn_end_refill") -> void:
+func log_stamp_drawn(player_id: int, drawn_stamp_name: String, hand_before: Array, deck_before: Array, deck_top_before: String, target_zone: String = "hand", reason: String = "turn_end_refill") -> void:
 	if game_state.match_logger == null:
 		return
 
-	var drawn_card: Card = CardLibrary.get_card(drawn_card_name)
-	game_state.match_logger.log_card_event(game_state, "draw_card", {
+	var drawn_stamp: Stamp = StampLibrary.get_stamp(drawn_stamp_name)
+	game_state.match_logger.log_stamp_event(game_state, "draw_stamp", {
 		"player_id": player_id,
-		"card": drawn_card,
-		"card_name": drawn_card_name,
+		"stamp": drawn_stamp,
+		"stamp_name": drawn_stamp_name,
 		"hand_before": hand_before,
 		"deck_count_before": deck_before.size(),
 		"deck_top_before": deck_top_before,
-		"drawn_card": drawn_card_name,
+		"drawn_stamp": drawn_stamp_name,
 		"source_zone": "deck",
 		"target_zone": target_zone,
 		"reason": reason,
 	})
 
-func log_card_expired(player_id: int, card: Card, piece: Piece, piece_pos: Vector2) -> void:
+func log_stamp_expired(player_id: int, stamp: Stamp, piece: Piece, piece_pos: Vector2) -> void:
 	if game_state.match_logger == null:
 		return
 
-	game_state.match_logger.log_card_event(game_state, "expire_card", {
+	game_state.match_logger.log_stamp_event(game_state, "expire_stamp", {
 		"player_id": player_id,
-		"card": card,
+		"stamp": stamp,
 		"piece": piece,
 		"piece_pos": piece_pos,
 		"reason": "duration_ended",
 	})
 
-func register_card_expiration(player_id: int, card: Card, piece_pos: Vector2) -> void:
-	if card == null:
+func register_stamp_expiration(player_id: int, stamp: Stamp, piece_pos: Vector2) -> void:
+	if stamp == null:
 		return
 
-	game_state.recent_card_expirations.append({
+	game_state.recent_stamp_expirations.append({
 		"player_id": player_id,
-		"card_name": card.card_name,
+		"stamp_name": stamp.stamp_name,
 		"piece_pos": piece_pos,
 	})
 

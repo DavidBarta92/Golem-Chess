@@ -217,12 +217,12 @@ func select_first_available_deck() -> void:
 func has_selected_deck() -> bool:
 	return !get_selected_deck_id().is_empty()
 
-func get_selected_deck_card_names() -> Array[String]:
+func get_selected_deck_stamp_names() -> Array[String]:
 	var deck_id: String = get_selected_deck_id()
 	if deck_id.is_empty():
-		var empty_card_names: Array[String] = []
-		return empty_card_names
-	return PlayerDeckStore.get_deck_card_names(deck_id)
+		var empty_stamp_names: Array[String] = []
+		return empty_stamp_names
+	return PlayerDeckStore.get_deck_stamp_names(deck_id)
 
 func set_selected_ai_deck_id(deck_id: String) -> void:
 	selected_ai_deck_id = deck_id.strip_edges()
@@ -254,12 +254,12 @@ func ensure_selected_decks() -> void:
 		if selected_ai_deck_id.strip_edges().is_empty() or !PlayerDeckStore.is_deck_playable_id(selected_ai_deck_id):
 			select_first_available_ai_deck()
 
-func get_selected_ai_deck_card_names() -> Array[String]:
+func get_selected_ai_deck_stamp_names() -> Array[String]:
 	var deck_id: String = get_selected_ai_deck_id()
 	if deck_id.is_empty():
-		var empty_card_names: Array[String] = []
-		return empty_card_names
-	return PlayerDeckStore.get_deck_card_names(deck_id)
+		var empty_stamp_names: Array[String] = []
+		return empty_stamp_names
+	return PlayerDeckStore.get_deck_stamp_names(deck_id)
 
 func record_ai_vs_ai_result(winner_player_id: int) -> void:
 	if !is_ai_vs_ai_batch:

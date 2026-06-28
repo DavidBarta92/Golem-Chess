@@ -1,11 +1,11 @@
-[gd_scene format=3 uid="uid://67s030mxf45n"]
+[gd_scene format=3 uid="uid://blwd7kfhtxnet"]
 
-[ext_resource type="Script" uid="uid://dgl5umdn6mctq" path="res://Scripts/CardVisual.gd" id="1"]
-[ext_resource type="Script" uid="uid://b4rbx66i3ardt" path="res://Scripts/CardPatternView.gd" id="2"]
+[ext_resource type="Script" path="res://Scripts/CardVisual.gd" id="1"]
+[ext_resource type="Script" path="res://Scripts/CardPatternView.gd" id="2"]
 [ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="3"]
-[ext_resource type="Shader" uid="uid://2w0ypeypns36" path="res://Shaders/card_tilt.gdshader" id="5"]
+[ext_resource type="Shader" path="res://Shaders/card_tilt.gdshader" id="5"]
 [ext_resource type="FontFile" uid="uid://qkd6nyfjtoyf" path="res://Fonts/OLDENGL.TTF" id="5_7hptf"]
-[ext_resource type="Shader" uid="uid://cmkftqqcjg2yk" path="res://Shaders/card_shimmer.gdshader" id="6"]
+[ext_resource type="Shader" path="res://Shaders/card_shimmer.gdshader" id="6"]
 [ext_resource type="FontFile" uid="uid://b1beq61l8rupp" path="res://Fonts/Rosemartin.otf" id="8_5weds"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
@@ -117,7 +117,6 @@ theme_override_constants/shadow_offset_y = 1
 theme_override_fonts/font = ExtResource("5_7hptf")
 theme_override_font_sizes/font_size = 47
 text = "1"
-horizontal_alignment = 0
 vertical_alignment = 1
 
 [node name="EffectIconTexture" type="TextureRect" parent="." unique_id=970024804]

@@ -2,7 +2,7 @@ extends RefCounted
 class_name CollectionPackController
 
 const BOOSTER_PACK_TEXTURE = preload("res://Assets/booster.png")
-const PACK_REWARD_CARD_COUNT: int = 3
+const PACK_REWARD_STAMP_COUNT: int = 3
 const MAX_VISIBLE_PACK_ICONS: int = 4
 
 var buy_packs_button: Button
@@ -174,14 +174,14 @@ func open_pack() -> void:
 	if PlayerProgressStore.get_unopened_pack_count() <= 0:
 		return
 
-	var rewards: Array[CardPrint] = _roll_pack_rewards()
+	var rewards: Array[StampPrint] = _roll_pack_rewards()
 	if rewards.is_empty():
 		return
 	if !PlayerProgressStore.open_pack():
 		return
 
-	for card_print: CardPrint in rewards:
-		PlayerCollectionStore.add_local_print_copy(card_print.print_id)
+	for stamp_print: StampPrint in rewards:
+		PlayerCollectionStore.add_local_print_copy(stamp_print.print_id)
 
 	_show_pack_result(rewards)
 	refresh_progress_ui()
@@ -189,32 +189,32 @@ func open_pack() -> void:
 	if pack_opened_callback.is_valid():
 		pack_opened_callback.call(rewards)
 
-func _roll_pack_rewards() -> Array[CardPrint]:
-	var available_prints: Array[CardPrint] = []
-	for card_print_value in CardPrintLibrary.get_all_prints():
-		var card_print: CardPrint = card_print_value as CardPrint
-		if card_print != null && CardPrintLibrary.get_card_for_print(card_print) != null:
-			available_prints.append(card_print)
+func _roll_pack_rewards() -> Array[StampPrint]:
+	var available_prints: Array[StampPrint] = []
+	for stamp_print_value in StampPrintLibrary.get_all_prints():
+		var stamp_print: StampPrint = stamp_print_value as StampPrint
+		if stamp_print != null && StampPrintLibrary.get_stamp_for_print(stamp_print) != null:
+			available_prints.append(stamp_print)
 
-	var rewards: Array[CardPrint] = []
+	var rewards: Array[StampPrint] = []
 	if available_prints.is_empty():
 		return rewards
 
-	for i in range(PACK_REWARD_CARD_COUNT):
+	for i in range(PACK_REWARD_STAMP_COUNT):
 		rewards.append(available_prints[randi() % available_prints.size()])
 	return rewards
 
-func _show_pack_result(rewards: Array[CardPrint]) -> void:
+func _show_pack_result(rewards: Array[StampPrint]) -> void:
 	if pack_result_dialog == null or pack_result_label == null:
 		return
 
 	var lines: Array[String] = ["You opened:"]
-	for card_print: CardPrint in rewards:
-		var card: Card = CardPrintLibrary.get_card_for_print(card_print)
-		var card_name: String = card.card_name if card != null else card_print.card_code
-		if card_print.variant_id != PlayerCollectionStore.DEFAULT_VARIANT_ID:
-			card_name = "%s - %s" % [card_name, card_print.get_display_name()]
-		lines.append("- %s" % card_name)
+	for stamp_print: StampPrint in rewards:
+		var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
+		var stamp_name: String = stamp.stamp_name if stamp != null else stamp_print.stamp_code
+		if stamp_print.variant_id != PlayerCollectionStore.DEFAULT_VARIANT_ID:
+			stamp_name = "%s - %s" % [stamp_name, stamp_print.get_display_name()]
+		lines.append("- %s" % stamp_name)
 
 	pack_result_label.text = "\n".join(lines)
 	pack_result_dialog.popup_centered(Vector2i(360, 220))

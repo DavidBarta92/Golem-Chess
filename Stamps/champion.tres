@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://cuvcr535xxng0"]
+
+[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="1_white"]
+[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="2_black"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_stamp"]
+
+[resource]
+script = ExtResource("3_stamp")
+stamp_name = "Champion"
+stamp_code = "champion"
+white_piece_texture = ExtResource("1_white")
+black_piece_texture = ExtResource("2_black")
+description = "No special effect."
+movement_pattern = [[2, 2, 0, 2, 2], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [2, 2, 0, 2, 2]]
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

@@ -153,9 +153,9 @@ static func normalize_value(value):
 	if value is Vector2:
 		var vector_value: Vector2 = value
 		return [vector_value.x, vector_value.y]
-	if value is Card:
-		var card: Card = value
-		return card.card_name
+	if value is Stamp:
+		var stamp: Stamp = value
+		return stamp.stamp_name
 	if value is Array:
 		var source_array: Array = value
 		var output_array: Array = []
@@ -166,7 +166,7 @@ static func normalize_value(value):
 		var source_dict: Dictionary = value
 		var output_dict: Dictionary = {}
 		for key in source_dict:
-			if str(key) == "card":
+			if str(key) == "stamp":
 				continue
 			output_dict[str(key)] = normalize_value(source_dict[key])
 		return output_dict
@@ -179,7 +179,7 @@ static func summarize_plan_actions(plan: Dictionary) -> Array:
 		var action: Dictionary = action_value
 		summaries.append({
 			"type": str(action.get("type", "")),
-			"card_name": str(action.get("card_name", "")),
+			"stamp_name": str(action.get("stamp_name", "")),
 			"piece_pos": action.get("piece_pos", ""),
 			"from": action.get("from", ""),
 			"to": action.get("to", ""),
@@ -236,7 +236,7 @@ static func get_deck_count(game_state: GameStateData, player_id: int) -> int:
 	return deck.size()
 
 static func count_pieces(game_state: GameStateData, player_id: int) -> int:
-	var expected_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var expected_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var count: int = 0
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece

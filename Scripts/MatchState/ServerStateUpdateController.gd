@@ -13,12 +13,12 @@ func update_from_server_state(
 	winner_player: int = -1,
 	player_deck_sizes: Dictionary = {},
 	player_codex_state: Dictionary = {},
-	hidden_cards: Array = [],
+	hidden_stamps: Array = [],
 	player_base_fields: Dictionary = {},
 	board_effects: Array = [],
 	player_names: Dictionary = {},
-	recent_card_transfers: Array = [],
-	recent_card_expirations: Array = [],
+	recent_stamp_transfers: Array = [],
+	recent_stamp_expirations: Array = [],
 	recent_bomb_effects: Array = [],
 	recent_pending_respawn_queues: Array = [],
 	recent_pending_respawn_arrivals: Array = [],
@@ -31,10 +31,10 @@ func update_from_server_state(
 	await wait_for_active_state_visual_animations()
 
 	var previous_piece_visual_state: Dictionary = match_board.get_piece_visual_state_snapshot()
-	var previous_hidden_card_counts: Dictionary = match_board.hidden_card_counts.duplicate()
-	var current_hidden_card_counts: Dictionary = match_board.get_match_state_sync_controller().get_hidden_card_counts_from_state(hidden_cards)
-	var previous_white_hand_names: Array[String] = match_board.get_card_names_from_hand(match_board.white_card_hand)
-	var previous_black_hand_names: Array[String] = match_board.get_card_names_from_hand(match_board.black_card_hand)
+	var previous_hidden_stamp_counts: Dictionary = match_board.hidden_stamp_counts.duplicate()
+	var current_hidden_stamp_counts: Dictionary = match_board.get_match_state_sync_controller().get_hidden_stamp_counts_from_state(hidden_stamps)
+	var previous_white_hand_names: Array[String] = match_board.get_stamp_names_from_hand(match_board.white_stamp_hand)
+	var previous_black_hand_names: Array[String] = match_board.get_stamp_names_from_hand(match_board.black_stamp_hand)
 
 	var parsed_piece_state: Dictionary = match_board.get_match_state_sync_controller().build_piece_state_from_server(pieces_data)
 	match_board.board = parsed_piece_state.get("board", BoardConfig.create_empty_board())
@@ -46,13 +46,13 @@ func update_from_server_state(
 	var should_emit_turn_ended: bool = bool(turn_transition.get("should_emit_turn_ended", false))
 	var server_ending_color: int = int(turn_transition.get("server_ending_color", 0))
 	if bool(turn_transition.get("changed_turn", false)):
-		match_board.get_turn_action_state_controller().reset_current_turn_card_attach()
+		match_board.get_turn_action_state_controller().reset_current_turn_stamp_attach()
 
 	var current_white_hand_names: Array = match_board.get_match_state_sync_controller().get_hand_names_from_state(player_hands, 0)
 	var current_black_hand_names: Array = match_board.get_match_state_sync_controller().get_hand_names_from_state(player_hands, 1)
 	if !player_deck_sizes.is_empty():
-		match_board.white_deck_count_override = match_board.get_match_state_sync_controller().get_int_from_state_dict(player_deck_sizes, 0, match_board.white_card_deck.size())
-		match_board.black_deck_count_override = match_board.get_match_state_sync_controller().get_int_from_state_dict(player_deck_sizes, 1, match_board.black_card_deck.size())
+		match_board.white_deck_count_override = match_board.get_match_state_sync_controller().get_int_from_state_dict(player_deck_sizes, 0, match_board.white_stamp_deck.size())
+		match_board.black_deck_count_override = match_board.get_match_state_sync_controller().get_int_from_state_dict(player_deck_sizes, 1, match_board.black_stamp_deck.size())
 	if !player_codex_state.is_empty():
 		match_board.apply_codex_state_from_server(player_codex_state)
 	match_board.current_player_base_fields = match_board.get_match_state_sync_controller().parse_player_base_fields(player_base_fields)
@@ -65,29 +65,29 @@ func update_from_server_state(
 	match_board.get_turn_hud_controller().sync_player_clocks(player_clock_seconds)
 	match_board.update_end_turn_button()
 	match_board.get_turn_hud_controller().update_action_status_ui()
-	match_board.white_card_hand = match_board.create_card_hand_from_names(current_white_hand_names)
-	match_board.black_card_hand = match_board.create_card_hand_from_names(current_black_hand_names)
-	match_board.white_card_visuals = match_board.populate_card_hand(match_board.white_pieces, match_board.white_card_hand, 1)
-	match_board.black_card_visuals = match_board.populate_card_hand(match_board.black_pieces, match_board.black_card_hand, -1)
+	match_board.white_stamp_hand = match_board.create_stamp_hand_from_names(current_white_hand_names)
+	match_board.black_stamp_hand = match_board.create_stamp_hand_from_names(current_black_hand_names)
+	match_board.white_stamp_visuals = match_board.populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
+	match_board.black_stamp_visuals = match_board.populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
 	match_board.setup_deck_visuals()
 
 	match_board.delete_dots()
 	match_board.hide_hover_piece_details()
-	match_board.get_hidden_card_preview_controller().update_previews(hidden_cards)
-	match_board.update_card_presentation()
-	var card_expiration_events: Array[Dictionary] = match_board.get_state_card_expiration_events(previous_piece_visual_state, recent_card_expirations)
+	match_board.get_hidden_stamp_preview_controller().update_previews(hidden_stamps)
+	match_board.update_stamp_presentation()
+	var stamp_expiration_events: Array[Dictionary] = match_board.get_state_stamp_expiration_events(previous_piece_visual_state, recent_stamp_expirations)
 	var state_attach_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().collect_state_attach_animations(
 		previous_piece_visual_state,
 		match_board.piece_objects,
-		hidden_cards,
-		previous_hidden_card_counts,
+		hidden_stamps,
+		previous_hidden_stamp_counts,
 		match_board.get_own_player_id(),
 		match_board.has_received_server_state,
 		match_board.should_skip_visual_animations()
 	)
 	var state_piece_revert_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().collect_piece_revert_animations(
 		previous_piece_visual_state,
-		card_expiration_events,
+		stamp_expiration_events,
 		match_board.piece_objects,
 		match_board.has_received_server_state,
 		match_board.should_skip_visual_animations()
@@ -111,12 +111,12 @@ func update_from_server_state(
 	)
 	var bomb_warning_animations: Array[Dictionary] = match_board.collect_bomb_warning_animations(recent_bomb_effects, previous_piece_visual_state)
 	var pending_respawn_arrival_animations: Array[Dictionary] = match_board.parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals)
-	match_board.hidden_card_counts = current_hidden_card_counts
+	match_board.hidden_stamp_counts = current_hidden_stamp_counts
 	var animated_attach_positions: Dictionary = match_board.get_attach_animation_positions(state_attach_animations)
 	for position_value in animated_attach_positions.keys():
 		var animated_attach_pos: Vector2 = match_board.value_to_vector2(position_value, match_board.INVALID_BOARD_POS)
 		if match_board.is_valid_position(animated_attach_pos):
-			match_board.begin_card_attach_process(animated_attach_pos)
+			match_board.begin_stamp_attach_process(animated_attach_pos)
 	match_board.prepare_piece_shatter_respawn_reveals(state_piece_shatter_animations)
 	match_board.prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrival_animations)
 
@@ -128,12 +128,12 @@ func update_from_server_state(
 		"state_piece_shatter_animations": state_piece_shatter_animations,
 		"pending_respawn_arrival_animations": pending_respawn_arrival_animations,
 		"should_play_post_state_animations": match_board.has_received_server_state and !match_board.should_skip_visual_animations(),
-		"recent_card_transfers": recent_card_transfers,
+		"recent_stamp_transfers": recent_stamp_transfers,
 		"previous_white_hand_names": previous_white_hand_names,
 		"current_white_hand_names": current_white_hand_names,
 		"previous_black_hand_names": previous_black_hand_names,
 		"current_black_hand_names": current_black_hand_names,
-		"card_expiration_events": card_expiration_events,
+		"stamp_expiration_events": stamp_expiration_events,
 		"should_emit_turn_ended": should_emit_turn_ended,
 		"server_ending_color": server_ending_color,
 		"server_game_over": server_game_over,
@@ -150,7 +150,7 @@ func wait_for_active_state_visual_animations() -> void:
 		await match_board.get_tree().process_frame
 
 func has_active_state_visual_animations() -> bool:
-	return match_board.active_piece_move_animation_count > 0 or match_board.active_state_card_attach_animation_count > 0
+	return match_board.active_piece_move_animation_count > 0 or match_board.active_state_stamp_attach_animation_count > 0
 
 func apply_viewer_player_id(viewer_player_id: int) -> void:
 	if viewer_player_id != 0 and viewer_player_id != 1:
@@ -167,11 +167,11 @@ func apply_turn_action_state_from_server(turn_action_state: Dictionary) -> bool:
 
 	for player_id in [0, 1]:
 		var owner_color: int = match_board.get_color_for_player_id(player_id)
-		match_board.attached_card_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "attached_card_this_turn", player_id)
+		match_board.attached_stamp_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "attached_stamp_this_turn", player_id)
 		match_board.moved_piece_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "moved_piece_this_turn", player_id)
-		match_board.exchanged_card_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "exchanged_card_this_turn", player_id)
+		match_board.exchanged_stamp_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "exchanged_stamp_this_turn", player_id)
 		match_board.has_turned_page_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "has_turned_page_this_turn", player_id)
-		match_board.attached_card_count_this_turn[player_id] = get_turn_action_int(turn_action_state, "attached_card_count_this_turn", player_id)
+		match_board.attached_stamp_count_this_turn[player_id] = get_turn_action_int(turn_action_state, "attached_stamp_count_this_turn", player_id)
 		match_board.completed_turn_counts[player_id] = get_turn_action_int(turn_action_state, "completed_turn_counts", player_id)
 	return true
 

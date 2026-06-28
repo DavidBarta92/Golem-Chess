@@ -66,9 +66,9 @@ func apply_local_move_state(move_context: Dictionary) -> void:
 	var moving_piece_visible_to_enemy: bool = bool(move_state.get("moving_piece_visible_to_enemy", true))
 
 	if bool(move_state.get("captured_seeker", false)):
-		return_captured_seeker_card_to_deck(captured_piece)
+		return_captured_seeker_stamp_to_deck(captured_piece)
 	if captured_piece != null:
-		captured_piece.detach_card()
+		captured_piece.detach_stamp()
 
 	match_board.current_last_move = move_state.get("last_move", {})
 	move_context["moving_color"] = moving_color
@@ -85,7 +85,7 @@ func apply_local_move_post_move_effects(move_context: Dictionary) -> void:
 	var moving_piece: Piece = match_board.piece_objects[end_pos] as Piece if match_board.piece_objects.has(end_pos) else null
 	var pending_respawn_arrivals: Array = move_context.get("pending_respawn_arrivals", [])
 	if moving_piece != null and !GameController.current_game_host:
-		pending_respawn_arrivals.append_array(match_board.get_local_state_mutator().apply_card_effect_trigger(CardEffect.TRIGGER_ON_MOVE, end_pos, moving_piece, moving_piece.attached_card))
+		pending_respawn_arrivals.append_array(match_board.get_local_state_mutator().apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_MOVE, end_pos, moving_piece, moving_piece.attached_stamp))
 	consume_moved_piece_duration_locally(moving_piece, end_pos)
 	move_context["pending_respawn_arrivals"] = pending_respawn_arrivals
 
@@ -108,7 +108,7 @@ func resolve_local_move_capture_respawn(move_context: Dictionary) -> void:
 
 func finish_local_move_state_updates(move_context: Dictionary) -> void:
 	match_board.get_turn_action_state_controller().mark_piece_moved_this_turn(int(move_context.get("moving_color", 0)))
-	match_board.update_card_presentation()
+	match_board.update_stamp_presentation()
 
 func play_local_move_transition(move_context: Dictionary) -> void:
 	var start_pos: Vector2 = move_context.get("start_pos", invalid_board_pos)
@@ -146,25 +146,25 @@ func restore_local_move_selection(move_context: Dictionary) -> void:
 		match_board.show_options()
 		match_board.state = true
 
-func return_captured_seeker_card_to_deck(captured_piece: Piece) -> void:
-	if captured_piece == null or captured_piece.attached_card == null:
+func return_captured_seeker_stamp_to_deck(captured_piece: Piece) -> void:
+	if captured_piece == null or captured_piece.attached_stamp == null:
 		return
-	match_board.get_card_animation_controller().queue_seeker_card_return_to_deck_animation(captured_piece.color, captured_piece.attached_card, captured_piece.position)
-	match_board.return_local_seeker_stamp(captured_piece.color, captured_piece.attached_card)
+	match_board.get_stamp_animation_controller().queue_seeker_stamp_return_to_deck_animation(captured_piece.color, captured_piece.attached_stamp, captured_piece.position)
+	match_board.return_local_seeker_stamp(captured_piece.color, captured_piece.attached_stamp)
 
 func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> void:
-	if piece == null or piece.attached_card == null:
+	if piece == null or piece.attached_stamp == null:
 		return
 
 	var owner_color: int = piece.color
 	var expiring_piece_texture: Texture2D = match_board.get_piece_visual_texture(piece)
-	var expired_card: Card = piece.use_turn()
-	if expired_card == null:
+	var expired_stamp: Stamp = piece.use_turn()
+	if expired_stamp == null:
 		return
 
 	match_board.queue_piece_revert_animation(piece_pos, expiring_piece_texture)
-	if MoveRules.is_seeker_card(expired_card):
-		match_board.handle_expired_seeker_card_locally(owner_color, expired_card, piece_pos)
+	if MoveRules.is_seeker_stamp(expired_stamp):
+		match_board.handle_expired_seeker_stamp_locally(owner_color, expired_stamp, piece_pos)
 		return
 
-	match_board.get_card_animation_controller().queue_card_expire_animation(piece_pos, expired_card)
+	match_board.get_stamp_animation_controller().queue_stamp_expire_animation(piece_pos, expired_stamp)

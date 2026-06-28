@@ -28,16 +28,16 @@ func evaluate_strategy(game_state: GameStateData, player_id: int, memory: Dictio
 	context["own_deck_count"] = get_player_deck_count(game_state, player_id)
 	context["own_resource_count"] = int(context.get("own_hand_count", 0)) + int(context.get("own_deck_count", 0))
 	context["own_active_seeker_count"] = count_active_seeker_pieces(game_state, player_id)
-	context["own_available_seeker_count"] = count_available_seeker_cards(game_state, player_id)
+	context["own_available_seeker_count"] = count_available_seeker_stamps(game_state, player_id)
 	context["enemy_active_seeker_count"] = count_active_seeker_pieces(game_state, 1 - player_id)
-	context["enemy_available_seeker_count"] = count_available_seeker_cards(game_state, 1 - player_id)
+	context["enemy_available_seeker_count"] = count_available_seeker_stamps(game_state, 1 - player_id)
 	context["enemy_base_pressure_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_PRESSURE_RADIUS)
 	context["enemy_base_danger_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_DANGER_RADIUS)
 	context["enemy_base_staging_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_STAGING_RADIUS)
 	context["enemy_seeker_min_base_distance"] = get_enemy_seeker_min_base_distance(game_state, player_id)
 	context["enemy_immediate_base_win"] = has_immediate_base_win(game_state, 1 - player_id, board_size)
-	context["own_base"] = CardEffectResolver.get_base_field_for_player(game_state, player_id)
-	context["opponent_base"] = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
+	context["own_base"] = StampEffectResolver.get_base_field_for_player(game_state, player_id)
+	context["opponent_base"] = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	context["center_zone_keys"] = get_center_zone_keys(board_size)
 
 	var opening_completed: bool = bool(memory.get("opening_completed", false))
@@ -102,24 +102,24 @@ func get_player_hand_count(game_state: GameStateData, player_id: int) -> int:
 func get_player_deck_count(game_state: GameStateData, player_id: int) -> int:
 	return game_state.player_decks.get(player_id, []).size()
 
-func count_available_seeker_cards(game_state: GameStateData, player_id: int) -> int:
+func count_available_seeker_stamps(game_state: GameStateData, player_id: int) -> int:
 	var count: int = 0
 	var seen: Dictionary = {}
-	var card_names: Array = []
-	card_names.append_array(game_state.player_hands.get(player_id, []))
-	card_names.append_array(game_state.player_decks.get(player_id, []))
-	for card_name_value in card_names:
-		var card_name: String = str(card_name_value)
-		if seen.has(card_name):
+	var stamp_names: Array = []
+	stamp_names.append_array(game_state.player_hands.get(player_id, []))
+	stamp_names.append_array(game_state.player_decks.get(player_id, []))
+	for stamp_name_value in stamp_names:
+		var stamp_name: String = str(stamp_name_value)
+		if seen.has(stamp_name):
 			continue
-		seen[card_name] = true
-		var card: Card = CardLibrary.get_card(card_name)
-		if card != null and MoveRules.is_seeker_card(card):
+		seen[stamp_name] = true
+		var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
+		if stamp != null and MoveRules.is_seeker_stamp(stamp):
 			count += 1
 	return count
 
 func count_player_pieces(game_state: GameStateData, player_id: int) -> int:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var count: int = 0
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
@@ -128,50 +128,50 @@ func count_player_pieces(game_state: GameStateData, player_id: int) -> int:
 	return count
 
 func count_player_pieces_in_center(game_state: GameStateData, player_id: int, board_size: int) -> int:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var count: int = 0
 	for position_value in game_state.pieces:
-		var pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
 		if piece != null and piece.color == player_color and is_in_center_zone(pos, board_size):
 			count += 1
 	return count
 
 func count_active_seeker_pieces(game_state: GameStateData, player_id: int) -> int:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var count: int = 0
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null and piece.color == player_color and MoveRules.is_seeker_card(piece.attached_card):
+		if piece != null and piece.color == player_color and MoveRules.is_seeker_stamp(piece.attached_stamp):
 			count += 1
 	return count
 
 func count_enemy_pieces_near_base(game_state: GameStateData, player_id: int, radius: float) -> int:
-	var enemy_color: int = CardEffectResolver.get_color_for_player_id(1 - player_id)
-	var own_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, player_id)
+	var enemy_color: int = StampEffectResolver.get_color_for_player_id(1 - player_id)
+	var own_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, player_id)
 	var count: int = 0
 	for position_value in game_state.pieces:
-		var pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
 		if piece != null and piece.color == enemy_color and get_manhattan_distance(pos, own_base) <= radius:
 			count += 1
 	return count
 
 func get_enemy_seeker_min_base_distance(game_state: GameStateData, player_id: int) -> float:
-	var enemy_color: int = CardEffectResolver.get_color_for_player_id(1 - player_id)
-	var own_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, player_id)
+	var enemy_color: int = StampEffectResolver.get_color_for_player_id(1 - player_id)
+	var own_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, player_id)
 	var best_distance: float = 99.0
 	for position_value in game_state.pieces:
-		var pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null and piece.color == enemy_color and MoveRules.is_seeker_card(piece.attached_card):
+		if piece != null and piece.color == enemy_color and MoveRules.is_seeker_stamp(piece.attached_stamp):
 			best_distance = minf(best_distance, get_manhattan_distance(pos, own_base))
 	return best_distance
 
 func has_immediate_base_win(game_state: GameStateData, player_id: int, board_size: int) -> bool:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var opponent_base: Vector2 = CardEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
-	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(game_state.pieces, player_color, board_size, game_state.board_effects)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_stamp_moves(game_state.pieces, player_color, board_size, game_state.board_effects)
 	for move: Dictionary in valid_moves:
 		if AIStateSimulator.get_move_to(move) == opponent_base and AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
 			return true

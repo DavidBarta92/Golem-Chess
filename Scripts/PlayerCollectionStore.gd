@@ -6,7 +6,7 @@ const SAVED_DECKS_PATH: String = "user://decks.json"
 const LOCAL_PROVIDER: String = "local_json"
 const DEFAULT_VARIANT_ID: String = "standard"
 const DEFAULT_VARIANT_NAME: String = "Standard"
-const DEFAULT_COLLECTION_CARD_NAMES: Array[String] = [
+const DEFAULT_COLLECTION_STAMP_NAMES: Array[String] = [
 	"Numero_1",
 	"Numero_2",
 	"Numero_3",
@@ -27,9 +27,9 @@ func ensure_loaded() -> void:
 	if is_loaded:
 		return
 
-	if CardLibrary.all_cards.is_empty():
-		CardLibrary.load_all_cards()
-	CardPrintLibrary.ensure_loaded()
+	if StampLibrary.all_stamps.is_empty():
+		StampLibrary.load_all_stamps()
+	StampPrintLibrary.ensure_loaded()
 
 	if FileAccess.file_exists(COLLECTION_PATH):
 		var file := FileAccess.open(COLLECTION_PATH, FileAccess.READ)
@@ -56,37 +56,37 @@ func list_items() -> Array:
 	ensure_loaded()
 	return _get_items().duplicate(true)
 
-func owns_card(card: Card) -> bool:
-	return get_owned_count_for_card(card) > 0
+func owns_stamp(stamp: Stamp) -> bool:
+	return get_owned_count_for_stamp(stamp) > 0
 
-func owns_card_code(card_code: String) -> bool:
-	return get_owned_count_for_card_code(card_code) > 0
+func owns_stamp_code(stamp_code: String) -> bool:
+	return get_owned_count_for_stamp_code(stamp_code) > 0
 
-func owns_print(card_print: CardPrint) -> bool:
-	return card_print != null && get_owned_count_for_print_id(card_print.print_id) > 0
+func owns_print(stamp_print: StampPrint) -> bool:
+	return stamp_print != null && get_owned_count_for_print_id(stamp_print.print_id) > 0
 
 func owns_print_id(print_id: String) -> bool:
 	return get_owned_count_for_print_id(print_id) > 0
 
-func get_owned_count_for_card(card: Card) -> int:
-	if card == null:
+func get_owned_count_for_stamp(stamp: Stamp) -> int:
+	if stamp == null:
 		return 0
 
-	var card_code: String = get_card_code(card)
+	var stamp_code: String = get_stamp_code(stamp)
 	var owned_count: int = 0
 	for item in _get_items():
-		if item is Dictionary && _resolve_card_code(str(item.get("card_code", ""))) == card_code:
+		if item is Dictionary && _resolve_stamp_code(str(item.get("stamp_code", ""))) == stamp_code:
 			owned_count += int(item.get("quantity", 0))
 	return owned_count
 
-func get_owned_count_for_card_code(card_code: String) -> int:
-	var normalized_card_code: String = _resolve_card_code(card_code)
-	if normalized_card_code.is_empty():
+func get_owned_count_for_stamp_code(stamp_code: String) -> int:
+	var normalized_stamp_code: String = _resolve_stamp_code(stamp_code)
+	if normalized_stamp_code.is_empty():
 		return 0
 
 	var owned_count: int = 0
 	for item in _get_items():
-		if item is Dictionary && _resolve_card_code(str(item.get("card_code", ""))) == normalized_card_code:
+		if item is Dictionary && _resolve_stamp_code(str(item.get("stamp_code", ""))) == normalized_stamp_code:
 			owned_count += int(item.get("quantity", 0))
 	return owned_count
 
@@ -100,20 +100,20 @@ func get_owned_count_for_print_id(print_id: String) -> int:
 			return int(item.get("quantity", 0))
 	return 0
 
-func get_first_owned_item_for_card(card: Card) -> Dictionary:
-	if card == null:
+func get_first_owned_item_for_stamp(stamp: Stamp) -> Dictionary:
+	if stamp == null:
 		return {}
 
-	var card_code: String = get_card_code(card)
+	var stamp_code: String = get_stamp_code(stamp)
 	for item in _get_items():
-		if item is Dictionary && _resolve_card_code(str(item.get("card_code", ""))) == card_code && int(item.get("quantity", 0)) > 0:
+		if item is Dictionary && _resolve_stamp_code(str(item.get("stamp_code", ""))) == stamp_code && int(item.get("quantity", 0)) > 0:
 			return item.duplicate(true)
 	return {}
 
-func get_owned_item_for_print(card_print: CardPrint) -> Dictionary:
-	if card_print == null:
+func get_owned_item_for_print(stamp_print: StampPrint) -> Dictionary:
+	if stamp_print == null:
 		return {}
-	return get_owned_item_for_print_id(card_print.print_id)
+	return get_owned_item_for_print_id(stamp_print.print_id)
 
 func get_owned_item_for_print_id(print_id: String) -> Dictionary:
 	var normalized_print_id: String = _resolve_print_id(print_id)
@@ -122,39 +122,39 @@ func get_owned_item_for_print_id(print_id: String) -> Dictionary:
 			return item.duplicate(true)
 	return {}
 
-func add_local_card_copy(card_name: String, variant_id: String = DEFAULT_VARIANT_ID, _variant_name: String = DEFAULT_VARIANT_NAME) -> Dictionary:
+func add_local_stamp_copy(stamp_name: String, variant_id: String = DEFAULT_VARIANT_ID, _variant_name: String = DEFAULT_VARIANT_NAME) -> Dictionary:
 	ensure_loaded()
-	var card: Card = CardLibrary.get_card(card_name)
-	if card == null:
+	var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
+	if stamp == null:
 		return {}
 
-	var card_code: String = get_card_code(card)
-	var print_id: String = CardPrintLibrary.get_print_id(card_code, variant_id)
+	var stamp_code: String = get_stamp_code(stamp)
+	var print_id: String = StampPrintLibrary.get_print_id(stamp_code, variant_id)
 	return add_local_print_copy(print_id)
 
 func add_local_print_copy(print_id: String, amount: int = 1) -> Dictionary:
 	ensure_loaded()
-	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
-	if card_print == null:
+	var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
+	if stamp_print == null:
 		return {}
 
 	var items: Array = _get_items()
 	for index in range(items.size()):
 		var item = items[index]
-		if item is Dictionary && _resolve_print_id(str(item.get("print_id", ""))) == card_print.print_id:
+		if item is Dictionary && _resolve_print_id(str(item.get("print_id", ""))) == stamp_print.print_id:
 			item["quantity"] = maxi(0, int(item.get("quantity", 0))) + maxi(1, amount)
 			items[index] = item
 			collection_data["items"] = items
 			save_collection()
 			return item.duplicate(true)
 
-	var new_item: Dictionary = _create_collection_item(card_print, maxi(1, amount))
+	var new_item: Dictionary = _create_collection_item(stamp_print, maxi(1, amount))
 	items.append(new_item)
 	collection_data["items"] = items
 	save_collection()
 	return new_item.duplicate(true)
 
-func remove_card_instance(instance_id: String) -> bool:
+func remove_stamp_instance(instance_id: String) -> bool:
 	ensure_loaded()
 	var items: Array = _get_items()
 	for index in range(items.size()):
@@ -175,35 +175,35 @@ func save_collection() -> bool:
 
 	var file := FileAccess.open(COLLECTION_PATH, FileAccess.WRITE)
 	if file == null:
-		push_error("Could not save player card collection to %s" % COLLECTION_PATH)
+		push_error("Could not save player stamp collection to %s" % COLLECTION_PATH)
 		return false
 
 	file.store_string(JSON.stringify(collection_data, "\t"))
 	return true
 
-func get_card_code(card: Card) -> String:
-	if card == null:
+func get_stamp_code(stamp: Stamp) -> String:
+	if stamp == null:
 		return ""
 
-	var card_code := card.card_code.strip_edges()
-	return card_code if !card_code.is_empty() else card.card_name.strip_edges()
+	var stamp_code := stamp.stamp_code.strip_edges()
+	return stamp_code if !stamp_code.is_empty() else stamp.stamp_name.strip_edges()
 
-func _resolve_card_code(card_code_or_name: String) -> String:
-	var normalized_value: String = card_code_or_name.strip_edges()
+func _resolve_stamp_code(stamp_code_or_name: String) -> String:
+	var normalized_value: String = stamp_code_or_name.strip_edges()
 	if normalized_value.is_empty():
 		return ""
 
-	var card_by_code: Card = CardLibrary.get_card_by_code(normalized_value)
-	if card_by_code != null:
-		return get_card_code(card_by_code)
+	var stamp_by_code: Stamp = StampLibrary.get_stamp_by_code(normalized_value)
+	if stamp_by_code != null:
+		return get_stamp_code(stamp_by_code)
 
-	var card_by_name: Card = CardLibrary.get_card(normalized_value)
-	if card_by_name != null:
-		return get_card_code(card_by_name)
+	var stamp_by_name: Stamp = StampLibrary.get_stamp(normalized_value)
+	if stamp_by_name != null:
+		return get_stamp_code(stamp_by_name)
 
-	var alias_card_code: String = CardLibrary.resolve_card_code_alias(normalized_value)
-	if alias_card_code != normalized_value.to_lower():
-		return alias_card_code
+	var alias_stamp_code: String = StampLibrary.resolve_stamp_code_alias(normalized_value)
+	if alias_stamp_code != normalized_value.to_lower():
+		return alias_stamp_code
 
 	return normalized_value
 
@@ -212,14 +212,14 @@ func _resolve_print_id(print_id: String) -> String:
 	if normalized_print_id.is_empty():
 		return ""
 
-	var card_print: CardPrint = CardPrintLibrary.get_print(normalized_print_id)
-	if card_print != null:
-		return card_print.print_id
+	var stamp_print: StampPrint = StampPrintLibrary.get_print(normalized_print_id)
+	if stamp_print != null:
+		return stamp_print.print_id
 
-	return CardPrintLibrary.resolve_print_id_alias(normalized_print_id)
+	return StampPrintLibrary.resolve_print_id_alias(normalized_print_id)
 
-func get_item_def_key(card_code: String, variant_id: String) -> String:
-	return CardPrintLibrary.get_print_id(card_code, variant_id)
+func get_item_def_key(stamp_code: String, variant_id: String) -> String:
+	return StampPrintLibrary.get_print_id(stamp_code, variant_id)
 
 func _get_items() -> Array:
 	ensure_loaded()
@@ -245,51 +245,51 @@ func _normalize_collection(raw_data: Dictionary) -> Dictionary:
 
 func _normalize_collection_item(raw_item: Dictionary) -> Dictionary:
 	var print_id: String = str(raw_item.get("print_id", ""))
-	var card_code: String = str(raw_item.get("card_code", ""))
-	var card_name: String = str(raw_item.get("card_name", ""))
-	var variant_id: String = CardPrintLibrary.normalize_variant_id(str(raw_item.get("variant_id", DEFAULT_VARIANT_ID)))
+	var stamp_code: String = str(raw_item.get("stamp_code", ""))
+	var stamp_name: String = str(raw_item.get("stamp_name", ""))
+	var variant_id: String = StampPrintLibrary.normalize_variant_id(str(raw_item.get("variant_id", DEFAULT_VARIANT_ID)))
 
-	if card_code.is_empty() && !card_name.is_empty():
-		card_code = _resolve_card_code(card_name)
+	if stamp_code.is_empty() && !stamp_name.is_empty():
+		stamp_code = _resolve_stamp_code(stamp_name)
 	else:
-		card_code = _resolve_card_code(card_code)
+		stamp_code = _resolve_stamp_code(stamp_code)
 
 	if !print_id.is_empty():
 		print_id = _resolve_print_id(print_id)
-	if print_id.is_empty() && !card_code.is_empty():
-		print_id = CardPrintLibrary.get_print_id(card_code, variant_id)
+	if print_id.is_empty() && !stamp_code.is_empty():
+		print_id = StampPrintLibrary.get_print_id(stamp_code, variant_id)
 
-	var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
-	if card_print != null:
-		print_id = card_print.print_id
-		card_code = card_print.card_code
-		variant_id = card_print.variant_id
+	var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
+	if stamp_print != null:
+		print_id = stamp_print.print_id
+		stamp_code = stamp_print.stamp_code
+		variant_id = stamp_print.variant_id
 	else:
-		card_print = CardPrint.new()
-		card_print.print_id = print_id
-		card_print.card_code = card_code
-		card_print.variant_id = variant_id
-		card_print.variant_name = CardPrintLibrary.get_variant_name(variant_id)
+		stamp_print = StampPrint.new()
+		stamp_print.print_id = print_id
+		stamp_print.stamp_code = stamp_code
+		stamp_print.variant_id = variant_id
+		stamp_print.variant_name = StampPrintLibrary.get_variant_name(variant_id)
 
 	var quantity: int = maxi(1, int(raw_item.get("quantity", 1)))
 	var instance_id: String = str(raw_item.get("instance_id", ""))
 	if instance_id.is_empty():
-		instance_id = _generate_instance_id(card_print)
+		instance_id = _generate_instance_id(stamp_print)
 
-	return _create_collection_item(card_print, quantity, instance_id)
+	return _create_collection_item(stamp_print, quantity, instance_id)
 
 func _create_default_collection() -> Dictionary:
-	if CardLibrary.all_cards.is_empty():
-		CardLibrary.load_all_cards()
-	CardPrintLibrary.ensure_loaded()
+	if StampLibrary.all_stamps.is_empty():
+		StampLibrary.load_all_stamps()
+	StampPrintLibrary.ensure_loaded()
 
 	var items: Array = []
 	var default_prints: Array = _get_default_collection_prints()
-	for card_print_value in default_prints:
-		var card_print: CardPrint = card_print_value as CardPrint
-		if card_print == null:
+	for stamp_print_value in default_prints:
+		var stamp_print: StampPrint = stamp_print_value as StampPrint
+		if stamp_print == null:
 			continue
-		items.append(_create_collection_item(card_print, _get_default_collection_quantity(card_print)))
+		items.append(_create_collection_item(stamp_print, _get_default_collection_quantity(stamp_print)))
 
 	return {
 		"schema_version": COLLECTION_SCHEMA_VERSION,
@@ -306,21 +306,21 @@ func _add_missing_default_collection_prints() -> void:
 			item_index_by_print_id[_resolve_print_id(str(item.get("print_id", "")))] = index
 
 	var default_prints: Array = _get_default_collection_prints()
-	for card_print_value in default_prints:
-		var card_print: CardPrint = card_print_value as CardPrint
-		if card_print == null:
+	for stamp_print_value in default_prints:
+		var stamp_print: StampPrint = stamp_print_value as StampPrint
+		if stamp_print == null:
 			continue
 
-		var default_quantity: int = _get_default_collection_quantity(card_print)
-		if item_index_by_print_id.has(card_print.print_id):
-			var item_index: int = int(item_index_by_print_id[card_print.print_id])
+		var default_quantity: int = _get_default_collection_quantity(stamp_print)
+		if item_index_by_print_id.has(stamp_print.print_id):
+			var item_index: int = int(item_index_by_print_id[stamp_print.print_id])
 			var existing_item: Dictionary = items[item_index]
 			if int(existing_item.get("quantity", 0)) < default_quantity:
 				existing_item["quantity"] = default_quantity
 				items[item_index] = existing_item
 			continue
 
-		items.append(_create_collection_item(card_print, default_quantity))
+		items.append(_create_collection_item(stamp_print, default_quantity))
 
 	collection_data["items"] = items
 
@@ -335,21 +335,21 @@ func _add_missing_saved_deck_prints() -> void:
 		if item is Dictionary:
 			item_index_by_print_id[_resolve_print_id(str(item.get("print_id", "")))] = index
 
-	for card_print_value in _get_saved_deck_prints():
-		var card_print: CardPrint = card_print_value as CardPrint
-		if card_print == null:
+	for stamp_print_value in _get_saved_deck_prints():
+		var stamp_print: StampPrint = stamp_print_value as StampPrint
+		if stamp_print == null:
 			continue
 
-		if item_index_by_print_id.has(card_print.print_id):
-			var item_index: int = int(item_index_by_print_id[card_print.print_id])
+		if item_index_by_print_id.has(stamp_print.print_id):
+			var item_index: int = int(item_index_by_print_id[stamp_print.print_id])
 			var existing_item: Dictionary = items[item_index]
 			if int(existing_item.get("quantity", 0)) < 1:
 				existing_item["quantity"] = 1
 				items[item_index] = existing_item
 			continue
 
-		items.append(_create_collection_item(card_print, 1))
-		item_index_by_print_id[card_print.print_id] = items.size() - 1
+		items.append(_create_collection_item(stamp_print, 1))
+		item_index_by_print_id[stamp_print.print_id] = items.size() - 1
 
 	collection_data["items"] = items
 
@@ -376,98 +376,98 @@ func _get_saved_deck_prints() -> Array:
 			continue
 
 		var deck: Dictionary = deck_value
-		var cards = deck.get("cards", [])
-		if !(cards is Array):
+		var stamps = deck.get("stamps", [])
+		if !(stamps is Array):
 			continue
 
-		for deck_card in cards:
-			var card_print: CardPrint = _get_saved_deck_card_print(deck_card)
-			if card_print != null:
-				saved_prints[card_print.print_id] = card_print
+		for deck_stamp in stamps:
+			var stamp_print: StampPrint = _get_saved_deck_stamp_print(deck_stamp)
+			if stamp_print != null:
+				saved_prints[stamp_print.print_id] = stamp_print
 
 	return saved_prints.values()
 
-func _get_saved_deck_card_print(deck_card) -> CardPrint:
-	if deck_card is Dictionary:
-		var print_id: String = str(deck_card.get("print_id", "")).strip_edges()
+func _get_saved_deck_stamp_print(deck_stamp) -> StampPrint:
+	if deck_stamp is Dictionary:
+		var print_id: String = str(deck_stamp.get("print_id", "")).strip_edges()
 		if !print_id.is_empty():
-			var card_print: CardPrint = CardPrintLibrary.get_print(print_id)
-			if card_print != null:
-				return card_print
+			var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
+			if stamp_print != null:
+				return stamp_print
 
-		var card_code: String = str(deck_card.get("card_code", "")).strip_edges()
-		if card_code.is_empty():
-			card_code = _get_card_code_for_name(str(deck_card.get("card_name", "")))
+		var stamp_code: String = str(deck_stamp.get("stamp_code", "")).strip_edges()
+		if stamp_code.is_empty():
+			stamp_code = _get_stamp_code_for_name(str(deck_stamp.get("stamp_name", "")))
 		else:
-			card_code = _resolve_card_code(card_code)
-		if card_code.is_empty():
+			stamp_code = _resolve_stamp_code(stamp_code)
+		if stamp_code.is_empty():
 			return null
 
-		var variant_id: String = CardPrintLibrary.normalize_variant_id(str(deck_card.get("variant_id", DEFAULT_VARIANT_ID)))
-		var card_print_by_variant: CardPrint = CardPrintLibrary.get_print(CardPrintLibrary.get_print_id(card_code, variant_id))
-		if card_print_by_variant != null:
-			return card_print_by_variant
-		return CardPrintLibrary.get_print(CardPrintLibrary.get_default_print_id_for_card_code(card_code))
+		var variant_id: String = StampPrintLibrary.normalize_variant_id(str(deck_stamp.get("variant_id", DEFAULT_VARIANT_ID)))
+		var stamp_print_by_variant: StampPrint = StampPrintLibrary.get_print(StampPrintLibrary.get_print_id(stamp_code, variant_id))
+		if stamp_print_by_variant != null:
+			return stamp_print_by_variant
+		return StampPrintLibrary.get_print(StampPrintLibrary.get_default_print_id_for_stamp_code(stamp_code))
 
-	var legacy_card_code: String = _get_card_code_for_name(str(deck_card))
-	if legacy_card_code.is_empty():
+	var legacy_stamp_code: String = _get_stamp_code_for_name(str(deck_stamp))
+	if legacy_stamp_code.is_empty():
 		return null
-	return CardPrintLibrary.get_print(CardPrintLibrary.get_default_print_id_for_card_code(legacy_card_code))
+	return StampPrintLibrary.get_print(StampPrintLibrary.get_default_print_id_for_stamp_code(legacy_stamp_code))
 
-func _get_default_collection_quantity(card_print: CardPrint) -> int:
-	if card_print == null:
+func _get_default_collection_quantity(stamp_print: StampPrint) -> int:
+	if stamp_print == null:
 		return 1
-	var default_quantities: Dictionary = _get_default_collection_card_code_quantities()
-	return maxi(1, int(default_quantities.get(card_print.card_code, 1)))
+	var default_quantities: Dictionary = _get_default_collection_stamp_code_quantities()
+	return maxi(1, int(default_quantities.get(stamp_print.stamp_code, 1)))
 
 func _get_default_collection_prints() -> Array:
 	var default_prints: Array = []
-	var card_codes: Array = _get_default_collection_card_code_quantities().keys()
-	card_codes.sort()
-	for card_code_value in card_codes:
-		var card_code: String = str(card_code_value)
-		var card_print: CardPrint = CardPrintLibrary.get_print(CardPrintLibrary.get_default_print_id_for_card_code(card_code))
-		if card_print != null:
-			default_prints.append(card_print)
+	var stamp_codes: Array = _get_default_collection_stamp_code_quantities().keys()
+	stamp_codes.sort()
+	for stamp_code_value in stamp_codes:
+		var stamp_code: String = str(stamp_code_value)
+		var stamp_print: StampPrint = StampPrintLibrary.get_print(StampPrintLibrary.get_default_print_id_for_stamp_code(stamp_code))
+		if stamp_print != null:
+			default_prints.append(stamp_print)
 
 	return default_prints
 
-func _get_default_collection_card_code_quantities() -> Dictionary:
+func _get_default_collection_stamp_code_quantities() -> Dictionary:
 	var quantities: Dictionary = {}
-	for card_name_value in DEFAULT_COLLECTION_CARD_NAMES:
-		var card_code: String = _get_card_code_for_name(str(card_name_value))
-		if card_code.is_empty():
+	for stamp_name_value in DEFAULT_COLLECTION_STAMP_NAMES:
+		var stamp_code: String = _get_stamp_code_for_name(str(stamp_name_value))
+		if stamp_code.is_empty():
 			continue
-		quantities[card_code] = 1
+		quantities[stamp_code] = 1
 
 	return quantities
 
-func _get_card_code_for_name(card_name: String) -> String:
-	var card: Card = CardLibrary.get_card(card_name)
-	if card == null:
-		push_warning("Default collection card not found: %s" % card_name)
+func _get_stamp_code_for_name(stamp_name: String) -> String:
+	var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
+	if stamp == null:
+		push_warning("Default collection stamp not found: %s" % stamp_name)
 		return ""
-	return get_card_code(card)
+	return get_stamp_code(stamp)
 
 func _should_reset_outdated_local_collection(previous_schema_version: int, normalized_collection: Dictionary) -> bool:
 	if previous_schema_version >= COLLECTION_SCHEMA_VERSION:
 		return false
 	return str(normalized_collection.get("provider", LOCAL_PROVIDER)) == LOCAL_PROVIDER
 
-func _create_collection_item(card_print: CardPrint, quantity: int = 1, instance_id: String = "") -> Dictionary:
-	var card: Card = CardPrintLibrary.get_card_for_print(card_print)
+func _create_collection_item(stamp_print: StampPrint, quantity: int = 1, instance_id: String = "") -> Dictionary:
+	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
 	if instance_id.is_empty():
-		instance_id = _generate_instance_id(card_print)
+		instance_id = _generate_instance_id(stamp_print)
 
 	return {
 		"instance_id": instance_id,
 		"provider": LOCAL_PROVIDER,
-		"print_id": card_print.print_id,
-		"card_code": card_print.card_code,
-		"card_name": card.card_name if card != null else card_print.card_code,
-		"variant_id": card_print.variant_id,
-		"variant_name": card_print.get_display_name(),
-		"item_def_key": card_print.print_id,
+		"print_id": stamp_print.print_id,
+		"stamp_code": stamp_print.stamp_code,
+		"stamp_name": stamp.stamp_name if stamp != null else stamp_print.stamp_code,
+		"variant_id": stamp_print.variant_id,
+		"variant_name": stamp_print.get_display_name(),
+		"item_def_key": stamp_print.print_id,
 		"steam_item_instance_id": "",
 		"steam_item_def_id": "",
 		"quantity": maxi(0, quantity),
@@ -483,8 +483,8 @@ func _add_or_merge_item(items: Array, new_item: Dictionary) -> void:
 			return
 	items.append(new_item)
 
-func _generate_instance_id(card_print: CardPrint) -> String:
-	return "local_%s_%d" % [_sanitize_id(card_print.print_id), Time.get_ticks_usec()]
+func _generate_instance_id(stamp_print: StampPrint) -> String:
+	return "local_%s_%d" % [_sanitize_id(stamp_print.print_id), Time.get_ticks_usec()]
 
 func _sanitize_id(value: String) -> String:
 	return value.to_lower().replace(" ", "_").replace("/", "_").replace("\\", "_").replace(":", "_").replace(".", "_")

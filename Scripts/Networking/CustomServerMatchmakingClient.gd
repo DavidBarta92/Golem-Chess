@@ -13,7 +13,7 @@ func set_lobbies_from_server(raw_lobbies: Array) -> void:
 			cached_lobbies.append(MultiplayerLobby.from_dictionary(raw_lobby))
 	lobby_list_updated.emit(cached_lobbies.duplicate())
 
-func create_lobby(player_name: String, _deck_card_names: Array[String]) -> void:
+func create_lobby(player_name: String, _deck_stamp_names: Array[String]) -> void:
 	var lobby := MultiplayerLobby.new()
 	lobby.lobby_id = "local-%d" % Time.get_unix_time_from_system()
 	lobby.host_name = GameConfig.sanitize_player_name(player_name)

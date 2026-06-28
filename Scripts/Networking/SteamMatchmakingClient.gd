@@ -4,7 +4,7 @@ class_name SteamMatchmakingClient
 func refresh_lobbies() -> void:
 	matchmaking_failed.emit("Steam public lobby browsing is not planned for this game mode yet.")
 
-func create_lobby(_player_name: String, _deck_card_names: Array[String]) -> void:
+func create_lobby(_player_name: String, _deck_stamp_names: Array[String]) -> void:
 	matchmaking_failed.emit("Steam matchmaking is not integrated yet.")
 
 func invite_friend(friend_id: String) -> void:

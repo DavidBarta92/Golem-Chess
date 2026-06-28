@@ -2,7 +2,7 @@ extends RefCounted
 class_name AITurnPlanner
 
 const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
-const ACTION_ATTACH_CARD: String = "attach_card"
+const ACTION_ATTACH_STAMP: String = "attach_stamp"
 const ACTION_TURN_PAGE: String = "turn_page"
 const ACTION_MOVE_PIECE: String = "move_piece"
 const ACTION_END_TURN: String = "end_turn"
@@ -169,23 +169,23 @@ func find_best_attach_setup(
 	var best_action: Dictionary = {}
 	var best_score: float = -INF
 	var hand_names: Array = game_state.player_hands.get(player_id, [])
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 
 	for hand_index in range(hand_names.size()):
-		var card_name: String = str(hand_names[hand_index])
-		var card: Card = CardLibrary.get_card(card_name)
-		if card == null or !MoveRules.card_can_be_used(card):
+		var stamp_name: String = str(hand_names[hand_index])
+		var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
+		if stamp == null or !MoveRules.stamp_can_be_used(stamp):
 			continue
 
 		for position_value in game_state.pieces:
-			var piece_pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+			var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 			var piece: Piece = game_state.pieces[position_value] as Piece
-			if piece == null or piece.color != player_color or piece.attached_card != null:
+			if piece == null or piece.color != player_color or piece.attached_stamp != null:
 				continue
-			if !MoveRules.can_attach_card_for_turn(game_state.pieces, player_color, card):
+			if !MoveRules.can_attach_stamp_for_turn(game_state.pieces, player_color, stamp):
 				continue
 
-			var attach_action: Dictionary = make_attach_action(player_id, card, piece_pos, hand_index)
+			var attach_action: Dictionary = make_attach_action(player_id, stamp, piece_pos, hand_index)
 			var attach_score: float = evaluator.score_attach_setup(game_state, player_id, attach_action, board_size)
 			increment_profile_count(profile, "evaluated_own_plans")
 			if best_action.is_empty() or attach_score > best_score:
@@ -197,7 +197,7 @@ func find_best_attach_setup(
 		"score": best_score,
 	}
 
-func find_exchange_action_for_worst_card(
+func find_exchange_action_for_worst_stamp(
 	game_state: GameStateData,
 	player_id: int,
 	evaluator: AIMoveEvaluator,
@@ -206,44 +206,44 @@ func find_exchange_action_for_worst_card(
 ) -> Dictionary:
 	var hand_names: Array = game_state.player_hands.get(player_id, [])
 	var worst_hand_index: int = -1
-	var worst_card_name: String = ""
+	var worst_stamp_name: String = ""
 	var worst_score: float = INF
 
 	for hand_index in range(hand_names.size()):
-		var card_name: String = str(hand_names[hand_index])
-		var card_score: float = score_best_fit_for_card(game_state, player_id, card_name, hand_index, evaluator, board_size, profile)
-		if worst_hand_index == -1 or card_score < worst_score:
+		var stamp_name: String = str(hand_names[hand_index])
+		var stamp_score: float = score_best_fit_for_stamp(game_state, player_id, stamp_name, hand_index, evaluator, board_size, profile)
+		if worst_hand_index == -1 or stamp_score < worst_score:
 			worst_hand_index = hand_index
-			worst_card_name = card_name
-			worst_score = card_score
+			worst_stamp_name = stamp_name
+			worst_score = stamp_score
 
 	if worst_hand_index == -1:
 		return {}
 
-	return make_exchange_action(player_id, worst_card_name, worst_hand_index)
+	return make_exchange_action(player_id, worst_stamp_name, worst_hand_index)
 
-func score_best_fit_for_card(
+func score_best_fit_for_stamp(
 	game_state: GameStateData,
 	player_id: int,
-	card_name: String,
+	stamp_name: String,
 	hand_index: int,
 	evaluator: AIMoveEvaluator,
 	board_size: int,
 	profile: Dictionary = {}
 ) -> float:
-	var card: Card = CardLibrary.get_card(card_name)
-	if card == null or !MoveRules.card_can_be_used(card):
+	var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
+	if stamp == null or !MoveRules.stamp_can_be_used(stamp):
 		return -INF
 
 	var best_score: float = -INF
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	for position_value in game_state.pieces:
-		var piece_pos: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_card != null:
+		if piece == null or piece.color != player_color or piece.attached_stamp != null:
 			continue
 
-		var attach_action: Dictionary = make_attach_action(player_id, card, piece_pos, hand_index)
+		var attach_action: Dictionary = make_attach_action(player_id, stamp, piece_pos, hand_index)
 		var attach_score: float = evaluator.score_attach_setup_for_exchange(game_state, player_id, attach_action, board_size)
 		increment_profile_count(profile, "evaluated_own_plans")
 		best_score = max(best_score, attach_score)
@@ -268,11 +268,11 @@ func has_free_attach_piece(game_state: GameStateData, player_id: int) -> bool:
 	return count_free_attach_pieces(game_state, player_id) > 0
 
 func count_free_attach_pieces(game_state: GameStateData, player_id: int) -> int:
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var count: int = 0
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null and piece.color == player_color and piece.can_receive_card():
+		if piece != null and piece.color == player_color and piece.can_receive_stamp():
 			count += 1
 	return count
 
@@ -286,8 +286,8 @@ func find_best_existing_move(
 	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
 		return {}
 
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_stamp_moves(
 		game_state.pieces,
 		player_color,
 		board_size,
@@ -368,10 +368,10 @@ func add_sequential_turn_plan_branches(
 			return
 
 		var next_state: GameStateData = AIStateSimulator.clone_game_state(game_state)
-		var piece_pos: Vector2 = CardEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+		var piece_pos: Vector2 = StampEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 		AIStateSimulator.apply_attach_action(next_state, player_id, attach_action, board_size)
 		var attached_piece: Piece = next_state.get_piece(piece_pos)
-		if attached_piece == null or attached_piece.attached_card == null:
+		if attached_piece == null or attached_piece.attached_stamp == null:
 			continue
 
 		var next_prefix: Array[Dictionary] = duplicate_actions(prefix_actions)
@@ -409,8 +409,8 @@ func add_current_state_finish_plans(
 	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
 		return
 
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
-	var valid_moves: Array[Dictionary] = MoveRules.get_existing_card_moves(
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var valid_moves: Array[Dictionary] = MoveRules.get_existing_stamp_moves(
 		game_state.pieces,
 		player_color,
 		board_size,
@@ -426,8 +426,8 @@ func add_current_state_finish_plans(
 		plans.append(create_plan(move_actions, move, duplicate_actions(setup_attach_actions), plan_type))
 
 func get_ranked_attach_actions_for_state(game_state: GameStateData, player_id: int, board_size: int) -> Array[Dictionary]:
-	var hand_cards: Array[Card] = AIStateSimulator.get_hand_cards_from_state(game_state, player_id)
-	var attach_actions: Array[Dictionary] = get_attach_actions_for_pieces(game_state.pieces, player_id, hand_cards)
+	var hand_stamps: Array[Stamp] = AIStateSimulator.get_hand_stamps_from_state(game_state, player_id)
+	var attach_actions: Array[Dictionary] = get_attach_actions_for_pieces(game_state.pieces, player_id, hand_stamps)
 	var scored_actions: Array[Dictionary] = []
 	for attach_action: Dictionary in attach_actions:
 		var score: float = 0.0
@@ -449,12 +449,12 @@ func get_exchange_actions_for_state(game_state: GameStateData, player_id: int, b
 	var hand_names: Array = game_state.player_hands.get(player_id, [])
 	var scored_actions: Array[Dictionary] = []
 	for hand_index in range(hand_names.size()):
-		var card_name: String = str(hand_names[hand_index])
+		var stamp_name: String = str(hand_names[hand_index])
 		var score: float = 0.0
 		if planning_evaluator != null:
-			score = score_best_fit_for_card(game_state, player_id, card_name, hand_index, planning_evaluator, board_size)
+			score = score_best_fit_for_stamp(game_state, player_id, stamp_name, hand_index, planning_evaluator, board_size)
 		scored_actions.append({
-			"action": make_exchange_action(player_id, card_name, hand_index),
+			"action": make_exchange_action(player_id, stamp_name, hand_index),
 			"score": score,
 		})
 	scored_actions.sort_custom(Callable(self, "sort_scored_action_asc"))
@@ -482,14 +482,14 @@ func add_branch_plans(
 	game_state: GameStateData,
 	player_id: int,
 	pieces: Dictionary,
-	hand_cards: Array[Card],
+	hand_stamps: Array[Stamp],
 	prefix_actions: Array[Dictionary],
 	can_move: bool,
 	can_attach: bool,
 	board_size: int
 ) -> void:
 	if can_attach:
-		var attach_actions: Array[Dictionary] = get_attach_actions_for_pieces(pieces, player_id, hand_cards)
+		var attach_actions: Array[Dictionary] = get_attach_actions_for_pieces(pieces, player_id, hand_stamps)
 		for attach_action: Dictionary in attach_actions:
 			var attach_only_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 			attach_only_actions.append(attach_action)
@@ -498,11 +498,11 @@ func add_branch_plans(
 	if !can_move:
 		return
 
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var valid_moves: Array[Dictionary] = MoveRules.get_valid_turn_moves(
 		pieces,
 		player_color,
-		hand_cards,
+		hand_stamps,
 		can_attach,
 		board_size,
 		game_state.board_effects
@@ -511,7 +511,7 @@ func add_branch_plans(
 	for move: Dictionary in valid_moves:
 		var move_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 		if bool(move.get("requires_attach", false)):
-			var move_attach_action: Dictionary = make_attach_action(player_id, get_move_card(move), AIStateSimulator.get_move_from(move))
+			var move_attach_action: Dictionary = make_attach_action(player_id, get_move_stamp(move), AIStateSimulator.get_move_from(move))
 			move_actions.append(move_attach_action)
 
 		move_actions.append(make_move_action(player_id, move))
@@ -522,34 +522,34 @@ func add_move_then_attach_plans(
 	plans: Array[Dictionary],
 	game_state: GameStateData,
 	player_id: int,
-	hand_cards: Array[Card],
+	hand_stamps: Array[Stamp],
 	prefix_actions: Array[Dictionary],
 	move: Dictionary,
 	_board_size: int
 ) -> void:
 	var simulated_pieces: Dictionary = AIStateSimulator.apply_candidate_to_pieces(game_state.pieces, move)
-	var attach_actions: Array[Dictionary] = get_attach_actions_for_pieces(simulated_pieces, player_id, hand_cards)
+	var attach_actions: Array[Dictionary] = get_attach_actions_for_pieces(simulated_pieces, player_id, hand_stamps)
 	for attach_action: Dictionary in attach_actions:
 		var actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 		actions.append(make_move_action(player_id, move))
 		actions.append(attach_action)
 		plans.append(create_plan(actions, move, [attach_action], "move_then_attach"))
 
-func get_attach_actions_for_pieces(pieces: Dictionary, player_id: int, hand_cards: Array[Card]) -> Array[Dictionary]:
+func get_attach_actions_for_pieces(pieces: Dictionary, player_id: int, hand_stamps: Array[Stamp]) -> Array[Dictionary]:
 	var actions: Array[Dictionary] = []
-	var player_color: int = CardEffectResolver.get_color_for_player_id(player_id)
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	for position_value in pieces:
-		var piece_position: Vector2 = CardEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var piece_position: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or !piece.can_receive_card():
+		if piece == null or piece.color != player_color or !piece.can_receive_stamp():
 			continue
 
-		for card: Card in hand_cards:
-			if !MoveRules.card_can_be_used(card):
+		for stamp: Stamp in hand_stamps:
+			if !MoveRules.stamp_can_be_used(stamp):
 				continue
-			if !MoveRules.can_attach_card_for_turn(pieces, player_color, card):
+			if !MoveRules.can_attach_stamp_for_turn(pieces, player_color, stamp):
 				continue
-			actions.append(make_attach_action(player_id, card, piece_position))
+			actions.append(make_attach_action(player_id, stamp, piece_position))
 
 	return actions
 
@@ -587,17 +587,17 @@ func create_plan(actions: Array[Dictionary], move: Dictionary, setup_attach_acti
 		"plan_type": plan_type,
 	}
 
-func make_attach_action(player_id: int, card: Card, piece_pos: Vector2, hand_index: int = -1) -> Dictionary:
+func make_attach_action(player_id: int, stamp: Stamp, piece_pos: Vector2, hand_index: int = -1) -> Dictionary:
 	return {
-		"type": ACTION_ATTACH_CARD,
+		"type": ACTION_ATTACH_STAMP,
 		"player_id": player_id,
-		"card_name": card.card_name if card != null else "",
+		"stamp_name": stamp.stamp_name if stamp != null else "",
 		"piece_pos": piece_pos,
 		"hand_index": hand_index,
-		"card": card,
+		"stamp": stamp,
 	}
 
-func make_exchange_action(player_id: int, card_name: String, hand_index: int) -> Dictionary:
+func make_exchange_action(player_id: int, stamp_name: String, hand_index: int) -> Dictionary:
 	return {
 		"type": ACTION_TURN_PAGE,
 		"player_id": player_id,
@@ -626,7 +626,7 @@ func make_end_turn_action(player_id: int) -> Dictionary:
 func make_executable_action(action: Dictionary) -> Dictionary:
 	var executable_action: Dictionary = {}
 	for key in action:
-		if str(key) == "card":
+		if str(key) == "stamp":
 			continue
 		executable_action[key] = action[key]
 	return executable_action
@@ -634,7 +634,7 @@ func make_executable_action(action: Dictionary) -> Dictionary:
 func get_ai_action_delay(action: Dictionary, action_delay: float) -> float:
 	if action_delay <= 0.0:
 		return 0.0
-	if str(action.get("type", "")) == ACTION_ATTACH_CARD:
+	if str(action.get("type", "")) == ACTION_ATTACH_STAMP:
 		return maxf(action_delay, ATTACH_ACTION_DELAY)
 	return action_delay
 
@@ -644,8 +644,8 @@ func duplicate_actions(source_actions: Array[Dictionary]) -> Array[Dictionary]:
 		duplicated_actions.append(action.duplicate())
 	return duplicated_actions
 
-func get_move_card(move: Dictionary) -> Card:
-	return move.get("card", null) as Card
+func get_move_stamp(move: Dictionary) -> Stamp:
+	return move.get("stamp", null) as Stamp
 
 func increment_profile_count(profile: Dictionary, key: String, amount: int = 1) -> void:
 	if profile.is_empty():

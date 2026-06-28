@@ -259,9 +259,9 @@ func get_board_special_tile_targets() -> Dictionary:
 		var effect: Dictionary = effect_value
 		var effect_type: String = str(effect.get("effect_type", ""))
 		var tile_type: String = special_tile_none
-		if effect_type == CardEffect.TYPE_INVALID_SQUARES:
+		if effect_type == StampEffect.TYPE_INVALID_SQUARES:
 			tile_type = special_tile_disabled
-		elif effect_type == CardEffect.TYPE_FROZEN_SQUARES:
+		elif effect_type == StampEffect.TYPE_FROZEN_SQUARES:
 			tile_type = special_tile_freeze
 		if tile_type == special_tile_none:
 			continue
