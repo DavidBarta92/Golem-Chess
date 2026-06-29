@@ -188,13 +188,13 @@ func set_stamp_hand(owner_color: int, stamp_names: Array) -> void:
 	if owner_color == 1:
 		match_board.white_stamp_hand = stamps
 		match_board.white_stamp_visuals = match_board.populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
-		match_board.set_codex_page_index(1, 0)
-		match_board.set_codex_pages(1, DeckManager.create_codex_pages(stamp_names))
+		match_board.get_match_codex_controller().set_page_index(1, 0)
+		match_board.get_match_codex_controller().set_pages(1, DeckManager.create_codex_pages(stamp_names))
 	else:
 		match_board.black_stamp_hand = stamps
 		match_board.black_stamp_visuals = match_board.populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
-		match_board.set_codex_page_index(-1, 0)
-		match_board.set_codex_pages(-1, DeckManager.create_codex_pages(stamp_names))
+		match_board.get_match_codex_controller().set_page_index(-1, 0)
+		match_board.get_match_codex_controller().set_pages(-1, DeckManager.create_codex_pages(stamp_names))
 	match_board.setup_deck_visuals()
 
 func set_stamp_deck(owner_color: int, stamp_names: Array) -> void:
@@ -202,7 +202,7 @@ func set_stamp_deck(owner_color: int, stamp_names: Array) -> void:
 	for stamp_name_value in stamp_names:
 		deck_names.append(str(stamp_name_value))
 
-	var pages: Array = match_board.get_codex_pages(owner_color)
+	var pages: Array = match_board.get_match_codex_controller().get_pages(owner_color)
 	while pages.size() < DeckManager.CODEX_PAGE_COUNT:
 		pages.append([])
 	var stamp_index: int = 0
@@ -216,10 +216,10 @@ func set_stamp_deck(owner_color: int, stamp_names: Array) -> void:
 		pages[page_index] = page
 
 	if owner_color == 1:
-		match_board.set_codex_pages(1, pages)
+		match_board.get_match_codex_controller().set_pages(1, pages)
 		match_board.white_deck_count_override = -1
 	else:
-		match_board.set_codex_pages(-1, pages)
+		match_board.get_match_codex_controller().set_pages(-1, pages)
 		match_board.black_deck_count_override = -1
 	match_board.setup_deck_visuals()
 

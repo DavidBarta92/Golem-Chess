@@ -11,11 +11,7 @@ func configure(config: Dictionary) -> void:
 
 func has_pending_visual_processes() -> bool:
 	return (
-		match_board.active_stamp_attach_process_count > 0
-		or match_board.active_piece_revert_animation_count > 0
-		or match_board.active_piece_move_animation_count > 0
-		or match_board.active_piece_shatter_animation_count > 0
-		or match_board.active_bomb_warning_animation_count > 0
+		match_board.has_active_visual_processes()
 		or match_board.get_stamp_animation_controller().has_pending_animations()
 		or !match_board.pending_piece_revert_animations.is_empty()
 	)
@@ -26,7 +22,7 @@ func wait_for_pending_visual_processes() -> void:
 
 func can_switch_action_now() -> bool:
 	var owner_color: int = match_board.get_controllable_color()
-	return match_board.can_turn_page_locally(owner_color)
+	return match_board.get_match_codex_controller().can_turn_page_locally(owner_color)
 
 func has_tutorial_allowed_exchange_stamp(owner_color: int) -> bool:
 	if !match_board.tutorial_constraints_enabled:

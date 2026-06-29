@@ -14,12 +14,13 @@ func configure(config: Dictionary) -> void:
 func setup_player_stamp_hands() -> void:
 	match_board.white_stamp_deck = DeckManager.create_starting_deck()
 	match_board.black_stamp_deck = DeckManager.create_starting_deck()
-	match_board.set_codex_pages(1, DeckManager.create_codex_pages(match_board.white_stamp_deck))
-	match_board.set_codex_pages(-1, DeckManager.create_codex_pages(match_board.black_stamp_deck))
-	match_board.set_codex_page_index(1, 0)
-	match_board.set_codex_page_index(-1, 0)
-	match_board.white_stamp_hand = create_stamp_hand_from_names(match_board.white_codex_pages[0])
-	match_board.black_stamp_hand = create_stamp_hand_from_names(match_board.black_codex_pages[0])
+	var codex_controller = match_board.get_match_codex_controller()
+	codex_controller.set_pages(1, DeckManager.create_codex_pages(match_board.white_stamp_deck))
+	codex_controller.set_pages(-1, DeckManager.create_codex_pages(match_board.black_stamp_deck))
+	codex_controller.set_page_index(1, 0)
+	codex_controller.set_page_index(-1, 0)
+	match_board.white_stamp_hand = create_stamp_hand_from_names(codex_controller.get_pages(1)[0])
+	match_board.black_stamp_hand = create_stamp_hand_from_names(codex_controller.get_pages(-1)[0])
 
 	match_board.white_stamp_visuals = populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
 	match_board.black_stamp_visuals = populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
@@ -69,7 +70,7 @@ func get_stamp_deck_count(owner_color: int) -> int:
 
 func get_codex_remaining_count(owner_color: int) -> int:
 	var total: int = 0
-	for page_count in match_board.get_codex_page_counts(owner_color):
+	for page_count in match_board.get_match_codex_controller().get_page_counts(owner_color):
 		total += int(page_count)
 	return total
 
@@ -83,8 +84,9 @@ func get_stamp_draw_start_position(owner_color: int) -> Vector2:
 	var deck_visual: StampVisual = get_deck_visual(owner_color)
 	if deck_visual and is_instance_valid(deck_visual):
 		return deck_visual.global_position
-	if match_board.codex_panel != null and is_instance_valid(match_board.codex_panel):
-		return match_board.codex_panel.get_global_rect().get_center()
+	var codex_panel: PanelContainer = match_board.get_match_codex_controller().get_panel()
+	if codex_panel != null and is_instance_valid(codex_panel):
+		return codex_panel.get_global_rect().get_center()
 
 	var hand_node: Control = get_stamp_hand_node(owner_color)
 	return hand_node.global_position + match_board.get_stamp_hud_controller().get_deck_home_position()
@@ -94,8 +96,9 @@ func get_stamp_return_to_deck_target_position(owner_color: int, target_scale: fl
 	var deck_visual: StampVisual = get_deck_visual(owner_color)
 	if deck_visual != null and is_instance_valid(deck_visual):
 		return deck_visual.get_global_rect().get_center() - target_size * 0.5
-	if match_board.codex_panel != null and is_instance_valid(match_board.codex_panel):
-		return match_board.codex_panel.get_global_rect().get_center() - target_size * 0.5
+	var codex_panel: PanelContainer = match_board.get_match_codex_controller().get_panel()
+	if codex_panel != null and is_instance_valid(codex_panel):
+		return codex_panel.get_global_rect().get_center() - target_size * 0.5
 
 	return get_stamp_draw_start_position(owner_color)
 
@@ -110,7 +113,7 @@ func update_stamp_presentation() -> void:
 	match_board.update_end_turn_button()
 	match_board.get_turn_hud_controller().update_rules_info_ui()
 	match_board.get_turn_hud_controller().update_action_status_ui()
-	match_board.update_codex_ui()
+	match_board.get_match_codex_controller().update_ui()
 
 func update_stamp_drag_permissions() -> void:
 	var active_color: int = match_board.get_controllable_color()
@@ -156,7 +159,7 @@ func remove_stamp_from_hand_index(owner_color: int, hand_index: int, should_draw
 	visuals.remove_at(hand_index)
 	stamps.remove_at(hand_index)
 	if !GameController.current_game_host:
-		match_board.remove_local_codex_stamp(owner_color, hand_index)
+		match_board.get_match_codex_controller().remove_local_stamp(owner_color, hand_index)
 
 	if removed_visual and is_instance_valid(removed_visual):
 		removed_visual.assign_and_hide()

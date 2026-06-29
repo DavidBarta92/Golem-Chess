@@ -26,10 +26,10 @@ func reset_current_turn_stamp_attach() -> void:
 	match_board.has_turned_page_this_turn[current_color] = false
 	match_board.played_stamp_hand_slots_this_turn[current_color] = []
 	match_board.exchanged_stamp_names_this_turn[current_color] = []
-	match_board.advance_empty_codex_page_at_turn_start(current_color)
+	match_board.get_match_codex_controller().advance_empty_page_at_turn_start(current_color)
 	match_board.update_end_turn_button()
 	match_board.get_turn_hud_controller().update_action_status_ui()
-	match_board.update_codex_ui()
+	match_board.get_match_codex_controller().update_ui()
 
 func has_moved_piece_this_turn(owner_color: int) -> bool:
 	return bool(match_board.moved_piece_this_turn.get(owner_color, false))

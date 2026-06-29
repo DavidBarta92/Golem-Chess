@@ -11,37 +11,7 @@ signal tutorial_action_rejected(action_name: String, context: Dictionary)
 const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const CELL_WIDTH: int = BoardConfig.CELL_WIDTH
 
-const TEXTURE_HOLDER = preload("res://Scenes/texture_holder.tscn")
-const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
-const BOARD_GEOMETRY_SCRIPT = preload("res://Scripts/MatchView/BoardGeometry.gd")
-const BOARD_VISUAL_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/BoardVisualController.gd")
-const BOARD_TILE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/BoardTileController.gd")
-const BOARD_MARKER_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/BoardMarkerController.gd")
-const MATCH_STATE_SYNC_CONTROLLER_SCRIPT = preload("res://Scripts/MatchState/MatchStateSyncController.gd")
-const SERVER_STATE_UPDATE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchState/ServerStateUpdateController.gd")
-const LOCAL_STATE_MUTATOR_SCRIPT = preload("res://Scripts/MatchState/LocalStateMutator.gd")
-const LOCAL_MOVE_FLOW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchState/LocalMoveFlowController.gd")
-const TUTORIAL_MATCH_ADAPTER_SCRIPT = preload("res://Scripts/MatchState/TutorialMatchAdapter.gd")
-const GAME_RESULT_CONTROLLER_SCRIPT = preload("res://Scripts/MatchState/GameResultController.gd")
-const TURN_FLOW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchState/TurnFlowController.gd")
-const TURN_ACTION_STATE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchState/TurnActionStateController.gd")
-const PIECE_VISUAL_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/PieceVisualController.gd")
-const PIECE_MOVE_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/PieceMoveAnimator.gd")
-const PIECE_SHATTER_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/PieceShatterAnimator.gd")
-const PIECE_RESPAWN_FRAGMENT_COORDINATOR_SCRIPT = preload("res://Scripts/MatchView/PieceRespawnFragmentCoordinator.gd")
-const PIECE_DISPLAY_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/PieceDisplayController.gd")
-const PIECE_EFFECT_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/PieceEffectAnimator.gd")
-const FREEZE_EFFECT_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/FreezeEffectAnimator.gd")
-const HIDDEN_STAMP_PREVIEW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/HiddenStampPreviewController.gd")
-const MATCH_STAMP_HUD_SCRIPT = preload("res://Scripts/MatchView/MatchStampHud.gd")
-const STAMP_HOVER_PREVIEW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampHoverPreviewController.gd")
-const STAMP_INTERACTION_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampInteractionController.gd")
-const STAMP_ANIMATION_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampAnimationController.gd")
-const TURN_HUD_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/TurnHudController.gd")
-const DECK_COUNTER_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/DeckCounterController.gd")
-const MATCH_INPUT_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchInputController.gd")
-const MATCH_BOARD_LIFECYCLE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchBoardLifecycleController.gd")
-const STAMP_HAND_STATE_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampHandStateController.gd")
+const MATCH_BOARD_CONTROLLER_REGISTRY_SCRIPT = preload("res://Scripts/MatchView/MatchBoardControllerRegistry.gd")
 const RESPONSIVE_REFERENCE_VIEWPORT_SIZE = Vector2(1280.0, 720.0)
 const HOVER_DESCRIPTION_STAMP_BASE_TEXTURE = preload("res://Assets/stamp_base.svg")
 
@@ -101,6 +71,12 @@ const BOARD_SPECIAL_TILE_BASE_WHITE: String = "base_white"
 const BOARD_SPECIAL_TILE_BASE_BLACK: String = "base_black"
 const BOARD_SPECIAL_TILE_FREEZE: String = "freeze"
 const BOARD_SPECIAL_TILE_DISABLED: String = "disabled"
+const VISUAL_PROCESS_STAMP_ATTACH: String = "stamp_attach"
+const VISUAL_PROCESS_STATE_STAMP_ATTACH: String = "state_stamp_attach"
+const VISUAL_PROCESS_PIECE_REVERT: String = "piece_revert"
+const VISUAL_PROCESS_PIECE_MOVE: String = "piece_move"
+const VISUAL_PROCESS_PIECE_SHATTER: String = "piece_shatter"
+const VISUAL_PROCESS_BOMB_WARNING: String = "bomb_warning"
 const BOARD_SPECIAL_TILE_Z_INDEX: int = 1
 const BOARD_TILE_SWAP_DURATION: float = 0.26
 const BOARD_TILE_SINK_OFFSET: float = 7.0
@@ -468,8 +444,6 @@ var played_stamp_hand_slots_this_turn: Dictionary = {
 	-1: [],
 }
 var pending_stamp_attach_positions: Dictionary = {}
-var active_stamp_attach_process_count: int = 0
-var active_state_stamp_attach_animation_count: int = 0
 var exchanged_stamp_names_this_turn: Dictionary = {
 	1: [],
 	-1: [],
@@ -485,47 +459,8 @@ var has_received_server_state: bool = false
 var quit_confirmation_dialog: ConfirmationDialog
 var white_deck_count_override: int = -1
 var black_deck_count_override: int = -1
-var white_codex_page_index: int = 0
-var black_codex_page_index: int = 0
-var white_codex_page_counts: Array[int] = [0, 0, 0, 0, 0]
-var black_codex_page_counts: Array[int] = [0, 0, 0, 0, 0]
-var white_codex_pages: Array = []
-var black_codex_pages: Array = []
-var codex_panel: PanelContainer
-var codex_page_label: Label
-var codex_counts_row: HBoxContainer
-var codex_turn_page_button: Button
-var codex_count_labels: Array[Label] = []
 var hidden_stamp_counts: Dictionary = {}
-var board_geometry
-var board_visuals
-var board_tile_controller
-var board_marker_controller
-var match_state_sync_controller
-var server_state_update_controller
-var local_state_mutator
-var local_move_flow_controller
-var tutorial_match_adapter
-var game_result_controller
-var turn_flow_controller
-var turn_action_state_controller
-var piece_visuals
-var piece_move_animator
-var piece_shatter_animator
-var piece_respawn_fragment_coordinator
-var piece_display_controller
-var piece_effect_animator
-var freeze_effect_animator
-var hidden_stamp_preview_controller
-var stamp_hud_controller
-var stamp_hover_preview_controller
-var stamp_interaction_controller
-var stamp_animation_controller
-var turn_hud_controller
-var deck_counter_controller
-var match_input_controller
-var match_board_lifecycle_controller
-var stamp_hand_state_controller
+var controller_registry
 var board_markers_node: Node2D
 var board_frame_node: Node2D
 var board_base_tiles_node: Node2D
@@ -534,13 +469,6 @@ var board_special_tile_nodes: Dictionary = {}
 var board_special_tile_types: Dictionary = {}
 var board_special_tiles_initialized: bool = false
 var piece_effects_node: Node2D
-var attach_point_light_texture: Texture2D
-var ambient_board_light: PointLight2D
-var ambient_board_fill_light: PointLight2D
-var board_shader_backbuffer: BackBufferCopy
-var board_shader_overlay: ColorRect
-var board_shader_material: ShaderMaterial
-var piece_kuwahara_material: ShaderMaterial
 var current_last_move: Dictionary = {}
 var current_board_effects: Array = []
 var current_player_base_fields: Dictionary = {
@@ -553,7 +481,6 @@ var current_player_names: Dictionary = {
 }
 var current_player_portraits: Dictionary = {}
 var pending_piece_revert_animations: Array[Dictionary] = []
-var active_piece_revert_animation_count: int = 0
 var pending_piece_shatter_respawn_reveal_counts: Dictionary = {}
 var pending_piece_shatter_respawn_reveal_groups: Dictionary = {}
 var respawn_piece_shatter_fragment_markers: Dictionary = {}
@@ -562,9 +489,6 @@ var local_pending_respawns: Dictionary = {
 	1: [],
 	-1: [],
 }
-var active_piece_move_animation_count: int = 0
-var active_piece_shatter_animation_count: int = 0
-var active_bomb_warning_animation_count: int = 0
 var local_auto_end_turn_pending: bool = false
 var tutorial_mode_active: bool = false
 var tutorial_constraints_enabled: bool = false
@@ -581,312 +505,79 @@ func _ready():
 func apply_board_visual_scale() -> void:
 	get_match_board_lifecycle_controller().apply_board_visual_scale()
 
-func initialize_match_board_lifecycle_controller() -> void:
-	if match_board_lifecycle_controller == null:
-		match_board_lifecycle_controller = MATCH_BOARD_LIFECYCLE_CONTROLLER_SCRIPT.new()
-	sync_match_board_lifecycle_controller()
-
-func sync_match_board_lifecycle_controller() -> void:
-	if match_board_lifecycle_controller == null:
-		return
-	match_board_lifecycle_controller.configure({
+func get_controller_registry():
+	if controller_registry == null:
+		controller_registry = MATCH_BOARD_CONTROLLER_REGISTRY_SCRIPT.new()
+	controller_registry.configure({
 		"match_board": self,
-		"board_visual_scale": BOARD_VISUAL_SCALE,
 	})
+	return controller_registry
 
 func get_match_board_lifecycle_controller():
-	initialize_match_board_lifecycle_controller()
-	return match_board_lifecycle_controller
-
-func initialize_board_view_helpers() -> void:
-	if board_geometry == null:
-		board_geometry = BOARD_GEOMETRY_SCRIPT.new()
-	if board_visuals == null:
-		board_visuals = BOARD_VISUAL_CONTROLLER_SCRIPT.new()
-	sync_board_geometry()
-	board_visuals.configure(board_geometry)
-
-func sync_board_geometry() -> void:
-	if board_geometry == null:
-		return
-	board_geometry.configure({
-		"board_size": BOARD_SIZE,
-		"cell_width": CELL_WIDTH,
-		"perspective_enabled": BOARD_PERSPECTIVE_ENABLED,
-		"perspective_top_scale": BOARD_PERSPECTIVE_TOP_SCALE,
-		"perspective_bottom_scale": BOARD_PERSPECTIVE_BOTTOM_SCALE,
-		"perspective_vertical_scale": BOARD_PERSPECTIVE_VERTICAL_SCALE,
-		"tile_slide_distance_factor": BOARD_TILE_SLIDE_DISTANCE_FACTOR,
-		"tile_sink_offset": BOARD_TILE_SINK_OFFSET,
-		"view_color": get_board_view_color(),
-	})
+	return get_controller_registry().get_match_board_lifecycle_controller()
 
 func get_board_geometry():
-	initialize_board_view_helpers()
-	board_geometry.set_view_color(get_board_view_color())
-	return board_geometry
+	return get_controller_registry().get_board_geometry()
 
 func get_board_visuals():
-	initialize_board_view_helpers()
-	return board_visuals
+	return get_controller_registry().get_board_visuals()
 
-func initialize_board_tile_controller() -> void:
-	if board_tile_controller == null:
-		board_tile_controller = BOARD_TILE_CONTROLLER_SCRIPT.new()
-	sync_board_tile_controller()
+func get_board_environment_controller():
+	return get_controller_registry().get_board_environment_controller()
 
-func sync_board_tile_controller() -> void:
-	if board_tile_controller == null:
-		return
-	board_tile_controller.configure({
-		"match_board": self,
-		"visuals": get_board_visuals(),
-		"geometry": get_board_geometry(),
-		"board_size": BOARD_SIZE,
-		"invalid_board_pos": INVALID_BOARD_POS,
-		"board_tile_texture": BOARD_TILE_TEXTURE,
-		"board_tile_base_white_texture": BOARD_TILE_BASE_WHITE_TEXTURE,
-		"board_tile_base_black_texture": BOARD_TILE_BASE_BLACK_TEXTURE,
-		"board_tile_freeze_texture": BOARD_TILE_FREEZE_TEXTURE,
-		"board_tile_disabled_texture": BOARD_TILE_DISABLED_TEXTURE,
-		"special_tile_none": BOARD_SPECIAL_TILE_NONE,
-		"special_tile_base_white": BOARD_SPECIAL_TILE_BASE_WHITE,
-		"special_tile_base_black": BOARD_SPECIAL_TILE_BASE_BLACK,
-		"special_tile_freeze": BOARD_SPECIAL_TILE_FREEZE,
-		"special_tile_disabled": BOARD_SPECIAL_TILE_DISABLED,
-		"special_tile_z_index": BOARD_SPECIAL_TILE_Z_INDEX,
-		"tile_swap_duration": BOARD_TILE_SWAP_DURATION,
-		"tile_sunk_alpha": BOARD_TILE_SUNK_ALPHA,
-		"tile_depth_wall_color": BOARD_TILE_DEPTH_WALL_COLOR,
-		"tile_occlusion_lip_color": BOARD_TILE_OCCLUSION_LIP_COLOR,
-		"tile_occlusion_lip_inset_factor": BOARD_TILE_OCCLUSION_LIP_INSET_FACTOR,
-		"tile_transition_cover_z_index": BOARD_TILE_TRANSITION_COVER_Z_INDEX,
-		"frame_width": BOARD_FRAME_WIDTH,
-		"frame_vertical_extension": BOARD_FRAME_VERTICAL_EXTENSION,
-		"frame_color": BOARD_FRAME_COLOR,
-		"side_thickness": BOARD_SIDE_THICKNESS,
-		"side_color": BOARD_SIDE_COLOR,
-		"shadow_enabled": board_shadow_enabled,
-		"shadow_color": board_shadow_color,
-		"shadow_offset": board_shadow_offset,
-		"shadow_spread": board_shadow_spread,
-		"shadow_steps": board_shadow_steps,
-	})
+func get_visual_process_tracker():
+	return get_controller_registry().get_visual_process_tracker()
+
+func begin_visual_process(process_name: String) -> void:
+	get_visual_process_tracker().begin(process_name)
+
+func finish_visual_process(process_name: String) -> void:
+	get_visual_process_tracker().finish(process_name)
+
+func is_visual_process_active(process_name: String) -> bool:
+	return get_visual_process_tracker().is_active(process_name)
+
+func has_active_visual_processes(process_names: Array = []) -> bool:
+	return get_visual_process_tracker().has_any_active(process_names)
 
 func get_board_tile_controller():
-	initialize_board_tile_controller()
-	return board_tile_controller
-
-func initialize_board_marker_controller() -> void:
-	if board_marker_controller == null:
-		board_marker_controller = BOARD_MARKER_CONTROLLER_SCRIPT.new()
-	sync_board_marker_controller()
-
-func sync_board_marker_controller() -> void:
-	if board_marker_controller == null:
-		return
-	board_marker_controller.configure({
-		"geometry": get_board_geometry(),
-		"visuals": get_board_visuals(),
-		"dots_node": dots,
-		"board_markers_node": board_markers_node,
-		"texture_holder_scene": TEXTURE_HOLDER,
-		"move_option_dot_texture": MOVE_OPTION_DOT_TEXTURE,
-		"move_option_dot_shader": MOVE_OPTION_DOT_SHADER,
-		"cell_width": CELL_WIDTH,
-		"board_size": BOARD_SIZE,
-		"move_option_dot_cell_width_ratio": MOVE_OPTION_DOT_CELL_WIDTH_RATIO,
-		"move_option_dot_shader_speed": MOVE_OPTION_DOT_SHADER_SPEED,
-		"move_option_dot_shader_glow_strength": MOVE_OPTION_DOT_SHADER_GLOW_STRENGTH,
-		"move_option_dot_shader_edge_softness": MOVE_OPTION_DOT_SHADER_EDGE_SOFTNESS,
-		"move_option_dot_shader_pulse_min_scale": MOVE_OPTION_DOT_SHADER_PULSE_MIN_SCALE,
-		"move_option_dot_shader_pulse_max_scale": MOVE_OPTION_DOT_SHADER_PULSE_MAX_SCALE,
-		"move_option_dot_shader_color": MOVE_OPTION_DOT_SHADER_COLOR,
-		"last_move_arrow_color": LAST_MOVE_ARROW_COLOR,
-		"last_move_arrow_width": LAST_MOVE_ARROW_WIDTH,
-		"last_move_arrow_endpoint_inset": LAST_MOVE_ARROW_ENDPOINT_INSET,
-		"last_move_arrow_head_length": LAST_MOVE_ARROW_HEAD_LENGTH,
-		"last_move_arrow_head_half_width": LAST_MOVE_ARROW_HEAD_HALF_WIDTH,
-		"piece_objects_provider": Callable(self, "get_piece_objects"),
-		"board_effects_provider": Callable(self, "get_current_board_effects"),
-		"current_last_move_provider": Callable(self, "get_current_last_move"),
-		"local_view_color_provider": Callable(self, "get_local_view_color"),
-		"local_view_ready_provider": Callable(self, "is_local_view_ready"),
-		"own_player_id_provider": Callable(self, "get_own_player_id"),
-		"can_move_action_now_provider": Callable(self, "can_move_action_now"),
-		"can_player_control_piece_at_provider": Callable(self, "can_player_control_piece_at"),
-		"update_special_tiles_callback": Callable(get_board_tile_controller(), "update_board_special_tiles"),
-	})
+	return get_controller_registry().get_board_tile_controller()
 
 func get_board_marker_controller():
-	initialize_board_marker_controller()
-	return board_marker_controller
-
-func initialize_match_state_sync_controller() -> void:
-	if match_state_sync_controller == null:
-		match_state_sync_controller = MATCH_STATE_SYNC_CONTROLLER_SCRIPT.new()
-	sync_match_state_sync_controller()
-
-func sync_match_state_sync_controller() -> void:
-	if match_state_sync_controller == null:
-		return
-	match_state_sync_controller.configure({
-		"board_size": BOARD_SIZE,
-		"invalid_board_pos": INVALID_BOARD_POS,
-		"white_base_field": WHITE_BASE_FIELD,
-		"black_base_field": BLACK_BASE_FIELD,
-		"fragment_group_none": PIECE_SHATTER_FRAGMENT_GROUP_NONE,
-		"fragment_group_bottom": PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM,
-		"fragment_group_top": PIECE_SHATTER_FRAGMENT_GROUP_TOP,
-		"fragment_group_pending": PIECE_SHATTER_FRAGMENT_GROUP_PENDING,
-		"default_piece_texture_provider": Callable(self, "get_default_piece_texture"),
-		"stamp_piece_texture_provider": Callable(self, "get_stamp_piece_texture_for_color"),
-	})
+	return get_controller_registry().get_board_marker_controller()
 
 func get_match_state_sync_controller():
-	initialize_match_state_sync_controller()
-	return match_state_sync_controller
-
-func initialize_server_state_update_controller() -> void:
-	if server_state_update_controller == null:
-		server_state_update_controller = SERVER_STATE_UPDATE_CONTROLLER_SCRIPT.new()
-	sync_server_state_update_controller()
-
-func sync_server_state_update_controller() -> void:
-	if server_state_update_controller == null:
-		return
-	server_state_update_controller.configure({
-		"match_board": self,
-	})
+	return get_controller_registry().get_match_state_sync_controller()
 
 func get_server_state_update_controller():
-	initialize_server_state_update_controller()
-	return server_state_update_controller
+	return get_controller_registry().get_server_state_update_controller()
 
-func initialize_local_state_mutator() -> void:
-	if local_state_mutator == null:
-		local_state_mutator = LOCAL_STATE_MUTATOR_SCRIPT.new()
-	sync_local_state_mutator()
-
-func sync_local_state_mutator() -> void:
-	if local_state_mutator == null:
-		return
-	local_state_mutator.configure({
-		"board": board,
-		"piece_objects": piece_objects,
-		"local_pending_respawns": local_pending_respawns,
-		"moved_piece_this_turn": moved_piece_this_turn,
-		"played_stamp_hand_slots_this_turn": played_stamp_hand_slots_this_turn,
-		"player_base_fields": current_player_base_fields,
-		"board_effects": current_board_effects,
-		"board_size": BOARD_SIZE,
-		"invalid_board_pos": INVALID_BOARD_POS,
-		"fragment_group_none": PIECE_SHATTER_FRAGMENT_GROUP_NONE,
-		"fragment_group_bottom": PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM,
-		"fragment_group_top": PIECE_SHATTER_FRAGMENT_GROUP_TOP,
-		"fragment_group_pending": PIECE_SHATTER_FRAGMENT_GROUP_PENDING,
-		"player_id_for_color_provider": Callable(self, "get_player_id_for_color"),
-		"stamp_hand_provider": Callable(self, "get_stamp_hand"),
-		"stamp_deck_provider": Callable(self, "get_stamp_deck"),
-		"current_turn_color_provider": Callable(self, "get_current_turn_color"),
-		"moved_piece_this_turn_provider": Callable(get_turn_action_state_controller(), "has_moved_piece_this_turn"),
-		"can_exchange_stamp_provider": Callable(self, "can_exchange_stamp_locally"),
-		"can_turn_page_provider": Callable(self, "can_turn_page_locally"),
-		"create_board_tiles_callback": Callable(self, "create_board_tiles"),
-	})
+func get_server_state_visual_update_controller():
+	return get_controller_registry().get_server_state_visual_update_controller()
 
 func get_local_state_mutator():
-	initialize_local_state_mutator()
-	sync_local_state_mutator()
-	return local_state_mutator
-
-func initialize_local_move_flow_controller() -> void:
-	if local_move_flow_controller == null:
-		local_move_flow_controller = LOCAL_MOVE_FLOW_CONTROLLER_SCRIPT.new()
-	sync_local_move_flow_controller()
-
-func sync_local_move_flow_controller() -> void:
-	if local_move_flow_controller == null:
-		return
-	local_move_flow_controller.configure({
-		"match_board": self,
-		"invalid_board_pos": INVALID_BOARD_POS,
-		"fragment_group_none": PIECE_SHATTER_FRAGMENT_GROUP_NONE,
-	})
+	return get_controller_registry().get_local_state_mutator()
 
 func get_local_move_flow_controller():
-	initialize_local_move_flow_controller()
-	return local_move_flow_controller
+	return get_controller_registry().get_local_move_flow_controller()
 
-func initialize_tutorial_match_adapter() -> void:
-	if tutorial_match_adapter == null:
-		tutorial_match_adapter = TUTORIAL_MATCH_ADAPTER_SCRIPT.new()
-	sync_tutorial_match_adapter()
+func get_local_stamp_action_controller():
+	return get_controller_registry().get_local_stamp_action_controller()
 
-func sync_tutorial_match_adapter() -> void:
-	if tutorial_match_adapter == null:
-		return
-	tutorial_match_adapter.configure({
-		"match_board": self,
-		"invalid_board_pos": INVALID_BOARD_POS,
-		"board_size": BOARD_SIZE,
-	})
+func get_local_gameplay_controller():
+	return get_controller_registry().get_local_gameplay_controller()
 
 func get_tutorial_match_adapter():
-	initialize_tutorial_match_adapter()
-	return tutorial_match_adapter
-
-func initialize_game_result_controller() -> void:
-	if game_result_controller == null:
-		game_result_controller = GAME_RESULT_CONTROLLER_SCRIPT.new()
-	sync_game_result_controller()
-
-func sync_game_result_controller() -> void:
-	if game_result_controller == null:
-		return
-	game_result_controller.configure({
-		"match_board": self,
-		"main_menu_scene": MAIN_MENU_SCENE,
-		"match_end_feedback_scene": MATCH_END_FEEDBACK_SCENE,
-	})
+	return get_controller_registry().get_tutorial_match_adapter()
 
 func get_game_result_controller():
-	initialize_game_result_controller()
-	return game_result_controller
-
-func initialize_turn_flow_controller() -> void:
-	if turn_flow_controller == null:
-		turn_flow_controller = TURN_FLOW_CONTROLLER_SCRIPT.new()
-	sync_turn_flow_controller()
-
-func sync_turn_flow_controller() -> void:
-	if turn_flow_controller == null:
-		return
-	turn_flow_controller.configure({
-		"match_board": self,
-		"board_size": BOARD_SIZE,
-		"invalid_board_pos": INVALID_BOARD_POS,
-	})
+	return get_controller_registry().get_game_result_controller()
 
 func get_turn_flow_controller():
-	initialize_turn_flow_controller()
-	return turn_flow_controller
-
-func initialize_turn_action_state_controller() -> void:
-	if turn_action_state_controller == null:
-		turn_action_state_controller = TURN_ACTION_STATE_CONTROLLER_SCRIPT.new()
-	sync_turn_action_state_controller()
-
-func sync_turn_action_state_controller() -> void:
-	if turn_action_state_controller == null:
-		return
-	turn_action_state_controller.configure({
-		"match_board": self,
-	})
+	return get_controller_registry().get_turn_flow_controller()
 
 func get_turn_action_state_controller():
-	initialize_turn_action_state_controller()
-	return turn_action_state_controller
+	return get_controller_registry().get_turn_action_state_controller()
 
 func get_piece_objects() -> Dictionary:
 	return piece_objects
@@ -900,523 +591,56 @@ func get_current_last_move() -> Dictionary:
 func get_pending_stamp_attach_positions() -> Dictionary:
 	return pending_stamp_attach_positions
 
-func initialize_piece_visual_controller() -> void:
-	if piece_visuals == null:
-		piece_visuals = PIECE_VISUAL_CONTROLLER_SCRIPT.new()
-	sync_piece_visual_controller()
-
-func sync_piece_visual_controller() -> void:
-	if piece_visuals == null:
-		return
-	piece_visuals.configure({
-		"geometry": get_board_geometry(),
-		"board_size": BOARD_SIZE,
-		"cell_width": CELL_WIDTH,
-		"view_color": get_board_view_color(),
-		"texture_filter": PIECE_TEXTURE_FILTER,
-		"default_piece_texture": DEFAULT_PIECE_TEXTURE,
-		"own_default_piece_texture": OWN_DEFAULT_PIECE_TEXTURE,
-		"default_piece_visual_height": DEFAULT_PIECE_VISUAL_HEIGHT,
-		"piece_auto_fit_height_threshold": PIECE_AUTO_FIT_HEIGHT_THRESHOLD,
-		"default_piece_bottom_inset": DEFAULT_PIECE_BOTTOM_INSET,
-		"piece_perspective_scale_variation": PIECE_PERSPECTIVE_SCALE_VARIATION,
-		"piece_shadow_name": PIECE_SHADOW_NAME,
-		"piece_shadow_light_texture_scale": PIECE_SHADOW_LIGHT_TEXTURE_SCALE,
-		"piece_shadow_light_source_offset": PIECE_SHADOW_LIGHT_SOURCE_OFFSET,
-		"piece_shadow_light_energy": PIECE_SHADOW_LIGHT_ENERGY,
-		"piece_shadow_light_color": PIECE_SHADOW_LIGHT_COLOR,
-		"piece_shadow_light_shadow_color": PIECE_SHADOW_LIGHT_SHADOW_COLOR,
-		"piece_shadow_light_shadow_smooth": PIECE_SHADOW_LIGHT_SHADOW_SMOOTH,
-		"board_light_receive_mask": BOARD_LIGHT_RECEIVE_MASK,
-		"piece_light_occluder_mask": PIECE_LIGHT_OCCLUDER_MASK,
-		"piece_light_receive_mask": PIECE_LIGHT_RECEIVE_MASK,
-		"piece_effect_light_receive_mask": PIECE_EFFECT_LIGHT_RECEIVE_MASK,
-		"piece_light_occluder_name": PIECE_LIGHT_OCCLUDER_NAME,
-		"piece_light_occluder_footprint_width_factor": PIECE_LIGHT_OCCLUDER_FOOTPRINT_WIDTH_FACTOR,
-		"piece_light_occluder_footprint_fixed_radius_y": PIECE_LIGHT_OCCLUDER_FOOTPRINT_FIXED_RADIUS_Y,
-		"piece_light_occluder_footprint_bottom_inset_factor": PIECE_LIGHT_OCCLUDER_FOOTPRINT_BOTTOM_INSET_FACTOR,
-		"piece_light_occluder_footprint_offset": PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET,
-		"piece_light_occluder_footprint_segments": PIECE_LIGHT_OCCLUDER_FOOTPRINT_SEGMENTS,
-		"piece_footprint_alpha_threshold": PIECE_FOOTPRINT_ALPHA_THRESHOLD,
-		"piece_footprint_width_scan_start_ratio": PIECE_FOOTPRINT_WIDTH_SCAN_START_RATIO,
-		"piece_footprint_stable_width_band_ratio": PIECE_FOOTPRINT_STABLE_WIDTH_BAND_RATIO,
-		"piece_footprint_stable_row_sample_count": PIECE_FOOTPRINT_STABLE_ROW_SAMPLE_COUNT,
-		"piece_light_occluder_footprint_min_radius_bounds_factor": PIECE_LIGHT_OCCLUDER_FOOTPRINT_MIN_RADIUS_BOUNDS_FACTOR,
-		"attach_effect_names": [PIECE_ATTACH_GLOW_NAME, PIECE_ATTACH_TARGET_GLOW_NAME, PIECE_ATTACH_RAYS_NAME, PIECE_ATTACH_MORPH_NAME],
-	})
+func get_piece_texture_resolver():
+	return get_controller_registry().get_piece_texture_resolver()
 
 func get_piece_visuals():
-	initialize_piece_visual_controller()
-	return piece_visuals
+	return get_controller_registry().get_piece_visuals()
 
-func initialize_piece_move_animator() -> void:
-	if piece_move_animator == null:
-		piece_move_animator = PIECE_MOVE_ANIMATOR_SCRIPT.new()
-	sync_piece_move_animator()
-
-func sync_piece_move_animator() -> void:
-	if piece_move_animator == null:
-		return
-	piece_move_animator.configure({
-		"geometry": get_board_geometry(),
-		"piece_visuals": get_piece_visuals(),
-		"tween_owner": self,
-		"cell_width": CELL_WIDTH,
-		"board_size": BOARD_SIZE,
-		"move_duration": piece_move_duration,
-		"move_lift_ratio": piece_move_lift_ratio,
-		"lift_duration": piece_move_lift_duration,
-		"drop_duration": piece_move_drop_duration,
-		"wobble_step_duration": piece_move_wobble_step_duration,
-		"wobble_rotation_degrees": piece_move_wobble_rotation_degrees,
-		"movement_tilt_degrees": piece_move_travel_tilt_degrees,
-		"capture_approach_edge_ratio": piece_move_capture_approach_edge_ratio,
-		"capture_approach_hold_duration": piece_move_capture_approach_hold_duration,
-		"capture_push_duration": piece_move_capture_push_duration,
-		"capture_recoil_duration": piece_move_capture_recoil_duration,
-		"capture_center_settle_duration": piece_move_capture_center_settle_duration,
-		"capture_push_rotation_degrees": piece_move_capture_push_rotation_degrees,
-		"movement_shadow_color": piece_move_shadow_color,
-		"movement_shadow_radius_scale": piece_move_shadow_radius_scale,
-		"movement_shadow_ground_edge_softness": piece_move_shadow_ground_edge_softness,
-		"movement_shadow_lifted_edge_softness": piece_move_shadow_lifted_edge_softness,
-		"movement_shadow_lifted_scale": piece_move_shadow_lifted_scale,
-		"movement_shadow_lifted_alpha": piece_move_shadow_lifted_alpha,
-		"corner_rounding_ratio": PIECE_MOVE_ROUTE_CORNER_ROUNDING_RATIO,
-		"corner_sample_count": PIECE_MOVE_ROUTE_CORNER_SAMPLE_COUNT,
-		"pieces_node": pieces_node,
-		"local_space_node": self,
-		"avoid_occupied_footprints": piece_move_avoid_occupied_footprints,
-		"footprint_clearance": piece_move_footprint_clearance,
-		"footprint_fixed_radius_y": PIECE_LIGHT_OCCLUDER_FOOTPRINT_FIXED_RADIUS_Y,
-		"route_z_front_offset": PIECE_MOVE_ROUTE_Z_FRONT_OFFSET,
-		"route_z_back_offset": PIECE_MOVE_ROUTE_Z_BACK_OFFSET,
-		"view_color": get_board_view_color(),
-		"invalid_board_pos": INVALID_BOARD_POS,
-		"piece_exists_provider": Callable(self, "has_piece_object_at"),
-		"sprite_bounds_provider": Callable(self, "get_sprite_texture_bounds_local"),
-	})
+func get_piece_effect_geometry_controller():
+	return get_controller_registry().get_piece_effect_geometry_controller()
 
 func get_piece_move_animator():
-	initialize_piece_move_animator()
-	return piece_move_animator
+	return get_controller_registry().get_piece_move_animator()
 
 func has_piece_object_at(board_pos: Vector2) -> bool:
 	return piece_objects.has(board_pos)
 
-func initialize_piece_shatter_animator() -> void:
-	if piece_shatter_animator == null:
-		piece_shatter_animator = PIECE_SHATTER_ANIMATOR_SCRIPT.new()
-	sync_piece_shatter_animator()
-
-func sync_piece_shatter_animator() -> void:
-	if piece_shatter_animator == null:
-		return
-	piece_shatter_animator.configure({
-		"geometry": get_board_geometry(),
-		"piece_visuals": get_piece_visuals(),
-		"pieces_node": pieces_node,
-		"piece_effects_node": piece_effects_node,
-		"tween_owner": self,
-		"board_size": BOARD_SIZE,
-		"cell_width": CELL_WIDTH,
-		"view_color": get_board_view_color(),
-		"invalid_board_pos": INVALID_BOARD_POS,
-		"texture_filter": PIECE_TEXTURE_FILTER,
-		"piece_effect_light_receive_mask": PIECE_EFFECT_LIGHT_RECEIVE_MASK,
-		"flipped_view": side != null && !side,
-		"returning_debris_count": piece_shatter_returning_debris_count,
-		"scatter_duration": piece_shatter_scatter_duration,
-		"fade_duration": piece_shatter_fade_duration,
-		"return_duration": piece_shatter_return_duration,
-		"return_fade_duration": piece_shatter_return_fade_duration,
-		"fragment_settle_duration": piece_shatter_fragment_settle_duration,
-		"scatter_radius": piece_shatter_scatter_radius,
-		"scatter_jitter": piece_shatter_scatter_jitter,
-		"min_piece_scale": piece_shatter_min_piece_scale,
-		"max_piece_scale": piece_shatter_max_piece_scale,
-		"avoid_occupied_cells": piece_shatter_avoid_occupied_cells,
-		"route_jitter_ratio": piece_shatter_route_jitter_ratio,
-		"fragment_landing_hold_duration": PIECE_SHATTER_FRAGMENT_LANDING_HOLD_DURATION,
-		"route_z_front_offset": PIECE_SHATTER_ROUTE_Z_FRONT_OFFSET,
-		"route_z_back_offset": PIECE_SHATTER_ROUTE_Z_BACK_OFFSET,
-		"route_direct_fallback_offset": PIECE_SHATTER_ROUTE_DIRECT_FALLBACK_OFFSET,
-		"return_acceleration_progress": PIECE_SHATTER_RETURN_ACCELERATION_PROGRESS,
-		"fragment_group_bottom": PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM,
-		"route_cell_blocked_provider": Callable(self, "is_piece_shatter_route_cell_blocked"),
-		"finish_respawn_fragment_callback": Callable(self, "finish_piece_shatter_respawn_fragment"),
-		"player_id_for_color_provider": Callable(self, "get_player_id_for_color"),
-		"antialias_provider": Callable(get_board_visuals(), "enable_canvas_item_antialiasing"),
-	})
-
 func get_piece_shatter_animator():
-	initialize_piece_shatter_animator()
-	return piece_shatter_animator
-
-func initialize_piece_respawn_fragment_coordinator() -> void:
-	if piece_respawn_fragment_coordinator == null:
-		piece_respawn_fragment_coordinator = PIECE_RESPAWN_FRAGMENT_COORDINATOR_SCRIPT.new()
-	sync_piece_respawn_fragment_coordinator()
-
-func sync_piece_respawn_fragment_coordinator() -> void:
-	if piece_respawn_fragment_coordinator == null:
-		return
-	piece_respawn_fragment_coordinator.configure({
-		"match_board": self,
-		"invalid_board_pos": INVALID_BOARD_POS,
-	})
+	return get_controller_registry().get_piece_shatter_animator()
 
 func get_piece_respawn_fragment_coordinator():
-	initialize_piece_respawn_fragment_coordinator()
-	return piece_respawn_fragment_coordinator
-
-func initialize_piece_display_controller() -> void:
-	if piece_display_controller == null:
-		piece_display_controller = PIECE_DISPLAY_CONTROLLER_SCRIPT.new()
-	sync_piece_display_controller()
-
-func sync_piece_display_controller() -> void:
-	if piece_display_controller == null:
-		return
-	piece_display_controller.configure({
-		"match_board": self,
-		"texture_holder_scene": TEXTURE_HOLDER,
-		"board_size": BOARD_SIZE,
-		"piece_light_receive_mask": PIECE_LIGHT_RECEIVE_MASK,
-		"selected_piece_glow_name": SELECTED_PIECE_GLOW_NAME,
-		"selected_piece_glow_z_index": SELECTED_PIECE_GLOW_Z_INDEX,
-		"selected_piece_glow_strength": SELECTED_PIECE_GLOW_STRENGTH,
-		"invalid_board_pos": INVALID_BOARD_POS,
-	})
+	return get_controller_registry().get_piece_respawn_fragment_coordinator()
 
 func get_piece_display_controller():
-	initialize_piece_display_controller()
-	return piece_display_controller
-
-func initialize_piece_effect_animator() -> void:
-	if piece_effect_animator == null:
-		piece_effect_animator = PIECE_EFFECT_ANIMATOR_SCRIPT.new()
-	sync_piece_effect_animator()
-
-func sync_piece_effect_animator() -> void:
-	if piece_effect_animator == null:
-		return
-	piece_effect_animator.configure({
-		"geometry": get_board_geometry(),
-		"piece_visuals": get_piece_visuals(),
-		"pieces_node": pieces_node,
-		"piece_effects_node": piece_effects_node,
-		"tween_owner": self,
-		"texture_holder_scene": TEXTURE_HOLDER,
-		"cell_width": CELL_WIDTH,
-		"board_size": BOARD_SIZE,
-		"texture_filter": PIECE_TEXTURE_FILTER,
-		"board_light_receive_mask": BOARD_LIGHT_RECEIVE_MASK,
-		"piece_light_receive_mask": PIECE_LIGHT_RECEIVE_MASK,
-		"piece_effect_light_receive_mask": PIECE_EFFECT_LIGHT_RECEIVE_MASK,
-		"piece_light_occluder_mask": PIECE_LIGHT_OCCLUDER_MASK,
-		"flipped_view": side != null && !side,
-		"capture_flash_texture": CAPTURE_FLASH_TEXTURE,
-		"capture_flash_color": capture_flash_color,
-		"capture_flash_duration": capture_flash_duration,
-		"capture_flash_size_ratio": capture_flash_size_ratio,
-		"capture_flash_start_scale_ratio": capture_flash_start_scale_ratio,
-		"capture_flash_rotation_degrees": capture_flash_rotation_degrees,
-		"default_piece_visual_height": DEFAULT_PIECE_VISUAL_HEIGHT,
-		"bomb_warning_texture": BOMB_WARNING_TEXTURE,
-		"bomb_warning_color": bomb_warning_color,
-		"bomb_warning_duration": bomb_warning_duration,
-		"bomb_warning_rise_distance": bomb_warning_rise_distance,
-		"bomb_warning_size_ratio": bomb_warning_size_ratio,
-		"bomb_warning_target_y_offset": bomb_warning_target_y_offset,
-		"bomb_warning_z_offset": BOMB_WARNING_Z_OFFSET,
-		"piece_expire_dissolve_shader": PIECE_EXPIRE_DISSOLVE_SHADER,
-		"piece_expire_dissolve_duration": PIECE_EXPIRE_DISSOLVE_DURATION,
-		"piece_expire_dissolve_beam_size": PIECE_EXPIRE_DISSOLVE_BEAM_SIZE,
-		"piece_expire_dissolve_noise_density": PIECE_EXPIRE_DISSOLVE_NOISE_DENSITY,
-		"piece_expire_dissolve_color": PIECE_EXPIRE_DISSOLVE_COLOR,
-		"piece_invisibility_refract_shader": PIECE_INVISIBILITY_REFRACT_SHADER,
-		"piece_invisibility_visible_hold_duration": PIECE_INVISIBILITY_VISIBLE_HOLD_DURATION,
-		"piece_invisibility_refract_in_duration": PIECE_INVISIBILITY_REFRACT_IN_DURATION,
-		"piece_invisibility_fade_out_duration": PIECE_INVISIBILITY_FADE_OUT_DURATION,
-		"piece_invisibility_refract_distance": PIECE_INVISIBILITY_REFRACT_DISTANCE,
-		"attach_point_light_name": ATTACH_POINT_LIGHT_NAME,
-		"attach_piece_light_name": ATTACH_PIECE_LIGHT_NAME,
-		"attach_point_light_texture_scale": ATTACH_POINT_LIGHT_TEXTURE_SCALE,
-		"attach_point_light_color": ATTACH_POINT_LIGHT_COLOR,
-		"attach_point_light_shadow_color": ATTACH_POINT_LIGHT_SHADOW_COLOR,
-		"attach_point_light_shadow_smooth": ATTACH_POINT_LIGHT_SHADOW_SMOOTH,
-		"attach_piece_light_texture_scale": ATTACH_PIECE_LIGHT_TEXTURE_SCALE,
-		"attach_piece_light_color": ATTACH_PIECE_LIGHT_COLOR,
-		"attach_point_light_energy": ATTACH_POINT_LIGHT_ENERGY,
-		"attach_piece_light_energy": ATTACH_PIECE_LIGHT_ENERGY,
-		"piece_attach_glow_name": PIECE_ATTACH_GLOW_NAME,
-		"piece_attach_target_glow_name": PIECE_ATTACH_TARGET_GLOW_NAME,
-		"piece_attach_rays_name": PIECE_ATTACH_RAYS_NAME,
-		"piece_attach_morph_name": PIECE_ATTACH_MORPH_NAME,
-		"piece_effect_occlusion_dim_name": PIECE_EFFECT_OCCLUSION_DIM_NAME,
-		"piece_attach_glow_z_index": PIECE_ATTACH_GLOW_Z_INDEX,
-		"piece_attach_rays_z_index": PIECE_ATTACH_RAYS_Z_INDEX,
-		"piece_attach_morph_z_index": PIECE_ATTACH_MORPH_Z_INDEX,
-		"piece_effect_occlusion_dim_z_index": PIECE_EFFECT_OCCLUSION_DIM_Z_INDEX,
-		"piece_attach_glow_shader": PIECE_ATTACH_GLOW_SHADER,
-		"piece_attach_rays_shader": PIECE_ATTACH_RAYS_SHADER,
-		"piece_texture_morph_shader": PIECE_TEXTURE_MORPH_SHADER,
-		"piece_attach_glow_color": PIECE_ATTACH_GLOW_COLOR,
-		"occluded_piece_effect_dim_color": occluded_piece_effect_dim_color,
-		"piece_attach_glow_size": PIECE_ATTACH_GLOW_SIZE,
-		"piece_attach_glow_fill_strength": PIECE_ATTACH_GLOW_FILL_STRENGTH,
-		"piece_attach_glow_base_strength": PIECE_ATTACH_GLOW_BASE_STRENGTH,
-		"piece_attach_glow_switch_strength": PIECE_ATTACH_GLOW_SWITCH_STRENGTH,
-		"piece_attach_glow_switch_duration": PIECE_ATTACH_GLOW_SWITCH_DURATION,
-		"piece_attach_in_duration": PIECE_ATTACH_IN_DURATION,
-		"piece_attach_pre_switch_hold_duration": PIECE_ATTACH_PRE_SWITCH_HOLD_DURATION,
-		"piece_attach_morph_duration": PIECE_ATTACH_MORPH_DURATION,
-		"piece_attach_target_appear_duration": PIECE_ATTACH_TARGET_APPEAR_DURATION,
-		"piece_attach_post_switch_hold_duration": PIECE_ATTACH_POST_SWITCH_HOLD_DURATION,
-		"piece_attach_morph_noise_strength": PIECE_ATTACH_MORPH_NOISE_STRENGTH,
-		"piece_attach_morph_shine_strength": PIECE_ATTACH_MORPH_SHINE_STRENGTH,
-		"piece_attach_out_duration": PIECE_ATTACH_OUT_DURATION,
-		"piece_attach_rays_start_size": PIECE_ATTACH_RAYS_START_SIZE,
-		"piece_attach_rays_switch_size": PIECE_ATTACH_RAYS_SWITCH_SIZE,
-		"piece_attach_rays_texture_size": PIECE_ATTACH_RAYS_TEXTURE_SIZE,
-		"piece_attach_rays_overlay_scale": PIECE_ATTACH_RAYS_OVERLAY_SCALE,
-		"piece_attach_rays_local_offset": PIECE_ATTACH_RAYS_LOCAL_OFFSET,
-		"piece_attach_rays_spread": PIECE_ATTACH_RAYS_SPREAD,
-		"piece_attach_rays_cutoff": PIECE_ATTACH_RAYS_CUTOFF,
-		"piece_attach_rays_speed": PIECE_ATTACH_RAYS_SPEED,
-		"piece_attach_rays_ray1_density": PIECE_ATTACH_RAYS_RAY1_DENSITY,
-		"piece_attach_rays_ray2_density": PIECE_ATTACH_RAYS_RAY2_DENSITY,
-		"piece_attach_rays_ray2_intensity": PIECE_ATTACH_RAYS_RAY2_INTENSITY,
-		"piece_attach_rays_core_intensity": PIECE_ATTACH_RAYS_CORE_INTENSITY,
-		"piece_attach_rays_seed": PIECE_ATTACH_RAYS_SEED,
-		"piece_attach_rays_fade_in_delay_ratio": PIECE_ATTACH_RAYS_FADE_IN_DELAY_RATIO,
-		"piece_attach_rays_fade_in_duration_ratio": PIECE_ATTACH_RAYS_FADE_IN_DURATION_RATIO,
-		"attach_point_light_texture_provider": Callable(self, "get_attach_point_light_texture"),
-		"piece_light_global_position_provider": Callable(self, "get_piece_light_global_position_for_texture"),
-		"sprite_bounds_provider": Callable(self, "get_sprite_texture_bounds_local"),
-	})
+	return get_controller_registry().get_piece_display_controller()
 
 func get_piece_effect_animator():
-	initialize_piece_effect_animator()
-	return piece_effect_animator
+	return get_controller_registry().get_piece_effect_animator()
 
-func initialize_freeze_effect_animator() -> void:
-	if freeze_effect_animator == null:
-		freeze_effect_animator = FREEZE_EFFECT_ANIMATOR_SCRIPT.new()
-	sync_freeze_effect_animator()
-
-func sync_freeze_effect_animator() -> void:
-	if freeze_effect_animator == null:
-		return
-	var effect_animator = get_piece_effect_animator()
-	freeze_effect_animator.configure({
-		"tween_owner": self,
-		"geometry": get_board_geometry(),
-		"visuals": get_board_visuals(),
-		"board_markers_node": board_markers_node,
-		"freeze_shader": PIECE_FREEZE_CRACK_SHADER,
-		"square_texture_provider": Callable(effect_animator, "get_attach_rays_square_texture"),
-		"sync_overlay_to_holder_callback": Callable(effect_animator, "sync_sprite_overlay_to_holder"),
-		"piece_holder_provider": Callable(self, "get_piece_holder_at"),
-		"should_skip_visual_animations_provider": Callable(self, "should_skip_visual_animations"),
-		"pending_attach_positions_provider": Callable(self, "get_pending_stamp_attach_positions"),
-		"piece_objects_provider": Callable(self, "get_piece_objects"),
-		"board_effects_provider": Callable(self, "get_current_board_effects"),
-		"player_id_for_color_callback": Callable(self, "get_player_id_for_color"),
-		"is_valid_position_callback": Callable(self, "is_valid_position"),
-		"crack_name": PIECE_FREEZE_CRACK_NAME,
-		"release_name": PIECE_FREEZE_RELEASE_NAME,
-		"square_name": PIECE_FREEZE_SQUARE_NAME,
-		"square_release_name": PIECE_FREEZE_SQUARE_RELEASE_NAME,
-		"crack_z_index": PIECE_FREEZE_CRACK_Z_INDEX,
-		"square_z_index": PIECE_FREEZE_SQUARE_Z_INDEX,
-		"crack_duration": PIECE_FREEZE_CRACK_DURATION,
-		"crack_release_duration": PIECE_FREEZE_CRACK_RELEASE_DURATION,
-		"crack_start_width": PIECE_FREEZE_CRACK_START_WIDTH,
-		"crack_end_width": PIECE_FREEZE_CRACK_END_WIDTH,
-		"crack_depth": PIECE_FREEZE_CRACK_DEPTH,
-		"crack_scale": PIECE_FREEZE_CRACK_SCALE,
-		"crack_zebra_scale": PIECE_FREEZE_CRACK_ZEBRA_SCALE,
-		"crack_zebra_amp": PIECE_FREEZE_CRACK_ZEBRA_AMP,
-		"crack_profile": PIECE_FREEZE_CRACK_PROFILE,
-		"crack_slope": PIECE_FREEZE_CRACK_SLOPE,
-		"refraction_offset": PIECE_FREEZE_REFRACTION_OFFSET,
-		"reflection_offset": PIECE_FREEZE_REFLECTION_OFFSET,
-		"square_inset": PIECE_FREEZE_SQUARE_INSET,
-		"square_alpha": PIECE_FREEZE_SQUARE_ALPHA,
-		"piece_effect_light_receive_mask": PIECE_EFFECT_LIGHT_RECEIVE_MASK,
-	})
+func get_piece_effect_flow_controller():
+	return get_controller_registry().get_piece_effect_flow_controller()
 
 func get_freeze_effect_animator():
-	initialize_freeze_effect_animator()
-	return freeze_effect_animator
-
-func initialize_hidden_stamp_preview_controller() -> void:
-	if hidden_stamp_preview_controller == null:
-		hidden_stamp_preview_controller = HIDDEN_STAMP_PREVIEW_CONTROLLER_SCRIPT.new()
-	sync_hidden_stamp_preview_controller()
-
-func sync_hidden_stamp_preview_controller() -> void:
-	if hidden_stamp_preview_controller == null:
-		return
-	hidden_stamp_preview_controller.configure({
-		"canvas_layer": canvas_layer,
-		"stamp_visual_scene": STAMP_VISUAL,
-		"stamp_ui_size": STAMP_UI_SIZE,
-		"hidden_stamp_margin": HIDDEN_STAMP_MARGIN,
-		"hidden_stamp_gap": HIDDEN_STAMP_GAP,
-		"hidden_stamp_scale": HIDDEN_STAMP_SCALE,
-		"hidden_stamp_preview_alpha": HIDDEN_STAMP_PREVIEW_ALPHA,
-		"board_size": BOARD_SIZE,
-		"cell_width": CELL_WIDTH,
-		"hidden_stamp_invisibility_shader": HIDDEN_STAMP_INVISIBILITY_SHADER,
-		"hidden_stamp_invisibility_radius": HIDDEN_STAMP_INVISIBILITY_RADIUS,
-		"hidden_stamp_invisibility_effect_control": HIDDEN_STAMP_INVISIBILITY_EFFECT_CONTROL,
-		"hidden_stamp_invisibility_burn_speed": HIDDEN_STAMP_INVISIBILITY_BURN_SPEED,
-		"hidden_stamp_invisibility_shape": HIDDEN_STAMP_INVISIBILITY_SHAPE,
-		"board_screen_scale_provider": Callable(self, "get_board_screen_scale"),
-	})
+	return get_controller_registry().get_freeze_effect_animator()
 
 func get_hidden_stamp_preview_controller():
-	initialize_hidden_stamp_preview_controller()
-	return hidden_stamp_preview_controller
-
-func initialize_stamp_hud_controller() -> void:
-	if stamp_hud_controller == null:
-		stamp_hud_controller = MATCH_STAMP_HUD_SCRIPT.new()
-	sync_stamp_hud_controller()
-
-func sync_stamp_hud_controller() -> void:
-	if stamp_hud_controller == null:
-		return
-	stamp_hud_controller.configure({
-		"stamp_visual_scene": STAMP_VISUAL,
-		"stamp_ui_size": STAMP_UI_SIZE,
-		"player_hand_size": PLAYER_HAND_SIZE,
-		"stamp_hand_scale": STAMP_HAND_SCALE,
-		"deck_stamp_scale": DECK_STAMP_SCALE,
-		"deck_extra_left_offset": DECK_EXTRA_LEFT_OFFSET,
-		"stamp_ui_gap": STAMP_UI_GAP,
-		"top_stamp_hand_margin": TOP_STAMP_HAND_MARGIN,
-		"bottom_stamp_hand_margin": BOTTOM_STAMP_HAND_MARGIN,
-	})
+	return get_controller_registry().get_hidden_stamp_preview_controller()
 
 func get_stamp_hud_controller():
-	initialize_stamp_hud_controller()
-	return stamp_hud_controller
+	return get_controller_registry().get_stamp_hud_controller()
 
-func initialize_stamp_hover_preview_controller() -> void:
-	if stamp_hover_preview_controller == null:
-		stamp_hover_preview_controller = STAMP_HOVER_PREVIEW_CONTROLLER_SCRIPT.new()
-	sync_stamp_hover_preview_controller()
-
-func sync_stamp_hover_preview_controller() -> void:
-	if stamp_hover_preview_controller == null:
-		return
-	stamp_hover_preview_controller.configure({
-		"canvas_layer": canvas_layer,
-		"stamp_visual_scene": STAMP_VISUAL,
-		"stamp_ui_size": STAMP_UI_SIZE,
-		"stamp_base_texture": HOVER_DESCRIPTION_STAMP_BASE_TEXTURE,
-		"hover_stamp_margin": HOVER_STAMP_MARGIN,
-		"hover_stamp_preview_scale": HOVER_STAMP_PREVIEW_SCALE,
-		"hover_stamp_vertical_offset": HOVER_STAMP_VERTICAL_OFFSET,
-		"hover_stamp_rotation_degrees": HOVER_STAMP_ROTATION_DEGREES,
-		"hover_stamp_visual_edge_overlap": HOVER_STAMP_VISUAL_EDGE_OVERLAP,
-		"hover_piece_preview_size": HOVER_PIECE_PREVIEW_SIZE,
-		"hover_piece_preview_vertical_offset": HOVER_PIECE_PREVIEW_VERTICAL_OFFSET,
-		"description_text_margin": HOVER_DESCRIPTION_TEXT_MARGIN,
-		"description_frame_edge_color": HOVER_DESCRIPTION_FRAME_EDGE_COLOR,
-		"description_frame_edge_thickness": HOVER_DESCRIPTION_FRAME_EDGE_THICKNESS,
-		"description_frame_edge_horizontal_inset": HOVER_DESCRIPTION_FRAME_EDGE_HORIZONTAL_INSET,
-		"description_frame_edge_vertical_inset": HOVER_DESCRIPTION_FRAME_EDGE_VERTICAL_INSET,
-	})
+func get_match_codex_controller():
+	return get_controller_registry().get_match_codex_controller()
 
 func get_stamp_hover_preview_controller():
-	initialize_stamp_hover_preview_controller()
-	return stamp_hover_preview_controller
-
-func initialize_stamp_interaction_controller() -> void:
-	if stamp_interaction_controller == null:
-		stamp_interaction_controller = STAMP_INTERACTION_CONTROLLER_SCRIPT.new()
-	sync_stamp_interaction_controller()
-
-func sync_stamp_interaction_controller() -> void:
-	if stamp_interaction_controller == null:
-		return
-	stamp_interaction_controller.configure({
-		"tween_owner": self,
-		"geometry": get_board_geometry(),
-		"visuals": get_board_visuals(),
-		"board_markers_node": board_markers_node,
-		"stamp_attach_target_fill_color": STAMP_ATTACH_TARGET_FILL_COLOR,
-		"stamp_attach_target_fill_inset": STAMP_ATTACH_TARGET_FILL_INSET,
-		"stamp_attach_target_wiggle_rise": STAMP_ATTACH_TARGET_WIGGLE_RISE,
-		"stamp_attach_target_wiggle_rotation_degrees": STAMP_ATTACH_TARGET_WIGGLE_ROTATION_DEGREES,
-		"stamp_attach_target_wiggle_step_duration": STAMP_ATTACH_TARGET_WIGGLE_STEP_DURATION,
-		"hide_hover_callback": Callable(self, "hide_hover_piece_details"),
-		"show_hover_stamp_description_callback": Callable(self, "show_hover_stamp_description"),
-		"can_control_current_turn_provider": Callable(self, "can_control_current_turn"),
-		"controllable_color_provider": Callable(self, "get_controllable_color"),
-		"is_mouse_out_provider": Callable(self, "is_mouse_out"),
-		"mouse_board_position_provider": Callable(self, "get_mouse_board_position"),
-		"is_valid_position_callback": Callable(self, "is_valid_position"),
-		"is_piece_owned_by_callback": Callable(self, "is_piece_owned_by"),
-		"can_attach_stamp_to_piece_callback": Callable(self, "can_attach_stamp_to_piece"),
-		"can_exchange_stamp_locally_callback": Callable(self, "can_exchange_stamp_locally"),
-		"is_mouse_over_deck_callback": Callable(self, "is_mouse_over_deck"),
-		"attach_stamp_visual_to_piece_callback": Callable(self, "attach_stamp_visual_to_piece"),
-		"stamp_visuals_provider": Callable(self, "get_stamp_visuals"),
-		"stamp_hand_provider": Callable(self, "get_stamp_hand"),
-		"stamp_home_position_provider": Callable(self, "get_stamp_home_position"),
-		"piece_holder_provider": Callable(self, "get_piece_holder_at"),
-		"stamp_visual_index_provider": Callable(self, "get_stamp_visual_index"),
-		"tutorial_exchange_allowed_callback": Callable(self, "is_tutorial_exchange_stamp_allowed"),
-		"send_stamp_exchange_callback": Callable(self, "send_stamp_exchange_action"),
-		"stamp_deck_provider": Callable(self, "get_stamp_deck"),
-		"remove_stamp_from_hand_index_callback": Callable(self, "remove_stamp_from_hand_index"),
-		"complete_stamp_exchange_callback": Callable(self, "complete_stamp_exchange"),
-	})
+	return get_controller_registry().get_stamp_hover_preview_controller()
 
 func get_stamp_interaction_controller():
-	initialize_stamp_interaction_controller()
-	return stamp_interaction_controller
-
-func initialize_stamp_animation_controller() -> void:
-	if stamp_animation_controller == null:
-		stamp_animation_controller = STAMP_ANIMATION_CONTROLLER_SCRIPT.new()
-	sync_stamp_animation_controller()
-
-func sync_stamp_animation_controller() -> void:
-	if stamp_animation_controller == null:
-		return
-	stamp_animation_controller.configure({
-		"canvas_layer": canvas_layer,
-		"tween_owner": self,
-		"stamp_visual_scene": STAMP_VISUAL,
-		"stamp_ui_size": STAMP_UI_SIZE,
-		"stamp_burn_sequence_gap": STAMP_BURN_SEQUENCE_GAP,
-		"return_to_deck_start_scale": STAMP_RETURN_TO_DECK_START_SCALE,
-		"return_to_deck_end_scale": STAMP_RETURN_TO_DECK_END_SCALE,
-		"return_to_deck_duration": STAMP_RETURN_TO_DECK_DURATION,
-		"color_for_player_provider": Callable(self, "get_color_for_player_id"),
-		"player_id_for_color_provider": Callable(self, "get_player_id_for_color"),
-		"local_view_color_provider": Callable(self, "get_local_view_color"),
-		"is_valid_position_callback": Callable(self, "is_valid_position"),
-		"board_screen_position_provider": Callable(self, "get_board_position_screen_position"),
-		"stamp_draw_start_position_provider": Callable(self, "get_stamp_draw_start_position"),
-		"stamp_return_to_deck_target_position_provider": Callable(self, "get_stamp_return_to_deck_target_position"),
-		"stamp_hand_source_position_provider": Callable(self, "get_stamp_hand_source_position"),
-		"deck_visual_provider": Callable(self, "get_deck_visual"),
-		"viewport_size_provider": Callable(self, "get_visible_viewport_size"),
-		"value_to_vector2_provider": Callable(self, "value_to_vector2"),
-		"stamp_visuals_provider": Callable(self, "get_stamp_visuals"),
-	})
+	return get_controller_registry().get_stamp_interaction_controller()
 
 func get_stamp_animation_controller():
-	initialize_stamp_animation_controller()
-	return stamp_animation_controller
+	return get_controller_registry().get_stamp_animation_controller()
 
 func get_visible_viewport_size() -> Vector2:
 	return get_viewport().get_visible_rect().size
@@ -1432,112 +656,11 @@ func get_game_result_context() -> Dictionary:
 		"side_is_null": side == null,
 	}
 
-func initialize_deck_counter_controller() -> void:
-	if deck_counter_controller == null:
-		deck_counter_controller = DECK_COUNTER_CONTROLLER_SCRIPT.new()
-	sync_deck_counter_controller()
-
-func sync_deck_counter_controller() -> void:
-	if deck_counter_controller == null:
-		return
-	deck_counter_controller.configure({
-		"canvas_layer": canvas_layer,
-		"tween_owner": self,
-		"deck_count_label_size": DECK_COUNT_LABEL_SIZE,
-		"deck_count_label_gap": DECK_COUNT_LABEL_GAP,
-		"deck_counter_background_size": DECK_COUNTER_BACKGROUND_SIZE,
-		"deck_counter_digit_size": DECK_COUNTER_DIGIT_SIZE,
-		"deck_counter_digit_gap": DECK_COUNTER_DIGIT_GAP,
-		"deck_counter_frame_size": DECK_COUNTER_FRAME_SIZE,
-		"deck_counter_content_offset": DECK_COUNTER_CONTENT_OFFSET,
-		"deck_counter_size": DECK_COUNTER_SIZE,
-		"deck_counter_roll_duration": DECK_COUNTER_ROLL_DURATION,
-		"deck_counter_motion_blur": DECK_COUNTER_MOTION_BLUR,
-		"deck_counter_offset": DECK_COUNTER_OFFSET,
-		"deck_counter_z_index": DECK_COUNTER_Z_INDEX,
-		"deck_counter_digits_texture": DECK_COUNTER_DIGITS_TEXTURE,
-		"deck_counter_background_texture": DECK_COUNTER_BACKGROUND_TEXTURE,
-		"deck_counter_frame_texture": DECK_COUNTER_FRAME_TEXTURE,
-		"deck_counter_shadow_texture": DECK_COUNTER_SHADOW_TEXTURE,
-		"deck_counter_digit_shader": DECK_COUNTER_DIGIT_SHADER,
-		"deck_visual_provider": Callable(self, "get_deck_visual"),
-		"stamp_deck_count_provider": Callable(self, "get_stamp_deck_count"),
-		"game_over_provider": Callable(self, "is_game_over"),
-	})
-
 func get_deck_counter_controller():
-	initialize_deck_counter_controller()
-	return deck_counter_controller
-
-func initialize_turn_hud_controller() -> void:
-	if turn_hud_controller == null:
-		turn_hud_controller = TURN_HUD_CONTROLLER_SCRIPT.new()
-	sync_turn_hud_controller()
-
-func sync_turn_hud_controller() -> void:
-	if turn_hud_controller == null:
-		return
-	turn_hud_controller.configure({
-		"canvas_layer": canvas_layer,
-		"tween_owner": self,
-		"turn_timer_limit_seconds": TURN_TIMER_LIMIT_SECONDS,
-		"turn_timer_counter_key": TURN_TIMER_COUNTER_KEY,
-		"turn_timer_gap": TURN_TIMER_GAP,
-		"turn_timer_z_index": TURN_TIMER_Z_INDEX,
-		"deck_counter_size": DECK_COUNTER_SIZE,
-		"action_status_size": ACTION_STATUS_SIZE,
-		"action_status_margin": ACTION_STATUS_MARGIN,
-		"action_status_cell_size": ACTION_STATUS_CELL_SIZE,
-		"action_status_cell_gap": ACTION_STATUS_CELL_GAP,
-		"action_status_flip_duration": ACTION_STATUS_FLIP_DURATION,
-		"action_status_active_color": ACTION_STATUS_ACTIVE_COLOR,
-		"action_status_active_text_color": ACTION_STATUS_ACTIVE_TEXT_COLOR,
-		"action_status_active_border_color": ACTION_STATUS_ACTIVE_BORDER_COLOR,
-		"action_status_inactive_color": ACTION_STATUS_INACTIVE_COLOR,
-		"action_status_blocked_color": ACTION_STATUS_BLOCKED_COLOR,
-		"action_status_state_active": ACTION_STATUS_STATE_ACTIVE,
-		"action_status_state_empty": ACTION_STATUS_STATE_EMPTY,
-		"action_status_state_blocked": ACTION_STATUS_STATE_BLOCKED,
-		"end_turn_indicator_padding": END_TURN_INDICATOR_PADDING,
-		"end_turn_indicator_color": END_TURN_INDICATOR_COLOR,
-		"end_turn_indicator_z_index": END_TURN_INDICATOR_Z_INDEX,
-		"player_name_label_size": PLAYER_NAME_LABEL_SIZE,
-		"player_name_label_gap": PLAYER_NAME_LABEL_GAP,
-		"player_portrait_size": get_scaled_player_portrait_size(),
-		"player_portrait_margin": PLAYER_PORTRAIT_MARGIN,
-		"player_portrait_top_position": get_player_portrait_top_position(),
-		"player_portrait_z_index": PLAYER_PORTRAIT_Z_INDEX,
-		"rules_info_button_size": RULES_INFO_BUTTON_SIZE,
-		"rules_info_panel_size": RULES_INFO_PANEL_SIZE,
-		"rules_info_panel_margin": RULES_INFO_PANEL_MARGIN,
-		"rules_info_text": RULES_INFO_TEXT,
-		"current_player_names": current_player_names,
-		"current_player_portraits": current_player_portraits,
-		"create_digit_counter_callback": Callable(get_deck_counter_controller(), "create_digit_counter_container"),
-		"set_digit_counter_value_callback": Callable(get_deck_counter_controller(), "set_deck_counter_value"),
-		"end_turn_pressed_callback": Callable(self, "_on_end_turn_pressed"),
-		"game_over_provider": Callable(self, "is_game_over"),
-		"can_control_current_turn_provider": Callable(self, "can_control_current_turn"),
-		"tutorial_end_turn_allowed_provider": Callable(self, "is_end_turn_tutorial_allowed"),
-		"show_first_turn_end_provider": Callable(self, "should_show_first_turn_end_button"),
-		"can_end_first_turn_provider": Callable(self, "can_end_first_turn"),
-		"can_switch_action_provider": Callable(self, "can_switch_action_now"),
-		"can_attach_action_provider": Callable(self, "can_attach_action_now"),
-		"can_move_action_provider": Callable(self, "can_move_action_now"),
-		"current_turn_color_provider": Callable(self, "get_current_turn_color"),
-		"player_id_for_color_provider": Callable(self, "get_player_id_for_color"),
-		"turn_timer_timeout_callback": Callable(self, "defer_turn_timer_timeout"),
-		"deck_visual_provider": Callable(self, "get_deck_visual"),
-		"local_view_color_provider": Callable(self, "get_local_view_color"),
-		"own_color_provider": Callable(self, "get_own_color"),
-		"visible_viewport_size_provider": Callable(self, "get_visible_viewport_size"),
-		"board_screen_size_provider": Callable(self, "get_board_screen_size"),
-		"game_result_context_provider": Callable(self, "get_game_result_context"),
-	})
+	return get_controller_registry().get_deck_counter_controller()
 
 func get_turn_hud_controller():
-	initialize_turn_hud_controller()
-	return turn_hud_controller
+	return get_controller_registry().get_turn_hud_controller()
 
 func get_player_portrait_top_position() -> Vector2:
 	return scale_canvas_point_from_reference(PLAYER_PORTRAIT_TOP_POSITION)
@@ -1560,42 +683,11 @@ func get_canvas_scale_from_reference() -> Vector2:
 		viewport_size.y / RESPONSIVE_REFERENCE_VIEWPORT_SIZE.y
 	)
 
-func initialize_match_input_controller() -> void:
-	if match_input_controller == null:
-		match_input_controller = MATCH_INPUT_CONTROLLER_SCRIPT.new()
-	sync_match_input_controller()
-
-func sync_match_input_controller() -> void:
-	if match_input_controller == null:
-		return
-	match_input_controller.configure({
-		"match_board": self,
-		"invalid_board_pos": INVALID_BOARD_POS,
-		"main_menu_scene": MAIN_MENU_SCENE,
-	})
-
 func get_match_input_controller():
-	initialize_match_input_controller()
-	return match_input_controller
-
-func initialize_stamp_hand_state_controller() -> void:
-	if stamp_hand_state_controller == null:
-		stamp_hand_state_controller = STAMP_HAND_STATE_CONTROLLER_SCRIPT.new()
-	sync_stamp_hand_state_controller()
-
-func sync_stamp_hand_state_controller() -> void:
-	if stamp_hand_state_controller == null:
-		return
-	stamp_hand_state_controller.configure({
-		"match_board": self,
-		"stamp_visual_scene": STAMP_VISUAL,
-		"stamp_ui_size": STAMP_UI_SIZE,
-		"stamp_hand_scale": STAMP_HAND_SCALE,
-	})
+	return get_controller_registry().get_match_input_controller()
 
 func get_stamp_hand_state_controller():
-	initialize_stamp_hand_state_controller()
-	return stamp_hand_state_controller
+	return get_controller_registry().get_stamp_hand_state_controller()
 
 func is_game_over() -> bool:
 	return game_over
@@ -1676,112 +768,6 @@ func create_piece_effects_node() -> void:
 	piece_effects_node.name = "PieceEffects"
 	piece_effects_node.z_index = 12
 	add_child(piece_effects_node)
-
-func create_ambient_board_light() -> void:
-	if ambient_board_light != null and is_instance_valid(ambient_board_light) and ambient_board_fill_light != null and is_instance_valid(ambient_board_fill_light):
-		return
-
-	if ambient_board_fill_light == null or !is_instance_valid(ambient_board_fill_light):
-		ambient_board_fill_light = PointLight2D.new()
-		ambient_board_fill_light.name = AMBIENT_BOARD_FILL_LIGHT_NAME
-		ambient_board_fill_light.texture = get_attach_point_light_texture()
-		ambient_board_fill_light.texture_scale = AMBIENT_BOARD_FILL_LIGHT_TEXTURE_SCALE
-		ambient_board_fill_light.color = AMBIENT_BOARD_LIGHT_COLOR
-		ambient_board_fill_light.energy = AMBIENT_BOARD_FILL_LIGHT_ENERGY
-		ambient_board_fill_light.range_item_cull_mask = BOARD_LIGHT_RECEIVE_MASK
-		ambient_board_fill_light.shadow_enabled = false
-		ambient_board_fill_light.position = AMBIENT_BOARD_LIGHT_OFFSET
-		add_child(ambient_board_fill_light)
-
-	if ambient_board_light == null or !is_instance_valid(ambient_board_light):
-		ambient_board_light = PointLight2D.new()
-		ambient_board_light.name = AMBIENT_BOARD_LIGHT_NAME
-		ambient_board_light.texture = get_attach_point_light_texture()
-		ambient_board_light.texture_scale = AMBIENT_BOARD_LIGHT_TEXTURE_SCALE
-		ambient_board_light.color = AMBIENT_BOARD_LIGHT_COLOR
-		ambient_board_light.energy = AMBIENT_BOARD_LIGHT_ENERGY
-		ambient_board_light.range_item_cull_mask = BOARD_LIGHT_RECEIVE_MASK
-		ambient_board_light.shadow_enabled = false
-		ambient_board_light.shadow_color = AMBIENT_BOARD_LIGHT_SHADOW_COLOR
-		ambient_board_light.shadow_filter = Light2D.SHADOW_FILTER_PCF5
-		ambient_board_light.shadow_filter_smooth = AMBIENT_BOARD_LIGHT_SHADOW_SMOOTH
-		ambient_board_light.shadow_item_cull_mask = PIECE_LIGHT_OCCLUDER_MASK
-		ambient_board_light.position = AMBIENT_BOARD_LIGHT_OFFSET
-		add_child(ambient_board_light)
-
-func create_board_shader_overlay() -> void:
-	if !board_shader_enabled:
-		remove_board_shader_overlay()
-		return
-
-	if board_shader_material == null:
-		board_shader_material = ShaderMaterial.new()
-		board_shader_material.shader = BOARD_KUWAHARA_SHADER
-	update_board_shader_material()
-
-	if board_shader_backbuffer == null or !is_instance_valid(board_shader_backbuffer):
-		board_shader_backbuffer = BackBufferCopy.new()
-		board_shader_backbuffer.name = "BoardShaderBackBuffer"
-		board_shader_backbuffer.copy_mode = BackBufferCopy.COPY_MODE_VIEWPORT
-		board_shader_backbuffer.z_as_relative = false
-		board_shader_backbuffer.z_index = BOARD_SHADER_OVERLAY_Z_INDEX - 1
-		add_child(board_shader_backbuffer)
-
-	if board_shader_overlay == null or !is_instance_valid(board_shader_overlay):
-		board_shader_overlay = ColorRect.new()
-		board_shader_overlay.name = "BoardShaderOverlay"
-		board_shader_overlay.color = Color.WHITE
-		board_shader_overlay.material = board_shader_material
-		board_shader_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		board_shader_overlay.z_as_relative = false
-		board_shader_overlay.z_index = BOARD_SHADER_OVERLAY_Z_INDEX
-		board_shader_overlay.light_mask = 0
-		add_child(board_shader_overlay)
-
-	update_board_shader_overlay_rect()
-
-func remove_board_shader_overlay() -> void:
-	if board_shader_overlay != null and is_instance_valid(board_shader_overlay):
-		board_shader_overlay.queue_free()
-	if board_shader_backbuffer != null and is_instance_valid(board_shader_backbuffer):
-		board_shader_backbuffer.queue_free()
-	board_shader_overlay = null
-	board_shader_backbuffer = null
-
-func update_board_shader_material() -> void:
-	if board_shader_material == null:
-		return
-	board_shader_material.set_shader_parameter("radius", BOARD_SHADER_RADIUS)
-	board_shader_material.set_shader_parameter("offset", board_shader_offset)
-
-func update_board_shader_overlay_rect() -> void:
-	if board_shader_overlay == null or !is_instance_valid(board_shader_overlay):
-		return
-
-	var overlay_rect: Rect2 = get_board_shader_overlay_rect()
-	board_shader_overlay.position = overlay_rect.position
-	board_shader_overlay.size = overlay_rect.size
-
-func get_board_shader_overlay_rect() -> Rect2:
-	var board_polygon: PackedVector2Array = get_projected_board_rect_polygon(
-		BOARD_FRAME_WIDTH,
-		BOARD_FRAME_VERTICAL_EXTENSION,
-		false
-	)
-	if board_polygon.size() == 0:
-		return BoardConfig.get_board_rect_local().grow(board_shader_margin)
-
-	return get_board_geometry().get_points_bounds_local(board_polygon).grow(board_shader_margin)
-
-func get_piece_kuwahara_material() -> ShaderMaterial:
-	if !piece_kuwahara_enabled:
-		return null
-	if piece_kuwahara_material == null:
-		piece_kuwahara_material = ShaderMaterial.new()
-		piece_kuwahara_material.shader = PIECE_KUWAHARA_SHADER
-	piece_kuwahara_material.set_shader_parameter("radius", PIECE_KUWAHARA_RADIUS)
-	piece_kuwahara_material.set_shader_parameter("offset", piece_kuwahara_offset)
-	return piece_kuwahara_material
 
 func create_pieces_from_board():
 	piece_objects.clear()
@@ -1867,14 +853,14 @@ func update_end_turn_button():
 
 func begin_stamp_attach_process(piece_position: Vector2) -> void:
 	if !pending_stamp_attach_positions.has(piece_position):
-		active_stamp_attach_process_count += 1
+		begin_visual_process(VISUAL_PROCESS_STAMP_ATTACH)
 	pending_stamp_attach_positions[piece_position] = true
 
 func finish_stamp_attach_process(piece_position: Vector2) -> void:
 	var had_pending_attach: bool = pending_stamp_attach_positions.has(piece_position)
 	if pending_stamp_attach_positions.has(piece_position):
 		pending_stamp_attach_positions.erase(piece_position)
-		active_stamp_attach_process_count = maxi(0, active_stamp_attach_process_count - 1)
+		finish_visual_process(VISUAL_PROCESS_STAMP_ATTACH)
 	if had_pending_attach:
 		refresh_piece_freeze_overlay(piece_position)
 	update_stamp_drag_permissions()
@@ -1918,7 +904,7 @@ func end_current_turn_locally():
 
 func handle_expired_seeker_stamp_locally(owner_color: int, expired_stamp: Stamp, piece_pos: Vector2) -> void:
 	get_stamp_animation_controller().queue_seeker_stamp_return_to_deck_animation(owner_color, expired_stamp, piece_pos)
-	return_local_seeker_stamp(owner_color, expired_stamp)
+	get_match_codex_controller().return_local_seeker_stamp(owner_color, expired_stamp)
 
 func update_stamp_face_visibility(local_color: int):
 	for stamp_visual in white_stamp_visuals:
@@ -1968,151 +954,31 @@ func show_hover_stamp_description(stamp: Stamp) -> void:
 	get_stamp_hover_preview_controller().show_description(description)
 
 func can_exchange_stamp_locally(owner_color: int) -> bool:
-	return false
+	return get_local_stamp_action_controller().can_exchange_stamp_locally(owner_color)
 
 func is_tutorial_exchange_stamp_allowed(owner_color: int, stamp_name: String, hand_index: int, emit_rejection: bool) -> bool:
-	return false
+	return get_local_stamp_action_controller().is_tutorial_exchange_stamp_allowed(owner_color, stamp_name, hand_index, emit_rejection)
 
 func complete_stamp_exchange(owner_color: int, stamp_name: String, hand_index: int, should_record_name: bool, source_global_position = null) -> void:
-	if should_record_name:
-		get_stamp_hand_state_controller().record_exchanged_stamp_name_this_turn(owner_color, stamp_name)
-		var return_animation: Dictionary = {
-			"source_player_id": get_player_id_for_color(owner_color),
-			"target_player_id": get_player_id_for_color(owner_color),
-			"stamp_name": stamp_name,
-			"source_zone": "hand",
-			"target_zone": "deck",
-		}
-		if source_global_position is Vector2:
-			return_animation["source_global_position"] = source_global_position
-		get_stamp_animation_controller().queue_stamp_return_to_deck_animation(return_animation)
-	get_turn_action_state_controller().mark_stamp_exchanged_this_turn(owner_color)
-	stamp_exchanged.emit(stamp_name, owner_color, hand_index)
+	get_local_stamp_action_controller().complete_stamp_exchange(owner_color, stamp_name, hand_index, should_record_name, source_global_position)
 
 func send_stamp_exchange_action(owner_color: int, stamp_name: String, hand_index: int) -> bool:
-	return false
+	return get_local_stamp_action_controller().send_stamp_exchange_action(owner_color, stamp_name, hand_index)
 
 func attach_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vector2) -> void:
-	if stamp_visual == null or !is_instance_valid(stamp_visual):
-		return
-	if not piece_objects.has(piece_position) or stamp_visual.stamp == null:
-		stamp_visual.fly_home()
-		return
-	var attach_stamp: Stamp = stamp_visual.stamp
-	var stamp_name: String = attach_stamp.stamp_name
-	var owner_color: int = stamp_visual.owner_color
-	var hand_index: int = get_stamp_visual_index(stamp_visual)
-	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_STAMP, {
-		"owner_color": owner_color,
-		"piece_pos": piece_position,
-		"stamp_name": stamp_name,
-		"hand_index": hand_index,
-	}, true):
-		stamp_visual.fly_home()
-		return
-	if !can_attach_stamp_to_piece(piece_position, stamp_name, owner_color):
-		stamp_visual.fly_home()
-		return
-
-	var start_texture: Texture2D = null
-	var holder: Sprite2D = get_piece_holder_at(piece_position)
-	if holder != null and is_instance_valid(holder):
-		start_texture = holder.texture
-
-	begin_stamp_attach_process(piece_position)
-
-	if GameController.current_game_host:
-		get_local_state_mutator().record_played_stamp_hand_slot(owner_color, hand_index)
-		stamp_visual.assign_and_hide()
-		if !send_stamp_attach_action(owner_color, stamp_name, piece_position, hand_index):
-			finish_stamp_attach_process(piece_position)
-			return
-		get_turn_action_state_controller().mark_stamp_attached_this_turn(owner_color)
-		stamp_attached.emit(piece_position, stamp_name, owner_color, hand_index)
-		return
-
-	if !apply_stamp_to_piece(piece_position, stamp_name):
-		finish_stamp_attach_process(piece_position)
-		if is_instance_valid(stamp_visual):
-			stamp_visual.fly_home()
-		return
-
-	get_local_state_mutator().record_played_stamp_hand_slot(owner_color, hand_index)
-	if is_instance_valid(stamp_visual):
-		remove_stamp_from_hand(stamp_visual)
-	else:
-		get_stamp_hand_state_controller().remove_stamp_from_hand_index(owner_color, hand_index, false)
-	get_turn_action_state_controller().mark_stamp_attached_this_turn(owner_color)
-	stamp_attached.emit(piece_position, stamp_name, owner_color, hand_index)
-
-	if get_parent().has_method("send_stamp_attach"):
-		get_parent().send_stamp_attach(piece_position, stamp_name, owner_color, hand_index, "")
-
-	await play_piece_stamp_attach_animation(piece_position, attach_stamp, start_texture)
-	finish_stamp_attach_process(piece_position)
+	await get_local_stamp_action_controller().attach_stamp_visual_to_piece(stamp_visual, piece_position)
 
 func send_stamp_attach_action(owner_color: int, stamp_name: String, piece_position: Vector2, hand_index: int) -> bool:
-	var action: Dictionary = {
-		"type": "attach_stamp",
-		"player_id": get_player_id_for_color(owner_color),
-		"stamp_name": stamp_name,
-		"piece_pos": piece_position,
-		"hand_index": hand_index,
-	}
-	return bool(GameController.send_action(action))
+	return get_local_stamp_action_controller().send_stamp_attach_action(owner_color, stamp_name, piece_position, hand_index)
 
 func can_attach_stamp_to_piece(piece_position: Vector2, stamp_name: String = "", owner_color: int = 0) -> bool:
-	if not piece_objects.has(piece_position):
-		return false
-	if pending_stamp_attach_positions.has(piece_position):
-		return false
-	var action_owner_color: int = owner_color if owner_color != 0 else get_controllable_color()
-	if !is_tutorial_action_allowed(TUTORIAL_ACTION_ATTACH_STAMP, {
-		"owner_color": action_owner_color,
-		"piece_pos": piece_position,
-		"stamp_name": stamp_name,
-	}):
-		return false
-
-	var piece: Piece = piece_objects[piece_position] as Piece
-	return piece.can_receive_stamp()
+	return get_local_stamp_action_controller().can_attach_stamp_to_piece(piece_position, stamp_name, owner_color)
 
 func apply_stamp_to_piece(piece_position: Vector2, stamp_name: String) -> bool:
-	if not piece_objects.has(piece_position):
-		return false
-
-	var piece: Piece = piece_objects[piece_position] as Piece
-	if !piece.can_receive_stamp():
-		push_warning("This piece cannot receive a stamp right now: %s" % piece_position)
-		return false
-
-	var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
-	if stamp == null:
-		push_warning("Stamp not found for attach: %s" % stamp_name)
-		return false
-
-	var owner_player_id: int = get_player_id_for_color(piece.color)
-	var local_codex_page_index: int = get_codex_page_index(piece.color)
-	var local_codex_page: Array = []
-	var local_codex_pages: Array = get_codex_pages(piece.color)
-	if local_codex_page_index >= 0 and local_codex_page_index < local_codex_pages.size() and local_codex_pages[local_codex_page_index] is Array:
-		local_codex_page = local_codex_pages[local_codex_page_index]
-	stamp.set_meta("codex_owner_player_id", owner_player_id)
-	stamp.set_meta("codex_page_index", local_codex_page_index)
-	stamp.set_meta("codex_stamp_index", local_codex_page.find(stamp_name))
-	piece.attach_stamp(stamp, true)
-	var pending_respawn_arrivals: Array[Dictionary] = []
-	if !GameController.current_game_host:
-		pending_respawn_arrivals = get_local_state_mutator().apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_ATTACH, piece_position, piece, stamp)
-	prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrivals)
-	display_board()
-	if !pending_respawn_arrivals.is_empty():
-		play_pending_edge_respawn_arrival_animations(pending_respawn_arrivals)
-	return true
+	return get_local_stamp_action_controller().apply_stamp_to_piece(piece_position, stamp_name)
 
 func apply_remote_stamp_attach(piece_position: Vector2, stamp_name: String, owner_color: int, hand_index: int, _replacement_stamp_name: String = ""):
-	if apply_stamp_to_piece(piece_position, stamp_name):
-		get_stamp_hand_state_controller().remove_stamp_from_hand_index(owner_color, hand_index, false, _replacement_stamp_name)
+	get_local_stamp_action_controller().apply_remote_stamp_attach(piece_position, stamp_name, owner_color, hand_index, _replacement_stamp_name)
 
 func remove_stamp_from_hand(stamp_visual: StampVisual) -> String:
 	return get_stamp_hand_state_controller().remove_stamp_from_hand(stamp_visual)
@@ -2131,12 +997,6 @@ func get_stamp_names_from_hand(stamps: Array[Stamp]) -> Array[String]:
 
 func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_stamp_expirations: Array) -> Array[Dictionary]:
 	return get_match_state_sync_controller().get_state_stamp_expiration_events(previous_snapshot, recent_stamp_expirations, piece_objects)
-
-func get_previous_state_texture(previous_state: Dictionary, piece_color: int) -> Texture2D:
-	var texture_value: Texture2D = previous_state.get("texture", null) as Texture2D
-	if texture_value != null:
-		return texture_value
-	return get_default_piece_texture(piece_color)
 
 func queue_piece_revert_animation(piece_position: Vector2, start_texture: Texture2D) -> void:
 	if start_texture == null or !is_valid_position(piece_position):
@@ -2165,9 +1025,9 @@ func play_piece_revert_animation(piece_position: Vector2, start_texture: Texture
 	if should_skip_visual_animations() or start_texture == null or !is_valid_position(piece_position):
 		return
 
-	active_piece_revert_animation_count += 1
+	begin_visual_process(VISUAL_PROCESS_PIECE_REVERT)
 	await get_piece_effect_animator().play_piece_revert(piece_position, start_texture)
-	active_piece_revert_animation_count = maxi(0, active_piece_revert_animation_count - 1)
+	finish_visual_process(VISUAL_PROCESS_PIECE_REVERT)
 
 func get_stamp_hand_source_position(owner_color: int) -> Vector2:
 	var visuals: Array[StampVisual] = get_stamp_visuals(owner_color)
@@ -2183,299 +1043,6 @@ func get_stamp_hand_source_position(owner_color: int) -> Vector2:
 
 func arrange_stamp_visuals(visuals: Array[StampVisual], animate: bool):
 	get_stamp_interaction_controller().arrange_stamp_visuals(visuals, animate)
-
-func create_codex_ui() -> void:
-	if canvas_layer == null or codex_panel != null:
-		return
-
-	codex_panel = PanelContainer.new()
-	codex_panel.name = "CodexPanel"
-	codex_panel.anchor_left = 0.0
-	codex_panel.anchor_right = 0.0
-	codex_panel.anchor_top = 1.0
-	codex_panel.anchor_bottom = 1.0
-	codex_panel.offset_left = CODEX_PANEL_MARGIN.x
-	codex_panel.offset_right = CODEX_PANEL_MARGIN.x + CODEX_PANEL_SIZE.x
-	codex_panel.offset_top = -CODEX_PANEL_MARGIN.y - CODEX_PANEL_SIZE.y
-	codex_panel.offset_bottom = -CODEX_PANEL_MARGIN.y
-	codex_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	codex_panel.z_index = 920
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.045, 0.042, 0.038, 0.88)
-	panel_style.border_color = Color(1.0, 0.92, 0.72, 0.34)
-	panel_style.border_width_left = 1
-	panel_style.border_width_top = 1
-	panel_style.border_width_right = 1
-	panel_style.border_width_bottom = 1
-	panel_style.corner_radius_top_left = 6
-	panel_style.corner_radius_top_right = 6
-	panel_style.corner_radius_bottom_left = 6
-	panel_style.corner_radius_bottom_right = 6
-	panel_style.content_margin_left = 12
-	panel_style.content_margin_top = 10
-	panel_style.content_margin_right = 12
-	panel_style.content_margin_bottom = 10
-	codex_panel.add_theme_stylebox_override("panel", panel_style)
-	canvas_layer.add_child(codex_panel)
-
-	var root := VBoxContainer.new()
-	codex_panel.add_child(root)
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_theme_constant_override("separation", 8)
-
-	codex_page_label = Label.new()
-	root.add_child(codex_page_label)
-	codex_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	codex_page_label.add_theme_font_size_override("font_size", 16)
-	codex_page_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.82))
-
-	codex_counts_row = HBoxContainer.new()
-	root.add_child(codex_counts_row)
-	codex_counts_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	codex_counts_row.add_theme_constant_override("separation", 6)
-	codex_count_labels.clear()
-	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
-		var count_label := Label.new()
-		codex_counts_row.add_child(count_label)
-		count_label.custom_minimum_size = Vector2(34, 24)
-		count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		count_label.add_theme_font_size_override("font_size", 14)
-		codex_count_labels.append(count_label)
-
-	codex_turn_page_button = Button.new()
-	root.add_child(codex_turn_page_button)
-	codex_turn_page_button.text = "Turn Page"
-	codex_turn_page_button.custom_minimum_size = Vector2(0, 34)
-	codex_turn_page_button.pressed.connect(_on_turn_page_pressed)
-	update_codex_ui()
-
-func update_codex_ui() -> void:
-	if codex_panel == null:
-		return
-
-	var owner_color: int = get_codex_display_color()
-	var page_index: int = get_codex_page_index(owner_color)
-	var page_counts: Array[int] = get_codex_page_counts(owner_color)
-	codex_page_label.text = "%d. oldal / %d" % [page_index + 1, DeckManager.CODEX_PAGE_COUNT]
-	for index in range(codex_count_labels.size()):
-		var count_label: Label = codex_count_labels[index]
-		var page_count: int = int(page_counts[index]) if index < page_counts.size() else 0
-		count_label.text = "%d:%d" % [index + 1, page_count]
-		count_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.44) if index == page_index else Color(0.82, 0.80, 0.74))
-	if codex_turn_page_button != null:
-		codex_turn_page_button.disabled = !can_turn_page_locally(owner_color)
-
-func get_codex_display_color() -> int:
-	if can_control_current_turn():
-		return get_controllable_color()
-	return get_local_view_color()
-
-func get_codex_page_index(owner_color: int) -> int:
-	return white_codex_page_index if owner_color == 1 else black_codex_page_index
-
-func get_codex_page_counts(owner_color: int) -> Array[int]:
-	return white_codex_page_counts if owner_color == 1 else black_codex_page_counts
-
-func get_codex_pages(owner_color: int) -> Array:
-	return white_codex_pages if owner_color == 1 else black_codex_pages
-
-func set_codex_page_index(owner_color: int, page_index: int) -> void:
-	if owner_color == 1:
-		white_codex_page_index = clampi(page_index, 0, DeckManager.CODEX_PAGE_COUNT - 1)
-	else:
-		black_codex_page_index = clampi(page_index, 0, DeckManager.CODEX_PAGE_COUNT - 1)
-	sync_deck_from_local_codex(owner_color)
-
-func set_codex_pages(owner_color: int, pages: Array) -> void:
-	if owner_color == 1:
-		white_codex_pages = pages
-		white_codex_page_counts = get_counts_from_codex_pages(pages)
-	else:
-		black_codex_pages = pages
-		black_codex_page_counts = get_counts_from_codex_pages(pages)
-	sync_deck_from_local_codex(owner_color)
-
-func get_counts_from_codex_pages(pages: Array) -> Array[int]:
-	var counts: Array[int] = []
-	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
-		if page_index < pages.size() and pages[page_index] is Array:
-			counts.append((pages[page_index] as Array).size())
-		else:
-			counts.append(0)
-	return counts
-
-func apply_codex_state_from_server(player_codex_state: Dictionary) -> void:
-	for player_id in [0, 1]:
-		var state_value = player_codex_state.get(player_id, player_codex_state.get(str(player_id), {}))
-		if !(state_value is Dictionary):
-			continue
-		var state: Dictionary = state_value
-		var owner_color: int = get_color_for_player_id(player_id)
-		set_codex_page_index(owner_color, int(state.get("current_page_index", 0)))
-		var pages_value = state.get("pages", [])
-		if pages_value is Array:
-			set_codex_pages(owner_color, parse_codex_pages_from_state(pages_value))
-		var counts_value = state.get("page_counts", [])
-		var parsed_counts: Array[int] = [0, 0, 0, 0, 0]
-		if counts_value is Array:
-			for index in range(mini(parsed_counts.size(), (counts_value as Array).size())):
-				parsed_counts[index] = int((counts_value as Array)[index])
-		if owner_color == 1:
-			white_codex_page_counts = parsed_counts
-			has_turned_page_this_turn[1] = bool(state.get("has_turned_page_this_turn", false))
-		else:
-			black_codex_page_counts = parsed_counts
-			has_turned_page_this_turn[-1] = bool(state.get("has_turned_page_this_turn", false))
-	update_codex_ui()
-
-func parse_codex_pages_from_state(pages_value: Array) -> Array:
-	var pages: Array = []
-	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
-		var page: Array[String] = []
-		if page_index < pages_value.size() and pages_value[page_index] is Array:
-			for stamp_value in pages_value[page_index]:
-				var stamp_name: String = ""
-				if stamp_value is Dictionary:
-					stamp_name = str((stamp_value as Dictionary).get("stamp_name", ""))
-				else:
-					stamp_name = str(stamp_value)
-				if !stamp_name.is_empty():
-					page.append(stamp_name)
-		pages.append(page)
-	return pages
-
-func can_turn_page_locally(owner_color: int) -> bool:
-	if !can_control_current_turn():
-		return false
-	if owner_color != get_controllable_color():
-		return false
-	if !is_tutorial_action_allowed(TUTORIAL_ACTION_TURN_PAGE, {
-		"owner_color": owner_color,
-	}):
-		return false
-	if bool(has_turned_page_this_turn.get(owner_color, false)):
-		return false
-	if bool(attached_stamp_this_turn.get(owner_color, false)):
-		return false
-	return count_non_empty_codex_pages(owner_color) > 1
-
-func count_non_empty_codex_pages(owner_color: int) -> int:
-	var count: int = 0
-	for page_count in get_codex_page_counts(owner_color):
-		if int(page_count) > 0:
-			count += 1
-	return count
-
-func _on_turn_page_pressed() -> void:
-	var owner_color: int = get_controllable_color()
-	if !is_tutorial_action_allowed(TUTORIAL_ACTION_TURN_PAGE, {
-		"owner_color": owner_color,
-	}, true):
-		update_codex_ui()
-		return
-	if !can_turn_page_locally(owner_color):
-		update_codex_ui()
-		return
-	if GameController.current_game_host:
-		send_turn_page_action(owner_color)
-		return
-	turn_codex_page_locally(owner_color)
-
-func send_turn_page_action(owner_color: int) -> bool:
-	return bool(GameController.send_action({
-		"type": "turn_page",
-		"player_id": get_player_id_for_color(owner_color),
-	}))
-
-func turn_codex_page_locally(owner_color: int) -> void:
-	var next_page_index: int = find_next_non_empty_codex_page(owner_color, get_codex_page_index(owner_color))
-	if next_page_index == -1:
-		return
-	set_codex_page_index(owner_color, next_page_index)
-	has_turned_page_this_turn[owner_color] = true
-	sync_hand_from_local_codex(owner_color)
-	codex_page_turned.emit(owner_color, next_page_index)
-	update_stamp_presentation()
-
-func find_next_non_empty_codex_page(owner_color: int, start_index: int) -> int:
-	var counts: Array[int] = get_codex_page_counts(owner_color)
-	for offset in range(1, DeckManager.CODEX_PAGE_COUNT + 1):
-		var candidate_index: int = (start_index + offset) % DeckManager.CODEX_PAGE_COUNT
-		if candidate_index < counts.size() and int(counts[candidate_index]) > 0:
-			return candidate_index
-	return -1
-
-func advance_empty_codex_page_at_turn_start(owner_color: int) -> void:
-	var page_index: int = get_codex_page_index(owner_color)
-	var counts: Array[int] = get_codex_page_counts(owner_color)
-	if page_index < counts.size() and int(counts[page_index]) > 0:
-		return
-	var next_page_index: int = find_next_non_empty_codex_page(owner_color, page_index)
-	if next_page_index == -1:
-		return
-	set_codex_page_index(owner_color, next_page_index)
-	sync_hand_from_local_codex(owner_color)
-
-func remove_local_codex_stamp(owner_color: int, stamp_index: int) -> void:
-	var pages: Array = get_codex_pages(owner_color)
-	var page_index: int = get_codex_page_index(owner_color)
-	if page_index < 0 or page_index >= pages.size() or !(pages[page_index] is Array):
-		return
-	var page: Array = pages[page_index]
-	if stamp_index < 0 or stamp_index >= page.size():
-		return
-	page.remove_at(stamp_index)
-	pages[page_index] = page
-	set_codex_pages(owner_color, pages)
-	update_codex_ui()
-
-func return_local_seeker_stamp(owner_color: int, stamp: Stamp) -> void:
-	if stamp == null:
-		return
-	var pages: Array = get_codex_pages(owner_color)
-	var page_index: int = int(stamp.get_meta("codex_page_index", get_codex_page_index(owner_color)))
-	var stamp_index: int = int(stamp.get_meta("codex_stamp_index", -1))
-	page_index = clampi(page_index, 0, DeckManager.CODEX_PAGE_COUNT - 1)
-	while pages.size() < DeckManager.CODEX_PAGE_COUNT:
-		pages.append([])
-	var page = pages[page_index]
-	if !(page is Array):
-		page = []
-	var stamps: Array = page
-	var insert_index: int = clampi(stamp_index, 0, stamps.size()) if stamp_index >= 0 else stamps.size()
-	stamps.insert(insert_index, stamp.stamp_name)
-	pages[page_index] = stamps
-	set_codex_pages(owner_color, pages)
-	if page_index == get_codex_page_index(owner_color):
-		sync_hand_from_local_codex(owner_color)
-	else:
-		update_codex_ui()
-
-func sync_hand_from_local_codex(owner_color: int) -> void:
-	var pages: Array = get_codex_pages(owner_color)
-	var page_index: int = get_codex_page_index(owner_color)
-	var page_names: Array = []
-	if page_index >= 0 and page_index < pages.size() and pages[page_index] is Array:
-		page_names = pages[page_index]
-	var stamps: Array[Stamp] = create_stamp_hand_from_names(page_names)
-	if owner_color == 1:
-		white_stamp_hand = stamps
-		white_stamp_visuals = populate_stamp_hand(white_pieces, white_stamp_hand, 1)
-	else:
-		black_stamp_hand = stamps
-		black_stamp_visuals = populate_stamp_hand(black_pieces, black_stamp_hand, -1)
-	sync_deck_from_local_codex(owner_color)
-	setup_deck_visuals()
-
-func sync_deck_from_local_codex(owner_color: int) -> void:
-	var pages: Array = get_codex_pages(owner_color)
-	var closed_page_names: Array[String] = DeckManager.flatten_codex_pages(pages, get_codex_page_index(owner_color))
-	if owner_color == 1:
-		white_stamp_deck = closed_page_names
-	else:
-		black_stamp_deck = closed_page_names
 
 func _process(delta):
 	get_match_input_controller().process(delta)
@@ -2564,332 +1131,14 @@ func get_board_position_screen_position(board_pos: Vector2) -> Vector2:
 func get_board_position_local_position(board_pos: Vector2, clamp_to_board: bool = true) -> Vector2:
 	return get_board_geometry().get_position_local(board_pos, clamp_to_board)
 
-func get_default_piece_texture(piece_value: int) -> Texture2D:
-	if piece_value == 0:
-		return null
-	if piece_value * get_own_color() > 0:
-		return OWN_DEFAULT_PIECE_TEXTURE
-	return DEFAULT_PIECE_TEXTURE
-
-func is_default_piece_texture(texture_value: Texture2D) -> bool:
-	return get_piece_visuals().is_default_piece_texture(texture_value)
-
-func should_fit_piece_texture_to_default_height(texture_value: Texture2D) -> bool:
-	return get_piece_visuals().should_fit_piece_texture_to_default_height(texture_value)
-
-func get_piece_visual_transform_for_texture(texture_value: Texture2D, board_pos: Vector2) -> Dictionary:
-	return get_piece_visuals().get_visual_transform_for_texture(texture_value, board_pos)
-
-func get_piece_light_global_position_for_texture(holder: Sprite2D, texture_value: Texture2D) -> Vector2:
-	if holder == null or !is_instance_valid(holder):
-		return Vector2.ZERO
-
-	var board_pos: Vector2 = value_to_vector2(holder.get_meta("board_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
-	if !is_valid_position(board_pos):
-		return holder.to_global(holder.offset)
-
-	var visual_transform: Dictionary = get_piece_visual_transform_for_texture(texture_value, board_pos)
-	var visual_scale: Vector2 = visual_transform.get("scale", holder.scale)
-	var visual_offset: Vector2 = visual_transform.get("offset", holder.offset)
-	var scaled_offset := Vector2(visual_offset.x * visual_scale.x, visual_offset.y * visual_scale.y)
-	var parent_node := holder.get_parent()
-	if parent_node is Node2D:
-		var parent_2d := parent_node as Node2D
-		return parent_2d.to_global(holder.position + scaled_offset.rotated(holder.rotation))
-
-	return holder.to_global(visual_offset)
-
-func apply_piece_visual_size(holder: Sprite2D, board_pos: Vector2) -> void:
-	get_piece_visuals().apply_visual_size(holder, board_pos)
-
-func apply_piece_texture_filter(holder: Sprite2D) -> void:
-	get_piece_visuals().apply_texture_filter(holder)
-
-func get_piece_perspective_scale(board_pos: Vector2) -> float:
-	return get_piece_visuals().get_perspective_scale(board_pos)
-
-func get_piece_depth_z_index(board_pos: Vector2) -> int:
-	return get_piece_visuals().get_depth_z_index(board_pos)
-
-func apply_piece_shadow(holder: Sprite2D, board_pos: Vector2) -> void:
-	var piece_color: int = 0
-	if piece_objects.has(board_pos):
-		var piece: Piece = piece_objects[board_pos] as Piece
-		if piece != null:
-			piece_color = piece.color
-	get_piece_visuals().apply_shadow(holder, board_pos, piece_color, get_own_color(), get_attach_point_light_texture())
-
-func remove_piece_shadow(holder: Sprite2D) -> void:
-	get_piece_visuals().remove_shadow(holder)
-
-func apply_piece_light_occluder(holder: Sprite2D, board_pos: Vector2) -> void:
-	get_piece_visuals().apply_light_occluder(holder, piece_objects.has(board_pos))
-
-func remove_piece_light_occluder(holder: Sprite2D) -> void:
-	get_piece_visuals().remove_light_occluder(holder)
-
-func get_piece_footprint_geometry(holder: Sprite2D) -> Dictionary:
-	return get_piece_visuals().get_footprint_geometry(holder)
-
-func get_piece_footprint_fixed_radius_y(holder: Sprite2D) -> float:
-	return get_piece_visuals().get_footprint_fixed_radius_y(holder)
-
-func get_fallback_piece_footprint_geometry(holder: Sprite2D, texture_size: Vector2) -> Dictionary:
-	return get_piece_visuals().get_fallback_footprint_geometry(holder, texture_size)
-
-func get_piece_footprint_metrics(texture_value: Texture2D) -> Dictionary:
-	return get_piece_visuals().get_footprint_metrics(texture_value)
-
-func get_piece_footprint_metrics_cache_key(texture_value: Texture2D) -> String:
-	return get_piece_visuals().get_footprint_metrics_cache_key(texture_value)
-
-func measure_piece_footprint_metrics(texture_value: Texture2D) -> Dictionary:
-	return get_piece_visuals().measure_footprint_metrics(texture_value)
-
-func set_piece_light_occluder_enabled(holder: Sprite2D, is_enabled: bool) -> void:
-	get_piece_visuals().set_light_occluder_enabled(holder, is_enabled)
-
-func get_attached_stamp_piece_texture(piece: Piece) -> Texture2D:
-	if piece == null or piece.attached_stamp == null:
-		return null
-	return piece.attached_stamp.get_piece_texture(piece.color, get_piece_board_view(piece.color))
-
-func get_piece_texture_for_position(board_pos: Vector2, piece_value: int) -> Texture2D:
-	var attached_texture: Texture2D = null
-	if piece_objects.has(board_pos):
-		var piece: Piece = piece_objects[board_pos] as Piece
-		if piece != null and piece.hidden_from_viewer:
-			return null
-		attached_texture = get_attached_stamp_piece_texture(piece)
-	if attached_texture != null:
-		return attached_texture
-	return get_default_piece_texture(piece_value)
-
-func get_stamp_piece_texture_for_color(stamp: Stamp, piece_color: int) -> Texture2D:
-	if stamp == null:
-		return null
-	return stamp.get_piece_texture(piece_color, get_piece_board_view(piece_color))
-
-func get_stamp_piece_preview_texture(stamp: Stamp, piece_color: int) -> Texture2D:
-	if stamp == null:
-		return null
-	return stamp.get_piece_preview_texture(piece_color)
-
-func get_piece_board_view(piece_color: int) -> String:
-	if piece_color * get_own_color() > 0:
-		return PieceVisualSet.VIEW_BACK
-	return PieceVisualSet.VIEW_FRONT
-
-func get_piece_visual_texture(piece: Piece) -> Texture2D:
-	if piece == null:
-		return null
-	if piece.hidden_from_viewer:
-		return null
-
-	var attached_texture: Texture2D = get_attached_stamp_piece_texture(piece)
-	if attached_texture != null:
-		return attached_texture
-	return get_default_piece_texture(piece.color)
-
-func get_piece_visual_state_snapshot() -> Dictionary:
-	var snapshot: Dictionary = {}
-	for position_value in piece_objects:
-		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
-		var piece: Piece = piece_objects[position_value] as Piece
-		if piece == null or piece.hidden_from_viewer:
-			continue
-
-		snapshot[board_pos] = {
-			"color": piece.color,
-			"stamp_name": piece.attached_stamp.stamp_name if piece.attached_stamp != null else "",
-			"texture": get_piece_visual_texture(piece),
-			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
-		}
-
-	return snapshot
-
-func play_state_attach_animations(animations: Array[Dictionary]) -> void:
-	active_state_stamp_attach_animation_count += 1
-	for animation: Dictionary in animations:
-		var board_pos: Vector2 = value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
-		var stamp: Stamp = animation.get("stamp", null) as Stamp
-		var start_texture: Texture2D = animation.get("start_texture", null) as Texture2D
-		var hide_after_attach: bool = bool(animation.get("hide_after_attach", false))
-		if !is_valid_position(board_pos) or stamp == null:
-			finish_stamp_attach_process(board_pos)
-			continue
-
-		if hide_after_attach:
-			var piece_color: int = int(animation.get("piece_color", 0))
-			if piece_color == 0:
-				piece_color = get_color_for_player_id(1 - get_own_player_id())
-			await play_hidden_piece_invisibility_attach_animation(board_pos, stamp, start_texture, piece_color)
-		else:
-			await play_piece_stamp_attach_animation(board_pos, stamp, start_texture)
-		finish_stamp_attach_process(board_pos)
-	active_state_stamp_attach_animation_count = maxi(0, active_state_stamp_attach_animation_count - 1)
-
 func get_piece_holder_at(board_pos: Vector2) -> Sprite2D:
 	return get_piece_visuals().get_holder_at(pieces_node, board_pos, INVALID_BOARD_POS)
 
 func refresh_piece_holder_visual(holder: Sprite2D, board_pos: Vector2) -> void:
-	if holder == null or !is_instance_valid(holder):
-		return
-
-	get_piece_visuals().apply_holder_base_visual(holder, board_pos)
-	apply_piece_respawn_lock_opacity(holder, board_pos)
-	if should_hide_piece_for_shatter_respawn(board_pos):
-		apply_piece_exhausted_material(holder, board_pos)
-		remove_piece_light_occluder(holder)
-		remove_piece_shadow(holder)
-		remove_piece_freeze_overlay(holder)
-		remove_piece_freeze_square_overlay(board_pos)
-		remove_selected_piece_glow(holder)
-		return
-	apply_piece_light_occluder(holder, board_pos)
-	apply_piece_shadow(holder, board_pos)
-	apply_piece_exhausted_material(holder, board_pos)
-	apply_piece_freeze_overlay(holder, board_pos)
-	apply_selected_piece_glow(holder, board_pos)
+	get_piece_display_controller().refresh_piece_holder_visual(holder, board_pos)
 
 func apply_piece_respawn_lock_opacity(holder: Sprite2D, board_pos: Vector2) -> void:
-	var is_respawn_locked: bool = false
-	if piece_objects.has(board_pos):
-		var piece: Piece = piece_objects[board_pos] as Piece
-		is_respawn_locked = piece != null and piece.is_respawn_locked()
-	get_piece_visuals().apply_respawn_lock_opacity(holder, should_hide_piece_for_shatter_respawn(board_pos), is_respawn_locked)
-
-func get_attach_point_light_texture() -> Texture2D:
-	if attach_point_light_texture != null:
-		return attach_point_light_texture
-
-	var texture_size: int = ATTACH_POINT_LIGHT_TEXTURE_SIZE
-	var image := Image.create(texture_size, texture_size, false, Image.FORMAT_RGBA8)
-	var center := Vector2(float(texture_size) * 0.5, float(texture_size) * 0.5)
-	var radius: float = float(texture_size) * 0.5
-	var grain_noise := FastNoiseLite.new()
-	grain_noise.seed = 91357
-	grain_noise.frequency = LIGHT_TEXTURE_GRAIN_FREQUENCY
-	grain_noise.fractal_octaves = 3
-	grain_noise.fractal_gain = 0.52
-	var fine_grain_noise := FastNoiseLite.new()
-	fine_grain_noise.seed = 24731
-	fine_grain_noise.frequency = LIGHT_TEXTURE_FINE_GRAIN_FREQUENCY
-	fine_grain_noise.fractal_octaves = 2
-	fine_grain_noise.fractal_gain = 0.44
-	for y in texture_size:
-		for x in texture_size:
-			var pixel_pos := Vector2(float(x) + 0.5, float(y) + 0.5)
-			var distance_ratio: float = clampf(pixel_pos.distance_to(center) / radius, 0.0, 1.0)
-			var alpha: float = pow(1.0 - distance_ratio, 1.85)
-			var grain: float = grain_noise.get_noise_2d(float(x), float(y)) * LIGHT_TEXTURE_GRAIN_STRENGTH
-			grain += fine_grain_noise.get_noise_2d(float(x), float(y)) * LIGHT_TEXTURE_FINE_GRAIN_STRENGTH
-			alpha = clampf(alpha * (1.0 + grain), 0.0, 1.0)
-			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
-
-	attach_point_light_texture = ImageTexture.create_from_image(image)
-	return attach_point_light_texture
-
-func get_sprite_texture_bounds_local(sprite: Sprite2D) -> Rect2:
-	if sprite == null or !is_instance_valid(sprite) or sprite.texture == null:
-		return Rect2()
-
-	var texture_size: Vector2 = sprite.texture.get_size()
-	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
-		return Rect2()
-
-	var local_top_left: Vector2 = sprite.offset
-	if sprite.centered:
-		local_top_left -= texture_size * 0.5
-	var local_bottom_right: Vector2 = local_top_left + texture_size
-	var corners := PackedVector2Array([
-		local_top_left,
-		Vector2(local_bottom_right.x, local_top_left.y),
-		local_bottom_right,
-		Vector2(local_top_left.x, local_bottom_right.y),
-	])
-	var board_points := PackedVector2Array()
-	for corner: Vector2 in corners:
-		board_points.append(to_local(sprite.to_global(corner)))
-
-	return get_points_bounds_local(board_points)
-
-func play_piece_stamp_attach_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D = null) -> void:
-	if should_skip_visual_animations() or !is_inside_tree():
-		return
-	if stamp == null or !piece_objects.has(piece_position):
-		return
-
-	var piece: Piece = piece_objects[piece_position] as Piece
-	if piece == null:
-		return
-
-	var attached_texture: Texture2D = get_stamp_piece_texture_for_color(stamp, piece.color)
-	if attached_texture == null:
-		return
-
-	var holder: Sprite2D = get_piece_holder_at(piece_position)
-	if holder == null or holder.texture == null:
-		return
-
-	if start_texture != null and holder.texture != start_texture:
-		holder.texture = start_texture
-		refresh_piece_holder_visual(holder, piece_position)
-
-	await get_piece_effect_animator().play_attach_sequence(holder, piece_position, attached_texture, {
-		"post_morph_callback": Callable(self, "apply_visible_piece_attach_morph_result").bind(piece_position, attached_texture),
-		"disable_holder_occluder": true,
-	})
-
-func apply_visible_piece_attach_morph_result(holder: Sprite2D, piece_position: Vector2, attached_texture: Texture2D) -> void:
-	if holder == null or !is_instance_valid(holder):
-		return
-
-	holder.texture = attached_texture
-	refresh_piece_holder_visual(holder, piece_position)
-
-func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D, piece_color: int) -> void:
-	if should_skip_visual_animations() or !is_inside_tree():
-		return
-	if stamp == null or !is_valid_position(piece_position):
-		return
-	if start_texture == null:
-		start_texture = get_default_piece_texture(piece_color)
-	if start_texture == null:
-		return
-
-	var holder: Sprite2D = create_hidden_invisibility_animation_holder(piece_position, start_texture)
-	if holder == null:
-		return
-
-	var attached_texture: Texture2D = get_stamp_piece_texture_for_color(stamp, piece_color)
-	if attached_texture == null:
-		attached_texture = start_texture
-
-	var completed: bool = await get_piece_effect_animator().play_attach_sequence(holder, piece_position, attached_texture, {
-		"post_morph_callback": Callable(self, "apply_hidden_piece_attach_morph_result").bind(piece_position, attached_texture),
-		"disable_holder_occluder": false,
-	})
-	if !completed:
-		return
-
-	await get_piece_effect_animator().play_invisibility_exit(holder)
-
-func apply_hidden_piece_attach_morph_result(holder: Sprite2D, piece_position: Vector2, attached_texture: Texture2D) -> void:
-	if holder == null or !is_instance_valid(holder):
-		return
-
-	holder.texture = attached_texture
-	apply_piece_visual_size(holder, piece_position)
-
-func create_piece_effect_holder(piece_position: Vector2, texture_value: Texture2D, holder_name: String = "PieceEffect") -> Sprite2D:
-	if texture_value == null or !is_valid_position(piece_position):
-		return null
-	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
-		create_piece_effects_node()
-	if piece_effects_node == null:
-		return null
-	return get_piece_effect_animator().create_effect_holder(piece_position, texture_value, holder_name)
+	get_piece_display_controller().apply_piece_respawn_lock_opacity(holder, board_pos)
 
 func collect_bomb_warning_animations(recent_bomb_effects: Array, previous_snapshot: Dictionary) -> Array[Dictionary]:
 	return get_match_state_sync_controller().collect_bomb_warning_animations(recent_bomb_effects, previous_snapshot, has_received_server_state, should_skip_visual_animations())
@@ -2909,284 +1158,25 @@ func play_bomb_warning_animation(target_pos: Vector2) -> void:
 	get_piece_effect_animator().play_bomb_warning(target_pos)
 
 func defer_server_state_visual_update_for_bomb_warning(bomb_warning_animations: Array[Dictionary], visual_context: Dictionary) -> void:
-	active_bomb_warning_animation_count += 1
-	play_bomb_warning_animations(bomb_warning_animations)
-
-	var tween: Tween = create_tween()
-	tween.tween_interval(bomb_warning_duration)
-	tween.tween_callback(Callable(self, "finish_server_state_visual_update").bind(visual_context))
-	tween.finished.connect(func():
-		active_bomb_warning_animation_count = maxi(0, active_bomb_warning_animation_count - 1)
-	)
+	get_server_state_visual_update_controller().defer_for_bomb_warning(bomb_warning_animations, visual_context)
 
 func finish_server_state_visual_update(visual_context: Dictionary) -> void:
-	display_board()
-
-	var state_piece_move_animation: Dictionary = visual_context.get("state_piece_move_animation", {})
-	var state_piece_shatter_animations: Array = visual_context.get("state_piece_shatter_animations", [])
-	if !state_piece_move_animation.is_empty():
-		var move_to_pos: Vector2 = value_to_vector2(state_piece_move_animation.get("to", INVALID_BOARD_POS), INVALID_BOARD_POS)
-		var move_from_pos: Vector2 = value_to_vector2(state_piece_move_animation.get("from", INVALID_BOARD_POS), INVALID_BOARD_POS)
-		var move_piece_color: int = int(state_piece_move_animation.get("piece_color", 0))
-		var capture_placeholder: Sprite2D = create_piece_move_capture_placeholder(
-			move_to_pos,
-			state_piece_move_animation.get("captured_texture", null) as Texture2D
-		)
-		if capture_placeholder != null and bool(state_piece_move_animation.get("captured_reveal_from_invisibility", false)):
-			play_capture_invisibility_reveal(capture_placeholder)
-		var capture_shatter_animation_index: int = get_piece_shatter_animation_index_for_source(state_piece_shatter_animations, move_to_pos) if capture_placeholder != null else -1
-		var capture_shatter_animation: Dictionary = state_piece_shatter_animations[capture_shatter_animation_index] if capture_shatter_animation_index >= 0 else {}
-		var capture_impact_callback: Callable = Callable()
-		if capture_placeholder != null:
-			capture_impact_callback = func() -> void:
-				if is_instance_valid(capture_placeholder):
-					capture_placeholder.queue_free()
-				if !capture_shatter_animation.is_empty():
-					remove_piece_shatter_animation_from_list(state_piece_shatter_animations, capture_shatter_animation, capture_shatter_animation_index)
-					play_piece_shatter_animation(
-						move_to_pos,
-						value_to_vector2(capture_shatter_animation.get("respawn_pos", INVALID_BOARD_POS), INVALID_BOARD_POS),
-						int(capture_shatter_animation.get("piece_color", 0)),
-						str(capture_shatter_animation.get("fragment_group", PIECE_SHATTER_FRAGMENT_GROUP_NONE))
-					)
-		await play_piece_move_animation(
-			move_from_pos,
-			move_to_pos,
-			state_piece_move_animation.get("start_texture", null) as Texture2D,
-			bool(state_piece_move_animation.get("visible_to_enemy", true)),
-			capture_impact_callback
-		)
-		if is_instance_valid(capture_placeholder):
-			capture_placeholder.queue_free()
-		if move_piece_color != 0:
-			piece_moved.emit(move_from_pos, move_to_pos, move_piece_color)
-
-	var animated_attach_positions: Dictionary = visual_context.get("animated_attach_positions", {})
-	finish_resolved_pending_stamp_attach_processes(animated_attach_positions)
-
-	var state_attach_animations: Array = visual_context.get("state_attach_animations", [])
-	var state_piece_revert_animations: Array = visual_context.get("state_piece_revert_animations", [])
-	var pending_respawn_arrival_animations: Array = visual_context.get("pending_respawn_arrival_animations", [])
-	if !state_attach_animations.is_empty():
-		await play_state_attach_animations(state_attach_animations)
-	if !state_piece_revert_animations.is_empty():
-		call_deferred("play_piece_revert_animations", state_piece_revert_animations)
-	if !state_piece_shatter_animations.is_empty():
-		call_deferred("play_piece_shatter_animations", state_piece_shatter_animations)
-	if !pending_respawn_arrival_animations.is_empty():
-		call_deferred("play_pending_edge_respawn_arrival_animations", pending_respawn_arrival_animations)
-
-	if bool(visual_context.get("should_play_post_state_animations", false)):
-		var recent_stamp_transfers: Array = visual_context.get("recent_stamp_transfers", [])
-		var previous_white_hand_names: Array = visual_context.get("previous_white_hand_names", [])
-		var current_white_hand_names: Array = visual_context.get("current_white_hand_names", [])
-		var previous_black_hand_names: Array = visual_context.get("previous_black_hand_names", [])
-		var current_black_hand_names: Array = visual_context.get("current_black_hand_names", [])
-		if recent_stamp_transfers.is_empty():
-			get_stamp_animation_controller().animate_state_draw_if_needed(1, previous_white_hand_names, current_white_hand_names)
-			get_stamp_animation_controller().animate_state_draw_if_needed(-1, previous_black_hand_names, current_black_hand_names)
-		else:
-			get_stamp_animation_controller().animate_recent_stamp_transfers(recent_stamp_transfers, previous_white_hand_names, current_white_hand_names, previous_black_hand_names, current_black_hand_names)
-		get_stamp_animation_controller().animate_recent_stamp_expirations(visual_context.get("stamp_expiration_events", []))
-
-	if bool(visual_context.get("should_emit_turn_ended", false)):
-		turn_ended.emit(int(visual_context.get("server_ending_color", 0)), get_current_turn_color())
-	has_received_server_state = true
-
-	if bool(visual_context.get("server_game_over", false)) && int(visual_context.get("winner_player", -1)) != -1:
-		reveal_hidden_last_move_arrow_for_game_over()
-		finish_game(get_color_for_player_id(int(visual_context.get("winner_player", -1))))
+	await get_server_state_visual_update_controller().finish(visual_context)
 
 func reveal_hidden_last_move_arrow_for_game_over() -> void:
-	if current_last_move.is_empty() or bool(current_last_move.get("visible_to_enemy", true)):
-		return
-
-	var revealed_last_move: Dictionary = current_last_move.duplicate()
-	revealed_last_move["visible_to_enemy"] = true
-	current_last_move = revealed_last_move
-	update_board_markers()
-
-func get_piece_shatter_animation_index_for_source(animations: Array, source_pos: Vector2) -> int:
-	for index in range(animations.size()):
-		var animation: Dictionary = animations[index]
-		var animation_source_pos: Vector2 = value_to_vector2(animation.get("source_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
-		if animation_source_pos != source_pos:
-			continue
-		return index
-	return -1
-
-func remove_piece_shatter_animation_from_list(animations: Array, animation: Dictionary, preferred_index: int) -> void:
-	if preferred_index >= 0 and preferred_index < animations.size() and animations[preferred_index] == animation:
-		animations.remove_at(preferred_index)
-		return
-	animations.erase(animation)
-
-func prepare_piece_shatter_respawn_reveals(animations: Array[Dictionary]) -> void:
-	get_piece_respawn_fragment_coordinator().prepare_piece_shatter_respawn_reveals(animations)
+	get_server_state_visual_update_controller().reveal_hidden_last_move_arrow_for_game_over()
 
 func parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals: Array) -> Array[Dictionary]:
 	return get_match_state_sync_controller().parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals)
 
-func prepare_pending_edge_respawn_arrival_reveals(animations: Array) -> void:
-	get_piece_respawn_fragment_coordinator().prepare_pending_edge_respawn_arrival_reveals(animations)
-
-func is_piece_shatter_respawn_reveal_pending(board_pos: Vector2) -> bool:
-	return get_piece_respawn_fragment_coordinator().is_piece_shatter_respawn_reveal_pending(board_pos)
-
-func has_piece_shatter_respawn_fragment_markers(board_pos: Vector2) -> bool:
-	return get_piece_respawn_fragment_coordinator().has_piece_shatter_respawn_fragment_markers(board_pos)
-
-func should_hide_piece_for_shatter_respawn(board_pos: Vector2) -> bool:
-	return get_piece_respawn_fragment_coordinator().should_hide_piece_for_shatter_respawn(board_pos)
-
-func add_piece_shatter_respawn_fragment_marker(respawn_pos: Vector2, fragment: Sprite2D) -> void:
-	get_piece_respawn_fragment_coordinator().add_piece_shatter_respawn_fragment_marker(respawn_pos, fragment)
-
-func clear_piece_shatter_respawn_fragment_markers(respawn_pos: Vector2) -> void:
-	get_piece_respawn_fragment_coordinator().clear_piece_shatter_respawn_fragment_markers(respawn_pos)
-
-func get_piece_shatter_return_fragment_count(fragment_group: String) -> int:
-	return get_piece_respawn_fragment_coordinator().get_piece_shatter_return_fragment_count(fragment_group)
-
-func begin_piece_shatter_respawn_reveal(respawn_pos: Vector2, fragment_group: String) -> int:
-	return get_piece_respawn_fragment_coordinator().begin_piece_shatter_respawn_reveal(respawn_pos, fragment_group)
-
-func adjust_piece_shatter_respawn_reveal_count(respawn_pos: Vector2, fragment_count: int) -> void:
-	get_piece_respawn_fragment_coordinator().adjust_piece_shatter_respawn_reveal_count(respawn_pos, fragment_count)
-
-func cancel_piece_shatter_respawn_reveal(respawn_pos: Vector2) -> void:
-	get_piece_respawn_fragment_coordinator().cancel_piece_shatter_respawn_reveal(respawn_pos)
-
-func finish_piece_shatter_respawn_fragment(respawn_pos: Vector2) -> void:
-	get_piece_respawn_fragment_coordinator().finish_piece_shatter_respawn_fragment(respawn_pos)
-
-func refresh_piece_shatter_respawn_piece_visibility(respawn_pos: Vector2) -> void:
-	get_piece_respawn_fragment_coordinator().refresh_piece_shatter_respawn_piece_visibility(respawn_pos)
-
-func reveal_piece_shatter_respawn_piece(respawn_pos: Vector2) -> void:
-	get_piece_respawn_fragment_coordinator().reveal_piece_shatter_respawn_piece(respawn_pos)
-
-func should_play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool = true) -> bool:
-	if !piece_move_animation_enabled or should_skip_visual_animations() or !is_inside_tree():
-		return false
-	if !is_valid_position(from_pos) or !is_valid_position(to_pos):
-		return false
-	return from_pos != to_pos
-
-func play_piece_move_animation(
-	from_pos: Vector2,
-	to_pos: Vector2,
-	start_texture: Texture2D = null,
-	visible_to_enemy: bool = true,
-	capture_impact_callback: Callable = Callable()
-) -> void:
-	if !should_play_piece_move_animation(from_pos, to_pos, visible_to_enemy):
-		return
-
-	var holder: Sprite2D = get_piece_holder_at(to_pos)
-	if holder == null or !is_instance_valid(holder) or holder.texture == null:
-		return
-
-	active_piece_move_animation_count += 1
-	var end_texture: Texture2D = holder.texture
-	var display_texture: Texture2D = start_texture if start_texture != null else end_texture
-	var start_transform: Dictionary = get_piece_visual_transform_for_texture(display_texture, from_pos)
-	var end_transform: Dictionary = get_piece_visual_transform_for_texture(end_texture, to_pos)
-	var start_scale: Vector2 = start_transform.get("scale", holder.scale)
-	var end_scale: Vector2 = end_transform.get("scale", holder.scale)
-	var start_offset: Vector2 = start_transform.get("offset", holder.offset)
-	var end_offset: Vector2 = end_transform.get("offset", holder.offset)
-
-	holder.texture = display_texture
-	holder.position = get_board_position_local_position(from_pos)
-	holder.scale = start_scale
-	holder.offset = start_offset
-	var move_animator = get_piece_move_animator()
-	remove_piece_shadow(holder)
-	remove_piece_light_occluder(holder)
-	await move_animator.play_move_sequence(
-		holder,
-		from_pos,
-		to_pos,
-		start_scale,
-		end_scale,
-		start_offset,
-		end_offset,
-		capture_impact_callback
-	)
-
-	if is_instance_valid(holder):
-		holder.texture = end_texture
-		refresh_piece_holder_visual(holder, to_pos)
-	active_piece_move_animation_count = maxi(0, active_piece_move_animation_count - 1)
-
-func create_piece_move_capture_placeholder(board_pos: Vector2, texture_value: Texture2D) -> Sprite2D:
-	if texture_value == null or !is_valid_position(board_pos):
-		return null
-
-	var placeholder: Sprite2D = create_piece_effect_holder(board_pos, texture_value, "PieceMoveCaptureTarget")
-	if placeholder == null:
-		return null
-	placeholder.z_index = pieces_node.z_index + get_piece_depth_z_index(board_pos)
-	return placeholder
-
-func play_capture_invisibility_reveal(capture_placeholder: Sprite2D) -> void:
-	get_piece_effect_animator().play_invisibility_reveal(capture_placeholder)
-
-func play_piece_shatter_animations(animations: Array[Dictionary]) -> void:
-	get_piece_respawn_fragment_coordinator().play_piece_shatter_animations(animations)
-
-func play_piece_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, fragment_group: String = PIECE_SHATTER_FRAGMENT_GROUP_NONE) -> void:
-	get_piece_respawn_fragment_coordinator().play_piece_shatter_animation(source_pos, respawn_pos, piece_color, fragment_group)
-
-func play_capture_flash_animation(board_pos: Vector2) -> void:
-	get_piece_respawn_fragment_coordinator().play_capture_flash_animation(board_pos)
-
-func get_piece_shatter_fragment_textures(fragment_group: String) -> Array[Texture2D]:
-	return get_piece_respawn_fragment_coordinator().get_piece_shatter_fragment_textures(fragment_group)
-
-func add_pending_edge_respawn_fragment_marker(piece_color: int, fragment: Sprite2D) -> void:
-	get_piece_respawn_fragment_coordinator().add_pending_edge_respawn_fragment_marker(piece_color, fragment)
-
-func take_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Sprite2D]:
-	return get_piece_respawn_fragment_coordinator().take_pending_edge_respawn_fragment_markers(piece_color)
-
-func play_pending_edge_respawn_arrival_animations(animations: Array) -> void:
-	get_piece_respawn_fragment_coordinator().play_pending_edge_respawn_arrival_animations(animations)
-
-func create_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Sprite2D]:
-	return get_piece_respawn_fragment_coordinator().create_pending_edge_respawn_fragment_markers(piece_color)
-
-func is_piece_shatter_route_cell_blocked(board_pos: Vector2, source_pos: Vector2, respawn_pos: Vector2) -> bool:
-	return get_piece_respawn_fragment_coordinator().is_piece_shatter_route_cell_blocked(board_pos, source_pos, respawn_pos)
-
-func create_hidden_invisibility_animation_holder(piece_position: Vector2, start_texture: Texture2D) -> Sprite2D:
-	return create_piece_effect_holder(piece_position, start_texture, "HiddenInvisibilityPiece")
-
 func get_attach_animation_positions(animations: Array[Dictionary]) -> Dictionary:
-	var positions: Dictionary = {}
-	for animation: Dictionary in animations:
-		var board_pos: Vector2 = value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
-		if is_valid_position(board_pos):
-			positions[board_pos] = true
-	return positions
+	return get_server_state_visual_update_controller().get_attach_animation_positions(animations)
 
 func finish_resolved_pending_stamp_attach_processes(excluded_positions: Dictionary = {}) -> void:
-	for position_value in pending_stamp_attach_positions.keys():
-		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
-		if excluded_positions.has(board_pos):
-			continue
-		if !piece_objects.has(board_pos):
-			finish_stamp_attach_process(position_value)
-			continue
-
-		finish_stamp_attach_process(position_value)
+	get_server_state_visual_update_controller().finish_resolved_pending_stamp_attach_processes(excluded_positions)
 
 func clear_resolved_pending_stamp_attach_positions() -> void:
-	for position_value in pending_stamp_attach_positions.keys():
-		var board_pos: Vector2 = value_to_vector2(position_value, INVALID_BOARD_POS)
-		if !piece_objects.has(board_pos):
-			finish_stamp_attach_process(position_value)
+	get_server_state_visual_update_controller().clear_resolved_pending_stamp_attach_positions()
 
 func display_board():
 	get_piece_display_controller().display_board()
@@ -3227,24 +1217,6 @@ func delete_dots():
 func set_move(start_pos: Vector2, end_pos: Vector2) -> void:
 	await get_local_move_flow_controller().set_move(start_pos, end_pos)
 
-func refill_played_stamps_locally(owner_color: int) -> void:
-	var played_slots: Array = played_stamp_hand_slots_this_turn.get(owner_color, [])
-	if played_slots.is_empty():
-		return
-
-	played_slots.sort()
-	for slot_value in played_slots:
-		var hand: Array[Stamp] = get_stamp_hand(owner_color)
-		if hand.size() >= DeckManager.HAND_SIZE:
-			break
-
-		var stamp_name: String = get_stamp_hand_state_controller().draw_refill_stamp_name(owner_color)
-		if stamp_name.is_empty():
-			break
-		insert_drawn_stamp(owner_color, int(slot_value), stamp_name)
-
-	played_stamp_hand_slots_this_turn[owner_color] = []
-
 func finish_if_current_player_has_no_valid_turn() -> bool:
 	return get_game_result_controller().finish_if_current_player_has_no_valid_turn()
 
@@ -3262,44 +1234,6 @@ func should_award_win_points(winner_color: int) -> bool:
 
 func show_result_message(winner_color: int):
 	get_game_result_controller().show_result_message(winner_color)
-
-func get_moves(selected : Vector2):
-	if piece_objects.has(selected):
-		var piece: Piece = piece_objects[selected] as Piece
-		if piece.can_move():
-			DebugLog.info("Using stamp movement: %s" % piece.get_info())
-			return get_stamp_based_moves(selected, piece, get_move_preview_player_id(selected, piece))
-		else:
-			DebugLog.info("No usable stamp on this piece.")
-			return []
-
-	return []
-
-func get_move_preview_player_id(piece_position: Vector2, piece: Piece) -> int:
-	var own_player_id: int = get_own_player_id()
-	if can_control_current_turn() && can_player_control_piece_at(piece_position, own_player_id):
-		return own_player_id
-	return get_player_id_for_color(piece.color)
-
-func get_stamp_based_moves(piece_position: Vector2, piece: Piece, player_id: int) -> Array:
-	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(piece_objects, piece_position, player_id, BOARD_SIZE, current_board_effects)
-	valid_moves = filter_tutorial_move_targets(piece_position, valid_moves, piece.color)
-	DebugLog.info("  Valid moves: %s" % [valid_moves])
-	return valid_moves
-
-func filter_tutorial_move_targets(from_pos: Vector2, candidate_moves: Array[Vector2], owner_color: int) -> Array[Vector2]:
-	if !tutorial_constraints_enabled:
-		return candidate_moves
-
-	var filtered_moves: Array[Vector2] = []
-	for to_pos: Vector2 in candidate_moves:
-		if is_tutorial_action_allowed(TUTORIAL_ACTION_MOVE_PIECE, {
-			"owner_color": owner_color,
-			"from_pos": from_pos,
-			"to_pos": to_pos,
-		}):
-			filtered_moves.append(to_pos)
-	return filtered_moves
 
 func is_valid_position(pos : Vector2):
 	if pos.x >= 0 && pos.x < BOARD_SIZE && pos.y >= 0 && pos.y < BOARD_SIZE: return true

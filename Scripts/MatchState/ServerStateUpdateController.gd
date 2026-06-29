@@ -30,7 +30,7 @@ func update_from_server_state(
 ) -> void:
 	await wait_for_active_state_visual_animations()
 
-	var previous_piece_visual_state: Dictionary = match_board.get_piece_visual_state_snapshot()
+	var previous_piece_visual_state: Dictionary = match_board.get_piece_texture_resolver().get_piece_visual_state_snapshot()
 	var previous_hidden_stamp_counts: Dictionary = match_board.hidden_stamp_counts.duplicate()
 	var current_hidden_stamp_counts: Dictionary = match_board.get_match_state_sync_controller().get_hidden_stamp_counts_from_state(hidden_stamps)
 	var previous_white_hand_names: Array[String] = match_board.get_stamp_names_from_hand(match_board.white_stamp_hand)
@@ -54,7 +54,7 @@ func update_from_server_state(
 		match_board.white_deck_count_override = match_board.get_match_state_sync_controller().get_int_from_state_dict(player_deck_sizes, 0, match_board.white_stamp_deck.size())
 		match_board.black_deck_count_override = match_board.get_match_state_sync_controller().get_int_from_state_dict(player_deck_sizes, 1, match_board.black_stamp_deck.size())
 	if !player_codex_state.is_empty():
-		match_board.apply_codex_state_from_server(player_codex_state)
+		match_board.get_match_codex_controller().apply_state_from_server(player_codex_state)
 	match_board.current_player_base_fields = match_board.get_match_state_sync_controller().parse_player_base_fields(player_base_fields)
 	match_board.current_board_effects = match_board.get_match_state_sync_controller().parse_board_effects(board_effects)
 	match_board.current_player_names = match_board.get_match_state_sync_controller().parse_player_names(player_names, match_board.current_player_names)
@@ -112,13 +112,14 @@ func update_from_server_state(
 	var bomb_warning_animations: Array[Dictionary] = match_board.collect_bomb_warning_animations(recent_bomb_effects, previous_piece_visual_state)
 	var pending_respawn_arrival_animations: Array[Dictionary] = match_board.parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals)
 	match_board.hidden_stamp_counts = current_hidden_stamp_counts
-	var animated_attach_positions: Dictionary = match_board.get_attach_animation_positions(state_attach_animations)
+	var animated_attach_positions: Dictionary = match_board.get_server_state_visual_update_controller().get_attach_animation_positions(state_attach_animations)
 	for position_value in animated_attach_positions.keys():
 		var animated_attach_pos: Vector2 = match_board.value_to_vector2(position_value, match_board.INVALID_BOARD_POS)
 		if match_board.is_valid_position(animated_attach_pos):
 			match_board.begin_stamp_attach_process(animated_attach_pos)
-	match_board.prepare_piece_shatter_respawn_reveals(state_piece_shatter_animations)
-	match_board.prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrival_animations)
+	var respawn_fragment_coordinator = match_board.get_piece_respawn_fragment_coordinator()
+	respawn_fragment_coordinator.prepare_piece_shatter_respawn_reveals(state_piece_shatter_animations)
+	respawn_fragment_coordinator.prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrival_animations)
 
 	var visual_context: Dictionary = {
 		"animated_attach_positions": animated_attach_positions,
@@ -140,17 +141,20 @@ func update_from_server_state(
 		"winner_player": winner_player,
 	}
 	if !bomb_warning_animations.is_empty():
-		match_board.defer_server_state_visual_update_for_bomb_warning(bomb_warning_animations, visual_context)
+		match_board.get_server_state_visual_update_controller().defer_for_bomb_warning(bomb_warning_animations, visual_context)
 		return
 
-	match_board.finish_server_state_visual_update(visual_context)
+	match_board.get_server_state_visual_update_controller().finish(visual_context)
 
 func wait_for_active_state_visual_animations() -> void:
 	while match_board != null and match_board.is_inside_tree() and has_active_state_visual_animations():
 		await match_board.get_tree().process_frame
 
 func has_active_state_visual_animations() -> bool:
-	return match_board.active_piece_move_animation_count > 0 or match_board.active_state_stamp_attach_animation_count > 0
+	return match_board.has_active_visual_processes([
+		match_board.VISUAL_PROCESS_PIECE_MOVE,
+		match_board.VISUAL_PROCESS_STATE_STAMP_ATTACH,
+	])
 
 func apply_viewer_player_id(viewer_player_id: int) -> void:
 	if viewer_player_id != 0 and viewer_player_id != 1:

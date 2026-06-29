@@ -30,6 +30,49 @@ Completed in the current cleanup pass:
 
 Not committed yet by project owner choice.
 
+## MatchBoard Refactor Status - 2026-06-29
+
+Completed in this MatchBoard pass:
+
+- Extracted server-state visual completion into `Scripts/MatchState/ServerStateVisualUpdateController.gd`.
+- `Scenes/MatchBoard.gd` now delegates bomb-warning delay, post-server-state animation sequencing, hidden last-move reveal, and pending attach cleanup to the new visual update controller.
+- `Scripts/MatchState/ServerStateUpdateController.gd` still owns server-state application/parsing, but now hands visual completion to the dedicated controller.
+- Extracted local stamp attach/exchange action handling into `Scripts/MatchState/LocalStampActionController.gd`.
+- `Scenes/MatchBoard.gd` keeps compatibility wrapper methods for existing callbacks from `StampInteractionController`, but no longer contains the full stamp attach/apply implementation.
+- `Scripts/MatchView/MatchBoardLifecycleController.gd` initializes both new controllers during MatchBoard startup.
+- Added `Scripts/MatchView/VisualProcessTracker.gd` and moved active visual-process counters into it.
+- Replaced direct `active_*` animation/process counter usage with `begin_visual_process()`, `finish_visual_process()`, and `has_active_visual_processes()`.
+- `Scripts/MatchState/TurnFlowController.gd` now waits on the shared visual-process tracker instead of checking scattered MatchBoard counters.
+- Extracted Codex UI and page state into `Scripts/MatchView/MatchCodexController.gd`.
+- `Scenes/MatchBoard.gd` now keeps only thin Codex wrapper methods for existing collaborators.
+- Updated `Scripts/MatchView/StampHandStateController.gd` to access Codex panel/pages through MatchBoard wrapper methods instead of direct MatchBoard Codex fields.
+- Extracted board visual environment setup into `Scripts/MatchView/BoardEnvironmentController.gd`.
+- `Scenes/MatchBoard.gd` now delegates ambient board lights, board shader overlay/backbuffer, shader material refresh, overlay rect calculation, and piece Kuwahara material creation to the environment controller.
+- Pruned MatchBoard wrapper methods for Codex and board environment behavior after updating internal collaborators to call the owning controllers directly.
+- Updated lifecycle, piece display, tutorial, turn flow/action, server state, local move/stamp, and stamp hand state controllers to use `get_match_codex_controller()` / `get_board_environment_controller()` directly where appropriate.
+- Extracted piece texture resolution into `Scripts/MatchView/PieceTextureResolver.gd`.
+- `PieceTextureResolver` now owns default piece texture selection, attached-stamp piece texture lookup, stamp preview textures, and piece visual-state snapshots.
+- Moved piece holder refresh, visual sizing, respawn opacity, selected glow coordination, shadow, and light occluder application into `Scripts/MatchView/PieceDisplayController.gd`.
+- Pruned the MatchBoard piece visual wrapper block for texture lookup, default texture checks, footprint metrics, depth/z-index, visual transforms, shadow, and occluder helpers.
+- Extracted attach/move visual orchestration into `Scripts/MatchView/PieceEffectFlowController.gd`.
+- `PieceEffectFlowController` now owns visible/hidden stamp attach setup, hidden attach morph result, state attach sequencing, local move transition visuals, server-state move visuals, capture placeholders, capture invisibility reveal, and move visual-process tracking.
+- `Scripts/MatchState/LocalMoveFlowController.gd`, `Scripts/MatchState/LocalStampActionController.gd`, and `Scripts/MatchState/ServerStateVisualUpdateController.gd` now call the piece effect flow controller instead of MatchBoard visual wrappers.
+- Pruned the shatter/respawn wrapper family from `Scenes/MatchBoard.gd`; local move/stamp flow, server-state update/visual update, piece display, and effect flow now call `PieceRespawnFragmentCoordinator` directly.
+- Extracted light texture, piece-light position, and sprite texture bounds helpers into `Scripts/MatchView/PieceEffectGeometryController.gd`.
+- `PieceMoveAnimator`, `PieceEffectAnimator`, `BoardEnvironmentController`, and `PieceDisplayController` now receive light/bounds behavior through the geometry controller instead of MatchBoard helper methods.
+- Extracted small local gameplay helpers into `Scripts/MatchState/LocalGameplayController.gd`, including local move preview resolution, stamp-based move lookup, tutorial target filtering, and local played-stamp refill.
+- `Scripts/MatchView/MatchInputController.gd` now asks the local gameplay controller for hover/selected move previews instead of calling MatchBoard move helpers.
+- Godot headless smoke test passed after this refactor pass: `godot4.exe.exe --headless --path . --scene res://Scenes/main.tscn --quit-after 5`.
+- Extracted MatchBoard controller construction/wiring into `Scripts/MatchView/MatchBoardControllerRegistry.gd`.
+- `Scenes/MatchBoard.gd` now keeps stable getter facade methods, while controller instances, init order, and sync/config dictionaries live in the registry.
+- `Scripts/MatchView/MatchBoardLifecycleController.gd` now initializes startup controllers through the registry instead of calling individual MatchBoard init methods.
+- `Scenes/MatchBoard.gd` is now under the 2000-line target after the registry extraction.
+
+Still worth doing later:
+
+- Consider moving pending visual queues into a dedicated coordinator after the active-counter migration has had a smoke-test pass.
+- Consider whether the remaining MatchBoard compatibility wrappers around input/HUD/stamp hand APIs should stay as scene-level facade methods or be pruned once all collaborators use controllers directly.
+
 This is a first-pass audit focused on finding high-value cleanup and refactor targets after recent structural changes. It is intentionally conservative: items are grouped by risk so cleanup can start without destabilizing gameplay.
 
 ## Executive Summary

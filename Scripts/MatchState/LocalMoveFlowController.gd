@@ -45,11 +45,12 @@ func set_move(start_pos: Vector2, end_pos: Vector2) -> void:
 func create_local_move_context(start_pos: Vector2, end_pos: Vector2) -> Dictionary:
 	var start_piece: Piece = match_board.piece_objects[start_pos] as Piece if match_board.piece_objects.has(start_pos) else null
 	var captured_piece_before_move: Piece = match_board.piece_objects[end_pos] as Piece if match_board.piece_objects.has(end_pos) else null
+	var texture_resolver = match_board.get_piece_texture_resolver()
 	return {
 		"start_pos": start_pos,
 		"end_pos": end_pos,
-		"moving_start_texture": match_board.get_piece_visual_texture(start_piece) if start_piece != null else null,
-		"captured_start_texture": match_board.get_piece_visual_texture(captured_piece_before_move) if captured_piece_before_move != null else null,
+		"moving_start_texture": texture_resolver.get_piece_visual_texture(start_piece) if start_piece != null else null,
+		"captured_start_texture": texture_resolver.get_piece_visual_texture(captured_piece_before_move) if captured_piece_before_move != null else null,
 		"pending_respawn_arrivals": [],
 		"should_play_capture_shatter": false,
 		"shatter_respawn_pos": invalid_board_pos,
@@ -99,11 +100,11 @@ func resolve_local_move_capture_respawn(move_context: Dictionary) -> void:
 		move_context["should_play_capture_shatter"] = true
 		move_context["shatter_respawn_pos"] = shatter_respawn_pos
 		move_context["shatter_fragment_group"] = shatter_fragment_group
-		match_board.begin_piece_shatter_respawn_reveal(shatter_respawn_pos, shatter_fragment_group)
+		match_board.get_piece_respawn_fragment_coordinator().begin_piece_shatter_respawn_reveal(shatter_respawn_pos, shatter_fragment_group)
 		pending_respawn_arrivals.append_array(shatter_respawn_info.get("pending_respawn_arrivals", []))
 	else:
 		pending_respawn_arrivals.append_array(match_board.get_local_state_mutator().resolve_pending_respawns_for_all())
-	match_board.prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrivals)
+	match_board.get_piece_respawn_fragment_coordinator().prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrivals)
 	move_context["pending_respawn_arrivals"] = pending_respawn_arrivals
 
 func finish_local_move_state_updates(move_context: Dictionary) -> void:
@@ -111,32 +112,7 @@ func finish_local_move_state_updates(move_context: Dictionary) -> void:
 	match_board.update_stamp_presentation()
 
 func play_local_move_transition(move_context: Dictionary) -> void:
-	var start_pos: Vector2 = move_context.get("start_pos", invalid_board_pos)
-	var end_pos: Vector2 = move_context.get("end_pos", invalid_board_pos)
-	var moving_start_texture: Texture2D = move_context.get("moving_start_texture", null) as Texture2D
-	var moving_piece_visible_to_enemy: bool = bool(move_context.get("moving_piece_visible_to_enemy", true))
-	var should_play_capture_shatter: bool = bool(move_context.get("should_play_capture_shatter", false))
-	var captured_start_texture: Texture2D = move_context.get("captured_start_texture", null) as Texture2D
-
-	match_board.display_board()
-	var capture_placeholder: Sprite2D = match_board.create_piece_move_capture_placeholder(end_pos, captured_start_texture) if should_play_capture_shatter else null
-	var capture_impact_callback: Callable = Callable()
-	if should_play_capture_shatter:
-		var captured_piece: Piece = move_context.get("captured_piece", null) as Piece
-		var captured_color: int = captured_piece.color if captured_piece != null else 0
-		var shatter_respawn_pos: Vector2 = match_board.value_to_vector2(move_context.get("shatter_respawn_pos", invalid_board_pos), invalid_board_pos)
-		var shatter_fragment_group: String = str(move_context.get("shatter_fragment_group", fragment_group_none))
-		capture_impact_callback = func() -> void:
-			if is_instance_valid(capture_placeholder):
-				capture_placeholder.queue_free()
-			match_board.play_piece_shatter_animation(end_pos, shatter_respawn_pos, captured_color, shatter_fragment_group)
-	await match_board.play_piece_move_animation(start_pos, end_pos, moving_start_texture, moving_piece_visible_to_enemy, capture_impact_callback)
-	if is_instance_valid(capture_placeholder):
-		capture_placeholder.queue_free()
-	var pending_respawn_arrivals: Array = move_context.get("pending_respawn_arrivals", [])
-	if !pending_respawn_arrivals.is_empty():
-		match_board.play_pending_edge_respawn_arrival_animations(pending_respawn_arrivals)
-	match_board.call_deferred("play_pending_piece_revert_animations")
+	await match_board.get_piece_effect_flow_controller().play_local_move_transition(move_context)
 
 func restore_local_move_selection(move_context: Dictionary) -> void:
 	var start_pos: Vector2 = move_context.get("start_pos", invalid_board_pos)
@@ -150,14 +126,14 @@ func return_captured_seeker_stamp_to_deck(captured_piece: Piece) -> void:
 	if captured_piece == null or captured_piece.attached_stamp == null:
 		return
 	match_board.get_stamp_animation_controller().queue_seeker_stamp_return_to_deck_animation(captured_piece.color, captured_piece.attached_stamp, captured_piece.position)
-	match_board.return_local_seeker_stamp(captured_piece.color, captured_piece.attached_stamp)
+	match_board.get_match_codex_controller().return_local_seeker_stamp(captured_piece.color, captured_piece.attached_stamp)
 
 func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> void:
 	if piece == null or piece.attached_stamp == null:
 		return
 
 	var owner_color: int = piece.color
-	var expiring_piece_texture: Texture2D = match_board.get_piece_visual_texture(piece)
+	var expiring_piece_texture: Texture2D = match_board.get_piece_texture_resolver().get_piece_visual_texture(piece)
 	var expired_stamp: Stamp = piece.use_turn()
 	if expired_stamp == null:
 		return

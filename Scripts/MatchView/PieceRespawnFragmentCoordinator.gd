@@ -64,7 +64,7 @@ func begin_piece_shatter_respawn_reveal(respawn_pos: Vector2, fragment_group: St
 		return 0
 
 	if !match_board.pending_piece_shatter_respawn_reveal_counts.has(respawn_pos):
-		match_board.active_piece_shatter_animation_count += 1
+		match_board.begin_visual_process(match_board.VISUAL_PROCESS_PIECE_SHATTER)
 	match_board.pending_piece_shatter_respawn_reveal_counts[respawn_pos] = maxi(return_count, int(match_board.pending_piece_shatter_respawn_reveal_counts.get(respawn_pos, 0)))
 	match_board.pending_piece_shatter_respawn_reveal_groups[respawn_pos] = fragment_group
 
@@ -85,7 +85,7 @@ func cancel_piece_shatter_respawn_reveal(respawn_pos: Vector2) -> void:
 	if match_board.pending_piece_shatter_respawn_reveal_counts.has(respawn_pos):
 		match_board.pending_piece_shatter_respawn_reveal_counts.erase(respawn_pos)
 		match_board.pending_piece_shatter_respawn_reveal_groups.erase(respawn_pos)
-		match_board.active_piece_shatter_animation_count = maxi(0, match_board.active_piece_shatter_animation_count - 1)
+		match_board.finish_visual_process(match_board.VISUAL_PROCESS_PIECE_SHATTER)
 	refresh_piece_shatter_respawn_piece_visibility(respawn_pos)
 
 func finish_piece_shatter_respawn_fragment(respawn_pos: Vector2) -> void:
@@ -100,7 +100,7 @@ func finish_piece_shatter_respawn_fragment(respawn_pos: Vector2) -> void:
 
 	match_board.pending_piece_shatter_respawn_reveal_counts.erase(respawn_pos)
 	match_board.pending_piece_shatter_respawn_reveal_groups.erase(respawn_pos)
-	match_board.active_piece_shatter_animation_count = maxi(0, match_board.active_piece_shatter_animation_count - 1)
+	match_board.finish_visual_process(match_board.VISUAL_PROCESS_PIECE_SHATTER)
 	if fragment_group == match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM:
 		refresh_piece_shatter_respawn_piece_visibility(respawn_pos)
 		return

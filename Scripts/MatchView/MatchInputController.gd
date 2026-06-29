@@ -140,7 +140,7 @@ func update_hovered_piece() -> void:
 	hide_hover_piece_details()
 
 	if match_board.is_valid_position(board_pos) and !match_board.is_empty(board_pos):
-		match_board.moves = match_board.get_moves(board_pos)
+		match_board.moves = match_board.get_local_gameplay_controller().get_moves(board_pos)
 		show_dots(board_pos)
 		show_hover_piece_details(board_pos)
 
@@ -155,7 +155,7 @@ func show_hover_piece_details(board_pos: Vector2) -> void:
 	var preview_stamp: Stamp = piece.attached_stamp.duplicate() as Stamp
 	if preview_stamp:
 		preview_stamp.duration = piece.turns_remaining
-		var preview_texture: Texture2D = match_board.get_stamp_piece_preview_texture(preview_stamp, piece.color)
+		var preview_texture: Texture2D = match_board.get_piece_texture_resolver().get_stamp_piece_preview_texture(preview_stamp, piece.color)
 		var duration_text: String = "INF" if piece.turns_remaining < 0 else str(piece.turns_remaining)
 		match_board.get_stamp_hover_preview_controller().show_piece_details(preview_stamp, preview_texture, duration_text)
 	update_hover_duration_label_position()
@@ -173,11 +173,11 @@ func update_hover_duration_label_position() -> void:
 	match_board.get_stamp_hover_preview_controller().update_duration_label_position(piece_screen_position)
 
 func show_hover_piece_preview(stamp: Stamp, piece_color: int) -> void:
-	var preview_texture: Texture2D = match_board.get_stamp_piece_preview_texture(stamp, piece_color)
+	var preview_texture: Texture2D = match_board.get_piece_texture_resolver().get_stamp_piece_preview_texture(stamp, piece_color)
 	match_board.get_stamp_hover_preview_controller().show_piece_preview(preview_texture)
 
 func show_options() -> void:
-	match_board.moves = match_board.get_moves(match_board.selected_piece)
+	match_board.moves = match_board.get_local_gameplay_controller().get_moves(match_board.selected_piece)
 	if match_board.moves == []:
 		match_board.state = false
 		match_board.update_selected_piece_glow()
