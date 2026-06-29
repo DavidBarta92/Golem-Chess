@@ -14,6 +14,7 @@ grow_vertical = 2
 script = ExtResource("1_tt5f1")
 
 [node name="TopBackground" type="ColorRect" parent="." unique_id=366199248]
+visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -22,6 +23,7 @@ grow_horizontal = 2
 color = Color(0.9366637, 0.9330646, 0.89437205, 1)
 
 [node name="TopBar" type="HBoxContainer" parent="." unique_id=411097308]
+visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -134,6 +136,7 @@ grow_horizontal = 2
 grow_vertical = 0
 
 [node name="Label" type="Label" parent="." unique_id=1540343529]
+visible = false
 layout_mode = 0
 offset_left = 178.0
 offset_top = 33.0
@@ -248,6 +251,7 @@ text = "Balance sessions are saved during AI vs AI runs."
 autowrap_mode = 2
 
 [node name="GolemPaintedVectorTransparent2" type="Sprite2D" parent="." unique_id=2114504425]
+visible = false
 position = Vector2(101, 29)
 scale = Vector2(0.07829182, 0.07829182)
 texture = ExtResource("2_853f1")

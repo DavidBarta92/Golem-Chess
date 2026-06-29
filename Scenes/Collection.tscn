@@ -6,6 +6,8 @@
 [ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="4_u2t3u"]
 [ext_resource type="Texture2D" uid="uid://bdyr3etvetn3o" path="res://Assets/magnifying_glass_case_closed.png" id="5_case_closed"]
 [ext_resource type="Texture2D" uid="uid://bthcwpocferx0" path="res://Assets/magnifying_glass_case_opened.png" id="6_case_opened"]
+[ext_resource type="Texture2D" uid="uid://b2rdnleh8sbn" path="res://ui/themes/icons/back.png" id="7_page_back"]
+[ext_resource type="Texture2D" uid="uid://byelcob5i8chv" path="res://ui/themes/icons/next.png" id="8_page_next"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_grid_bg"]
 shader = ExtResource("2_grid_bg")
@@ -15,6 +17,8 @@ shader_parameter/cell_size = 32.0
 shader_parameter/line_width = 0.65
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_browser"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pager_button"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamp"]
 bg_color = Color(0.98, 0.98, 0.96, 1)
@@ -77,6 +81,7 @@ mouse_filter = 2
 color = Color(0.9764706, 0.90588236, 0.80784315, 1)
 
 [node name="TopBackground" type="ColorRect" parent="." unique_id=2090701836]
+visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -86,6 +91,7 @@ mouse_filter = 2
 color = Color(0.9366637, 0.9330646, 0.89437205, 1)
 
 [node name="TopBar" type="HBoxContainer" parent="." unique_id=792694485]
+visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -292,6 +298,7 @@ layout_mode = 2
 placeholder_text = "Search"
 
 [node name="StampGrid" type="GridContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=648111285]
+custom_minimum_size = Vector2(0, 430)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/h_separation = 8
@@ -407,7 +414,15 @@ alignment = 1
 custom_minimum_size = Vector2(54, 42)
 layout_mode = 2
 size_flags_vertical = 8
-text = "<"
+focus_mode = 0
+icon = ExtResource("7_page_back")
+flat = true
+expand_icon = true
+theme_override_styles/normal = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_pager_button")
 
 [node name="PageLabel" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager" unique_id=1190991235]
 custom_minimum_size = Vector2(92, 42)
@@ -421,7 +436,15 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(54, 42)
 layout_mode = 2
 size_flags_vertical = 8
-text = ">"
+focus_mode = 0
+icon = ExtResource("8_page_next")
+flat = true
+expand_icon = true
+theme_override_styles/normal = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_pager_button")
 
 [node name="DeckPanelFrame" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout" unique_id=376321816]
 custom_minimum_size = Vector2(360, 0)

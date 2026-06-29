@@ -3,6 +3,8 @@ extends Control
 const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
 const PACK_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionPackController.gd")
 const WINDOW_CLOSE_ICON: Texture2D = preload("res://ui/themes/icons/window_close.svg")
+const PAGER_BACK_ICON: Texture2D = preload("res://ui/themes/icons/back.png")
+const PAGER_NEXT_ICON: Texture2D = preload("res://ui/themes/icons/next.png")
 const CODEX_TITLE_FONT: FontFile = preload("res://Fonts/ElmsSans-ExtraBold.ttf")
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const STAMP_VISUAL_SIZE: Vector2 = Vector2(168.7, 229)
@@ -31,6 +33,9 @@ const CODEX_PAGE_TITLE_FONT_SIZE: int = 19
 const CODEX_PAGE_GRID_HORIZONTAL_GAP: int = 8
 const CODEX_PAGE_BOTTOM_SPACING: int = 2
 const COLLECTION_PAGER_HEIGHT: float = 72.0
+const PAGER_BUTTON_PRESSED_SCALE: float = 0.92
+const PAGER_BUTTON_PRESS_IN_SECONDS: float = 0.055
+const PAGER_BUTTON_PRESS_OUT_SECONDS: float = 0.075
 const CODEX_EDITOR_LIST_SPACING: int = 4
 const CODEX_SCROLL_WHEEL_IMPULSE: float = 620.0
 const CODEX_SCROLL_MAX_VELOCITY: float = 2600.0
@@ -85,6 +90,7 @@ var is_editing_deck_name: bool = false
 var current_stamps_per_page: int = DESKTOP_STAMPS_PER_PAGE
 var current_stamp_columns: int = DESKTOP_STAMP_COLUMNS
 var current_stamp_slot_size: Vector2 = DESKTOP_STAMP_SLOT_SIZE
+var current_stamp_grid_vertical_gap: int = 2
 var codex_scroll_velocity: float = 0.0
 var codex_scroll_overshoot: float = 0.0
 var codex_scroll_overshoot_velocity: float = 0.0
@@ -106,6 +112,7 @@ var owned_only_check: CheckBox
 var previous_button: Button
 var next_button: Button
 var page_label: Label
+var pager_button_press_tweens: Dictionary = {}
 var new_deck_button: Button
 var deck_editor_back_button: Button
 var deck_title_label: Label
@@ -193,7 +200,7 @@ func _setup_pack_controller() -> void:
 	pack_controller = PACK_CONTROLLER_SCRIPT.new()
 	var buy_packs_cancel_button := get_node_or_null("BuyPacksPanel/BuyPacksRoot/ButtonRow/CancelButton") as Button
 	pack_controller.bind({
-		"buy_packs_button": buy_packs_button,
+		"buy_packs_button": null,
 		"points_label": points_label,
 		"buy_packs_panel": buy_packs_panel,
 		"pack_count_spin_box": pack_count_spin_box,
@@ -239,9 +246,11 @@ func _bind_scene_ui() -> void:
 	deck_stamp_list.add_theme_constant_override("separation", CODEX_EDITOR_LIST_SPACING)
 	deck_count_label = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter/DeckCountLabel
 	done_button = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter/DoneButton
-	top_bar = $TopBar
-	buy_packs_button = $TopBar/BuyPacksButton
-	points_label = $TopBar/PointsContainer/PointsLabel
+	_hide_local_top_bar()
+	GlobalTopBar.show_collection(Callable(self, "_on_back_pressed"), Callable(self, "_on_buy_packs_pressed"))
+	top_bar = null
+	buy_packs_button = GlobalTopBar.get_button("buy_packs")
+	points_label = GlobalTopBar.points_label
 	pack_panel = get_node_or_null("PackNoticePanel") as Control
 	if pack_panel == null:
 		create_pack_inventory_ui()
@@ -261,12 +270,12 @@ func _bind_scene_ui() -> void:
 		deck_title_label.text = "My codexes"
 	new_deck_button.text = "New codex"
 	deck_name_edit.placeholder_text = "Codex name"
+	_configure_pager_buttons()
 	_configure_inventory_block()
 	_configure_pack_notice_panel()
 	_remove_stamp_info_panel()
 	_setup_hover_description_panel()
 
-	_connect_once($TopBar/BackButton.pressed, Callable(self, "_on_back_pressed"))
 	_connect_once(owned_only_check.toggled, Callable(self, "_on_owned_only_toggled"))
 	_connect_once(search_field.text_changed, Callable(self, "_on_search_text_changed"))
 	_connect_once(previous_button.pressed, Callable(self, "_on_previous_pressed"))
@@ -295,11 +304,22 @@ func _bind_scene_ui() -> void:
 	deck_count_label.visible = false
 	done_button.visible = false
 	remove_stamp_button.visible = false
-	$TopBackground.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$TopBackground.color = TOP_BAR_BACKGROUND_COLOR
-	$TopBackground.move_to_front()
-	top_bar.move_to_front()
 	_setup_magnifier()
+
+
+func _hide_local_top_bar() -> void:
+	var local_top_background := get_node_or_null("TopBackground") as CanvasItem
+	if local_top_background != null:
+		local_top_background.visible = false
+		if local_top_background is Control:
+			(local_top_background as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var local_top_bar := get_node_or_null("TopBar") as CanvasItem
+	if local_top_bar != null:
+		local_top_bar.visible = false
+		if local_top_bar is Control:
+			(local_top_bar as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 
 func _configure_inventory_block() -> void:
 	var browser_frame := get_node_or_null("RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame") as PanelContainer
@@ -315,7 +335,71 @@ func _configure_inventory_block() -> void:
 		browser.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		browser.add_theme_constant_override("separation", 4)
 	if stamp_grid != null:
-		stamp_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		_update_stamp_grid_reserved_size()
+
+func _update_stamp_grid_reserved_size() -> void:
+	if stamp_grid == null:
+		return
+
+	var row_count: int = maxi(1, int(ceil(float(current_stamps_per_page) / float(maxi(1, current_stamp_columns)))))
+	var reserved_height: float = current_stamp_slot_size.y * row_count + current_stamp_grid_vertical_gap * maxi(0, row_count - 1)
+	stamp_grid.custom_minimum_size = Vector2(0.0, reserved_height)
+	stamp_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+
+func _configure_pager_buttons() -> void:
+	_connect_pager_button_animation(previous_button)
+	_connect_pager_button_animation(next_button)
+
+func _apply_generated_pager_button_visual(button: Button, icon: Texture2D) -> void:
+	if button == null:
+		return
+
+	button.text = ""
+	button.icon = icon
+	button.expand_icon = true
+	button.flat = true
+	button.focus_mode = Control.FOCUS_NONE
+	button.pivot_offset = button.custom_minimum_size * 0.5
+
+	var empty_style := StyleBoxEmpty.new()
+	button.add_theme_stylebox_override("normal", empty_style)
+	button.add_theme_stylebox_override("hover", empty_style)
+	button.add_theme_stylebox_override("pressed", empty_style)
+	button.add_theme_stylebox_override("focus", empty_style)
+	button.add_theme_stylebox_override("disabled", empty_style)
+
+	_connect_pager_button_animation(button)
+
+func _connect_pager_button_animation(button: Button) -> void:
+	if button == null:
+		return
+
+	button.pivot_offset = button.custom_minimum_size * 0.5
+	_connect_once(button.button_down, Callable(self, "_on_pager_button_down").bind(button))
+
+func _on_pager_button_down(button: Button) -> void:
+	_animate_pager_button_press(button)
+
+func _animate_pager_button_press(button: Button) -> void:
+	if button == null:
+		return
+
+	if pager_button_press_tweens.has(button):
+		var previous_tween: Tween = pager_button_press_tweens[button] as Tween
+		if previous_tween != null and previous_tween.is_valid():
+			previous_tween.kill()
+
+	var button_size: Vector2 = button.size
+	if button_size == Vector2.ZERO:
+		button_size = button.custom_minimum_size
+	button.pivot_offset = button_size * 0.5
+
+	var tween := create_tween()
+	pager_button_press_tweens[button] = tween
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(button, "scale", Vector2.ONE * PAGER_BUTTON_PRESSED_SCALE, PAGER_BUTTON_PRESS_IN_SECONDS)
+	tween.tween_property(button, "scale", Vector2.ONE, PAGER_BUTTON_PRESS_OUT_SECONDS)
 
 func _configure_pack_notice_panel() -> void:
 	if pack_panel == null:
@@ -410,6 +494,11 @@ func _layout_hover_description_panel() -> void:
 func _build_ui() -> void:
 	_setup_grid_background()
 	create_top_progress_ui()
+	_hide_local_top_bar()
+	GlobalTopBar.show_collection(Callable(self, "_on_back_pressed"), Callable(self, "_on_buy_packs_pressed"))
+	top_bar = null
+	buy_packs_button = GlobalTopBar.get_button("buy_packs")
+	points_label = GlobalTopBar.points_label
 
 	root_margin = MarginContainer.new()
 	add_child(root_margin)
@@ -507,6 +596,7 @@ func _build_ui() -> void:
 	stamp_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	stamp_grid.add_theme_constant_override("h_separation", 8)
 	stamp_grid.add_theme_constant_override("v_separation", 2)
+	_update_stamp_grid_reserved_size()
 
 	var pager := HBoxContainer.new()
 	browser.add_child(pager)
@@ -518,7 +608,6 @@ func _build_ui() -> void:
 	pager.add_child(previous_button)
 	previous_button.custom_minimum_size = Vector2(54, 42)
 	previous_button.size_flags_vertical = Control.SIZE_SHRINK_END
-	previous_button.text = "<"
 	previous_button.pressed.connect(_on_previous_pressed)
 
 	page_label = Label.new()
@@ -532,8 +621,9 @@ func _build_ui() -> void:
 	pager.add_child(next_button)
 	next_button.custom_minimum_size = Vector2(54, 42)
 	next_button.size_flags_vertical = Control.SIZE_SHRINK_END
-	next_button.text = ">"
 	next_button.pressed.connect(_on_next_pressed)
+	_apply_generated_pager_button_visual(previous_button, PAGER_BACK_ICON)
+	_apply_generated_pager_button_visual(next_button, PAGER_NEXT_ICON)
 
 	deck_panel_frame = PanelContainer.new()
 	main_layout.add_child(deck_panel_frame)
@@ -666,8 +756,6 @@ func _build_ui() -> void:
 		_populate_saved_decks_list()
 		_refresh_progress_ui()
 		_refresh_pack_inventory_ui()
-	if top_bar != null:
-		top_bar.move_to_front()
 	_configure_inventory_block()
 	_configure_pack_notice_panel()
 	_remove_stamp_info_panel()
@@ -1556,6 +1644,7 @@ func _apply_responsive_layout(refresh_page: bool) -> void:
 	current_stamp_columns = next_columns
 	current_stamps_per_page = next_stamps_per_page
 	current_stamp_slot_size = next_stamp_slot_size
+	current_stamp_grid_vertical_gap = next_v_gap
 
 	if root_margin != null:
 		root_margin.add_theme_constant_override("margin_left", next_margin)
@@ -1574,6 +1663,7 @@ func _apply_responsive_layout(refresh_page: bool) -> void:
 		stamp_grid.columns = current_stamp_columns
 		stamp_grid.add_theme_constant_override("h_separation", next_h_gap)
 		stamp_grid.add_theme_constant_override("v_separation", next_v_gap)
+		_update_stamp_grid_reserved_size()
 	if deck_panel_frame != null:
 		deck_panel_frame.custom_minimum_size = Vector2(next_deck_width, 0)
 	if right_column != null:

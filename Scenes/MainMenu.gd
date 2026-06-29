@@ -121,13 +121,36 @@ func _connect_once(signal_value: Signal, callable: Callable) -> void:
 		signal_value.connect(callable)
 
 func _bind_top_bar() -> void:
-	top_bar = $TopBar
-	settings_button = $TopBar/SettingsButton
-	points_hud = $TopBar/PointsHud
-	points_label = $TopBar/PointsHud/PointsLabel
-	_connect_once(settings_button.pressed, Callable(self, "_on_settings_button_pressed"))
-	_connect_once($TopBar/ExitButton.pressed, Callable(self, "_on_exit_button_pressed"))
+	_hide_local_top_bar()
+	GlobalTopBar.show_main_menu(Callable(self, "_on_settings_button_pressed"), Callable(self, "_on_exit_button_pressed"))
+	top_bar = null
+	settings_button = GlobalTopBar.get_button("settings")
+	points_hud = GlobalTopBar.points_hud
+	points_label = GlobalTopBar.points_label
 	update_points_hud()
+
+
+func _hide_local_top_bar() -> void:
+	var local_top_background := get_node_or_null("TopBackground") as CanvasItem
+	if local_top_background != null:
+		local_top_background.visible = false
+		if local_top_background is Control:
+			(local_top_background as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var local_top_bar := get_node_or_null("TopBar") as CanvasItem
+	if local_top_bar != null:
+		local_top_bar.visible = false
+		if local_top_bar is Control:
+			(local_top_bar as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var local_logo := get_node_or_null("GolemPaintedVectorTransparent2") as CanvasItem
+	if local_logo != null:
+		local_logo.visible = false
+
+	var local_version_label := get_node_or_null("Label") as CanvasItem
+	if local_version_label != null:
+		local_version_label.visible = false
+
 
 func _bind_main_menu_buttons() -> void:
 	var collection_button := get_node_or_null("VBoxContainer/CollectionButton") as Button
@@ -222,6 +245,7 @@ func create_points_hud() -> void:
 	update_points_hud()
 
 func update_points_hud() -> void:
+	GlobalTopBar.refresh_points()
 	if points_label == null:
 		return
 	if Engine.is_editor_hint():

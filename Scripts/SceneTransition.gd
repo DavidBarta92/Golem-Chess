@@ -30,6 +30,8 @@ func change_scene(scene_path: String) -> void:
 		return
 
 	_transition_in_progress = true
+	_set_global_top_bar_scene_transition_active(true)
+	_prepare_global_top_bar_for_scene_change(scene_path)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	await _fade_to(1.0, FADE_TO_COLOR_DURATION)
 
@@ -90,6 +92,19 @@ func _set_scene_zoom(scale: float) -> void:
 func _finish_transition() -> void:
 	_transition_in_progress = false
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_set_global_top_bar_scene_transition_active(false)
+
+
+func _prepare_global_top_bar_for_scene_change(scene_path: String) -> void:
+	var global_top_bar := get_node_or_null("/root/GlobalTopBar")
+	if global_top_bar != null and global_top_bar.has_method("prepare_for_scene_change"):
+		global_top_bar.prepare_for_scene_change(scene_path)
+
+
+func _set_global_top_bar_scene_transition_active(active: bool) -> void:
+	var global_top_bar := get_node_or_null("/root/GlobalTopBar")
+	if global_top_bar != null and global_top_bar.has_method("set_scene_transition_active"):
+		global_top_bar.set_scene_transition_active(active)
 
 
 func _should_skip_animation() -> bool:

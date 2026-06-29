@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://67s030mxf45n"]
 
-[ext_resource type="Script" uid="uid://dgl5umdn6mctq" path="res://Scripts/StampVisual.gd" id="1"]
-[ext_resource type="Script" uid="uid://b4rbx66i3ardt" path="res://Scripts/StampPatternView.gd" id="2"]
+[ext_resource type="Script" path="res://Scripts/StampVisual.gd" id="1"]
+[ext_resource type="Script" path="res://Scripts/StampPatternView.gd" id="2"]
 [ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="3"]
-[ext_resource type="Shader" uid="uid://2w0ypeypns36" path="res://Shaders/stamp_tilt.gdshader" id="5"]
+[ext_resource type="Shader" path="res://Shaders/stamp_tilt.gdshader" id="5"]
 [ext_resource type="FontFile" uid="uid://qkd6nyfjtoyf" path="res://Fonts/OLDENGL.TTF" id="5_7hptf"]
-[ext_resource type="Shader" uid="uid://cmkftqqcjg2yk" path="res://Shaders/stamp_shimmer.gdshader" id="6"]
+[ext_resource type="Shader" path="res://Shaders/stamp_shimmer.gdshader" id="6"]
 [ext_resource type="FontFile" uid="uid://b1beq61l8rupp" path="res://Fonts/Rosemartin.otf" id="8_5weds"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
@@ -117,7 +117,6 @@ theme_override_constants/shadow_offset_y = 1
 theme_override_fonts/font = ExtResource("5_7hptf")
 theme_override_font_sizes/font_size = 47
 text = "1"
-horizontal_alignment = 0
 vertical_alignment = 1
 
 [node name="EffectIconTexture" type="TextureRect" parent="." unique_id=970024804]
@@ -187,9 +186,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = -61.0
+offset_top = -69.0
 offset_right = -20.0
-offset_bottom = -21.0
+offset_bottom = -29.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.8745098, 0.85882354, 0.81960785, 1)

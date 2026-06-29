@@ -30,6 +30,7 @@ PlayerProgressStore="*res://Scripts/PlayerProgressStore.gd"
 GameConfig="*res://GameConfig.gd"
 PlayerSettingsStore="*res://Scripts/PlayerSettingsStore.gd"
 GameController="*res://Scripts/GameController.gd"
+GlobalTopBar="*res://Scenes/GlobalTopBar.tscn"
 SceneTransition="*res://Scripts/SceneTransition.gd"
 CursorManager="*res://Scripts/CursorManager.gd"
 

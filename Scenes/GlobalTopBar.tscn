@@ -1,0 +1,238 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" uid="uid://bb2vr4ui84kxa" path="res://Scenes/GlobalTopBar.gd" id="1_global_top_bar"]
+[ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="2_coin"]
+[ext_resource type="Texture2D" uid="uid://cn5e1f7amlgkn" path="res://Assets/golem_painted_vector_transparent_2.svg" id="3_logo"]
+
+[node name="GlobalTopBar" type="CanvasLayer"]
+layer = 1200
+script = ExtResource("1_global_top_bar")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBackground" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 60.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.9366637, 0.9330646, 0.89437205, 1)
+
+[node name="SceneItemsClip" type="Control" parent="Root"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 24.0
+offset_right = -164.0
+offset_bottom = 60.0
+grow_horizontal = 2
+mouse_filter = 1
+
+[node name="MainMenuItems" type="HBoxContainer" parent="Root/SceneItemsClip"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="LogoSlot" type="Control" parent="Root/SceneItemsClip/MainMenuItems"]
+custom_minimum_size = Vector2(155, 60)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Logo" type="TextureRect" parent="Root/SceneItemsClip/MainMenuItems/LogoSlot"]
+texture_filter = 2
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -77.5
+offset_top = -22.0
+offset_right = 77.5
+offset_bottom = 22.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VersionSlot" type="Control" parent="Root/SceneItemsClip/MainMenuItems"]
+custom_minimum_size = Vector2(112, 60)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="VersionLabel" type="Label" parent="Root/SceneItemsClip/MainMenuItems/VersionSlot"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -56.0
+offset_top = -21.0
+offset_right = 56.0
+offset_bottom = 21.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.61960787, 0.6039216, 0.6862745, 1)
+theme_override_font_sizes/font_size = 12
+text = "v0.0.8 alpha"
+vertical_alignment = 1
+
+[node name="MainMenuSpacer" type="Control" parent="Root/SceneItemsClip/MainMenuItems"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="SettingsSlot" type="Control" parent="Root/SceneItemsClip/MainMenuItems"]
+custom_minimum_size = Vector2(110, 60)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="SettingsButton" type="Button" parent="Root/SceneItemsClip/MainMenuItems/SettingsSlot"]
+custom_minimum_size = Vector2(110, 40)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -55.0
+offset_top = -20.0
+offset_right = 55.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+text = "Settings"
+
+[node name="ExitSlot" type="Control" parent="Root/SceneItemsClip/MainMenuItems"]
+custom_minimum_size = Vector2(92, 60)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ExitButton" type="Button" parent="Root/SceneItemsClip/MainMenuItems/ExitSlot"]
+custom_minimum_size = Vector2(92, 40)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -46.0
+offset_top = -20.0
+offset_right = 46.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+text = "Exit"
+
+[node name="CollectionItems" type="HBoxContainer" parent="Root/SceneItemsClip"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="BackSlot" type="Control" parent="Root/SceneItemsClip/CollectionItems"]
+custom_minimum_size = Vector2(112, 60)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BackButton" type="Button" parent="Root/SceneItemsClip/CollectionItems/BackSlot"]
+custom_minimum_size = Vector2(112, 40)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -56.0
+offset_top = -20.0
+offset_right = 56.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+text = "Back"
+
+[node name="CollectionSpacer" type="Control" parent="Root/SceneItemsClip/CollectionItems"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="BuyPacksSlot" type="Control" parent="Root/SceneItemsClip/CollectionItems"]
+custom_minimum_size = Vector2(124, 60)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BuyPacksButton" type="Button" parent="Root/SceneItemsClip/CollectionItems/BuyPacksSlot"]
+custom_minimum_size = Vector2(124, 38)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -62.0
+offset_top = -19.0
+offset_right = 62.0
+offset_bottom = 19.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+text = "Buy Packs"
+
+[node name="PointsHud" type="Control" parent="Root"]
+custom_minimum_size = Vector2(116, 38)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140.0
+offset_top = 11.0
+offset_right = -24.0
+offset_bottom = 49.0
+grow_horizontal = 0
+mouse_filter = 2
+
+[node name="Coin" type="TextureRect" parent="Root/PointsHud"]
+texture_filter = 2
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 0
+offset_top = 7.0
+offset_right = 24.0
+offset_bottom = 31.0
+mouse_filter = 2
+texture = ExtResource("2_coin")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PointsLabel" type="Label" parent="Root/PointsHud"]
+custom_minimum_size = Vector2(70, 32)
+layout_mode = 0
+offset_left = 32.0
+offset_top = 3.0
+offset_right = 116.0
+offset_bottom = 35.0
+theme_override_colors/font_color = Color(0.06666667, 0.05490196, 0.09411765, 1)
+theme_override_font_sizes/font_size = 20
+text = "0"
+vertical_alignment = 1

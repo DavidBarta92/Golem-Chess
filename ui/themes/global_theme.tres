@@ -8,7 +8,7 @@
 [ext_resource type="FontFile" uid="uid://bjtukmh5u0umu" path="res://Fonts/ElmsSans-Italic.ttf" id="4_dialogue_italic"]
 [ext_resource type="FontFile" uid="uid://c6ek3bb3qj55l" path="res://Fonts/ElmsSans-BoldItalic.ttf" id="5_dialogue_bold_italic"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_popup"]
+[sub_resource type="StyleBoxFlat" id="StyleBox_dialog_body"]
 content_margin_left = 16.0
 content_margin_top = 16.0
 content_margin_right = 16.0
@@ -19,8 +19,6 @@ border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.211765, 0.211765, 0.211765, 1)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 shadow_color = Color(0, 0, 0, 0.22)
@@ -251,6 +249,25 @@ corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
+[sub_resource type="StyleBoxFlat" id="StyleBox_popup"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.984314, 0.980392, 0.968627, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.211765, 0.211765, 0.211765, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0, 0, 0.22)
+shadow_size = 10
+shadow_offset = Vector2(0, 4)
+
 [sub_resource type="StyleBoxFlat" id="StyleBox_progress_background"]
 content_margin_top = 7.0
 content_margin_bottom = 7.0
@@ -331,7 +348,7 @@ content_margin_right = 1.0
 content_margin_bottom = 1.0
 bg_color = Color(0.984314, 0.980392, 0.968627, 1)
 border_width_left = 1
-border_width_top = 46
+border_width_top = 38
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.070588, 0.070588, 0.070588, 1)
@@ -339,7 +356,7 @@ corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
-expand_margin_top = 46.0
+expand_margin_top = 38.0
 shadow_color = Color(0, 0, 0, 0.28)
 shadow_size = 12
 shadow_offset = Vector2(0, 5)
@@ -349,7 +366,7 @@ default_font = ExtResource("2_820ue")
 default_font_size = 16
 AcceptDialog/constants/buttons_min_height = 38
 AcceptDialog/constants/buttons_min_width = 96
-AcceptDialog/styles/panel = SubResource("StyleBox_popup")
+AcceptDialog/styles/panel = SubResource("StyleBox_dialog_body")
 Button/colors/font_color = Color(0.12549, 0.12549, 0.12549, 1)
 Button/colors/font_disabled_color = Color(0.462745, 0.454902, 0.431373, 0.72)
 Button/colors/font_focus_color = Color(0.12549, 0.12549, 0.12549, 1)
@@ -609,11 +626,11 @@ VSlider/styles/grabber_area_highlight = SubResource("StyleBox_track_fill")
 VSlider/styles/slider = SubResource("StyleBox_track")
 Window/colors/title_color = Color(1, 1, 1, 1)
 Window/colors/title_outline_modulate = Color(0, 0, 0, 0)
-Window/constants/close_h_offset = 32
-Window/constants/close_v_offset = 32
+Window/constants/close_h_offset = 28
+Window/constants/close_v_offset = 27
 Window/constants/resize_margin = 6
-Window/constants/title_height = 46
-Window/font_sizes/title_font_size = 17
+Window/constants/title_height = 38
+Window/font_sizes/title_font_size = 16
 Window/fonts/title_font = ExtResource("3_820ue")
 Window/icons/close = ExtResource("2_window_close")
 Window/icons/close_pressed = ExtResource("2_window_close")
