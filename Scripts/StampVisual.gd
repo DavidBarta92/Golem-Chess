@@ -105,6 +105,7 @@ func _ready() -> void:
 	resized.connect(_on_stamp_visual_resized)
 	shimmer_material = shimmer.material.duplicate() as ShaderMaterial
 	shimmer.material = shimmer_material
+	_configure_shimmer_surface()
 	shimmer.visible = _is_stamp_shimmer_enabled() && !face_down
 	last_position = position
 	last_scale = scale
@@ -126,6 +127,15 @@ func _apply_texture_filter() -> void:
 	stamp_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	stamp_art.stretch_mode = TextureRect.STRETCH_SCALE
 	effect_icon_texture.texture_filter = STAMP_TEXTURE_FILTER
+
+func _configure_shimmer_surface() -> void:
+	shimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shimmer.offset_left = 0.0
+	shimmer.offset_top = 0.0
+	shimmer.offset_right = 0.0
+	shimmer.offset_bottom = 0.0
+	if shimmer_material != null:
+		shimmer_material.set_shader_parameter("surface_mask_texture", STAMP_FRONT_TEXTURE)
 
 func _on_stamp_visual_resized() -> void:
 	pivot_offset = size * 0.5
@@ -819,7 +829,7 @@ func reset_drag_paper_motion() -> void:
 	tween_drag_reset.parallel().tween_property(face_material, "shader_parameter/y_rot", 0.0, 0.16)
 
 func update_ambient_motion(delta: float) -> void:
-	if face_down or !collection_owned or face_material == null:
+	if !collection_owned:
 		return
 
 	ambient_motion_time += delta
@@ -828,8 +838,9 @@ func update_ambient_motion(delta: float) -> void:
 	var tilt: float = sin(ambient_motion_time * 1.85 + 0.7)
 	position = home_position + Vector2(side_sway * AMBIENT_MOTION_SIDE_PIXELS, sway * AMBIENT_MOTION_FLOAT_PIXELS)
 	rotation = deg_to_rad(sway * AMBIENT_MOTION_ROTATION_DEGREES)
-	face_material.set_shader_parameter("x_rot", tilt * AMBIENT_MOTION_X_TILT)
-	face_material.set_shader_parameter("y_rot", sway * AMBIENT_MOTION_Y_TILT)
+	if !face_down and face_material != null:
+		face_material.set_shader_parameter("x_rot", tilt * AMBIENT_MOTION_X_TILT)
+		face_material.set_shader_parameter("y_rot", sway * AMBIENT_MOTION_Y_TILT)
 
 func reset_tilt_and_scale() -> void:
 	if tween_hover and tween_hover.is_running():

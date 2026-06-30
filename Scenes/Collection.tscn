@@ -178,10 +178,10 @@ mouse_filter = 2
 
 [node name="PackPreview1" type="TextureRect" parent="PackNoticePanel/PackNoticeRoot/PackInventory" unique_id=265380200]
 layout_mode = 0
-offset_left = 120.86885
-offset_top = 6.95149
-offset_right = 228.94654
-offset_bottom = 157.75755
+offset_left = 112.76302
+offset_top = -4.35896
+offset_right = 237.05237
+offset_bottom = 169.068
 rotation = 0.575959
 texture = ExtResource("2_kbw0k")
 expand_mode = 1
@@ -189,10 +189,10 @@ stretch_mode = 5
 
 [node name="PackPreview2" type="TextureRect" parent="PackNoticePanel/PackNoticeRoot/PackInventory" unique_id=859556305]
 layout_mode = 0
-offset_left = 130.42533
-offset_top = 68.61668
-offset_right = 231.06808
-offset_bottom = 209.04842
+offset_left = 122.87712
+offset_top = 58.0843
+offset_right = 238.61629
+offset_bottom = 219.5808
 rotation = 0.890118
 texture = ExtResource("2_kbw0k")
 expand_mode = 1
@@ -200,10 +200,10 @@ stretch_mode = 5
 
 [node name="PackPreview3" type="TextureRect" parent="PackNoticePanel/PackNoticeRoot/PackInventory" unique_id=1412845816]
 layout_mode = 0
-offset_left = 69.51006
-offset_top = 160.73503
-offset_right = 168.28877
-offset_bottom = 298.56578
+offset_left = 62.10166
+offset_top = 150.39772
+offset_right = 175.69717
+offset_bottom = 308.90309
 rotation = -0.48171088
 texture = ExtResource("2_kbw0k")
 expand_mode = 1
@@ -211,10 +211,10 @@ stretch_mode = 5
 
 [node name="PackPreview4" type="TextureRect" parent="PackNoticePanel/PackNoticeRoot/PackInventory" unique_id=977433472]
 layout_mode = 0
-offset_left = 72.68129
-offset_top = 184.9739
-offset_right = 167.69286
-offset_bottom = 317.54816
+offset_left = 65.55542
+offset_top = 175.03083
+offset_right = 174.81873
+offset_bottom = 327.49123
 rotation = 0.47822022
 texture = ExtResource("2_kbw0k")
 expand_mode = 1

@@ -1,5 +1,6 @@
 shader_type canvas_item;
 
+uniform sampler2D surface_mask_texture : repeat_disable, filter_linear_mipmap;
 uniform float strength : hint_range(0.0, 1.0) = 0.16;
 uniform float speed = 0.65;
 uniform float band_scale = 14.0;
@@ -17,10 +18,12 @@ float rounded_alpha(vec2 uv, float radius) {
 }
 
 void fragment() {
+	float surface_alpha = texture(surface_mask_texture, UV).a;
 	float band = sin((UV.x + UV.y * 0.72 + shimmer_time * speed) * band_scale);
 	float fine_noise = random(floor(UV * 56.0) + vec2(shimmer_time * 8.0, 0.0));
 	float mask = smoothstep(0.25, 1.0, band * 0.5 + 0.5);
 	vec3 shine = mix(vec3(0.65, 0.88, 1.0), vec3(1.0, 0.86, 0.42), mask);
-	float alpha = (mask * 0.75 + fine_noise * 0.25) * strength * rounded_alpha(UV, corner_radius);
+	float stamp_surface = smoothstep(0.02, 0.16, surface_alpha) * rounded_alpha(UV, corner_radius);
+	float alpha = (mask * 0.75 + fine_noise * 0.25) * strength * stamp_surface * COLOR.a;
 	COLOR = vec4(shine, alpha);
 }

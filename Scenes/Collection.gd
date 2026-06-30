@@ -198,6 +198,7 @@ func _setup_pack_controller() -> void:
 	pack_controller = PACK_CONTROLLER_SCRIPT.new()
 	var buy_packs_cancel_button := get_node_or_null("BuyPacksPanel/BuyPacksRoot/ButtonRow/CancelButton") as Button
 	pack_controller.bind({
+		"collection": self,
 		"buy_packs_button": null,
 		"points_label": points_label,
 		"buy_packs_panel": buy_packs_panel,
@@ -409,7 +410,7 @@ func _configure_pack_notice_panel() -> void:
 	if pack_panel == null:
 		return
 	pack_panel.clip_contents = false
-	pack_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pack_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	pack_panel.z_as_relative = false
 	pack_panel.z_index = 25
 
@@ -418,12 +419,12 @@ func _configure_pack_notice_panel() -> void:
 		return
 	pack_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pack_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	pack_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pack_root.mouse_filter = Control.MOUSE_FILTER_PASS
 
 	if pack_inventory != null:
 		pack_inventory.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		pack_inventory.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		pack_inventory.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pack_inventory.mouse_filter = Control.MOUSE_FILTER_PASS
 		pack_inventory.clip_contents = false
 
 func _remove_stamp_info_panel() -> void:
@@ -1246,7 +1247,7 @@ func create_pack_inventory_ui() -> void:
 	pack_panel.offset_right = PACK_NOTICE_OFFSET_RIGHT
 	pack_panel.offset_bottom = PACK_NOTICE_OFFSET_BOTTOM
 	pack_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	pack_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pack_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	pack_panel.clip_contents = false
 
 	var pack_root := Control.new()
@@ -1255,7 +1256,7 @@ func create_pack_inventory_ui() -> void:
 	pack_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pack_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pack_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	pack_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pack_root.mouse_filter = Control.MOUSE_FILTER_PASS
 	pack_inventory_label = null
 
 	pack_inventory = Control.new()
@@ -1264,7 +1265,7 @@ func create_pack_inventory_ui() -> void:
 	pack_inventory.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pack_inventory.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pack_inventory.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	pack_inventory.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pack_inventory.mouse_filter = Control.MOUSE_FILTER_PASS
 	pack_inventory.clip_contents = false
 	pack_inventory.resized.connect(_refresh_pack_inventory_ui)
 
@@ -1980,6 +1981,8 @@ func _on_done_pressed() -> void:
 	_show_page(_get_stamp_browser_controller().get_current_page())
 
 func _on_back_pressed() -> void:
+	if pack_controller != null and pack_controller.handle_back_pressed():
+		return
 	SceneTransition.change_scene(MAIN_MENU_SCENE)
 
 func _update_deck_editor_state() -> void:

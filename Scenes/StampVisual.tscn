@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://67s030mxf45n"]
 
-[ext_resource type="Script" path="res://Scripts/StampVisual.gd" id="1"]
+[ext_resource type="Script" uid="uid://dgl5umdn6mctq" path="res://Scripts/StampVisual.gd" id="1"]
 [ext_resource type="Script" path="res://Scripts/StampPatternView.gd" id="2"]
 [ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="3"]
 [ext_resource type="Shader" path="res://Shaders/stamp_tilt.gdshader" id="5"]
@@ -97,10 +97,6 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 6.0
-offset_top = 7.0
-offset_right = -5.0
-offset_bottom = -6.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -186,9 +182,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = -69.0
+offset_top = -67.0
 offset_right = -20.0
-offset_bottom = -29.0
+offset_bottom = -27.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.8745098, 0.85882354, 0.81960785, 1)

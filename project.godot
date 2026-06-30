@@ -24,6 +24,7 @@ config/icon="res://icon.svg"
 
 StampLibrary="*res://Scripts/StampLibrary.gd"
 StampPrintLibrary="*res://Scripts/StampPrintLibrary.gd"
+PackDefinitionLibrary="*res://Scripts/PackDefinitionLibrary.gd"
 PlayerCollectionStore="*res://Scripts/PlayerCollectionStore.gd"
 PlayerDeckStore="*res://Scripts/PlayerDeckStore.gd"
 PlayerProgressStore="*res://Scripts/PlayerProgressStore.gd"
