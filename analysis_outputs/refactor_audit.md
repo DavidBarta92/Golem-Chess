@@ -30,6 +30,21 @@ Completed in the current cleanup pass:
 
 Not committed yet by project owner choice.
 
+## Collection Refactor Status - 2026-06-29
+
+Completed in this Collection pass:
+
+- Extracted stamp browser loading, filtering, pagination, browser stamp slot layout, owned-count badges, responsive browser sizing, and pager button animation into `Scenes/CollectionStampBrowserController.gd`.
+- `Scenes/Collection.gd` now delegates stamp browsing through stable wrapper methods, so existing hover/drag/drop and deck editor callers did not need a behavior rewrite.
+- Extracted saved deck list rendering into `Scenes/CollectionSavedDeckListController.gd`, including list refresh, saved codex row construction, preview stamp fan, edit/delete buttons, and saved-list delete handling.
+- `Scenes/Collection.gd` line count is down from about 2911 to 2602 after the browser and saved-list splits.
+- Godot headless smoke test passed after this refactor pass: `godot4.exe.exe --headless --path . --scene res://Scenes/main.tscn --quit-after 5`.
+
+Still worth doing next:
+
+- Extract the selected deck editor section: selected deck slots, deck stamp rows, remove-button hover flow, slot reorder/drop behavior, and deck completion state.
+- Extract preview/hover/selection behavior after the deck editor split, because it currently crosses browser stamps, selected deck stamps, magnifier state, and hover description panels.
+
 ## MatchBoard Refactor Status - 2026-06-29
 
 Completed in this MatchBoard pass:
