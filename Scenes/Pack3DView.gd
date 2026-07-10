@@ -268,8 +268,9 @@ func _create_front_surface() -> void:
 
 func _create_back_surface() -> void:
 	back_material = StandardMaterial3D.new()
-	back_material.roughness = 0.45
-	back_material.metallic = 0.02
+	back_material.roughness = 0.82
+	back_material.metallic = 0.0
+	back_material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	back_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	back_material.alpha_scissor_threshold = 0.035
 

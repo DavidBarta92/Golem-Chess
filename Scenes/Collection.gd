@@ -178,6 +178,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_set_magnifier_enabled(false)
 		get_viewport().set_input_as_handled()
 		return
+	if pack_controller != null and pack_controller.is_buy_packs_modal_open():
+		if event is InputEventMouseButton or event is InputEventMouseMotion:
+			get_viewport().set_input_as_handled()
+			return
 	if _handle_elastic_scroll_unhandled_input(event):
 		get_viewport().set_input_as_handled()
 

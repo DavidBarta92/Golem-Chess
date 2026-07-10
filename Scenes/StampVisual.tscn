@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="3"]
 [ext_resource type="Shader" path="res://Shaders/stamp_tilt.gdshader" id="5"]
 [ext_resource type="FontFile" uid="uid://qkd6nyfjtoyf" path="res://Fonts/OLDENGL.TTF" id="5_7hptf"]
-[ext_resource type="Shader" path="res://Shaders/stamp_shimmer.gdshader" id="6"]
+[ext_resource type="Shader" uid="uid://cmkftqqcjg2yk" path="res://Shaders/stamp_shimmer.gdshader" id="6"]
 [ext_resource type="FontFile" uid="uid://b1beq61l8rupp" path="res://Fonts/Rosemartin.otf" id="8_5weds"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]

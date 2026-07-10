@@ -1,6 +1,6 @@
 extends Node
 
-const PROGRESS_SCHEMA_VERSION: int = 2
+const PROGRESS_SCHEMA_VERSION: int = 3
 const PROGRESS_PATH: String = "user://player_progress.json"
 const PACK_COST: int = 15
 const LEGACY_PACK_ID: String = "basic_pack"
@@ -76,22 +76,40 @@ func get_unopened_pack_counts() -> Dictionary:
 		return normalized_counts
 	return {}
 
+func get_unopened_pack_queue(max_count: int = -1) -> Array[String]:
+	ensure_loaded()
+	var queue: Array[String] = _normalize_unopened_pack_queue(
+		progress_data.get("unopened_pack_queue", []),
+		get_unopened_pack_counts()
+	)
+	progress_data["unopened_pack_queue"] = queue
+	progress_data["unopened_pack_counts"] = _counts_from_pack_queue(queue)
+	if max_count < 0 or queue.size() <= max_count:
+		return queue
+
+	var limited_queue: Array[String] = []
+	for i in range(max_count):
+		limited_queue.append(queue[i])
+	return limited_queue
+
 func get_unopened_pack_ids() -> Array[String]:
 	var pack_ids: Array[String] = []
-	var pack_counts: Dictionary = get_unopened_pack_counts()
-	for pack_id_value in pack_counts.keys():
-		var pack_id: String = str(pack_id_value)
-		if int(pack_counts.get(pack_id, 0)) > 0:
-			pack_ids.append(pack_id)
-	pack_ids.sort()
+	var used_pack_ids: Dictionary = {}
+	for pack_id in get_unopened_pack_queue():
+		if used_pack_ids.has(pack_id):
+			continue
+		used_pack_ids[pack_id] = true
+		pack_ids.append(pack_id)
 	return pack_ids
 
 func add_unopened_packs(amount: int, pack_id: String = LEGACY_PACK_ID) -> int:
 	ensure_loaded()
 	var normalized_pack_id: String = _normalize_pack_id(pack_id)
-	var pack_counts: Dictionary = get_unopened_pack_counts()
-	pack_counts[normalized_pack_id] = maxi(0, int(pack_counts.get(normalized_pack_id, 0))) + maxi(0, amount)
-	progress_data["unopened_pack_counts"] = _remove_empty_pack_counts(pack_counts)
+	var queue: Array[String] = get_unopened_pack_queue()
+	for i in range(maxi(0, amount)):
+		queue.append(normalized_pack_id)
+	progress_data["unopened_pack_queue"] = queue
+	progress_data["unopened_pack_counts"] = _counts_from_pack_queue(queue)
 	save_progress()
 	return get_unopened_pack_count(normalized_pack_id)
 
@@ -117,19 +135,32 @@ func open_pack(pack_id: String = "") -> bool:
 	if pack_count <= 0:
 		return false
 
-	var pack_counts: Dictionary = get_unopened_pack_counts()
-	var next_count: int = pack_count - 1
-	if next_count <= 0:
-		pack_counts.erase(normalized_pack_id)
+	var queue: Array[String] = get_unopened_pack_queue()
+	var removed_from_queue: bool = false
+	for i in range(queue.size()):
+		if queue[i] == normalized_pack_id:
+			queue.remove_at(i)
+			removed_from_queue = true
+			break
+
+	if removed_from_queue:
+		progress_data["unopened_pack_queue"] = queue
+		progress_data["unopened_pack_counts"] = _counts_from_pack_queue(queue)
 	else:
-		pack_counts[normalized_pack_id] = next_count
-	progress_data["unopened_pack_counts"] = _remove_empty_pack_counts(pack_counts)
+		var pack_counts: Dictionary = get_unopened_pack_counts()
+		var next_count: int = pack_count - 1
+		if next_count <= 0:
+			pack_counts.erase(normalized_pack_id)
+		else:
+			pack_counts[normalized_pack_id] = next_count
+		progress_data["unopened_pack_counts"] = _remove_empty_pack_counts(pack_counts)
+		progress_data["unopened_pack_queue"] = _normalize_unopened_pack_queue([], pack_counts)
 	save_progress()
 	return true
 
 func get_first_unopened_pack_id() -> String:
-	var pack_ids: Array[String] = get_unopened_pack_ids()
-	return pack_ids[0] if !pack_ids.is_empty() else ""
+	var queue: Array[String] = get_unopened_pack_queue(1)
+	return queue[0] if !queue.is_empty() else ""
 
 func get_max_affordable_pack_count(pack_price: int = PACK_COST) -> int:
 	var normalized_price: int = maxi(0, pack_price)
@@ -154,6 +185,7 @@ func _create_default_progress() -> Dictionary:
 		"schema_version": PROGRESS_SCHEMA_VERSION,
 		"points": 0,
 		"unopened_pack_counts": {},
+		"unopened_pack_queue": [],
 	}
 
 func _normalize_progress(raw_data: Dictionary) -> Dictionary:
@@ -172,10 +204,16 @@ func _normalize_progress(raw_data: Dictionary) -> Dictionary:
 		if legacy_count > 0:
 			pack_counts[LEGACY_PACK_ID] = legacy_count
 
+	var pack_queue: Array[String] = _normalize_unopened_pack_queue(
+		raw_data.get("unopened_pack_queue", []),
+		pack_counts
+	)
+
 	return {
 		"schema_version": PROGRESS_SCHEMA_VERSION,
 		"points": maxi(0, int(raw_data.get("points", 0))),
-		"unopened_pack_counts": pack_counts,
+		"unopened_pack_counts": _counts_from_pack_queue(pack_queue),
+		"unopened_pack_queue": pack_queue,
 	}
 
 func _normalize_pack_id(pack_id: String) -> String:
@@ -192,3 +230,40 @@ func _remove_empty_pack_counts(pack_counts: Dictionary) -> Dictionary:
 		if count > 0:
 			normalized_counts[pack_id] = count
 	return normalized_counts
+
+func _normalize_unopened_pack_queue(raw_queue, pack_counts: Dictionary) -> Array[String]:
+	var remaining_counts: Dictionary = _remove_empty_pack_counts(pack_counts)
+	var queue: Array[String] = []
+
+	if raw_queue is Array:
+		for pack_id_value in raw_queue:
+			var pack_id: String = _normalize_pack_id(str(pack_id_value))
+			var remaining_count: int = maxi(0, int(remaining_counts.get(pack_id, 0)))
+			if remaining_count <= 0:
+				continue
+			queue.append(pack_id)
+			if remaining_count <= 1:
+				remaining_counts.erase(pack_id)
+			else:
+				remaining_counts[pack_id] = remaining_count - 1
+
+	var remaining_pack_ids: Array[String] = []
+	for pack_id_value in remaining_counts.keys():
+		var pack_id: String = str(pack_id_value).strip_edges()
+		if pack_id.is_empty():
+			continue
+		remaining_pack_ids.append(pack_id)
+	remaining_pack_ids.sort()
+
+	for pack_id in remaining_pack_ids:
+		var count: int = maxi(0, int(remaining_counts.get(pack_id, 0)))
+		for i in range(count):
+			queue.append(pack_id)
+	return queue
+
+func _counts_from_pack_queue(queue: Array[String]) -> Dictionary:
+	var counts: Dictionary = {}
+	for pack_id in queue:
+		var normalized_pack_id: String = _normalize_pack_id(pack_id)
+		counts[normalized_pack_id] = maxi(0, int(counts.get(normalized_pack_id, 0))) + 1
+	return _remove_empty_pack_counts(counts)

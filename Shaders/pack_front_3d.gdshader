@@ -12,10 +12,12 @@ uniform bool has_normal_texture = false;
 uniform bool has_roughness_texture = false;
 uniform bool has_foil_mask_texture = false;
 
-uniform float height_strength = 0.24;
-uniform float dome_strength = 0.27;
-uniform float normal_depth = 2.35;
-uniform float default_roughness = 0.48;
+uniform float height_strength = 0.11;
+uniform float dome_strength = 0.20;
+uniform float normal_depth = 0.78;
+uniform float default_roughness = 0.80;
+uniform float paper_normal_mix = 0.42;
+uniform float paper_specular = 0.20;
 uniform float foil_intensity = 0.72;
 uniform float foil_metallic = 0.82;
 uniform float foil_roughness = 0.055;
@@ -23,6 +25,7 @@ uniform float foil_clearcoat = 0.9;
 uniform float foil_max_albedo_mix = 0.46;
 uniform float foil_color_mix = 0.58;
 uniform float foil_emission_scale = 0.20;
+uniform float foil_layer_opacity = 0.0;
 uniform vec2 foil_tilt_offset = vec2(0.0, 0.0);
 uniform float tear_cut_progress = 0.0;
 uniform float tear_cut_y = 0.085;
@@ -82,12 +85,14 @@ void fragment() {
 	ALPHA_SCISSOR_THRESHOLD = 0.035;
 
 	vec3 normal_sample = has_normal_texture ? texture(normal_texture, UV).rgb : vec3(0.5, 0.5, 1.0);
+	normal_sample = mix(vec3(0.5, 0.5, 1.0), normal_sample, paper_normal_mix);
 	NORMAL_MAP = normal_sample;
 	NORMAL_MAP_DEPTH = normal_depth;
 
 	float roughness_sample = has_roughness_texture ? texture(roughness_texture, UV).r : default_roughness;
+	float paper_roughness = clamp(mix(roughness_sample, default_roughness, 0.72), 0.68, 0.94);
 	float foil_mask = has_foil_mask_texture ? texture(foil_mask_texture, UV).r : 0.0;
-	foil_mask *= alpha;
+	foil_mask *= alpha * foil_layer_opacity;
 
 	float ndv = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
 	float fresnel = pow(1.0 - ndv, 2.15);
@@ -101,9 +106,9 @@ void fragment() {
 
 	ALBEDO = mix(torn_edge_color, foil_surface, clamp(foil_visibility, 0.0, foil_max_albedo_mix)) * alpha;
 	METALLIC = mix(0.0, foil_metallic, foil_mask);
-	SPECULAR = mix(0.5, 1.0, foil_mask);
-	ROUGHNESS = mix(roughness_sample, foil_roughness, foil_mask);
+	SPECULAR = mix(paper_specular, 1.0, foil_mask);
+	ROUGHNESS = mix(paper_roughness, foil_roughness, foil_mask);
 	CLEARCOAT = foil_mask * foil_clearcoat;
-	CLEARCOAT_ROUGHNESS = mix(0.32, 0.035, foil_mask);
+	CLEARCOAT_ROUGHNESS = mix(0.62, 0.035, foil_mask);
 	EMISSION = foil_color * foil_visibility * foil_intensity * foil_emission_scale * alpha;
 }

@@ -54,7 +54,7 @@ void fragment() {
 
 	ALBEDO = final_color;
 	ALPHA = alpha;
-	METALLIC = 0.08;
-	SPECULAR = 0.68;
-	ROUGHNESS = 0.34;
+	METALLIC = 0.0;
+	SPECULAR = 0.22;
+	ROUGHNESS = 0.78;
 }

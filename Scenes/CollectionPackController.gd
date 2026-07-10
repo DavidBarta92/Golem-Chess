@@ -4,13 +4,17 @@ class_name CollectionPackController
 const BOOSTER_PACK_TEXTURE = preload("res://Assets/booster.png")
 const PACK_3D_VIEW = preload("res://Scenes/Pack3DView.tscn")
 const PACK_TEAR_PIECE_SHADER = preload("res://Shaders/pack_tear_piece.gdshader")
+const WINDOW_CLOSE_ICON = preload("res://ui/themes/icons/window_close_large.svg")
+const COIN_TEXTURE = preload("res://Assets/coin.svg")
 const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
 const PACK_REWARD_STAMP_COUNT: int = 4
 const MAX_VISIBLE_PACK_ICONS: int = 4
+const MAX_SELECTION_PACK_ICONS: int = 15
 const PACK_OVERLAY_Z_INDEX: int = 2200
 const PACK_FLY_IN_SECONDS: float = 0.42
 const PACK_FLY_STAGGER_SECONDS: float = 0.055
 const PACK_FOCUS_SECONDS: float = 0.42
+const PACK_INVENTORY_PREVIEW_SCALE: float = 1.1
 const PACK_VISUAL_SIZE_SCALE: float = 1.15
 const PACK_FOCUSED_SCALE: float = 1.61
 const PACK_TEAR_SECONDS: float = 1.05
@@ -27,6 +31,19 @@ const PACK_REWARD_MAX_SCALE: float = 0.72
 const PACK_REWARD_MIN_SCALE: float = 0.38
 const PACK_REWARD_SIDE_MARGIN: float = 36.0
 const STAMP_VISUAL_SIZE: Vector2 = Vector2(168.7, 229.0)
+const BUY_PACKS_WINDOW_MIN_SIZE: Vector2 = Vector2(860.0, 430.0)
+const BUY_PACKS_WINDOW_MAX_SIZE: Vector2 = Vector2(1180.0, 640.0)
+const BUY_PACKS_MODAL_BLOCKER_Z_INDEX: int = 2300
+const BUY_PACKS_WINDOW_Z_INDEX: int = 2310
+const BUY_PACKS_TOOLTIP_Z_INDEX: int = 2320
+const BUY_PACKS_RIGHT_COLUMN_WIDTH: float = 492.0
+const BUY_PACKS_PACK_CARD_SIZE: Vector2 = Vector2(132.0, 188.0)
+const BUY_PACKS_CONTENT_STAMP_SCALE: float = 0.43
+const BUY_PACKS_CONTENT_STAMP_CELL_SIZE: Vector2 = Vector2(72.541, 98.47)
+const BUY_PACKS_CONTENT_COLUMNS: int = 4
+const BUY_PACKS_CONTENT_H_SEPARATION: float = 16.0
+const BUY_PACKS_CONTENT_V_SEPARATION: float = 12.0
+const BUY_PACKS_STAMP_TOOLTIP_OFFSET: Vector2 = Vector2(14.0, 14.0)
 const OVERLAY_STATE_SELECTION: String = "selection"
 const OVERLAY_STATE_FOCUSED: String = "focused"
 const OVERLAY_STATE_OPENING: String = "opening"
@@ -36,15 +53,25 @@ var collection: Control
 var buy_packs_button: Button
 var points_label: Label
 var buy_packs_panel: PanelContainer
-var pack_select_option: OptionButton
+var buy_packs_modal_blocker: Control
 var pack_count_spin_box: SpinBox
 var buy_packs_info_label: Label
 var buy_packs_confirm_button: Button
 var buy_packs_cancel_button: Button
+var buy_packs_title_label: Label
+var buy_packs_pack_grid: GridContainer
+var buy_packs_contents_title: Label
+var buy_packs_contents_scroll: ScrollContainer
+var buy_packs_contents_list: Control
+var buy_packs_stamp_tooltip_panel: PanelContainer
+var buy_packs_stamp_tooltip_label: Label
+var buy_packs_pack_cards: Dictionary = {}
+var buy_packs_open_tween: Tween
 var pack_notice_panel: Control
 var pack_inventory: Control
 var pack_inventory_label: Label
 var pack_preview_nodes: Array[Control] = []
+var pack_inventory_arrival_tweens: Dictionary = {}
 var pack_result_dialog: AcceptDialog
 var pack_result_label: Label
 var pack_opened_callback: Callable
@@ -87,7 +114,7 @@ func bind(nodes: Dictionary, opened_callback: Callable = Callable()) -> void:
 		PlayerProgressStore.ensure_loaded()
 		PlayerCollectionStore.ensure_loaded()
 
-	_ensure_buy_pack_selector()
+	_ensure_buy_packs_window()
 	_connect_once(buy_packs_button, "pressed", Callable(self, "show_buy_packs"))
 	_connect_once(pack_inventory, "resized", Callable(self, "refresh_pack_inventory_ui"))
 	_connect_once(pack_count_spin_box, "value_changed", Callable(self, "on_pack_count_spin_value_changed"))
@@ -108,37 +135,390 @@ func _connect_once(node: Object, signal_name: StringName, callable: Callable) ->
 	if !node.is_connected(signal_name, callable):
 		node.connect(signal_name, callable)
 
-func _ensure_buy_pack_selector() -> void:
+func _ensure_buy_packs_window() -> void:
 	if buy_packs_panel == null:
 		return
-	if pack_select_option != null and is_instance_valid(pack_select_option):
+	if bool(buy_packs_panel.get_meta("pack_shop_window_built", false)) and buy_packs_pack_grid != null and is_instance_valid(buy_packs_pack_grid):
 		return
 
-	var root := buy_packs_panel.get_node_or_null("BuyPacksRoot") as VBoxContainer
-	if root == null:
-		for child in buy_packs_panel.get_children():
-			if child is VBoxContainer:
-				root = child as VBoxContainer
-				break
-	if root == null:
+	_clear_node_children(buy_packs_panel)
+	buy_packs_panel.set_meta("pack_shop_window_built", true)
+	buy_packs_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	buy_packs_panel.z_as_relative = false
+	buy_packs_panel.z_index = BUY_PACKS_WINDOW_Z_INDEX
+	buy_packs_panel.add_theme_stylebox_override(
+		"panel",
+		_create_panel_style(Color(0.984, 0.98, 0.969, 1.0), Color(0.071, 0.071, 0.071, 1.0), 6, 1, 0)
+	)
+	_ensure_buy_packs_modal_blocker()
+	_ensure_buy_packs_stamp_tooltip()
+
+	var root := VBoxContainer.new()
+	root.name = "BuyPacksRoot"
+	buy_packs_panel.add_child(root)
+	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_theme_constant_override("separation", 0)
+
+	var header_panel := PanelContainer.new()
+	header_panel.name = "Header"
+	root.add_child(header_panel)
+	header_panel.custom_minimum_size = Vector2(0.0, 38.0)
+	header_panel.add_theme_stylebox_override(
+		"panel",
+		_create_panel_style(Color(0.071, 0.071, 0.071, 1.0), Color(0.071, 0.071, 0.071, 1.0), 6, 0, 0)
+	)
+
+	var title_row := HBoxContainer.new()
+	title_row.name = "TitleRow"
+	header_panel.add_child(title_row)
+	title_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	title_row.add_theme_constant_override("separation", 10)
+
+	buy_packs_title_label = Label.new()
+	buy_packs_title_label.name = "TitleLabel"
+	title_row.add_child(buy_packs_title_label)
+	buy_packs_title_label.text = "Buy Packs"
+	buy_packs_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buy_packs_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	buy_packs_title_label.add_theme_font_size_override("font_size", 16)
+	buy_packs_title_label.add_theme_color_override("font_color", Color.WHITE)
+
+	buy_packs_cancel_button = Button.new()
+	buy_packs_cancel_button.name = "CancelButton"
+	title_row.add_child(buy_packs_cancel_button)
+	buy_packs_cancel_button.text = ""
+	buy_packs_cancel_button.icon = WINDOW_CLOSE_ICON
+	buy_packs_cancel_button.custom_minimum_size = Vector2(38.0, 38.0)
+	buy_packs_cancel_button.focus_mode = Control.FOCUS_NONE
+	buy_packs_cancel_button.tooltip_text = "Close"
+	buy_packs_cancel_button.flat = true
+	buy_packs_cancel_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	buy_packs_cancel_button.expand_icon = false
+	buy_packs_cancel_button.add_theme_color_override("icon_normal_color", Color.WHITE)
+	buy_packs_cancel_button.add_theme_color_override("icon_hover_color", Color.WHITE)
+	buy_packs_cancel_button.add_theme_color_override("icon_pressed_color", Color.WHITE)
+	buy_packs_cancel_button.add_theme_color_override("icon_focus_color", Color.WHITE)
+	buy_packs_cancel_button.add_theme_color_override("icon_disabled_color", Color(1.0, 1.0, 1.0, 0.55))
+
+	var content_margin := MarginContainer.new()
+	content_margin.name = "ContentMargin"
+	root.add_child(content_margin)
+	content_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_margin.add_theme_constant_override("margin_left", 14)
+	content_margin.add_theme_constant_override("margin_top", 14)
+	content_margin.add_theme_constant_override("margin_right", 14)
+	content_margin.add_theme_constant_override("margin_bottom", 14)
+
+	var content_row := HBoxContainer.new()
+	content_row.name = "ContentRow"
+	content_margin.add_child(content_row)
+	content_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_row.add_theme_constant_override("separation", 14)
+
+	var pack_area := VBoxContainer.new()
+	pack_area.name = "PackArea"
+	content_row.add_child(pack_area)
+	pack_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pack_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	pack_area.add_theme_constant_override("separation", 10)
+
+	var pack_area_title := Label.new()
+	pack_area_title.name = "PackAreaTitle"
+	pack_area.add_child(pack_area_title)
+	pack_area_title.text = "Packs"
+	pack_area_title.add_theme_font_size_override("font_size", 18)
+	pack_area_title.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+
+	var pack_scroll := ScrollContainer.new()
+	pack_scroll.name = "PackScroll"
+	pack_area.add_child(pack_scroll)
+	pack_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pack_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	pack_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+
+	buy_packs_pack_grid = GridContainer.new()
+	buy_packs_pack_grid.name = "PackGrid"
+	pack_scroll.add_child(buy_packs_pack_grid)
+	buy_packs_pack_grid.columns = 4
+	buy_packs_pack_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buy_packs_pack_grid.add_theme_constant_override("h_separation", 16)
+	buy_packs_pack_grid.add_theme_constant_override("v_separation", 16)
+
+	var right_panel := PanelContainer.new()
+	right_panel.name = "PackDetailsPanel"
+	content_row.add_child(right_panel)
+	right_panel.custom_minimum_size = Vector2(BUY_PACKS_RIGHT_COLUMN_WIDTH, 0.0)
+	right_panel.add_theme_stylebox_override(
+		"panel",
+		_create_panel_style(Color(0.955, 0.948, 0.925, 1.0), Color(0.12, 0.11, 0.12, 0.85), 4, 1, 12)
+	)
+
+	var right_root := VBoxContainer.new()
+	right_panel.add_child(right_root)
+	right_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_root.add_theme_constant_override("separation", 4)
+
+	buy_packs_contents_title = Label.new()
+	buy_packs_contents_title.name = "PackContentsTitle"
+	right_root.add_child(buy_packs_contents_title)
+	buy_packs_contents_title.text = "Pack contents"
+	buy_packs_contents_title.add_theme_font_size_override("font_size", 16)
+	buy_packs_contents_title.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+
+	var contents_scroll := ScrollContainer.new()
+	contents_scroll.name = "ContentsScroll"
+	right_root.add_child(contents_scroll)
+	buy_packs_contents_scroll = contents_scroll
+	contents_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	contents_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	contents_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	contents_scroll.clip_contents = true
+	_connect_once(contents_scroll, "resized", Callable(self, "_layout_buy_pack_contents_grid"))
+
+	buy_packs_contents_list = Control.new()
+	buy_packs_contents_list.name = "ContentsList"
+	contents_scroll.add_child(buy_packs_contents_list)
+	buy_packs_contents_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buy_packs_contents_list.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+
+	var purchase_row := HBoxContainer.new()
+	purchase_row.name = "PurchaseRow"
+	right_root.add_child(purchase_row)
+	purchase_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	purchase_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	purchase_row.add_theme_constant_override("separation", 10)
+
+	var price_row := HBoxContainer.new()
+	price_row.name = "TotalPriceRow"
+	purchase_row.add_child(price_row)
+	price_row.custom_minimum_size = Vector2(104.0, 38.0)
+	price_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	price_row.add_theme_constant_override("separation", 5)
+
+	var total_coin_icon := TextureRect.new()
+	total_coin_icon.name = "TotalCoinIcon"
+	price_row.add_child(total_coin_icon)
+	total_coin_icon.texture = COIN_TEXTURE
+	total_coin_icon.custom_minimum_size = Vector2(20.0, 20.0)
+	total_coin_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	total_coin_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	total_coin_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	buy_packs_info_label = Label.new()
+	buy_packs_info_label.name = "BuyPacksInfoLabel"
+	price_row.add_child(buy_packs_info_label)
+	buy_packs_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	buy_packs_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	buy_packs_info_label.add_theme_font_size_override("font_size", 18)
+	buy_packs_info_label.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+
+	pack_count_spin_box = SpinBox.new()
+	pack_count_spin_box.name = "PackCountSpinBox"
+	purchase_row.add_child(pack_count_spin_box)
+	pack_count_spin_box.min_value = 0
+	pack_count_spin_box.max_value = 0
+	pack_count_spin_box.step = 1
+	pack_count_spin_box.value = 0
+	pack_count_spin_box.custom_minimum_size = Vector2(70.0, 38.0)
+
+	buy_packs_confirm_button = Button.new()
+	buy_packs_confirm_button.name = "BuyButton"
+	purchase_row.add_child(buy_packs_confirm_button)
+	buy_packs_confirm_button.text = "Buy"
+	buy_packs_confirm_button.custom_minimum_size = Vector2(132.0, 40.0)
+	buy_packs_confirm_button.focus_mode = Control.FOCUS_NONE
+
+func _create_panel_style(bg_color: Color, border_color: Color, radius: int, border_width: int, margin: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.border_color = border_color
+	style.border_width_left = border_width
+	style.border_width_top = border_width
+	style.border_width_right = border_width
+	style.border_width_bottom = border_width
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius
+	style.corner_radius_bottom_right = radius
+	style.content_margin_left = margin
+	style.content_margin_top = margin
+	style.content_margin_right = margin
+	style.content_margin_bottom = margin
+	return style
+
+func _ensure_buy_packs_modal_blocker() -> void:
+	if collection == null or !is_instance_valid(collection):
+		return
+	if buy_packs_modal_blocker != null and is_instance_valid(buy_packs_modal_blocker):
 		return
 
-	pack_select_option = root.get_node_or_null("PackSelectOption") as OptionButton
-	if pack_select_option == null:
-		pack_select_option = OptionButton.new()
-		pack_select_option.name = "PackSelectOption"
-		pack_select_option.custom_minimum_size = Vector2(0.0, 32.0)
-		root.add_child(pack_select_option)
-		root.move_child(pack_select_option, mini(1, root.get_child_count() - 1))
+	buy_packs_modal_blocker = Control.new()
+	buy_packs_modal_blocker.name = "BuyPacksModalBlocker"
+	collection.add_child(buy_packs_modal_blocker)
+	buy_packs_modal_blocker.z_as_relative = false
+	buy_packs_modal_blocker.z_index = BUY_PACKS_MODAL_BLOCKER_Z_INDEX
+	buy_packs_modal_blocker.mouse_filter = Control.MOUSE_FILTER_STOP
+	buy_packs_modal_blocker.visible = false
+	buy_packs_modal_blocker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	buy_packs_modal_blocker.offset_left = 0.0
+	buy_packs_modal_blocker.offset_top = 0.0
+	buy_packs_modal_blocker.offset_right = 0.0
+	buy_packs_modal_blocker.offset_bottom = 0.0
+	_connect_once(buy_packs_modal_blocker, "gui_input", Callable(self, "_on_buy_packs_modal_blocker_gui_input"))
 
-	if !pack_select_option.item_selected.is_connected(Callable(self, "_on_purchase_pack_selected")):
-		pack_select_option.item_selected.connect(_on_purchase_pack_selected)
-	if buy_packs_panel.offset_bottom < 250.0:
-		buy_packs_panel.offset_bottom = 250.0
+func _on_buy_packs_modal_blocker_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton or event is InputEventMouseMotion or event is InputEventKey:
+		buy_packs_modal_blocker.accept_event()
 
-func _on_purchase_pack_selected(_index: int) -> void:
-	var pack_definition: PackDefinition = _get_selected_purchase_pack()
-	selected_purchase_pack_id = pack_definition.get_resolved_id() if pack_definition != null else ""
+func _ensure_buy_packs_stamp_tooltip() -> void:
+	if collection == null or !is_instance_valid(collection):
+		return
+	if buy_packs_stamp_tooltip_panel != null and is_instance_valid(buy_packs_stamp_tooltip_panel):
+		return
+
+	buy_packs_stamp_tooltip_panel = PanelContainer.new()
+	buy_packs_stamp_tooltip_panel.name = "BuyPackStampTooltip"
+	collection.add_child(buy_packs_stamp_tooltip_panel)
+	buy_packs_stamp_tooltip_panel.visible = false
+	buy_packs_stamp_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	buy_packs_stamp_tooltip_panel.z_as_relative = false
+	buy_packs_stamp_tooltip_panel.z_index = BUY_PACKS_TOOLTIP_Z_INDEX
+	buy_packs_stamp_tooltip_panel.add_theme_stylebox_override(
+		"panel",
+		_create_panel_style(Color(0.04, 0.038, 0.04, 0.94), Color(0.04, 0.038, 0.04, 0.94), 4, 0, 7)
+	)
+
+	buy_packs_stamp_tooltip_label = Label.new()
+	buy_packs_stamp_tooltip_label.name = "TooltipLabel"
+	buy_packs_stamp_tooltip_panel.add_child(buy_packs_stamp_tooltip_label)
+	buy_packs_stamp_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	buy_packs_stamp_tooltip_label.add_theme_font_size_override("font_size", 12)
+	buy_packs_stamp_tooltip_label.add_theme_color_override("font_color", Color.WHITE)
+
+func _show_buy_pack_stamp_tooltip(text: String) -> void:
+	_ensure_buy_packs_stamp_tooltip()
+	if buy_packs_stamp_tooltip_panel == null or !is_instance_valid(buy_packs_stamp_tooltip_panel):
+		return
+	if buy_packs_stamp_tooltip_label == null or !is_instance_valid(buy_packs_stamp_tooltip_label):
+		return
+	if text.strip_edges().is_empty():
+		_hide_buy_pack_stamp_tooltip()
+		return
+
+	buy_packs_stamp_tooltip_label.text = text
+	buy_packs_stamp_tooltip_panel.size = buy_packs_stamp_tooltip_panel.get_combined_minimum_size()
+	buy_packs_stamp_tooltip_panel.visible = true
+	buy_packs_stamp_tooltip_panel.move_to_front()
+	_position_buy_pack_stamp_tooltip()
+
+func _hide_buy_pack_stamp_tooltip() -> void:
+	if buy_packs_stamp_tooltip_panel != null and is_instance_valid(buy_packs_stamp_tooltip_panel):
+		buy_packs_stamp_tooltip_panel.visible = false
+
+func _position_buy_pack_stamp_tooltip() -> void:
+	if collection == null or !is_instance_valid(collection):
+		return
+	if buy_packs_stamp_tooltip_panel == null or !is_instance_valid(buy_packs_stamp_tooltip_panel):
+		return
+	if !buy_packs_stamp_tooltip_panel.visible:
+		return
+
+	var tooltip_size: Vector2 = buy_packs_stamp_tooltip_panel.size
+	if tooltip_size == Vector2.ZERO:
+		tooltip_size = buy_packs_stamp_tooltip_panel.get_combined_minimum_size()
+	var viewport_size: Vector2 = _get_viewport_size()
+	var desired_position: Vector2 = collection.get_global_mouse_position() + BUY_PACKS_STAMP_TOOLTIP_OFFSET
+	desired_position.x = clampf(desired_position.x, 8.0, maxf(8.0, viewport_size.x - tooltip_size.x - 8.0))
+	desired_position.y = clampf(desired_position.y, 8.0, maxf(8.0, viewport_size.y - tooltip_size.y - 8.0))
+	buy_packs_stamp_tooltip_panel.global_position = desired_position
+
+func _set_buy_packs_modal_visible(visible: bool) -> void:
+	if !visible and buy_packs_open_tween != null and buy_packs_open_tween.is_valid():
+		buy_packs_open_tween.kill()
+		buy_packs_open_tween = null
+	if !visible:
+		_hide_buy_pack_stamp_tooltip()
+	if buy_packs_modal_blocker != null and is_instance_valid(buy_packs_modal_blocker):
+		buy_packs_modal_blocker.visible = visible
+		if visible:
+			buy_packs_modal_blocker.move_to_front()
+	if buy_packs_panel != null and is_instance_valid(buy_packs_panel):
+		buy_packs_panel.visible = visible
+		if !visible:
+			buy_packs_panel.modulate.a = 1.0
+		if visible:
+			buy_packs_panel.move_to_front()
+
+func _show_buy_packs_modal_animated() -> void:
+	if buy_packs_panel == null or !is_instance_valid(buy_packs_panel):
+		return
+	_set_buy_packs_modal_visible(true)
+	if buy_packs_open_tween != null and buy_packs_open_tween.is_valid():
+		buy_packs_open_tween.kill()
+
+	var final_top: float = buy_packs_panel.offset_top
+	var final_bottom: float = buy_packs_panel.offset_bottom
+	buy_packs_panel.set_meta("buy_packs_final_top", final_top)
+	buy_packs_panel.set_meta("buy_packs_final_bottom", final_bottom)
+	buy_packs_panel.modulate.a = 0.0
+	buy_packs_panel.offset_top = final_top - 28.0
+	buy_packs_panel.offset_bottom = final_bottom - 28.0
+
+	buy_packs_open_tween = buy_packs_panel.create_tween()
+	buy_packs_open_tween.set_parallel(true)
+	buy_packs_open_tween.tween_property(buy_packs_panel, "modulate:a", 1.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	buy_packs_open_tween.tween_property(buy_packs_panel, "offset_top", final_top, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	buy_packs_open_tween.tween_property(buy_packs_panel, "offset_bottom", final_bottom, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+func _hide_buy_packs_modal_animated() -> void:
+	if buy_packs_panel == null or !is_instance_valid(buy_packs_panel):
+		_set_buy_packs_modal_visible(false)
+		return
+	if !buy_packs_panel.visible:
+		_set_buy_packs_modal_visible(false)
+		return
+	if buy_packs_open_tween != null and buy_packs_open_tween.is_valid():
+		buy_packs_open_tween.kill()
+
+	var final_top: float = float(buy_packs_panel.get_meta("buy_packs_final_top", buy_packs_panel.offset_top))
+	var final_bottom: float = float(buy_packs_panel.get_meta("buy_packs_final_bottom", buy_packs_panel.offset_bottom))
+	buy_packs_panel.modulate.a = 1.0
+
+	buy_packs_open_tween = buy_packs_panel.create_tween()
+	buy_packs_open_tween.tween_property(buy_packs_panel, "modulate:a", 0.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	buy_packs_open_tween.parallel().tween_property(buy_packs_panel, "offset_top", final_top - 28.0, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	buy_packs_open_tween.parallel().tween_property(buy_packs_panel, "offset_bottom", final_bottom - 28.0, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	buy_packs_open_tween.tween_callback(Callable(self, "_finish_hide_buy_packs_modal").bind(final_top, final_bottom))
+
+func _finish_hide_buy_packs_modal(final_top: float, final_bottom: float) -> void:
+	if buy_packs_modal_blocker != null and is_instance_valid(buy_packs_modal_blocker):
+		buy_packs_modal_blocker.visible = false
+	if buy_packs_panel != null and is_instance_valid(buy_packs_panel):
+		buy_packs_panel.visible = false
+		buy_packs_panel.modulate.a = 1.0
+		buy_packs_panel.offset_top = final_top
+		buy_packs_panel.offset_bottom = final_bottom
+	buy_packs_open_tween = null
+
+func is_buy_packs_modal_open() -> bool:
+	return buy_packs_panel != null and is_instance_valid(buy_packs_panel) and buy_packs_panel.visible
+
+func _clear_node_children(node: Node) -> void:
+	if node == null:
+		return
+	for child in node.get_children():
+		node.remove_child(child)
+		child.queue_free()
+
+func _on_purchase_pack_card_pressed(pack_id: String) -> void:
+	selected_purchase_pack_id = pack_id
+	_update_buy_pack_card_selection()
+	_refresh_buy_pack_contents()
 	update_buy_packs_info()
 
 func _collect_pack_preview_nodes() -> void:
@@ -161,6 +541,10 @@ func _collect_pack_preview_nodes() -> void:
 		preview.mouse_filter = Control.MOUSE_FILTER_STOP
 		preview.mouse_default_cursor_shape = Control.CURSOR_ARROW
 		preview.tooltip_text = "Open pack"
+		preview.set_meta("inventory_base_position", preview.position)
+		preview.set_meta("inventory_base_rotation", preview.rotation)
+		preview.pivot_offset = preview.size * 0.5
+		preview.scale = Vector2.ONE * PACK_INVENTORY_PREVIEW_SCALE
 		if preview is TextureRect:
 			var texture_preview := preview as TextureRect
 			texture_preview.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -184,7 +568,7 @@ func refresh_progress_ui() -> void:
 		return
 	points_label.text = str(PlayerProgressStore.get_points())
 
-func refresh_pack_inventory_ui() -> void:
+func refresh_pack_inventory_ui(animate_new: bool = false, previous_preview_ids: Array[String] = []) -> void:
 	if Engine.is_editor_hint() or pack_inventory == null:
 		return
 
@@ -204,6 +588,13 @@ func refresh_pack_inventory_ui() -> void:
 		if preview is TextureRect and i < preview_pack_ids.size():
 			var texture_preview := preview as TextureRect
 			texture_preview.texture = PackDefinitionLibrary.get_pack_front_texture(preview_pack_ids[i], BOOSTER_PACK_TEXTURE)
+		if preview.visible:
+			var previous_pack_id: String = previous_preview_ids[i] if i < previous_preview_ids.size() else ""
+			var should_animate: bool = animate_new and (i >= previous_preview_ids.size() or previous_pack_id != preview_pack_ids[i])
+			if should_animate:
+				_play_pack_inventory_arrival(preview, i)
+			else:
+				_reset_pack_inventory_preview_transform(preview)
 	_sync_pack_click_area()
 
 func populate_editor_pack_preview() -> void:
@@ -217,11 +608,65 @@ func populate_editor_pack_preview() -> void:
 	for preview in pack_preview_nodes:
 		preview.visible = true
 
+func _reset_pack_inventory_preview_transform(preview: Control) -> void:
+	if preview == null or !is_instance_valid(preview):
+		return
+	var tween: Tween = pack_inventory_arrival_tweens.get(preview, null) as Tween
+	if tween != null and tween.is_valid():
+		tween.kill()
+	pack_inventory_arrival_tweens.erase(preview)
+	var base_position: Vector2 = preview.get_meta("inventory_base_position", preview.position) as Vector2
+	var base_rotation: float = float(preview.get_meta("inventory_base_rotation", preview.rotation))
+	preview.position = base_position
+	preview.rotation = base_rotation
+	preview.scale = Vector2.ONE * PACK_INVENTORY_PREVIEW_SCALE
+	preview.modulate.a = 1.0
+
+func _play_pack_inventory_arrival(preview: Control, index: int) -> void:
+	if preview == null or !is_instance_valid(preview):
+		return
+
+	_reset_pack_inventory_preview_transform(preview)
+	var base_position: Vector2 = preview.get_meta("inventory_base_position", preview.position) as Vector2
+	var base_rotation: float = float(preview.get_meta("inventory_base_rotation", preview.rotation))
+	var base_scale := Vector2.ONE * PACK_INVENTORY_PREVIEW_SCALE
+	var start_rotation: float = base_rotation + deg_to_rad(randf_range(-4.0, 4.0))
+	preview.modulate.a = 0.0
+	preview.position = base_position + Vector2(0.0, -24.0)
+	preview.rotation = start_rotation
+	preview.scale = base_scale * 1.18
+
+	var tween := preview.create_tween()
+	pack_inventory_arrival_tweens[preview] = tween
+	tween.tween_interval(float(index) * 0.045)
+	tween.tween_property(preview, "position", base_position, 0.34).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(preview, "scale", base_scale, 0.34).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.parallel().tween_property(preview, "rotation", base_rotation, 0.34).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(preview, "modulate:a", 1.0, 0.18).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(preview, "rotation", base_rotation + deg_to_rad(3.2), 0.055).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(preview, "rotation", base_rotation - deg_to_rad(2.2), 0.07).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(preview, "rotation", base_rotation + deg_to_rad(1.1), 0.06).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(preview, "rotation", base_rotation, 0.075).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	tween.tween_callback(Callable(self, "_finish_pack_inventory_arrival").bind(preview))
+
+func _finish_pack_inventory_arrival(preview: Control) -> void:
+	if preview == null or !is_instance_valid(preview):
+		return
+	pack_inventory_arrival_tweens.erase(preview)
+	var base_position: Vector2 = preview.get_meta("inventory_base_position", preview.position) as Vector2
+	var base_rotation: float = float(preview.get_meta("inventory_base_rotation", preview.rotation))
+	preview.position = base_position
+	preview.rotation = base_rotation
+	preview.scale = Vector2.ONE * PACK_INVENTORY_PREVIEW_SCALE
+	preview.modulate.a = 1.0
+	_sync_pack_click_area()
+
 func show_buy_packs() -> void:
 	if buy_packs_panel == null or pack_count_spin_box == null:
 		return
 
-	_ensure_buy_pack_selector()
+	_ensure_buy_packs_window()
+	_layout_buy_packs_window()
 	_populate_pack_selector()
 	var selected_pack: PackDefinition = _get_selected_purchase_pack()
 	var pack_price: int = selected_pack.price if selected_pack != null else PlayerProgressStore.PACK_COST
@@ -233,44 +678,321 @@ func show_buy_packs() -> void:
 	update_buy_packs_info()
 	if buy_packs_confirm_button != null:
 		buy_packs_confirm_button.disabled = max_pack_count <= 0 or selected_pack == null
-	buy_packs_panel.visible = true
-	buy_packs_panel.move_to_front()
+	_show_buy_packs_modal_animated()
 
 func on_pack_count_spin_value_changed(_value: float) -> void:
 	update_buy_packs_info()
 
 func _populate_pack_selector() -> void:
-	_ensure_buy_pack_selector()
-	if pack_select_option == null or !is_instance_valid(pack_select_option):
+	_ensure_buy_packs_window()
+	if buy_packs_pack_grid == null or !is_instance_valid(buy_packs_pack_grid):
 		return
 
 	PackDefinitionLibrary.ensure_loaded()
 	var available_packs: Array[PackDefinition] = PackDefinitionLibrary.get_available_packs()
-	pack_select_option.clear()
-	for pack_definition in available_packs:
-		var item_index: int = pack_select_option.item_count
-		pack_select_option.add_item("%s - %d points" % [pack_definition.get_display_name(), pack_definition.price])
-		pack_select_option.set_item_metadata(item_index, pack_definition.get_resolved_id())
+	_clear_node_children(buy_packs_pack_grid)
+	buy_packs_pack_cards.clear()
 
 	if available_packs.is_empty():
 		selected_purchase_pack_id = ""
-		pack_select_option.disabled = true
+		_refresh_buy_pack_contents()
 		return
 
-	pack_select_option.disabled = false
-	var selected_index: int = 0
-	for i in range(pack_select_option.item_count):
-		if str(pack_select_option.get_item_metadata(i)) == selected_purchase_pack_id:
-			selected_index = i
+	var has_selected_pack: bool = false
+	for pack_definition in available_packs:
+		if pack_definition.get_resolved_id() == selected_purchase_pack_id:
+			has_selected_pack = true
 			break
-	pack_select_option.select(selected_index)
-	selected_purchase_pack_id = str(pack_select_option.get_item_metadata(selected_index))
+	if !has_selected_pack:
+		selected_purchase_pack_id = available_packs[0].get_resolved_id()
+
+	for pack_definition in available_packs:
+		var card := _create_buy_pack_card(pack_definition)
+		buy_packs_pack_grid.add_child(card)
+		buy_packs_pack_cards[pack_definition.get_resolved_id()] = card
+
+	_update_buy_pack_card_selection()
+	_refresh_buy_pack_contents()
+
+func _layout_buy_packs_window() -> void:
+	if buy_packs_panel == null or !is_instance_valid(buy_packs_panel):
+		return
+	var viewport_size: Vector2 = _get_viewport_size()
+	var max_window_width: float = maxf(560.0, minf(BUY_PACKS_WINDOW_MAX_SIZE.x, viewport_size.x - 48.0))
+	var max_window_height: float = maxf(360.0, minf(BUY_PACKS_WINDOW_MAX_SIZE.y, viewport_size.y - 64.0))
+	var min_window_width: float = minf(BUY_PACKS_WINDOW_MIN_SIZE.x, max_window_width)
+	var min_window_height: float = minf(BUY_PACKS_WINDOW_MIN_SIZE.y, max_window_height)
+	var window_size := Vector2(
+		clampf(viewport_size.x * 0.78, min_window_width, max_window_width),
+		clampf(viewport_size.y * 0.68, min_window_height, max_window_height)
+	)
+	buy_packs_panel.anchor_left = 0.5
+	buy_packs_panel.anchor_right = 0.5
+	buy_packs_panel.anchor_top = 0.5
+	buy_packs_panel.anchor_bottom = 0.5
+	buy_packs_panel.offset_left = -window_size.x * 0.5
+	buy_packs_panel.offset_right = window_size.x * 0.5
+	buy_packs_panel.offset_top = -window_size.y * 0.5
+	buy_packs_panel.offset_bottom = window_size.y * 0.5
+
+func _create_buy_pack_card(pack_definition: PackDefinition) -> Button:
+	var pack_id: String = pack_definition.get_resolved_id()
+	var card := Button.new()
+	card.name = "PackCard_%s" % pack_id
+	card.custom_minimum_size = BUY_PACKS_PACK_CARD_SIZE
+	card.focus_mode = Control.FOCUS_NONE
+	card.toggle_mode = true
+	card.text = ""
+	card.mouse_default_cursor_shape = Control.CURSOR_ARROW
+	card.add_theme_stylebox_override("normal", _create_pack_card_style(false, false))
+	card.add_theme_stylebox_override("hover", _create_pack_card_style(false, true))
+	card.add_theme_stylebox_override("pressed", _create_pack_card_style(true, false))
+	card.add_theme_stylebox_override("hover_pressed", _create_pack_card_style(true, false))
+	card.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+	var root := VBoxContainer.new()
+	card.add_child(root)
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.offset_left = 9.0
+	root.offset_top = 9.0
+	root.offset_right = -9.0
+	root.offset_bottom = -9.0
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_theme_constant_override("separation", 6)
+
+	var texture_rect := TextureRect.new()
+	root.add_child(texture_rect)
+	texture_rect.custom_minimum_size = Vector2(0.0, 102.0)
+	texture_rect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	texture_rect.texture = pack_definition.get_front_texture()
+	if texture_rect.texture == null:
+		texture_rect.texture = BOOSTER_PACK_TEXTURE
+	texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+
+	var name_label := Label.new()
+	root.add_child(name_label)
+	name_label.text = pack_definition.get_display_name()
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var price_row := HBoxContainer.new()
+	root.add_child(price_row)
+	price_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	price_row.add_theme_constant_override("separation", 4)
+	price_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var coin_icon := TextureRect.new()
+	price_row.add_child(coin_icon)
+	coin_icon.texture = COIN_TEXTURE
+	coin_icon.custom_minimum_size = Vector2(16.0, 16.0)
+	coin_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	coin_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	coin_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var price_label := Label.new()
+	price_row.add_child(price_label)
+	price_label.text = "%d" % pack_definition.price
+	price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	price_label.add_theme_font_size_override("font_size", 12)
+	price_label.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+	price_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	card.pressed.connect(Callable(self, "_on_purchase_pack_card_pressed").bind(pack_id))
+	return card
+
+func _create_pack_card_style(selected: bool, hovered: bool) -> StyleBoxFlat:
+	var bg_color := Color(1.0, 0.994, 0.972, 1.0)
+	var border_color := Color(0.46, 0.44, 0.4, 0.72)
+	if hovered:
+		bg_color = Color(1.0, 1.0, 0.988, 1.0)
+		border_color = Color(0.24, 0.22, 0.2, 0.86)
+	if selected:
+		bg_color = Color(0.96, 0.942, 0.89, 1.0)
+		border_color = Color(0.07, 0.07, 0.07, 1.0)
+	return _create_panel_style(bg_color, border_color, 5, 1 if !selected else 2, 8)
+
+func _update_buy_pack_card_selection() -> void:
+	for pack_id_value in buy_packs_pack_cards.keys():
+		var pack_id: String = str(pack_id_value)
+		var card := buy_packs_pack_cards.get(pack_id) as Button
+		if card == null or !is_instance_valid(card):
+			continue
+		var selected: bool = pack_id == selected_purchase_pack_id
+		card.button_pressed = selected
+		card.add_theme_stylebox_override("normal", _create_pack_card_style(selected, false))
+		card.add_theme_stylebox_override("hover", _create_pack_card_style(selected, false if selected else true))
+		card.add_theme_stylebox_override("pressed", _create_pack_card_style(true, false))
+		card.add_theme_stylebox_override("hover_pressed", _create_pack_card_style(true, false))
+
+func _refresh_buy_pack_contents() -> void:
+	if buy_packs_contents_list == null or !is_instance_valid(buy_packs_contents_list):
+		return
+	_hide_buy_pack_stamp_tooltip()
+	_clear_node_children(buy_packs_contents_list)
+	if buy_packs_contents_scroll != null and is_instance_valid(buy_packs_contents_scroll):
+		buy_packs_contents_scroll.scroll_vertical = 0
+
+	var selected_pack: PackDefinition = _get_selected_purchase_pack()
+	if selected_pack == null:
+		if buy_packs_contents_title != null:
+			buy_packs_contents_title.text = "Pack contents"
+		_add_pack_contents_label("No available packs.")
+		return
+
+	if buy_packs_contents_title != null:
+		buy_packs_contents_title.text = selected_pack.get_display_name()
+
+	var print_pool: Array[StampPrint] = PackDefinitionLibrary.get_reward_print_pool(selected_pack)
+	var added_count: int = 0
+	for stamp_print in print_pool:
+		if StampPrintLibrary.get_stamp_for_print(stamp_print) == null:
+			continue
+		_add_pack_contents_stamp(stamp_print)
+		added_count += 1
+
+	if added_count <= 0:
+		_add_pack_contents_label("This pack has no configured stamps.")
+	_queue_buy_pack_contents_grid_layout()
+
+func _add_pack_contents_label(text: String) -> void:
+	if buy_packs_contents_list == null or !is_instance_valid(buy_packs_contents_list):
+		return
+	var label := Label.new()
+	buy_packs_contents_list.add_child(label)
+	label.custom_minimum_size = Vector2(BUY_PACKS_RIGHT_COLUMN_WIDTH - 36.0, 32.0)
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+	_queue_buy_pack_contents_grid_layout()
+
+func _add_pack_contents_stamp(stamp_print: StampPrint) -> void:
+	if buy_packs_contents_list == null or !is_instance_valid(buy_packs_contents_list):
+		return
+	var cell := Control.new()
+	cell.name = "ContentStampCell"
+	buy_packs_contents_list.add_child(cell)
+	cell.custom_minimum_size = BUY_PACKS_CONTENT_STAMP_CELL_SIZE
+	cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cell.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	cell.mouse_filter = Control.MOUSE_FILTER_PASS
+	var stamp_display_name: String = _get_stamp_print_display_name(stamp_print)
+	cell.tooltip_text = stamp_display_name
+	_connect_once(cell, "mouse_entered", Callable(self, "_show_buy_pack_stamp_tooltip").bind(stamp_display_name))
+	_connect_once(cell, "mouse_exited", Callable(self, "_hide_buy_pack_stamp_tooltip"))
+	_connect_once(cell, "gui_input", Callable(self, "_on_buy_pack_content_stamp_gui_input"))
+
+	var stamp_visual := STAMP_VISUAL.instantiate() as StampVisual
+	cell.add_child(stamp_visual)
+	stamp_visual.custom_minimum_size = STAMP_VISUAL_SIZE
+	stamp_visual.size = STAMP_VISUAL_SIZE
+	stamp_visual.pivot_offset = STAMP_VISUAL_SIZE * 0.5
+	stamp_visual.set_hover_raise_enabled(false)
+	stamp_visual.set_stamp_print(stamp_print)
+	stamp_visual.set_face_down(false)
+	stamp_visual.set_collection_owned(true)
+	stamp_visual.set_rest_scale(Vector2.ONE * BUY_PACKS_CONTENT_STAMP_SCALE)
+	stamp_visual.scale = Vector2.ONE * BUY_PACKS_CONTENT_STAMP_SCALE
+	stamp_visual.draggable = false
+	stamp_visual.disabled = true
+	stamp_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_layout_pack_contents_stamp(cell, stamp_visual)
+	_connect_once(cell, "resized", Callable(self, "_layout_pack_contents_stamp").bind(cell, stamp_visual))
+	_queue_buy_pack_contents_grid_layout()
+
+func _on_buy_pack_content_stamp_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_position_buy_pack_stamp_tooltip()
+
+func _queue_buy_pack_contents_grid_layout() -> void:
+	if buy_packs_contents_list == null or !is_instance_valid(buy_packs_contents_list):
+		return
+	_layout_buy_pack_contents_grid()
+	call_deferred("_layout_buy_pack_contents_grid")
+
+func _layout_buy_pack_contents_grid() -> void:
+	if buy_packs_contents_list == null or !is_instance_valid(buy_packs_contents_list):
+		return
+
+	var content_width: float = _get_buy_pack_contents_width()
+	var stamp_cells: Array[Control] = []
+	var label_controls: Array[Control] = []
+	for child in buy_packs_contents_list.get_children():
+		var control := child as Control
+		if control == null:
+			continue
+		if control is Label:
+			label_controls.append(control)
+		else:
+			stamp_cells.append(control)
+
+	var y: float = 0.0
+	for label_control in label_controls:
+		label_control.position = Vector2.ZERO
+		label_control.size = Vector2(content_width, maxf(32.0, label_control.get_combined_minimum_size().y))
+		y = maxf(y, label_control.size.y)
+
+	if !stamp_cells.is_empty():
+		var column_count: int = BUY_PACKS_CONTENT_COLUMNS
+		var total_gap_width: float = BUY_PACKS_CONTENT_H_SEPARATION * float(column_count - 1)
+		var cell_width: float = maxf(BUY_PACKS_CONTENT_STAMP_CELL_SIZE.x, (content_width - total_gap_width) / float(column_count))
+		var row_height: float = BUY_PACKS_CONTENT_STAMP_CELL_SIZE.y
+		for i in range(stamp_cells.size()):
+			var cell: Control = stamp_cells[i]
+			var column: int = i % column_count
+			var row: int = int(i / column_count)
+			cell.position = Vector2(
+				float(column) * (cell_width + BUY_PACKS_CONTENT_H_SEPARATION),
+				y + float(row) * (row_height + BUY_PACKS_CONTENT_V_SEPARATION)
+			)
+			cell.size = Vector2(cell_width, row_height)
+			if cell.get_child_count() > 0:
+				var stamp_visual := cell.get_child(0) as StampVisual
+				if stamp_visual != null:
+					_layout_pack_contents_stamp(cell, stamp_visual)
+		var row_count: int = int(ceil(float(stamp_cells.size()) / float(column_count)))
+		y += float(row_count) * row_height + float(maxi(0, row_count - 1)) * BUY_PACKS_CONTENT_V_SEPARATION
+
+	buy_packs_contents_list.custom_minimum_size = Vector2(content_width, y)
+	buy_packs_contents_list.size = Vector2(content_width, y)
+
+func _get_buy_pack_contents_width() -> float:
+	if buy_packs_contents_scroll != null and is_instance_valid(buy_packs_contents_scroll):
+		var scrollbar_width: float = 0.0
+		var vertical_bar := buy_packs_contents_scroll.get_v_scroll_bar()
+		if vertical_bar != null and vertical_bar.visible:
+			scrollbar_width = vertical_bar.size.x
+		if buy_packs_contents_scroll.size.x > 0.0:
+			return maxf(BUY_PACKS_CONTENT_STAMP_CELL_SIZE.x, buy_packs_contents_scroll.size.x - scrollbar_width)
+	if buy_packs_contents_list != null and is_instance_valid(buy_packs_contents_list) and buy_packs_contents_list.size.x > 0.0:
+		return buy_packs_contents_list.size.x
+	return BUY_PACKS_RIGHT_COLUMN_WIDTH - 24.0
+
+func _layout_pack_contents_stamp(cell: Control, stamp_visual: StampVisual) -> void:
+	if cell == null or !is_instance_valid(cell) or stamp_visual == null or !is_instance_valid(stamp_visual):
+		return
+	var cell_size: Vector2 = cell.size
+	if cell_size == Vector2.ZERO:
+		cell_size = cell.custom_minimum_size
+	var visual_size: Vector2 = STAMP_VISUAL_SIZE * BUY_PACKS_CONTENT_STAMP_SCALE
+	stamp_visual.position = Vector2(maxf(0.0, (cell_size.x - visual_size.x) * 0.5), 0.0)
+
+func _get_stamp_print_display_name(stamp_print: StampPrint) -> String:
+	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
+	if stamp == null:
+		return stamp_print.get_display_name()
+	var display_name: String = stamp.stamp_name
+	if stamp_print.variant_id != PlayerCollectionStore.DEFAULT_VARIANT_ID:
+		display_name = "%s - %s" % [display_name, stamp_print.get_display_name()]
+	return display_name
 
 func _get_selected_purchase_pack() -> PackDefinition:
-	if pack_select_option != null and is_instance_valid(pack_select_option) and pack_select_option.item_count > 0:
-		var selected_index: int = pack_select_option.selected
-		if selected_index >= 0 and selected_index < pack_select_option.item_count:
-			selected_purchase_pack_id = str(pack_select_option.get_item_metadata(selected_index))
 	if selected_purchase_pack_id.is_empty():
 		var first_pack: PackDefinition = PackDefinitionLibrary.get_first_available_pack()
 		selected_purchase_pack_id = first_pack.get_resolved_id() if first_pack != null else ""
@@ -282,76 +1004,54 @@ func update_buy_packs_info() -> void:
 
 	var selected_pack: PackDefinition = _get_selected_purchase_pack()
 	if selected_pack == null:
-		buy_packs_info_label.text = "No available packs."
+		buy_packs_info_label.text = "0"
 		if buy_packs_confirm_button != null:
 			buy_packs_confirm_button.disabled = true
 		return
 
 	var max_pack_count: int = PlayerProgressStore.get_max_affordable_pack_count(selected_pack.price)
 	if max_pack_count <= 0:
-		buy_packs_info_label.text = "%s: %d points\nNot enough points." % [
-			selected_pack.get_display_name(),
-			selected_pack.price,
-		]
+		pack_count_spin_box.min_value = 0
+		pack_count_spin_box.max_value = 0
+		pack_count_spin_box.value = 0
+		pack_count_spin_box.editable = false
+		buy_packs_info_label.text = "0"
 		if buy_packs_confirm_button != null:
 			buy_packs_confirm_button.disabled = true
 		return
 
+	pack_count_spin_box.min_value = 1
+	pack_count_spin_box.max_value = max_pack_count
+	pack_count_spin_box.editable = true
+	if int(pack_count_spin_box.value) < 1:
+		pack_count_spin_box.value = 1
+	if int(pack_count_spin_box.value) > max_pack_count:
+		pack_count_spin_box.value = max_pack_count
+
 	var pack_count: int = int(pack_count_spin_box.value)
 	var total_cost: int = pack_count * selected_pack.price
-	buy_packs_info_label.text = "%s | %d points each | Max: %d\nCost: %d points" % [
-		selected_pack.get_display_name(),
-		selected_pack.price,
-		max_pack_count,
-		total_cost,
-	]
+	buy_packs_info_label.text = "%d" % total_cost
 	if buy_packs_confirm_button != null:
-		buy_packs_confirm_button.disabled = pack_count <= 0
+		buy_packs_confirm_button.disabled = pack_count <= 0 or total_cost > PlayerProgressStore.get_points()
 
 func confirm_buy_packs() -> void:
 	var pack_count: int = int(pack_count_spin_box.value) if pack_count_spin_box != null else 0
 	var selected_pack: PackDefinition = _get_selected_purchase_pack()
 	if selected_pack == null:
 		return
+	var previous_preview_ids: Array[String] = _get_unopened_pack_ids_for_display(MAX_VISIBLE_PACK_ICONS)
 	if !PlayerProgressStore.purchase_packs(pack_count, selected_pack.get_resolved_id(), selected_pack.price):
 		return
 
-	if buy_packs_panel != null:
-		buy_packs_panel.visible = false
+	_set_buy_packs_modal_visible(false)
 	refresh_progress_ui()
-	refresh_pack_inventory_ui()
+	refresh_pack_inventory_ui(true, previous_preview_ids)
 
 func cancel_buy_packs() -> void:
-	if buy_packs_panel != null:
-		buy_packs_panel.visible = false
+	_hide_buy_packs_modal_animated()
 
 func _get_unopened_pack_ids_for_display(max_count: int = -1) -> Array[String]:
-	var pack_counts: Dictionary = PlayerProgressStore.get_unopened_pack_counts()
-	var pack_ids: Array[String] = []
-	var used_pack_ids: Dictionary = {}
-
-	for pack_definition in PackDefinitionLibrary.get_all_packs():
-		var pack_id: String = pack_definition.get_resolved_id()
-		used_pack_ids[pack_id] = true
-		var count: int = int(pack_counts.get(pack_id, 0))
-		for i in range(count):
-			pack_ids.append(pack_id)
-			if max_count >= 0 and pack_ids.size() >= max_count:
-				return pack_ids
-
-	var unknown_pack_ids: Array[String] = []
-	for pack_id_value in pack_counts.keys():
-		var pack_id: String = str(pack_id_value)
-		if !used_pack_ids.has(pack_id):
-			unknown_pack_ids.append(pack_id)
-	unknown_pack_ids.sort()
-	for pack_id in unknown_pack_ids:
-		var count: int = int(pack_counts.get(pack_id, 0))
-		for i in range(count):
-			pack_ids.append(pack_id)
-			if max_count >= 0 and pack_ids.size() >= max_count:
-				return pack_ids
-	return pack_ids
+	return PlayerProgressStore.get_unopened_pack_queue(max_count)
 
 func open_pack() -> void:
 	show_pack_opening_view()
@@ -517,11 +1217,11 @@ func _show_pack_selection_overlay(animate_in: bool) -> void:
 		var fade_tween := pack_overlay.create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 		fade_tween.tween_property(pack_overlay, "modulate:a", 1.0, 0.16)
 
-	var visible_pack_ids: Array[String] = _get_unopened_pack_ids_for_display(MAX_VISIBLE_PACK_ICONS)
+	var visible_pack_ids: Array[String] = _get_unopened_pack_ids_for_display(MAX_SELECTION_PACK_ICONS)
 	var target_positions: Array[Vector2] = _get_selection_pack_positions(visible_pack_ids.size())
 	for i in range(visible_pack_ids.size()):
 		var pack_id: String = visible_pack_ids[i]
-		var pack_node := _create_opening_pack_node(i, pack_id)
+		var pack_node := _create_opening_pack_node(i, pack_id, visible_pack_ids.size())
 		opening_pack_nodes.append(pack_node)
 		pack_layer.add_child(pack_node)
 		var target_position: Vector2 = target_positions[i]
@@ -544,10 +1244,10 @@ func _show_pack_selection_overlay(animate_in: bool) -> void:
 	else:
 		_start_selection_pack_ambient_motion()
 
-func _create_opening_pack_node(index: int, pack_id: String) -> Control:
+func _create_opening_pack_node(index: int, pack_id: String, selection_count: int = 1) -> Control:
 	var pack_definition: PackDefinition = PackDefinitionLibrary.get_pack(pack_id)
 	var pack_texture: Texture2D = PackDefinitionLibrary.get_pack_front_texture(pack_id, BOOSTER_PACK_TEXTURE)
-	var pack_size: Vector2 = _get_pack_visual_size(pack_texture)
+	var pack_size: Vector2 = _get_selection_pack_visual_size(selection_count, pack_texture)
 	var pack_node := PACK_3D_VIEW.instantiate() as Pack3DView
 	pack_node.name = "OpeningPack%d" % (index + 1)
 	pack_node.set_meta("pack_id", pack_id)
@@ -1012,7 +1712,7 @@ func _layout_selection_packs(animated: bool) -> void:
 			continue
 		_stop_pack_ambient_motion(pack_node, false)
 		var pack_texture: Texture2D = _get_pack_texture_for_node(pack_node)
-		_apply_pack_control_size(pack_node, _get_pack_visual_size(pack_texture))
+		_apply_pack_control_size(pack_node, _get_selection_pack_visual_size(opening_pack_nodes.size(), pack_texture))
 		if animated:
 			var tween := pack_overlay.create_tween()
 			tween.tween_property(pack_node, "position", positions[i], 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
@@ -1033,25 +1733,34 @@ func _get_selection_pack_positions(count: int) -> Array[Vector2]:
 		return positions
 
 	var viewport_size: Vector2 = _get_viewport_size()
-	var pack_size: Vector2 = _get_pack_visual_size()
-	var side_margin: float = maxf(118.0, pack_size.x * 1.05)
-	var available_width: float = maxf(pack_size.x, viewport_size.x - side_margin * 2.0)
-	var gap: float = clampf(viewport_size.x * 0.115, pack_size.x * 0.92, pack_size.x * 1.72)
-	if count > 1:
-		gap = minf(gap, maxf(18.0, (available_width - pack_size.x * float(count)) / float(count - 1)))
-	var row_width: float = pack_size.x * float(count) + gap * float(maxi(0, count - 1))
-	var start_x: float = (viewport_size.x - row_width) * 0.5
-	var y: float = clampf(
-		viewport_size.y * 0.52 - pack_size.y * 0.5,
-		96.0,
-		maxf(96.0, viewport_size.y - pack_size.y - 72.0)
-	)
+	var pack_size: Vector2 = _get_selection_pack_visual_size(count)
+	var columns: int = _get_selection_grid_columns(count)
+	var rows: int = int(ceil(float(count) / float(columns)))
+	var side_margin: float = maxf(72.0, viewport_size.x * 0.07)
+	var vertical_margin: float = maxf(64.0, viewport_size.y * 0.075)
+	var gap_x: float = _get_selection_grid_gap_x(viewport_size)
+	var gap_y: float = _get_selection_grid_gap_y(viewport_size)
+	var grid_height: float = pack_size.y * float(rows) + gap_y * float(maxi(0, rows - 1))
+	var max_start_y: float = maxf(vertical_margin, viewport_size.y - vertical_margin - grid_height)
+	var start_y: float = clampf(viewport_size.y * 0.5 - grid_height * 0.5, vertical_margin, max_start_y)
 
-	for i in range(count):
-		var center_x: float = viewport_size.x * 0.5
-		if count > 1:
-			center_x = start_x + pack_size.x * 0.5 + float(i) * (pack_size.x + gap)
-		positions.append(Vector2(center_x - pack_size.x * 0.5, y))
+	for row in range(rows):
+		var first_index: int = row * columns
+		var row_count: int = mini(columns, count - first_index)
+		var row_width: float = pack_size.x * float(row_count) + gap_x * float(maxi(0, row_count - 1))
+		var start_x: float = clampf(
+			viewport_size.x * 0.5 - row_width * 0.5,
+			side_margin,
+			maxf(side_margin, viewport_size.x - side_margin - row_width)
+		)
+		for column in range(row_count):
+			var index: int = first_index + column
+			if index >= count:
+				break
+			positions.append(Vector2(
+				start_x + float(column) * (pack_size.x + gap_x),
+				start_y + float(row) * (pack_size.y + gap_y)
+			))
 	return positions
 
 func _get_reward_stamp_positions(count: int, scale_factor: float) -> Array[Vector2]:
@@ -1102,6 +1811,42 @@ func _get_pack_texture_for_node(pack_node: Control) -> Texture2D:
 	if pack_node is TextureRect:
 		return (pack_node as TextureRect).texture
 	return null
+
+func _get_selection_pack_visual_size(count: int, pack_texture: Texture2D = null) -> Vector2:
+	var base_size: Vector2 = _get_pack_visual_size(pack_texture)
+	if count <= 0:
+		return base_size
+
+	var viewport_size: Vector2 = _get_viewport_size()
+	var columns: int = _get_selection_grid_columns(count)
+	var rows: int = int(ceil(float(count) / float(columns)))
+	var side_margin: float = maxf(72.0, viewport_size.x * 0.07)
+	var vertical_margin: float = maxf(64.0, viewport_size.y * 0.075)
+	var gap_x: float = _get_selection_grid_gap_x(viewport_size)
+	var gap_y: float = _get_selection_grid_gap_y(viewport_size)
+	var available_width: float = maxf(base_size.x, viewport_size.x - side_margin * 2.0 - gap_x * float(maxi(0, columns - 1)))
+	var available_height: float = maxf(base_size.y, viewport_size.y - vertical_margin * 2.0 - gap_y * float(maxi(0, rows - 1)))
+	var width_scale: float = available_width / (base_size.x * float(columns))
+	var height_scale: float = available_height / (base_size.y * float(rows))
+	var fit_scale: float = clampf(minf(1.0, minf(width_scale, height_scale)), 0.58, 1.0)
+	return base_size * fit_scale
+
+func _get_selection_grid_columns(count: int) -> int:
+	if count <= 1:
+		return 1
+	if count <= 4:
+		return count
+	if count <= 6:
+		return 3
+	if count <= 8:
+		return 4
+	return 5
+
+func _get_selection_grid_gap_x(viewport_size: Vector2) -> float:
+	return clampf(viewport_size.x * 0.035, 22.0, 54.0)
+
+func _get_selection_grid_gap_y(viewport_size: Vector2) -> float:
+	return clampf(viewport_size.y * 0.035, 20.0, 42.0)
 
 func _get_pack_visual_size(pack_texture: Texture2D = null) -> Vector2:
 	var viewport_size: Vector2 = _get_viewport_size()
