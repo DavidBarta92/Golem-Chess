@@ -280,7 +280,12 @@ func _on_set_filter_button_pressed(button: Button) -> void:
 		if container != null:
 			for child in container.get_children():
 				if child is Button and child != button:
-					child.pressed = false
+					# Use set_pressed to change toggle state programmatically
+					if child.has_method("set_pressed"):
+						child.set_pressed(false)
+					elif "pressed" in child:
+						# fallback: try to assign if property exists (defensive)
+						child.pressed = false
 		stamp_browser_controller.set_active_set_filter(set_name)
 	else:
 		stamp_browser_controller.set_active_set_filter("")
