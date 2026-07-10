@@ -14,6 +14,7 @@ enum Role {
 @export var stamp_code: String = "New Stamp"
 @export_enum("Unit", "Seeker", "Shared", "Se-tenant", "Overseal") var role: int = Role.UNIT
 @export_enum("Animals", "Flora", "Celestials", "Archetypes", "Courtyard", "Structures") var Set: String = "Archetypes"
+@export var enabled: bool = true
 @export var duration: int = 3
 @export var texture: Texture2D
 @export var stamp_art: Texture2D

@@ -24,6 +24,7 @@ var deck_stamp_display_name_provider: Callable = Callable()
 
 var all_stamp_prints: Array = []
 var filtered_stamp_prints: Array = []
+var active_set_filter: String = ""
 var current_page: int = 0
 var current_stamps_per_page: int = 9
 var current_stamp_columns: int = 3
@@ -146,8 +147,17 @@ func refresh_stamp_filter(reset_page: bool = true) -> void:
 		if stamp == null:
 			continue
 
+		# Skip disabled stamps
+		if not stamp.enabled:
+			continue
+
+		# Filter by "My collection" owned-only
 		var owned_count: int = PlayerCollectionStore.get_owned_count_for_print_id(stamp_print.print_id)
 		if owned_only && owned_count <= 0:
+			continue
+
+		# Filter by active set filter if any
+		if active_set_filter != "" and stamp.Set != active_set_filter:
 			continue
 
 		var display_name: String = get_deck_stamp_display_name(stamp, stamp_print).to_lower()
@@ -165,6 +175,11 @@ func get_deck_stamp_display_name(stamp: Stamp, stamp_print: StampPrint) -> Strin
 	if stamp_print == null or stamp_print.variant_id == PlayerCollectionStore.DEFAULT_VARIANT_ID:
 		return stamp.stamp_name
 	return "%s - %s" % [stamp.stamp_name, stamp_print.get_display_name()]
+
+func set_active_set_filter(set_name: String) -> void:
+	# set_name empty string clears filter
+	active_set_filter = str(set_name)
+	refresh_stamp_filter(true)
 
 func create_browser_stamp_slot(stamp_visual: StampVisual, owned_count: int) -> Control:
 	var stamp_slot := Control.new()

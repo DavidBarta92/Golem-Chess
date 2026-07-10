@@ -297,6 +297,47 @@ custom_minimum_size = Vector2(150, 34)
 layout_mode = 2
 placeholder_text = "Search"
 
+[node name="SetFilterButtons" type="HBoxContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=1987654321]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AnimalsButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654322]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "Animals"
+toggle_mode = true
+
+[node name="FloraButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654323]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "Flora"
+toggle_mode = true
+
+[node name="CelestialsButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654324]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "Celestials"
+toggle_mode = true
+
+[node name="ArchetypesButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654325]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "Archetypes"
+toggle_mode = true
+
+[node name="CourtyardButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654326]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "Courtyard"
+toggle_mode = true
+
+[node name="StructuresButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654327]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "Structures"
+toggle_mode = true
+
 [node name="StampGrid" type="GridContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=648111285]
 custom_minimum_size = Vector2(0, 430)
 layout_mode = 2

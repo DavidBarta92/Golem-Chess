@@ -269,6 +269,22 @@ func _get_saved_deck_list_controller():
 	})
 	return saved_deck_list_controller
 
+func _on_set_filter_button_pressed(button: Button) -> void:
+	if stamp_browser_controller == null:
+		return
+	# Toggle behavior: if button is pressed, set that set as active filter; if unpressed, clear filter
+	var set_name: String = str(button.text)
+	if button.pressed:
+		# clear other buttons
+		var container := get_node_or_null("RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons") as HBoxContainer
+		if container != null:
+			for child in container.get_children():
+				if child is Button and child != button:
+					child.pressed = false
+		stamp_browser_controller.set_active_set_filter(set_name)
+	else:
+		stamp_browser_controller.set_active_set_filter("")
+
 func _bind_scene_ui() -> void:
 	_setup_grid_background()
 	root_margin = $RootMargin
@@ -286,6 +302,14 @@ func _bind_scene_ui() -> void:
 	stamp_grid = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid
 	owned_only_check = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTools/OwnedOnlyCheck
 	search_field = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTools/SearchField
+	# Set filter buttons container (six buttons for the stamp Sets)
+	var set_filter_container = get_node_or_null("RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons") as HBoxContainer
+	if set_filter_container != null:
+		for child in set_filter_container.get_children():
+			if child is Button:
+				# connect button press to handler; pass the button as bound parameter
+				child.pressed.connect(Callable(self, "_on_set_filter_button_pressed").bind(child))
+
 	previous_button = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager/PreviousButton
 	page_label = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager/PageLabel
 	next_button = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager/NextButton
