@@ -8,8 +8,9 @@
 script = ExtResource("3_stamp")
 stamp_name = "Champion"
 stamp_code = "champion"
+enabled = false
 white_piece_texture = ExtResource("1_white")
 black_piece_texture = ExtResource("2_black")
 description = "No special effect."
-movement_pattern = [[2, 2, 0, 2, 2], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [2, 2, 0, 2, 2]]
+movement_pattern = Array[Array]([[2, 2, 0, 2, 2], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [2, 2, 0, 2, 2]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

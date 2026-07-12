@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://ctaaanhjan0ih"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_wq1f4"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_nm1g1"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_3kkj6"]
+
+[resource]
+script = ExtResource("2_nm1g1")
+stamp_name = "Shaggy mane"
+stamp_code = "shaggy_mane"
+role = 4
+Set = "Flora"
+white_piece_texture = ExtResource("3_3kkj6")
+black_piece_texture = ExtResource("1_wq1f4")
+description = "No special effect."
+movement_pattern = [[2, 0, 0, 0, 2], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [2, 0, 0, 0, 2]]
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

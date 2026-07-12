@@ -8,11 +8,12 @@
 script = ExtResource("2_stamp")
 stamp_name = "Ruler"
 stamp_code = "ruler"
+enabled = false
 duration = 4
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "When attached, creates invalid squares in front of the linked piece."
 effect_type = "invalid_squares"
 effect_params = Array[Array]([[0, 0, 0, 0, 0], [1, 1, 0, 1, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
-movement_pattern = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 1, 1, 1, 0]]
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 1, 1, 1, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

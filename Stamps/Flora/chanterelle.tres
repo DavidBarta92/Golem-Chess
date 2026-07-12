@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://dvc118t3jkhoq"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_ro1of"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_5adk3"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_fhh6a"]
+
+[resource]
+script = ExtResource("2_5adk3")
+stamp_name = "Chanterelle"
+stamp_code = "chanterelle"
+role = 4
+Set = "Flora"
+duration = 2
+white_piece_texture = ExtResource("3_fhh6a")
+black_piece_texture = ExtResource("1_ro1of")
+description = "No special effect."
+movement_pattern = [[2, 0, 2, 0, 2], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2]]
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

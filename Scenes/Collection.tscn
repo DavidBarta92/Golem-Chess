@@ -18,8 +18,6 @@ shader_parameter/line_width = 0.65
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_browser"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pager_button"]
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamp"]
 bg_color = Color(0.98, 0.98, 0.96, 1)
 border_width_left = 2
@@ -31,6 +29,8 @@ corner_radius_top_left = 7
 corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pager_button"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_light"]
 content_margin_left = 14.0
@@ -203,7 +203,7 @@ layout_mode = 0
 offset_left = 62.10166
 offset_top = 150.39772
 offset_right = 175.69717
-offset_bottom = 308.90309
+offset_bottom = 308.90308
 rotation = -0.48171088
 texture = ExtResource("2_kbw0k")
 expand_mode = 1
@@ -212,9 +212,9 @@ stretch_mode = 5
 [node name="PackPreview4" type="TextureRect" parent="PackNoticePanel/PackNoticeRoot/PackInventory" unique_id=977433472]
 layout_mode = 0
 offset_left = 65.55542
-offset_top = 175.03083
+offset_top = 175.03082
 offset_right = 174.81873
-offset_bottom = 327.49123
+offset_bottom = 327.49124
 rotation = 0.47822022
 texture = ExtResource("2_kbw0k")
 expand_mode = 1
@@ -305,38 +305,38 @@ theme_override_constants/separation = 8
 [node name="AnimalsButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654322]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-text = "Animals"
 toggle_mode = true
+text = "Animals"
 
 [node name="FloraButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654323]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-text = "Flora"
 toggle_mode = true
+text = "Flora"
 
 [node name="CelestialsButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654324]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-text = "Celestials"
 toggle_mode = true
+text = "Celestials"
 
 [node name="ArchetypesButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654325]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-text = "Archetypes"
 toggle_mode = true
+text = "Archetypes"
 
 [node name="CourtyardButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654326]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-text = "Courtyard"
 toggle_mode = true
+text = "Courtyard"
 
 [node name="StructuresButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654327]
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
-text = "Structures"
 toggle_mode = true
+text = "Structures"
 
 [node name="StampGrid" type="GridContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=648111285]
 custom_minimum_size = Vector2(0, 430)
@@ -456,14 +456,14 @@ custom_minimum_size = Vector2(54, 42)
 layout_mode = 2
 size_flags_vertical = 8
 focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_pager_button")
 icon = ExtResource("7_page_back")
 flat = true
 expand_icon = true
-theme_override_styles/normal = SubResource("StyleBoxEmpty_pager_button")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_pager_button")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_pager_button")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_pager_button")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_pager_button")
 
 [node name="PageLabel" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager" unique_id=1190991235]
 custom_minimum_size = Vector2(92, 42)
@@ -478,14 +478,14 @@ custom_minimum_size = Vector2(54, 42)
 layout_mode = 2
 size_flags_vertical = 8
 focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_pager_button")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_pager_button")
 icon = ExtResource("8_page_next")
 flat = true
 expand_icon = true
-theme_override_styles/normal = SubResource("StyleBoxEmpty_pager_button")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_pager_button")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_pager_button")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_pager_button")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_pager_button")
 
 [node name="DeckPanelFrame" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout" unique_id=376321816]
 custom_minimum_size = Vector2(360, 0)
@@ -636,10 +636,10 @@ text = "Buy"
 
 [node name="MagnifierCaseButton" type="Control" parent="." unique_id=1656206030]
 anchors_preset = 0
-offset_left = -77.0
-offset_top = 71.0
-offset_right = 174.61465
-offset_bottom = 634.8032
+offset_left = -92.0
+offset_top = 138.99998
+offset_right = 159.61465
+offset_bottom = 702.8032
 rotation = 0.5235988
 pivot_offset = Vector2(27, 60.5)
 mouse_filter = 2

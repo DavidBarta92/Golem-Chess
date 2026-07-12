@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://chwix77fgw62p"]
+
+[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_rakhv"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_2kik6"]
+[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_g3rtj"]
+
+[resource]
+script = ExtResource("2_2kik6")
+stamp_name = "Duck"
+stamp_code = "duck"
+role = 2
+Set = "Animals"
+duration = 4
+white_piece_texture = ExtResource("3_g3rtj")
+black_piece_texture = ExtResource("1_rakhv")
+description = "No special effect."
+movement_pattern = Array[Array]([[2, 2, 2, 2, 2], [2, 2, 2, 2, 2], [2, 2, 0, 2, 2], [2, 2, 2, 2, 2], [2, 2, 2, 2, 2]])

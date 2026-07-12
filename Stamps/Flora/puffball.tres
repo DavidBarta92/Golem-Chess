@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://ds3neik6rh2a2"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_r1bxp"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_kmkq2"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_ogets"]
+
+[resource]
+script = ExtResource("2_kmkq2")
+stamp_name = "Puffball"
+stamp_code = "puffball"
+role = 4
+Set = "Flora"
+enabled = false
+white_piece_texture = ExtResource("3_ogets")
+black_piece_texture = ExtResource("1_r1bxp")
+description = "No special effect."
+effect_type = "bomb"
+effect_trigger = "on_captured"
+effect_params = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 1, 1, 0], [0, 1, 1, 1, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]])
+movement_pattern = [[2, 0, 0, 0, 2], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2]]
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

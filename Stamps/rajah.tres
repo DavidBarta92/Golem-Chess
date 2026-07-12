@@ -9,6 +9,7 @@ script = ExtResource("2_l0wl3")
 stamp_name = "Rajah"
 stamp_code = "rajah"
 role = 1
+enabled = false
 duration = 6
 white_piece_texture = ExtResource("3_4ur4y")
 black_piece_texture = ExtResource("1_ktlwe")

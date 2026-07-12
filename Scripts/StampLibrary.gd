@@ -2,6 +2,8 @@ extends Node
 
 var all_stamps: Dictionary = {}  # stamp_code -> Stamp resource
 
+const STAMPS_PATH: String = "res://Stamps/"
+
 const STAMP_CODE_ALIASES: Dictionary = {
 	"grandmaster": "architect",
 	"scholar": "logician",
@@ -44,21 +46,31 @@ func _ready():
 
 func load_all_stamps():
 	all_stamps.clear()
-	var stamps_path: String = "res://Stamps/"
-	var dir: DirAccess = DirAccess.open(stamps_path)
+	var dir: DirAccess = DirAccess.open(STAMPS_PATH)
 
 	if dir == null:
 		push_error("Stamps folder not found.")
+		return
+
+	_load_stamps_from_directory(STAMPS_PATH)
+
+func _load_stamps_from_directory(directory_path: String) -> void:
+	var dir: DirAccess = DirAccess.open(directory_path)
+	if dir == null:
+		push_warning("Stamp folder not found: %s" % directory_path)
 		return
 
 	dir.list_dir_begin()
 	var file_name: String = dir.get_next()
 
 	while file_name != "":
-		if !dir.current_is_dir():
+		if dir.current_is_dir():
+			if file_name != "." and file_name != "..":
+				_load_stamps_from_directory(_join_resource_path(directory_path, file_name))
+		else:
 			var resource_file_name: String = file_name.trim_suffix(".remap")
 			if resource_file_name.ends_with(".tres"):
-				var stamp_path: String = stamps_path + resource_file_name
+				var stamp_path: String = _join_resource_path(directory_path, resource_file_name)
 				var stamp: Stamp = load(stamp_path) as Stamp
 				if stamp:
 					all_stamps[stamp.stamp_name] = stamp
@@ -66,6 +78,11 @@ func load_all_stamps():
 		file_name = dir.get_next()
 
 	dir.list_dir_end()
+
+func _join_resource_path(directory_path: String, resource_name: String) -> String:
+	if directory_path.ends_with("/"):
+		return directory_path + resource_name
+	return directory_path + "/" + resource_name
 
 func get_stamp(stamp_name: String) -> Stamp:
 	var normalized_name: String = stamp_name.strip_edges()

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://chmh45nd08ete"]
+
+[ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_gb8ak"]
+[ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_i1pgi"]
+[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="3_686f3"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_xt1ri"]
+[ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_fpg1y"]
+
+[resource]
+script = ExtResource("3_686f3")
+stamp_name = "Turtle"
+stamp_code = "turtle"
+role = 1
+Set = "Animals"
+duration = 2
+stamp_art = ExtResource("4_xt1ri")
+piece_visuals = ExtResource("2_i1pgi")
+white_piece_texture = ExtResource("5_fpg1y")
+black_piece_texture = ExtResource("1_gb8ak")
+description = "No special effect."
+movement_pattern = [[0, 0, 0, 0, 0], [0, 2, 2, 2, 0], [0, 2, 0, 2, 0], [0, 2, 2, 2, 0], [0, 0, 0, 0, 0]]

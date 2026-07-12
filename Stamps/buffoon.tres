@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="Stamp" format=3]
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://3techy8v3lyt"]
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_black"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_stamp"]
@@ -8,9 +8,10 @@
 script = ExtResource("2_stamp")
 stamp_name = "Buffoon"
 stamp_code = "buffoon"
-description = "When this stamp expires, give a random stamp from your hand to your opponent."
+enabled = false
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
+description = "When this stamp expires, give a random stamp from your hand to your opponent."
 effect_type = "give_stamp"
 effect_trigger = "on_expire"
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])

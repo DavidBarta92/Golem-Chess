@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://bnqev01kdt5eo"]
+
+[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_wjj3i"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_joy3f"]
+[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_lifin"]
+
+[resource]
+script = ExtResource("2_joy3f")
+stamp_name = "Knight"
+stamp_code = "knight"
+Set = "Courtyard"
+duration = 4
+white_piece_texture = ExtResource("3_lifin")
+black_piece_texture = ExtResource("1_wjj3i")
+description = "No special effect."
+effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+movement_pattern = Array[Array]([[0, 1, 0, 1, 0], [1, 0, 0, 0, 1], [0, 0, 0, 0, 0], [1, 0, 0, 0, 1], [0, 1, 0, 1, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

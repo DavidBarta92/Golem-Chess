@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://d061268quon4k"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_t7lwx"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_q2p24"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_5qcnv"]
+
+[resource]
+script = ExtResource("2_q2p24")
+stamp_name = "Yellow coral"
+stamp_code = "yellow_coral"
+role = 4
+Set = "Flora"
+white_piece_texture = ExtResource("3_5qcnv")
+black_piece_texture = ExtResource("1_t7lwx")
+description = "No special effect."
+movement_pattern = [[2, 0, 0, 0, 2], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0]]
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

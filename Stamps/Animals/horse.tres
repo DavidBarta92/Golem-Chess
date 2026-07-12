@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://cnsmq2gwtgfpj"]
+
+[ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_thd16"]
+[ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_j3x57"]
+[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="3_i8gwp"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_6qhmn"]
+[ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_k7pjx"]
+
+[resource]
+script = ExtResource("3_i8gwp")
+stamp_name = "Horse"
+stamp_code = "horse"
+Set = "Animals"
+duration = 2
+stamp_art = ExtResource("4_6qhmn")
+piece_visuals = ExtResource("2_j3x57")
+white_piece_texture = ExtResource("5_k7pjx")
+black_piece_texture = ExtResource("1_thd16")
+description = "No special effect."
+movement_pattern = [[0, 2, 0, 2, 0], [2, 0, 0, 0, 2], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2], [0, 2, 0, 2, 0]]

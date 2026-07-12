@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://cfqrejfex1gfi"]
+
+[ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="1_62bjf"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_htr5l"]
+[ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="3_ot82w"]
+
+[resource]
+script = ExtResource("2_htr5l")
+stamp_name = "Moon"
+stamp_code = "moon"
+role = 3
+Set = "Celestials"
+duration = 5
+white_piece_texture = ExtResource("3_ot82w")
+black_piece_texture = ExtResource("1_62bjf")
+description = "Setup (early)"
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

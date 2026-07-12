@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://clx5v8wrihu2a"]
+
+[ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="1_vi0sm"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_kpfhj"]
+[ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="3_gyv4s"]
+
+[resource]
+script = ExtResource("2_kpfhj")
+stamp_name = "Jupiter"
+stamp_code = "jupiter"
+Set = "Celestials"
+duration = 5
+white_piece_texture = ExtResource("3_gyv4s")
+black_piece_texture = ExtResource("1_vi0sm")
+description = "Setup (early)"
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

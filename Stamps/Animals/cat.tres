@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://cd45ef3olij3c"]
+
+[ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_tdttj"]
+[ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_7ttbv"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_05kj4"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_abi6w"]
+[ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_78h6u"]
+
+[resource]
+script = ExtResource("3_05kj4")
+stamp_name = "Cat"
+stamp_code = "cat"
+role = 1
+Set = "Animals"
+stamp_art = ExtResource("4_abi6w")
+piece_visuals = ExtResource("2_7ttbv")
+white_piece_texture = ExtResource("5_78h6u")
+black_piece_texture = ExtResource("1_tdttj")
+description = "No special effect."
+movement_pattern = [[1, 0, 0, 0, 1], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 0, 2, 0, 0], [0, 0, 0, 0, 0]]

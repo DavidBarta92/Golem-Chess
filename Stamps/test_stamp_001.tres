@@ -8,9 +8,10 @@
 script = ExtResource("2_w705l")
 stamp_name = "Test_001"
 stamp_code = "test_0012"
-description = "No special effect."
+enabled = false
 white_piece_texture = ExtResource("3_qk5hi")
 black_piece_texture = ExtResource("1_iluj2")
+description = "No special effect."
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 1, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

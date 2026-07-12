@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://ywrmajp4rndl"]
+
+[ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_ffmbq"]
+[ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_7vvnr"]
+[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="3_c4acc"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_pckwj"]
+[ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_uhh30"]
+
+[resource]
+script = ExtResource("3_c4acc")
+stamp_name = "Dragonhorse"
+stamp_code = "dragonhorse"
+Set = "Animals"
+duration = 2
+stamp_art = ExtResource("4_pckwj")
+piece_visuals = ExtResource("2_7vvnr")
+white_piece_texture = ExtResource("5_uhh30")
+black_piece_texture = ExtResource("1_ffmbq")
+description = "No special effect."
+movement_pattern = [[0, 2, 0, 2, 0], [2, 3, 0, 3, 2], [0, 3, 0, 3, 0], [2, 3, 0, 3, 2], [0, 2, 0, 2, 0]]

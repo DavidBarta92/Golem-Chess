@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://csa7t7erufd27"]
+
+[ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="1_bk7fn"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_8kw1s"]
+[ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="3_w5wbd"]
+
+[resource]
+script = ExtResource("2_8kw1s")
+stamp_name = "Neptune"
+stamp_code = "neptune"
+Set = "Celestials"
+duration = 5
+white_piece_texture = ExtResource("3_w5wbd")
+black_piece_texture = ExtResource("1_bk7fn")
+description = "Setup (early)"
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

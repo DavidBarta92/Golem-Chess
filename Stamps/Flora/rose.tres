@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://dy4lmi03r40j8"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_7ygke"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_x1jrn"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_j5lhh"]
+
+[resource]
+script = ExtResource("2_x1jrn")
+stamp_name = "Rose"
+stamp_code = "rose"
+Set = "Flora"
+duration = 1
+white_piece_texture = ExtResource("3_j5lhh")
+black_piece_texture = ExtResource("1_7ygke")
+description = "No special effect."
+movement_pattern = [[2, 0, 2, 0, 2], [0, 1, 0, 1, 0], [2, 0, 0, 0, 2], [0, 1, 0, 1, 0], [2, 0, 2, 0, 2]]
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

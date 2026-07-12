@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://g0lmmmwhako5"]
+
+[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_g3qil"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_yqh6b"]
+[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_04j72"]
+
+[resource]
+script = ExtResource("2_yqh6b")
+stamp_name = "Tower"
+stamp_code = "tower"
+Set = "Structures"
+white_piece_texture = ExtResource("3_04j72")
+black_piece_texture = ExtResource("1_g3qil")
+description = "No special effect."
+movement_pattern = Array[Array]([[0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [2, 2, 0, 2, 2], [0, 0, 2, 0, 0], [0, 0, 2, 0, 0]])

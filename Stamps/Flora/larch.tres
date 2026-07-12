@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://col8q84pxn8ca"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_onpl2"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_d1foy"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_y6bpm"]
+
+[resource]
+script = ExtResource("2_d1foy")
+stamp_name = "Larch"
+stamp_code = "larch"
+Set = "Flora"
+white_piece_texture = ExtResource("3_y6bpm")
+black_piece_texture = ExtResource("1_onpl2")
+description = "No special effect."
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 2, 2, 2, 0], [0, 2, 0, 2, 0], [0, 2, 2, 2, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://c5iejb7l67aa3"]
+
+[ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_6j4oi"]
+[ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_4r2et"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_7l2ky"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_hcif3"]
+[ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_6i8tx"]
+
+[resource]
+script = ExtResource("3_7l2ky")
+stamp_name = "Bear"
+stamp_code = "bear"
+Set = "Animals"
+stamp_art = ExtResource("4_hcif3")
+piece_visuals = ExtResource("2_4r2et")
+white_piece_texture = ExtResource("5_6i8tx")
+black_piece_texture = ExtResource("1_6j4oi")
+description = "No special effect."
+effect_type = "decrease_own_durations"
+effect_trigger = "on_capture"
+movement_pattern = [[1, 0, 0, 0, 1], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 2, 0, 0], [2, 0, 0, 0, 2]]

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://bpditvtwohntt"]
+
+[ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="1_qwkpe"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_guq67"]
+[ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="3_j5bsa"]
+
+[resource]
+script = ExtResource("2_guq67")
+stamp_name = "Nebula"
+stamp_code = "nebula"
+Set = "Celestials"
+duration = 5
+white_piece_texture = ExtResource("3_j5bsa")
+black_piece_texture = ExtResource("1_qwkpe")
+description = "Setup (early)"
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

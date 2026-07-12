@@ -38,11 +38,12 @@ const BUY_PACKS_WINDOW_Z_INDEX: int = 2310
 const BUY_PACKS_TOOLTIP_Z_INDEX: int = 2320
 const BUY_PACKS_RIGHT_COLUMN_WIDTH: float = 492.0
 const BUY_PACKS_PACK_CARD_SIZE: Vector2 = Vector2(132.0, 188.0)
-const BUY_PACKS_CONTENT_STAMP_SCALE: float = 0.43
-const BUY_PACKS_CONTENT_STAMP_CELL_SIZE: Vector2 = Vector2(72.541, 98.47)
-const BUY_PACKS_CONTENT_COLUMNS: int = 4
-const BUY_PACKS_CONTENT_H_SEPARATION: float = 16.0
+const BUY_PACKS_CONTENT_STAMP_SCALE: float = 0.37
+const BUY_PACKS_CONTENT_STAMP_CELL_SIZE: Vector2 = Vector2(62.419, 84.73)
+const BUY_PACKS_CONTENT_COLUMNS: int = 5
+const BUY_PACKS_CONTENT_H_SEPARATION: float = 46.0
 const BUY_PACKS_CONTENT_V_SEPARATION: float = 12.0
+const BUY_PACKS_CONTENT_TOP_PADDING: float = 4.0
 const BUY_PACKS_STAMP_TOOLTIP_OFFSET: Vector2 = Vector2(14.0, 14.0)
 const OVERLAY_STATE_SELECTION: String = "selection"
 const OVERLAY_STATE_FOCUSED: String = "focused"
@@ -921,6 +922,7 @@ func _layout_buy_pack_contents_grid() -> void:
 		return
 
 	var content_width: float = _get_buy_pack_contents_width()
+	buy_packs_contents_list.position = Vector2.ZERO
 	var stamp_cells: Array[Control] = []
 	var label_controls: Array[Control] = []
 	for child in buy_packs_contents_list.get_children():
@@ -940,15 +942,19 @@ func _layout_buy_pack_contents_grid() -> void:
 
 	if !stamp_cells.is_empty():
 		var column_count: int = BUY_PACKS_CONTENT_COLUMNS
-		var total_gap_width: float = BUY_PACKS_CONTENT_H_SEPARATION * float(column_count - 1)
-		var cell_width: float = maxf(BUY_PACKS_CONTENT_STAMP_CELL_SIZE.x, (content_width - total_gap_width) / float(column_count))
+		var cell_width: float = BUY_PACKS_CONTENT_STAMP_CELL_SIZE.x
 		var row_height: float = BUY_PACKS_CONTENT_STAMP_CELL_SIZE.y
+		var available_gap: float = (content_width - cell_width * float(column_count)) / float(maxi(1, column_count - 1))
+		var gap_width: float = minf(BUY_PACKS_CONTENT_H_SEPARATION, maxf(0.0, available_gap))
+		var group_width: float = cell_width * float(column_count) + gap_width * float(column_count - 1)
+		var start_x: float = maxf(0.0, (content_width - group_width) * 0.5)
+		y += BUY_PACKS_CONTENT_TOP_PADDING
 		for i in range(stamp_cells.size()):
 			var cell: Control = stamp_cells[i]
 			var column: int = i % column_count
 			var row: int = int(i / column_count)
 			cell.position = Vector2(
-				float(column) * (cell_width + BUY_PACKS_CONTENT_H_SEPARATION),
+				start_x + float(column) * (cell_width + gap_width),
 				y + float(row) * (row_height + BUY_PACKS_CONTENT_V_SEPARATION)
 			)
 			cell.size = Vector2(cell_width, row_height)
@@ -980,8 +986,14 @@ func _layout_pack_contents_stamp(cell: Control, stamp_visual: StampVisual) -> vo
 	var cell_size: Vector2 = cell.size
 	if cell_size == Vector2.ZERO:
 		cell_size = cell.custom_minimum_size
-	var visual_size: Vector2 = STAMP_VISUAL_SIZE * BUY_PACKS_CONTENT_STAMP_SCALE
-	stamp_visual.position = Vector2(maxf(0.0, (cell_size.x - visual_size.x) * 0.5), 0.0)
+	var stamp_scale := Vector2(absf(stamp_visual.scale.x), absf(stamp_visual.scale.y))
+	var visual_size: Vector2 = STAMP_VISUAL_SIZE * stamp_scale
+	var desired_top_left := Vector2(maxf(0.0, (cell_size.x - visual_size.x) * 0.5), 0.0)
+	var pivot_compensation := Vector2(
+		stamp_visual.pivot_offset.x * (1.0 - stamp_scale.x),
+		stamp_visual.pivot_offset.y * (1.0 - stamp_scale.y)
+	)
+	stamp_visual.position = desired_top_left - pivot_compensation
 
 func _get_stamp_print_display_name(stamp_print: StampPrint) -> String:
 	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
@@ -1642,11 +1654,29 @@ func _get_reward_stamp_hitbox_rect(stamp_visual: StampVisual) -> Rect2:
 	var visual_center: Vector2 = stamp_visual.home_position + STAMP_VISUAL_SIZE * 0.5
 	return Rect2(visual_center - visual_size * 0.5, visual_size).grow(8.0)
 
+func _is_global_point_inside_focused_pack(global_point: Vector2) -> bool:
+	if focused_pack_node == null or !is_instance_valid(focused_pack_node):
+		return false
+
+	var scale_abs := Vector2(absf(focused_pack_node.scale.x), absf(focused_pack_node.scale.y))
+	var visual_size: Vector2 = focused_pack_node.size * scale_abs
+	var pivot: Vector2 = focused_pack_node.pivot_offset
+	var visual_position: Vector2 = focused_pack_node.global_position + pivot - Vector2(pivot.x * scale_abs.x, pivot.y * scale_abs.y)
+	return Rect2(visual_position, visual_size).grow(12.0).has_point(global_point)
+
 func _on_pack_overlay_gui_input(event: InputEvent) -> void:
 	if !(event is InputEventMouseButton):
 		return
 	var mouse_event := event as InputEventMouseButton
 	if mouse_event.button_index != MOUSE_BUTTON_LEFT or !mouse_event.pressed:
+		return
+	if overlay_state == OVERLAY_STATE_FOCUSED:
+		if overlay_animating:
+			return
+		if _is_global_point_inside_focused_pack(mouse_event.global_position):
+			return
+		pack_overlay.accept_event()
+		handle_back_pressed()
 		return
 	if overlay_state != OVERLAY_STATE_REWARDS or overlay_animating or reward_flip_in_progress:
 		return

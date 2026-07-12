@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://ob1q6xbteyeb"]
+
+[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_5fuef"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_qyuvm"]
+[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_m5jcg"]
+
+[resource]
+script = ExtResource("2_qyuvm")
+stamp_name = "Silver General"
+stamp_code = "silver_general"
+Set = "Courtyard"
+white_piece_texture = ExtResource("3_m5jcg")
+black_piece_texture = ExtResource("1_5fuef")
+description = "No special effect."
+movement_pattern = [[3, 0, 0, 0, 3], [0, 3, 3, 3, 0], [0, 2, 0, 2, 0], [0, 0, 2, 0, 0], [0, 0, 0, 0, 0]]
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

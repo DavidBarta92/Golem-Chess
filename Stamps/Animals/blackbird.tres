@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://dcj6nvlpp8g54"]
+
+[ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_j6rkn"]
+[ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_m5elg"]
+[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="3_riiqf"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_mj8qd"]
+[ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_dl8g4"]
+
+[resource]
+script = ExtResource("3_riiqf")
+stamp_name = "Blackbird"
+stamp_code = "blackbird"
+Set = "Animals"
+duration = 2
+stamp_art = ExtResource("4_mj8qd")
+piece_visuals = ExtResource("2_m5elg")
+white_piece_texture = ExtResource("5_dl8g4")
+black_piece_texture = ExtResource("1_j6rkn")
+description = "No special effect."
+movement_pattern = [[2, 0, 2, 0, 2], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2], [0, 0, 0, 0, 0], [2, 0, 2, 0, 2]]

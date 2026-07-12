@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://c5pdyqqfrl8d6"]
+
+[ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_6xrxe"]
+[ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_fep3t"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_wounc"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_6t64u"]
+[ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_rciyy"]
+
+[resource]
+script = ExtResource("3_wounc")
+stamp_name = "Heron"
+stamp_code = "heron"
+Set = "Animals"
+duration = 2
+stamp_art = ExtResource("4_6t64u")
+piece_visuals = ExtResource("2_fep3t")
+white_piece_texture = ExtResource("5_rciyy")
+black_piece_texture = ExtResource("1_6xrxe")
+description = "No special effect."
+movement_pattern = [[0, 2, 0, 2, 0], [0, 0, 2, 0, 0], [0, 2, 0, 2, 0], [0, 0, 2, 0, 0], [0, 2, 0, 2, 0]]

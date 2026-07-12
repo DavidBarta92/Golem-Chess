@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://bnth6g4ril8kb"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_o2wap"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_bu5hv"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_4woum"]
+
+[resource]
+script = ExtResource("2_bu5hv")
+stamp_name = "Olive tree"
+stamp_code = "olive_tree"
+Set = "Flora"
+white_piece_texture = ExtResource("3_4woum")
+black_piece_texture = ExtResource("1_o2wap")
+description = "No special effect."
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 2, 2, 2, 0], [0, 2, 0, 2, 0], [0, 2, 2, 2, 0], [0, 0, 0, 0, 0]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://c0h6f1ktb4qgv"]
+
+[ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_1ymg8"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_6dvdd"]
+[ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_vjhhh"]
+
+[resource]
+script = ExtResource("2_6dvdd")
+stamp_name = "Orchid"
+stamp_code = "orchid"
+Set = "Flora"
+duration = 1
+white_piece_texture = ExtResource("3_vjhhh")
+black_piece_texture = ExtResource("1_1ymg8")
+description = "No special effect."
+movement_pattern = [[0, 1, 0, 1, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 1, 0, 1, 0]]
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

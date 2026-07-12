@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="Stamp" format=3]
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://nrddyt6k3e7j"]
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_black"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_stamp"]
@@ -8,10 +8,11 @@
 script = ExtResource("2_stamp")
 stamp_name = "Sage"
 stamp_code = "sage"
+enabled = false
 duration = 7
-description = "When the linked piece moves, move your base field onto that piece's new square."
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
+description = "When the linked piece moves, move your base field onto that piece's new square."
 effect_type = "move_base"
 effect_trigger = "on_move"
 effect_params = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])

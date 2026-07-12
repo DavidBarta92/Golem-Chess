@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://i4g07gvanhf1"]
+
+[ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_axm2v"]
+[ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_cr8a3"]
+[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="3_bal7a"]
+[ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_i8lob"]
+[ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_ty3sh"]
+
+[resource]
+script = ExtResource("3_bal7a")
+stamp_name = "Goat"
+stamp_code = "goat"
+Set = "Animals"
+duration = 2
+stamp_art = ExtResource("4_i8lob")
+piece_visuals = ExtResource("2_cr8a3")
+white_piece_texture = ExtResource("5_ty3sh")
+black_piece_texture = ExtResource("1_axm2v")
+description = "No special effect."
+movement_pattern = [[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 2], [0, 2, 0, 0, 0], [0, 0, 0, 0, 0]]
