@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://flbefiif8lfy"]
+
+[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_m1f48"]
+[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_0s187"]
+[ext_resource type="Texture2D" uid="uid://7najhtgyuinf" path="res://Assets/citadel_guard.png" id="3_1bj6x"]
+[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_uhsrd"]
+[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_k84vy"]
+[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_g2j18"]
+[ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_2pxp4"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_5skd5"]
+[ext_resource type="Resource" uid="uid://clrhv5a1hu3u4" path="res://Stamps/Structures/gate.tres" id="9_0s187"]
+[ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_s6gd0"]
+[ext_resource type="Resource" uid="uid://g0lmmmwhako5" path="res://Stamps/Structures/tower.tres" id="10_1bj6x"]
+[ext_resource type="Resource" uid="uid://bme63lbc76klu" path="res://Stamps/Structures/castle.tres" id="11_0npfi"]
+[ext_resource type="Resource" uid="uid://bvuijxogx51au" path="res://Stamps/Structures/shrine.tres" id="12_mhfuq"]
+[ext_resource type="Resource" uid="uid://cgosohjad17bj" path="res://Stamps/Structures/temple.tres" id="13_swomt"]
+[ext_resource type="Resource" uid="uid://4yibfwwprejp" path="res://Stamps/Structures/bastion.tres" id="14_q10pf"]
+[ext_resource type="Resource" uid="uid://d3aknm1y2lda0" path="res://Stamps/Structures/bicycle.tres" id="15_4v3x8"]
+[ext_resource type="Resource" uid="uid://bxtspnxv4qast" path="res://Stamps/Structures/bombard.tres" id="16_1ay3n"]
+[ext_resource type="Resource" uid="uid://d1t56jrr1ccju" path="res://Stamps/Structures/citadel.tres" id="17_5u820"]
+[ext_resource type="Resource" uid="uid://lld5243xl18k" path="res://Stamps/Structures/mantlet.tres" id="18_tlqit"]
+[ext_resource type="Resource" uid="uid://1em8v5f52tkx" path="res://Stamps/Structures/ballista.tres" id="19_y8r6r"]
+[ext_resource type="Resource" uid="uid://beavrkwvr43vu" path="res://Stamps/Structures/fortress.tres" id="20_f7quv"]
+[ext_resource type="Resource" uid="uid://cj6gnpwxrvdiv" path="res://Stamps/Structures/tortoise.tres" id="21_5hbpi"]
+[ext_resource type="Resource" uid="uid://ckhonx3jd8yum" path="res://Stamps/Structures/trebuchet.tres" id="22_frmaw"]
+[ext_resource type="Resource" uid="uid://bva2p7308sa63" path="res://Stamps/Structures/war_chariot.tres" id="23_vieyo"]
+[ext_resource type="Resource" uid="uid://cspl7fa7jb5pf" path="res://Stamps/Courtyard/duke.tres" id="24_vyrww"]
+[ext_resource type="Resource" uid="uid://bgin1crswq00n" path="res://Stamps/Courtyard/lance.tres" id="25_vpbhy"]
+[ext_resource type="Resource" uid="uid://dw2t1mpptv7if" path="res://Stamps/Courtyard/archer.tres" id="26_e51kj"]
+[ext_resource type="Resource" uid="uid://dfheckgprs3lw" path="res://Stamps/Courtyard/bishop.tres" id="27_xs2na"]
+[ext_resource type="Resource" uid="uid://bnqev01kdt5eo" path="res://Stamps/Courtyard/knight.tres" id="28_vokgb"]
+[ext_resource type="Resource" uid="uid://gx71tu87d5ip" path="res://Stamps/Courtyard/prince.tres" id="29_git06"]
+[ext_resource type="Resource" uid="uid://ufbrx8m22qtk" path="res://Stamps/Courtyard/berserk.tres" id="30_0ogmn"]
+[ext_resource type="Resource" uid="uid://mwgyk7o2sixs" path="res://Stamps/Courtyard/warlord.tres" id="31_4twht"]
+[ext_resource type="Resource" uid="uid://duedv18n0vjk8" path="res://Stamps/Courtyard/assassin.tres" id="32_33ohe"]
+[ext_resource type="Resource" uid="uid://bf0hhbc0427gd" path="res://Stamps/Courtyard/the_golem.tres" id="33_7n616"]
+[ext_resource type="Resource" uid="uid://8rvwi7jj14be" path="res://Stamps/Courtyard/war_drummer.tres" id="34_xr0gt"]
+[ext_resource type="Resource" uid="uid://c6aydjmwt1orf" path="res://Stamps/Courtyard/gold_general.tres" id="35_7271v"]
+[ext_resource type="Resource" uid="uid://ob1q6xbteyeb" path="res://Stamps/Courtyard/silver_general.tres" id="36_scmkw"]
+
+[resource]
+script = ExtResource("9_s6gd0")
+pack_id = "citadel_guard"
+pack_name = "Citadel Guard"
+pack_texture = ExtResource("3_1bj6x")
+pack_front_texture = ExtResource("3_1bj6x")
+pack_back_texture = ExtResource("1_m1f48")
+pack_height_texture = ExtResource("4_uhsrd")
+pack_normal_texture = ExtResource("5_k84vy")
+pack_roughness_texture = ExtResource("6_g2j18")
+pack_foil_mask_texture = ExtResource("2_0s187")
+possible_stamps = Array[ExtResource("8_5skd5")]([ExtResource("9_0s187"), ExtResource("10_1bj6x"), ExtResource("11_0npfi"), ExtResource("12_mhfuq"), ExtResource("13_swomt"), ExtResource("14_q10pf"), ExtResource("15_4v3x8"), ExtResource("16_1ay3n"), ExtResource("17_5u820"), ExtResource("18_tlqit"), ExtResource("19_y8r6r"), ExtResource("20_f7quv"), ExtResource("21_5hbpi"), ExtResource("22_frmaw"), ExtResource("23_vieyo"), ExtResource("24_vyrww"), ExtResource("25_vpbhy"), ExtResource("26_e51kj"), ExtResource("27_xs2na"), ExtResource("28_vokgb"), ExtResource("29_git06"), ExtResource("30_0ogmn"), ExtResource("31_4twht"), ExtResource("32_33ohe"), ExtResource("33_7n616"), ExtResource("34_xr0gt"), ExtResource("35_7271v"), ExtResource("36_scmkw")])
+include_all_standard_prints = true
+price = 1

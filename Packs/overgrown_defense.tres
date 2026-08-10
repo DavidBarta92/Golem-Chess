@@ -1,21 +1,21 @@
-[gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://flbefiif8lfy"]
+[gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://bbtmnthdlv75o"]
 
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://dspxsiid41buh" path="res://Assets/booster.png" id="2"]
 [ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="3"]
+[ext_resource type="Texture2D" uid="uid://b1tmbgt8ejiy8" path="res://Assets/overgrown_defense.png" id="3_8ifqb"]
 [ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4"]
 [ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5"]
 [ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="7"]
-[ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_vgcnb"]
-[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="8_b65ns"]
+[ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_8ifqb"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_tjx8l"]
 
 [resource]
 script = ExtResource("1")
-pack_id = "basic_pack_2"
-pack_name = "Basic Pack 2"
-pack_texture = ExtResource("2")
-pack_front_texture = ExtResource("2")
+pack_id = "overgrown_efense"
+pack_name = "Overgrown Defense"
+pack_texture = ExtResource("3_8ifqb")
+pack_front_texture = ExtResource("3_8ifqb")
 pack_back_texture = ExtResource("3")
 pack_height_texture = ExtResource("4")
 pack_normal_texture = ExtResource("5")

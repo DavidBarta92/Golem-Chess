@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://bq8cpmhx6cv6n"]
+
+[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_2xg0i"]
+[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_lqytn"]
+[ext_resource type="Texture2D" uid="uid://qxtwgs4x4gjp" path="res://Assets/inner_instinct.png" id="3_2xg0i"]
+[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_dkah6"]
+[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_0vsja"]
+[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_r8r58"]
+[ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_w2nj7"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_n62bt"]
+[ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_33svs"]
+
+[resource]
+script = ExtResource("9_33svs")
+pack_id = "inner_instinct"
+pack_name = "Inner Instinct"
+pack_texture = ExtResource("3_2xg0i")
+pack_front_texture = ExtResource("3_2xg0i")
+pack_back_texture = ExtResource("1_2xg0i")
+pack_height_texture = ExtResource("4_dkah6")
+pack_normal_texture = ExtResource("5_0vsja")
+pack_roughness_texture = ExtResource("6_r8r58")
+pack_foil_mask_texture = ExtResource("2_lqytn")
+include_all_standard_prints = true
+price = 1

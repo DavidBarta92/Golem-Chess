@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://cunv3u4x4wna"]
+
+[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_r54b4"]
+[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_700c6"]
+[ext_resource type="Texture2D" uid="uid://5x4jsmr1r841" path="res://Assets/setenant_harmony.png" id="3_r54b4"]
+[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_3cf7m"]
+[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_jpmp2"]
+[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_8de0e"]
+[ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_52flt"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_d6kpg"]
+[ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_41cdo"]
+
+[resource]
+script = ExtResource("9_41cdo")
+pack_id = "se-tenant_harmmony"
+pack_name = "Se-tenant Harmmony"
+pack_texture = ExtResource("3_r54b4")
+pack_front_texture = ExtResource("3_r54b4")
+pack_back_texture = ExtResource("1_r54b4")
+pack_height_texture = ExtResource("4_3cf7m")
+pack_normal_texture = ExtResource("5_jpmp2")
+pack_roughness_texture = ExtResource("6_8de0e")
+pack_foil_mask_texture = ExtResource("2_700c6")
+include_all_standard_prints = true
+price = 1

@@ -12,4 +12,5 @@ Set = "Structures"
 white_piece_texture = ExtResource("3_xluyl")
 black_piece_texture = ExtResource("1_idmm4")
 description = "No special effect."
+effect_type = "invalid_squares"
 movement_pattern = Array[Array]([[0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [2, 2, 0, 2, 2], [0, 0, 2, 0, 0], [0, 0, 2, 0, 0]])

@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://diyexbnbbw0db"]
+
+[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_4exx0"]
+[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_ookg6"]
+[ext_resource type="Texture2D" uid="uid://dspxsiid41buh" path="res://Assets/booster.png" id="3_y51iu"]
+[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_uutlh"]
+[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_0rvgd"]
+[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_u6txf"]
+[ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_vt7bh"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_mi2ms"]
+[ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_6j6tf"]
+
+[resource]
+script = ExtResource("9_6j6tf")
+pack_id = "hunters_pack"
+pack_name = "Hunter's Pack"
+pack_texture = ExtResource("3_y51iu")
+pack_front_texture = ExtResource("3_y51iu")
+pack_back_texture = ExtResource("1_4exx0")
+pack_height_texture = ExtResource("4_uutlh")
+pack_normal_texture = ExtResource("5_0rvgd")
+pack_roughness_texture = ExtResource("6_u6txf")
+pack_foil_mask_texture = ExtResource("2_ookg6")
+include_all_standard_prints = true
+price = 1
