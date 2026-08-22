@@ -99,7 +99,7 @@ func show_line(speaker: String, text: String, portrait = null, allow_continue: b
 	reset_dialogue_line()
 	dialogue_line.visible = true
 	continue_button.visible = true
-	continue_button.text = "Skip"
+	continue_button.text = tr("Skip")
 	call_deferred("prepare_dialogue_line_before_typing", prepare_version)
 	set_process(true)
 
@@ -142,7 +142,7 @@ func finish_line() -> void:
 	dialogue_text.visible_characters = -1
 	dialogue_line_visible_height = dialogue_line_target_height
 	apply_dialogue_line_size()
-	continue_button.text = "Continue"
+	continue_button.text = tr("Continue")
 	continue_button.visible = line_allows_continue
 	set_process(false)
 

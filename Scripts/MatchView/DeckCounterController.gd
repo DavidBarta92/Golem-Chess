@@ -292,7 +292,7 @@ func update_deck_count_hover() -> void:
 	if label_y < 0.0:
 		label_y = deck_rect.end.y + deck_count_label_gap
 
-	deck_count_label.text = "%d stamps" % get_stamp_deck_count(hovered_deck_color)
+	deck_count_label.text = tr("%d stamps") % get_stamp_deck_count(hovered_deck_color)
 	deck_count_label.global_position = Vector2(
 		deck_rect.get_center().x - deck_count_label.size.x * 0.5,
 		label_y

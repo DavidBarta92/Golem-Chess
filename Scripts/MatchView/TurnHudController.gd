@@ -77,8 +77,8 @@ var rules_info_button: Button
 var rules_info_panel: PanelContainer
 var rules_info_label: Label
 var current_player_names: Dictionary = {
-	0: "Player",
-	1: "Opponent",
+	0: tr("Player"),
+	1: tr("Opponent"),
 }
 var current_player_portraits: Dictionary = {
 	0: PortraitLibrary.get_default_portrait_for_player_id(0),
@@ -157,7 +157,7 @@ func create_end_turn_ui() -> void:
 
 	end_turn_button = Button.new()
 	canvas_layer.add_child(end_turn_button)
-	end_turn_button.text = "END TURN"
+	end_turn_button.text = tr("END TURN")
 	end_turn_button.anchor_left = 1.0
 	end_turn_button.anchor_right = 1.0
 	end_turn_button.anchor_top = 1.0
@@ -286,15 +286,15 @@ func show_result_message(winner_color: int) -> void:
 
 	var context: Dictionary = get_game_result_context()
 	if bool(context.get("is_ai_vs_ai_batch", false)):
-		result_label.text = "%s WINS!\nMATCH %d / %d" % [
-			"WHITE" if winner_color == 1 else "BLACK",
+		result_label.text = tr("%s WINS!\nMATCH %d / %d") % [
+			tr("WHITE") if winner_color == 1 else tr("BLACK"),
 			int(context.get("ai_matches_played", 0)) + 1,
 			int(context.get("ai_match_count", 0)),
 		]
 	elif bool(context.get("side_is_null", false)):
-		result_label.text = "WHITE WINS!" if winner_color == 1 else "BLACK WINS!"
+		result_label.text = tr("WHITE WINS!") if winner_color == 1 else tr("BLACK WINS!")
 	else:
-		result_label.text = "YOU WON!" if winner_color == get_own_color() else "YOU LOST!"
+		result_label.text = tr("YOU WON!") if winner_color == get_own_color() else tr("YOU LOST!")
 	result_overlay.visible = true
 
 func initialize_player_portraits() -> void:
@@ -336,7 +336,7 @@ func create_rules_info_ui() -> void:
 	rules_info_button = Button.new()
 	canvas_layer.add_child(rules_info_button)
 	rules_info_button.text = "i"
-	rules_info_button.tooltip_text = "Rules"
+	rules_info_button.tooltip_text = tr("Rules")
 	rules_info_button.anchor_left = 1.0
 	rules_info_button.anchor_right = 1.0
 	rules_info_button.anchor_top = 1.0
@@ -387,7 +387,7 @@ func create_rules_info_ui() -> void:
 
 	var title_label := Label.new()
 	panel_layout.add_child(title_label)
-	title_label.text = "How to Play"
+	title_label.text = tr("How to Play")
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title_label.add_theme_font_size_override("font_size", 17)
 	title_label.add_theme_color_override("font_color", Color(1.0, 0.96, 0.82))
@@ -396,7 +396,7 @@ func create_rules_info_ui() -> void:
 	panel_layout.add_child(rules_info_label)
 	rules_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rules_info_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rules_info_label.text = rules_info_text
+	rules_info_label.text = tr(rules_info_text)
 	rules_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rules_info_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	rules_info_label.add_theme_font_size_override("font_size", 13)
@@ -477,7 +477,7 @@ func get_display_name_for_player(player_id: int) -> String:
 	var string_key: String = str(player_id)
 	if current_player_names.has(string_key):
 		return str(current_player_names[string_key])
-	return "Player"
+	return tr("Player")
 
 func update_end_turn_button() -> void:
 	if end_turn_button == null:

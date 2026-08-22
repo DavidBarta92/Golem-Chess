@@ -1,0 +1,115 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Settings/SettingsSection.gd" id="1_section"]
+[ext_resource type="Script" path="res://Scripts/Settings/AudioElements/VolumeElement.gd" id="2_volume"]
+
+[node name="Audio" type="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_section")
+IDENTIFIER = "Audio"
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="Content" type="VBoxContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="MasterVolume" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("SliderRef", "ValueBoxRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("2_volume")
+DEFAULT_VALUE = 1.0
+STEP_VALUE = 0.01
+DISPLAY_PERCENT_VALUE = true
+VALUE_SUFFIX = "%"
+SliderRef = NodePath("Row/Slider")
+ValueBoxRef = NodePath("Row/ValueLabel")
+IDENTIFIER = "MasterVolume"
+AUDIO_BUS = "Master"
+
+[node name="Label" type="Label" parent="Scroll/Content/MasterVolume"]
+layout_mode = 2
+text = "Master Volume"
+
+[node name="Row" type="HBoxContainer" parent="Scroll/Content/MasterVolume"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Slider" type="HSlider" parent="Scroll/Content/MasterVolume/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ValueLabel" type="Label" parent="Scroll/Content/MasterVolume/Row"]
+custom_minimum_size = Vector2(58, 0)
+layout_mode = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="MusicVolume" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("SliderRef", "ValueBoxRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("2_volume")
+DEFAULT_VALUE = 1.0
+STEP_VALUE = 0.01
+DISPLAY_PERCENT_VALUE = true
+VALUE_SUFFIX = "%"
+SliderRef = NodePath("Row/Slider")
+ValueBoxRef = NodePath("Row/ValueLabel")
+IDENTIFIER = "MusicVolume"
+AUDIO_BUS = "Music"
+
+[node name="Label" type="Label" parent="Scroll/Content/MusicVolume"]
+layout_mode = 2
+text = "Music Volume"
+
+[node name="Row" type="HBoxContainer" parent="Scroll/Content/MusicVolume"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Slider" type="HSlider" parent="Scroll/Content/MusicVolume/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ValueLabel" type="Label" parent="Scroll/Content/MusicVolume/Row"]
+custom_minimum_size = Vector2(58, 0)
+layout_mode = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SfxVolume" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("SliderRef", "ValueBoxRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("2_volume")
+DEFAULT_VALUE = 1.0
+STEP_VALUE = 0.01
+DISPLAY_PERCENT_VALUE = true
+VALUE_SUFFIX = "%"
+SliderRef = NodePath("Row/Slider")
+ValueBoxRef = NodePath("Row/ValueLabel")
+IDENTIFIER = "SfxVolume"
+AUDIO_BUS = "SFX"
+
+[node name="Label" type="Label" parent="Scroll/Content/SfxVolume"]
+layout_mode = 2
+text = "SFX Volume"
+
+[node name="Row" type="HBoxContainer" parent="Scroll/Content/SfxVolume"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Slider" type="HSlider" parent="Scroll/Content/SfxVolume/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ValueLabel" type="Label" parent="Scroll/Content/SfxVolume/Row"]
+custom_minimum_size = Vector2(58, 0)
+layout_mode = 2
+horizontal_alignment = 2
+vertical_alignment = 1

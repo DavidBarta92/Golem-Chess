@@ -107,9 +107,9 @@ func update_markers() -> void:
 	for child in board_markers_node.get_children():
 		child.queue_free()
 
-	if PlayerSettingsStore.is_enemy_attack_markers_enabled() and is_local_view_ready():
+	if SettingsDataManager.is_enemy_attack_markers_enabled() and is_local_view_ready():
 		add_enemy_attack_markers()
-	if PlayerSettingsStore.is_last_move_arrow_enabled() and is_local_view_ready():
+	if SettingsDataManager.is_last_move_arrow_enabled() and is_local_view_ready():
 		add_last_move_arrow_marker()
 
 func add_enemy_attack_markers() -> void:

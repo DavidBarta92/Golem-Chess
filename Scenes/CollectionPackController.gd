@@ -180,7 +180,7 @@ func _ensure_buy_packs_window() -> void:
 	buy_packs_title_label = Label.new()
 	buy_packs_title_label.name = "TitleLabel"
 	title_row.add_child(buy_packs_title_label)
-	buy_packs_title_label.text = "Buy Packs"
+	buy_packs_title_label.text = tr("Buy Packs")
 	buy_packs_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buy_packs_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	buy_packs_title_label.add_theme_font_size_override("font_size", 16)
@@ -193,7 +193,7 @@ func _ensure_buy_packs_window() -> void:
 	buy_packs_cancel_button.icon = WINDOW_CLOSE_ICON
 	buy_packs_cancel_button.custom_minimum_size = Vector2(38.0, 38.0)
 	buy_packs_cancel_button.focus_mode = Control.FOCUS_NONE
-	buy_packs_cancel_button.tooltip_text = "Close"
+	buy_packs_cancel_button.tooltip_text = tr("Close")
 	buy_packs_cancel_button.flat = true
 	buy_packs_cancel_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	buy_packs_cancel_button.expand_icon = false
@@ -230,7 +230,7 @@ func _ensure_buy_packs_window() -> void:
 	var pack_area_title := Label.new()
 	pack_area_title.name = "PackAreaTitle"
 	pack_area.add_child(pack_area_title)
-	pack_area_title.text = "Packs"
+	pack_area_title.text = tr("Packs")
 	pack_area_title.add_theme_font_size_override("font_size", 18)
 	pack_area_title.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
 
@@ -267,7 +267,7 @@ func _ensure_buy_packs_window() -> void:
 	buy_packs_contents_title = Label.new()
 	buy_packs_contents_title.name = "PackContentsTitle"
 	right_root.add_child(buy_packs_contents_title)
-	buy_packs_contents_title.text = "Pack contents"
+	buy_packs_contents_title.text = tr("Pack contents")
 	buy_packs_contents_title.add_theme_font_size_override("font_size", 16)
 	buy_packs_contents_title.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
 
@@ -330,7 +330,7 @@ func _ensure_buy_packs_window() -> void:
 	buy_packs_confirm_button = Button.new()
 	buy_packs_confirm_button.name = "BuyButton"
 	purchase_row.add_child(buy_packs_confirm_button)
-	buy_packs_confirm_button.text = "Buy"
+	buy_packs_confirm_button.text = tr("Buy")
 	buy_packs_confirm_button.custom_minimum_size = Vector2(132.0, 40.0)
 	buy_packs_confirm_button.focus_mode = Control.FOCUS_NONE
 
@@ -541,7 +541,7 @@ func _collect_pack_preview_nodes() -> void:
 		pack_preview_nodes.append(preview)
 		preview.mouse_filter = Control.MOUSE_FILTER_STOP
 		preview.mouse_default_cursor_shape = Control.CURSOR_ARROW
-		preview.tooltip_text = "Open pack"
+		preview.tooltip_text = tr("Open pack")
 		preview.set_meta("inventory_base_position", preview.position)
 		preview.set_meta("inventory_base_rotation", preview.rotation)
 		preview.pivot_offset = preview.size * 0.5
@@ -579,7 +579,7 @@ func refresh_pack_inventory_ui(animate_new: bool = false, previous_preview_ids: 
 	var pack_count: int = PlayerProgressStore.get_unopened_pack_count()
 	var preview_pack_ids: Array[String] = _get_unopened_pack_ids_for_display(MAX_VISIBLE_PACK_ICONS)
 	if pack_inventory_label != null:
-		pack_inventory_label.text = "%d unopened" % pack_count if pack_count > 0 else "No unopened packs"
+		pack_inventory_label.text = tr("%d unopened") % pack_count if pack_count > 0 else tr("No unopened packs")
 	if pack_notice_panel != null:
 		pack_notice_panel.visible = pack_count > 0
 	pack_inventory.visible = pack_count > 0
@@ -842,8 +842,8 @@ func _refresh_buy_pack_contents() -> void:
 	var selected_pack: PackDefinition = _get_selected_purchase_pack()
 	if selected_pack == null:
 		if buy_packs_contents_title != null:
-			buy_packs_contents_title.text = "Pack contents"
-		_add_pack_contents_label("No available packs.")
+			buy_packs_contents_title.text = tr("Pack contents")
+		_add_pack_contents_label(tr("No available packs."))
 		return
 
 	if buy_packs_contents_title != null:
@@ -858,7 +858,7 @@ func _refresh_buy_pack_contents() -> void:
 		added_count += 1
 
 	if added_count <= 0:
-		_add_pack_contents_label("This pack has no configured stamps.")
+		_add_pack_contents_label(tr("This pack has no configured stamps."))
 	_queue_buy_pack_contents_grid_layout()
 
 func _add_pack_contents_label(text: String) -> void:
@@ -2103,7 +2103,7 @@ func _show_pack_result(rewards: Array[StampPrint]) -> void:
 	if pack_result_dialog == null or pack_result_label == null:
 		return
 
-	var lines: Array[String] = ["You opened:"]
+	var lines: Array[String] = [tr("You opened:")]
 	for stamp_print: StampPrint in rewards:
 		var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
 		var stamp_name: String = stamp.stamp_name if stamp != null else stamp_print.stamp_code

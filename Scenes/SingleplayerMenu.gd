@@ -35,7 +35,7 @@ func _populate_deck_options() -> void:
 	var all_decks: Array = PlayerDeckStore.list_decks()
 	var decks: Array = PlayerDeckStore.list_playable_decks()
 	if decks.is_empty():
-		var empty_text: String = "No saved codexes" if all_decks.is_empty() else "No complete codexes"
+		var empty_text: String = tr("No saved codexes") if all_decks.is_empty() else tr("No complete codexes")
 		deck_option_button.add_item(empty_text)
 		ai_deck_option_button.add_item(empty_text)
 		deck_option_button.disabled = true
@@ -76,7 +76,7 @@ func _populate_ai_difficulty_options() -> void:
 	var selected_index: int = 0
 	var current_level: int = GameConfig.get_player_ai_difficulty_level(1)
 	for level in range(GameConfig.MIN_AI_DIFFICULTY_LEVEL, GameConfig.MAX_AI_DIFFICULTY_LEVEL + 1):
-		ai_difficulty_option_button.add_item("Level %d" % level)
+		ai_difficulty_option_button.add_item(tr("Level %d") % level)
 		ai_difficulty_option_button.set_item_metadata(ai_difficulty_option_button.get_item_count() - 1, level)
 		if level == current_level:
 			selected_index = ai_difficulty_option_button.get_item_count() - 1

@@ -41,7 +41,7 @@ func _ready():
 	apply_command_line_network_overrides()
 	if !GameConfig.is_singleplayer:
 		ensure_network_status_label()
-		set_network_status("Starting network...")
+		set_network_status(tr("Starting network..."))
 		if is_using_single_server_room_mode():
 			ensure_custom_lobby_panel()
 	DebugLog.network("Multiplayer scene ready. singleplayer=%s hosting=%s endpoint=%s:%d log=%s" % [
@@ -183,12 +183,12 @@ func ensure_custom_lobby_panel() -> void:
 	panel.add_child(container)
 
 	var title_label := Label.new()
-	title_label.text = "Server Room"
+	title_label.text = tr("Server Room")
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	container.add_child(title_label)
 
 	custom_lobby_status_label = Label.new()
-	custom_lobby_status_label.text = "Connecting..."
+	custom_lobby_status_label.text = tr("Connecting...")
 	custom_lobby_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	container.add_child(custom_lobby_status_label)
 
@@ -255,10 +255,10 @@ func setup_singleplayer_player_names() -> void:
 			peer_player_names[player_id] = GameConfig.get_local_player_name()
 			peer_player_portraits[player_id] = GameConfig.get_local_portrait_data()
 		elif GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_CODEX:
-			peer_player_names[player_id] = "Codex"
+			peer_player_names[player_id] = tr("Codex")
 			peer_player_portraits[player_id] = GameConfig.get_ai_portrait_data(player_id)
 		else:
-			peer_player_names[player_id] = "AI %s" % ("White" if player_id == 0 else "Black")
+			peer_player_names[player_id] = tr("AI %s") % (tr("White") if player_id == 0 else tr("Black"))
 			peer_player_portraits[player_id] = GameConfig.get_ai_portrait_data(player_id)
 
 func get_local_human_player_id() -> int:
@@ -299,13 +299,13 @@ func _play_singleplayer_ai_turn(player_id: int):
 	maybe_play_singleplayer_ai_turn()
 
 func host_game(port = 9999):
-	set_network_status("Hosting on UDP %d. Waiting for peer..." % port)
+	set_network_status(tr("Hosting on UDP %d. Waiting for peer...") % port)
 	DebugLog.network("Starting ENet host on UDP port %d. Local IPv4 addresses: %s" % [port, get_local_address_summary()])
 	var error = multiplayer_peer.create_server(port, 2, 0, 0, 0)
 
 	if error != OK:
 		var error_message: String = "Failed to start ENet server on UDP port %d. Error code: %d" % [port, error]
-		set_network_status("Host failed on UDP %d." % port)
+		set_network_status(tr("Host failed on UDP %d.") % port)
 		DebugLog.network_error(error_message)
 		push_error(error_message)
 		return false
@@ -333,14 +333,14 @@ func host_game(port = 9999):
 	return true
 
 func start_dedicated_custom_server(port: int = 9999) -> bool:
-	set_network_status("Dedicated server listening on UDP %d." % port)
+	set_network_status(tr("Dedicated server listening on UDP %d.") % port)
 	hide_custom_lobby_panel()
 	DebugLog.network("Starting dedicated custom server on UDP port %d. Local IPv4 addresses: %s" % [port, get_local_address_summary()])
 	var error = multiplayer_peer.create_server(port, MAX_DEDICATED_SERVER_CLIENTS, 0, 0, 0)
 
 	if error != OK:
 		var error_message: String = "Failed to start dedicated custom server on UDP port %d. Error code: %d" % [port, error]
-		set_network_status("Dedicated server failed on UDP %d." % port)
+		set_network_status(tr("Dedicated server failed on UDP %d.") % port)
 		DebugLog.network_error(error_message)
 		push_error(error_message)
 		return false
@@ -367,12 +367,12 @@ func start_dedicated_custom_server(port: int = 9999) -> bool:
 	return true
 
 func join_game(ip, port = 9999):
-	set_network_status("Connecting to %s:%d..." % [ip, port])
+	set_network_status(tr("Connecting to %s:%d...") % [ip, port])
 	DebugLog.network("Starting ENet client. Target=%s:%d" % [ip, port])
 	var error = multiplayer_peer.create_client(ip, port)
 	if error != OK:
 		var error_message: String = "Failed to create ENet client for %s:%d. Error code: %d" % [ip, port, error]
-		set_network_status("Connection setup failed.")
+		set_network_status(tr("Connection setup failed."))
 		DebugLog.network_error(error_message)
 		push_error(error_message)
 		return false
@@ -402,7 +402,7 @@ func _log_host_connection_status_after_delay(port: int) -> void:
 		port,
 	])
 	if connected_peer_ids.size() < 2:
-		set_network_status("Hosting on UDP %d. Still waiting for peer." % port)
+		set_network_status(tr("Hosting on UDP %d. Still waiting for peer.") % port)
 		DebugLog.network_error("No remote peer reached the host. Most likely cause: UDP %d is not forwarded to this PC, Windows Firewall blocked the game, wrong public IP was used, or the host is behind CGNAT." % port)
 
 func _log_client_connection_status_after_delay(ip: String, port: int) -> void:
@@ -419,8 +419,8 @@ func _log_client_connection_status_after_delay(ip: String, port: int) -> void:
 		port,
 	])
 	if status_text != "connected":
-		set_network_status("Connection failed or timed out.")
-		set_custom_lobby_status("Connection failed or timed out: %s:%d" % [ip, port])
+		set_network_status(tr("Connection failed or timed out."))
+		set_custom_lobby_status(tr("Connection failed or timed out: %s:%d") % [ip, port])
 		set_custom_lobby_controls_enabled(false)
 		DebugLog.network_error("Client is not connected to %s:%d. Check that the host gave the public IPv4 address and UDP %d is reachable." % [ip, port, port])
 
@@ -467,7 +467,7 @@ func _on_peer_connected(peer_id):
 	if is_dedicated_server:
 		if !server_connected_peer_ids.has(peer_id):
 			server_connected_peer_ids.append(peer_id)
-		set_network_status("Dedicated server clients: %d" % server_connected_peer_ids.size())
+		set_network_status(tr("Dedicated server clients: %d") % server_connected_peer_ids.size())
 		DebugLog.network("Dedicated server accepted connection shell for peer %s." % peer_id)
 		return
 
@@ -475,7 +475,7 @@ func _on_peer_connected(peer_id):
 		connected_peer_ids.append(peer_id)
 		DebugLog.info("  Players: %d/2" % connected_peer_ids.size())
 		DebugLog.network("Connected players: %d/2" % connected_peer_ids.size())
-		set_network_status("Connected players: %d/2" % connected_peer_ids.size())
+		set_network_status(tr("Connected players: %d/2") % connected_peer_ids.size())
 		_try_start_multiplayer_game()
 
 func _on_peer_disconnected(peer_id):
@@ -498,7 +498,7 @@ func _on_peer_disconnected(peer_id):
 		elif connected_peer_ids.is_empty():
 			reset_dedicated_server_room()
 		else:
-			set_network_status("Dedicated server clients: %d" % server_connected_peer_ids.size())
+			set_network_status(tr("Dedicated server clients: %d") % server_connected_peer_ids.size())
 		broadcast_open_lobby_list()
 		return
 
@@ -511,23 +511,23 @@ func _on_peer_disconnected(peer_id):
 		return
 	DebugLog.info("  Players: %d/2" % connected_peer_ids.size())
 	DebugLog.network("Connected players: %d/2" % connected_peer_ids.size())
-	set_network_status("Connected players: %d/2" % connected_peer_ids.size())
+	set_network_status(tr("Connected players: %d/2") % connected_peer_ids.size())
 
 func _on_connection_succeeded():
 	DebugLog.info("Connected to server")
 	DebugLog.network("Connected to server. Local peer id: %s" % multiplayer.get_unique_id())
 	if is_using_single_server_room_mode():
-		set_network_status("Connected. Joining server room...")
-		set_custom_lobby_status("Joining server room...")
+		set_network_status(tr("Connected. Joining server room..."))
+		set_custom_lobby_status(tr("Joining server room..."))
 		set_custom_lobby_controls_enabled(false)
 		enter_custom_server_room.rpc_id(1, GameConfig.get_local_player_name(), GameConfig.get_selected_deck_stamp_names(), GameConfig.get_local_portrait_data())
 	else:
-		set_network_status("Connected. Registering player...")
+		set_network_status(tr("Connected. Registering player..."))
 		register_player_name.rpc_id(1, multiplayer.get_unique_id(), GameConfig.get_local_player_name(), GameConfig.get_selected_deck_stamp_names(), GameConfig.get_local_portrait_data())
 
 func _on_connection_failed():
-	var error_message: String = "Connection failed for %s:%d. Check host UDP port forwarding and firewall." % [GameConfig.server_ip, GameConfig.server_port]
-	set_network_status("Connection failed.")
+	var error_message: String = tr("Connection failed for %s:%d. Check host UDP port forwarding and firewall.") % [GameConfig.server_ip, GameConfig.server_port]
+	set_network_status(tr("Connection failed."))
 	set_custom_lobby_status(error_message)
 	set_custom_lobby_controls_enabled(false)
 	DebugLog.network_error(error_message)
@@ -535,8 +535,8 @@ func _on_connection_failed():
 
 func _on_server_disconnected():
 	DebugLog.info("Server disconnected")
-	set_network_status("Server disconnected.")
-	set_custom_lobby_status("Server disconnected.")
+	set_network_status(tr("Server disconnected."))
+	set_custom_lobby_status(tr("Server disconnected."))
 	set_custom_lobby_controls_enabled(false)
 	DebugLog.network_error("Server disconnected.")
 	if has_received_match_state():
@@ -564,14 +564,14 @@ func create_lobby_on_server() -> void:
 	if !can_send_custom_lobby_request():
 		report_custom_lobby_connection_problem()
 		return
-	set_custom_lobby_status("Joining server room...")
+	set_custom_lobby_status(tr("Joining server room..."))
 	enter_custom_server_room.rpc_id(1, GameConfig.get_local_player_name(), GameConfig.get_selected_deck_stamp_names(), GameConfig.get_local_portrait_data())
 
 func join_lobby_on_server(lobby_id: String) -> void:
 	if !can_send_custom_lobby_request():
 		report_custom_lobby_connection_problem()
 		return
-	set_custom_lobby_status("Joining room...")
+	set_custom_lobby_status(tr("Joining room..."))
 	join_custom_lobby.rpc_id(1, lobby_id, GameConfig.get_local_player_name(), GameConfig.get_selected_deck_stamp_names(), GameConfig.get_local_portrait_data())
 
 func can_send_custom_lobby_request() -> bool:
@@ -582,13 +582,13 @@ func can_send_custom_lobby_request() -> bool:
 
 func report_custom_lobby_connection_problem() -> void:
 	var status_text: String = get_peer_connection_status_text()
-	var message: String = "Not connected to the custom server as a client. Status: %s. Target: %s:%d." % [
+	var message: String = tr("Not connected to the custom server as a client. Status: %s. Target: %s:%d.") % [
 		status_text,
 		GameConfig.server_ip,
 		GameConfig.server_port,
 	]
 	if is_server or multiplayer.get_unique_id() == 1:
-		message = "This game instance is the server. Start a separate client window for Server Room."
+		message = tr("This game instance is the server. Start a separate client window for Server Room.")
 	custom_lobby_failed.emit(message)
 	set_custom_lobby_status(message)
 	DebugLog.network_error("%s status=%s is_server=%s unique_id=%s" % [
@@ -612,11 +612,11 @@ func _on_custom_lobby_item_activated(index: int) -> void:
 
 func join_custom_lobby_at_index(index: int) -> void:
 	if index < 0 or index >= custom_lobby_entries.size():
-		set_custom_lobby_status("That room is no longer available.")
+		set_custom_lobby_status(tr("That room is no longer available."))
 		return
 	var lobby: MultiplayerLobby = custom_lobby_entries[index]
 	if !lobby.is_joinable():
-		set_custom_lobby_status("That room is no longer joinable.")
+		set_custom_lobby_status(tr("That room is no longer joinable."))
 		return
 	join_lobby_on_server(lobby.lobby_id)
 
@@ -642,7 +642,7 @@ func enter_custom_server_room(player_name: String, deck_stamp_names: Array = [],
 
 	if connected_peer_ids.size() == 1:
 		receive_custom_room_waiting.rpc_id(peer_id, "Waiting for another player.")
-		set_network_status("Dedicated server room: 1/2. Waiting for another player.")
+		set_network_status(tr("Dedicated server room: 1/2. Waiting for another player."))
 		DebugLog.network("Peer %d is waiting in the single server room." % peer_id)
 		return
 
@@ -769,7 +769,7 @@ func has_received_match_state() -> bool:
 	return match_board != null and bool(match_board.get("has_received_server_state")) and !bool(match_board.get("game_over"))
 
 func close_remaining_match_peers_after_disconnect(disconnected_peer_id: int) -> void:
-	set_network_status("A player left. Closing the match in 5 seconds.")
+	set_network_status(tr("A player left. Closing the match in 5 seconds."))
 	DebugLog.network("Peer %d left an active dedicated match. Closing remaining peer(s) in 5 seconds." % disconnected_peer_id)
 	for remaining_peer_id in connected_peer_ids:
 		receive_match_peer_left.rpc_id(int(remaining_peer_id), "Opponent left. Returning to menu in 5 seconds.")
@@ -786,7 +786,7 @@ func reset_dedicated_server_room() -> void:
 	server_turn = true
 	game_host = null
 	GameController.set_game_host(null)
-	set_network_status("Dedicated server room is open.")
+	set_network_status(tr("Dedicated server room is open."))
 	DebugLog.network("Dedicated server room reset and is open.")
 
 func start_dedicated_match(host_peer_id: int, joining_peer_id: int) -> void:
@@ -812,7 +812,7 @@ func start_dedicated_match(host_peer_id: int, joining_peer_id: int) -> void:
 	await get_tree().create_timer(0.2).timeout
 	give_turn.rpc_id(host_peer_id, server_turn)
 	give_turn.rpc_id(joining_peer_id, !server_turn)
-	set_network_status("Dedicated match running: %d vs %d" % [host_peer_id, joining_peer_id])
+	set_network_status(tr("Dedicated match running: %d vs %d") % [host_peer_id, joining_peer_id])
 	DebugLog.network("Dedicated custom match started: %d vs %d server_turn=%s" % [host_peer_id, joining_peer_id, server_turn])
 
 @rpc("authority", "call_remote", "reliable")
@@ -827,27 +827,28 @@ func receive_custom_lobby_list(raw_lobbies: Array) -> void:
 
 @rpc("authority", "call_remote", "reliable")
 func receive_custom_lobby_error(message: String) -> void:
-	custom_lobby_failed.emit(message)
-	set_network_status(message)
-	set_custom_lobby_status(message)
+	var translated_message: String = tr(message)
+	custom_lobby_failed.emit(translated_message)
+	set_network_status(translated_message)
+	set_custom_lobby_status(translated_message)
 	if is_using_single_server_room_mode():
-		GameConfig.set_multiplayer_menu_status_message(message)
+		GameConfig.set_multiplayer_menu_status_message(translated_message)
 		close_game_connection()
 		SceneTransition.change_scene("res://Scenes/MultiplayerMenu.tscn")
 
 @rpc("authority", "call_remote", "reliable")
 func receive_custom_room_waiting(message: String) -> void:
-	set_network_status(message)
-	set_custom_lobby_status(message)
+	set_network_status(tr(message))
+	set_custom_lobby_status(tr(message))
 
 @rpc("authority", "call_remote", "reliable")
 func receive_match_peer_left(message: String) -> void:
 	if match_peer_left_return_scheduled:
 		return
 	match_peer_left_return_scheduled = true
-	set_network_status(message)
+	set_network_status(tr(message))
 	if is_using_single_server_room_mode():
-		set_custom_lobby_status(message)
+		set_custom_lobby_status(tr(message))
 	call_deferred("return_to_menu_after_match_peer_left")
 
 func return_to_menu_after_match_peer_left() -> void:
@@ -864,9 +865,9 @@ func update_custom_lobby_list_ui() -> void:
 	for lobby in custom_lobby_entries:
 		custom_lobby_item_list.add_item(lobby.get_display_name())
 	if custom_lobby_entries.is_empty():
-		set_custom_lobby_status("Waiting for another player.")
+		set_custom_lobby_status(tr("Waiting for another player."))
 	else:
-		set_custom_lobby_status("Server room is available.")
+		set_custom_lobby_status(tr("Server room is available."))
 
 @rpc("any_peer", "call_local", "reliable")
 func register_player_name(peer_id: int, player_name: String, deck_stamp_names: Array = [], portrait_data: Dictionary = {}):
@@ -885,13 +886,13 @@ func _try_start_multiplayer_game() -> void:
 	if !is_server or GameConfig.is_singleplayer or multiplayer_game_started:
 		return
 	if connected_peer_ids.size() < 2:
-		set_network_status("Connected players: %d/2. Waiting for peer..." % connected_peer_ids.size())
+		set_network_status(tr("Connected players: %d/2. Waiting for peer...") % connected_peer_ids.size())
 		DebugLog.network("Waiting for remote peer. Connected players: %d/2" % connected_peer_ids.size())
 		return
 
 	for peer_id in connected_peer_ids:
 		if !peer_player_names.has(peer_id) or !peer_player_decks.has(peer_id):
-			set_network_status("Waiting for peer registration...")
+			set_network_status(tr("Waiting for peer registration..."))
 			DebugLog.network("Waiting for peer registration data. Peer=%s has_name=%s has_deck=%s" % [
 				peer_id,
 				peer_player_names.has(peer_id),
@@ -905,7 +906,7 @@ func _try_start_multiplayer_game() -> void:
 	peer_player_ids[connected_peer_ids[1]] = 1 - first_player_id
 	DebugLog.info("Game starting")
 	DebugLog.network("Game starting. peer_ids=%s server_turn=%s first_player_id=%d" % [connected_peer_ids, server_turn, first_player_id])
-	set_network_status("Game starting...")
+	set_network_status(tr("Game starting..."))
 
 	var board_data = $MatchBoard.board
 	game_host.initialize_game(board_data)
@@ -1023,13 +1024,13 @@ func apply_game_state(state_data: Dictionary):
 func get_player_names_by_id() -> Dictionary:
 	if GameConfig.is_singleplayer:
 		return {
-			0: str(peer_player_names.get(0, "AI White")),
-			1: str(peer_player_names.get(1, "AI Black")),
+			0: str(peer_player_names.get(0, tr("AI %s") % tr("White"))),
+			1: str(peer_player_names.get(1, tr("AI %s") % tr("Black"))),
 		}
 
 	var player_names: Dictionary = {
-		0: "Player",
-		1: "Player",
+		0: tr("Player"),
+		1: tr("Player"),
 	}
 	for peer_id in peer_player_ids:
 		var player_id: int = int(peer_player_ids[peer_id])

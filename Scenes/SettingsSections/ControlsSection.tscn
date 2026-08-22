@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Settings/ControlsSection.gd" id="1_section"]
+
+[node name="Controls" type="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_section")
+IDENTIFIER = "Controls"
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="Content" type="VBoxContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="Scroll/Content"]
+layout_mode = 2
+text = "Keyboard"
+
+[node name="RebindKeysButton" type="Button" parent="Scroll/Content"]
+layout_mode = 2
+text = "Rebind Keys…"

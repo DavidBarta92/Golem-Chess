@@ -1,0 +1,122 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Settings/SettingsSection.gd" id="1_section"]
+[ext_resource type="Script" path="res://Scripts/Settings/VideoElements/DisplayModeElement.gd" id="2_display_mode"]
+[ext_resource type="Script" path="res://Scripts/Settings/VideoElements/ResolutionElement.gd" id="3_resolution"]
+[ext_resource type="Script" path="res://Scripts/Settings/VideoElements/VSyncElement.gd" id="4_vsync"]
+[ext_resource type="Script" path="res://Scripts/Settings/VideoElements/MaxFpsElement.gd" id="5_max_fps"]
+[ext_resource type="Script" path="res://Scripts/Settings/VideoElements/AntiAliasingElement.gd" id="6_anti_aliasing"]
+[ext_resource type="Script" path="res://Scripts/Settings/VideoElements/FilmGrainElement.gd" id="7_film_grain"]
+
+[node name="Video" type="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_section")
+IDENTIFIER = "Video"
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="Content" type="VBoxContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="DisplayMode" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("OptionsRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("2_display_mode")
+OptionsRef = NodePath("Options")
+
+[node name="Label" type="Label" parent="Scroll/Content/DisplayMode"]
+layout_mode = 2
+text = "Display Mode"
+
+[node name="Options" type="OptionButton" parent="Scroll/Content/DisplayMode"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Resolution" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("OptionsRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("3_resolution")
+OptionsRef = NodePath("Options")
+
+[node name="Label" type="Label" parent="Scroll/Content/Resolution"]
+layout_mode = 2
+text = "Resolution"
+
+[node name="Options" type="OptionButton" parent="Scroll/Content/Resolution"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VSync" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("OptionsRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("4_vsync")
+OptionsRef = NodePath("Options")
+
+[node name="Label" type="Label" parent="Scroll/Content/VSync"]
+layout_mode = 2
+text = "V-Sync"
+
+[node name="Options" type="OptionButton" parent="Scroll/Content/VSync"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MaxFps" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("OptionsRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("5_max_fps")
+OptionsRef = NodePath("Options")
+
+[node name="Label" type="Label" parent="Scroll/Content/MaxFps"]
+layout_mode = 2
+text = "Max FPS"
+
+[node name="Options" type="OptionButton" parent="Scroll/Content/MaxFps"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AntiAliasing" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("OptionsRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("6_anti_aliasing")
+OptionsRef = NodePath("Options")
+
+[node name="Label" type="Label" parent="Scroll/Content/AntiAliasing"]
+layout_mode = 2
+text = "Anti Aliasing"
+
+[node name="Options" type="OptionButton" parent="Scroll/Content/AntiAliasing"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FilmGrainIntensity" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("SliderRef", "ValueBoxRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("7_film_grain")
+SliderRef = NodePath("Row/Slider")
+ValueBoxRef = NodePath("Row/ValueLabel")
+
+[node name="Label" type="Label" parent="Scroll/Content/FilmGrainIntensity"]
+layout_mode = 2
+text = "Film grain intensity"
+
+[node name="Row" type="HBoxContainer" parent="Scroll/Content/FilmGrainIntensity"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Slider" type="HSlider" parent="Scroll/Content/FilmGrainIntensity/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ValueLabel" type="Label" parent="Scroll/Content/FilmGrainIntensity/Row"]
+custom_minimum_size = Vector2(58, 0)
+layout_mode = 2
+horizontal_alignment = 2
+vertical_alignment = 1

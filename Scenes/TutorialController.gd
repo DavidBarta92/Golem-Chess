@@ -50,13 +50,13 @@ func build_steps() -> void:
 	steps = [
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Welcome. We will play a guided version of the game: one rule, one action, then the next rule.",
+			"text": "TUTORIAL_STEP_1",
 			"completion": "dialogue",
 			"constraints": no_actions(),
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Stamps give pieces their movement. On your first turn every piece is frozen, so you must attach at least one stamp. Drag Numero_1 onto a piece.",
+			"text": "TUTORIAL_STEP_2",
 			"completion": "stamp_attached",
 			"expected_stamp_name": "Numero_1",
 			"setup": {
@@ -75,7 +75,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "The End Turn button is now active. Press it to finish your first turn. If you attach all three stamps, the turn ends automatically.",
+			"text": "TUTORIAL_STEP_3",
 			"completion": "turn_ended",
 			"constraints": {
 				"allowed_actions": ["end_turn"],
@@ -84,7 +84,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "From your next turn onward, moving is mandatory and immediately ends your turn. Turn Codex pages and attach before moving. Select the ready piece, then move it to a highlighted square.",
+			"text": "TUTORIAL_STEP_4",
 			"completion": "piece_moved",
 			"setup": {
 				"board": starting_board(),
@@ -103,13 +103,13 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "After a piece moves, its stamp loses one duration and the turn ends. Stamps do not tick down merely because another piece moved.",
+			"text": "TUTORIAL_STEP_5",
 			"completion": "dialogue",
 			"constraints": no_actions(),
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "You can attach more than one stamp in a turn. Put both stamps from your hand onto two empty pieces.",
+			"text": "TUTORIAL_STEP_6",
 			"completion": "stamp_attached",
 			"required_count": 2,
 			"setup": {
@@ -129,7 +129,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Good. Now move the piece that was already ready. A successful move ends the turn. Spent non-Seeker stamps stay out of the Codex.",
+			"text": "TUTORIAL_STEP_7",
 			"completion": "piece_moved",
 			"constraints": {
 				"allowed_actions": ["select_piece", "move_piece"],
@@ -139,10 +139,10 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Once per turn, before attaching any stamp, you may turn the Codex to the next non-empty page. Press Turn Page.",
+			"text": "TUTORIAL_STEP_8",
 			"completion": "codex_page_turned",
 			"continue_after_completion": true,
-			"post_completion_text": "The new page is now open, and only that page's stamps are usable. Press Continue when you are ready.",
+			"post_completion_text": "TUTORIAL_STEP_8_POST",
 			"setup": {
 				"board": starting_board(),
 				"white_hand": ["Numero_4"],
@@ -158,13 +158,13 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "In multiplayer, each player has five minutes for the whole match. Your clock runs only during your turns; reaching 00:00 loses the game.",
+			"text": "TUTORIAL_STEP_9",
 			"completion": "dialogue",
 			"constraints": no_actions(),
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Some stamps have effects. Drag Training Seal onto a piece; its effect will mark frozen squares around it.",
+			"text": "TUTORIAL_STEP_10",
 			"completion": "stamp_attached",
 			"expected_stamp_name": "Training Seal",
 			"setup": {
@@ -183,16 +183,16 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Those blue marks are board effects. Effects can change what pieces may do, separate from the stamp's movement pattern.",
+			"text": "TUTORIAL_STEP_11",
 			"completion": "dialogue",
 			"constraints": no_actions(),
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Now capture the enemy piece. The first captured piece returns locked to a non-base square on its starting row. A later capture unlocks it instead of creating another respawn.",
+			"text": "TUTORIAL_STEP_12",
 			"completion": "piece_moved",
 			"continue_after_completion": true,
-			"post_completion_text": "The captured piece returned to its home row. Its attached stamp is gone, and it stays locked until another piece is captured. Press Continue when you are ready.",
+			"post_completion_text": "TUTORIAL_STEP_12_POST",
 			"expected_from": Vector2(3, 2),
 			"expected_to": Vector2(3, 3),
 			"setup": {
@@ -220,7 +220,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "Seeker stamps are special. Attach Crown to a piece. If a Seeker is captured, it returns to its original Codex page.",
+			"text": "TUTORIAL_STEP_13",
 			"completion": "stamp_attached",
 			"expected_stamp_name": "Crown",
 			"setup": {
@@ -239,7 +239,7 @@ func build_steps() -> void:
 		},
 		{
 			"speaker": MENTOR_NAME,
-			"text": "To win, a piece with a Seeker must move onto the opponent's base. Make the winning move.",
+			"text": "TUTORIAL_STEP_14",
 			"completion": "piece_moved",
 			"expected_from": Vector2(5, 3),
 			"expected_to": Vector2(6, 3),
@@ -327,7 +327,7 @@ func start_step(step_index: int) -> void:
 		board.set_tutorial_constraints(constraints)
 
 	var speaker: String = str(step.get("speaker", MENTOR_NAME))
-	dialogue_panel.show_line(speaker, str(step.get("text", "")), get_portrait_for_speaker(speaker), should_show_continue_for_step(step))
+	dialogue_panel.show_line(tr(speaker), tr(str(step.get("text", ""))), get_portrait_for_speaker(speaker), should_show_continue_for_step(step))
 
 func finish_tutorial() -> void:
 	if board != null and board.has_method("clear_tutorial_constraints"):
@@ -335,7 +335,7 @@ func finish_tutorial() -> void:
 	if board != null and board.has_method("set_tutorial_mode_active"):
 		board.set_tutorial_mode_active(false)
 	current_step_index = -1
-	dialogue_panel.show_line(MENTOR_NAME, "Tutorial complete. Good work.", mentor_portrait, true)
+	dialogue_panel.show_line(tr(MENTOR_NAME), tr("TUTORIAL_STEP_15"), mentor_portrait, true)
 
 func _on_dialogue_continue_requested() -> void:
 	if waiting_for_continue_after_completion:
@@ -418,7 +418,7 @@ func _on_tutorial_action_rejected(_action_name: String, _context: Dictionary) ->
 
 	var step: Dictionary = steps[current_step_index]
 	var speaker: String = str(step.get("speaker", MENTOR_NAME))
-	dialogue_panel.show_line(speaker, str(step.get("rejection_text", step.get("text", ""))), get_portrait_for_speaker(speaker), should_show_continue_for_step(step))
+	dialogue_panel.show_line(tr(speaker), tr(str(step.get("rejection_text", step.get("text", "")))), get_portrait_for_speaker(speaker), should_show_continue_for_step(step))
 
 func advance_current_step() -> void:
 	start_step(current_step_index + 1)
@@ -430,7 +430,7 @@ func complete_current_action_step() -> void:
 		if board != null and board.has_method("set_tutorial_constraints"):
 			board.set_tutorial_constraints(no_actions())
 		var speaker: String = str(step.get("speaker", MENTOR_NAME))
-		dialogue_panel.show_line(speaker, str(step.get("post_completion_text", step.get("text", ""))), get_portrait_for_speaker(speaker), true)
+		dialogue_panel.show_line(tr(speaker), tr(str(step.get("post_completion_text", step.get("text", "")))), get_portrait_for_speaker(speaker), true)
 		return
 
 	advance_current_step()

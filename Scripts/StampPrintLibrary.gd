@@ -78,11 +78,11 @@ func normalize_variant_id(variant_id: String) -> String:
 func get_variant_name(variant_id: String) -> String:
 	match normalize_variant_id(variant_id):
 		"foil":
-			return "Foil"
+			return tr("Foil")
 		"full_art":
-			return "Full Art"
+			return tr("Full Art")
 		_:
-			return STANDARD_VARIANT_NAME
+			return tr(STANDARD_VARIANT_NAME)
 
 func _create_implicit_standard_prints() -> void:
 	var stamp_codes: Array = StampLibrary.get_all_stamp_codes()

@@ -58,12 +58,10 @@ func clear_piece_selection() -> void:
 	hide_hover_piece_details()
 
 func handle_input(event: InputEvent) -> void:
-	if event is InputEventKey:
-		var key_event: InputEventKey = event as InputEventKey
-		if key_event.pressed and !key_event.echo and key_event.keycode == KEY_ESCAPE:
-			match_board.show_quit_confirmation()
-			match_board.get_viewport().set_input_as_handled()
-			return
+	if event.is_action_pressed("ui_cancel"):
+		match_board.show_quit_confirmation()
+		match_board.get_viewport().set_input_as_handled()
+		return
 
 	if match_board.can_control_current_turn():
 		if event is InputEventMouseButton and event.pressed:

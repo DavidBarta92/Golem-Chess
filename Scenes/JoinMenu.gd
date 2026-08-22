@@ -10,7 +10,7 @@ func _ready() -> void:
 func _on_connect_button_pressed():
 	var endpoint: Dictionary = _parse_endpoint(ip_input.text, port_input.text)
 	if !bool(endpoint.get("valid", false)):
-		var error_message: String = str(endpoint.get("error", "Invalid server address."))
+		var error_message: String = tr(str(endpoint.get("error", "Invalid server address.")))
 		status_label.text = error_message
 		DebugLog.network_error(error_message)
 		return

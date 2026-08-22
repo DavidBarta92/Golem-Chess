@@ -13,7 +13,7 @@ var deck_ids: Array[String] = []
 func _ready() -> void:
 	server_ip_input.text = GameConfig.server_ip
 	port_input.text = str(GameConfig.server_port)
-	server_rooms_button.text = "Server Room"
+	server_rooms_button.text = tr("Server Room")
 	show_status_message(GameConfig.consume_multiplayer_menu_status_message())
 	_populate_deck_options()
 
@@ -72,7 +72,7 @@ func _populate_deck_options() -> void:
 	var all_decks: Array = PlayerDeckStore.list_decks()
 	var decks: Array = PlayerDeckStore.list_playable_decks()
 	if decks.is_empty():
-		var empty_text: String = "No saved codexes" if all_decks.is_empty() else "No complete codexes"
+		var empty_text: String = tr("No saved codexes") if all_decks.is_empty() else tr("No complete codexes")
 		deck_option_button.add_item(empty_text)
 		deck_option_button.disabled = true
 		host_button.disabled = true

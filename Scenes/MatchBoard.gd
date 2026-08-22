@@ -311,7 +311,8 @@ const TUTORIAL_ACTION_MOVE_PIECE = "move_piece"
 const TUTORIAL_ACTION_EXCHANGE_STAMP = "exchange_stamp"
 const TUTORIAL_ACTION_TURN_PAGE = "turn_page"
 const TUTORIAL_ACTION_END_TURN = "end_turn"
-const RULES_INFO_TEXT: String = "Goal: attach a Seeker stamp to one of your pieces, then move that Seeker onto the opponent's base square.\n\nCodex:\n- Your codex has 5 pages with up to 3 stamps per page.\n- You may use only the currently open page.\n- Before attaching a stamp, you may turn once to the next non-empty page.\n- Empty pages are skipped, and a depleted page leaves the rotation.\n\nTurn flow:\n1. On your first turn, attach at least one stamp, then press End Turn. Attaching all 3 stamps ends it automatically.\n2. On later turns, optionally turn the page, attach stamps, then move.\n3. A newly stamped piece is frozen for that turn.\n4. Moving is mandatory and immediately ends the turn. If frozen stamped pieces leave you with no legal move, press End Turn.\n\nCaptures:\n- The first captured piece respawns locked on an empty non-base home-row square. The next capture unlocks it.\n- Its attached stamp is removed. Seeker stamps return to their original codex page."
+# Translation key, not display text - the actual paragraph lives in Localization/translations.csv.
+const RULES_INFO_TEXT: String = "RULES_INFO_TEXT"
 const PIECE_SHATTER_FRAGMENT_GROUP_NONE: String = ""
 const PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM: String = "bottom"
 const PIECE_SHATTER_FRAGMENT_GROUP_TOP: String = "top"
@@ -808,10 +809,10 @@ func create_hover_piece_ui():
 func create_quit_confirmation_ui():
 	quit_confirmation_dialog = ConfirmationDialog.new()
 	canvas_layer.add_child(quit_confirmation_dialog)
-	quit_confirmation_dialog.title = "Leave Game"
-	quit_confirmation_dialog.dialog_text = "Do you really want to leave the game?"
-	quit_confirmation_dialog.ok_button_text = "Yes"
-	quit_confirmation_dialog.cancel_button_text = "No"
+	quit_confirmation_dialog.title = tr("Leave Game")
+	quit_confirmation_dialog.dialog_text = tr("Do you really want to leave the game?")
+	quit_confirmation_dialog.ok_button_text = tr("Yes")
+	quit_confirmation_dialog.cancel_button_text = tr("No")
 	quit_confirmation_dialog.exclusive = true
 	quit_confirmation_dialog.confirmed.connect(_on_quit_confirmed)
 

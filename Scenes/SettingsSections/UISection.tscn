@@ -1,0 +1,56 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Settings/SettingsSection.gd" id="1_section"]
+[ext_resource type="Script" path="res://Scripts/Settings/UIElements/LastMoveArrowElement.gd" id="2_last_move_arrow"]
+[ext_resource type="Script" path="res://Scripts/Settings/UIElements/EnemyAttackMarkersElement.gd" id="3_enemy_attack_markers"]
+[ext_resource type="Script" path="res://Scripts/Settings/UIElements/LanguageElement.gd" id="4_language"]
+
+[node name="UI" type="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_section")
+IDENTIFIER = "UI"
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="Content" type="VBoxContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Language" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("OptionsRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("4_language")
+OptionsRef = NodePath("Options")
+
+[node name="Label" type="Label" parent="Scroll/Content/Language"]
+layout_mode = 2
+text = "Language"
+
+[node name="Options" type="OptionButton" parent="Scroll/Content/Language"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LastMoveArrow" type="HBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("ToggleRef")]
+layout_mode = 2
+script = ExtResource("2_last_move_arrow")
+ToggleRef = NodePath("Check")
+
+[node name="Check" type="CheckBox" parent="Scroll/Content/LastMoveArrow"]
+layout_mode = 2
+text = "Show last move arrow"
+
+[node name="EnemyAttackMarkers" type="HBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("ToggleRef")]
+layout_mode = 2
+script = ExtResource("3_enemy_attack_markers")
+ToggleRef = NodePath("Check")
+
+[node name="Check" type="CheckBox" parent="Scroll/Content/EnemyAttackMarkers"]
+layout_mode = 2
+text = "Show enemy attack highlights"

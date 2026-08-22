@@ -11,12 +11,17 @@ const ITEM_STAGGER_SECONDS: float = 0.045
 const TOP_BAR_BACKGROUND_COLOR: Color = Color(0.9366637, 0.9330646, 0.89437205, 1.0)
 const TOP_BAR_TEXT_COLOR: Color = Color(0.06666667, 0.05490196, 0.09411765, 1.0)
 const VERSION_TEXT_COLOR: Color = Color(0.61960787, 0.6039216, 0.6862745, 1.0)
+const SINGLEPLAYER_UNLOCK_KEY: Key = KEY_A
+const SINGLEPLAYER_UNLOCK_PRESS_COUNT: int = 3
 
 @onready var root: Control = $Root
 @onready var top_background: ColorRect = $Root/TopBackground
 @onready var scene_items_clip: Control = $Root/SceneItemsClip
 @onready var main_menu_items: HBoxContainer = $Root/SceneItemsClip/MainMenuItems
 @onready var collection_items: HBoxContainer = $Root/SceneItemsClip/CollectionItems
+@onready var singleplayer_slot: Control = $Root/SceneItemsClip/MainMenuItems/SingleplayerSlot
+@onready var singleplayer_button: Button = $Root/SceneItemsClip/MainMenuItems/SingleplayerSlot/SingleplayerButton
+@onready var multiplayer_button: Button = $Root/SceneItemsClip/MainMenuItems/MultiplayerSlot/MultiplayerButton
 @onready var settings_button: Button = $Root/SceneItemsClip/MainMenuItems/SettingsSlot/SettingsButton
 @onready var exit_button: Button = $Root/SceneItemsClip/MainMenuItems/ExitSlot/ExitButton
 @onready var back_button: Button = $Root/SceneItemsClip/CollectionItems/BackSlot/BackButton
@@ -34,6 +39,7 @@ var button_by_id: Dictionary = {}
 var pressed_connections: Dictionary = {}
 var rest_positions: Dictionary = {}
 var scene_transition_active: bool = false
+var singleplayer_unlock_presses: int = 0
 
 
 func _ready() -> void:
@@ -55,6 +61,8 @@ func _ready() -> void:
 		"exit": exit_button,
 		"back": back_button,
 		"buy_packs": buy_packs_button,
+		"singleplayer": singleplayer_button,
+		"multiplayer": multiplayer_button,
 	}
 	_reset_container_items(main_menu_items)
 	_reset_container_items(collection_items)
@@ -62,9 +70,39 @@ func _ready() -> void:
 	refresh_points()
 
 
-func show_main_menu(settings_pressed: Callable, exit_pressed: Callable) -> void:
+func _input(event: InputEvent) -> void:
+	if current_mode != MAIN_MENU_MODE or singleplayer_slot.visible:
+		return
+	if get_viewport().gui_get_focus_owner() is LineEdit:
+		return
+
+	var key_event: InputEventKey = event as InputEventKey
+	if key_event == null or !key_event.pressed or key_event.echo:
+		return
+
+	if key_event.keycode == SINGLEPLAYER_UNLOCK_KEY:
+		singleplayer_unlock_presses += 1
+		if singleplayer_unlock_presses >= SINGLEPLAYER_UNLOCK_PRESS_COUNT:
+			_reveal_singleplayer_button()
+	else:
+		singleplayer_unlock_presses = 0
+
+
+func _reveal_singleplayer_button() -> void:
+	singleplayer_unlock_presses = 0
+	if singleplayer_slot.visible:
+		return
+	singleplayer_slot.visible = true
+	await get_tree().process_frame
+	rest_positions.erase(singleplayer_button)
+	_reset_container_items(main_menu_items)
+
+
+func show_main_menu(settings_pressed: Callable, exit_pressed: Callable, singleplayer_pressed: Callable = Callable(), multiplayer_pressed: Callable = Callable()) -> void:
 	_replace_button_connection(settings_button, settings_pressed)
 	_replace_button_connection(exit_button, exit_pressed)
+	_replace_button_connection(singleplayer_button, singleplayer_pressed)
+	_replace_button_connection(multiplayer_button, multiplayer_pressed)
 	_show_mode(MAIN_MENU_MODE)
 
 

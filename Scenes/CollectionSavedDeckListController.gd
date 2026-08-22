@@ -38,7 +38,7 @@ func populate_saved_decks_list() -> void:
 	if saved_decks.is_empty():
 		var empty_label := Label.new()
 		deck_list.add_child(empty_label)
-		empty_label.text = "No saved codexes"
+		empty_label.text = tr("No saved codexes")
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		return
 
@@ -92,7 +92,7 @@ func create_saved_deck_row(deck_data: Dictionary) -> Control:
 
 	var name_label := Label.new()
 	content.add_child(name_label)
-	name_label.text = str(deck_data.get("name", "Unnamed codex"))
+	name_label.text = str(deck_data.get("name", tr("Unnamed codex")))
 	name_label.clip_text = true
 	name_label.add_theme_font_size_override("font_size", 20)
 	name_label.add_theme_color_override("font_color", Color(0.94, 0.94, 0.9))
@@ -113,12 +113,12 @@ func create_saved_deck_row(deck_data: Dictionary) -> Control:
 	count_label.add_theme_font_size_override("font_size", 18)
 	count_label.add_theme_color_override("font_color", Color(0.95, 0.2, 0.2) if !is_playable else Color(0.86, 0.86, 0.82))
 
-	var edit_button := create_circle_icon_button("E", "Edit codex")
+	var edit_button := create_circle_icon_button("E", tr("Edit codex"))
 	footer.add_child(edit_button)
 	if edit_deck_callback.is_valid():
 		edit_button.pressed.connect(edit_deck_callback.bind(deck_data.duplicate(true)))
 
-	var delete_button := create_circle_icon_button("X", "Delete codex")
+	var delete_button := create_circle_icon_button("X", tr("Delete codex"))
 	footer.add_child(delete_button)
 	delete_button.pressed.connect(on_delete_deck_pressed.bind(str(deck_data.get("deck_id", ""))))
 

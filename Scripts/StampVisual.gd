@@ -576,7 +576,7 @@ func _apply_stamp() -> void:
 		pattern_view.set_stamp(null)
 	else:
 		name_label.text = stamp.stamp_name
-		duration_label.text = "INF" if stamp.duration < 0 else str(stamp.duration)
+		duration_label.text = tr("INF") if stamp.duration < 0 else str(stamp.duration)
 		effect_icon_texture.texture = stamp.effect_icon
 		effect_icon_label.text = StampEffect.get_effect_label(stamp.effect_type)
 		pattern_view.set_stamp(stamp)

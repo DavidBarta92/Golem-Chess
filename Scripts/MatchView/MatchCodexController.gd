@@ -84,7 +84,7 @@ func create_ui() -> void:
 
 	turn_page_button = Button.new()
 	root.add_child(turn_page_button)
-	turn_page_button.text = "Turn Page"
+	turn_page_button.text = tr("Turn Page")
 	turn_page_button.custom_minimum_size = Vector2(0, 34)
 	turn_page_button.pressed.connect(on_turn_page_pressed)
 	update_ui()
@@ -96,7 +96,7 @@ func update_ui() -> void:
 	var owner_color: int = get_display_color()
 	var page_index: int = get_page_index(owner_color)
 	var page_counts: Array[int] = get_page_counts(owner_color)
-	page_label.text = "%d. oldal / %d" % [page_index + 1, DeckManager.CODEX_PAGE_COUNT]
+	page_label.text = tr("PAGE_OF_TOTAL") % [page_index + 1, DeckManager.CODEX_PAGE_COUNT]
 	for index in range(count_labels.size()):
 		var count_label: Label = count_labels[index]
 		var page_count: int = int(page_counts[index]) if index < page_counts.size() else 0

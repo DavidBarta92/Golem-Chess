@@ -351,9 +351,9 @@ func _bind_scene_ui() -> void:
 	remove_stamp_timer = $RemoveStampTimer
 	deck_title_label = get_node_or_null("RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckTitle") as Label
 	if deck_title_label != null:
-		deck_title_label.text = "My codexes"
-	new_deck_button.text = "New codex"
-	deck_name_edit.placeholder_text = "Codex name"
+		deck_title_label.text = tr("My codexes")
+	new_deck_button.text = tr("New codex")
+	deck_name_edit.placeholder_text = tr("Codex name")
 	_configure_pager_buttons()
 	_configure_inventory_block()
 	_configure_pack_notice_panel()
@@ -893,7 +893,7 @@ func _bind_magnifier_case_button() -> void:
 		magnifier_case_opened_image.texture = MAGNIFIER_CASE_OPENED_TEXTURE
 		magnifier_case_opened_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if magnifier_case_click_area != null:
-		magnifier_case_click_area.tooltip_text = "Magnifier"
+		magnifier_case_click_area.tooltip_text = tr("Magnifier")
 		magnifier_case_click_area.flat = true
 		magnifier_case_click_area.focus_mode = Control.FOCUS_NONE
 		_connect_once(magnifier_case_click_area.pressed, Callable(self, "_on_magnifier_case_pressed"))
@@ -1802,7 +1802,7 @@ func _sync_deck_name_display() -> void:
 	if deck_name_display == null or deck_name_edit == null:
 		return
 	var name_text: String = deck_name_edit.text.strip_edges()
-	deck_name_display.text = name_text if !name_text.is_empty() else "New"
+	deck_name_display.text = name_text if !name_text.is_empty() else tr("New")
 	deck_name_display.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08) if !name_text.is_empty() else Color(0.26, 0.26, 0.24))
 
 func _on_deck_name_display_gui_input(event: InputEvent) -> void:
@@ -2137,7 +2137,7 @@ func _refresh_selected_deck_stamps() -> void:
 		child.queue_free()
 
 	for page_index in range(CODEX_PAGE_COUNT):
-		_add_selected_deck_section("Page %d" % (page_index + 1), page_index)
+		_add_selected_deck_section(tr("Page %d") % (page_index + 1), page_index)
 
 func _add_selected_deck_section(title: String, page_index: int) -> void:
 	var section_title := Label.new()
@@ -2276,7 +2276,7 @@ func _get_stamp_visual_draw_top_left(stamp_visual: StampVisual) -> Vector2:
 
 func _create_deck_slot_remove_button(deck_stamp_index: int) -> Control:
 	var root := Control.new()
-	root.tooltip_text = "Remove stamp"
+	root.tooltip_text = tr("Remove stamp")
 	root.custom_minimum_size = DECK_SLOT_REMOVE_BUTTON_SIZE
 	root.size = DECK_SLOT_REMOVE_BUTTON_SIZE
 	root.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -2420,7 +2420,7 @@ func _create_deck_stamp_row(stamp: Stamp, stamp_print: StampPrint, deck_stamp_in
 	duration_label.custom_minimum_size = Vector2(34, 0)
 	duration_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	duration_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	duration_label.text = "INF" if stamp.duration < 0 else str(stamp.duration)
+	duration_label.text = tr("INF") if stamp.duration < 0 else str(stamp.duration)
 
 	var name_label := Label.new()
 	row.add_child(name_label)

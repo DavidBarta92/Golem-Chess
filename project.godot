@@ -29,16 +29,17 @@ PlayerCollectionStore="*res://Scripts/PlayerCollectionStore.gd"
 PlayerDeckStore="*res://Scripts/PlayerDeckStore.gd"
 PlayerProgressStore="*res://Scripts/PlayerProgressStore.gd"
 GameConfig="*res://GameConfig.gd"
-PlayerSettingsStore="*res://Scripts/PlayerSettingsStore.gd"
 GameController="*res://Scripts/GameController.gd"
 GlobalTopBar="*res://Scenes/GlobalTopBar.tscn"
 SceneTransition="*res://Scripts/SceneTransition.gd"
 CursorManager="*res://Scripts/CursorManager.gd"
+SettingsDataManager="*res://Scripts/Settings/SettingsDataManager.gd"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/resizable=false
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/size/min_width=1024
@@ -51,6 +52,12 @@ enabled=PackedStringArray("res://addons/stamp_pattern_editor/plugin.cfg")
 [gui]
 
 theme/custom="res://ui/themes/global_theme.tres"
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://Localization/translations.en.translation", "res://Localization/translations.hu.translation")
+locale/locale_filter_mode=1
+locale/locale_filter=PackedStringArray("en", "hu")
 
 [rendering]
 

@@ -1,0 +1,50 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Settings/InputRebindDialog.gd" id="1_script"]
+
+[node name="InputRebindDialog" type="Window"]
+title = "Rebind Keys"
+size = Vector2i(360, 180)
+visible = false
+script = ExtResource("1_script")
+
+[node name="Root" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="ActionRow" type="HBoxContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="Root/ActionRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Cancel / Back"
+
+[node name="ActionButton" type="Button" parent="Root/ActionRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 0)
+text = "Escape"
+
+[node name="ButtonRow" type="HBoxContainer" parent="Root"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ResetButton" type="Button" parent="Root/ButtonRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Reset to Default"
+
+[node name="CloseButton" type="Button" parent="Root/ButtonRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Close"

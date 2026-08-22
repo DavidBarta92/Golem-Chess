@@ -1,8 +1,12 @@
 [gd_scene format=3 uid="uid://b2oed0tahffou"]
 
 [ext_resource type="Script" uid="uid://cef2ndnwft8t1" path="res://Scenes/MainMenu.gd" id="1_tt5f1"]
-[ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="2_8saeu"]
-[ext_resource type="Texture2D" uid="uid://cn5e1f7amlgkn" path="res://Assets/golem_painted_vector_transparent_2.svg" id="2_853f1"]
+[ext_resource type="PackedScene" path="res://Scenes/SettingsSections/VideoSection.tscn" id="10_video_section"]
+[ext_resource type="PackedScene" path="res://Scenes/SettingsSections/ControlsSection.tscn" id="11_controls_section"]
+[ext_resource type="PackedScene" path="res://Scenes/SettingsSections/AudioSection.tscn" id="12_audio_section"]
+[ext_resource type="PackedScene" path="res://Scenes/SettingsSections/InputRebindDialog.tscn" id="13_input_rebind_dialog"]
+[ext_resource type="PackedScene" path="res://Scenes/SettingsSections/GeneralSection.tscn" id="14_general_section"]
+[ext_resource type="PackedScene" path="res://Scenes/SettingsSections/UISection.tscn" id="15_ui_section"]
 
 [node name="MainMenu" type="Control" unique_id=683751200]
 layout_mode = 3
@@ -12,70 +16,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tt5f1")
-
-[node name="TopBackground" type="ColorRect" parent="." unique_id=366199248]
-visible = false
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 60.0
-grow_horizontal = 2
-color = Color(0.9366637, 0.9330646, 0.89437205, 1)
-
-[node name="TopBar" type="HBoxContainer" parent="." unique_id=411097308]
-visible = false
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 24.0
-offset_top = 10.0
-offset_right = -24.0
-offset_bottom = 52.0
-grow_horizontal = 2
-theme_override_constants/separation = 12
-
-[node name="TopSpacer" type="Control" parent="TopBar" unique_id=403020104]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="SettingsButton" type="Button" parent="TopBar" unique_id=992141542]
-custom_minimum_size = Vector2(110, 40)
-layout_mode = 2
-focus_mode = 0
-text = "Settings"
-
-[node name="ExitButton" type="Button" parent="TopBar" unique_id=24372862]
-custom_minimum_size = Vector2(92, 40)
-layout_mode = 2
-focus_mode = 0
-text = "Exit"
-
-[node name="PointsHud" type="Control" parent="TopBar" unique_id=1733465618]
-custom_minimum_size = Vector2(116, 38)
-layout_mode = 2
-
-[node name="Coin" type="TextureRect" parent="TopBar/PointsHud" unique_id=1062072344]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 0
-offset_top = 7.0
-offset_right = 24.0
-offset_bottom = 31.0
-texture_filter = 2
-texture = ExtResource("2_8saeu")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="PointsLabel" type="Label" parent="TopBar/PointsHud" unique_id=1471077960]
-custom_minimum_size = Vector2(70, 32)
-layout_mode = 0
-offset_left = 32.0
-offset_top = 3.0
-offset_right = 116.0
-offset_bottom = 35.0
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/font_size = 20
-text = "0"
-vertical_alignment = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1578044636]
 layout_mode = 1
@@ -91,60 +31,9 @@ offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="NameLabel" type="Label" parent="VBoxContainer" unique_id=1137982642]
-layout_mode = 2
-text = "Player name"
-
-[node name="PlayerNameField" type="LineEdit" parent="VBoxContainer" unique_id=984049382]
-layout_mode = 2
-text = "Player"
-placeholder_text = "Player"
-
-[node name="SingleplayerButton" type="Button" parent="VBoxContainer" unique_id=2029327827]
-layout_mode = 2
-text = "Singleplayer"
-
-[node name="TutorialButton" type="Button" parent="VBoxContainer" unique_id=684865236]
-layout_mode = 2
-text = "Tutorial"
-
-[node name="MultiplayerButton" type="Button" parent="VBoxContainer" unique_id=516859431]
-layout_mode = 2
-text = "Multiplayer"
-
 [node name="CollectionButton" type="Button" parent="VBoxContainer" unique_id=464422607]
 layout_mode = 2
 text = "Collection"
-
-[node name="ExitButton" type="Button" parent="VBoxContainer" unique_id=1409857597]
-visible = false
-layout_mode = 2
-text = "Exit"
-
-[node name="AIVsAIControls" type="Control" parent="." unique_id=155862287]
-visible = false
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = -56.0
-offset_right = -16.0
-offset_bottom = -16.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="Label" type="Label" parent="." unique_id=1540343529]
-visible = false
-layout_mode = 0
-offset_left = 178.0
-offset_top = 33.0
-offset_right = 283.0
-offset_bottom = 64.0
-theme_override_colors/font_color = Color(0.61960787, 0.6039216, 0.6862745, 1)
-theme_override_font_sizes/font_size = 12
-text = "v0.0.8 alpha"
 
 [node name="DevToolsWindow" type="Window" parent="." unique_id=91807004]
 title = "Developer Tools"
@@ -250,14 +139,53 @@ layout_mode = 2
 text = "Balance sessions are saved during AI vs AI runs."
 autowrap_mode = 2
 
-[node name="GolemPaintedVectorTransparent2" type="Sprite2D" parent="." unique_id=2114504425]
-visible = false
-position = Vector2(101, 29)
-scale = Vector2(0.07829182, 0.07829182)
-texture = ExtResource("2_853f1")
+[node name="SettingsDialog" type="AcceptDialog" parent="." unique_id=730184552]
+title = "Settings"
+exclusive = true
+min_size = Vector2i(540, 340)
 
-[connection signal="pressed" from="VBoxContainer/SingleplayerButton" to="." method="_on_singleplayer_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/TutorialButton" to="." method="_on_tutorial_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MultiplayerButton" to="." method="_on_multiplayer_button_pressed"]
+[node name="Root" type="VBoxContainer" parent="SettingsDialog" unique_id=730184553]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="Tabs" type="TabContainer" parent="SettingsDialog/Root" unique_id=730184554]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="General" parent="SettingsDialog/Root/Tabs" instance=ExtResource("14_general_section")]
+layout_mode = 2
+
+[node name="Video" parent="SettingsDialog/Root/Tabs" instance=ExtResource("10_video_section")]
+visible = false
+layout_mode = 2
+
+[node name="Controls" parent="SettingsDialog/Root/Tabs" instance=ExtResource("11_controls_section")]
+visible = false
+layout_mode = 2
+
+[node name="UI" parent="SettingsDialog/Root/Tabs" instance=ExtResource("15_ui_section")]
+visible = false
+layout_mode = 2
+
+[node name="Audio" parent="SettingsDialog/Root/Tabs" instance=ExtResource("12_audio_section")]
+visible = false
+layout_mode = 2
+
+[node name="InputRebindDialog" parent="." instance=ExtResource("13_input_rebind_dialog")]
+
 [connection signal="pressed" from="VBoxContainer/CollectionButton" to="." method="_on_collection_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/ExitButton" to="." method="_on_exit_button_pressed"]
+[connection signal="pressed" from="SettingsDialog/Root/Tabs/General/Scroll/Content/TutorialButton" to="." method="_on_tutorial_button_pressed"]
+[connection signal="confirmed" from="SettingsDialog" to="." method="_on_settings_confirmed"]
+[connection signal="canceled" from="SettingsDialog" to="." method="_on_settings_canceled"]

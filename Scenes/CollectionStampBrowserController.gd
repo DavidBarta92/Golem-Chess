@@ -90,7 +90,7 @@ func show_page(page_index: int) -> void:
 	if filtered_stamp_prints.is_empty():
 		var empty_label := Label.new()
 		stamp_grid.add_child(empty_label)
-		empty_label.text = "No stamps found"
+		empty_label.text = tr("No stamps found")
 		empty_label.custom_minimum_size = Vector2(0, 120)
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

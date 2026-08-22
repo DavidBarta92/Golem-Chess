@@ -1,0 +1,201 @@
+keys,en,hu
+Multiplayer,Multiplayer,Multijátékos
+Collection,Collection,Gyűjtemény
+Settings,Settings,Beállítások
+Singleplayer,Singleplayer,Egyjátékos
+Exit,Exit,Kilépés
+Back,Back,Vissza
+Buy Packs,Buy Packs,Csomagvásárlás
+General,General,Általános
+UI,UI,Kezelőfelület
+Video,Video,Videó
+Controls,Controls,Vezérlés
+Audio,Audio,Hang
+Player name,Player name,Játékosnév
+Tutorial,Tutorial,Oktatóprogram
+Language,Language,Nyelv
+Keyboard,Keyboard,Billentyűzet
+Rebind Keys…,Rebind Keys…,Billentyűk átkötése
+Rebind Keys,Rebind Keys,Billentyűk átkötése
+Cancel / Back,Cancel / Back,Mégse / Vissza
+Reset to Default,Reset to Default,Alapértelmezés visszaállítása
+Press a key…,Press a key…,Nyomj le egy billentyűt…
+Show last move arrow,Show last move arrow,Utolsó lépés nyilának mutatása
+Show enemy attack highlights,Show enemy attack highlights,Ellenfél támadási zónáinak kiemelése
+Player,Player,Játékos
+My collection,My collection,Gyűjteményem
+Search,Search,Keresés
+Animals,Animals,Állatok
+Flora,Flora,Növények
+Celestials,Celestials,Égitestek
+Archetypes,Archetypes,Archetípusok
+Courtyard,Courtyard,Udvar
+Structures,Structures,Építmények
+My codexes,My codexes,Kódexeim
+New codex,New codex,Új kódex
+Codex name,Codex name,Kódex neve
+Done,Done,Kész
+Cancel,Cancel,Mégse
+Magnifier,Magnifier,Nagyító
+Pack Opened,Pack Opened,Csomag kibontva
+Remove stamp,Remove stamp,Bélyeg eltávolítása
+New,New,Új
+"Page %d","Page %d","%d. oldal"
+No stamps found,No stamps found,Nem található bélyeg
+No saved codexes,No saved codexes,Nincs mentett kódex
+No complete codexes,No complete codexes,Nincs teljes kódex
+Unnamed codex,Unnamed codex,Névtelen kódex
+Edit codex,Edit codex,Kódex szerkesztése
+Delete codex,Delete codex,Kódex törlése
+INF,INF,INF
+Foil,Foil,Fólia
+Full Art,Full Art,Teljes illusztráció
+Standard,Standard,Alap
+Close,Close,Bezárás
+Packs,Packs,Csomagok
+Pack contents,Pack contents,Csomag tartalma
+Buy,Buy,Vásárlás
+Open pack,Open pack,Csomag kibontása
+"%d unopened","%d unopened","%d felbontatlan"
+No unopened packs,No unopened packs,Nincs felbontatlan csomag
+No available packs.,No available packs.,Nincs elérhető csomag.
+This pack has no configured stamps.,This pack has no configured stamps.,Ehhez a csomaghoz nincsenek beállított bélyegek.
+You opened:,You opened:,Kibontottad:
+Enter Server IP:,Enter Server IP:,Add meg a szerver IP-címét:
+Port:,Port:,Port:
+Connect,Connect,Csatlakozás
+Invalid port in server address.,Invalid port in server address.,Érvénytelen port a szerver címében.
+Server IP is empty.,Server IP is empty.,A szerver IP-címe üres.
+Invalid server port.,Invalid server port.,Érvénytelen szerver port.
+Invalid server address.,Invalid server address.,Érvénytelen szerver cím.
+Deck,Deck,Kódex
+Codex,Codex,Kódex
+Server IP,Server IP,Szerver IP
+Host Game,Host Game,Játék indítása
+Join Game,Join Game,Csatlakozás játékhoz
+Server Room,Server Room,Szerver szoba
+Connecting...,Connecting...,Csatlakozás...
+Start,Start,Indítás
+AI difficulty,AI difficulty,MI nehézség
+AI deck,AI deck,MI kódex
+"Level %d","Level %d","%d. szint"
+Thank you for playing!,Thank you for playing!,"Köszönjük, hogy játszottál!"
+"If you have not filled out the questionnaire yet, please take two minutes to do it. It would help a lot as I continue improving the game and the overall experience.","If you have not filled out the questionnaire yet, please take two minutes to do it. It would help a lot as I continue improving the game and the overall experience.","Ha még nem töltötted ki a kérdőívet, kérlek szánj rá két percet. Nagyon sokat segítene a játék és az élmény továbbfejlesztésében."
+Main Menu,Main Menu,Főmenü
+Open Questionnaire,Open Questionnaire,Kérdőív megnyitása
+Skip,Skip,Kihagyás
+Continue,Continue,Folytatás
+Mentor,Mentor,Mentor
+Leave Game,Leave Game,Kilépés a játékból
+Do you really want to leave the game?,Do you really want to leave the game?,Biztosan ki szeretnél lépni a játékból?
+Yes,Yes,Igen
+No,No,Nem
+RULES_INFO_TEXT,"Goal: attach a Seeker stamp to one of your pieces, then move that Seeker onto the opponent's base square.
+
+Codex:
+- Your codex has 5 pages with up to 3 stamps per page.
+- You may use only the currently open page.
+- Before attaching a stamp, you may turn once to the next non-empty page.
+- Empty pages are skipped, and a depleted page leaves the rotation.
+
+Turn flow:
+1. On your first turn, attach at least one stamp, then press End Turn. Attaching all 3 stamps ends it automatically.
+2. On later turns, optionally turn the page, attach stamps, then move.
+3. A newly stamped piece is frozen for that turn.
+4. Moving is mandatory and immediately ends the turn. If frozen stamped pieces leave you with no legal move, press End Turn.
+
+Captures:
+- The first captured piece respawns locked on an empty non-base home-row square. The next capture unlocks it.
+- Its attached stamp is removed. Seeker stamps return to their original codex page.","Cél: erősíts egy Kereső bélyeget az egyik bábudra, majd lépj vele az ellenfél bázismezőjére.
+
+Kódex:
+- A kódexednek 5 oldala van, oldalanként legfeljebb 3 bélyeggel.
+- Csak az éppen nyitott oldalt használhatod.
+- Egy bélyeg felragasztása előtt egyszer lapozhatsz a következő nem üres oldalra.
+- Az üres oldalakat kihagyja a rendszer, a kimerült oldal pedig kikerül a forgásból.
+
+Körök menete:
+1. Az első körödben erősíts fel legalább egy bélyeget, majd nyomd meg a Kör vége gombot. Ha mindhárom bélyeget felhasználod, a kör automatikusan véget ér.
+2. A későbbi körökben opcionálisan lapozhatsz, felerősítheted a bélyegeket, majd léphetsz.
+3. Az újonnan megbélyegzett bábu az adott körben lefagy (nem mozgatható).
+4. A lépés kötelező, és azonnal véget vet a körnek. Ha a lefagyott, megbélyegzett bábuid miatt nincs szabályos lépésed, nyomd meg a Kör vége gombot.
+
+Ütések:
+- Az elsőként leütött bábu zárolva éled újra egy üres, nem bázis alapsor-mezőn. A következő ütés feloldja.
+- A rajta lévő bélyeg eltávolításra kerül. A Kereső bélyegek visszakerülnek az eredeti kódexoldalukra."
+END TURN,END TURN,KÖR VÉGE
+How to Play,How to Play,Hogyan játssz
+Rules,Rules,Szabályok
+"%s WINS!
+MATCH %d / %d","%s WINS!
+MATCH %d / %d","%s NYER!
+MECCS %d / %d"
+WHITE WINS!,WHITE WINS!,VILÁGOS NYER!
+BLACK WINS!,BLACK WINS!,SÖTÉT NYER!
+YOU WON!,YOU WON!,NYERTÉL!
+YOU LOST!,YOU LOST!,VESZTETTÉL!
+Opponent,Opponent,Ellenfél
+WHITE,WHITE,VILÁGOS
+BLACK,BLACK,SÖTÉT
+White,White,Világos
+Black,Black,Fekete
+"%d stamps","%d stamps","%d bélyeg"
+Turn Page,Turn Page,Lapozás
+PAGE_OF_TOTAL,"Page %d / %d","%d. oldal / %d"
+"AI %s","AI %s","MI %s"
+i,i,i
+Starting network...,Starting network...,Hálózat indítása...
+"Hosting on UDP %d. Waiting for peer...","Hosting on UDP %d. Waiting for peer...","Szerver fut az UDP %d porton. Várakozás ellenfélre..."
+"Host failed on UDP %d.","Host failed on UDP %d.","A szerver indítása sikertelen az UDP %d porton."
+"Dedicated server listening on UDP %d.","Dedicated server listening on UDP %d.","A dedikált szerver figyel az UDP %d porton."
+"Dedicated server failed on UDP %d.","Dedicated server failed on UDP %d.","A dedikált szerver indítása sikertelen az UDP %d porton."
+"Connecting to %s:%d...","Connecting to %s:%d...","Csatlakozás ehhez: %s:%d..."
+Connection setup failed.,Connection setup failed.,A kapcsolat létrehozása sikertelen.
+"Hosting on UDP %d. Still waiting for peer.","Hosting on UDP %d. Still waiting for peer.","Szerver fut az UDP %d porton. Továbbra is várakozás ellenfélre."
+Connection failed or timed out.,Connection failed or timed out.,A kapcsolódás sikertelen vagy időtúllépés történt.
+"Connected players: %d/2","Connected players: %d/2","Csatlakozott játékosok: %d/2"
+"Dedicated server clients: %d","Dedicated server clients: %d","Kliensek a dedikált szerveren: %d"
+Connected. Joining server room...,Connected. Joining server room...,Kapcsolódva. Belépés a szerverszobába...
+Connected. Registering player...,Connected. Registering player...,Kapcsolódva. Játékos regisztrálása...
+Connection failed.,Connection failed.,A kapcsolódás sikertelen.
+Server disconnected.,Server disconnected.,A szerver bontotta a kapcsolatot.
+A player left. Closing the match in 5 seconds.,A player left. Closing the match in 5 seconds.,Egy játékos kilépett. A meccs 5 másodperc múlva bezárul.
+Dedicated server room is open.,Dedicated server room is open.,A dedikált szerverszoba nyitva áll.
+"Dedicated match running: %d vs %d","Dedicated match running: %d vs %d","Folyamatban lévő dedikált meccs: %d vs %d"
+"Connected players: %d/2. Waiting for peer...","Connected players: %d/2. Waiting for peer...","Csatlakozott játékosok: %d/2. Várakozás ellenfélre..."
+Waiting for peer registration...,Waiting for peer registration...,Várakozás az ellenfél regisztrációjára...
+Game starting...,Game starting...,A játék indul...
+"Dedicated server room: 1/2. Waiting for another player.","Dedicated server room: 1/2. Waiting for another player.","Dedikált szerverszoba: 1/2. Várakozás egy másik játékosra."
+"Connection failed or timed out: %s:%d","Connection failed or timed out: %s:%d","A kapcsolódás sikertelen vagy időtúllépés történt: %s:%d"
+Joining server room...,Joining server room...,Belépés a szerverszobába...
+Joining room...,Joining room...,Belépés a szobába...
+That room is no longer available.,That room is no longer available.,Ez a szoba már nem elérhető.
+That room is no longer joinable.,That room is no longer joinable.,Ehhez a szobához már nem lehet csatlakozni.
+Waiting for another player.,Waiting for another player.,Várakozás egy másik játékosra.
+Server room is available.,Server room is available.,A szerverszoba elérhető.
+"Connection failed for %s:%d. Check host UDP port forwarding and firewall.","Connection failed for %s:%d. Check host UDP port forwarding and firewall.","A kapcsolódás sikertelen ehhez: %s:%d. Ellenőrizd a host UDP port-továbbítását és a tűzfalat."
+"Server room is full. Please try again in a few minutes.","Server room is full. Please try again in a few minutes.","A szerverszoba megtelt. Kérlek próbáld újra néhány perc múlva."
+A match is already running on this alpha server.,A match is already running on this alpha server.,Már fut egy meccs ezen az alfa szerveren.
+This lobby no longer exists.,This lobby no longer exists.,Ez a lobbi már nem létezik.
+You are already hosting this lobby.,You are already hosting this lobby.,Már te vagy ennek a lobbinak a hosztja.
+The lobby host disconnected.,The lobby host disconnected.,A lobbi hosztja bontotta a kapcsolatot.
+"Not connected to the custom server as a client. Status: %s. Target: %s:%d.","Not connected to the custom server as a client. Status: %s. Target: %s:%d.","Nem vagy kliensként csatlakozva az egyedi szerverhez. Állapot: %s. Cél: %s:%d."
+This game instance is the server. Start a separate client window for Server Room.,This game instance is the server. Start a separate client window for Server Room.,Ez a példány maga a szerver. Indíts egy külön kliens ablakot a szerverszobához.
+Opponent left. Returning to menu in 5 seconds.,Opponent left. Returning to menu in 5 seconds.,Az ellenfél kilépett. Visszatérés a menübe 5 másodperc múlva.
+TUTORIAL_STEP_1,"Welcome. We will play a guided version of the game: one rule, one action, then the next rule.","Üdvözlünk. Egy irányított verzióját fogjuk játszani a játéknak: egy szabály, egy lépés, aztán a következő szabály."
+TUTORIAL_STEP_2,"Stamps give pieces their movement. On your first turn every piece is frozen, so you must attach at least one stamp. Drag Numero_1 onto a piece.","A bélyegek adják a bábuk mozgását. Az első körödben minden bábu le van fagyasztva, ezért legalább egy bélyeget fel kell erősítened. Húzd a Numero_1-et egy bábura."
+TUTORIAL_STEP_3,"The End Turn button is now active. Press it to finish your first turn. If you attach all three stamps, the turn ends automatically.","A Kör vége gomb most már aktív. Nyomd meg, hogy befejezd az első köröd. Ha mindhárom bélyeget felerősíted, a kör automatikusan véget ér."
+TUTORIAL_STEP_4,"From your next turn onward, moving is mandatory and immediately ends your turn. Turn Codex pages and attach before moving. Select the ready piece, then move it to a highlighted square.","A következő köreidtől kezdve a lépés kötelező, és azonnal véget vet a körnek. Lapozz a kódexben és erősíts fel bélyegeket lépés előtt. Válaszd ki a kész bábut, majd lépj vele egy kiemelt mezőre."
+TUTORIAL_STEP_5,"After a piece moves, its stamp loses one duration and the turn ends. Stamps do not tick down merely because another piece moved.","Miután egy bábu lép, a rajta lévő bélyeg időtartama eggyel csökken, és a kör véget ér. A bélyegek nem csökkennek csak azért, mert egy másik bábu lépett."
+TUTORIAL_STEP_6,"You can attach more than one stamp in a turn. Put both stamps from your hand onto two empty pieces.","Egy körben több bélyeget is felerősíthetsz. Tedd fel mindkét kézben lévő bélyeget két üres bábura."
+TUTORIAL_STEP_7,"Good. Now move the piece that was already ready. A successful move ends the turn. Spent non-Seeker stamps stay out of the Codex.","Ügyes. Most mozgasd a bábut, ami már készen állt. A sikeres lépés véget vet a körnek. Az elhasznált, nem Kereső bélyegek a kódexen kívül maradnak."
+TUTORIAL_STEP_8,"Once per turn, before attaching any stamp, you may turn the Codex to the next non-empty page. Press Turn Page.","Körönként egyszer, bármelyik bélyeg felerősítése előtt lapozhatsz a kódex következő nem üres oldalára. Nyomd meg a Lapozás gombot."
+TUTORIAL_STEP_8_POST,"The new page is now open, and only that page's stamps are usable. Press Continue when you are ready.","Az új oldal most nyitva van, és csak az azon lévő bélyegek használhatók. Nyomd meg a Folytatás gombot, ha készen állsz."
+TUTORIAL_STEP_9,"In multiplayer, each player has five minutes for the whole match. Your clock runs only during your turns; reaching 00:00 loses the game.","Többjátékos módban minden játékosnak öt perce van a teljes meccsre. Az órád csak a te köreid alatt fut; ha eléri a 00:00-t, elveszíted a játékot."
+TUTORIAL_STEP_10,"Some stamps have effects. Drag Training Seal onto a piece; its effect will mark frozen squares around it.","Néhány bélyegnek van különleges hatása is. Húzd a Training Seal-t egy bábura; a hatása lefagyasztott mezőket fog jelölni körülötte."
+TUTORIAL_STEP_11,"Those blue marks are board effects. Effects can change what pieces may do, separate from the stamp's movement pattern.","Azok a kék jelölések tábla-hatások. A hatások megváltoztathatják, mit tehetnek a bábuk, függetlenül a bélyeg mozgásmintájától."
+TUTORIAL_STEP_12,"Now capture the enemy piece. The first captured piece returns locked to a non-base square on its starting row. A later capture unlocks it instead of creating another respawn.","Most üsd le az ellenfél bábuját. Az elsőként leütött bábu zárolva tér vissza egy nem bázis mezőre a kezdősorában. Egy későbbi ütés feloldja azt, ahelyett hogy újabb újraéledést hozna létre."
+TUTORIAL_STEP_12_POST,"The captured piece returned to its home row. Its attached stamp is gone, and it stays locked until another piece is captured. Press Continue when you are ready.","A leütött bábu visszatért a kezdősorába. A rajta lévő bélyeg megszűnt, és zárolva marad, amíg egy másik bábut le nem ütnek. Nyomd meg a Folytatás gombot, ha készen állsz."
+TUTORIAL_STEP_13,"Seeker stamps are special. Attach Crown to a piece. If a Seeker is captured, it returns to its original Codex page.","A Kereső bélyegek különlegesek. Erősítsd a Crown-t egy bábura. Ha egy Keresőt leütnek, visszakerül az eredeti kódexoldalára."
+TUTORIAL_STEP_14,"To win, a piece with a Seeker must move onto the opponent's base. Make the winning move.","A győzelemhez egy Keresővel felszerelt bábunak az ellenfél bázisára kell lépnie. Tedd meg a győztes lépést."
+TUTORIAL_STEP_15,Tutorial complete. Good work.,Az oktatóprogram véget ért. Szép munka.
