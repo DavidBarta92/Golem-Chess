@@ -12,6 +12,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 0,
 		"randomness": 45.0,
 		"opponent_response_weight": 0.0,
+		"tactical_defense_awareness": 0.35,
 	},
 	2: {
 		"search_depth": 1,
@@ -19,6 +20,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 0,
 		"randomness": 35.0,
 		"opponent_response_weight": 0.0,
+		"tactical_defense_awareness": 0.45,
 	},
 	3: {
 		"search_depth": 1,
@@ -26,6 +28,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 0,
 		"randomness": 28.0,
 		"opponent_response_weight": 0.0,
+		"tactical_defense_awareness": 0.55,
 	},
 	4: {
 		"search_depth": 1,
@@ -33,6 +36,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 0,
 		"randomness": 20.0,
 		"opponent_response_weight": 0.0,
+		"tactical_defense_awareness": 0.65,
 	},
 	5: {
 		"search_depth": 2,
@@ -40,6 +44,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 2,
 		"randomness": 15.0,
 		"opponent_response_weight": 0.35,
+		"tactical_defense_awareness": 0.75,
 	},
 	6: {
 		"search_depth": 2,
@@ -47,6 +52,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 4,
 		"randomness": 10.0,
 		"opponent_response_weight": 0.50,
+		"tactical_defense_awareness": 0.85,
 	},
 	7: {
 		"search_depth": 2,
@@ -54,6 +60,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 6,
 		"randomness": 6.0,
 		"opponent_response_weight": 0.58,
+		"tactical_defense_awareness": 0.90,
 	},
 	8: {
 		"search_depth": 2,
@@ -61,6 +68,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 8,
 		"randomness": 4.0,
 		"opponent_response_weight": 0.64,
+		"tactical_defense_awareness": 0.95,
 	},
 	9: {
 		"search_depth": 2,
@@ -68,6 +76,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 10,
 		"randomness": 2.0,
 		"opponent_response_weight": 0.70,
+		"tactical_defense_awareness": 1.0,
 	},
 	10: {
 		"search_depth": 2,
@@ -75,6 +84,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 6,
 		"randomness": 1.0,
 		"opponent_response_weight": 0.76,
+		"tactical_defense_awareness": 1.0,
 	},
 	11: {
 		"search_depth": 2,
@@ -82,6 +92,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 6,
 		"randomness": 0.0,
 		"opponent_response_weight": 0.80,
+		"tactical_defense_awareness": 1.0,
 	},
 	12: {
 		"search_depth": 2,
@@ -89,6 +100,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"opponent_top_n": 7,
 		"randomness": 0.0,
 		"opponent_response_weight": 0.82,
+		"tactical_defense_awareness": 1.0,
 	},
 }
 
@@ -128,6 +140,7 @@ const STAMP_VALUE_ATTACH_EXCHANGE_WEIGHT: float = 0.6
 const STAMP_VALUE_CAPTURE_WEIGHT: float = 1.2
 const ROOT_FULL_SCORE_LIMIT: int = 48
 const RESPONSE_FULL_SCORE_LIMIT: int = 24
+const PARALLEL_FAST_SCORE_MIN_PLAN_COUNT: int = 12
 const HAND_DECK_ECONOMY_WEIGHT: float = 0.18
 const SCORE_TWO_TURN_BASE_THREAT: float = 260.0
 const SCORE_FORCE_DEFENSE: float = 120.0
@@ -183,11 +196,13 @@ var own_top_n: int = 6
 var opponent_top_n: int = 4
 var randomness: float = 8.0
 var opponent_response_weight: float = DEFAULT_OPPONENT_RESPONSE_WEIGHT
+var tactical_defense_awareness: float = 1.0
 var last_profile: Dictionary = {}
 var fast_score_cache: Dictionary = {}
 var full_score_cache: Dictionary = {}
 var move_score_cache: Dictionary = {}
 var response_score_cache: Dictionary = {}
+var simulated_state_cache: Dictionary = {}
 var stamp_cache: Dictionary = {}
 var seeker_route_cache: Dictionary = {}
 var strategy_context: Dictionary = {}
@@ -225,6 +240,21 @@ func apply_difficulty_config(level: int) -> void:
 	opponent_top_n = int(config.get("opponent_top_n", 4))
 	randomness = float(config.get("randomness", 8.0))
 	opponent_response_weight = float(config.get("opponent_response_weight", DEFAULT_OPPONENT_RESPONSE_WEIGHT))
+	tactical_defense_awareness = float(config.get("tactical_defense_awareness", 1.0))
+
+func should_notice_defensive_tactics() -> bool:
+	# Guards the non-"immediate win" forced-tactical shortcuts (AITacticalSearch) - defense,
+	# two-turn-threat, and staging-capture - which have no equivalent recognition in the normal
+	# fast-prefilter scoring pass (score_turn_plan_fast never sees the huge hard-rule bonuses
+	# from score_hard_tactical_rules_for_plan, only the full scorer does). Skipping this check is
+	# what lets low difficulty realistically miss "if I don't respond now, I lose next turn" -
+	# the same blind spot a beginner has - instead of just being a slower version of perfect play.
+	# The "immediate win" shortcut is intentionally NOT gated by this: an unblocked winning move
+	# is something the normal scorer already reliably finds on its own (score_move_fast awards
+	# it SCORE_WIN directly), so hiding it here would only slow the AI down, not make it weaker.
+	if tactical_defense_awareness >= 1.0:
+		return true
+	return randf() < tactical_defense_awareness
 
 func choose_best_move(game_state: GameStateData, player_id: int, valid_moves: Array[Dictionary], board_size: int = BoardConfig.BOARD_SIZE) -> Dictionary:
 	if game_state == null or valid_moves.is_empty():
@@ -364,12 +394,7 @@ func add_best_plan_breakdown_to_profile(profile: Dictionary, game_state: GameSta
 func score_own_turn_plans(game_state: GameStateData, player_id: int, turn_plans: Array[Dictionary], board_size: int, profile: Dictionary) -> Array[Dictionary]:
 	var scored_plans: Array[Dictionary] = []
 	var own_score_start_usec: int = Time.get_ticks_usec()
-	var fast_scored_plans: Array[Dictionary] = []
-	for plan: Dictionary in turn_plans:
-		fast_scored_plans.append({
-			"plan": plan,
-			"score": score_turn_plan_fast_cached(game_state, player_id, plan, board_size),
-		})
+	var fast_scored_plans: Array[Dictionary] = score_turn_plans_fast(game_state, player_id, turn_plans, board_size, profile)
 
 	var full_score_limit: int = get_root_full_score_limit(turn_plans.size())
 	var ordered_candidates: Array[Dictionary] = get_top_scored_plans(fast_scored_plans, full_score_limit)
@@ -385,6 +410,51 @@ func score_own_turn_plans(game_state: GameStateData, player_id: int, turn_plans:
 	profile["root_full_score_count"] = ordered_candidates.size()
 	return scored_plans
 
+func score_turn_plans_fast(game_state: GameStateData, player_id: int, turn_plans: Array[Dictionary], board_size: int, profile: Dictionary) -> Array[Dictionary]:
+	if turn_plans.size() < PARALLEL_FAST_SCORE_MIN_PLAN_COUNT:
+		return score_turn_plans_fast_sequential(game_state, player_id, turn_plans, board_size)
+	return score_turn_plans_fast_parallel(game_state, player_id, turn_plans, board_size, profile)
+
+func score_turn_plans_fast_sequential(game_state: GameStateData, player_id: int, turn_plans: Array[Dictionary], board_size: int) -> Array[Dictionary]:
+	var fast_scored_plans: Array[Dictionary] = []
+	for plan: Dictionary in turn_plans:
+		fast_scored_plans.append({
+			"plan": plan,
+			"score": score_turn_plan_fast_cached(game_state, player_id, plan, board_size),
+		})
+	return fast_scored_plans
+
+func score_turn_plans_fast_parallel(game_state: GameStateData, player_id: int, turn_plans: Array[Dictionary], board_size: int, profile: Dictionary) -> Array[Dictionary]:
+	# Each candidate plan's fast score depends only on (game_state, player_id, plan, board_size)
+	# plus read-only constants and StampLibrary/StampBalanceStore lookups (both populated once at
+	# startup and never mutated during play), so scoring every plan is embarrassingly parallel.
+	# Each task gets its own throwaway AIMoveEvaluator (rather than `self`) purely so its internal
+	# stamp_cache writes never touch this evaluator's shared caches from multiple threads at once;
+	# results are folded into fast_score_cache afterward on the calling thread, so all cache
+	# writes stay single-threaded even though the scoring itself runs in parallel.
+	var evaluator_script = get_script()
+	var results: Array = []
+	results.resize(turn_plans.size())
+	var fast_score_task: Callable = func(index: int) -> void:
+		var scratch_evaluator = evaluator_script.new()
+		results[index] = scratch_evaluator.score_turn_plan_fast(game_state, player_id, turn_plans[index], board_size)
+
+	var task_id: int = WorkerThreadPool.add_group_task(fast_score_task, turn_plans.size())
+	if task_id < 0:
+		increment_profile_count(profile, "fast_score_parallel_fallback")
+		return score_turn_plans_fast_sequential(game_state, player_id, turn_plans, board_size)
+	WorkerThreadPool.wait_for_group_task_completion(task_id)
+
+	var fast_scored_plans: Array[Dictionary] = []
+	for index in range(turn_plans.size()):
+		var plan: Dictionary = turn_plans[index]
+		var score: float = float(results[index])
+		var cache_key: String = "fast|%s|p%d|%s" % [get_state_hash(game_state), player_id, get_plan_hash(plan)]
+		fast_score_cache[cache_key] = score
+		fast_scored_plans.append({"plan": plan, "score": score})
+	increment_profile_count(profile, "fast_score_parallel_batches")
+	return fast_scored_plans
+
 func get_root_full_score_limit(plan_count: int) -> int:
 	return mini(maxi(own_top_n * 4, 12), mini(ROOT_FULL_SCORE_LIMIT, plan_count))
 
@@ -393,7 +463,19 @@ func should_score_opponent_responses(turn_planner) -> bool:
 		&& turn_planner != null \
 		&& opponent_response_weight > 0.0 \
 		&& own_top_n > 0 \
-		&& opponent_top_n > 0
+		&& opponent_top_n > 0 \
+		&& !is_safe_opening_phase()
+
+func is_safe_opening_phase() -> bool:
+	# Early game, no active/available seeker pressure on either side yet, and the opening
+	# development goal not met (AIStrategyDirector only picks MODE_OPENING once every higher-
+	# priority defensive/finishing mode has been ruled out - see AIStrategyDirector.gd). No
+	# capture or tactical exchange is possible yet, so the expensive opponent-response lookahead
+	# can't change which stamp/piece choice is best. This is this game's equivalent of an
+	# "opening book" cost-reduction: since decks (and therefore starting hands) vary per match,
+	# there's no fixed line to memorize, so the shortcut is a safety-gated condition rather than
+	# a lookup table.
+	return str(strategy_context.get("mode", "")) == AIStrategyDirector.MODE_OPENING
 
 func should_score_deep_beam(turn_planner) -> bool:
 	return search_depth >= 4 && should_score_opponent_responses(turn_planner)
@@ -457,7 +539,7 @@ func score_best_opponent_response(game_state: GameStateData, player_id: int, pla
 		return float(response_score_cache[response_cache_key])
 
 	var simulator_start_usec: int = Time.get_ticks_usec()
-	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
 	add_profile_time(profile, "simulator_ms", Time.get_ticks_usec() - simulator_start_usec)
 	if simulated_state.game_over:
 		if simulated_state.winner_player == player_id:
@@ -780,6 +862,7 @@ func reset_decision_caches() -> void:
 	full_score_cache.clear()
 	move_score_cache.clear()
 	response_score_cache.clear()
+	simulated_state_cache.clear()
 	# stamp_cache (keyed by stamp name only) and seeker_route_cache (keyed by
 	# stamp/base/board-effects/occupancy, see get_seeker_route_map) stay valid
 	# across decisions as long as the evaluator instance itself persists, so
@@ -834,6 +917,19 @@ func score_move_cached(game_state: GameStateData, player_id: int, move: Dictiona
 	var score: float = score_move(game_state, player_id, move, board_size)
 	move_score_cache[cache_key] = score
 	return score
+
+func get_simulated_turn_plan_state(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> GameStateData:
+	# Several independent scoring sub-functions (seeker route, threat map, hard tactical
+	# rules, strategy mode) each need "the state after this plan" for the exact same
+	# (game_state, player_id, plan), so a single simulation is cached and shared between
+	# them instead of re-cloning and re-resolving stamp effects once per sub-function.
+	var cache_key: String = "sim|%s|p%d|%s" % [get_state_hash(game_state), player_id, get_plan_hash(plan)]
+	if simulated_state_cache.has(cache_key):
+		return simulated_state_cache[cache_key]
+
+	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	simulated_state_cache[cache_key] = simulated_state
+	return simulated_state
 
 func get_cached_stamp(stamp_name: String) -> Stamp:
 	var normalized_name: String = stamp_name.strip_edges()
@@ -1326,7 +1422,7 @@ func score_seeker_route_strategy_for_plan(game_state: GameStateData, player_id: 
 	if game_state == null or plan.is_empty():
 		return 0.0
 
-	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
 	if simulated_state.game_over:
 		return 0.0
 
@@ -1831,7 +1927,7 @@ func score_threat_map_for_plan(game_state: GameStateData, player_id: int, plan: 
 	if game_state == null or plan.is_empty():
 		return 0.0
 
-	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
 	if simulated_state.game_over:
 		return clampf(get_terminal_score_for_player(simulated_state, player_id) * 0.05, -SCORE_WIN * 0.05, SCORE_WIN * 0.05)
 
@@ -1967,7 +2063,7 @@ func score_hard_tactical_rules_for_plan(game_state: GameStateData, player_id: in
 
 	var opponent_player_id: int = 1 - player_id
 	var opponent_had_immediate_base_win: bool = has_immediate_base_win(game_state, opponent_player_id, board_size)
-	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
 	var opponent_has_immediate_base_win_after: bool = has_immediate_base_win(simulated_state, opponent_player_id, board_size)
 	var score: float = 0.0
 
@@ -2225,7 +2321,7 @@ func score_opening_strategy_plan(game_state: GameStateData, player_id: int, plan
 	if game_state == null or plan.is_empty():
 		return 0.0
 
-	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
 	if simulated_state.game_over:
 		return 0.0
 
@@ -2259,7 +2355,7 @@ func score_active_seeker_strategy_plan(game_state: GameStateData, player_id: int
 	var move: Dictionary = plan.get("move", {})
 	if move.is_empty():
 		return 0.0
-	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
 	if simulated_state.game_over:
 		return SCORE_WIN * 0.25
 	return score_active_seeker_push_plan(game_state, simulated_state, player_id, move, board_size) * 2.6
@@ -2268,7 +2364,7 @@ func score_endgame_seeker_finish_strategy_plan(game_state: GameStateData, player
 	if game_state == null or plan.is_empty():
 		return 0.0
 
-	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
 	if simulated_state.game_over:
 		return SCORE_WIN * 0.35 if simulated_state.winner_player == player_id else -SCORE_WIN
 
@@ -2365,7 +2461,7 @@ func score_defense_strategy_plan(game_state: GameStateData, player_id: int, plan
 	if game_state == null or plan.is_empty():
 		return 0.0
 
-	var simulated_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, plan, board_size)
+	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
 	var before_threat: float = score_base_threat_against_player(game_state, player_id, board_size)
 	var after_threat: float = score_base_threat_against_player(simulated_state, player_id, board_size)
 	var score: float = (before_threat - after_threat) * SCORE_DEFENSE_THREAT_REDUCTION * urgency

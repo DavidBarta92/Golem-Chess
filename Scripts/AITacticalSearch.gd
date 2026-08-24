@@ -17,6 +17,9 @@ func find_forced_tactical_plan(
 	if !winning_move.is_empty():
 		return create_move_plan(player_id, winning_move, "immediate_base_win")
 
+	if evaluator != null and !evaluator.should_notice_defensive_tactics():
+		return {}
+
 	var defense_move: Dictionary = find_immediate_base_defense_move(game_state, player_id, evaluator, board_size)
 	if !defense_move.is_empty():
 		return create_move_plan(player_id, defense_move, "immediate_base_defense")
