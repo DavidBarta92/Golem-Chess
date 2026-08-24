@@ -15,9 +15,11 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Golem"
-config/version="0.0.8"
+config/version="0.0.9"
 run/main_scene="uid://b2oed0tahffou"
 config/features=PackedStringArray("4.6", "Mobile")
+boot_splash/bg_color=Color(1, 1, 1, 1)
+boot_splash/use_filter=false
 config/icon="res://icon.svg"
 
 [autoload]
@@ -34,6 +36,8 @@ GlobalTopBar="*res://Scenes/GlobalTopBar.tscn"
 SceneTransition="*res://Scripts/SceneTransition.gd"
 CursorManager="*res://Scripts/CursorManager.gd"
 SettingsDataManager="*res://Scripts/Settings/SettingsDataManager.gd"
+StoryProgressStore="*res://Scripts/Story/StoryProgressStore.gd"
+StoryManager="*res://Scripts/Story/StoryManager.gd"
 
 [display]
 
@@ -61,6 +65,5 @@ locale/locale_filter=PackedStringArray("en", "hu")
 
 [rendering]
 
-textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 anti_aliasing/quality/msaa_2d=2

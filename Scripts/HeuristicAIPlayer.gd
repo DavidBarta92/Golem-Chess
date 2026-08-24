@@ -12,6 +12,16 @@ var planner
 var strategy_director
 var strategy_memory: Dictionary = {}
 
+# Owned exclusively by the AI-thinking call chain (choose_plan_threaded's
+# background thread, or its same-thread fallback) and never touched by the
+# main thread while that thread is alive, so reusing them across turns is
+# safe even though GDScript dictionaries aren't thread-safe under concurrent
+# access. Persisting them (instead of building fresh ones every turn) is what
+# lets AIMoveEvaluator's internal caches (stamp_cache, seeker_route_cache)
+# actually carry over between turns.
+var _persistent_thread_evaluator
+var _persistent_thread_planner
+
 func _init(new_player_id: int = 1, ai_difficulty_level: int = 12):
 	configure(new_player_id, ai_difficulty_level)
 
@@ -101,14 +111,24 @@ func choose_plan_on_main_thread(
 	var effective_player_id: int = player_id if thread_player_id == -1 else thread_player_id
 	var effective_difficulty: int = evaluator.difficulty_level if difficulty_level == -1 else difficulty_level
 	var effective_strategy_memory: Dictionary = strategy_memory.duplicate() if planning_strategy_memory.is_empty() else planning_strategy_memory.duplicate()
-	var evaluator_script = load("res://Scripts/AIMoveEvaluator.gd")
-	var thread_evaluator = evaluator_script.new()
-	thread_evaluator.set_difficulty_level(effective_difficulty)
+	var thread_evaluator = get_persistent_thread_evaluator(effective_difficulty)
 	var thread_strategy_director = AI_STRATEGY_DIRECTOR_SCRIPT.new()
 	thread_evaluator.set_strategy_context(thread_strategy_director.evaluate_strategy(game_state, effective_player_id, effective_strategy_memory, board_size))
-	var thread_planner = AI_TURN_PLANNER_SCRIPT.new()
+	var thread_planner = get_persistent_thread_planner()
 	var selected_plan: Dictionary = thread_planner.choose_planned_turn(game_state, effective_player_id, thread_evaluator, board_size)
 	return strip_thread_plan_values(selected_plan)
+
+func get_persistent_thread_evaluator(difficulty_level: int):
+	if _persistent_thread_evaluator == null:
+		var evaluator_script = load("res://Scripts/AIMoveEvaluator.gd")
+		_persistent_thread_evaluator = evaluator_script.new()
+	_persistent_thread_evaluator.set_difficulty_level(difficulty_level)
+	return _persistent_thread_evaluator
+
+func get_persistent_thread_planner():
+	if _persistent_thread_planner == null:
+		_persistent_thread_planner = AI_TURN_PLANNER_SCRIPT.new()
+	return _persistent_thread_planner
 
 func strip_thread_plan_values(value):
 	if value is Dictionary:

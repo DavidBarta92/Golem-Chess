@@ -27,8 +27,17 @@ const SETTINGS_DIALOG_BELOW_TOP_BAR_LAYER: int = -10
 @onready var audio_section: SettingsSection = $SettingsDialog/Root/Tabs/Audio
 @onready var rebind_keys_button: Button = $SettingsDialog/Root/Tabs/Controls/Scroll/Content/RebindKeysButton
 @onready var input_rebind_dialog: InputRebindDialog = $InputRebindDialog
+@onready var background_lines: TextureRect = $BackgroundLines
+@onready var street_view: MainMenuStreetView = $MainMenuStreetView
+@onready var play_button: TextureButton = $PlayButton
+
+const BACKGROUND_LINES_FALLBACK_BASE_DURATION: float = 1.6
+const BACKGROUND_LINES_FALLBACK_MAX_DELAY: float = 1.8
 
 var ai_vs_ai_unlock_presses: int = 0
+var background_lines_animating: bool = false
+var background_lines_elapsed: float = 0.0
+var background_lines_total_duration: float = 0.0
 var settings_dialog_saved_top_bar_layer: int = 0
 var ai_deck_ids: Array[String] = []
 var points_label: Label
@@ -37,6 +46,10 @@ func _ready():
 	if should_start_dedicated_server_from_launch():
 		prepare_dedicated_server_launch()
 		call_deferred("launch_dedicated_server_scene")
+		return
+
+	if StoryManager.should_block_hub():
+		call_deferred("launch_blocking_story_node")
 		return
 
 	PlayerProgressStore.ensure_loaded()
@@ -54,10 +67,44 @@ func _ready():
 	_connect_once(open_ai_logs_button.pressed, Callable(self, "_on_open_ai_logs_button_pressed"))
 	_connect_once(reset_balance_sessions_button.pressed, Callable(self, "_on_reset_balance_sessions_button_pressed"))
 	_update_ai_vs_ai_deck_controls()
+	_start_background_line_reveal()
+	_connect_once(street_view.opponent_arrived, Callable(self, "_on_opponent_arrived"))
+
+func _process(delta: float) -> void:
+	if !background_lines_animating:
+		return
+	background_lines_elapsed += delta
+	var line_material: ShaderMaterial = background_lines.material as ShaderMaterial
+	if line_material != null:
+		line_material.set_shader_parameter("time", background_lines_elapsed)
+	if background_lines_elapsed >= background_lines_total_duration:
+		background_lines_animating = false
+		set_process(false)
+
+func _start_background_line_reveal() -> void:
+	var line_material: ShaderMaterial = background_lines.material as ShaderMaterial
+	if line_material == null:
+		return
+	var base_duration_value = line_material.get_shader_parameter("base_duration")
+	var max_delay_value = line_material.get_shader_parameter("max_delay")
+	var base_duration: float = float(base_duration_value) if base_duration_value != null else BACKGROUND_LINES_FALLBACK_BASE_DURATION
+	var max_delay: float = float(max_delay_value) if max_delay_value != null else BACKGROUND_LINES_FALLBACK_MAX_DELAY
+	background_lines_total_duration = base_duration + max_delay
+	background_lines_elapsed = 0.0
+	line_material.set_shader_parameter("time", 0.0)
+	background_lines_animating = true
+	set_process(true)
+
+func _on_opponent_arrived() -> void:
+	play_button.disabled = false
 
 func launch_dedicated_server_scene() -> void:
 	if get_tree():
 		SceneTransition.change_scene("res://Scenes/main.tscn")
+
+func launch_blocking_story_node() -> void:
+	if get_tree():
+		StoryManager.start_current_node()
 
 func should_start_dedicated_server_from_launch() -> bool:
 	if GameConfig.is_dedicated_server or OS.has_feature("dedicated_server"):

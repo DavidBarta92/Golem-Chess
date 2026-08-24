@@ -5,6 +5,7 @@ const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const DEFAULT_MAX_HAND_SIZE: int = DeckManager.HAND_SIZE
 const DEFAULT_WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const DEFAULT_BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
+const BOARD_ZONE_EFFECT_TURNS: int = 1  # invalid_squares/frozen_squares always last exactly one round, independent of stamp.duration
 
 static func resolve_trigger(trigger: String, game_state: GameStateData, context: Dictionary, board_size: int = DEFAULT_BOARD_SIZE) -> bool:
 	if game_state == null or game_state.game_over:
@@ -337,24 +338,21 @@ static func resolve_board_zone_effect(game_state: GameStateData, player_id: int,
 		return {}
 
 	var target_player_id: int = int(stamp.effect_settings.get("target_player_id", -1))
-	var turns_remaining: int = int(stamp.effect_settings.get("turns_remaining", stamp.duration))
-	if turns_remaining == 0:
-		turns_remaining = 1
 
 	game_state.board_effects.append({
 		"effect_type": stamp.effect_type,
 		"owner_player_id": player_id,
 		"target_player_id": target_player_id,
 		"squares": squares,
-		"turns_remaining": turns_remaining,
-		"skip_next_tick": stamp.effect_type == StampEffect.TYPE_FROZEN_SQUARES,
+		"turns_remaining": BOARD_ZONE_EFFECT_TURNS,
+		"skip_next_tick": true,
 	})
 	DebugLog.info("Board effect added: type=%s, squares=%d" % [stamp.effect_type, squares.size()])
 	return {
 		"target_player_id": target_player_id,
 		"squares": squares,
 		"affected_count": squares.size(),
-		"board_effect_turns_remaining": turns_remaining,
+		"board_effect_turns_remaining": BOARD_ZONE_EFFECT_TURNS,
 	}
 
 static func get_effect_squares(stamp: Stamp, source_pos: Vector2, board_size: int, effect_color: int) -> Array[Vector2]:
@@ -545,6 +543,16 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 	var target_player_id: int = get_player_id_for_color(target_piece.color)
 	var target_stamp: Stamp = target_piece.attached_stamp
 	var target_was_seeker: bool = is_seeker_piece(target_piece)
+
+	if target_stamp != null:
+		resolve_trigger(StampEffect.TRIGGER_ON_CAPTURED, game_state, {
+			"player_id": target_player_id,
+			"piece": target_piece,
+			"piece_pos": target_pos,
+			"stamp": target_stamp,
+		})
+		if game_state.game_over or game_state.get_piece(target_pos) != target_piece:
+			return
 
 	if target_stamp != null:
 		if target_was_seeker:
@@ -782,7 +790,7 @@ static func can_player_control_piece(piece: Piece, player_id: int) -> bool:
 	var player_color: int = get_color_for_player_id(player_id)
 	if piece.color == player_color:
 		return true
-	return MoveRules.is_shared_stamp(piece.attached_stamp) || piece_has_attached_effect(piece, StampEffect.TYPE_SHARED_CONTROL)
+	return MoveRules.is_shared_stamp(piece.attached_stamp)
 
 static func is_piece_visible_to_player(piece: Piece, viewer_player_id: int) -> bool:
 	if piece == null:

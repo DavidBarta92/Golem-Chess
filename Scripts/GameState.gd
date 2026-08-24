@@ -165,6 +165,22 @@ func find_next_non_empty_page(player_id: int, start_index: int) -> int:
 			return candidate_index
 	return -1
 
+func get_upcoming_stamp_names_in_turn_order(player_id: int, max_count: int = -1) -> Array[String]:
+	var stamp_names: Array[String] = []
+	var pages: Array = get_codex_pages(player_id)
+	var start_index: int = get_current_page_index(player_id)
+	for offset in range(1, DeckManager.CODEX_PAGE_COUNT + 1):
+		var page_index: int = (start_index + offset) % DeckManager.CODEX_PAGE_COUNT
+		if page_index == start_index:
+			break
+		if page_index < 0 or page_index >= pages.size() or !(pages[page_index] is Array):
+			continue
+		for stamp_name_value in pages[page_index] as Array:
+			stamp_names.append(str(stamp_name_value))
+			if max_count > 0 and stamp_names.size() >= max_count:
+				return stamp_names
+	return stamp_names
+
 func consume_stamp(player_id: int, page_index: int, stamp_index: int) -> Dictionary:
 	var pages: Array = get_codex_pages(player_id)
 	if page_index < 0 or page_index >= pages.size():

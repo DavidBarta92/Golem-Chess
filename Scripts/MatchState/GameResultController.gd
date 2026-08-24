@@ -47,11 +47,18 @@ func finish_game(winner_color: int) -> void:
 	if match_parent != null and is_instance_valid(match_parent) and match_parent.has_method("close_game_connection"):
 		match_parent.close_game_connection()
 
+	if next_scene.is_empty():
+		return
+
 	var scene_tree: SceneTree = match_board.get_tree()
 	if scene_tree != null:
 		SceneTransition.change_scene(next_scene)
 
 func get_next_scene_after_game(winner_color: int) -> String:
+	if match_board.tutorial_mode_active:
+		StoryManager.finish_current_node()
+		return ""
+
 	if GameConfig.is_ai_vs_ai_batch:
 		var winner_player_id: int = match_board.get_player_id_for_color(winner_color)
 		GameConfig.record_ai_vs_ai_result(winner_player_id)

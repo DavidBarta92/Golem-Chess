@@ -6,8 +6,8 @@ const FILE_NAME: String = "settings.cfg"
 var PATH: String = "user://" + FILE_NAME
 
 const FILM_GRAIN_SHADER = preload("res://Shaders/film_grain.gdshader")
-const FILM_GRAIN_SIZE: float = 1.35
-const FILM_GRAIN_SPEED: float = 18.0
+const FILM_GRAIN_SIZE: float = 1.55
+const FILM_GRAIN_SPEED: float = 12.0
 const FILM_GRAIN_LAYER: int = 128
 
 var settingsData_: Dictionary = {}

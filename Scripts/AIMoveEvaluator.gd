@@ -111,9 +111,6 @@ const SCORE_INVALID_MOVE_REDUCTION: float = 8.0
 const PENALTY_OWN_MOVE_REDUCTION: float = 5.0
 const SCORE_FROZEN_ENEMY_PIECE: float = 34.0
 const PENALTY_FROZEN_OWN_PIECE: float = 38.0
-const SCORE_SHARED_OWN_MOBILITY: float = 4.0
-const PENALTY_SHARED_OPPONENT_MOBILITY: float = 2.0
-const PENALTY_SHARED_FUTURE_THREAT_MULTIPLIER: float = 0.35
 const SCORE_MOVE_BASE_MIN_DISTANCE: float = 24.0
 const SCORE_MOVE_BASE_AVG_DISTANCE: float = 8.0
 const PENALTY_MOVE_BASE_NOOP: float = 20.0
@@ -262,16 +259,20 @@ func choose_best_move_with_response(
 
 	var best_move: Dictionary = {}
 	var best_score: float = -INF
+	var best_clean_score: float = -INF
 	profile["move_response_candidate_count"] = valid_moves.size()
 	for move: Dictionary in valid_moves:
 		var plan: Dictionary = create_move_response_plan(player_id, move)
-		var move_score: float = score_turn_plan_with_response(game_state, player_id, plan, board_size, turn_planner, profile)
+		var clean_move_score: float = score_turn_plan_with_response(game_state, player_id, plan, board_size, turn_planner, profile, best_clean_score)
+		var move_score: float = clean_move_score
 		if randomness > 0.0:
 			move_score += randf_range(-randomness, randomness)
 
 		if best_move.is_empty() or move_score > best_score:
 			best_move = move
 			best_score = move_score
+		if clean_move_score > best_clean_score:
+			best_clean_score = clean_move_score
 
 	profile["best_move_response_score"] = best_score
 	return best_move
@@ -308,28 +309,34 @@ func choose_best_turn_plan(game_state: GameStateData, player_id: int, turn_plans
 	if should_score_opponent_responses(turn_planner):
 		best_plan = {}
 		best_score = -INF
+		var best_clean_score: float = -INF
 		for scored_plan: Dictionary in response_candidates:
 			var plan: Dictionary = scored_plan.get("plan", {})
 			var own_score: float = float(scored_plan.get("score", 0.0))
-			var plan_score: float = 0.0
+			var clean_plan_score: float = 0.0
 			if should_score_deep_beam(turn_planner):
-				plan_score = score_deep_beam_turn_plan(game_state, player_id, plan, own_score, board_size, turn_planner, profile)
+				clean_plan_score = score_deep_beam_turn_plan(game_state, player_id, plan, own_score, board_size, turn_planner, profile)
 			else:
+				var response_score_ceiling: float = get_opponent_response_score_ceiling(own_score, best_clean_score)
 				var opponent_response_score: float = score_best_opponent_response(
 					game_state,
 					player_id,
 					plan,
 					board_size,
 					turn_planner,
-					profile
+					profile,
+					response_score_ceiling
 				)
-				plan_score = own_score - opponent_response_score * opponent_response_weight
+				clean_plan_score = own_score - opponent_response_score * opponent_response_weight
+			var plan_score: float = clean_plan_score
 			if randomness > 0.0:
 				plan_score += randf_range(-randomness, randomness)
 
 			if best_plan.is_empty() or plan_score > best_score:
 				best_plan = plan
 				best_score = plan_score
+			if clean_plan_score > best_clean_score:
+				best_clean_score = clean_plan_score
 
 	profile["choose_best_turn_plan_ms"] = usec_to_ms(Time.get_ticks_usec() - start_usec)
 	profile["best_plan_score"] = best_score
@@ -418,7 +425,7 @@ func choose_best_scored_plan(scored_plans: Array[Dictionary], profile: Dictionar
 	profile["best_plan_type"] = str(best_plan.get("plan_type", ""))
 	return best_plan
 
-func score_turn_plan_with_response(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE, turn_planner = null, profile: Dictionary = {}) -> float:
+func score_turn_plan_with_response(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE, turn_planner = null, profile: Dictionary = {}, known_best_clean_score: float = -INF) -> float:
 	var own_score_start_usec: int = Time.get_ticks_usec()
 	var own_score: float = score_turn_plan_cached(game_state, player_id, plan, board_size)
 	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - own_score_start_usec)
@@ -429,10 +436,21 @@ func score_turn_plan_with_response(game_state: GameStateData, player_id: int, pl
 	if should_score_deep_beam(turn_planner):
 		return score_deep_beam_turn_plan(game_state, player_id, plan, own_score, board_size, turn_planner, profile)
 
-	var opponent_response_score: float = score_best_opponent_response(game_state, player_id, plan, board_size, turn_planner, profile)
+	var response_score_ceiling: float = get_opponent_response_score_ceiling(own_score, known_best_clean_score)
+	var opponent_response_score: float = score_best_opponent_response(game_state, player_id, plan, board_size, turn_planner, profile, response_score_ceiling)
 	return own_score - opponent_response_score * opponent_response_weight
 
-func score_best_opponent_response(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int, turn_planner, profile: Dictionary = {}) -> float:
+func get_opponent_response_score_ceiling(own_score: float, known_best_clean_score: float) -> float:
+	# Alpha-beta bound: plan_score = own_score - weight * opponent_response_score, and
+	# opponent_response_score only ever grows as score_best_opponent_response examines more
+	# candidates, so plan_score can only fall from here. Once it can no longer beat the best
+	# clean (non-jittered) score found so far, the inner search can stop early without changing
+	# which plan ultimately wins.
+	if opponent_response_weight <= 0.0 or known_best_clean_score == -INF:
+		return INF
+	return (own_score - known_best_clean_score) / opponent_response_weight
+
+func score_best_opponent_response(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int, turn_planner, profile: Dictionary = {}, response_score_ceiling: float = INF) -> float:
 	var response_cache_key: String = "response|%s|p%d|%s" % [get_state_hash(game_state), player_id, get_plan_hash(plan)]
 	if response_score_cache.has(response_cache_key):
 		increment_profile_count(profile, "response_cache_hits")
@@ -474,15 +492,26 @@ func score_best_opponent_response(game_state: GameStateData, player_id: int, pla
 	var best_response_score: float = -INF
 	var response_eval_start_usec: int = Time.get_ticks_usec()
 	var ordered_response_plans: Array[Dictionary] = order_plans_for_full_scoring(simulated_state, opponent_player_id, selected_response_plans, board_size, RESPONSE_FULL_SCORE_LIMIT, profile)
+	var alpha_beta_cutoff: bool = false
+	var evaluated_response_count: int = 0
 	for opponent_plan: Dictionary in ordered_response_plans:
 		var response_score: float = score_turn_plan_cached(simulated_state, opponent_player_id, opponent_plan, board_size)
+		evaluated_response_count += 1
 		if response_score > best_response_score:
 			best_response_score = response_score
+		if best_response_score >= response_score_ceiling:
+			alpha_beta_cutoff = true
+			increment_profile_count(profile, "opponent_response_alpha_beta_cutoffs")
+			break
 	add_profile_time(profile, "evaluator_ms", Time.get_ticks_usec() - response_eval_start_usec)
-	increment_profile_count(profile, "evaluated_response_plans", ordered_response_plans.size())
+	increment_profile_count(profile, "evaluated_response_plans", evaluated_response_count)
 
 	var final_response_score: float = best_response_score if best_response_score != -INF else 0.0
-	response_score_cache[response_cache_key] = final_response_score
+	# A cutoff result is only a lower bound on the true best opponent response, not the exact
+	# value, so it must not be cached as if it were - a later query without a tight ceiling
+	# (e.g. a different decision) would otherwise silently read a too-optimistic score.
+	if !alpha_beta_cutoff:
+		response_score_cache[response_cache_key] = final_response_score
 	return final_response_score
 
 func score_deep_beam_turn_plan(
@@ -751,8 +780,10 @@ func reset_decision_caches() -> void:
 	full_score_cache.clear()
 	move_score_cache.clear()
 	response_score_cache.clear()
-	stamp_cache.clear()
-	seeker_route_cache.clear()
+	# stamp_cache (keyed by stamp name only) and seeker_route_cache (keyed by
+	# stamp/base/board-effects/occupancy, see get_seeker_route_map) stay valid
+	# across decisions as long as the evaluator instance itself persists, so
+	# clearing them here would only force pointless recomputation.
 
 func order_plans_for_full_scoring(
 	game_state: GameStateData,
@@ -860,6 +891,22 @@ func get_state_hash(game_state: GameStateData) -> String:
 		get_stamp_list_dictionary_hash(game_state.player_decks),
 		";".join(effect_parts),
 	]
+
+func get_piece_occupancy_hash(game_state: GameStateData) -> String:
+	if game_state == null:
+		return "null"
+
+	var piece_parts: Array = []
+	var piece_positions: Array = game_state.pieces.keys()
+	piece_positions.sort_custom(Callable(self, "sort_vector2_values"))
+	for position_value in piece_positions:
+		var pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece == null:
+			continue
+		var stamp_name: String = piece.attached_stamp.stamp_name if piece.attached_stamp != null else ""
+		piece_parts.append("%d:%d:%d:%s" % [int(pos.x), int(pos.y), piece.color, stamp_name])
+	return ";".join(piece_parts)
 
 func get_stamp_list_dictionary_hash(stamp_lists: Dictionary) -> String:
 	var parts: Array = []
@@ -1073,8 +1120,6 @@ func score_stamp_effect_fast(
 	var effect_source_pos: Vector2 = get_effect_source_pos(stamp, from_pos, to_pos)
 	var score: float = 0.0
 	match stamp.effect_type:
-		StampEffect.TYPE_SHARED_CONTROL:
-			score += score_shared_control_effect_fast(stamp)
 		StampEffect.TYPE_INVISIBLE_TO_ENEMY:
 			score += 32.0
 			if MoveRules.is_seeker_stamp(stamp):
@@ -1167,12 +1212,6 @@ func score_frozen_squares_effect_fast(game_state: GameStateData, player_id: int,
 			score += piece_score
 	return score
 
-func score_shared_control_effect_fast(stamp: Stamp) -> float:
-	var movement_count: int = 0
-	if stamp != null:
-		movement_count = stamp.get_directions().size()
-	return float(movement_count) * (SCORE_SHARED_OWN_MOBILITY - PENALTY_SHARED_OPPONENT_MOBILITY)
-
 func score_grant_stamp_effect(game_state: GameStateData, player_id: int, stamp: Stamp) -> float:
 	if game_state == null or stamp == null:
 		return 0.0
@@ -1263,8 +1302,6 @@ func score_stamp_synergy_for_attach(game_state: GameStateData, player_id: int, a
 				score += SCORE_HAND_SYNERGY * 1.5
 		else:
 			score -= get_early_seeker_attach_penalty(game_state, player_id, stamp, piece_pos)
-	if stamp.effect_type == StampEffect.TYPE_SHARED_CONTROL:
-		score += float(movement_count) * 2.0
 	if stamp.effect_type == StampEffect.TYPE_FROZEN_SQUARES or stamp.effect_type == StampEffect.TYPE_INVALID_SQUARES:
 		score += maxf(0.0, float(BoardConfig.BOARD_SIZE) - distance_to_base) * 1.5
 	if stamp.effect_type == StampEffect.TYPE_INCREASE_SELF_DURATION and movement_count >= 4:
@@ -1618,11 +1655,12 @@ func get_best_distance_to_seeker_route(game_state: GameStateData, player_id: int
 
 func get_seeker_route_map(game_state: GameStateData, player_id: int, seeker_stamp: Stamp, board_size: int) -> Dictionary:
 	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
-	var cache_key: String = "%s|p%d|base%s|fx%s" % [
+	var cache_key: String = "%s|p%d|base%s|fx%s|occ%s" % [
 		seeker_stamp.stamp_name,
 		player_id,
 		vector_hash(opponent_base),
 		get_board_effects_hash(game_state.board_effects),
+		get_piece_occupancy_hash(game_state),
 	]
 	if seeker_route_cache.has(cache_key):
 		return seeker_route_cache[cache_key]
@@ -1756,14 +1794,14 @@ func score_remaining_hand_quality(game_state: GameStateData, player_id: int, act
 	return score / float(remaining_count)
 
 func score_remaining_deck_quality(game_state: GameStateData, player_id: int) -> float:
-	var deck: Array = game_state.player_decks.get(player_id, [])
+	var deck: Array = game_state.get_upcoming_stamp_names_in_turn_order(player_id, 5)
 	if deck.is_empty():
 		return -6.0
 
-	var sample_count: int = mini(5, deck.size())
+	var sample_count: int = deck.size()
 	var score: float = 0.0
-	for index in range(sample_count):
-		var stamp: Stamp = get_cached_stamp(str(deck[index]))
+	for stamp_name_value in deck:
+		var stamp: Stamp = get_cached_stamp(str(stamp_name_value))
 		if stamp == null:
 			continue
 		score += get_stamp_balance_value(stamp)
@@ -1772,7 +1810,7 @@ func score_remaining_deck_quality(game_state: GameStateData, player_id: int) -> 
 	return score / float(sample_count)
 
 func score_deck_draw_quality(game_state: GameStateData, player_id: int, avoided_stamp_name: String) -> float:
-	var deck: Array = game_state.player_decks.get(player_id, [])
+	var deck: Array = game_state.get_upcoming_stamp_names_in_turn_order(player_id)
 	if deck.is_empty():
 		return -10.0
 
@@ -2800,8 +2838,6 @@ func score_stamp_effect(
 	var score: float = 0.0
 	var effect_source_pos: Vector2 = get_effect_source_pos(stamp, from_pos, to_pos)
 	match stamp.effect_type:
-		StampEffect.TYPE_SHARED_CONTROL:
-			score += score_shared_control_effect(game_state, player_id, stamp, move, to_pos, board_size)
 		StampEffect.TYPE_INVISIBLE_TO_ENEMY:
 			score += 32.0
 			if MoveRules.is_seeker_stamp(stamp):
@@ -2956,54 +2992,6 @@ func score_move_base_effect(game_state: GameStateData, player_id: int, moving_pi
 	var avg_distance_after: float = get_average_distance_to_positions(new_base_pos, opponent_positions)
 	return (min_distance_after - min_distance_before) * SCORE_MOVE_BASE_MIN_DISTANCE \
 		+ (avg_distance_after - avg_distance_before) * SCORE_MOVE_BASE_AVG_DISTANCE
-
-func score_shared_control_effect(game_state: GameStateData, player_id: int, stamp: Stamp, move: Dictionary, piece_pos_after_move: Vector2, board_size: int) -> float:
-	var simulated_pieces: Dictionary = AIStateSimulator.apply_candidate_to_pieces(game_state.pieces, move)
-	var shared_piece: Piece = simulated_pieces.get(piece_pos_after_move, null) as Piece
-	if shared_piece == null:
-		return 0.0
-
-	var own_future_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(
-		simulated_pieces,
-		piece_pos_after_move,
-		player_id,
-		board_size,
-		game_state.board_effects
-	)
-	var score: float = float(own_future_moves.size()) * SCORE_SHARED_OWN_MOBILITY
-	for target_pos: Vector2 in own_future_moves:
-		var target_piece: Piece = simulated_pieces.get(target_pos, null) as Piece
-		if target_piece != null && StampEffectResolver.get_player_id_for_color(target_piece.color) != player_id:
-			score += get_piece_target_score(target_piece) * 0.35
-
-	var opponent_player_id: int = 1 - player_id
-	var opponent_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(
-		simulated_pieces,
-		piece_pos_after_move,
-		opponent_player_id,
-		board_size,
-		game_state.board_effects
-	)
-	score -= float(opponent_moves.size()) * PENALTY_SHARED_OPPONENT_MOBILITY
-	for opponent_target_pos: Vector2 in opponent_moves:
-		var immediate_target: Piece = simulated_pieces.get(opponent_target_pos, null) as Piece
-		if immediate_target != null && StampEffectResolver.get_player_id_for_color(immediate_target.color) == player_id:
-			score -= get_piece_target_score(immediate_target)
-
-		var opponent_future_pieces: Dictionary = simulate_piece_move(simulated_pieces, piece_pos_after_move, opponent_target_pos)
-		var future_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(
-			opponent_future_pieces,
-			opponent_target_pos,
-			opponent_player_id,
-			board_size,
-			game_state.board_effects
-		)
-		for future_target_pos: Vector2 in future_moves:
-			var future_target: Piece = opponent_future_pieces.get(future_target_pos, null) as Piece
-			if future_target != null && StampEffectResolver.get_player_id_for_color(future_target.color) == player_id:
-				score -= get_piece_target_score(future_target) * PENALTY_SHARED_FUTURE_THREAT_MULTIPLIER
-
-	return score
 
 func get_effect_source_pos(stamp: Stamp, from_pos: Vector2, to_pos: Vector2) -> Vector2:
 	if stamp.effect_trigger == StampEffect.TRIGGER_ON_MOVE \

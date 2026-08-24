@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="StoryDefinition" format=3 uid="uid://qiml2km1fed8"]
+
+[ext_resource type="Script" uid="uid://cb0rpmocliu5o" path="res://Scripts/Story/StoryChapter.gd" id="1_fursx"]
+[ext_resource type="Script" uid="uid://qwi6bsmt0mbd" path="res://Scripts/Story/StoryNode.gd" id="2_4u0sc"]
+[ext_resource type="Script" uid="uid://dajq2shuegbcw" path="res://Scripts/Story/TutorialStoryNode.gd" id="3_co32l"]
+[ext_resource type="PackedScene" path="res://Scenes/Tutorial.tscn" id="4_yqx7i"]
+[ext_resource type="Script" uid="uid://jei5phukg5dv" path="res://Scripts/Story/StoryDefinition.gd" id="5_kcb5i"]
+
+[sub_resource type="Resource" id="Resource_rlqrk"]
+script = ExtResource("3_co32l")
+tutorial_scene = ExtResource("4_yqx7i")
+id = "tutorial_basics"
+display_name = "Tutorial"
+blocks_hub_until_completed = true
+
+[sub_resource type="Resource" id="Resource_qnnl7"]
+script = ExtResource("1_fursx")
+id = "chapter_00"
+title = "Bevezetes"
+nodes = Array[ExtResource("2_4u0sc")]([SubResource("Resource_rlqrk")])
+
+[resource]
+script = ExtResource("5_kcb5i")
+chapters = Array[ExtResource("1_fursx")]([SubResource("Resource_qnnl7")])

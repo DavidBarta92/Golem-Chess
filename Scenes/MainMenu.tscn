@@ -1,12 +1,52 @@
 [gd_scene format=3 uid="uid://b2oed0tahffou"]
 
 [ext_resource type="Script" uid="uid://cef2ndnwft8t1" path="res://Scenes/MainMenu.gd" id="1_tt5f1"]
+[ext_resource type="Script" uid="uid://di8xqok5t4n0p" path="res://Scenes/MainMenuCollectionButton.gd" id="2_collection_btn_script"]
+[ext_resource type="Texture2D" uid="uid://cwqu0csyfsbt7" path="res://Assets/mainmenu_bg_1_reveal_mask.png" id="3_bg_mask"]
+[ext_resource type="Shader" uid="uid://dl2w4peyk1os1" path="res://Shaders/mainmenu_line_reveal.gdshader" id="4_bg_line_shader"]
+[ext_resource type="Shader" uid="uid://cq2wpk53gbihw" path="res://Shaders/paper_texture.gdshader" id="5_paper_texture_shader"]
+[ext_resource type="Script" uid="uid://dsac0eb8ca2uh" path="res://Scenes/MainMenuPlayButton.gd" id="6_play_btn_script"]
+[ext_resource type="Texture2D" uid="uid://d0rd00i8edmtp" path="res://Assets/mainmenu_play_button.png" id="7_play_btn_tex"]
+[ext_resource type="PackedScene" uid="uid://obqpbm4obapb" path="res://Scenes/MainMenuStreetView.tscn" id="8_street_view"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/VideoSection.tscn" id="10_video_section"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/ControlsSection.tscn" id="11_controls_section"]
+[ext_resource type="Texture2D" uid="uid://f7p0f8bwycyl" path="res://Assets/mainmenu_collection_button.png" id="11_if7li"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/AudioSection.tscn" id="12_audio_section"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/InputRebindDialog.tscn" id="13_input_rebind_dialog"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/GeneralSection.tscn" id="14_general_section"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/UISection.tscn" id="15_ui_section"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_lines"]
+shader = ExtResource("4_bg_line_shader")
+shader_parameter/time = 0.0
+shader_parameter/base_duration = 1.6
+shader_parameter/min_duration_frac = 0.45
+shader_parameter/max_delay = 1.8
+shader_parameter/feather = 0.03
+shader_parameter/line_color = Color(0.06, 0.06, 0.08, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_loo7a"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_if7li"]
+noise = SubResource("FastNoiseLite_loo7a")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_paper_texture"]
+shader = ExtResource("5_paper_texture_shader")
+shader_parameter/noise_texture = SubResource("NoiseTexture2D_if7li")
+shader_parameter/fold_scale = Vector2(2.2, 2.2)
+shader_parameter/fiber_scale = 39.9600017081
+shader_parameter/fiber_stretch = 13.2850005835375
+shader_parameter/fiber_edge = 0.04500000143898
+shader_parameter/fiber_strength = 0.0450000021375
+shader_parameter/grain_strength = 0.062000002945
+shader_parameter/highlight_tint = Color(1.04, 1.04, 1.04, 1)
+shader_parameter/shadow_tint = Color(0.68651277, 0.6474813, 0.5577221, 1)
+shader_parameter/light_dir = Vector3(0.35, 0.55, 0.75)
+shader_parameter/bump_strength = 2.5
+shader_parameter/light_strength = 0.55
+shader_parameter/contrast = 1.25
+shader_parameter/effect_opacity = 0.5
 
 [node name="MainMenu" type="Control" unique_id=683751200]
 layout_mode = 3
@@ -17,23 +57,42 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tt5f1")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1578044636]
+[node name="Background" type="ColorRect" parent="." unique_id=1578044601]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -140.0
-offset_right = 150.0
-offset_bottom = 140.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
-[node name="CollectionButton" type="Button" parent="VBoxContainer" unique_id=464422607]
-layout_mode = 2
-text = "Collection"
+[node name="MainMenuStreetView" parent="." unique_id=1088058937 instance=ExtResource("8_street_view")]
+layout_mode = 1
+
+[node name="BackgroundLines" type="TextureRect" parent="." unique_id=1578044602]
+material = SubResource("ShaderMaterial_bg_lines")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_bg_mask")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="CollectionButton" type="TextureButton" parent="." unique_id=1578044637]
+layout_mode = 1
+texture_normal = ExtResource("11_if7li")
+script = ExtResource("2_collection_btn_script")
+
+[node name="PlayButton" type="TextureButton" parent="." unique_id=1578044638]
+layout_mode = 1
+disabled = true
+texture_normal = ExtResource("7_play_btn_tex")
+script = ExtResource("6_play_btn_script")
+slide_end_offset = Vector2(-20, -60)
 
 [node name="DevToolsWindow" type="Window" parent="." unique_id=91807004]
 title = "Developer Tools"
@@ -141,11 +200,10 @@ autowrap_mode = 2
 
 [node name="SettingsDialog" type="AcceptDialog" parent="." unique_id=730184552]
 title = "Settings"
-exclusive = true
+size = Vector2i(540, 340)
 min_size = Vector2i(540, 340)
 
 [node name="Root" type="VBoxContainer" parent="SettingsDialog" unique_id=730184553]
-layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -163,29 +221,41 @@ theme_override_constants/separation = 14
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+current_tab = 0
 
-[node name="General" parent="SettingsDialog/Root/Tabs" instance=ExtResource("14_general_section")]
-layout_mode = 2
+[node name="General" parent="SettingsDialog/Root/Tabs" unique_id=896787808 instance=ExtResource("14_general_section")]
+metadata/_tab_index = 0
 
-[node name="Video" parent="SettingsDialog/Root/Tabs" instance=ExtResource("10_video_section")]
+[node name="Video" parent="SettingsDialog/Root/Tabs" unique_id=1791514761 instance=ExtResource("10_video_section")]
 visible = false
-layout_mode = 2
+metadata/_tab_index = 1
 
-[node name="Controls" parent="SettingsDialog/Root/Tabs" instance=ExtResource("11_controls_section")]
+[node name="Controls" parent="SettingsDialog/Root/Tabs" unique_id=1000110246 instance=ExtResource("11_controls_section")]
 visible = false
-layout_mode = 2
+metadata/_tab_index = 2
 
-[node name="UI" parent="SettingsDialog/Root/Tabs" instance=ExtResource("15_ui_section")]
+[node name="UI" parent="SettingsDialog/Root/Tabs" unique_id=2134922194 instance=ExtResource("15_ui_section")]
 visible = false
-layout_mode = 2
+metadata/_tab_index = 3
 
-[node name="Audio" parent="SettingsDialog/Root/Tabs" instance=ExtResource("12_audio_section")]
+[node name="Audio" parent="SettingsDialog/Root/Tabs" unique_id=1151758156 instance=ExtResource("12_audio_section")]
 visible = false
-layout_mode = 2
+metadata/_tab_index = 4
 
-[node name="InputRebindDialog" parent="." instance=ExtResource("13_input_rebind_dialog")]
+[node name="InputRebindDialog" parent="." unique_id=1469922501 instance=ExtResource("13_input_rebind_dialog")]
 
-[connection signal="pressed" from="VBoxContainer/CollectionButton" to="." method="_on_collection_button_pressed"]
-[connection signal="pressed" from="SettingsDialog/Root/Tabs/General/Scroll/Content/TutorialButton" to="." method="_on_tutorial_button_pressed"]
-[connection signal="confirmed" from="SettingsDialog" to="." method="_on_settings_confirmed"]
+[node name="PaperTextureLayer" type="CanvasLayer" parent="." unique_id=1167201497]
+layer = 10
+
+[node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer" unique_id=1372048643]
+material = SubResource("ShaderMaterial_paper_texture")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[connection signal="pressed" from="CollectionButton" to="." method="_on_collection_button_pressed"]
 [connection signal="canceled" from="SettingsDialog" to="." method="_on_settings_canceled"]
+[connection signal="confirmed" from="SettingsDialog" to="." method="_on_settings_confirmed"]

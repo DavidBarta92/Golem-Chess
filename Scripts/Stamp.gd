@@ -24,7 +24,7 @@ enum Role {
 @export_storage var black_piece_texture: Texture2D
 @export var description: String = ""
 @export var symbol: String = ""
-@export_enum("none", "shared_control", "steal_stamp", "grant_stamp", "give_stamp", "move_base", "invisible_to_enemy", "invalid_squares", "frozen_squares", "bomb", "uncapturable", "increase_own_durations", "increase_enemy_durations", "decrease_own_durations", "decrease_enemy_durations", "increase_self_duration") var effect_type: String = StampEffect.TYPE_NONE
+@export_enum("none", "steal_stamp", "grant_stamp", "give_stamp", "move_base", "invisible_to_enemy", "invalid_squares", "frozen_squares", "bomb", "uncapturable", "increase_own_durations", "increase_enemy_durations", "decrease_own_durations", "decrease_enemy_durations", "increase_self_duration") var effect_type: String = StampEffect.TYPE_NONE
 @export_enum("on_attach", "on_move", "on_capture", "on_captured", "on_expire", "while_attached", "on_symbol_count") var effect_trigger: String = StampEffect.TRIGGER_ON_ATTACH
 @export var effect_icon: Texture2D
 @export var effect_params: Array[Array] = [

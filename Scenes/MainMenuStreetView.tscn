@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://obqpbm4obapb"]
+
+[ext_resource type="Script" uid="uid://bfim74wdakklh" path="res://Scenes/MainMenuStreetView.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dryrfr017ahnj" path="res://Assets/mainmenu_opponent.png" id="2_opponent_tex"]
+[ext_resource type="Shader" uid="uid://cmkkk0ywmxdf7" path="res://Shaders/mainmenu_opponent_arrival.gdshader" id="3_arrival_shader"]
+[ext_resource type="Texture2D" path="res://Assets/mainmenu_bg_2.png" id="4_bg_2_tex"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_opponent_arrival"]
+shader = ExtResource("3_arrival_shader")
+shader_parameter/blur_amount = 0.0
+shader_parameter/blur_radius_px = 32.0
+shader_parameter/paint_amount = 0.0
+shader_parameter/paint_radius = 21
+
+[node name="MainMenuStreetView" type="Control" unique_id=1590854754]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="OpponentSprite" type="TextureRect" parent="." unique_id=758394806]
+material = SubResource("ShaderMaterial_opponent_arrival")
+layout_mode = 0
+mouse_filter = 2
+texture = ExtResource("2_opponent_tex")
+
+[node name="ForegroundOverlay" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4_bg_2_tex")
+expand_mode = 1
+stretch_mode = 6

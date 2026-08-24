@@ -2,7 +2,6 @@ extends RefCounted
 class_name StampEffect
 
 const TYPE_NONE: String = "none"
-const TYPE_SHARED_CONTROL: String = "shared_control"
 const TYPE_STEAL_STAMP: String = "steal_stamp"
 const TYPE_GRANT_STAMP: String = "grant_stamp"
 const TYPE_GIVE_STAMP: String = "give_stamp"
@@ -36,8 +35,6 @@ static func has_effect(effect_type: String) -> bool:
 
 static func get_effect_label(effect_type: String) -> String:
 	match effect_type:
-		TYPE_SHARED_CONTROL:
-			return "SC"
 		TYPE_STEAL_STAMP:
 			return "ST"
 		TYPE_GRANT_STAMP:
@@ -71,8 +68,6 @@ static func get_effect_label(effect_type: String) -> String:
 
 static func get_effect_display_name(effect_type: String) -> String:
 	match effect_type:
-		TYPE_SHARED_CONTROL:
-			return "Shared Control"
 		TYPE_STEAL_STAMP:
 			return "Steal Stamp"
 		TYPE_GRANT_STAMP:

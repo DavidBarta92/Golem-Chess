@@ -30,7 +30,9 @@ func evaluate_strategy(game_state: GameStateData, player_id: int, memory: Dictio
 	context["own_active_seeker_count"] = count_active_seeker_pieces(game_state, player_id)
 	context["own_available_seeker_count"] = count_available_seeker_stamps(game_state, player_id)
 	context["enemy_active_seeker_count"] = count_active_seeker_pieces(game_state, 1 - player_id)
-	context["enemy_available_seeker_count"] = count_available_seeker_stamps(game_state, 1 - player_id)
+	# Deliberately not reading the opponent's hidden Codex pages here (count_available_seeker_stamps
+	# would need game_state.player_decks[1 - player_id]): a real opponent can't see those either,
+	# so the AI is limited to what's visible on the board, like a human would be.
 	context["enemy_base_pressure_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_PRESSURE_RADIUS)
 	context["enemy_base_danger_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_DANGER_RADIUS)
 	context["enemy_base_staging_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_STAGING_RADIUS)
@@ -48,16 +50,14 @@ func evaluate_strategy(game_state: GameStateData, player_id: int, memory: Dictio
 	context["memory"] = memory.duplicate()
 
 	if bool(context.get("enemy_immediate_base_win", false)) \
-			or int(context.get("enemy_active_seeker_count", 0)) > 0 and float(context.get("enemy_seeker_min_base_distance", 99.0)) <= BASE_PRESSURE_RADIUS \
-			or int(context.get("enemy_available_seeker_count", 0)) > 0 and int(context.get("enemy_base_danger_count", 0)) > 0:
+			or int(context.get("enemy_active_seeker_count", 0)) > 0 and float(context.get("enemy_seeker_min_base_distance", 99.0)) <= BASE_PRESSURE_RADIUS:
 		context["mode"] = MODE_EMERGENCY_DEFENSE
 	elif int(context.get("own_active_seeker_count", 0)) > 0:
 		context["mode"] = MODE_ACTIVE_SEEKER_PUSH
 	elif should_enter_endgame_seeker_finish(context):
 		context["mode"] = MODE_ENDGAME_SEEKER_FINISH
 	elif int(context.get("enemy_base_danger_count", 0)) >= 2 \
-			or int(context.get("enemy_active_seeker_count", 0)) > 0 \
-			or int(context.get("enemy_available_seeker_count", 0)) > 0 and int(context.get("enemy_base_staging_count", 0)) > 0:
+			or int(context.get("enemy_active_seeker_count", 0)) > 0:
 		context["mode"] = MODE_SOFT_DEFENSE
 	elif !opening_completed:
 		context["mode"] = MODE_OPENING

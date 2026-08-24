@@ -291,17 +291,13 @@ func add_board_zone_effect(source_pos: Vector2, piece: Piece, stamp: Stamp) -> v
 	if squares.is_empty():
 		return
 
-	var turns_remaining: int = int(stamp.effect_settings.get("turns_remaining", stamp.duration))
-	if turns_remaining == 0:
-		turns_remaining = 1
-
 	board_effects.append({
 		"effect_type": stamp.effect_type,
 		"owner_player_id": get_player_id_for_color(piece.color),
 		"target_player_id": int(stamp.effect_settings.get("target_player_id", -1)),
 		"squares": squares,
-		"turns_remaining": turns_remaining,
-		"skip_next_tick": stamp.effect_type == StampEffect.TYPE_FROZEN_SQUARES,
+		"turns_remaining": StampEffectResolver.BOARD_ZONE_EFFECT_TURNS,
+		"skip_next_tick": true,
 	})
 
 func tick_board_effects() -> void:

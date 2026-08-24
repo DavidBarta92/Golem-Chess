@@ -3,8 +3,8 @@ render_mode unshaded;
 
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
 uniform float intensity : hint_range(0.0, 0.16) = 0.045;
-uniform float grain_size : hint_range(1.0, 8.0) = 1.35;
-uniform float animation_speed : hint_range(0.0, 60.0) = 18.0;
+uniform float grain_size : hint_range(1.0, 8.0) = 1.55;
+uniform float animation_speed : hint_range(0.0, 60.0) = 12.0;
 
 float hash(vec2 point) {
 	point = fract(point * vec2(123.34, 456.21));
