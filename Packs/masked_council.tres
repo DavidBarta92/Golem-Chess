@@ -9,6 +9,34 @@
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_2t711"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_wa7xc"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_dxsp7"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/archer.tres" id="10_archer"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/assassin.tres" id="11_assassin"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/berserk.tres" id="12_berserk"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/bishop.tres" id="13_bishop"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/duke.tres" id="14_duke"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/gold_general.tres" id="15_gold_general"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/knight.tres" id="16_knight"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/lance.tres" id="17_lance"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/prince.tres" id="18_prince"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/silver_general.tres" id="19_silver_general"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/the_golem.tres" id="20_the_golem"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/war_drummer.tres" id="21_war_drummer"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/warlord.tres" id="22_warlord"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/adventurer.tres" id="23_adventurer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/advocate.tres" id="24_advocate"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/architect.tres" id="25_architect"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/campaigner.tres" id="26_campaigner"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/commander.tres" id="27_commander"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/consul.tres" id="28_consul"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/defender.tres" id="29_defender"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entertainer.tres" id="30_entertainer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entrepreneur.tres" id="31_entrepreneur"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/executive.tres" id="32_executive"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logician.tres" id="33_logician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logistician.tres" id="34_logistician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/mediator.tres" id="35_mediator"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/protagonist.tres" id="36_protagonist"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/virtuoso.tres" id="37_virtuoso"]
 
 [resource]
 script = ExtResource("9_dxsp7")
@@ -21,5 +49,6 @@ pack_height_texture = ExtResource("4_6j75x")
 pack_normal_texture = ExtResource("5_mjee6")
 pack_roughness_texture = ExtResource("6_ivxbb")
 pack_foil_mask_texture = ExtResource("2_nw1q4")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_wa7xc")]([ExtResource("10_archer"), ExtResource("11_assassin"), ExtResource("12_berserk"), ExtResource("13_bishop"), ExtResource("14_duke"), ExtResource("15_gold_general"), ExtResource("16_knight"), ExtResource("17_lance"), ExtResource("18_prince"), ExtResource("19_silver_general"), ExtResource("20_the_golem"), ExtResource("21_war_drummer"), ExtResource("22_warlord"), ExtResource("23_adventurer"), ExtResource("24_advocate"), ExtResource("25_architect"), ExtResource("26_campaigner"), ExtResource("27_commander"), ExtResource("28_consul"), ExtResource("29_defender"), ExtResource("30_entertainer"), ExtResource("31_entrepreneur"), ExtResource("32_executive"), ExtResource("33_logician"), ExtResource("34_logistician"), ExtResource("35_mediator"), ExtResource("36_protagonist"), ExtResource("37_virtuoso")])
+include_all_standard_prints = false
 price = 1

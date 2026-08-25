@@ -8,7 +8,37 @@
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_35h6p"]
 [ext_resource type="Texture2D" uid="uid://cq0pquibb73jl" path="res://Assets/beast_engines.png" id="7_w4xu3"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_la215"]
+[ext_resource type="Resource" uid="uid://clrhv5a1hu3u4" path="res://Stamps/Structures/gate.tres" id="9_l24i0"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_xewxg"]
+[ext_resource type="Resource" uid="uid://g0lmmmwhako5" path="res://Stamps/Structures/tower.tres" id="10_s4no6"]
+[ext_resource type="Resource" uid="uid://bme63lbc76klu" path="res://Stamps/Structures/castle.tres" id="11_ndl1m"]
+[ext_resource type="Resource" uid="uid://bvuijxogx51au" path="res://Stamps/Structures/shrine.tres" id="12_on1vi"]
+[ext_resource type="Resource" uid="uid://cgosohjad17bj" path="res://Stamps/Structures/temple.tres" id="13_io3iq"]
+[ext_resource type="Resource" uid="uid://4yibfwwprejp" path="res://Stamps/Structures/bastion.tres" id="14_n36ig"]
+[ext_resource type="Resource" uid="uid://d3aknm1y2lda0" path="res://Stamps/Structures/bicycle.tres" id="15_sncnj"]
+[ext_resource type="Resource" uid="uid://bxtspnxv4qast" path="res://Stamps/Structures/bombard.tres" id="16_gccb8"]
+[ext_resource type="Resource" uid="uid://d1t56jrr1ccju" path="res://Stamps/Structures/citadel.tres" id="17_kcm25"]
+[ext_resource type="Resource" uid="uid://lld5243xl18k" path="res://Stamps/Structures/mantlet.tres" id="18_0tmel"]
+[ext_resource type="Resource" uid="uid://1em8v5f52tkx" path="res://Stamps/Structures/ballista.tres" id="19_qhswu"]
+[ext_resource type="Resource" uid="uid://cj6gnpwxrvdiv" path="res://Stamps/Structures/tortoise.tres" id="20_r882c"]
+[ext_resource type="Resource" uid="uid://ckhonx3jd8yum" path="res://Stamps/Structures/trebuchet.tres" id="21_5nv1n"]
+[ext_resource type="Resource" uid="uid://bva2p7308sa63" path="res://Stamps/Structures/war_chariot.tres" id="22_l8ihk"]
+[ext_resource type="Resource" path="res://Stamps/Structures/fortress.tres" id="23_fortress"]
+[ext_resource type="Resource" path="res://Stamps/Animals/bear.tres" id="24_bear"]
+[ext_resource type="Resource" path="res://Stamps/Animals/blackbird.tres" id="25_blackbird"]
+[ext_resource type="Resource" path="res://Stamps/Animals/cat.tres" id="26_cat"]
+[ext_resource type="Resource" path="res://Stamps/Animals/crocodile.tres" id="27_crocodile"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dog.tres" id="28_dog"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dragon.tres" id="29_dragon"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dragonhorse.tres" id="30_dragonhorse"]
+[ext_resource type="Resource" path="res://Stamps/Animals/duck.tres" id="31_duck"]
+[ext_resource type="Resource" path="res://Stamps/Animals/elephant.tres" id="32_elephant"]
+[ext_resource type="Resource" path="res://Stamps/Animals/fox.tres" id="33_fox"]
+[ext_resource type="Resource" path="res://Stamps/Animals/goat.tres" id="34_goat"]
+[ext_resource type="Resource" path="res://Stamps/Animals/heron.tres" id="35_heron"]
+[ext_resource type="Resource" path="res://Stamps/Animals/horse.tres" id="36_horse"]
+[ext_resource type="Resource" path="res://Stamps/Animals/rhinoceros.tres" id="37_rhinoceros"]
+[ext_resource type="Resource" path="res://Stamps/Animals/turtle.tres" id="38_turtle"]
 
 [resource]
 script = ExtResource("9_xewxg")
@@ -21,5 +51,6 @@ pack_height_texture = ExtResource("4_e5ja2")
 pack_normal_texture = ExtResource("5_nwevr")
 pack_roughness_texture = ExtResource("6_rhygr")
 pack_foil_mask_texture = ExtResource("2_w4xu3")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_la215")]([ExtResource("19_qhswu"), ExtResource("14_n36ig"), ExtResource("15_sncnj"), ExtResource("16_gccb8"), ExtResource("11_ndl1m"), ExtResource("17_kcm25"), ExtResource("23_fortress"), ExtResource("9_l24i0"), ExtResource("18_0tmel"), ExtResource("12_on1vi"), ExtResource("13_io3iq"), ExtResource("20_r882c"), ExtResource("10_s4no6"), ExtResource("21_5nv1n"), ExtResource("22_l8ihk"), ExtResource("24_bear"), ExtResource("25_blackbird"), ExtResource("26_cat"), ExtResource("27_crocodile"), ExtResource("28_dog"), ExtResource("29_dragon"), ExtResource("30_dragonhorse"), ExtResource("31_duck"), ExtResource("32_elephant"), ExtResource("33_fox"), ExtResource("34_goat"), ExtResource("35_heron"), ExtResource("36_horse"), ExtResource("37_rhinoceros"), ExtResource("38_turtle")])
+include_all_standard_prints = false
 price = 1

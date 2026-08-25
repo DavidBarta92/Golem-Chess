@@ -9,6 +9,36 @@
 [ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="7"]
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_8ifqb"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_tjx8l"]
+[ext_resource type="Resource" path="res://Stamps/Structures/ballista.tres" id="9_ballista"]
+[ext_resource type="Resource" path="res://Stamps/Structures/bastion.tres" id="10_bastion"]
+[ext_resource type="Resource" path="res://Stamps/Structures/bicycle.tres" id="11_bicycle"]
+[ext_resource type="Resource" path="res://Stamps/Structures/bombard.tres" id="12_bombard"]
+[ext_resource type="Resource" path="res://Stamps/Structures/castle.tres" id="13_castle"]
+[ext_resource type="Resource" path="res://Stamps/Structures/citadel.tres" id="14_citadel"]
+[ext_resource type="Resource" path="res://Stamps/Structures/fortress.tres" id="15_fortress"]
+[ext_resource type="Resource" path="res://Stamps/Structures/gate.tres" id="16_gate"]
+[ext_resource type="Resource" path="res://Stamps/Structures/mantlet.tres" id="17_mantlet"]
+[ext_resource type="Resource" path="res://Stamps/Structures/shrine.tres" id="18_shrine"]
+[ext_resource type="Resource" path="res://Stamps/Structures/temple.tres" id="19_temple"]
+[ext_resource type="Resource" path="res://Stamps/Structures/tortoise.tres" id="20_tortoise"]
+[ext_resource type="Resource" path="res://Stamps/Structures/tower.tres" id="21_tower"]
+[ext_resource type="Resource" path="res://Stamps/Structures/trebuchet.tres" id="22_trebuchet"]
+[ext_resource type="Resource" path="res://Stamps/Structures/war_chariot.tres" id="23_war_chariot"]
+[ext_resource type="Resource" path="res://Stamps/Flora/baobab.tres" id="24_baobab"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cactus.tres" id="25_cactus"]
+[ext_resource type="Resource" path="res://Stamps/Flora/chanterelle.tres" id="26_chanterelle"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cherry_tree.tres" id="27_cherry_tree"]
+[ext_resource type="Resource" path="res://Stamps/Flora/fly_agaric.tres" id="28_fly_agaric"]
+[ext_resource type="Resource" path="res://Stamps/Flora/larch.tres" id="29_larch"]
+[ext_resource type="Resource" path="res://Stamps/Flora/lotus.tres" id="30_lotus"]
+[ext_resource type="Resource" path="res://Stamps/Flora/magnolia.tres" id="31_magnolia"]
+[ext_resource type="Resource" path="res://Stamps/Flora/oak.tres" id="32_oak"]
+[ext_resource type="Resource" path="res://Stamps/Flora/olive_tree.tres" id="33_olive_tree"]
+[ext_resource type="Resource" path="res://Stamps/Flora/orchid.tres" id="34_orchid"]
+[ext_resource type="Resource" path="res://Stamps/Flora/puffball.tres" id="35_puffball"]
+[ext_resource type="Resource" path="res://Stamps/Flora/rose.tres" id="36_rose"]
+[ext_resource type="Resource" path="res://Stamps/Flora/shaggy_mane.tres" id="37_shaggy_mane"]
+[ext_resource type="Resource" path="res://Stamps/Flora/yellow_coral.tres" id="38_yellow_coral"]
 
 [resource]
 script = ExtResource("1")
@@ -21,5 +51,6 @@ pack_height_texture = ExtResource("4")
 pack_normal_texture = ExtResource("5")
 pack_roughness_texture = ExtResource("6")
 pack_foil_mask_texture = ExtResource("7")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_tjx8l")]([ExtResource("9_ballista"), ExtResource("10_bastion"), ExtResource("11_bicycle"), ExtResource("12_bombard"), ExtResource("13_castle"), ExtResource("14_citadel"), ExtResource("15_fortress"), ExtResource("16_gate"), ExtResource("17_mantlet"), ExtResource("18_shrine"), ExtResource("19_temple"), ExtResource("20_tortoise"), ExtResource("21_tower"), ExtResource("22_trebuchet"), ExtResource("23_war_chariot"), ExtResource("24_baobab"), ExtResource("25_cactus"), ExtResource("26_chanterelle"), ExtResource("27_cherry_tree"), ExtResource("28_fly_agaric"), ExtResource("29_larch"), ExtResource("30_lotus"), ExtResource("31_magnolia"), ExtResource("32_oak"), ExtResource("33_olive_tree"), ExtResource("34_orchid"), ExtResource("35_puffball"), ExtResource("36_rose"), ExtResource("37_shaggy_mane"), ExtResource("38_yellow_coral")])
+include_all_standard_prints = false
 price = 1

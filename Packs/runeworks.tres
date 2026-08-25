@@ -9,6 +9,36 @@
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_nyfmo"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_84rpv"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_u5325"]
+[ext_resource type="Resource" path="res://Stamps/Structures/ballista.tres" id="10_ballista"]
+[ext_resource type="Resource" path="res://Stamps/Structures/bastion.tres" id="11_bastion"]
+[ext_resource type="Resource" path="res://Stamps/Structures/bicycle.tres" id="12_bicycle"]
+[ext_resource type="Resource" path="res://Stamps/Structures/bombard.tres" id="13_bombard"]
+[ext_resource type="Resource" path="res://Stamps/Structures/castle.tres" id="14_castle"]
+[ext_resource type="Resource" path="res://Stamps/Structures/citadel.tres" id="15_citadel"]
+[ext_resource type="Resource" path="res://Stamps/Structures/fortress.tres" id="16_fortress"]
+[ext_resource type="Resource" path="res://Stamps/Structures/gate.tres" id="17_gate"]
+[ext_resource type="Resource" path="res://Stamps/Structures/mantlet.tres" id="18_mantlet"]
+[ext_resource type="Resource" path="res://Stamps/Structures/shrine.tres" id="19_shrine"]
+[ext_resource type="Resource" path="res://Stamps/Structures/temple.tres" id="20_temple"]
+[ext_resource type="Resource" path="res://Stamps/Structures/tortoise.tres" id="21_tortoise"]
+[ext_resource type="Resource" path="res://Stamps/Structures/tower.tres" id="22_tower"]
+[ext_resource type="Resource" path="res://Stamps/Structures/trebuchet.tres" id="23_trebuchet"]
+[ext_resource type="Resource" path="res://Stamps/Structures/war_chariot.tres" id="24_war_chariot"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/adventurer.tres" id="25_adventurer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/advocate.tres" id="26_advocate"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/architect.tres" id="27_architect"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/campaigner.tres" id="28_campaigner"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/commander.tres" id="29_commander"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/consul.tres" id="30_consul"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/defender.tres" id="31_defender"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entertainer.tres" id="32_entertainer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entrepreneur.tres" id="33_entrepreneur"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/executive.tres" id="34_executive"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logician.tres" id="35_logician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logistician.tres" id="36_logistician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/mediator.tres" id="37_mediator"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/protagonist.tres" id="38_protagonist"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/virtuoso.tres" id="39_virtuoso"]
 
 [resource]
 script = ExtResource("9_u5325")
@@ -21,5 +51,6 @@ pack_height_texture = ExtResource("4_otog2")
 pack_normal_texture = ExtResource("5_mdjgk")
 pack_roughness_texture = ExtResource("6_202vy")
 pack_foil_mask_texture = ExtResource("2_x0htc")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_84rpv")]([ExtResource("10_ballista"), ExtResource("11_bastion"), ExtResource("12_bicycle"), ExtResource("13_bombard"), ExtResource("14_castle"), ExtResource("15_citadel"), ExtResource("16_fortress"), ExtResource("17_gate"), ExtResource("18_mantlet"), ExtResource("19_shrine"), ExtResource("20_temple"), ExtResource("21_tortoise"), ExtResource("22_tower"), ExtResource("23_trebuchet"), ExtResource("24_war_chariot"), ExtResource("25_adventurer"), ExtResource("26_advocate"), ExtResource("27_architect"), ExtResource("28_campaigner"), ExtResource("29_commander"), ExtResource("30_consul"), ExtResource("31_defender"), ExtResource("32_entertainer"), ExtResource("33_entrepreneur"), ExtResource("34_executive"), ExtResource("35_logician"), ExtResource("36_logistician"), ExtResource("37_mediator"), ExtResource("38_protagonist"), ExtResource("39_virtuoso")])
+include_all_standard_prints = false
 price = 1

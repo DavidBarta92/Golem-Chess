@@ -9,6 +9,36 @@
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_kn4r1"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_y10hg"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_uwl32"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/adventurer.tres" id="10_adventurer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/advocate.tres" id="11_advocate"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/architect.tres" id="12_architect"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/campaigner.tres" id="13_campaigner"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/commander.tres" id="14_commander"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/consul.tres" id="15_consul"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/defender.tres" id="16_defender"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entertainer.tres" id="17_entertainer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entrepreneur.tres" id="18_entrepreneur"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/executive.tres" id="19_executive"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logician.tres" id="20_logician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logistician.tres" id="21_logistician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/mediator.tres" id="22_mediator"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/protagonist.tres" id="23_protagonist"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/virtuoso.tres" id="24_virtuoso"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/black_hole.tres" id="25_black_hole"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/comet.tres" id="26_comet"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/earth.tres" id="27_earth"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/jupiter.tres" id="28_jupiter"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/mars.tres" id="29_mars"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/mercury.tres" id="30_mercury"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/moon.tres" id="31_moon"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/nebula.tres" id="32_nebula"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/neptune.tres" id="33_neptune"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/north_star.tres" id="34_north_star"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/nova.tres" id="35_nova"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/saturn.tres" id="36_saturn"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/sun.tres" id="37_sun"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/uranus.tres" id="38_uranus"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/venus.tres" id="39_venus"]
 
 [resource]
 script = ExtResource("9_uwl32")
@@ -21,5 +51,6 @@ pack_height_texture = ExtResource("4_1lw7j")
 pack_normal_texture = ExtResource("5_57046")
 pack_roughness_texture = ExtResource("6_jbhly")
 pack_foil_mask_texture = ExtResource("2_p2324")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_y10hg")]([ExtResource("10_adventurer"), ExtResource("11_advocate"), ExtResource("12_architect"), ExtResource("13_campaigner"), ExtResource("14_commander"), ExtResource("15_consul"), ExtResource("16_defender"), ExtResource("17_entertainer"), ExtResource("18_entrepreneur"), ExtResource("19_executive"), ExtResource("20_logician"), ExtResource("21_logistician"), ExtResource("22_mediator"), ExtResource("23_protagonist"), ExtResource("24_virtuoso"), ExtResource("25_black_hole"), ExtResource("26_comet"), ExtResource("27_earth"), ExtResource("28_jupiter"), ExtResource("29_mars"), ExtResource("30_mercury"), ExtResource("31_moon"), ExtResource("32_nebula"), ExtResource("33_neptune"), ExtResource("34_north_star"), ExtResource("35_nova"), ExtResource("36_saturn"), ExtResource("37_sun"), ExtResource("38_uranus"), ExtResource("39_venus")])
+include_all_standard_prints = false
 price = 1

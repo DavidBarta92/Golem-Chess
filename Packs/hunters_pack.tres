@@ -9,6 +9,34 @@
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_vt7bh"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_mi2ms"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_6j6tf"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/archer.tres" id="10_archer"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/assassin.tres" id="11_assassin"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/berserk.tres" id="12_berserk"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/bishop.tres" id="13_bishop"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/duke.tres" id="14_duke"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/gold_general.tres" id="15_gold_general"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/knight.tres" id="16_knight"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/lance.tres" id="17_lance"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/prince.tres" id="18_prince"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/silver_general.tres" id="19_silver_general"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/the_golem.tres" id="20_the_golem"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/war_drummer.tres" id="21_war_drummer"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/warlord.tres" id="22_warlord"]
+[ext_resource type="Resource" path="res://Stamps/Animals/bear.tres" id="23_bear"]
+[ext_resource type="Resource" path="res://Stamps/Animals/blackbird.tres" id="24_blackbird"]
+[ext_resource type="Resource" path="res://Stamps/Animals/cat.tres" id="25_cat"]
+[ext_resource type="Resource" path="res://Stamps/Animals/crocodile.tres" id="26_crocodile"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dog.tres" id="27_dog"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dragon.tres" id="28_dragon"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dragonhorse.tres" id="29_dragonhorse"]
+[ext_resource type="Resource" path="res://Stamps/Animals/duck.tres" id="30_duck"]
+[ext_resource type="Resource" path="res://Stamps/Animals/elephant.tres" id="31_elephant"]
+[ext_resource type="Resource" path="res://Stamps/Animals/fox.tres" id="32_fox"]
+[ext_resource type="Resource" path="res://Stamps/Animals/goat.tres" id="33_goat"]
+[ext_resource type="Resource" path="res://Stamps/Animals/heron.tres" id="34_heron"]
+[ext_resource type="Resource" path="res://Stamps/Animals/horse.tres" id="35_horse"]
+[ext_resource type="Resource" path="res://Stamps/Animals/rhinoceros.tres" id="36_rhinoceros"]
+[ext_resource type="Resource" path="res://Stamps/Animals/turtle.tres" id="37_turtle"]
 
 [resource]
 script = ExtResource("9_6j6tf")
@@ -21,5 +49,6 @@ pack_height_texture = ExtResource("4_uutlh")
 pack_normal_texture = ExtResource("5_0rvgd")
 pack_roughness_texture = ExtResource("6_u6txf")
 pack_foil_mask_texture = ExtResource("2_ookg6")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_mi2ms")]([ExtResource("10_archer"), ExtResource("11_assassin"), ExtResource("12_berserk"), ExtResource("13_bishop"), ExtResource("14_duke"), ExtResource("15_gold_general"), ExtResource("16_knight"), ExtResource("17_lance"), ExtResource("18_prince"), ExtResource("19_silver_general"), ExtResource("20_the_golem"), ExtResource("21_war_drummer"), ExtResource("22_warlord"), ExtResource("23_bear"), ExtResource("24_blackbird"), ExtResource("25_cat"), ExtResource("26_crocodile"), ExtResource("27_dog"), ExtResource("28_dragon"), ExtResource("29_dragonhorse"), ExtResource("30_duck"), ExtResource("31_elephant"), ExtResource("32_fox"), ExtResource("33_goat"), ExtResource("34_heron"), ExtResource("35_horse"), ExtResource("36_rhinoceros"), ExtResource("37_turtle")])
+include_all_standard_prints = false
 price = 1

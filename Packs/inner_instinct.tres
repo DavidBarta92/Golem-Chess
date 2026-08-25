@@ -9,6 +9,36 @@
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_w2nj7"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_n62bt"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_33svs"]
+[ext_resource type="Resource" path="res://Stamps/Animals/bear.tres" id="10_bear"]
+[ext_resource type="Resource" path="res://Stamps/Animals/blackbird.tres" id="11_blackbird"]
+[ext_resource type="Resource" path="res://Stamps/Animals/cat.tres" id="12_cat"]
+[ext_resource type="Resource" path="res://Stamps/Animals/crocodile.tres" id="13_crocodile"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dog.tres" id="14_dog"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dragon.tres" id="15_dragon"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dragonhorse.tres" id="16_dragonhorse"]
+[ext_resource type="Resource" path="res://Stamps/Animals/duck.tres" id="17_duck"]
+[ext_resource type="Resource" path="res://Stamps/Animals/elephant.tres" id="18_elephant"]
+[ext_resource type="Resource" path="res://Stamps/Animals/fox.tres" id="19_fox"]
+[ext_resource type="Resource" path="res://Stamps/Animals/goat.tres" id="20_goat"]
+[ext_resource type="Resource" path="res://Stamps/Animals/heron.tres" id="21_heron"]
+[ext_resource type="Resource" path="res://Stamps/Animals/horse.tres" id="22_horse"]
+[ext_resource type="Resource" path="res://Stamps/Animals/rhinoceros.tres" id="23_rhinoceros"]
+[ext_resource type="Resource" path="res://Stamps/Animals/turtle.tres" id="24_turtle"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/adventurer.tres" id="25_adventurer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/advocate.tres" id="26_advocate"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/architect.tres" id="27_architect"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/campaigner.tres" id="28_campaigner"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/commander.tres" id="29_commander"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/consul.tres" id="30_consul"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/defender.tres" id="31_defender"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entertainer.tres" id="32_entertainer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entrepreneur.tres" id="33_entrepreneur"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/executive.tres" id="34_executive"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logician.tres" id="35_logician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logistician.tres" id="36_logistician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/mediator.tres" id="37_mediator"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/protagonist.tres" id="38_protagonist"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/virtuoso.tres" id="39_virtuoso"]
 
 [resource]
 script = ExtResource("9_33svs")
@@ -21,5 +51,6 @@ pack_height_texture = ExtResource("4_dkah6")
 pack_normal_texture = ExtResource("5_0vsja")
 pack_roughness_texture = ExtResource("6_r8r58")
 pack_foil_mask_texture = ExtResource("2_lqytn")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_n62bt")]([ExtResource("10_bear"), ExtResource("11_blackbird"), ExtResource("12_cat"), ExtResource("13_crocodile"), ExtResource("14_dog"), ExtResource("15_dragon"), ExtResource("16_dragonhorse"), ExtResource("17_duck"), ExtResource("18_elephant"), ExtResource("19_fox"), ExtResource("20_goat"), ExtResource("21_heron"), ExtResource("22_horse"), ExtResource("23_rhinoceros"), ExtResource("24_turtle"), ExtResource("25_adventurer"), ExtResource("26_advocate"), ExtResource("27_architect"), ExtResource("28_campaigner"), ExtResource("29_commander"), ExtResource("30_consul"), ExtResource("31_defender"), ExtResource("32_entertainer"), ExtResource("33_entrepreneur"), ExtResource("34_executive"), ExtResource("35_logician"), ExtResource("36_logistician"), ExtResource("37_mediator"), ExtResource("38_protagonist"), ExtResource("39_virtuoso")])
+include_all_standard_prints = false
 price = 1

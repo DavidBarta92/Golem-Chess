@@ -9,6 +9,36 @@
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_k5mbf"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_ailq5"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_0grn8"]
+[ext_resource type="Resource" path="res://Stamps/Flora/baobab.tres" id="10_baobab"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cactus.tres" id="11_cactus"]
+[ext_resource type="Resource" path="res://Stamps/Flora/chanterelle.tres" id="12_chanterelle"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cherry_tree.tres" id="13_cherry_tree"]
+[ext_resource type="Resource" path="res://Stamps/Flora/fly_agaric.tres" id="14_fly_agaric"]
+[ext_resource type="Resource" path="res://Stamps/Flora/larch.tres" id="15_larch"]
+[ext_resource type="Resource" path="res://Stamps/Flora/lotus.tres" id="16_lotus"]
+[ext_resource type="Resource" path="res://Stamps/Flora/magnolia.tres" id="17_magnolia"]
+[ext_resource type="Resource" path="res://Stamps/Flora/oak.tres" id="18_oak"]
+[ext_resource type="Resource" path="res://Stamps/Flora/olive_tree.tres" id="19_olive_tree"]
+[ext_resource type="Resource" path="res://Stamps/Flora/orchid.tres" id="20_orchid"]
+[ext_resource type="Resource" path="res://Stamps/Flora/puffball.tres" id="21_puffball"]
+[ext_resource type="Resource" path="res://Stamps/Flora/rose.tres" id="22_rose"]
+[ext_resource type="Resource" path="res://Stamps/Flora/shaggy_mane.tres" id="23_shaggy_mane"]
+[ext_resource type="Resource" path="res://Stamps/Flora/yellow_coral.tres" id="24_yellow_coral"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/black_hole.tres" id="25_black_hole"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/comet.tres" id="26_comet"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/earth.tres" id="27_earth"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/jupiter.tres" id="28_jupiter"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/mars.tres" id="29_mars"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/mercury.tres" id="30_mercury"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/moon.tres" id="31_moon"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/nebula.tres" id="32_nebula"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/neptune.tres" id="33_neptune"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/north_star.tres" id="34_north_star"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/nova.tres" id="35_nova"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/saturn.tres" id="36_saturn"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/sun.tres" id="37_sun"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/uranus.tres" id="38_uranus"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/venus.tres" id="39_venus"]
 
 [resource]
 script = ExtResource("9_0grn8")
@@ -21,5 +51,6 @@ pack_height_texture = ExtResource("4_axegh")
 pack_normal_texture = ExtResource("5_b1w2a")
 pack_roughness_texture = ExtResource("6_hlyum")
 pack_foil_mask_texture = ExtResource("2_qwcb6")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_ailq5")]([ExtResource("10_baobab"), ExtResource("11_cactus"), ExtResource("12_chanterelle"), ExtResource("13_cherry_tree"), ExtResource("14_fly_agaric"), ExtResource("15_larch"), ExtResource("16_lotus"), ExtResource("17_magnolia"), ExtResource("18_oak"), ExtResource("19_olive_tree"), ExtResource("20_orchid"), ExtResource("21_puffball"), ExtResource("22_rose"), ExtResource("23_shaggy_mane"), ExtResource("24_yellow_coral"), ExtResource("25_black_hole"), ExtResource("26_comet"), ExtResource("27_earth"), ExtResource("28_jupiter"), ExtResource("29_mars"), ExtResource("30_mercury"), ExtResource("31_moon"), ExtResource("32_nebula"), ExtResource("33_neptune"), ExtResource("34_north_star"), ExtResource("35_nova"), ExtResource("36_saturn"), ExtResource("37_sun"), ExtResource("38_uranus"), ExtResource("39_venus")])
+include_all_standard_prints = false
 price = 1

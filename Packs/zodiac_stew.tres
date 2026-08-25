@@ -9,6 +9,36 @@
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_sprn2"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_osdhi"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_ii3m6"]
+[ext_resource type="Resource" path="res://Stamps/Animals/bear.tres" id="10_bear"]
+[ext_resource type="Resource" path="res://Stamps/Animals/blackbird.tres" id="11_blackbird"]
+[ext_resource type="Resource" path="res://Stamps/Animals/cat.tres" id="12_cat"]
+[ext_resource type="Resource" path="res://Stamps/Animals/crocodile.tres" id="13_crocodile"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dog.tres" id="14_dog"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dragon.tres" id="15_dragon"]
+[ext_resource type="Resource" path="res://Stamps/Animals/dragonhorse.tres" id="16_dragonhorse"]
+[ext_resource type="Resource" path="res://Stamps/Animals/duck.tres" id="17_duck"]
+[ext_resource type="Resource" path="res://Stamps/Animals/elephant.tres" id="18_elephant"]
+[ext_resource type="Resource" path="res://Stamps/Animals/fox.tres" id="19_fox"]
+[ext_resource type="Resource" path="res://Stamps/Animals/goat.tres" id="20_goat"]
+[ext_resource type="Resource" path="res://Stamps/Animals/heron.tres" id="21_heron"]
+[ext_resource type="Resource" path="res://Stamps/Animals/horse.tres" id="22_horse"]
+[ext_resource type="Resource" path="res://Stamps/Animals/rhinoceros.tres" id="23_rhinoceros"]
+[ext_resource type="Resource" path="res://Stamps/Animals/turtle.tres" id="24_turtle"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/black_hole.tres" id="25_black_hole"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/comet.tres" id="26_comet"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/earth.tres" id="27_earth"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/jupiter.tres" id="28_jupiter"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/mars.tres" id="29_mars"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/mercury.tres" id="30_mercury"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/moon.tres" id="31_moon"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/nebula.tres" id="32_nebula"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/neptune.tres" id="33_neptune"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/north_star.tres" id="34_north_star"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/nova.tres" id="35_nova"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/saturn.tres" id="36_saturn"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/sun.tres" id="37_sun"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/uranus.tres" id="38_uranus"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/venus.tres" id="39_venus"]
 
 [resource]
 script = ExtResource("9_ii3m6")
@@ -21,5 +51,6 @@ pack_height_texture = ExtResource("4_tfxpv")
 pack_normal_texture = ExtResource("5_qo2gt")
 pack_roughness_texture = ExtResource("6_bew5y")
 pack_foil_mask_texture = ExtResource("2_ihg3a")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_osdhi")]([ExtResource("10_bear"), ExtResource("11_blackbird"), ExtResource("12_cat"), ExtResource("13_crocodile"), ExtResource("14_dog"), ExtResource("15_dragon"), ExtResource("16_dragonhorse"), ExtResource("17_duck"), ExtResource("18_elephant"), ExtResource("19_fox"), ExtResource("20_goat"), ExtResource("21_heron"), ExtResource("22_horse"), ExtResource("23_rhinoceros"), ExtResource("24_turtle"), ExtResource("25_black_hole"), ExtResource("26_comet"), ExtResource("27_earth"), ExtResource("28_jupiter"), ExtResource("29_mars"), ExtResource("30_mercury"), ExtResource("31_moon"), ExtResource("32_nebula"), ExtResource("33_neptune"), ExtResource("34_north_star"), ExtResource("35_nova"), ExtResource("36_saturn"), ExtResource("37_sun"), ExtResource("38_uranus"), ExtResource("39_venus")])
+include_all_standard_prints = false
 price = 1

@@ -9,6 +9,34 @@
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_x4tbm"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_2f2s7"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_qacxd"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/archer.tres" id="10_archer"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/assassin.tres" id="11_assassin"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/berserk.tres" id="12_berserk"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/bishop.tres" id="13_bishop"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/duke.tres" id="14_duke"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/gold_general.tres" id="15_gold_general"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/knight.tres" id="16_knight"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/lance.tres" id="17_lance"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/prince.tres" id="18_prince"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/silver_general.tres" id="19_silver_general"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/the_golem.tres" id="20_the_golem"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/war_drummer.tres" id="21_war_drummer"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/warlord.tres" id="22_warlord"]
+[ext_resource type="Resource" path="res://Stamps/Flora/baobab.tres" id="23_baobab"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cactus.tres" id="24_cactus"]
+[ext_resource type="Resource" path="res://Stamps/Flora/chanterelle.tres" id="25_chanterelle"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cherry_tree.tres" id="26_cherry_tree"]
+[ext_resource type="Resource" path="res://Stamps/Flora/fly_agaric.tres" id="27_fly_agaric"]
+[ext_resource type="Resource" path="res://Stamps/Flora/larch.tres" id="28_larch"]
+[ext_resource type="Resource" path="res://Stamps/Flora/lotus.tres" id="29_lotus"]
+[ext_resource type="Resource" path="res://Stamps/Flora/magnolia.tres" id="30_magnolia"]
+[ext_resource type="Resource" path="res://Stamps/Flora/oak.tres" id="31_oak"]
+[ext_resource type="Resource" path="res://Stamps/Flora/olive_tree.tres" id="32_olive_tree"]
+[ext_resource type="Resource" path="res://Stamps/Flora/orchid.tres" id="33_orchid"]
+[ext_resource type="Resource" path="res://Stamps/Flora/puffball.tres" id="34_puffball"]
+[ext_resource type="Resource" path="res://Stamps/Flora/rose.tres" id="35_rose"]
+[ext_resource type="Resource" path="res://Stamps/Flora/shaggy_mane.tres" id="36_shaggy_mane"]
+[ext_resource type="Resource" path="res://Stamps/Flora/yellow_coral.tres" id="37_yellow_coral"]
 
 [resource]
 script = ExtResource("9_qacxd")
@@ -21,5 +49,6 @@ pack_height_texture = ExtResource("4_eol6q")
 pack_normal_texture = ExtResource("5_x4agf")
 pack_roughness_texture = ExtResource("6_k5h6r")
 pack_foil_mask_texture = ExtResource("2_nf33p")
-include_all_standard_prints = true
+possible_stamps = Array[ExtResource("8_2f2s7")]([ExtResource("10_archer"), ExtResource("11_assassin"), ExtResource("12_berserk"), ExtResource("13_bishop"), ExtResource("14_duke"), ExtResource("15_gold_general"), ExtResource("16_knight"), ExtResource("17_lance"), ExtResource("18_prince"), ExtResource("19_silver_general"), ExtResource("20_the_golem"), ExtResource("21_war_drummer"), ExtResource("22_warlord"), ExtResource("23_baobab"), ExtResource("24_cactus"), ExtResource("25_chanterelle"), ExtResource("26_cherry_tree"), ExtResource("27_fly_agaric"), ExtResource("28_larch"), ExtResource("29_lotus"), ExtResource("30_magnolia"), ExtResource("31_oak"), ExtResource("32_olive_tree"), ExtResource("33_orchid"), ExtResource("34_puffball"), ExtResource("35_rose"), ExtResource("36_shaggy_mane"), ExtResource("37_yellow_coral")])
+include_all_standard_prints = false
 price = 1
