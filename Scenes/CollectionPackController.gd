@@ -189,6 +189,7 @@ func _ensure_buy_packs_window() -> void:
 	buy_packs_cancel_button = Button.new()
 	buy_packs_cancel_button.name = "CancelButton"
 	title_row.add_child(buy_packs_cancel_button)
+	buy_packs_cancel_button.set_meta("sfx_click", "")
 	buy_packs_cancel_button.text = ""
 	buy_packs_cancel_button.icon = WINDOW_CLOSE_ICON
 	buy_packs_cancel_button.custom_minimum_size = Vector2(38.0, 38.0)
@@ -333,6 +334,7 @@ func _ensure_buy_packs_window() -> void:
 	buy_packs_confirm_button.text = tr("Buy")
 	buy_packs_confirm_button.custom_minimum_size = Vector2(132.0, 40.0)
 	buy_packs_confirm_button.focus_mode = Control.FOCUS_NONE
+	buy_packs_confirm_button.set_meta("sfx_click", "buy")
 
 func _create_panel_style(bg_color: Color, border_color: Color, radius: int, border_width: int, margin: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -1055,11 +1057,13 @@ func confirm_buy_packs() -> void:
 	if !PlayerProgressStore.purchase_packs(pack_count, selected_pack.get_resolved_id(), selected_pack.price):
 		return
 
+	SFXManager.play("buy_packs_window_closing")
 	_set_buy_packs_modal_visible(false)
 	refresh_progress_ui()
 	refresh_pack_inventory_ui(true, previous_preview_ids)
 
 func cancel_buy_packs() -> void:
+	SFXManager.play("buy_packs_window_closing")
 	_hide_buy_packs_modal_animated()
 
 func _get_unopened_pack_ids_for_display(max_count: int = -1) -> Array[String]:
@@ -1243,6 +1247,7 @@ func _show_pack_selection_overlay(animate_in: bool) -> void:
 			pack_node.scale = Vector2.ONE * 0.86
 			var tween := pack_overlay.create_tween()
 			tween.tween_interval(float(i) * PACK_FLY_STAGGER_SECONDS)
+			tween.tween_callback(func(): SFXManager.play("pack_whoosh"))
 			tween.tween_property(pack_node, "position", target_position, PACK_FLY_IN_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 			tween.parallel().tween_property(pack_node, "scale", Vector2.ONE, PACK_FLY_IN_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		else:

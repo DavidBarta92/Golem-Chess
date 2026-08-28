@@ -1027,6 +1027,7 @@ func play_piece_revert_animation(piece_position: Vector2, start_texture: Texture
 		return
 
 	begin_visual_process(VISUAL_PROCESS_PIECE_REVERT)
+	SFXManager.play("stamp_duration_over")
 	await get_piece_effect_animator().play_piece_revert(piece_position, start_texture)
 	finish_visual_process(VISUAL_PROCESS_PIECE_REVERT)
 

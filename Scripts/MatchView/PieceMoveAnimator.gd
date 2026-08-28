@@ -93,7 +93,8 @@ func play_move_sequence(
 	end_scale: Vector2,
 	start_offset: Vector2,
 	end_offset: Vector2,
-	capture_impact_callback: Callable = Callable()
+	capture_impact_callback: Callable = Callable(),
+	landed_callback: Callable = Callable()
 ) -> bool:
 	if holder == null or !is_instance_valid(holder) or !_is_valid_position(from_pos) or !_is_valid_position(to_pos):
 		return false
@@ -193,6 +194,8 @@ func play_move_sequence(
 
 	holder.position = end_ground_pos
 	holder.z_index = get_depth_z_index(to_pos)
+	if landed_callback.is_valid():
+		landed_callback.call()
 	var wobble_tween: Tween = create_animation_tween()
 	if wobble_tween == null:
 		holder.rotation = resting_rotation

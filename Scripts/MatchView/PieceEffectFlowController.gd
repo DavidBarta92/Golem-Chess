@@ -53,6 +53,7 @@ func play_piece_stamp_attach_animation(piece_position: Vector2, stamp: Stamp, st
 		holder.texture = start_texture
 		match_board.refresh_piece_holder_visual(holder, piece_position)
 
+	SFXManager.play("attach_stamp")
 	await match_board.get_piece_effect_animator().play_attach_sequence(holder, piece_position, attached_texture, {
 		"post_morph_callback": Callable(self, "apply_visible_piece_attach_morph_result").bind(piece_position, attached_texture),
 		"disable_holder_occluder": true,
@@ -83,6 +84,7 @@ func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, st
 	if attached_texture == null:
 		attached_texture = start_texture
 
+	SFXManager.play("attach_stamp")
 	var completed: bool = await match_board.get_piece_effect_animator().play_attach_sequence(holder, piece_position, attached_texture, {
 		"post_morph_callback": Callable(self, "apply_hidden_piece_attach_morph_result").bind(piece_position, attached_texture),
 		"disable_holder_occluder": false,
@@ -90,6 +92,7 @@ func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, st
 	if !completed:
 		return
 
+	SFXManager.play("invisibility_effect")
 	await match_board.get_piece_effect_animator().play_invisibility_exit(holder)
 
 func apply_hidden_piece_attach_morph_result(holder: Sprite2D, piece_position: Vector2, attached_texture: Texture2D) -> void:
@@ -118,10 +121,14 @@ func play_local_move_transition(move_context: Dictionary) -> void:
 		var captured_color: int = captured_piece.color if captured_piece != null else 0
 		var shatter_respawn_pos: Vector2 = match_board.value_to_vector2(move_context.get("shatter_respawn_pos", invalid_board_pos), invalid_board_pos)
 		var shatter_fragment_group: String = str(move_context.get("shatter_fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
+		var capturing_cast: String = get_capturing_cast_sound_name(end_pos)
 		capture_impact_callback = func() -> void:
 			if is_instance_valid(capture_placeholder):
 				capture_placeholder.queue_free()
 			match_board.get_piece_respawn_fragment_coordinator().play_piece_shatter_animation(end_pos, shatter_respawn_pos, captured_color, shatter_fragment_group)
+			if !capturing_cast.is_empty():
+				SFXManager.play(capturing_cast)
+			SFXManager.play("piece_captured")
 	await play_piece_move_animation(start_pos, end_pos, moving_start_texture, moving_piece_visible_to_enemy, capture_impact_callback)
 	if is_instance_valid(capture_placeholder):
 		capture_placeholder.queue_free()
@@ -148,6 +155,7 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 	var capture_shatter_animation: Dictionary = state_piece_shatter_animations[capture_shatter_animation_index] if capture_shatter_animation_index >= 0 else {}
 	var capture_impact_callback: Callable = Callable()
 	if capture_placeholder != null:
+		var capturing_cast: String = get_capturing_cast_sound_name(move_to_pos)
 		capture_impact_callback = func() -> void:
 			if is_instance_valid(capture_placeholder):
 				capture_placeholder.queue_free()
@@ -159,6 +167,9 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 					int(capture_shatter_animation.get("piece_color", 0)),
 					str(capture_shatter_animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
 				)
+			if !capturing_cast.is_empty():
+				SFXManager.play(capturing_cast)
+			SFXManager.play("piece_captured")
 
 	await play_piece_move_animation(
 		move_from_pos,
@@ -211,6 +222,9 @@ func play_piece_move_animation(
 	holder.offset = start_offset
 	match_board.get_piece_visuals().remove_shadow(holder)
 	match_board.get_piece_visuals().remove_light_occluder(holder)
+	SFXManager.play("piece_lifted")
+	var landed_callback: Callable = func() -> void:
+		SFXManager.play("piece_placed")
 	await match_board.get_piece_move_animator().play_move_sequence(
 		holder,
 		from_pos,
@@ -219,7 +233,8 @@ func play_piece_move_animation(
 		end_scale,
 		start_offset,
 		end_offset,
-		capture_impact_callback
+		capture_impact_callback,
+		landed_callback
 	)
 
 	if is_instance_valid(holder):
@@ -267,3 +282,11 @@ func remove_piece_shatter_animation_from_list(animations: Array, animation: Dict
 		animations.remove_at(preferred_index)
 		return
 	animations.erase(animation)
+
+func get_capturing_cast_sound_name(capturing_piece_pos: Vector2) -> String:
+	if match_board == null:
+		return ""
+	var capturing_piece: Piece = match_board.piece_objects.get(capturing_piece_pos, null) as Piece
+	if capturing_piece == null or capturing_piece.attached_stamp == null:
+		return ""
+	return "%s_capture" % capturing_piece.attached_stamp.Set.to_lower()

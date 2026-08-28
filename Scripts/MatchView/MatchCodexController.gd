@@ -86,6 +86,7 @@ func create_ui() -> void:
 	root.add_child(turn_page_button)
 	turn_page_button.text = tr("Turn Page")
 	turn_page_button.custom_minimum_size = Vector2(0, 34)
+	turn_page_button.set_meta("sfx_click", "codex_fold")
 	turn_page_button.pressed.connect(on_turn_page_pressed)
 	update_ui()
 
@@ -154,7 +155,11 @@ func apply_state_from_server(player_codex_state: Dictionary) -> void:
 			continue
 		var state: Dictionary = state_value
 		var owner_color: int = match_board.get_color_for_player_id(player_id)
-		set_page_index(owner_color, int(state.get("current_page_index", 0)))
+		var previous_page_index: int = get_page_index(owner_color)
+		var new_page_index: int = int(state.get("current_page_index", 0))
+		set_page_index(owner_color, new_page_index)
+		if new_page_index != previous_page_index and owner_color != match_board.get_own_color() and !match_board.should_skip_visual_animations():
+			SFXManager.play("codex_fold")
 		var pages_value = state.get("pages", [])
 		if pages_value is Array:
 			set_pages(owner_color, parse_pages_from_state(pages_value))

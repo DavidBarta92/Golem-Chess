@@ -168,6 +168,7 @@ func create_end_turn_ui() -> void:
 	end_turn_button.offset_bottom = -24.0
 	end_turn_button.z_index = 960
 	end_turn_button.focus_mode = Control.FOCUS_NONE
+	end_turn_button.set_meta("sfx_click", "end_turn_button_click")
 	if end_turn_pressed_callback.is_valid():
 		end_turn_button.pressed.connect(func(): end_turn_pressed_callback.call())
 	arrange_end_turn_indicator()
@@ -294,7 +295,9 @@ func show_result_message(winner_color: int) -> void:
 	elif bool(context.get("side_is_null", false)):
 		result_label.text = tr("WHITE WINS!") if winner_color == 1 else tr("BLACK WINS!")
 	else:
-		result_label.text = tr("YOU WON!") if winner_color == get_own_color() else tr("YOU LOST!")
+		var won: bool = winner_color == get_own_color()
+		result_label.text = tr("YOU WON!") if won else tr("YOU LOST!")
+		SFXManager.play("win" if won else "lose")
 	result_overlay.visible = true
 
 func initialize_player_portraits() -> void:

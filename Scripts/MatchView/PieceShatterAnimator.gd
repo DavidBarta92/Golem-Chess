@@ -160,13 +160,20 @@ func animate_fragment(fragment: Sprite2D, scatter_target: Vector2, source_pos: V
 	tween.tween_method(func(local_pos: Vector2): update_item_motion(fragment, local_pos), bounce_target, settled_target, roll_duration)
 	tween.parallel().tween_property(fragment, "rotation", settled_rotation, roll_duration)
 
+	var rolling_player_box: Array = [null]
 	tween.tween_interval(fragment_settle_duration)
+	tween.tween_callback(func(): rolling_player_box[0] = SFXManager.play("piece_rolling"))
 	tween.set_trans(Tween.TRANS_LINEAR)
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_method(func(progress: float): update_respawn_path_motion(fragment, return_path, get_return_motion_progress(progress), respawn_pos), 0.0, 1.0, return_duration)
 	tween.parallel().tween_property(fragment, "rotation", rest_rotation, return_duration)
 	tween.parallel().tween_property(fragment, "scale", target_scale, return_duration)
 	tween.parallel().tween_property(fragment, "offset", target_offset, return_duration)
+	tween.tween_callback(func():
+		var rolling_player: AudioStreamPlayer = rolling_player_box[0]
+		if rolling_player != null:
+			rolling_player.stop()
+	)
 	tween_respawn_finish_callback(tween, respawn_pos)
 	if fragment_group == fragment_group_bottom:
 		return
@@ -211,11 +218,18 @@ func animate_pending_edge_fragment(fragment: Sprite2D, scatter_target: Vector2, 
 	tween.tween_method(func(local_pos: Vector2): update_item_motion(fragment, local_pos), bounce_target, settled_target, roll_duration)
 	tween.parallel().tween_property(fragment, "rotation", settled_rotation, roll_duration)
 
+	var rolling_player_box: Array = [null]
 	tween.tween_interval(fragment_settle_duration)
+	tween.tween_callback(func(): rolling_player_box[0] = SFXManager.play("piece_rolling"))
 	tween.set_trans(Tween.TRANS_LINEAR)
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_method(func(progress: float): update_item_path_motion(fragment, return_path, get_return_motion_progress(progress)), 0.0, 1.0, return_duration)
 	tween.parallel().tween_property(fragment, "rotation", rest_rotation, return_duration)
+	tween.tween_callback(func():
+		var rolling_player: AudioStreamPlayer = rolling_player_box[0]
+		if rolling_player != null:
+			rolling_player.stop()
+	)
 
 func animate_pending_edge_arrival_fragment(fragment: Sprite2D, respawn_pos: Vector2, fragment_group: String, fragment_index: int) -> void:
 	if fragment == null or !is_instance_valid(fragment) or !_is_valid_position(respawn_pos):
@@ -234,11 +248,18 @@ func animate_pending_edge_arrival_fragment(fragment: Sprite2D, respawn_pos: Vect
 	var tween: Tween = create_animation_tween()
 	if tween == null:
 		return
+	var rolling_player_box: Array = [null]
+	tween.tween_callback(func(): rolling_player_box[0] = SFXManager.play("piece_rolling"))
 	tween.set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_method(func(progress: float): update_respawn_path_motion(fragment, path_points, get_return_motion_progress(progress), respawn_pos), 0.0, 1.0, return_duration)
 	tween.parallel().tween_property(fragment, "rotation", rest_rotation, return_duration)
 	tween.parallel().tween_property(fragment, "scale", target_scale, return_duration)
 	tween.parallel().tween_property(fragment, "offset", target_offset, return_duration)
+	tween.tween_callback(func():
+		var rolling_player: AudioStreamPlayer = rolling_player_box[0]
+		if rolling_player != null:
+			rolling_player.stop()
+	)
 	tween_respawn_finish_callback(tween, respawn_pos)
 	if fragment_group == fragment_group_bottom:
 		return

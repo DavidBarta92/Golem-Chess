@@ -67,6 +67,7 @@ func _ready():
 	_connect_once(open_ai_logs_button.pressed, Callable(self, "_on_open_ai_logs_button_pressed"))
 	_connect_once(reset_balance_sessions_button.pressed, Callable(self, "_on_reset_balance_sessions_button_pressed"))
 	_update_ai_vs_ai_deck_controls()
+	SFXManager.play("mainmenu_drawing")
 	_start_background_line_reveal()
 	_connect_once(street_view.opponent_arrived, Callable(self, "_on_opponent_arrived"))
 

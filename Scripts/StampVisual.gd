@@ -94,6 +94,7 @@ var preview_alpha_enabled: bool = false
 var preview_alpha: float = 1.0
 
 func _ready() -> void:
+	set_meta("sfx_click", "")
 	_apply_texture_filter()
 	shadow.self_modulate.a = normal_shadow_alpha
 	pivot_offset = size * 0.5
@@ -271,6 +272,7 @@ func apply_preview_alpha_to_node(node: Node, alpha: float) -> void:
 func set_hand_context(new_owner_color: int, new_hand_index: int, new_home_position: Vector2) -> void:
 	owner_color = new_owner_color
 	hand_index = new_hand_index
+	set_meta("sfx_hover", "stamp_up")
 	set_home_position(new_home_position, false)
 
 func set_home_position(new_home_position: Vector2, animate: bool) -> void:
@@ -727,6 +729,7 @@ func start_drag() -> void:
 	is_hovered = false
 	drop_target_active = false
 	disabled = false
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	move_to_front()
 	z_index = 100
 	drag_offset = get_global_mouse_position() - global_position
@@ -735,11 +738,13 @@ func start_drag() -> void:
 	drag_motion_velocity = Vector2.ZERO
 	scale = rest_scale * drag_scale
 	_set_stamp_drag_cursor()
+	SFXManager.play("stamp_tear_up")
 	drag_started.emit(self)
 
 func finish_drag() -> void:
 	_restore_default_cursor()
 	is_dragging = false
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	drag_motion_velocity = Vector2.ZERO
 	reset_drag_paper_motion()
 	drag_released.emit(self)

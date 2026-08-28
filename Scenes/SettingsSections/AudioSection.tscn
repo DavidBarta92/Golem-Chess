@@ -83,6 +83,37 @@ layout_mode = 2
 horizontal_alignment = 2
 vertical_alignment = 1
 
+[node name="AmbienceVolume" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("SliderRef", "ValueBoxRef")]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("2_volume")
+DEFAULT_VALUE = 1.0
+STEP_VALUE = 0.01
+DISPLAY_PERCENT_VALUE = true
+VALUE_SUFFIX = "%"
+SliderRef = NodePath("Row/Slider")
+ValueBoxRef = NodePath("Row/ValueLabel")
+IDENTIFIER = "AmbienceVolume"
+AUDIO_BUS = "Ambience"
+
+[node name="Label" type="Label" parent="Scroll/Content/AmbienceVolume"]
+layout_mode = 2
+text = "Ambience Volume"
+
+[node name="Row" type="HBoxContainer" parent="Scroll/Content/AmbienceVolume"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Slider" type="HSlider" parent="Scroll/Content/AmbienceVolume/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ValueLabel" type="Label" parent="Scroll/Content/AmbienceVolume/Row"]
+custom_minimum_size = Vector2(58, 0)
+layout_mode = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+
 [node name="SfxVolume" type="VBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("SliderRef", "ValueBoxRef")]
 layout_mode = 2
 theme_override_constants/separation = 4

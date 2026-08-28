@@ -101,6 +101,7 @@ func apply_overlay(holder: Sprite2D, board_pos: Vector2) -> void:
 	create_piece_overlay(holder, crack_name, freeze_material)
 	create_square_overlay(board_pos, freeze_material, square_name)
 	if should_animate and can_create_tween():
+		SFXManager.play("piece_freezes")
 		var tween: Tween = tween_owner.create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 		tween.tween_property(freeze_material, "shader_parameter/crack_width", crack_end_width, crack_duration)
 

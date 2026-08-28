@@ -22,6 +22,7 @@ var _scene_change_triggered: bool = false
 func _on_pressed() -> void:
 	if _slide_tween != null and _slide_tween.is_valid():
 		return
+	AmbienceManager.set_muffled(false, 2.0)
 	_scene_change_triggered = false
 	_slide_start_pos = _base_position + slide_start_offset
 	_slide_end_pos = _base_position + slide_end_offset

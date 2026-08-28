@@ -194,6 +194,8 @@ func update_board_special_tiles() -> void:
 	var animate_changes: bool = match_board.board_special_tiles_initialized
 	var target_tiles: Dictionary = get_board_special_tile_targets()
 	var previous_types: Dictionary = match_board.board_special_tile_types.duplicate()
+	var played_frozen_effect_sound: bool = false
+	var played_invalid_effect_sound: bool = false
 
 	for position_value in previous_types.keys():
 		var board_pos: Vector2 = match_board.value_to_vector2(position_value, invalid_board_pos)
@@ -212,6 +214,8 @@ func update_board_special_tiles() -> void:
 
 		var old_tile: Polygon2D = match_board.board_special_tile_nodes.get(board_pos, null) as Polygon2D
 		if old_tile != null and is_instance_valid(old_tile):
+			if animate_changes and !match_board.should_skip_visual_animations():
+				SFXManager.play("field_slips")
 			animate_board_tile_out(old_tile, animate_changes)
 		match_board.board_special_tile_nodes.erase(board_pos)
 		match_board.board_special_tile_types.erase(board_pos)
@@ -239,6 +243,14 @@ func update_board_special_tiles() -> void:
 		match_board.board_special_tiles_node.add_child(new_tile)
 		match_board.board_special_tile_nodes[board_pos] = new_tile
 		match_board.board_special_tile_types[board_pos] = target_type
+		if animate_changes and !match_board.should_skip_visual_animations():
+			SFXManager.play("field_slips")
+			if target_type == special_tile_freeze and !played_frozen_effect_sound:
+				played_frozen_effect_sound = true
+				SFXManager.play("frozen_squares_effect")
+			elif target_type == special_tile_disabled and !played_invalid_effect_sound:
+				played_invalid_effect_sound = true
+				SFXManager.play("invalid_squares_effect")
 		animate_board_tile_in(new_tile, board_pos, animate_changes)
 
 	match_board.board_special_tiles_initialized = true

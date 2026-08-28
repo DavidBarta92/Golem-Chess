@@ -38,6 +38,10 @@ CursorManager="*res://Scripts/CursorManager.gd"
 SettingsDataManager="*res://Scripts/Settings/SettingsDataManager.gd"
 StoryProgressStore="*res://Scripts/Story/StoryProgressStore.gd"
 StoryManager="*res://Scripts/Story/StoryManager.gd"
+SFXManager="*res://Scripts/Audio/SFXManager.gd"
+AmbienceManager="*res://Scripts/Audio/AmbienceManager.gd"
+MusicManager="*res://Scripts/Audio/MusicManager.gd"
+UIButtonSoundHook="*res://Scripts/Audio/UIButtonSoundHook.gd"
 
 [display]
 

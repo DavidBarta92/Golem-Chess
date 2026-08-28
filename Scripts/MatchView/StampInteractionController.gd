@@ -1,6 +1,11 @@
 extends RefCounted
 
 const INVALID_BOARD_POS = Vector2(-1, -1)
+const STAMP_MOVES_MIN_VOLUME_DB: float = -40.0
+const STAMP_MOVES_MAX_VOLUME_DB: float = 0.0
+const STAMP_MOVES_REFERENCE_SPEED: float = 600.0
+
+var _stamp_moves_player: AudioStreamPlayer
 
 var tween_owner: Node
 var geometry
@@ -94,6 +99,7 @@ func on_stamp_drag_started(stamp_visual: StampVisual) -> void:
 	if stamp_visual != null and is_instance_valid(stamp_visual):
 		stamp_visual.set_drop_target_active(false)
 	update_stamp_attach_target_feedback(INVALID_BOARD_POS)
+	start_stamp_moves_sound()
 
 func on_stamp_drag_moved(stamp_visual: StampVisual) -> void:
 	var target_pos: Vector2 = get_stamp_drop_piece_position(stamp_visual)
@@ -102,17 +108,52 @@ func on_stamp_drag_moved(stamp_visual: StampVisual) -> void:
 		stamp_visual.set_drop_target_active(target_pos != INVALID_BOARD_POS or can_drop_on_deck)
 	update_stamp_attach_target_feedback(target_pos)
 	handle_stamp_reorder(stamp_visual)
+	update_stamp_moves_sound_volume(stamp_visual)
 
 func on_stamp_drag_released(stamp_visual: StampVisual) -> void:
 	var target_pos: Vector2 = get_stamp_drop_piece_position(stamp_visual)
 	update_stamp_attach_target_feedback(INVALID_BOARD_POS)
+	stop_stamp_moves_sound()
 	if target_pos != INVALID_BOARD_POS:
+		SFXManager.play("stamp_glue")
 		if attach_stamp_visual_to_piece_callback.is_valid():
 			attach_stamp_visual_to_piece_callback.call(stamp_visual, target_pos)
 	elif can_drop_stamp_on_deck(stamp_visual):
 		exchange_stamp_visual_with_deck(stamp_visual)
 	elif stamp_visual != null and is_instance_valid(stamp_visual):
 		stamp_visual.fly_home()
+
+func start_stamp_moves_sound() -> void:
+	if tween_owner == null or !is_instance_valid(tween_owner) or !tween_owner.is_inside_tree():
+		return
+
+	var stream: AudioStream = SFXManager.get_stream("stamp_moves")
+	if stream == null:
+		return
+
+	if _stamp_moves_player == null or !is_instance_valid(_stamp_moves_player):
+		_stamp_moves_player = AudioStreamPlayer.new()
+		_stamp_moves_player.bus = "SFX"
+		tween_owner.add_child(_stamp_moves_player)
+
+	_stamp_moves_player.stream = stream
+	_stamp_moves_player.volume_db = STAMP_MOVES_MIN_VOLUME_DB
+	if !_stamp_moves_player.finished.is_connected(Callable(_stamp_moves_player, "play")):
+		_stamp_moves_player.finished.connect(Callable(_stamp_moves_player, "play"))
+	_stamp_moves_player.play()
+
+func update_stamp_moves_sound_volume(stamp_visual: StampVisual) -> void:
+	if _stamp_moves_player == null or !is_instance_valid(_stamp_moves_player) or !_stamp_moves_player.playing:
+		return
+	if stamp_visual == null or !is_instance_valid(stamp_visual):
+		return
+
+	var speed_ratio: float = clampf(stamp_visual.drag_motion_velocity.length() / STAMP_MOVES_REFERENCE_SPEED, 0.0, 1.0)
+	_stamp_moves_player.volume_db = lerpf(STAMP_MOVES_MIN_VOLUME_DB, STAMP_MOVES_MAX_VOLUME_DB, speed_ratio)
+
+func stop_stamp_moves_sound() -> void:
+	if _stamp_moves_player != null and is_instance_valid(_stamp_moves_player):
+		_stamp_moves_player.stop()
 
 func on_hand_stamp_mouse_entered(stamp_visual: StampVisual) -> void:
 	if stamp_visual == null or !is_instance_valid(stamp_visual):

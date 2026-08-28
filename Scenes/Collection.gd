@@ -334,6 +334,8 @@ func _bind_scene_ui() -> void:
 	GlobalTopBar.show_collection(Callable(self, "_on_back_pressed"), Callable(self, "_on_buy_packs_pressed"))
 	top_bar = null
 	buy_packs_button = GlobalTopBar.get_button("buy_packs")
+	if buy_packs_button != null:
+		buy_packs_button.set_meta("sfx_click", "buy_packs_window_opening")
 	points_label = GlobalTopBar.points_label
 	pack_panel = get_node_or_null("PackNoticePanel") as Control
 	if pack_panel == null:
@@ -536,6 +538,8 @@ func _build_ui() -> void:
 	GlobalTopBar.show_collection(Callable(self, "_on_back_pressed"), Callable(self, "_on_buy_packs_pressed"))
 	top_bar = null
 	buy_packs_button = GlobalTopBar.get_button("buy_packs")
+	if buy_packs_button != null:
+		buy_packs_button.set_meta("sfx_click", "buy_packs_window_opening")
 	points_label = GlobalTopBar.points_label
 
 	root_margin = MarginContainer.new()

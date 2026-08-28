@@ -28,6 +28,7 @@ func finish_game(winner_color: int) -> void:
 		return
 
 	match_board.game_over = true
+	AmbienceManager.set_muffled(true, 2.0)
 	match_board.state = false
 	match_board.hovered_piece = Vector2(-1, -1)
 	match_board.delete_dots()
