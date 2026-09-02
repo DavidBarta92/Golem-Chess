@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dgl5umdn6mctq" path="res://Scripts/StampVisual.gd" id="1"]
 [ext_resource type="Script" path="res://Scripts/StampPatternView.gd" id="2"]
 [ext_resource type="Texture2D" uid="uid://dh6afaolwnc30" path="res://Assets/stamp_base.svg" id="3"]
+[ext_resource type="Texture2D" path="res://Assets/stamp_square_mask.svg" id="4"]
 [ext_resource type="Shader" path="res://Shaders/stamp_tilt.gdshader" id="5"]
 [ext_resource type="FontFile" uid="uid://qkd6nyfjtoyf" path="res://Fonts/OLDENGL.TTF" id="5_7hptf"]
 [ext_resource type="Shader" uid="uid://cmkftqqcjg2yk" path="res://Shaders/stamp_shimmer.gdshader" id="6"]
@@ -68,6 +69,17 @@ mouse_filter = 2
 texture = ExtResource("3")
 expand_mode = 1
 
+[node name="StampSquare" type="TextureRect" parent="." unique_id=740193856]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4")
+expand_mode = 1
+
 [node name="StampArt" type="TextureRect" parent="." unique_id=1315429242]
 visible = false
 layout_mode = 1
@@ -113,32 +125,6 @@ theme_override_constants/shadow_offset_y = 1
 theme_override_fonts/font = ExtResource("5_7hptf")
 theme_override_font_sizes/font_size = 47
 text = "1"
-vertical_alignment = 1
-
-[node name="EffectIconTexture" type="TextureRect" parent="." unique_id=970024804]
-visible = false
-layout_mode = 1
-offset_left = 124.7
-offset_top = 13.0
-offset_right = 155.7
-offset_bottom = 44.0
-mouse_filter = 2
-expand_mode = 1
-
-[node name="EffectIconLabel" type="Label" parent="." unique_id=991651344]
-visible = false
-layout_mode = 1
-offset_left = 121.7
-offset_top = 13.0
-offset_right = 157.7
-offset_bottom = 44.0
-theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
-theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.75)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 16
-text = "FX"
-horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="SeekerIconLabel" type="Label" parent="." unique_id=220777662]
@@ -197,3 +183,25 @@ text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
+
+[node name="EffectArt" type="TextureRect" parent="." unique_id=740193857]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+
+[node name="TriggerArt" type="TextureRect" parent="." unique_id=740193858]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1

@@ -251,7 +251,7 @@ func create_attach_point_light(holder: Sprite2D) -> PointLight2D:
 	point_light.global_position = get_piece_light_global_position(holder, holder.texture)
 	return point_light
 
-func create_attach_sprite_light(holder: Sprite2D) -> PointLight2D:
+func create_affix_sprite_light(holder: Sprite2D) -> PointLight2D:
 	if holder == null or !is_instance_valid(holder):
 		return null
 
@@ -289,15 +289,15 @@ func cleanup_attach_point_light(holder, point_light, piece_light = null) -> void
 		piece_light.queue_free()
 	set_holder_light_occluder_enabled(holder, true)
 
-func cleanup_attach_animation_layers(holder, point_light, piece_light, occlusion_dimmers: Array[Sprite2D]) -> void:
+func cleanup_affix_animation_layers(holder, point_light, piece_light, occlusion_dimmers: Array[Sprite2D]) -> void:
 	cleanup_attach_point_light(holder, point_light, piece_light)
 	end_effect_occlusion_dimming(occlusion_dimmers)
 	remove_attach_effects_if_holder_valid(holder)
 
-func create_attach_glow_overlay(holder: Sprite2D) -> Sprite2D:
+func create_affix_glow_overlay(holder: Sprite2D) -> Sprite2D:
 	return create_glow_overlay(holder, piece_attach_glow_name, piece_attach_glow_z_index, 0.0)
 
-func create_attach_target_glow_overlay(holder: Sprite2D, target_texture: Texture2D, glow_material: ShaderMaterial) -> Sprite2D:
+func create_affix_target_glow_overlay(holder: Sprite2D, target_texture: Texture2D, glow_material: ShaderMaterial) -> Sprite2D:
 	if holder == null or !is_instance_valid(holder) or target_texture == null or glow_material == null:
 		return null
 
@@ -333,7 +333,7 @@ func create_glow_overlay(holder: Sprite2D, effect_name: String, z_index: int, gl
 	holder.add_child(overlay)
 	return overlay
 
-func create_attach_rays_overlay(holder: Sprite2D) -> Sprite2D:
+func create_affix_rays_overlay(holder: Sprite2D) -> Sprite2D:
 	if holder == null or !is_instance_valid(holder):
 		return null
 
@@ -341,11 +341,11 @@ func create_attach_rays_overlay(holder: Sprite2D) -> Sprite2D:
 	overlay.name = piece_attach_rays_name
 	overlay.z_index = piece_attach_rays_z_index
 	overlay.z_as_relative = true
-	apply_attach_rays_overlay_transform(overlay, holder)
+	apply_affix_rays_overlay_transform(overlay, holder)
 
 	var material := ShaderMaterial.new()
 	material.shader = piece_attach_rays_shader
-	material.set_shader_parameter("gradient", create_attach_rays_gradient_texture())
+	material.set_shader_parameter("gradient", create_affix_rays_gradient_texture())
 	material.set_shader_parameter("spread", piece_attach_rays_spread)
 	material.set_shader_parameter("cutoff", piece_attach_rays_cutoff)
 	material.set_shader_parameter("speed", piece_attach_rays_speed)
@@ -361,7 +361,7 @@ func create_attach_rays_overlay(holder: Sprite2D) -> Sprite2D:
 	holder.add_child(overlay)
 	return overlay
 
-func apply_attach_rays_overlay_transform(overlay, holder) -> void:
+func apply_affix_rays_overlay_transform(overlay, holder) -> void:
 	if overlay == null or !is_instance_valid(overlay) or !(overlay is Sprite2D):
 		return
 	if holder == null or !is_instance_valid(holder) or !(holder is Sprite2D):
@@ -397,7 +397,7 @@ func get_attach_rays_square_texture() -> Texture2D:
 	piece_attach_rays_square_texture = ImageTexture.create_from_image(image)
 	return piece_attach_rays_square_texture
 
-func create_attach_rays_gradient_texture() -> Texture2D:
+func create_affix_rays_gradient_texture() -> Texture2D:
 	var gradient := Gradient.new()
 	gradient.set_offset(0, 0.0)
 	gradient.set_color(0, Color(1.0, 0.42, 0.0, 0.0))
@@ -430,7 +430,7 @@ func remove_attach_effects_if_holder_valid(holder) -> void:
 	if holder != null and is_instance_valid(holder) and holder is Sprite2D:
 		remove_attach_effects(holder as Sprite2D)
 
-func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: Texture2D, options: Dictionary = {}) -> bool:
+func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: Texture2D, options: Dictionary = {}) -> bool:
 	if holder == null or !is_instance_valid(holder) or target_texture == null:
 		return false
 	if !is_tween_owner_inside_tree():
@@ -442,30 +442,30 @@ func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: 
 	var attach_point_light: PointLight2D = create_attach_point_light(holder)
 	var attach_piece_light: PointLight2D = null
 	if occlusion_dimmers.is_empty():
-		attach_piece_light = create_attach_sprite_light(holder)
+		attach_piece_light = create_affix_sprite_light(holder)
 	if disable_holder_occluder:
 		set_holder_light_occluder_enabled(holder, false)
 
 	remove_attach_effects(holder)
-	var glow_overlay: Sprite2D = create_attach_glow_overlay(holder)
-	var rays_overlay: Sprite2D = create_attach_rays_overlay(holder)
+	var glow_overlay: Sprite2D = create_affix_glow_overlay(holder)
+	var rays_overlay: Sprite2D = create_affix_rays_overlay(holder)
 	if glow_overlay == null or rays_overlay == null:
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
 	var glow_material: ShaderMaterial = glow_overlay.material as ShaderMaterial
 	var rays_material: ShaderMaterial = rays_overlay.material as ShaderMaterial
 	if glow_material == null or rays_material == null:
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
-	var target_glow_overlay: Sprite2D = create_attach_target_glow_overlay(holder, target_texture, glow_material)
+	var target_glow_overlay: Sprite2D = create_affix_target_glow_overlay(holder, target_texture, glow_material)
 	if target_glow_overlay == null:
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
 	var in_tween: Tween = create_animation_tween()
 	if in_tween == null:
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 	in_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 	in_tween.tween_property(glow_material, "shader_parameter/glow_strength", piece_attach_glow_base_strength, piece_attach_in_duration)
@@ -478,32 +478,32 @@ func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: 
 		in_tween.parallel().tween_property(attach_piece_light, "energy", attach_piece_light_energy, piece_attach_in_duration)
 	await in_tween.finished
 
-	if !is_attach_holder_active(holder):
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+	if !is_affix_holder_active(holder):
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
-	var pre_switch_hold_completed: bool = await await_attach_interval(piece_attach_pre_switch_hold_duration)
+	var pre_switch_hold_completed: bool = await await_affix_interval(piece_attach_pre_switch_hold_duration)
 	if !pre_switch_hold_completed:
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
-	if !is_attach_holder_active(holder):
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+	if !is_affix_holder_active(holder):
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
 	var switch_tween: Tween = create_animation_tween()
 	if switch_tween == null:
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 	switch_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	switch_tween.tween_property(glow_material, "shader_parameter/glow_strength", piece_attach_glow_switch_strength, piece_attach_glow_switch_duration)
 	await switch_tween.finished
-	if !is_attach_holder_active(holder):
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+	if !is_affix_holder_active(holder):
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
 	await play_texture_morph(holder, target_texture, piece_attach_morph_duration, attach_point_light, attach_piece_light, target_glow_overlay)
-	if !is_attach_holder_active(holder):
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+	if !is_affix_holder_active(holder):
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
 	if post_morph_callback.is_valid():
@@ -522,19 +522,19 @@ func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: 
 	update_attach_point_light_position(attach_point_light, holder)
 	update_attach_point_light_position(attach_piece_light, holder)
 	sync_sprite_overlay_to_holder(glow_overlay, holder)
-	apply_attach_rays_overlay_transform(rays_overlay, holder)
+	apply_affix_rays_overlay_transform(rays_overlay, holder)
 
-	var post_switch_hold_completed: bool = await await_attach_interval(piece_attach_post_switch_hold_duration)
+	var post_switch_hold_completed: bool = await await_affix_interval(piece_attach_post_switch_hold_duration)
 	if !post_switch_hold_completed:
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
-	if !is_attach_holder_active(holder):
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+	if !is_affix_holder_active(holder):
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
 	var out_tween: Tween = create_animation_tween()
 	if out_tween == null:
-		cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 	out_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 	out_tween.tween_property(glow_material, "shader_parameter/glow_strength", 0.0, piece_attach_out_duration)
@@ -553,7 +553,7 @@ func play_attach_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: 
 		target_glow_overlay.queue_free()
 	if is_instance_valid(rays_overlay):
 		rays_overlay.queue_free()
-	cleanup_attach_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
+	cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 	return true
 
 func begin_effect_occlusion_dimming(effect_holder: Sprite2D, board_pos: Vector2) -> Array[Sprite2D]:
@@ -950,10 +950,10 @@ func set_holder_light_occluder_enabled(holder, is_enabled: bool) -> void:
 	if holder != null and is_instance_valid(holder) and holder is Sprite2D and piece_visuals != null:
 		piece_visuals.set_light_occluder_enabled(holder as Sprite2D, is_enabled)
 
-func is_attach_holder_active(holder) -> bool:
+func is_affix_holder_active(holder) -> bool:
 	return is_tween_owner_inside_tree() and holder != null and is_instance_valid(holder) and holder is Sprite2D
 
-func await_attach_interval(duration: float) -> bool:
+func await_affix_interval(duration: float) -> bool:
 	if duration <= 0.0:
 		return is_tween_owner_inside_tree()
 	if !is_tween_owner_inside_tree():

@@ -9,7 +9,7 @@ var square_texture_provider: Callable
 var sync_overlay_to_holder_callback: Callable
 var piece_holder_provider: Callable
 var should_skip_visual_animations_provider: Callable
-var pending_attach_positions_provider: Callable
+var pending_affix_positions_provider: Callable
 var piece_objects_provider: Callable
 var board_effects_provider: Callable
 var player_id_for_color_callback: Callable
@@ -49,7 +49,7 @@ func configure(config: Dictionary) -> void:
 	sync_overlay_to_holder_callback = config.get("sync_overlay_to_holder_callback", sync_overlay_to_holder_callback)
 	piece_holder_provider = config.get("piece_holder_provider", piece_holder_provider)
 	should_skip_visual_animations_provider = config.get("should_skip_visual_animations_provider", should_skip_visual_animations_provider)
-	pending_attach_positions_provider = config.get("pending_attach_positions_provider", pending_attach_positions_provider)
+	pending_affix_positions_provider = config.get("pending_affix_positions_provider", pending_affix_positions_provider)
 	piece_objects_provider = config.get("piece_objects_provider", piece_objects_provider)
 	board_effects_provider = config.get("board_effects_provider", board_effects_provider)
 	player_id_for_color_callback = config.get("player_id_for_color_callback", player_id_for_color_callback)
@@ -80,7 +80,7 @@ func configure(config: Dictionary) -> void:
 func apply_overlay(holder: Sprite2D, board_pos: Vector2) -> void:
 	remove_overlay(holder)
 	remove_square_overlay(board_pos)
-	if get_pending_attach_positions().has(board_pos):
+	if get_pending_affix_positions().has(board_pos):
 		return
 	if holder == null or !is_instance_valid(holder) or holder.texture == null:
 		freeze_visual_signatures.erase(board_pos)
@@ -222,14 +222,14 @@ func get_visual_signature(board_pos: Vector2) -> String:
 	if !is_frozen_square and !is_exhausted_piece:
 		return ""
 
-	var attached_stamp_name: String = ""
-	if piece.attached_stamp != null:
-		attached_stamp_name = piece.attached_stamp.stamp_name
+	var affixed_stamp_name: String = ""
+	if piece.affixed_stamp != null:
+		affixed_stamp_name = piece.affixed_stamp.stamp_name
 
 	return "%s:%s:%s:%s:%s" % [
 		board_pos,
 		piece.color,
-		attached_stamp_name,
+		affixed_stamp_name,
 		is_exhausted_piece,
 		is_frozen_square,
 	]
@@ -254,9 +254,9 @@ func get_piece_holder_at(board_pos: Vector2) -> Sprite2D:
 func should_skip_visual_animations() -> bool:
 	return bool(should_skip_visual_animations_provider.call()) if should_skip_visual_animations_provider.is_valid() else false
 
-func get_pending_attach_positions() -> Dictionary:
-	if pending_attach_positions_provider.is_valid():
-		var value = pending_attach_positions_provider.call()
+func get_pending_affix_positions() -> Dictionary:
+	if pending_affix_positions_provider.is_valid():
+		var value = pending_affix_positions_provider.call()
 		if value is Dictionary:
 			return value
 	return {}

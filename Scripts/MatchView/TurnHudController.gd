@@ -46,7 +46,7 @@ var tutorial_end_turn_allowed_provider: Callable
 var show_first_turn_end_provider: Callable
 var can_end_first_turn_provider: Callable
 var can_switch_action_provider: Callable
-var can_attach_action_provider: Callable
+var can_affix_action_provider: Callable
 var can_move_action_provider: Callable
 var current_turn_color_provider: Callable
 var player_id_for_color_provider: Callable
@@ -131,7 +131,7 @@ func configure(config: Dictionary) -> void:
 	show_first_turn_end_provider = config.get("show_first_turn_end_provider", show_first_turn_end_provider)
 	can_end_first_turn_provider = config.get("can_end_first_turn_provider", can_end_first_turn_provider)
 	can_switch_action_provider = config.get("can_switch_action_provider", can_switch_action_provider)
-	can_attach_action_provider = config.get("can_attach_action_provider", can_attach_action_provider)
+	can_affix_action_provider = config.get("can_affix_action_provider", can_affix_action_provider)
 	can_move_action_provider = config.get("can_move_action_provider", can_move_action_provider)
 	current_turn_color_provider = config.get("current_turn_color_provider", current_turn_color_provider)
 	player_id_for_color_provider = config.get("player_id_for_color_provider", player_id_for_color_provider)
@@ -209,10 +209,10 @@ func create_action_status_ui() -> void:
 
 	var action_letters: Dictionary = {
 		"Page": "P",
-		"Attach": "A",
+		"Affix": "A",
 		"Move": "M",
 	}
-	for action_name in ["Page", "Attach", "Move"]:
+	for action_name in ["Page", "Affix", "Move"]:
 		var action_cell := PanelContainer.new()
 		action_status_container.add_child(action_cell)
 		action_cell.custom_minimum_size = action_status_cell_size
@@ -500,7 +500,7 @@ func update_action_status_ui() -> void:
 
 	action_status_container.visible = !is_game_over()
 	set_action_status_label("Page", get_bool(can_switch_action_provider, false))
-	set_action_status_label("Attach", get_bool(can_attach_action_provider, false))
+	set_action_status_label("Affix", get_bool(can_affix_action_provider, false))
 	set_action_status_label("Move", get_bool(can_move_action_provider, false))
 
 func set_action_status_label(action_name: String, is_available: bool) -> void:
@@ -682,7 +682,7 @@ func get_action_status_letter(action_name: String) -> String:
 			return "S"
 		"Page":
 			return "P"
-		"Attach":
+		"Affix":
 			return "A"
 		"Move":
 			return "M"

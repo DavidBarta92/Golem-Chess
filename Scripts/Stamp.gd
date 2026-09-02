@@ -25,8 +25,10 @@ enum Role {
 @export var description: String = ""
 @export var symbol: String = ""
 @export_enum("none", "steal_stamp", "grant_stamp", "give_stamp", "move_base", "invisible_to_enemy", "invalid_squares", "frozen_squares", "bomb", "uncapturable", "increase_own_durations", "increase_enemy_durations", "decrease_own_durations", "decrease_enemy_durations", "increase_self_duration") var effect_type: String = StampEffect.TYPE_NONE
-@export_enum("on_attach", "on_move", "on_capture", "on_captured", "on_expire", "while_attached", "on_symbol_count") var effect_trigger: String = StampEffect.TRIGGER_ON_ATTACH
+@export_enum("on_affix", "on_move", "on_capture", "on_captured", "on_expire", "while_attached", "on_symbol_count") var effect_trigger: String = StampEffect.TRIGGER_ON_AFFIX
 @export var effect_icon: Texture2D
+@export var square_color_a: Color = Color(0, 0, 0, 0)
+@export var square_color_b: Color = Color(0, 0, 0, 0)
 @export var effect_params: Array[Array] = [
 	[0, 0, 0, 0, 0],
 	[0, 0, 0, 0, 0],
@@ -100,6 +102,12 @@ func get_movement_options() -> Array[Dictionary]:
 
 func has_effect() -> bool:
 	return StampEffect.has_effect(effect_type)
+
+func has_square_color_a() -> bool:
+	return square_color_a.a > 0.0
+
+func has_square_color_b() -> bool:
+	return square_color_b.a > 0.0
 
 func get_piece_texture(piece_color: int, view: String = PieceVisualSet.VIEW_BACK) -> Texture2D:
 	if piece_visuals != null:

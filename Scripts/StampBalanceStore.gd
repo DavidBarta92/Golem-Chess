@@ -6,13 +6,13 @@ const SESSION_FOLDER_NAME: String = "balance_sessions"
 const SESSION_FILE_EXTENSION: String = ".tres"
 
 const INT_STAT_KEYS: Array[String] = [
-	"seen", "attach", "move", "move_win", "capture", "seeker_capture", "base_entry",
+	"seen", "affix", "move", "move_win", "capture", "seeker_capture", "base_entry",
 	"expire", "return_deck", "return_hand", "effect", "base_effect",
 	"effect_stamps_moved", "effect_affected", "win_slots", "lose_slots",
 ]
 
 const FLOAT_STAT_KEYS: Array[String] = [
-	"progress", "win_attach", "lose_attach", "win_moves", "lose_moves",
+	"progress", "win_affix", "lose_affix", "win_moves", "lose_moves",
 	"win_progress", "lose_progress", "win_captures", "lose_captures",
 ]
 
@@ -117,7 +117,7 @@ static func row_to_stats(row: Dictionary) -> Dictionary:
 		"trend": parse_float(row.get("trend_score", 50.0)),
 		"conf": parse_float(row.get("sample_confidence", 0.0)),
 		"seen": parse_int(row.get("seen_count", 0)),
-		"attach": parse_int(row.get("attach_count", 0)),
+		"affix": parse_int(row.get("affix_count", 0)),
 		"move": parse_int(row.get("move_count", 0)),
 		"move_win": parse_int(row.get("move_win_count", 0)),
 		"capture": parse_int(row.get("capture_count", 0)),
@@ -133,8 +133,8 @@ static func row_to_stats(row: Dictionary) -> Dictionary:
 		"effect_affected": parse_int(row.get("affected_count_by_effect", 0)),
 		"win_slots": parse_int(row.get("win_slot_count", 0)),
 		"lose_slots": parse_int(row.get("lose_slot_count", 0)),
-		"win_attach": parse_float(row.get("win_attach_sum", 0.0)),
-		"lose_attach": parse_float(row.get("lose_attach_sum", 0.0)),
+		"win_affix": parse_float(row.get("win_affix_sum", 0.0)),
+		"lose_affix": parse_float(row.get("lose_affix_sum", 0.0)),
 		"win_moves": parse_float(row.get("win_moves_sum", 0.0)),
 		"lose_moves": parse_float(row.get("lose_moves_sum", 0.0)),
 		"win_progress": parse_float(row.get("win_progress_sum", 0.0)),
@@ -184,15 +184,15 @@ static func recalculate_balance_data(data: StampBalanceData) -> void:
 
 static func stats_to_row(stamp_name: String, stats: Dictionary, source_match_count: int, generated_unix: int, win_condition_counts: Dictionary = {}) -> Dictionary:
 	var seen_count: int = int(stats.get("seen", 0))
-	var attach_count: int = int(stats.get("attach", 0))
+	var affix_count: int = int(stats.get("affix", 0))
 	var move_count: int = int(stats.get("move", 0))
 	var move_win_count: int = int(stats.get("move_win", 0))
 	var capture_count: int = int(stats.get("capture", 0))
 	var progress_sum: float = float(stats.get("progress", 0.0))
 	var win_slots: int = int(stats.get("win_slots", 0))
 	var lose_slots: int = int(stats.get("lose_slots", 0))
-	var win_attach: float = float(stats.get("win_attach", 0.0))
-	var lose_attach: float = float(stats.get("lose_attach", 0.0))
+	var win_affix: float = float(stats.get("win_affix", 0.0))
+	var lose_affix: float = float(stats.get("lose_affix", 0.0))
 	var win_moves: float = float(stats.get("win_moves", 0.0))
 	var lose_moves: float = float(stats.get("lose_moves", 0.0))
 	var win_progress: float = float(stats.get("win_progress", 0.0))
@@ -203,8 +203,8 @@ static func stats_to_row(stamp_name: String, stats: Dictionary, source_match_cou
 	return {
 		"stamp_name": stamp_name,
 		"seen_count": seen_count,
-		"attach_count": attach_count,
-		"attach_rate": safe_div(float(attach_count), float(seen_count)),
+		"affix_count": affix_count,
+		"affix_rate": safe_div(float(affix_count), float(seen_count)),
 		"move_count": move_count,
 		"move_win_count": move_win_count,
 		"move_win_rate": safe_div(float(move_win_count), float(move_count)),
@@ -214,7 +214,7 @@ static func stats_to_row(stamp_name: String, stats: Dictionary, source_match_cou
 		"base_entry_count": int(stats.get("base_entry", 0)),
 		"progress_sum": progress_sum,
 		"avg_progress_per_move": safe_div(progress_sum, float(move_count)),
-		"delta_attach_per_player_match": safe_div(win_attach, float(win_slots)) - safe_div(lose_attach, float(lose_slots)),
+		"delta_affix_per_player_match": safe_div(win_affix, float(win_slots)) - safe_div(lose_affix, float(lose_slots)),
 		"delta_moves_per_player_match": safe_div(win_moves, float(win_slots)) - safe_div(lose_moves, float(lose_slots)),
 		"delta_progress_per_player_match": safe_div(win_progress, float(win_slots)) - safe_div(lose_progress, float(lose_slots)),
 		"delta_captures_per_player_match": safe_div(win_captures, float(win_slots)) - safe_div(lose_captures, float(lose_slots)),
@@ -227,8 +227,8 @@ static func stats_to_row(stamp_name: String, stats: Dictionary, source_match_cou
 		"affected_count_by_effect": int(stats.get("effect_affected", 0)),
 		"win_slot_count": win_slots,
 		"lose_slot_count": lose_slots,
-		"win_attach_sum": win_attach,
-		"lose_attach_sum": lose_attach,
+		"win_affix_sum": win_affix,
+		"lose_affix_sum": lose_affix,
 		"win_moves_sum": win_moves,
 		"lose_moves_sum": lose_moves,
 		"win_progress_sum": win_progress,

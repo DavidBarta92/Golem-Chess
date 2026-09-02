@@ -39,10 +39,10 @@ func has_tutorial_allowed_exchange_stamp(owner_color: int) -> bool:
 			return true
 	return false
 
-func can_attach_action_now() -> bool:
+func can_affix_action_now() -> bool:
 	if !match_board.can_control_current_turn():
 		return false
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_STAMP):
+	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP):
 		return false
 
 	var owner_color: int = match_board.get_controllable_color()
@@ -52,19 +52,19 @@ func can_attach_action_now() -> bool:
 
 	for position_value in match_board.piece_objects:
 		var piece: Piece = match_board.piece_objects[position_value] as Piece
-		if piece == null or piece.color != owner_color or piece.attached_stamp != null:
+		if piece == null or piece.color != owner_color or piece.affixed_stamp != null:
 			continue
 
 		for stamp: Stamp in hand_stamps:
 			if !MoveRules.stamp_can_be_used(stamp):
 				continue
-			if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_STAMP, {
+			if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, {
 				"owner_color": owner_color,
 				"piece_pos": position_value,
 				"stamp_name": stamp.stamp_name,
 			}):
 				continue
-			if MoveRules.can_attach_stamp_for_turn(match_board.piece_objects, owner_color, stamp):
+			if MoveRules.can_affix_stamp_for_turn(match_board.piece_objects, owner_color, stamp):
 				return true
 
 	return false
@@ -99,7 +99,7 @@ func has_tutorial_allowed_piece_move(owner_color: int) -> bool:
 	return false
 
 func has_remaining_turn_action_now() -> bool:
-	return can_switch_action_now() or can_attach_action_now() or can_move_action_now()
+	return can_switch_action_now() or can_affix_action_now() or can_move_action_now()
 
 func on_turn_timer_timeout(expected_turn_color: int) -> void:
 	if !match_board.is_inside_tree():
@@ -172,7 +172,7 @@ func end_current_turn_locally() -> void:
 	match_board.get_local_state_mutator().clear_piece_exhaustion_for_color(ending_color)
 	match_board.completed_turn_counts[ending_player_id] = int(match_board.completed_turn_counts.get(ending_player_id, 0)) + 1
 	match_board.white = !match_board.white
-	match_board.get_turn_action_state_controller().reset_current_turn_stamp_attach()
+	match_board.get_turn_action_state_controller().reset_current_turn_stamp_affix()
 	match_board.state = false
 	match_board.delete_dots()
 	match_board.hide_hover_piece_details()

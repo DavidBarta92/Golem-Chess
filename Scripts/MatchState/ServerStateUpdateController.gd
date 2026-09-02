@@ -35,6 +35,8 @@ func update_from_server_state(
 	var current_hidden_stamp_counts: Dictionary = match_board.get_match_state_sync_controller().get_hidden_stamp_counts_from_state(hidden_stamps)
 	var previous_white_hand_names: Array[String] = match_board.get_stamp_names_from_hand(match_board.white_stamp_hand)
 	var previous_black_hand_names: Array[String] = match_board.get_stamp_names_from_hand(match_board.black_stamp_hand)
+	var previous_white_turned_page: bool = bool(match_board.has_turned_page_this_turn.get(1, false))
+	var previous_black_turned_page: bool = bool(match_board.has_turned_page_this_turn.get(-1, false))
 
 	var parsed_piece_state: Dictionary = match_board.get_match_state_sync_controller().build_piece_state_from_server(pieces_data)
 	match_board.board = parsed_piece_state.get("board", BoardConfig.create_empty_board())
@@ -46,7 +48,7 @@ func update_from_server_state(
 	var should_emit_turn_ended: bool = bool(turn_transition.get("should_emit_turn_ended", false))
 	var server_ending_color: int = int(turn_transition.get("server_ending_color", 0))
 	if bool(turn_transition.get("changed_turn", false)):
-		match_board.get_turn_action_state_controller().reset_current_turn_stamp_attach()
+		match_board.get_turn_action_state_controller().reset_current_turn_stamp_affix()
 
 	var current_white_hand_names: Array = match_board.get_match_state_sync_controller().get_hand_names_from_state(player_hands, 0)
 	var current_black_hand_names: Array = match_board.get_match_state_sync_controller().get_hand_names_from_state(player_hands, 1)
@@ -62,13 +64,30 @@ func update_from_server_state(
 	match_board.current_last_move = match_board.get_match_state_sync_controller().parse_last_move(last_move)
 	if !apply_turn_action_state_from_server(turn_action_state):
 		apply_missing_turn_action_state_fallback()
+	var white_page_turned_this_update: bool = !previous_white_turned_page and bool(match_board.has_turned_page_this_turn.get(1, false))
+	var black_page_turned_this_update: bool = !previous_black_turned_page and bool(match_board.has_turned_page_this_turn.get(-1, false))
 	match_board.get_turn_hud_controller().sync_player_clocks(player_clock_seconds)
 	match_board.update_end_turn_button()
 	match_board.get_turn_hud_controller().update_action_status_ui()
 	match_board.white_stamp_hand = match_board.create_stamp_hand_from_names(current_white_hand_names)
 	match_board.black_stamp_hand = match_board.create_stamp_hand_from_names(current_black_hand_names)
-	match_board.white_stamp_visuals = match_board.populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
-	match_board.black_stamp_visuals = match_board.populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
+
+	# The hand that just turned a page swaps its cards only once our own
+	# codex has actually left the screen (its slide animation was already
+	# started, client-side, at the moment the button was pressed) -- a
+	# networked round trip can resolve well before that animation finishes,
+	# and populating right then would show the old->new change while still
+	# visible. Only relevant for our own color: the opponent's hand is never
+	# shown, so there's nothing to time for theirs.
+	var own_color: int = match_board.get_own_color()
+	if white_page_turned_this_update and own_color == 1:
+		match_board.run_when_codex_off_screen(Callable(match_board, "refresh_stamp_hand_visuals").bind(1))
+	else:
+		match_board.white_stamp_visuals = match_board.populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
+	if black_page_turned_this_update and own_color == -1:
+		match_board.run_when_codex_off_screen(Callable(match_board, "refresh_stamp_hand_visuals").bind(-1))
+	else:
+		match_board.black_stamp_visuals = match_board.populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
 	match_board.setup_deck_visuals()
 
 	match_board.delete_dots()
@@ -76,7 +95,7 @@ func update_from_server_state(
 	match_board.get_hidden_stamp_preview_controller().update_previews(hidden_stamps)
 	match_board.update_stamp_presentation()
 	var stamp_expiration_events: Array[Dictionary] = match_board.get_state_stamp_expiration_events(previous_piece_visual_state, recent_stamp_expirations)
-	var state_attach_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().collect_state_attach_animations(
+	var state_affix_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().collect_state_affix_animations(
 		previous_piece_visual_state,
 		match_board.piece_objects,
 		hidden_stamps,
@@ -112,19 +131,19 @@ func update_from_server_state(
 	var bomb_warning_animations: Array[Dictionary] = match_board.collect_bomb_warning_animations(recent_bomb_effects, previous_piece_visual_state)
 	var pending_respawn_arrival_animations: Array[Dictionary] = match_board.parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals)
 	match_board.hidden_stamp_counts = current_hidden_stamp_counts
-	var animated_attach_positions: Dictionary = match_board.get_server_state_visual_update_controller().get_attach_animation_positions(state_attach_animations)
-	for position_value in animated_attach_positions.keys():
-		var animated_attach_pos: Vector2 = match_board.value_to_vector2(position_value, match_board.INVALID_BOARD_POS)
-		if match_board.is_valid_position(animated_attach_pos):
-			match_board.begin_stamp_attach_process(animated_attach_pos)
+	var animated_affix_positions: Dictionary = match_board.get_server_state_visual_update_controller().get_affix_animation_positions(state_affix_animations)
+	for position_value in animated_affix_positions.keys():
+		var animated_affix_pos: Vector2 = match_board.value_to_vector2(position_value, match_board.INVALID_BOARD_POS)
+		if match_board.is_valid_position(animated_affix_pos):
+			match_board.begin_stamp_affix_process(animated_affix_pos)
 	var respawn_fragment_coordinator = match_board.get_piece_respawn_fragment_coordinator()
 	respawn_fragment_coordinator.prepare_piece_shatter_respawn_reveals(state_piece_shatter_animations)
 	respawn_fragment_coordinator.prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrival_animations)
 
 	var visual_context: Dictionary = {
-		"animated_attach_positions": animated_attach_positions,
+		"animated_affix_positions": animated_affix_positions,
 		"state_piece_move_animation": state_piece_move_animation,
-		"state_attach_animations": state_attach_animations,
+		"state_affix_animations": state_affix_animations,
 		"state_piece_revert_animations": state_piece_revert_animations,
 		"state_piece_shatter_animations": state_piece_shatter_animations,
 		"pending_respawn_arrival_animations": pending_respawn_arrival_animations,
@@ -134,6 +153,8 @@ func update_from_server_state(
 		"current_white_hand_names": current_white_hand_names,
 		"previous_black_hand_names": previous_black_hand_names,
 		"current_black_hand_names": current_black_hand_names,
+		"white_page_turned_this_update": white_page_turned_this_update,
+		"black_page_turned_this_update": black_page_turned_this_update,
 		"stamp_expiration_events": stamp_expiration_events,
 		"should_emit_turn_ended": should_emit_turn_ended,
 		"server_ending_color": server_ending_color,
@@ -153,7 +174,7 @@ func wait_for_active_state_visual_animations() -> void:
 func has_active_state_visual_animations() -> bool:
 	return match_board.has_active_visual_processes([
 		match_board.VISUAL_PROCESS_PIECE_MOVE,
-		match_board.VISUAL_PROCESS_STATE_STAMP_ATTACH,
+		match_board.VISUAL_PROCESS_STATE_STAMP_AFFIX,
 	])
 
 func apply_viewer_player_id(viewer_player_id: int) -> void:
@@ -171,11 +192,11 @@ func apply_turn_action_state_from_server(turn_action_state: Dictionary) -> bool:
 
 	for player_id in [0, 1]:
 		var owner_color: int = match_board.get_color_for_player_id(player_id)
-		match_board.attached_stamp_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "attached_stamp_this_turn", player_id)
+		match_board.affixed_stamp_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "affixed_stamp_this_turn", player_id)
 		match_board.moved_piece_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "moved_piece_this_turn", player_id)
 		match_board.exchanged_stamp_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "exchanged_stamp_this_turn", player_id)
 		match_board.has_turned_page_this_turn[owner_color] = get_turn_action_flag(turn_action_state, "has_turned_page_this_turn", player_id)
-		match_board.attached_stamp_count_this_turn[player_id] = get_turn_action_int(turn_action_state, "attached_stamp_count_this_turn", player_id)
+		match_board.affixed_stamp_count_this_turn[player_id] = get_turn_action_int(turn_action_state, "affixed_stamp_count_this_turn", player_id)
 		match_board.completed_turn_counts[player_id] = get_turn_action_int(turn_action_state, "completed_turn_counts", player_id)
 	return true
 

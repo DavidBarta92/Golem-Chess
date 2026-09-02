@@ -106,18 +106,18 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 
 const SCORE_WIN: float = 100000.0
 const SCORE_CAPTURE_SEEKER: float = 160.0
-const SCORE_ATTACH_SEEKER: float = 35.0
+const SCORE_AFFIX_SEEKER: float = 35.0
 const SCORE_THREATEN_SEEKER: float = 420.0
 const SCORE_SEEKER_BASE_ENTRY_THREAT: float = 900.0
 const SCORE_CAPTURE_BASE_STAGING_PIECE: float = 180.0
 const SCORE_CAPTURE_PIECE: float = 45.0
 const SCORE_CAPTURE_STAMP: float = 75.0
 const SCORE_SEEKER_BASE_PROGRESS: float = 35.0
-const SCORE_ATTACH_STAMP: float = 10.0
+const SCORE_AFFIX_STAMP: float = 10.0
 const SCORE_CENTER: float = 4.0
 const SCORE_USE_EXISTING_STAMP: float = 4.0
-const SCORE_ATTACH_SETUP_MOBILITY: float = 5.0
-const PENALTY_ATTACH_SETUP_NO_MOVE: float = 8.0
+const SCORE_AFFIX_SETUP_MOBILITY: float = 5.0
+const PENALTY_AFFIX_SETUP_NO_MOVE: float = 8.0
 const PENALTY_GIVE_STAMP: float = 35.0
 const SCORE_INVALID_MOVE_REDUCTION: float = 8.0
 const PENALTY_OWN_MOVE_REDUCTION: float = 5.0
@@ -135,8 +135,8 @@ const DEEP_OWN_SECOND_BEAM_WIDTH: int = 2
 const DEEP_OPPONENT_SECOND_BEAM_WIDTH: int = 2
 const DEEP_SECOND_OWN_WEIGHT: float = 0.72
 const DEEP_SECOND_OPPONENT_WEIGHT: float = 0.62
-const STAMP_VALUE_ATTACH_PLAY_WEIGHT: float = 0.35
-const STAMP_VALUE_ATTACH_EXCHANGE_WEIGHT: float = 0.6
+const STAMP_VALUE_AFFIX_PLAY_WEIGHT: float = 0.35
+const STAMP_VALUE_AFFIX_EXCHANGE_WEIGHT: float = 0.6
 const STAMP_VALUE_CAPTURE_WEIGHT: float = 1.2
 const ROOT_FULL_SCORE_LIMIT: int = 48
 const RESPONSE_FULL_SCORE_LIMIT: int = 24
@@ -148,8 +148,8 @@ const SCORE_THREAT_MAP_OWN_ATTACK: float = 14.0
 const PENALTY_THREAT_MAP_EXPOSURE: float = 18.0
 const SCORE_HAND_SYNERGY: float = 18.0
 const SCORE_SEEKER_ROUTE_STAGING: float = 32.0
-const SCORE_SEEKER_ATTACH_IN_ROUTE: float = 220.0
-const PENALTY_SEEKER_ATTACH_OUT_OF_ROUTE: float = 180.0
+const SCORE_SEEKER_AFFIX_IN_ROUTE: float = 220.0
+const PENALTY_SEEKER_AFFIX_OUT_OF_ROUTE: float = 180.0
 const PENALTY_EARLY_SEEKER_COMMITMENT: float = 520.0
 const PENALTY_SEEKER_CAPTURE_DISTRACTION: float = 650.0
 const SCORE_ACTIVE_SEEKER_PUSH: float = 75.0
@@ -181,9 +181,9 @@ const PENALTY_MOVE_BASE_PIECE_THREATENED_BY_SEEKER: float = 1800.0
 const SCORE_MATERIAL_ADVANTAGE_FINISH: float = 360.0
 const PENALTY_AHEAD_NON_CLOSING_CAPTURE: float = 380.0
 const SCORE_ENDGAME_SEEKER_ROUTE: float = 95.0
-const SCORE_ENDGAME_SEEKER_ATTACH_READY: float = 520.0
-const SCORE_ENDGAME_SEEKER_ATTACH_NEAR: float = 260.0
-const PENALTY_ENDGAME_NON_SEEKER_ATTACH: float = 75.0
+const SCORE_ENDGAME_SEEKER_AFFIX_READY: float = 520.0
+const SCORE_ENDGAME_SEEKER_AFFIX_NEAR: float = 260.0
+const PENALTY_ENDGAME_NON_SEEKER_AFFIX: float = 75.0
 const PENALTY_ENDGAME_EXCHANGE_SEEKER_PLAN: float = 420.0
 const SCORE_EMERGENCY_PREVENT_BASE_WIN: float = 50000.0
 const PENALTY_ALLOW_IMMEDIATE_BASE_WIN: float = 65000.0
@@ -316,7 +316,7 @@ func create_move_response_plan(player_id: int, move: Dictionary) -> Dictionary:
 			"to": AIStateSimulator.get_move_to(move),
 		}],
 		"move": move,
-		"setup_attach_actions": [],
+		"setup_affix_actions": [],
 		"plan_type": "move_response",
 	}
 
@@ -954,7 +954,7 @@ func get_state_hash(game_state: GameStateData) -> String:
 		var piece: Piece = game_state.pieces[position_value] as Piece
 		if piece == null:
 			continue
-		var stamp_name: String = piece.attached_stamp.stamp_name if piece.attached_stamp != null else ""
+		var stamp_name: String = piece.affixed_stamp.stamp_name if piece.affixed_stamp != null else ""
 		piece_parts.append("%d:%d:%d:%s:%d:%s:%d" % [
 			int(pos.x),
 			int(pos.y),
@@ -1000,7 +1000,7 @@ func get_piece_occupancy_hash(game_state: GameStateData) -> String:
 		var piece: Piece = game_state.pieces[position_value] as Piece
 		if piece == null:
 			continue
-		var stamp_name: String = piece.attached_stamp.stamp_name if piece.attached_stamp != null else ""
+		var stamp_name: String = piece.affixed_stamp.stamp_name if piece.affixed_stamp != null else ""
 		piece_parts.append("%d:%d:%d:%s" % [int(pos.x), int(pos.y), piece.color, stamp_name])
 	return ";".join(piece_parts)
 
@@ -1040,7 +1040,7 @@ func get_move_hash(move: Dictionary) -> String:
 		vector_hash(AIStateSimulator.get_move_from(move)),
 		vector_hash(AIStateSimulator.get_move_to(move)),
 		get_move_hash_stamp_name(move),
-		str(move.get("requires_attach", false)),
+		str(move.get("requires_affix", false)),
 	]
 
 func get_move_hash_stamp_name(move: Dictionary) -> String:
@@ -1104,10 +1104,10 @@ func usec_to_ms(elapsed_usec: int) -> float:
 func score_turn_plan_fast(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
 	var score: float = 0.0
 
-	var setup_attach_actions: Array = plan.get("setup_attach_actions", [])
-	for attach_action_value in setup_attach_actions:
-		var attach_action: Dictionary = attach_action_value
-		score += score_attach_setup_fast(game_state, player_id, attach_action, board_size)
+	var setup_affix_actions: Array = plan.get("setup_affix_actions", [])
+	for affix_action_value in setup_affix_actions:
+		var affix_action: Dictionary = affix_action_value
+		score += score_affix_setup_fast(game_state, player_id, affix_action, board_size)
 
 	var move: Dictionary = plan.get("move", {})
 	if !move.is_empty():
@@ -1117,15 +1117,15 @@ func score_turn_plan_fast(game_state: GameStateData, player_id: int, plan: Dicti
 	score -= float(maxi(0, actions.size() - 1)) * 0.4
 	return score
 
-func score_attach_setup_fast(game_state: GameStateData, player_id: int, attach_action: Dictionary, board_size: int) -> float:
-	var piece_pos: Vector2 = StampEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+func score_affix_setup_fast(game_state: GameStateData, player_id: int, affix_action: Dictionary, board_size: int) -> float:
+	var piece_pos: Vector2 = StampEffectResolver.as_vector2(affix_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 	var piece: Piece = game_state.get_piece(piece_pos)
 	if piece == null:
 		return 0.0
 
-	var stamp: Stamp = attach_action.get("stamp", null) as Stamp
+	var stamp: Stamp = affix_action.get("stamp", null) as Stamp
 	if stamp == null:
-		stamp = get_cached_stamp(str(attach_action.get("stamp_name", "")))
+		stamp = get_cached_stamp(str(affix_action.get("stamp_name", "")))
 	if stamp == null:
 		return 0.0
 
@@ -1133,26 +1133,26 @@ func score_attach_setup_fast(game_state: GameStateData, player_id: int, attach_a
 		"from": piece_pos,
 		"to": piece_pos,
 		"stamp": stamp,
-		"requires_attach": true,
+		"requires_affix": true,
 	}
 	var is_seeker_stamp: bool = MoveRules.is_seeker_stamp(stamp)
-	var seeker_ready: bool = !is_seeker_stamp or is_seeker_attach_in_timing_window(game_state, player_id, stamp, piece_pos, board_size)
-	var score: float = SCORE_ATTACH_STAMP + max(0, stamp.duration) * 2.0
+	var seeker_ready: bool = !is_seeker_stamp or is_seeker_affix_in_timing_window(game_state, player_id, stamp, piece_pos, board_size)
+	var score: float = SCORE_AFFIX_STAMP + max(0, stamp.duration) * 2.0
 	if is_seeker_stamp:
 		if seeker_ready:
-			score += SCORE_ATTACH_SEEKER * 0.85
+			score += SCORE_AFFIX_SEEKER * 0.85
 		else:
 			score -= PENALTY_EARLY_SEEKER_COMMITMENT
 	score += float(stamp.get_directions().size()) * 2.5
-	score += get_stamp_balance_value(stamp) * STAMP_VALUE_ATTACH_PLAY_WEIGHT
+	score += get_stamp_balance_value(stamp) * STAMP_VALUE_AFFIX_PLAY_WEIGHT
 	if is_seeker_stamp:
-		score += score_seeker_attach_timing(game_state, player_id, stamp, piece_pos, piece_pos, board_size) * 0.75
+		score += score_seeker_affix_timing(game_state, player_id, stamp, piece_pos, piece_pos, board_size) * 0.75
 		var seeker_effect_weight: float = 0.45 if seeker_ready else 0.05
 		score += score_stamp_effect_fast(game_state, player_id, piece, stamp, piece_pos, piece_pos, null, move, board_size) * seeker_effect_weight
 	else:
 		score += score_seeker_base_entry_threat(game_state, player_id, piece_pos, stamp, board_size)
 		score += score_stamp_effect_fast(game_state, player_id, piece, stamp, piece_pos, piece_pos, null, move, board_size) * 0.65
-	score -= score_attachment_danger(game_state, player_id, attach_action, board_size, false)
+	score -= score_affix_danger(game_state, player_id, affix_action, board_size, false)
 	return score
 
 func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
@@ -1167,15 +1167,15 @@ func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary
 	var stamp: Stamp = AIStateSimulator.get_stamp_for_candidate(game_state.pieces, move)
 	var captured_piece: Piece = AIStateSimulator.get_captured_piece(game_state.pieces, move)
 	var score: float = 0.0
-	if bool(move.get("requires_attach", false)):
+	if bool(move.get("requires_affix", false)):
 		if stamp != null:
-			score += SCORE_ATTACH_STAMP + max(0, stamp.duration) * 2.0
+			score += SCORE_AFFIX_STAMP + max(0, stamp.duration) * 2.0
 			if MoveRules.is_seeker_stamp(stamp):
-				if is_seeker_attach_in_timing_window(game_state, player_id, stamp, from_pos, board_size):
-					score += SCORE_ATTACH_SEEKER * 0.85
+				if is_seeker_affix_in_timing_window(game_state, player_id, stamp, from_pos, board_size):
+					score += SCORE_AFFIX_SEEKER * 0.85
 				else:
 					score -= PENALTY_EARLY_SEEKER_COMMITMENT
-			score += get_stamp_balance_value(stamp) * STAMP_VALUE_ATTACH_PLAY_WEIGHT
+			score += get_stamp_balance_value(stamp) * STAMP_VALUE_AFFIX_PLAY_WEIGHT
 	else:
 		score += SCORE_USE_EXISTING_STAMP
 
@@ -1337,12 +1337,12 @@ func score_hand_deck_economy_for_plan(game_state: GameStateData, player_id: int,
 			continue
 		var action: Dictionary = action_value
 		match str(action.get("type", "")):
-			"attach_stamp":
-				var attached_stamp: Stamp = get_cached_stamp(str(action.get("stamp_name", "")))
-				if attached_stamp != null:
-					score -= get_stamp_balance_value(attached_stamp) * 0.20
-					score += max(0, attached_stamp.duration) * 0.75
-					score += score_stamp_synergy_for_attach(game_state, player_id, action, attached_stamp)
+			"affix_stamp":
+				var affixed_stamp: Stamp = get_cached_stamp(str(action.get("stamp_name", "")))
+				if affixed_stamp != null:
+					score -= get_stamp_balance_value(affixed_stamp) * 0.20
+					score += max(0, affixed_stamp.duration) * 0.75
+					score += score_stamp_synergy_for_affix(game_state, player_id, action, affixed_stamp)
 			"exchange_stamp":
 				var exchanged_stamp: Stamp = get_cached_stamp(str(action.get("stamp_name", "")))
 				if exchanged_stamp != null:
@@ -1354,8 +1354,8 @@ func score_hand_deck_economy_for_plan(game_state: GameStateData, player_id: int,
 	score += score_remaining_hand_quality(game_state, player_id, actions) * HAND_DECK_ECONOMY_WEIGHT
 	score += score_remaining_deck_quality(game_state, player_id) * HAND_DECK_ECONOMY_WEIGHT * 0.35
 	score += score_hand_synergy(game_state, player_id) * HAND_DECK_ECONOMY_WEIGHT
-	if has_non_seeker_attach_action(actions):
-		score += SCORE_ATTACH_STAMP * 1.5
+	if has_non_seeker_affix_action(actions):
+		score += SCORE_AFFIX_STAMP * 1.5
 	return score
 
 func get_seeker_exchange_penalty(game_state: GameStateData, player_id: int) -> float:
@@ -1367,19 +1367,19 @@ func get_seeker_exchange_penalty(game_state: GameStateData, player_id: int) -> f
 		return PENALTY_EXCHANGE_LAST_SEEKER
 	return PENALTY_EXCHANGE_LAST_SEEKER * 0.35
 
-func has_non_seeker_attach_action(actions: Array) -> bool:
+func has_non_seeker_affix_action(actions: Array) -> bool:
 	for action_value in actions:
 		if !(action_value is Dictionary):
 			continue
 		var action: Dictionary = action_value
-		if str(action.get("type", "")) != "attach_stamp":
+		if str(action.get("type", "")) != "affix_stamp":
 			continue
 		var stamp: Stamp = get_cached_stamp(str(action.get("stamp_name", "")))
 		if stamp != null and !MoveRules.is_seeker_stamp(stamp):
 			return true
 	return false
 
-func score_stamp_synergy_for_attach(game_state: GameStateData, player_id: int, action: Dictionary, stamp: Stamp) -> float:
+func score_stamp_synergy_for_affix(game_state: GameStateData, player_id: int, action: Dictionary, stamp: Stamp) -> float:
 	if game_state == null or stamp == null:
 		return 0.0
 
@@ -1391,13 +1391,13 @@ func score_stamp_synergy_for_attach(game_state: GameStateData, player_id: int, a
 	if MoveRules.is_seeker_stamp(stamp):
 		var route_distance: int = get_seeker_route_distance(game_state, player_id, stamp, piece_pos, BoardConfig.BOARD_SIZE)
 		var allowed_steps: int = max(1, stamp.duration)
-		if is_seeker_attach_in_timing_window(game_state, player_id, stamp, piece_pos, BoardConfig.BOARD_SIZE):
-			score += SCORE_SEEKER_ATTACH_IN_ROUTE + float(allowed_steps - route_distance) * 24.0
+		if is_seeker_affix_in_timing_window(game_state, player_id, stamp, piece_pos, BoardConfig.BOARD_SIZE):
+			score += SCORE_SEEKER_AFFIX_IN_ROUTE + float(allowed_steps - route_distance) * 24.0
 			score += maxf(0.0, float(BoardConfig.BOARD_SIZE) - distance_to_base) * 4.0
 			if stamp.effect_type == StampEffect.TYPE_INVISIBLE_TO_ENEMY or stamp.effect_type == StampEffect.TYPE_UNCAPTURABLE:
 				score += SCORE_HAND_SYNERGY * 1.5
 		else:
-			score -= get_early_seeker_attach_penalty(game_state, player_id, stamp, piece_pos)
+			score -= get_early_seeker_affix_penalty(game_state, player_id, stamp, piece_pos)
 	if stamp.effect_type == StampEffect.TYPE_FROZEN_SQUARES or stamp.effect_type == StampEffect.TYPE_INVALID_SQUARES:
 		score += maxf(0.0, float(BoardConfig.BOARD_SIZE) - distance_to_base) * 1.5
 	if stamp.effect_type == StampEffect.TYPE_INCREASE_SELF_DURATION and movement_count >= 4:
@@ -1406,10 +1406,10 @@ func score_stamp_synergy_for_attach(game_state: GameStateData, player_id: int, a
 		score += SCORE_HAND_SYNERGY * 0.75
 	return score
 
-func get_early_seeker_attach_penalty(game_state: GameStateData, player_id: int, stamp: Stamp, piece_pos: Vector2) -> float:
+func get_early_seeker_affix_penalty(game_state: GameStateData, player_id: int, stamp: Stamp, piece_pos: Vector2) -> float:
 	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var distance_to_base: float = get_manhattan_distance(piece_pos, opponent_base)
-	var penalty: float = PENALTY_SEEKER_ATTACH_OUT_OF_ROUTE + PENALTY_EARLY_SEEKER_COMMITMENT
+	var penalty: float = PENALTY_SEEKER_AFFIX_OUT_OF_ROUTE + PENALTY_EARLY_SEEKER_COMMITMENT
 	if distance_to_base <= float(max(2, stamp.duration + 1)):
 		penalty *= 0.78
 	if is_endgame_seeker_finish_mode():
@@ -1437,21 +1437,21 @@ func score_seeker_route_strategy_for_plan(game_state: GameStateData, player_id: 
 		score += score_move_toward_seeker_routes(game_state, simulated_state, player_id, move, board_size)
 		score += score_force_seeker_closing_plan(game_state, simulated_state, player_id, plan, board_size)
 
-	var setup_attach_actions: Array = plan.get("setup_attach_actions", [])
-	for action_value in setup_attach_actions:
+	var setup_affix_actions: Array = plan.get("setup_affix_actions", [])
+	for action_value in setup_affix_actions:
 		if !(action_value is Dictionary):
 			continue
 		var action: Dictionary = action_value
-		if str(action.get("type", "")) != "attach_stamp":
+		if str(action.get("type", "")) != "affix_stamp":
 			continue
 		var stamp: Stamp = get_cached_stamp(str(action.get("stamp_name", "")))
 		if stamp != null and MoveRules.is_seeker_stamp(stamp):
 			var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 			var distance: int = get_seeker_route_distance(game_state, player_id, stamp, piece_pos, board_size)
-			if is_seeker_attach_in_timing_window(game_state, player_id, stamp, piece_pos, board_size):
-				score += SCORE_SEEKER_ATTACH_IN_ROUTE
+			if is_seeker_affix_in_timing_window(game_state, player_id, stamp, piece_pos, board_size):
+				score += SCORE_SEEKER_AFFIX_IN_ROUTE
 			else:
-				score -= get_early_seeker_attach_penalty(game_state, player_id, stamp, piece_pos)
+				score -= get_early_seeker_affix_penalty(game_state, player_id, stamp, piece_pos)
 
 	return score
 
@@ -1511,12 +1511,12 @@ func get_active_seeker_pieces_for_player(game_state: GameStateData, player_id: i
 		var piece: Piece = game_state.pieces[position_value] as Piece
 		if piece == null or piece.color != player_color:
 			continue
-		if !MoveRules.is_seeker_stamp(piece.attached_stamp):
+		if !MoveRules.is_seeker_stamp(piece.affixed_stamp):
 			continue
 		active_seeker_pieces.append({
 			"position": pos,
 			"piece": piece,
-			"stamp": piece.attached_stamp,
+			"stamp": piece.affixed_stamp,
 		})
 	return active_seeker_pieces
 
@@ -1531,8 +1531,8 @@ func score_active_seeker_push_plan(
 	var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
 	var moving_piece: Piece = before_state.get_piece(from_pos)
 	var score: float = 0.0
-	if moving_piece != null and MoveRules.is_seeker_stamp(moving_piece.attached_stamp):
-		score += score_active_seeker_direct_progress(before_state, after_state, player_id, moving_piece.attached_stamp, from_pos, to_pos, board_size)
+	if moving_piece != null and MoveRules.is_seeker_stamp(moving_piece.affixed_stamp):
+		score += score_active_seeker_direct_progress(before_state, after_state, player_id, moving_piece.affixed_stamp, from_pos, to_pos, board_size)
 	else:
 		var clearing_score: float = score_route_clearing_move(before_state, player_id, move, board_size)
 		score += clearing_score
@@ -1617,7 +1617,7 @@ func get_best_available_seeker_route_distance(game_state: GameStateData, player_
 
 func is_any_available_seeker_ready_from_square(game_state: GameStateData, player_id: int, square: Vector2, board_size: int) -> bool:
 	for stamp in get_available_seeker_stamps_for_player(game_state, player_id):
-		if stamp != null and is_seeker_attach_in_timing_window(game_state, player_id, stamp, square, board_size):
+		if stamp != null and is_seeker_affix_in_timing_window(game_state, player_id, stamp, square, board_size):
 			return true
 	return false
 
@@ -1644,7 +1644,7 @@ func score_seeker_staging_stamp_block(game_state: GameStateData, player_id: int,
 	if can_piece_receive_seeker_at(game_state, player_id, square):
 		return 0.0
 	var piece: Piece = game_state.get_piece(square)
-	if piece == null or piece.attached_stamp == null:
+	if piece == null or piece.affixed_stamp == null:
 		return 0.0
 	return -minf(PENALTY_LEAVE_SEEKER_STAGING_SQUARE * 0.55, 180.0 + float(maxi(0, piece.turns_remaining)) * 70.0)
 
@@ -1704,7 +1704,7 @@ func score_move_toward_seeker_routes(
 	else:
 		score += SCORE_SEEKER_ROUTE_STAGING * 0.5
 	if best_after <= best_duration:
-		score += SCORE_SEEKER_ATTACH_IN_ROUTE * 0.45
+		score += SCORE_SEEKER_AFFIX_IN_ROUTE * 0.45
 	return score
 
 func get_available_seeker_stamps_for_player(game_state: GameStateData, player_id: int) -> Array:
@@ -1864,7 +1864,7 @@ func score_remaining_hand_quality(game_state: GameStateData, player_id: int, act
 		if !(action_value is Dictionary):
 			continue
 		var action: Dictionary = action_value
-		if str(action.get("type", "")) == "attach_stamp":
+		if str(action.get("type", "")) == "affix_stamp":
 			consumed_stamp_names.append(str(action.get("stamp_name", "")))
 
 	var hand: Array = game_state.player_hands.get(player_id, [])
@@ -1969,7 +1969,7 @@ func score_two_turn_base_pressure(game_state: GameStateData, player_id: int, boa
 				"to": to_pos,
 			}],
 			"move": move,
-			"setup_attach_actions": [],
+			"setup_affix_actions": [],
 			"plan_type": "threat_probe",
 		}
 		var next_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, simulated_plan, board_size)
@@ -2032,10 +2032,10 @@ func score_turn_plan_breakdown(game_state: GameStateData, player_id: int, plan: 
 	if !move.is_empty():
 		move_score = score_move_cached(game_state, player_id, move, board_size)
 
-	var setup_attach_actions: Array = plan.get("setup_attach_actions", [])
-	for attach_action_value in setup_attach_actions:
-		var attach_action: Dictionary = attach_action_value
-		setup_score += score_attach_setup(game_state, player_id, attach_action, board_size)
+	var setup_affix_actions: Array = plan.get("setup_affix_actions", [])
+	for affix_action_value in setup_affix_actions:
+		var affix_action: Dictionary = affix_action_value
+		setup_score += score_affix_setup(game_state, player_id, affix_action, board_size)
 
 	var actions: Array = plan.get("actions", [])
 	action_score = -float(maxi(0, actions.size() - 1)) * 0.8
@@ -2107,7 +2107,7 @@ func score_opponent_active_seeker_defense_rule(
 	var move: Dictionary = plan.get("move", {})
 	if !move.is_empty():
 		var captured_piece: Piece = AIStateSimulator.get_captured_piece(before_state.pieces, move)
-		if captured_piece != null and MoveRules.is_seeker_stamp(captured_piece.attached_stamp):
+		if captured_piece != null and MoveRules.is_seeker_stamp(captured_piece.affixed_stamp):
 			score += SCORE_DEFENSE_CAPTURE_SEEKER * 1.5
 	return score
 
@@ -2189,7 +2189,7 @@ func score_move_base_piece_seeker_risk(game_state: GameStateData, player_id: int
 	return risk
 
 func is_move_base_piece(piece: Piece) -> bool:
-	return piece != null and piece.attached_stamp != null and piece.attached_stamp.effect_type == StampEffect.TYPE_MOVE_BASE
+	return piece != null and piece.affixed_stamp != null and piece.affixed_stamp.effect_type == StampEffect.TYPE_MOVE_BASE
 
 func can_opponent_seeker_capture_square(game_state: GameStateData, opponent_player_id: int, square: Vector2, board_size: int) -> bool:
 	var opponent_color: int = StampEffectResolver.get_color_for_player_id(opponent_player_id)
@@ -2258,7 +2258,7 @@ func score_move_off_enemy_base_rule(game_state: GameStateData, player_id: int, p
 		return 0.0
 
 	var moving_piece: Piece = game_state.get_piece(from_pos)
-	if moving_piece != null and MoveRules.is_seeker_stamp(moving_piece.attached_stamp):
+	if moving_piece != null and MoveRules.is_seeker_stamp(moving_piece.affixed_stamp):
 		return 0.0
 	if player_has_seeker_win_plan(game_state, player_id):
 		return SCORE_CLEAR_OWN_NON_SEEKER_FROM_ENEMY_BASE
@@ -2341,8 +2341,8 @@ func score_opening_strategy_plan(game_state: GameStateData, player_id: int, plan
 			score += SCORE_OPENING_CENTER_ENTRY
 		score += (get_distance_to_board_center(from_pos, board_size) - get_distance_to_board_center(to_pos, board_size)) * 22.0
 
-	var setup_attach_actions: Array = plan.get("setup_attach_actions", [])
-	for action_value in setup_attach_actions:
+	var setup_affix_actions: Array = plan.get("setup_affix_actions", [])
+	for action_value in setup_affix_actions:
 		if !(action_value is Dictionary):
 			continue
 		var action: Dictionary = action_value
@@ -2385,8 +2385,8 @@ func score_endgame_seeker_finish_strategy_plan(game_state: GameStateData, player
 			continue
 		var action: Dictionary = action_value
 		match str(action.get("type", "")):
-			"attach_stamp":
-				score += score_endgame_attach_action(game_state, player_id, action, board_size)
+			"affix_stamp":
+				score += score_endgame_affix_action(game_state, player_id, action, board_size)
 			"exchange_stamp":
 				var exchanged_stamp: Stamp = get_cached_stamp(str(action.get("stamp_name", "")))
 				if exchanged_stamp != null and MoveRules.is_seeker_stamp(exchanged_stamp):
@@ -2431,31 +2431,31 @@ func score_endgame_move_toward_seeker_finish(
 			score += float(delta) * SCORE_ENDGAME_SEEKER_ROUTE
 	else:
 		score += SCORE_ENDGAME_SEEKER_ROUTE * 0.35
-	var can_attach_after_move: bool = can_piece_receive_seeker_at(after_state, player_id, to_pos)
-	if best_after <= best_allowed_steps and can_attach_after_move:
-		score += SCORE_ENDGAME_SEEKER_ATTACH_READY + SCORE_HOLD_SEEKER_STAGING_SQUARE
+	var can_affix_after_move: bool = can_piece_receive_seeker_at(after_state, player_id, to_pos)
+	if best_after <= best_allowed_steps and can_affix_after_move:
+		score += SCORE_ENDGAME_SEEKER_AFFIX_READY + SCORE_HOLD_SEEKER_STAGING_SQUARE
 	elif best_after <= best_allowed_steps + 2:
-		score += SCORE_ENDGAME_SEEKER_ATTACH_NEAR
-	if !can_attach_after_move:
+		score += SCORE_ENDGAME_SEEKER_AFFIX_NEAR
+	if !can_affix_after_move:
 		score += score_seeker_staging_stamp_block(after_state, player_id, to_pos, board_size)
 	return score
 
-func score_endgame_attach_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> float:
+func score_endgame_affix_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> float:
 	var stamp: Stamp = get_cached_stamp(str(action.get("stamp_name", "")))
 	if stamp == null:
 		return 0.0
 
 	var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 	if !MoveRules.is_seeker_stamp(stamp):
-		return -PENALTY_ENDGAME_NON_SEEKER_ATTACH
+		return -PENALTY_ENDGAME_NON_SEEKER_AFFIX
 
 	var route_distance: int = get_seeker_route_distance(game_state, player_id, stamp, piece_pos, board_size)
 	var allowed_steps: int = max(1, stamp.duration)
 	if route_distance >= 0 and route_distance <= allowed_steps:
-		return SCORE_ENDGAME_SEEKER_ATTACH_READY + float(allowed_steps - route_distance) * 55.0
+		return SCORE_ENDGAME_SEEKER_AFFIX_READY + float(allowed_steps - route_distance) * 55.0
 	if route_distance >= 0 and route_distance <= allowed_steps + 2:
-		return SCORE_ENDGAME_SEEKER_ATTACH_NEAR - float(route_distance - allowed_steps) * 45.0
-	return -PENALTY_SEEKER_ATTACH_OUT_OF_ROUTE
+		return SCORE_ENDGAME_SEEKER_AFFIX_NEAR - float(route_distance - allowed_steps) * 45.0
+	return -PENALTY_SEEKER_AFFIX_OUT_OF_ROUTE
 
 func score_defense_strategy_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int, urgency: float) -> float:
 	if game_state == null or plan.is_empty():
@@ -2470,7 +2470,7 @@ func score_defense_strategy_plan(game_state: GameStateData, player_id: int, plan
 	if !move.is_empty():
 		var captured_piece: Piece = AIStateSimulator.get_captured_piece(game_state.pieces, move)
 		if captured_piece != null and StampEffectResolver.get_player_id_for_color(captured_piece.color) != player_id:
-			if MoveRules.is_seeker_stamp(captured_piece.attached_stamp):
+			if MoveRules.is_seeker_stamp(captured_piece.affixed_stamp):
 				score += SCORE_DEFENSE_CAPTURE_SEEKER * urgency
 			else:
 				score += get_piece_target_score(captured_piece) * 0.8 * urgency
@@ -2498,7 +2498,7 @@ func score_base_threat_against_player(game_state: GameStateData, player_id: int,
 		var distance: float = get_manhattan_distance(pos, own_base)
 		if distance <= 3.0:
 			threat += float(board_size) - distance
-		if MoveRules.is_seeker_stamp(piece.attached_stamp):
+		if MoveRules.is_seeker_stamp(piece.affixed_stamp):
 			threat += 18.0
 			if distance <= 3.0:
 				threat += 24.0
@@ -2533,36 +2533,36 @@ func get_distance_to_board_center(pos: Vector2, board_size: int) -> float:
 	var center: Vector2 = Vector2(float(board_size - 1) / 2.0, float(board_size - 1) / 2.0)
 	return get_manhattan_distance(pos, center)
 
-func score_attach_setup(game_state: GameStateData, player_id: int, attach_action: Dictionary, board_size: int) -> float:
-	return score_attach_setup_with_stamp_value_weight(game_state, player_id, attach_action, board_size, STAMP_VALUE_ATTACH_PLAY_WEIGHT)
+func score_affix_setup(game_state: GameStateData, player_id: int, affix_action: Dictionary, board_size: int) -> float:
+	return score_affix_setup_with_stamp_value_weight(game_state, player_id, affix_action, board_size, STAMP_VALUE_AFFIX_PLAY_WEIGHT)
 
-func score_attach_setup_for_exchange(game_state: GameStateData, player_id: int, attach_action: Dictionary, board_size: int) -> float:
-	return score_attach_setup_with_stamp_value_weight(game_state, player_id, attach_action, board_size, STAMP_VALUE_ATTACH_EXCHANGE_WEIGHT)
+func score_affix_setup_for_exchange(game_state: GameStateData, player_id: int, affix_action: Dictionary, board_size: int) -> float:
+	return score_affix_setup_with_stamp_value_weight(game_state, player_id, affix_action, board_size, STAMP_VALUE_AFFIX_EXCHANGE_WEIGHT)
 
-func score_attach_setup_with_stamp_value_weight(
+func score_affix_setup_with_stamp_value_weight(
 	game_state: GameStateData,
 	player_id: int,
-	attach_action: Dictionary,
+	affix_action: Dictionary,
 	board_size: int,
 	stamp_value_weight: float
 ) -> float:
-	var piece_pos: Vector2 = StampEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+	var piece_pos: Vector2 = StampEffectResolver.as_vector2(affix_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 	var piece: Piece = game_state.get_piece(piece_pos)
 	if piece == null:
 		return 0.0
 
-	var stamp: Stamp = attach_action.get("stamp", null) as Stamp
+	var stamp: Stamp = affix_action.get("stamp", null) as Stamp
 	if stamp == null:
-		stamp = get_cached_stamp(str(attach_action.get("stamp_name", "")))
+		stamp = get_cached_stamp(str(affix_action.get("stamp_name", "")))
 	if stamp == null:
 		return 0.0
 
 	var is_seeker_stamp: bool = MoveRules.is_seeker_stamp(stamp)
-	var seeker_ready: bool = !is_seeker_stamp or is_seeker_attach_in_timing_window(game_state, player_id, stamp, piece_pos, board_size)
-	var score: float = SCORE_ATTACH_STAMP
+	var seeker_ready: bool = !is_seeker_stamp or is_seeker_affix_in_timing_window(game_state, player_id, stamp, piece_pos, board_size)
+	var score: float = SCORE_AFFIX_STAMP
 	if is_seeker_stamp:
 		if seeker_ready:
-			score += SCORE_ATTACH_SEEKER
+			score += SCORE_AFFIX_SEEKER
 		else:
 			score -= PENALTY_EARLY_SEEKER_COMMITMENT
 
@@ -2575,12 +2575,12 @@ func score_attach_setup_with_stamp_value_weight(
 		board_size,
 		game_state.board_effects
 	)
-	score += float(setup_moves.size()) * SCORE_ATTACH_SETUP_MOBILITY
+	score += float(setup_moves.size()) * SCORE_AFFIX_SETUP_MOBILITY
 	if setup_moves.is_empty():
-		score -= PENALTY_ATTACH_SETUP_NO_MOVE
+		score -= PENALTY_AFFIX_SETUP_NO_MOVE
 	score += get_stamp_balance_value(stamp) * stamp_value_weight
 	if is_seeker_stamp:
-		score += score_seeker_attach_timing(game_state, player_id, stamp, piece_pos, piece_pos, board_size)
+		score += score_seeker_affix_timing(game_state, player_id, stamp, piece_pos, piece_pos, board_size)
 	else:
 		score += score_seeker_base_entry_threat(game_state, player_id, piece_pos, stamp, board_size)
 
@@ -2588,13 +2588,13 @@ func score_attach_setup_with_stamp_value_weight(
 		"from": piece_pos,
 		"to": piece_pos,
 		"stamp": stamp,
-		"requires_attach": true,
+		"requires_affix": true,
 	}
 	var stamp_effect_weight: float = 0.65
 	if is_seeker_stamp and !seeker_ready:
 		stamp_effect_weight = 0.05
 	score += score_stamp_effect(game_state, player_id, piece, stamp, piece_pos, piece_pos, null, setup_move, board_size) * stamp_effect_weight
-	score -= score_attachment_danger(game_state, player_id, attach_action, board_size, true)
+	score -= score_affix_danger(game_state, player_id, affix_action, board_size, true)
 	return score
 
 func score_move(game_state: GameStateData, player_id: int, move: Dictionary, board_size: int = BoardConfig.BOARD_SIZE) -> float:
@@ -2611,8 +2611,8 @@ func score_move(game_state: GameStateData, player_id: int, move: Dictionary, boa
 	var captured_piece: Piece = AIStateSimulator.get_captured_piece(game_state.pieces, move)
 	var is_own_seeker_move: bool = AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id)
 
-	if bool(move.get("requires_attach", false)):
-		score += score_attached_stamp(game_state, player_id, moving_piece, stamp, from_pos, to_pos, captured_piece, move, board_size)
+	if bool(move.get("requires_affix", false)):
+		score += score_affixed_stamp(game_state, player_id, moving_piece, stamp, from_pos, to_pos, captured_piece, move, board_size)
 	else:
 		score += SCORE_USE_EXISTING_STAMP
 
@@ -2637,7 +2637,7 @@ func score_move(game_state: GameStateData, player_id: int, move: Dictionary, boa
 	score -= score_danger_after_move(game_state, player_id, move, board_size)
 	return score
 
-func score_attached_stamp(
+func score_affixed_stamp(
 	game_state: GameStateData,
 	player_id: int,
 	moving_piece: Piece,
@@ -2651,26 +2651,26 @@ func score_attached_stamp(
 	if stamp == null:
 		return 0.0
 
-	var score: float = SCORE_ATTACH_STAMP
+	var score: float = SCORE_AFFIX_STAMP
 	var is_seeker_stamp: bool = MoveRules.is_seeker_stamp(stamp)
-	var seeker_ready: bool = !is_seeker_stamp or is_seeker_attach_in_timing_window(game_state, player_id, stamp, to_pos, board_size)
+	var seeker_ready: bool = !is_seeker_stamp or is_seeker_affix_in_timing_window(game_state, player_id, stamp, to_pos, board_size)
 	if is_seeker_stamp:
 		if seeker_ready:
-			score += SCORE_ATTACH_SEEKER
+			score += SCORE_AFFIX_SEEKER
 		else:
 			score -= PENALTY_EARLY_SEEKER_COMMITMENT
 
 	score += max(0, stamp.duration) * 3.0
-	score += get_stamp_balance_value(stamp) * STAMP_VALUE_ATTACH_PLAY_WEIGHT
+	score += get_stamp_balance_value(stamp) * STAMP_VALUE_AFFIX_PLAY_WEIGHT
 	if is_seeker_stamp:
-		score += score_seeker_attach_timing(game_state, player_id, stamp, from_pos, to_pos, board_size)
+		score += score_seeker_affix_timing(game_state, player_id, stamp, from_pos, to_pos, board_size)
 	var stamp_effect_weight: float = 1.0
 	if is_seeker_stamp and !seeker_ready:
 		stamp_effect_weight = 0.05
 	score += score_stamp_effect(game_state, player_id, moving_piece, stamp, from_pos, to_pos, captured_piece, move, board_size) * stamp_effect_weight
 	return score
 
-func is_seeker_attach_in_timing_window(game_state: GameStateData, player_id: int, stamp: Stamp, pos: Vector2, board_size: int) -> bool:
+func is_seeker_affix_in_timing_window(game_state: GameStateData, player_id: int, stamp: Stamp, pos: Vector2, board_size: int) -> bool:
 	if game_state == null or !MoveRules.is_seeker_stamp(stamp):
 		return false
 	var route_distance: int = get_seeker_route_distance(game_state, player_id, stamp, pos, board_size)
@@ -2684,7 +2684,7 @@ func is_seeker_attach_in_timing_window(game_state: GameStateData, player_id: int
 func is_endgame_seeker_finish_mode() -> bool:
 	return str(strategy_context.get("mode", "")) == "endgame_seeker_finish"
 
-func score_seeker_attach_timing(
+func score_seeker_affix_timing(
 	game_state: GameStateData,
 	player_id: int,
 	stamp: Stamp,
@@ -2697,10 +2697,10 @@ func score_seeker_attach_timing(
 
 	var allowed_steps: int = max(1, stamp.duration)
 	var route_distance: int = get_seeker_route_distance(game_state, player_id, stamp, to_pos, board_size)
-	if is_seeker_attach_in_timing_window(game_state, player_id, stamp, to_pos, board_size):
-		return SCORE_SEEKER_ATTACH_IN_ROUTE + float(allowed_steps - route_distance) * 32.0
+	if is_seeker_affix_in_timing_window(game_state, player_id, stamp, to_pos, board_size):
+		return SCORE_SEEKER_AFFIX_IN_ROUTE + float(allowed_steps - route_distance) * 32.0
 
-	var penalty: float = get_early_seeker_attach_penalty(game_state, player_id, stamp, from_pos)
+	var penalty: float = get_early_seeker_affix_penalty(game_state, player_id, stamp, from_pos)
 	var distance_to_route: int = get_best_distance_to_seeker_route(game_state, player_id, stamp, to_pos, board_size)
 	if distance_to_route >= 0:
 		penalty += float(distance_to_route) * 28.0
@@ -2748,10 +2748,10 @@ func score_capture(captured_piece: Piece) -> float:
 		return SCORE_CAPTURE_SEEKER
 
 	var score: float = SCORE_CAPTURE_PIECE
-	if captured_piece.attached_stamp != null:
+	if captured_piece.affixed_stamp != null:
 		score += SCORE_CAPTURE_STAMP
 		score += max(0, captured_piece.turns_remaining) * 8.0
-		score += get_stamp_balance_value(captured_piece.attached_stamp) * STAMP_VALUE_CAPTURE_WEIGHT
+		score += get_stamp_balance_value(captured_piece.affixed_stamp) * STAMP_VALUE_CAPTURE_WEIGHT
 	return score
 
 func score_seeker_base_progress(game_state: GameStateData, player_id: int, from_pos: Vector2, to_pos: Vector2) -> float:
@@ -2779,7 +2779,7 @@ func score_seeker_base_entry_threat(game_state: GameStateData, player_id: int, p
 	return 0.0
 
 func score_base_staging_capture(game_state: GameStateData, player_id: int, captured_piece: Piece, captured_pos: Vector2, board_size: int) -> float:
-	if game_state == null or captured_piece == null or captured_piece.attached_stamp != null:
+	if game_state == null or captured_piece == null or captured_piece.affixed_stamp != null:
 		return 0.0
 
 	var opponent_player_id: int = 1 - player_id
@@ -2850,47 +2850,47 @@ func score_danger_after_move(game_state: GameStateData, player_id: int, move: Di
 	var threatened_piece: Piece = simulated_pieces.get(to_pos, null) as Piece
 	return score_threatened_piece_loss(threatened_piece)
 
-func score_attachment_danger(
+func score_affix_danger(
 	game_state: GameStateData,
 	player_id: int,
-	attach_action: Dictionary,
+	affix_action: Dictionary,
 	board_size: int,
 	simulate_effects: bool
 ) -> float:
 	if game_state == null:
 		return 0.0
 
-	var piece_pos: Vector2 = StampEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
-	var stamp: Stamp = attach_action.get("stamp", null) as Stamp
+	var piece_pos: Vector2 = StampEffectResolver.as_vector2(affix_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+	var stamp: Stamp = affix_action.get("stamp", null) as Stamp
 	if stamp == null:
-		stamp = StampLibrary.get_stamp(str(attach_action.get("stamp_name", "")))
+		stamp = StampLibrary.get_stamp(str(affix_action.get("stamp_name", "")))
 	if stamp == null:
 		return 0.0
 
 	var simulated_state: GameStateData = null
 	var simulated_pieces: Dictionary = {}
 	var simulated_board_effects: Array = []
-	var attached_piece: Piece = null
+	var affixed_piece: Piece = null
 	if simulate_effects:
 		simulated_state = AIStateSimulator.clone_game_state(game_state)
-		AIStateSimulator.apply_attach_action(simulated_state, player_id, attach_action, board_size)
+		AIStateSimulator.apply_affix_action(simulated_state, player_id, affix_action, board_size)
 		if simulated_state.game_over:
 			if simulated_state.winner_player == player_id:
 				return 0.0
 			return SCORE_WIN
 		simulated_pieces = simulated_state.pieces
 		simulated_board_effects = simulated_state.board_effects
-		attached_piece = simulated_state.get_piece(piece_pos)
+		affixed_piece = simulated_state.get_piece(piece_pos)
 	else:
 		simulated_pieces = AIStateSimulator.clone_pieces(game_state.pieces)
 		simulated_board_effects = game_state.board_effects
-		attached_piece = simulated_pieces.get(piece_pos, null) as Piece
-		if attached_piece != null:
-			attached_piece.attached_stamp = stamp
-			attached_piece.turns_remaining = stamp.duration
-			attached_piece.exhausted_this_turn = true
+		affixed_piece = simulated_pieces.get(piece_pos, null) as Piece
+		if affixed_piece != null:
+			affixed_piece.affixed_stamp = stamp
+			affixed_piece.turns_remaining = stamp.duration
+			affixed_piece.exhausted_this_turn = true
 
-	if attached_piece == null or attached_piece.attached_stamp == null:
+	if affixed_piece == null or affixed_piece.affixed_stamp == null:
 		return 0.0
 
 	var opponent_player_id: int = 1 - player_id
@@ -2908,7 +2908,7 @@ func score_attachment_danger(
 	):
 		return 0.0
 
-	return score_threatened_piece_loss(attached_piece)
+	return score_threatened_piece_loss(affixed_piece)
 
 func score_threatened_piece_loss(piece: Piece) -> float:
 	if piece == null:
@@ -2997,7 +2997,7 @@ func score_bomb_effect(game_state: GameStateData, player_id: int, moving_piece: 
 		var target_score: float = SCORE_CAPTURE_PIECE
 		if StampEffectResolver.is_seeker_piece(target_piece):
 			target_score = SCORE_CAPTURE_SEEKER
-		elif target_piece.attached_stamp != null:
+		elif target_piece.affixed_stamp != null:
 			target_score += SCORE_CAPTURE_STAMP
 
 		if target_player_id == player_id:
@@ -3100,7 +3100,7 @@ func get_frozen_piece_score(game_state: GameStateData, piece: Piece, piece_pos: 
 	var score: float = SCORE_FROZEN_ENEMY_PIECE
 	if StampEffectResolver.is_seeker_piece(piece):
 		score += SCORE_CAPTURE_SEEKER * 0.65
-	elif piece.attached_stamp != null:
+	elif piece.affixed_stamp != null:
 		score += SCORE_CAPTURE_STAMP * 0.45
 		score += max(0, piece.turns_remaining) * 4.0
 
@@ -3130,7 +3130,7 @@ func score_duration_adjustment_effect(game_state: GameStateData, player_id: int,
 	var score: float = 0.0
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != target_color or piece.attached_stamp == null or piece.turns_remaining <= 0:
+		if piece == null or piece.color != target_color or piece.affixed_stamp == null or piece.turns_remaining <= 0:
 			continue
 
 		var piece_value: float = 16.0 + float(piece.turns_remaining) * 2.0

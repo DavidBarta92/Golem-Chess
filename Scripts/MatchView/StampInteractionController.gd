@@ -11,11 +11,11 @@ var tween_owner: Node
 var geometry
 var visuals
 var board_markers_node: Node2D
-var stamp_attach_target_fill_color: Color = Color(1.0, 0.92, 0.58, 0.24)
-var stamp_attach_target_fill_inset: float = 1.0
-var stamp_attach_target_wiggle_rise: float = 2.2
-var stamp_attach_target_wiggle_rotation_degrees: float = 2.2
-var stamp_attach_target_wiggle_step_duration: float = 0.105
+var stamp_affix_target_fill_color: Color = Color(1.0, 0.92, 0.58, 0.24)
+var stamp_affix_target_fill_inset: float = 1.0
+var stamp_affix_target_wiggle_rise: float = 2.2
+var stamp_affix_target_wiggle_rotation_degrees: float = 2.2
+var stamp_affix_target_wiggle_step_duration: float = 0.105
 
 var hide_hover_callback: Callable
 var show_hover_stamp_description_callback: Callable
@@ -25,10 +25,10 @@ var is_mouse_out_provider: Callable
 var mouse_board_position_provider: Callable
 var is_valid_position_callback: Callable
 var is_piece_owned_by_callback: Callable
-var can_attach_stamp_to_piece_callback: Callable
+var can_affix_stamp_to_piece_callback: Callable
 var can_exchange_stamp_locally_callback: Callable
 var is_mouse_over_deck_callback: Callable
-var attach_stamp_visual_to_piece_callback: Callable
+var affix_stamp_visual_to_piece_callback: Callable
 var stamp_visuals_provider: Callable
 var stamp_hand_provider: Callable
 var stamp_home_position_provider: Callable
@@ -40,23 +40,23 @@ var stamp_deck_provider: Callable
 var remove_stamp_from_hand_index_callback: Callable
 var complete_stamp_exchange_callback: Callable
 
-var stamp_attach_target_marker: Node2D
-var stamp_attach_target_position: Vector2 = INVALID_BOARD_POS
-var stamp_attach_target_piece: Sprite2D
-var stamp_attach_target_piece_base_position: Vector2 = Vector2.ZERO
-var stamp_attach_target_piece_base_rotation: float = 0.0
-var stamp_attach_target_piece_tween: Tween
+var stamp_affix_target_marker: Node2D
+var stamp_affix_target_position: Vector2 = INVALID_BOARD_POS
+var stamp_affix_target_piece: Sprite2D
+var stamp_affix_target_piece_base_position: Vector2 = Vector2.ZERO
+var stamp_affix_target_piece_base_rotation: float = 0.0
+var stamp_affix_target_piece_tween: Tween
 
 func configure(config: Dictionary) -> void:
 	tween_owner = config.get("tween_owner", tween_owner)
 	geometry = config.get("geometry", geometry)
 	visuals = config.get("visuals", visuals)
 	board_markers_node = config.get("board_markers_node", board_markers_node)
-	stamp_attach_target_fill_color = config.get("stamp_attach_target_fill_color", stamp_attach_target_fill_color)
-	stamp_attach_target_fill_inset = float(config.get("stamp_attach_target_fill_inset", stamp_attach_target_fill_inset))
-	stamp_attach_target_wiggle_rise = float(config.get("stamp_attach_target_wiggle_rise", stamp_attach_target_wiggle_rise))
-	stamp_attach_target_wiggle_rotation_degrees = float(config.get("stamp_attach_target_wiggle_rotation_degrees", stamp_attach_target_wiggle_rotation_degrees))
-	stamp_attach_target_wiggle_step_duration = float(config.get("stamp_attach_target_wiggle_step_duration", stamp_attach_target_wiggle_step_duration))
+	stamp_affix_target_fill_color = config.get("stamp_affix_target_fill_color", stamp_affix_target_fill_color)
+	stamp_affix_target_fill_inset = float(config.get("stamp_affix_target_fill_inset", stamp_affix_target_fill_inset))
+	stamp_affix_target_wiggle_rise = float(config.get("stamp_affix_target_wiggle_rise", stamp_affix_target_wiggle_rise))
+	stamp_affix_target_wiggle_rotation_degrees = float(config.get("stamp_affix_target_wiggle_rotation_degrees", stamp_affix_target_wiggle_rotation_degrees))
+	stamp_affix_target_wiggle_step_duration = float(config.get("stamp_affix_target_wiggle_step_duration", stamp_affix_target_wiggle_step_duration))
 
 	hide_hover_callback = config.get("hide_hover_callback", hide_hover_callback)
 	show_hover_stamp_description_callback = config.get("show_hover_stamp_description_callback", show_hover_stamp_description_callback)
@@ -66,10 +66,10 @@ func configure(config: Dictionary) -> void:
 	mouse_board_position_provider = config.get("mouse_board_position_provider", mouse_board_position_provider)
 	is_valid_position_callback = config.get("is_valid_position_callback", is_valid_position_callback)
 	is_piece_owned_by_callback = config.get("is_piece_owned_by_callback", is_piece_owned_by_callback)
-	can_attach_stamp_to_piece_callback = config.get("can_attach_stamp_to_piece_callback", can_attach_stamp_to_piece_callback)
+	can_affix_stamp_to_piece_callback = config.get("can_affix_stamp_to_piece_callback", can_affix_stamp_to_piece_callback)
 	can_exchange_stamp_locally_callback = config.get("can_exchange_stamp_locally_callback", can_exchange_stamp_locally_callback)
 	is_mouse_over_deck_callback = config.get("is_mouse_over_deck_callback", is_mouse_over_deck_callback)
-	attach_stamp_visual_to_piece_callback = config.get("attach_stamp_visual_to_piece_callback", attach_stamp_visual_to_piece_callback)
+	affix_stamp_visual_to_piece_callback = config.get("affix_stamp_visual_to_piece_callback", affix_stamp_visual_to_piece_callback)
 	stamp_visuals_provider = config.get("stamp_visuals_provider", stamp_visuals_provider)
 	stamp_hand_provider = config.get("stamp_hand_provider", stamp_hand_provider)
 	stamp_home_position_provider = config.get("stamp_home_position_provider", stamp_home_position_provider)
@@ -98,7 +98,7 @@ func on_stamp_drag_started(stamp_visual: StampVisual) -> void:
 	call_no_args(hide_hover_callback)
 	if stamp_visual != null and is_instance_valid(stamp_visual):
 		stamp_visual.set_drop_target_active(false)
-	update_stamp_attach_target_feedback(INVALID_BOARD_POS)
+	update_stamp_affix_target_feedback(INVALID_BOARD_POS)
 	start_stamp_moves_sound()
 
 func on_stamp_drag_moved(stamp_visual: StampVisual) -> void:
@@ -106,18 +106,18 @@ func on_stamp_drag_moved(stamp_visual: StampVisual) -> void:
 	var can_drop_on_deck: bool = can_drop_stamp_on_deck(stamp_visual)
 	if stamp_visual != null and is_instance_valid(stamp_visual):
 		stamp_visual.set_drop_target_active(target_pos != INVALID_BOARD_POS or can_drop_on_deck)
-	update_stamp_attach_target_feedback(target_pos)
+	update_stamp_affix_target_feedback(target_pos)
 	handle_stamp_reorder(stamp_visual)
 	update_stamp_moves_sound_volume(stamp_visual)
 
 func on_stamp_drag_released(stamp_visual: StampVisual) -> void:
 	var target_pos: Vector2 = get_stamp_drop_piece_position(stamp_visual)
-	update_stamp_attach_target_feedback(INVALID_BOARD_POS)
+	update_stamp_affix_target_feedback(INVALID_BOARD_POS)
 	stop_stamp_moves_sound()
 	if target_pos != INVALID_BOARD_POS:
 		SFXManager.play("stamp_glue")
-		if attach_stamp_visual_to_piece_callback.is_valid():
-			attach_stamp_visual_to_piece_callback.call(stamp_visual, target_pos)
+		if affix_stamp_visual_to_piece_callback.is_valid():
+			affix_stamp_visual_to_piece_callback.call(stamp_visual, target_pos)
 	elif can_drop_stamp_on_deck(stamp_visual):
 		exchange_stamp_visual_with_deck(stamp_visual)
 	elif stamp_visual != null and is_instance_valid(stamp_visual):
@@ -178,7 +178,7 @@ func get_stamp_drop_piece_position(stamp_visual: StampVisual) -> Vector2:
 
 	var board_pos: Vector2 = get_vector2(mouse_board_position_provider, INVALID_BOARD_POS)
 	var stamp_name: String = stamp_visual.stamp.stamp_name if stamp_visual.stamp else ""
-	if is_valid_position(board_pos) and is_piece_owned_by(board_pos, stamp_visual.owner_color) and can_attach_stamp_to_piece(board_pos, stamp_name, stamp_visual.owner_color):
+	if is_valid_position(board_pos) and is_piece_owned_by(board_pos, stamp_visual.owner_color) and can_affix_stamp_to_piece(board_pos, stamp_name, stamp_visual.owner_color):
 		return board_pos
 
 	return INVALID_BOARD_POS
@@ -250,69 +250,69 @@ func draw_stamp_from_deck_avoiding_names(deck: Array, avoided_stamp_names: Array
 	deck.remove_at(draw_index)
 	return drawn_stamp_name
 
-func update_stamp_attach_target_feedback(target_pos: Vector2) -> void:
-	if target_pos == stamp_attach_target_position:
+func update_stamp_affix_target_feedback(target_pos: Vector2) -> void:
+	if target_pos == stamp_affix_target_position:
 		return
 
-	clear_stamp_attach_target_feedback()
+	clear_stamp_affix_target_feedback()
 	if target_pos == INVALID_BOARD_POS or !is_valid_position(target_pos):
 		return
 
-	stamp_attach_target_position = target_pos
-	stamp_attach_target_marker = create_stamp_attach_target_marker(target_pos)
-	start_stamp_attach_target_piece_wiggle(target_pos)
+	stamp_affix_target_position = target_pos
+	stamp_affix_target_marker = create_stamp_affix_target_marker(target_pos)
+	start_stamp_affix_target_piece_wiggle(target_pos)
 
-func create_stamp_attach_target_marker(target_pos: Vector2) -> Node2D:
+func create_stamp_affix_target_marker(target_pos: Vector2) -> Node2D:
 	if board_markers_node == null or !is_instance_valid(board_markers_node) or geometry == null:
 		return null
 
 	var marker_group := Node2D.new()
-	marker_group.name = "StampAttachTargetMarker"
+	marker_group.name = "StampAffixTargetMarker"
 	marker_group.z_index = 0
 	var marker := Polygon2D.new()
 	marker.name = "Fill"
-	marker.color = stamp_attach_target_fill_color
-	marker.polygon = geometry.get_cell_polygon_local(target_pos, stamp_attach_target_fill_inset)
+	marker.color = stamp_affix_target_fill_color
+	marker.polygon = geometry.get_cell_polygon_local(target_pos, stamp_affix_target_fill_inset)
 	if visuals != null:
 		visuals.enable_canvas_item_antialiasing(marker)
 	marker_group.add_child(marker)
 	board_markers_node.add_child(marker_group)
 	return marker_group
 
-func start_stamp_attach_target_piece_wiggle(target_pos: Vector2) -> void:
+func start_stamp_affix_target_piece_wiggle(target_pos: Vector2) -> void:
 	var holder: Sprite2D = get_piece_holder_at(target_pos)
 	if holder == null or !is_instance_valid(holder):
 		return
 	if tween_owner == null or !is_instance_valid(tween_owner):
 		return
 
-	stamp_attach_target_piece = holder
-	stamp_attach_target_piece_base_position = holder.position
-	stamp_attach_target_piece_base_rotation = holder.rotation
-	var lift: Vector2 = Vector2(0.0, -stamp_attach_target_wiggle_rise)
-	var tilt: float = deg_to_rad(stamp_attach_target_wiggle_rotation_degrees)
-	stamp_attach_target_piece_tween = tween_owner.create_tween().set_loops().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	stamp_attach_target_piece_tween.tween_property(holder, "position", stamp_attach_target_piece_base_position + lift, stamp_attach_target_wiggle_step_duration)
-	stamp_attach_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_attach_target_piece_base_rotation + tilt, stamp_attach_target_wiggle_step_duration)
-	stamp_attach_target_piece_tween.tween_property(holder, "position", stamp_attach_target_piece_base_position, stamp_attach_target_wiggle_step_duration)
-	stamp_attach_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_attach_target_piece_base_rotation - tilt, stamp_attach_target_wiggle_step_duration)
-	stamp_attach_target_piece_tween.tween_property(holder, "position", stamp_attach_target_piece_base_position + lift * 0.55, stamp_attach_target_wiggle_step_duration)
-	stamp_attach_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_attach_target_piece_base_rotation, stamp_attach_target_wiggle_step_duration)
-	stamp_attach_target_piece_tween.tween_property(holder, "position", stamp_attach_target_piece_base_position, stamp_attach_target_wiggle_step_duration)
+	stamp_affix_target_piece = holder
+	stamp_affix_target_piece_base_position = holder.position
+	stamp_affix_target_piece_base_rotation = holder.rotation
+	var lift: Vector2 = Vector2(0.0, -stamp_affix_target_wiggle_rise)
+	var tilt: float = deg_to_rad(stamp_affix_target_wiggle_rotation_degrees)
+	stamp_affix_target_piece_tween = tween_owner.create_tween().set_loops().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position + lift, stamp_affix_target_wiggle_step_duration)
+	stamp_affix_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_affix_target_piece_base_rotation + tilt, stamp_affix_target_wiggle_step_duration)
+	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position, stamp_affix_target_wiggle_step_duration)
+	stamp_affix_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_affix_target_piece_base_rotation - tilt, stamp_affix_target_wiggle_step_duration)
+	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position + lift * 0.55, stamp_affix_target_wiggle_step_duration)
+	stamp_affix_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_affix_target_piece_base_rotation, stamp_affix_target_wiggle_step_duration)
+	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position, stamp_affix_target_wiggle_step_duration)
 
-func clear_stamp_attach_target_feedback() -> void:
-	if stamp_attach_target_marker != null and is_instance_valid(stamp_attach_target_marker):
-		stamp_attach_target_marker.queue_free()
-	stamp_attach_target_marker = null
-	stamp_attach_target_position = INVALID_BOARD_POS
+func clear_stamp_affix_target_feedback() -> void:
+	if stamp_affix_target_marker != null and is_instance_valid(stamp_affix_target_marker):
+		stamp_affix_target_marker.queue_free()
+	stamp_affix_target_marker = null
+	stamp_affix_target_position = INVALID_BOARD_POS
 
-	if stamp_attach_target_piece_tween != null and stamp_attach_target_piece_tween.is_running():
-		stamp_attach_target_piece_tween.kill()
-	stamp_attach_target_piece_tween = null
-	if stamp_attach_target_piece != null and is_instance_valid(stamp_attach_target_piece):
-		stamp_attach_target_piece.position = stamp_attach_target_piece_base_position
-		stamp_attach_target_piece.rotation = stamp_attach_target_piece_base_rotation
-	stamp_attach_target_piece = null
+	if stamp_affix_target_piece_tween != null and stamp_affix_target_piece_tween.is_running():
+		stamp_affix_target_piece_tween.kill()
+	stamp_affix_target_piece_tween = null
+	if stamp_affix_target_piece != null and is_instance_valid(stamp_affix_target_piece):
+		stamp_affix_target_piece.position = stamp_affix_target_piece_base_position
+		stamp_affix_target_piece.rotation = stamp_affix_target_piece_base_rotation
+	stamp_affix_target_piece = null
 
 func handle_stamp_reorder(stamp_visual: StampVisual) -> void:
 	if stamp_visual == null or !is_instance_valid(stamp_visual):
@@ -436,8 +436,8 @@ func is_valid_position(board_pos: Vector2) -> bool:
 func is_piece_owned_by(board_pos: Vector2, owner_color: int) -> bool:
 	return bool(is_piece_owned_by_callback.call(board_pos, owner_color)) if is_piece_owned_by_callback.is_valid() else false
 
-func can_attach_stamp_to_piece(board_pos: Vector2, stamp_name: String, owner_color: int) -> bool:
-	return bool(can_attach_stamp_to_piece_callback.call(board_pos, stamp_name, owner_color)) if can_attach_stamp_to_piece_callback.is_valid() else false
+func can_affix_stamp_to_piece(board_pos: Vector2, stamp_name: String, owner_color: int) -> bool:
+	return bool(can_affix_stamp_to_piece_callback.call(board_pos, stamp_name, owner_color)) if can_affix_stamp_to_piece_callback.is_valid() else false
 
 func can_exchange_stamp_locally(owner_color: int) -> bool:
 	return bool(can_exchange_stamp_locally_callback.call(owner_color)) if can_exchange_stamp_locally_callback.is_valid() else false

@@ -53,7 +53,7 @@ func move_piece_on_board(start_pos: Vector2, end_pos: Vector2) -> Dictionary:
 
 	if piece_objects.has(start_pos):
 		var piece: Piece = piece_objects[start_pos] as Piece
-		moving_piece_visible_to_enemy = !StampEffectResolver.piece_has_attached_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
+		moving_piece_visible_to_enemy = !StampEffectResolver.piece_has_affixed_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
 		piece.position = end_pos
 		piece_objects.erase(start_pos)
 		piece_objects[end_pos] = piece
@@ -90,7 +90,7 @@ func create_last_move_record(moving_color: int, from_pos: Vector2, to_pos: Vecto
 	}
 	if captured_piece != null:
 		last_move["captured_piece_color"] = captured_piece.color
-		last_move["captured_stamp_name"] = captured_piece.attached_stamp.stamp_name if captured_piece.attached_stamp != null else ""
+		last_move["captured_stamp_name"] = captured_piece.affixed_stamp.stamp_name if captured_piece.affixed_stamp != null else ""
 	return last_move
 
 func record_played_stamp_hand_slot(owner_color: int, current_hand_index: int) -> void:
@@ -350,7 +350,7 @@ func player_has_available_seeker_stamp(owner_color: int) -> bool:
 		return true
 	for position_value in piece_objects:
 		var piece: Piece = piece_objects[position_value] as Piece
-		if piece != null and piece.color == owner_color and MoveRules.is_seeker_stamp(piece.attached_stamp):
+		if piece != null and piece.color == owner_color and MoveRules.is_seeker_stamp(piece.affixed_stamp):
 			return true
 	return false
 
@@ -387,7 +387,7 @@ func has_any_piece(owner_color: int) -> bool:
 	return MoveRules.has_any_piece(piece_objects, owner_color)
 
 func is_seeker_piece(piece: Piece) -> bool:
-	return piece != null and MoveRules.is_seeker_stamp(piece.attached_stamp)
+	return piece != null and MoveRules.is_seeker_stamp(piece.affixed_stamp)
 
 func is_seeker_piece_at(piece_position: Vector2) -> bool:
 	if !piece_objects.has(piece_position):
@@ -399,7 +399,7 @@ func current_player_has_valid_turn_action() -> bool:
 	var hand_stamps: Array[Stamp] = get_stamp_hand(current_color)
 	if !has_moved_piece_this_turn(current_color) and MoveRules.has_valid_piece_move(piece_objects, current_color, board_size, board_effects):
 		return true
-	if MoveRules.has_valid_attachment_move(piece_objects, current_color, hand_stamps, board_size, board_effects):
+	if MoveRules.has_valid_affix_move(piece_objects, current_color, hand_stamps, board_size, board_effects):
 		return true
 	if current_player_can_end_turn_due_to_frozen_piece():
 		return true

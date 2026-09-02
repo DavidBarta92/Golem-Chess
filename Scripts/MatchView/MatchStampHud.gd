@@ -9,6 +9,7 @@ var deck_extra_left_offset: float = 200.0
 var stamp_ui_gap: float = 10.0
 var top_stamp_hand_margin: float = -28.0
 var bottom_stamp_hand_margin: float = 34.0
+var codex_hand_vertical_nudge: float = 24.0
 
 func configure(config: Dictionary) -> void:
 	stamp_visual_scene = config.get("stamp_visual_scene", stamp_visual_scene)
@@ -37,6 +38,10 @@ func configure_hand_container(hand_node: Control, is_top: bool) -> void:
 	if hand_node == null or !is_instance_valid(hand_node):
 		return
 
+	if is_top:
+		hand_node.visible = false
+		return
+
 	var scaled_stamp_size: Vector2 = get_hand_layout_size()
 	var hand_width: float = scaled_stamp_size.x * float(player_hand_size) + stamp_ui_gap * float(player_hand_size - 1)
 	hand_node.visible = true
@@ -56,6 +61,37 @@ func configure_hand_container(hand_node: Control, is_top: bool) -> void:
 		hand_node.anchor_bottom = 1.0
 		hand_node.offset_top = -bottom_stamp_hand_margin - scaled_stamp_size.y
 		hand_node.offset_bottom = -bottom_stamp_hand_margin
+
+func align_hand_container_to_codex(hand_node: Control, codex_node) -> void:
+	if hand_node == null or !is_instance_valid(hand_node):
+		return
+	if codex_node == null or !is_instance_valid(codex_node):
+		return
+
+	# Uses the codex's resting (unanimated) absolute position rather than its
+	# live offset_left/right/top, which shift while it sways, sinks, or
+	# slides -- and rather than anchor-relative math, since both nodes share
+	# the same CanvasLayer and their "position" is already directly
+	# comparable, no anchor-base conversion to get wrong.
+	var hand_width: float = hand_node.offset_right - hand_node.offset_left
+	var hand_height: float = hand_node.offset_bottom - hand_node.offset_top
+
+	# StampVisual scales down around its OWN center (pivot_offset is set to
+	# stamp_ui_size * 0.5 in StampVisual.tscn), not its top-left corner, so
+	# at stamp_hand_scale < 1 its rendered corner sits inward from its
+	# "position" by pivot * (1 - scale) -- the container's raw rect doesn't
+	# know about this, so the cards render off-center within it unless this
+	# is added back in.
+	var stamp_render_shift: Vector2 = (stamp_ui_size * 0.5) * (1.0 - stamp_hand_scale)
+
+	hand_node.anchor_left = codex_node.anchor_left
+	hand_node.anchor_right = codex_node.anchor_right
+	hand_node.anchor_top = codex_node.anchor_top
+	hand_node.anchor_bottom = codex_node.anchor_bottom
+	hand_node.position = Vector2(
+		codex_node.rest_center_x - stamp_render_shift.x - hand_width * 0.5,
+		codex_node.rest_visible_center_y - stamp_render_shift.y - hand_height * 0.5 + codex_hand_vertical_nudge
+	)
 
 func populate_stamp_hand(hand_node: Control, stamps: Array[Stamp], owner_color: int, signal_connector: Callable = Callable()) -> Array[StampVisual]:
 	if hand_node == null or !is_instance_valid(hand_node):

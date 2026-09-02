@@ -155,7 +155,7 @@ func get_base_staging_positions(game_state: GameStateData, player_id: int, board
 	for position_value in game_state.pieces:
 		var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_stamp != null:
+		if piece == null or piece.color != player_color or piece.affixed_stamp != null:
 			continue
 
 		for seeker_stamp: Stamp in seeker_stamps:
@@ -195,6 +195,6 @@ func create_move_plan(player_id: int, move: Dictionary, plan_type: String) -> Di
 			}
 		],
 		"move": move,
-		"setup_attach_actions": [],
+		"setup_affix_actions": [],
 		"plan_type": plan_type,
 	}

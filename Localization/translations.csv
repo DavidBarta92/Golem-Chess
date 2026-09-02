@@ -90,23 +90,23 @@ Leave Game,Leave Game,Kilépés a játékból
 Do you really want to leave the game?,Do you really want to leave the game?,Biztosan ki szeretnél lépni a játékból?
 Yes,Yes,Igen
 No,No,Nem
-RULES_INFO_TEXT,"Goal: attach a Seeker stamp to one of your pieces, then move that Seeker onto the opponent's base square.
+RULES_INFO_TEXT,"Goal: affix a Seeker stamp to one of your pieces, then move that Seeker onto the opponent's base square.
 
 Codex:
 - Your codex has 5 pages with up to 3 stamps per page.
 - You may use only the currently open page.
-- Before attaching a stamp, you may turn once to the next non-empty page.
+- Before affixing a stamp, you may turn once to the next non-empty page.
 - Empty pages are skipped, and a depleted page leaves the rotation.
 
 Turn flow:
-1. On your first turn, attach at least one stamp, then press End Turn. Attaching all 3 stamps ends it automatically.
-2. On later turns, optionally turn the page, attach stamps, then move.
+1. On your first turn, affix at least one stamp, then press End Turn. Affixing all 3 stamps ends it automatically.
+2. On later turns, optionally turn the page, affix stamps, then move.
 3. A newly stamped piece is frozen for that turn.
 4. Moving is mandatory and immediately ends the turn. If frozen stamped pieces leave you with no legal move, press End Turn.
 
 Captures:
 - The first captured piece respawns locked on an empty non-base home-row square. The next capture unlocks it.
-- Its attached stamp is removed. Seeker stamps return to their original codex page.","Cél: erősíts egy Kereső bélyeget az egyik bábudra, majd lépj vele az ellenfél bázismezőjére.
+- Its affixed stamp is removed. Seeker stamps return to their original codex page.","Cél: ragassz fel egy Kereső bélyeget az egyik bábudra, majd lépj vele az ellenfél bázismezőjére.
 
 Kódex:
 - A kódexednek 5 oldala van, oldalanként legfeljebb 3 bélyeggel.
@@ -115,8 +115,8 @@ Kódex:
 - Az üres oldalakat kihagyja a rendszer, a kimerült oldal pedig kikerül a forgásból.
 
 Körök menete:
-1. Az első körödben erősíts fel legalább egy bélyeget, majd nyomd meg a Kör vége gombot. Ha mindhárom bélyeget felhasználod, a kör automatikusan véget ér.
-2. A későbbi körökben opcionálisan lapozhatsz, felerősítheted a bélyegeket, majd léphetsz.
+1. Az első körödben ragassz fel legalább egy bélyeget, majd nyomd meg a Kör vége gombot. Ha mindhárom bélyeget felhasználod, a kör automatikusan véget ér.
+2. A későbbi körökben opcionálisan lapozhatsz, felragaszthatod a bélyegeket, majd léphetsz.
 3. Az újonnan megbélyegzett bábu az adott körben lefagy (nem mozgatható).
 4. A lépés kötelező, és azonnal véget vet a körnek. Ha a lefagyott, megbélyegzett bábuid miatt nincs szabályos lépésed, nyomd meg a Kör vége gombot.
 
@@ -183,19 +183,19 @@ The lobby host disconnected.,The lobby host disconnected.,A lobbi hosztja bontot
 This game instance is the server. Start a separate client window for Server Room.,This game instance is the server. Start a separate client window for Server Room.,Ez a példány maga a szerver. Indíts egy külön kliens ablakot a szerverszobához.
 Opponent left. Returning to menu in 5 seconds.,Opponent left. Returning to menu in 5 seconds.,Az ellenfél kilépett. Visszatérés a menübe 5 másodperc múlva.
 TUTORIAL_STEP_1,"Welcome. We will play a guided version of the game: one rule, one action, then the next rule.","Üdvözlünk. Egy irányított verzióját fogjuk játszani a játéknak: egy szabály, egy lépés, aztán a következő szabály."
-TUTORIAL_STEP_2,"Stamps give pieces their movement. On your first turn every piece is frozen, so you must attach at least one stamp. Drag Numero_1 onto a piece.","A bélyegek adják a bábuk mozgását. Az első körödben minden bábu le van fagyasztva, ezért legalább egy bélyeget fel kell erősítened. Húzd a Numero_1-et egy bábura."
-TUTORIAL_STEP_3,"The End Turn button is now active. Press it to finish your first turn. If you attach all three stamps, the turn ends automatically.","A Kör vége gomb most már aktív. Nyomd meg, hogy befejezd az első köröd. Ha mindhárom bélyeget felerősíted, a kör automatikusan véget ér."
-TUTORIAL_STEP_4,"From your next turn onward, moving is mandatory and immediately ends your turn. Turn Codex pages and attach before moving. Select the ready piece, then move it to a highlighted square.","A következő köreidtől kezdve a lépés kötelező, és azonnal véget vet a körnek. Lapozz a kódexben és erősíts fel bélyegeket lépés előtt. Válaszd ki a kész bábut, majd lépj vele egy kiemelt mezőre."
+TUTORIAL_STEP_2,"Stamps give pieces their movement. On your first turn every piece is frozen, so you must affix at least one stamp. Drag Numero_1 onto a piece.","A bélyegek adják a bábuk mozgását. Az első körödben minden bábu le van fagyasztva, ezért legalább egy bélyeget fel kell ragasztanod. Húzd a Numero_1-et egy bábura."
+TUTORIAL_STEP_3,"The End Turn button is now active. Press it to finish your first turn. If you affix all three stamps, the turn ends automatically.","A Kör vége gomb most már aktív. Nyomd meg, hogy befejezd az első köröd. Ha mindhárom bélyeget felragasztod, a kör automatikusan véget ér."
+TUTORIAL_STEP_4,"From your next turn onward, moving is mandatory and immediately ends your turn. Turn Codex pages and affix before moving. Select the ready piece, then move it to a highlighted square.","A következő köreidtől kezdve a lépés kötelező, és azonnal véget vet a körnek. Lapozz a kódexben és ragassz fel bélyegeket lépés előtt. Válaszd ki a kész bábut, majd lépj vele egy kiemelt mezőre."
 TUTORIAL_STEP_5,"After a piece moves, its stamp loses one duration and the turn ends. Stamps do not tick down merely because another piece moved.","Miután egy bábu lép, a rajta lévő bélyeg időtartama eggyel csökken, és a kör véget ér. A bélyegek nem csökkennek csak azért, mert egy másik bábu lépett."
-TUTORIAL_STEP_6,"You can attach more than one stamp in a turn. Put both stamps from your hand onto two empty pieces.","Egy körben több bélyeget is felerősíthetsz. Tedd fel mindkét kézben lévő bélyeget két üres bábura."
+TUTORIAL_STEP_6,"You can affix more than one stamp in a turn. Put both stamps from your hand onto two empty pieces.","Egy körben több bélyeget is felragaszthatsz. Tedd fel mindkét kézben lévő bélyeget két üres bábura."
 TUTORIAL_STEP_7,"Good. Now move the piece that was already ready. A successful move ends the turn. Spent non-Seeker stamps stay out of the Codex.","Ügyes. Most mozgasd a bábut, ami már készen állt. A sikeres lépés véget vet a körnek. Az elhasznált, nem Kereső bélyegek a kódexen kívül maradnak."
-TUTORIAL_STEP_8,"Once per turn, before attaching any stamp, you may turn the Codex to the next non-empty page. Press Turn Page.","Körönként egyszer, bármelyik bélyeg felerősítése előtt lapozhatsz a kódex következő nem üres oldalára. Nyomd meg a Lapozás gombot."
+TUTORIAL_STEP_8,"Once per turn, before affixing any stamp, you may turn the Codex to the next non-empty page. Press Turn Page.","Körönként egyszer, bármelyik bélyeg felragasztása előtt lapozhatsz a kódex következő nem üres oldalára. Nyomd meg a Lapozás gombot."
 TUTORIAL_STEP_8_POST,"The new page is now open, and only that page's stamps are usable. Press Continue when you are ready.","Az új oldal most nyitva van, és csak az azon lévő bélyegek használhatók. Nyomd meg a Folytatás gombot, ha készen állsz."
 TUTORIAL_STEP_9,"In multiplayer, each player has five minutes for the whole match. Your clock runs only during your turns; reaching 00:00 loses the game.","Többjátékos módban minden játékosnak öt perce van a teljes meccsre. Az órád csak a te köreid alatt fut; ha eléri a 00:00-t, elveszíted a játékot."
 TUTORIAL_STEP_10,"Some stamps have effects. Drag Training Seal onto a piece; its effect will mark frozen squares around it.","Néhány bélyegnek van különleges hatása is. Húzd a Training Seal-t egy bábura; a hatása lefagyasztott mezőket fog jelölni körülötte."
 TUTORIAL_STEP_11,"Those blue marks are board effects. Effects can change what pieces may do, separate from the stamp's movement pattern.","Azok a kék jelölések tábla-hatások. A hatások megváltoztathatják, mit tehetnek a bábuk, függetlenül a bélyeg mozgásmintájától."
 TUTORIAL_STEP_12,"Now capture the enemy piece. The first captured piece returns locked to a non-base square on its starting row. A later capture unlocks it instead of creating another respawn.","Most üsd le az ellenfél bábuját. Az elsőként leütött bábu zárolva tér vissza egy nem bázis mezőre a kezdősorában. Egy későbbi ütés feloldja azt, ahelyett hogy újabb újraéledést hozna létre."
-TUTORIAL_STEP_12_POST,"The captured piece returned to its home row. Its attached stamp is gone, and it stays locked until another piece is captured. Press Continue when you are ready.","A leütött bábu visszatért a kezdősorába. A rajta lévő bélyeg megszűnt, és zárolva marad, amíg egy másik bábut le nem ütnek. Nyomd meg a Folytatás gombot, ha készen állsz."
-TUTORIAL_STEP_13,"Seeker stamps are special. Attach Crown to a piece. If a Seeker is captured, it returns to its original Codex page.","A Kereső bélyegek különlegesek. Erősítsd a Crown-t egy bábura. Ha egy Keresőt leütnek, visszakerül az eredeti kódexoldalára."
+TUTORIAL_STEP_12_POST,"The captured piece returned to its home row. Its affixed stamp is gone, and it stays locked until another piece is captured. Press Continue when you are ready.","A leütött bábu visszatért a kezdősorába. A rajta lévő bélyeg megszűnt, és zárolva marad, amíg egy másik bábut le nem ütnek. Nyomd meg a Folytatás gombot, ha készen állsz."
+TUTORIAL_STEP_13,"Seeker stamps are special. Affix Crown to a piece. If a Seeker is captured, it returns to its original Codex page.","A Kereső bélyegek különlegesek. Ragaszd fel a Crown-t egy bábura. Ha egy Keresőt leütnek, visszakerül az eredeti kódexoldalára."
 TUTORIAL_STEP_14,"To win, a piece with a Seeker must move onto the opponent's base. Make the winning move.","A győzelemhez egy Keresővel felszerelt bábunak az ellenfél bázisára kell lépnie. Tedd meg a győztes lépést."
 TUTORIAL_STEP_15,Tutorial complete. Good work.,Az oktatóprogram véget ért. Szép munka.

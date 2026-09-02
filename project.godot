@@ -18,9 +18,11 @@ config/name="Golem"
 config/version="0.0.9"
 run/main_scene="uid://b2oed0tahffou"
 config/features=PackedStringArray("4.6", "Mobile")
-boot_splash/bg_color=Color(1, 1, 1, 1)
-boot_splash/use_filter=false
 config/icon="res://icon.svg"
+
+[audio]
+
+buses/default_bus_layout="uid://0axhvfpiw6je"
 
 [autoload]
 

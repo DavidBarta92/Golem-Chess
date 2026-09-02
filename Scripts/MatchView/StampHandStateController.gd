@@ -106,6 +106,12 @@ func update_stamp_presentation() -> void:
 	var local_color: int = match_board.get_local_view_color()
 	match_board.get_stamp_hud_controller().configure_hand_container(match_board.white_pieces, local_color != 1)
 	match_board.get_stamp_hud_controller().configure_hand_container(match_board.black_pieces, local_color != -1)
+	var local_hand_node: Control = match_board.white_pieces if local_color == 1 else match_board.black_pieces
+	match_board.get_stamp_hud_controller().align_hand_container_to_codex(local_hand_node, match_board.codex_visual)
+	match_board.set_codex_hand_follower(local_hand_node)
+	var can_control_current_turn: bool = match_board.can_control_current_turn()
+	match_board.set_codex_turn_active(can_control_current_turn)
+	match_board.set_opponent_codex_turn_active(!can_control_current_turn)
 	match_board.update_stamp_face_visibility(local_color)
 	update_stamp_drag_permissions()
 	match_board.get_turn_hud_controller().update_player_name_labels()
@@ -136,7 +142,7 @@ func can_drag_stamp_visual_now(stamp_visual: StampVisual, active_color: int, can
 		"stamp_name": stamp_visual.stamp.stamp_name,
 		"hand_index": match_board.get_stamp_visual_index(stamp_visual),
 	}
-	return match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_STAMP, context)
+	return match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, context)
 
 func remove_stamp_from_hand(stamp_visual: StampVisual) -> String:
 	return remove_stamp_from_hand_index(stamp_visual.owner_color, get_stamp_visual_index(stamp_visual), false)

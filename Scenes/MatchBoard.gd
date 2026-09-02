@@ -1,7 +1,7 @@
 extends Sprite2D
 
 signal piece_selected(piece_pos: Vector2, player_id: int)
-signal stamp_attached(piece_pos: Vector2, stamp_name: String, owner_color: int, hand_index: int)
+signal stamp_affixed(piece_pos: Vector2, stamp_name: String, owner_color: int, hand_index: int)
 signal piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int)
 signal stamp_exchanged(stamp_name: String, owner_color: int, hand_index: int)
 signal codex_page_turned(owner_color: int, page_index: int)
@@ -71,8 +71,8 @@ const BOARD_SPECIAL_TILE_BASE_WHITE: String = "base_white"
 const BOARD_SPECIAL_TILE_BASE_BLACK: String = "base_black"
 const BOARD_SPECIAL_TILE_FREEZE: String = "freeze"
 const BOARD_SPECIAL_TILE_DISABLED: String = "disabled"
-const VISUAL_PROCESS_STAMP_ATTACH: String = "stamp_attach"
-const VISUAL_PROCESS_STATE_STAMP_ATTACH: String = "state_stamp_attach"
+const VISUAL_PROCESS_STAMP_AFFIX: String = "stamp_affix"
+const VISUAL_PROCESS_STATE_STAMP_AFFIX: String = "state_stamp_affix"
 const VISUAL_PROCESS_PIECE_REVERT: String = "piece_revert"
 const VISUAL_PROCESS_PIECE_MOVE: String = "piece_move"
 const VISUAL_PROCESS_PIECE_SHATTER: String = "piece_shatter"
@@ -173,14 +173,12 @@ const HIDDEN_STAMP_MARGIN = 24
 const HIDDEN_STAMP_GAP = 10
 const HIDDEN_STAMP_SCALE = 0.70 * 0.75
 const HIDDEN_STAMP_PREVIEW_ALPHA: float = 0.70
-const CODEX_PANEL_SIZE: Vector2 = Vector2(244, 116)
-const CODEX_PANEL_MARGIN: Vector2 = Vector2(22, 24)
 const BOARD_MARKER_LINE_WIDTH = 1.8
-const STAMP_ATTACH_TARGET_FILL_COLOR = Color(1.0, 0.92, 0.58, 0.24)
-const STAMP_ATTACH_TARGET_FILL_INSET: float = 1.0
-const STAMP_ATTACH_TARGET_WIGGLE_RISE: float = 2.2
-const STAMP_ATTACH_TARGET_WIGGLE_ROTATION_DEGREES: float = 2.2
-const STAMP_ATTACH_TARGET_WIGGLE_STEP_DURATION: float = 0.105
+const STAMP_AFFIX_TARGET_FILL_COLOR = Color(1.0, 0.92, 0.58, 0.24)
+const STAMP_AFFIX_TARGET_FILL_INSET: float = 1.0
+const STAMP_AFFIX_TARGET_WIGGLE_RISE: float = 2.2
+const STAMP_AFFIX_TARGET_WIGGLE_ROTATION_DEGREES: float = 2.2
+const STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION: float = 0.105
 const SELECTED_PIECE_GLOW_NAME = "SelectedPieceGlow"
 const SELECTED_PIECE_GLOW_Z_INDEX = 24
 const SELECTED_PIECE_GLOW_STRENGTH: float = 1.0
@@ -306,7 +304,7 @@ const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const MATCH_END_FEEDBACK_SCENE = "res://Scenes/MatchEndFeedback.tscn"
 const STAMP_BURN_SEQUENCE_GAP = 0.08
 const TUTORIAL_ACTION_SELECT_PIECE = "select_piece"
-const TUTORIAL_ACTION_ATTACH_STAMP = "attach_stamp"
+const TUTORIAL_ACTION_AFFIX_STAMP = "affix_stamp"
 const TUTORIAL_ACTION_MOVE_PIECE = "move_piece"
 const TUTORIAL_ACTION_EXCHANGE_STAMP = "exchange_stamp"
 const TUTORIAL_ACTION_TURN_PAGE = "turn_page"
@@ -406,6 +404,8 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @onready var canvas_layer = $"../CanvasLayer"
 @onready var white_pieces = $"../CanvasLayer/white_pieces"
 @onready var black_pieces = $"../CanvasLayer/black_pieces"
+@onready var codex_visual = get_node_or_null("../CanvasLayer/Codex")
+@onready var opponent_codex_visual = get_node_or_null("../BackgroundLayer/MatchBackground/Codex")
 
 var board : Array
 var piece_objects: Dictionary = {}
@@ -422,11 +422,11 @@ var white_stamp_visuals: Array[StampVisual] = []
 var black_stamp_visuals: Array[StampVisual] = []
 var white_deck_visual: StampVisual
 var black_deck_visual: StampVisual
-var attached_stamp_this_turn: Dictionary = {
+var affixed_stamp_this_turn: Dictionary = {
 	1: false,
 	-1: false,
 }
-var attached_stamp_count_this_turn: Dictionary = {0: 0, 1: 0}
+var affixed_stamp_count_this_turn: Dictionary = {0: 0, 1: 0}
 var completed_turn_counts: Dictionary = {0: 0, 1: 0}
 var moved_piece_this_turn: Dictionary = {
 	1: false,
@@ -444,7 +444,7 @@ var played_stamp_hand_slots_this_turn: Dictionary = {
 	1: [],
 	-1: [],
 }
-var pending_stamp_attach_positions: Dictionary = {}
+var pending_stamp_affix_positions: Dictionary = {}
 var exchanged_stamp_names_this_turn: Dictionary = {
 	1: [],
 	-1: [],
@@ -589,8 +589,8 @@ func get_current_board_effects() -> Array:
 func get_current_last_move() -> Dictionary:
 	return current_last_move
 
-func get_pending_stamp_attach_positions() -> Dictionary:
-	return pending_stamp_attach_positions
+func get_pending_stamp_affix_positions() -> Dictionary:
+	return pending_stamp_affix_positions
 
 func get_piece_texture_resolver():
 	return get_controller_registry().get_piece_texture_resolver()
@@ -633,6 +633,40 @@ func get_stamp_hud_controller():
 
 func get_match_codex_controller():
 	return get_controller_registry().get_match_codex_controller()
+
+func play_codex_page_turn_animation() -> void:
+	if codex_visual != null and is_instance_valid(codex_visual):
+		codex_visual.play_turn_page_animation()
+
+func play_opponent_codex_page_turn_animation() -> void:
+	if opponent_codex_visual != null and is_instance_valid(opponent_codex_visual):
+		opponent_codex_visual.play_turn_page_animation()
+
+func set_codex_hand_follower(hand_node: Control) -> void:
+	if codex_visual != null and is_instance_valid(codex_visual):
+		codex_visual.set_hand_follower(hand_node)
+
+func run_when_codex_off_screen(callback: Callable) -> void:
+	if codex_visual != null and is_instance_valid(codex_visual):
+		codex_visual.run_when_off_screen(callback)
+	else:
+		callback.call()
+
+func refresh_stamp_hand_visuals(owner_color: int) -> void:
+	if owner_color == 1:
+		white_stamp_visuals = populate_stamp_hand(white_pieces, white_stamp_hand, 1)
+	else:
+		black_stamp_visuals = populate_stamp_hand(black_pieces, black_stamp_hand, -1)
+	setup_deck_visuals()
+	update_stamp_presentation()
+
+func set_codex_turn_active(active: bool) -> void:
+	if codex_visual != null and is_instance_valid(codex_visual):
+		codex_visual.set_turn_active(active)
+
+func set_opponent_codex_turn_active(active: bool) -> void:
+	if opponent_codex_visual != null and is_instance_valid(opponent_codex_visual):
+		opponent_codex_visual.set_turn_active(active)
 
 func get_stamp_hover_preview_controller():
 	return get_controller_registry().get_stamp_hover_preview_controller()
@@ -707,7 +741,7 @@ func can_end_first_turn() -> bool:
 		return false
 	var player_id: int = get_player_id_for_color(get_current_turn_color())
 	if int(completed_turn_counts.get(player_id, 0)) == 0:
-		return int(attached_stamp_count_this_turn.get(player_id, 0)) >= 1
+		return int(affixed_stamp_count_this_turn.get(player_id, 0)) >= 1
 	return get_local_state_mutator().current_player_can_end_turn_due_to_frozen_piece()
 
 func defer_turn_timer_timeout(expected_turn_color: int) -> void:
@@ -737,8 +771,8 @@ func apply_tutorial_setup(setup: Dictionary) -> void:
 func set_tutorial_board_from_array(board_data: Array) -> void:
 	get_tutorial_match_adapter().set_board_from_array(board_data)
 
-func set_tutorial_attached_stamps(attached_stamps: Array) -> void:
-	get_tutorial_match_adapter().set_attached_stamps(attached_stamps)
+func set_tutorial_affixed_stamps(affixed_stamps: Array) -> void:
+	get_tutorial_match_adapter().set_affixed_stamps(affixed_stamps)
 
 func reset_tutorial_turn_state() -> void:
 	get_tutorial_match_adapter().reset_turn_state()
@@ -852,17 +886,17 @@ func update_stamp_drag_permissions():
 func update_end_turn_button():
 	get_turn_hud_controller().update_end_turn_button()
 
-func begin_stamp_attach_process(piece_position: Vector2) -> void:
-	if !pending_stamp_attach_positions.has(piece_position):
-		begin_visual_process(VISUAL_PROCESS_STAMP_ATTACH)
-	pending_stamp_attach_positions[piece_position] = true
+func begin_stamp_affix_process(piece_position: Vector2) -> void:
+	if !pending_stamp_affix_positions.has(piece_position):
+		begin_visual_process(VISUAL_PROCESS_STAMP_AFFIX)
+	pending_stamp_affix_positions[piece_position] = true
 
-func finish_stamp_attach_process(piece_position: Vector2) -> void:
-	var had_pending_attach: bool = pending_stamp_attach_positions.has(piece_position)
-	if pending_stamp_attach_positions.has(piece_position):
-		pending_stamp_attach_positions.erase(piece_position)
-		finish_visual_process(VISUAL_PROCESS_STAMP_ATTACH)
-	if had_pending_attach:
+func finish_stamp_affix_process(piece_position: Vector2) -> void:
+	var had_pending_affix: bool = pending_stamp_affix_positions.has(piece_position)
+	if pending_stamp_affix_positions.has(piece_position):
+		pending_stamp_affix_positions.erase(piece_position)
+		finish_visual_process(VISUAL_PROCESS_STAMP_AFFIX)
+	if had_pending_affix:
 		refresh_piece_freeze_overlay(piece_position)
 	update_stamp_drag_permissions()
 	get_turn_hud_controller().update_action_status_ui()
@@ -876,8 +910,8 @@ func wait_for_pending_visual_processes() -> void:
 func can_switch_action_now() -> bool:
 	return get_turn_flow_controller().can_switch_action_now()
 
-func can_attach_action_now() -> bool:
-	return get_turn_flow_controller().can_attach_action_now()
+func can_affix_action_now() -> bool:
+	return get_turn_flow_controller().can_affix_action_now()
 
 func can_move_action_now() -> bool:
 	return get_turn_flow_controller().can_move_action_now()
@@ -966,20 +1000,20 @@ func complete_stamp_exchange(owner_color: int, stamp_name: String, hand_index: i
 func send_stamp_exchange_action(owner_color: int, stamp_name: String, hand_index: int) -> bool:
 	return get_local_stamp_action_controller().send_stamp_exchange_action(owner_color, stamp_name, hand_index)
 
-func attach_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vector2) -> void:
-	await get_local_stamp_action_controller().attach_stamp_visual_to_piece(stamp_visual, piece_position)
+func affix_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vector2) -> void:
+	await get_local_stamp_action_controller().affix_stamp_visual_to_piece(stamp_visual, piece_position)
 
-func send_stamp_attach_action(owner_color: int, stamp_name: String, piece_position: Vector2, hand_index: int) -> bool:
-	return get_local_stamp_action_controller().send_stamp_attach_action(owner_color, stamp_name, piece_position, hand_index)
+func send_stamp_affix_action(owner_color: int, stamp_name: String, piece_position: Vector2, hand_index: int) -> bool:
+	return get_local_stamp_action_controller().send_stamp_affix_action(owner_color, stamp_name, piece_position, hand_index)
 
-func can_attach_stamp_to_piece(piece_position: Vector2, stamp_name: String = "", owner_color: int = 0) -> bool:
-	return get_local_stamp_action_controller().can_attach_stamp_to_piece(piece_position, stamp_name, owner_color)
+func can_affix_stamp_to_piece(piece_position: Vector2, stamp_name: String = "", owner_color: int = 0) -> bool:
+	return get_local_stamp_action_controller().can_affix_stamp_to_piece(piece_position, stamp_name, owner_color)
 
 func apply_stamp_to_piece(piece_position: Vector2, stamp_name: String) -> bool:
 	return get_local_stamp_action_controller().apply_stamp_to_piece(piece_position, stamp_name)
 
-func apply_remote_stamp_attach(piece_position: Vector2, stamp_name: String, owner_color: int, hand_index: int, _replacement_stamp_name: String = ""):
-	get_local_stamp_action_controller().apply_remote_stamp_attach(piece_position, stamp_name, owner_color, hand_index, _replacement_stamp_name)
+func apply_remote_stamp_affix(piece_position: Vector2, stamp_name: String, owner_color: int, hand_index: int, _replacement_stamp_name: String = ""):
+	get_local_stamp_action_controller().apply_remote_stamp_affix(piece_position, stamp_name, owner_color, hand_index, _replacement_stamp_name)
 
 func remove_stamp_from_hand(stamp_visual: StampVisual) -> String:
 	return get_stamp_hand_state_controller().remove_stamp_from_hand(stamp_visual)
@@ -1171,14 +1205,14 @@ func reveal_hidden_last_move_arrow_for_game_over() -> void:
 func parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals: Array) -> Array[Dictionary]:
 	return get_match_state_sync_controller().parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals)
 
-func get_attach_animation_positions(animations: Array[Dictionary]) -> Dictionary:
-	return get_server_state_visual_update_controller().get_attach_animation_positions(animations)
+func get_affix_animation_positions(animations: Array[Dictionary]) -> Dictionary:
+	return get_server_state_visual_update_controller().get_affix_animation_positions(animations)
 
-func finish_resolved_pending_stamp_attach_processes(excluded_positions: Dictionary = {}) -> void:
-	get_server_state_visual_update_controller().finish_resolved_pending_stamp_attach_processes(excluded_positions)
+func finish_resolved_pending_stamp_affix_processes(excluded_positions: Dictionary = {}) -> void:
+	get_server_state_visual_update_controller().finish_resolved_pending_stamp_affix_processes(excluded_positions)
 
-func clear_resolved_pending_stamp_attach_positions() -> void:
-	get_server_state_visual_update_controller().clear_resolved_pending_stamp_attach_positions()
+func clear_resolved_pending_stamp_affix_positions() -> void:
+	get_server_state_visual_update_controller().clear_resolved_pending_stamp_affix_positions()
 
 func display_board():
 	get_piece_display_controller().display_board()

@@ -4,6 +4,8 @@ class_name StampVisual
 const BURN_SHADER = preload("res://Shaders/stamp_burn.gdshader")
 const GRAYSCALE_SHADER = preload("res://Shaders/stamp_grayscale.gdshader")
 const STAMP_ART_MASK_SHADER = preload("res://Shaders/stamp_art_mask.gdshader")
+const STAMP_SQUARE_GRADIENT_SHADER = preload("res://Shaders/stamp_square_gradient.gdshader")
+const DEFAULT_STAMP_SQUARE_COLOR: Color = Color(0.867, 0.561, 0.016, 1.0)
 const STAMP_FRONT_TEXTURE = preload("res://Assets/stamp_base.svg")
 const STAMP_BACK_TEXTURE = preload("res://Assets/stamp_back.svg")
 const BASIC_TYPE_FRAME_TEXTURE = preload("res://Assets/basic_frame.svg")
@@ -45,13 +47,14 @@ signal burn_finished(stamp_visual: StampVisual)
 
 @onready var shadow: TextureRect = $Shadow
 @onready var stamp_face: TextureRect = $StampFace
+@onready var stamp_square: TextureRect = $StampSquare
 @onready var type_frame: TextureRect = $TypeFrame
 @onready var stamp_art: TextureRect = $StampArt
 @onready var shimmer: ColorRect = $Shimmer
 @onready var duration_label: Label = $DurationLabel
-@onready var effect_icon_texture: TextureRect = $EffectIconTexture
-@onready var effect_icon_label: Label = $EffectIconLabel
 @onready var seeker_icon_label: Label = $SeekerIconLabel
+@onready var effect_art: TextureRect = $EffectArt
+@onready var trigger_art: TextureRect = $TriggerArt
 @onready var name_label: Label = $NameLabel
 @onready var description_label: RichTextLabel = get_node_or_null("DescriptionLabel") as RichTextLabel
 @onready var pattern_view: StampPatternView = $PatternView
@@ -59,6 +62,7 @@ signal burn_finished(stamp_visual: StampVisual)
 var stamp: Stamp
 var stamp_print: StampPrint
 var face_material: ShaderMaterial
+var stamp_square_material: ShaderMaterial
 var stamp_art_material: ShaderMaterial
 var shimmer_material: ShaderMaterial
 var tween_hover: Tween
@@ -100,6 +104,9 @@ func _ready() -> void:
 	pivot_offset = size * 0.5
 	face_material = stamp_face.material.duplicate() as ShaderMaterial
 	stamp_face.material = face_material
+	stamp_square_material = ShaderMaterial.new()
+	stamp_square_material.shader = STAMP_SQUARE_GRADIENT_SHADER
+	stamp_square.material = stamp_square_material
 	stamp_art_material = ShaderMaterial.new()
 	stamp_art_material.shader = STAMP_ART_MASK_SHADER
 	stamp_art.material = stamp_art_material
@@ -123,11 +130,13 @@ func _apply_texture_filter() -> void:
 	texture_filter = STAMP_TEXTURE_FILTER
 	shadow.texture_filter = STAMP_TEXTURE_FILTER
 	stamp_face.texture_filter = STAMP_TEXTURE_FILTER
+	stamp_square.texture_filter = STAMP_TEXTURE_FILTER
 	type_frame.texture_filter = STAMP_ART_TEXTURE_FILTER
 	stamp_art.texture_filter = STAMP_ART_TEXTURE_FILTER
 	stamp_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	stamp_art.stretch_mode = TextureRect.STRETCH_SCALE
-	effect_icon_texture.texture_filter = STAMP_TEXTURE_FILTER
+	effect_art.texture_filter = STAMP_ART_TEXTURE_FILTER
+	trigger_art.texture_filter = STAMP_ART_TEXTURE_FILTER
 
 func _configure_shimmer_surface() -> void:
 	shimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -559,11 +568,12 @@ func reset_snapshot_source_alpha(node: Node) -> void:
 
 func set_stamp_content_visible(value: bool) -> void:
 	stamp_face.visible = value
+	stamp_square.visible = value && !face_down
 	type_frame.visible = value && !face_down && stamp != null && type_frame.texture != null
 	stamp_art.visible = value && !face_down && stamp_art.texture != null
 	duration_label.visible = value && !face_down
-	effect_icon_texture.visible = value && !face_down && stamp != null && stamp.has_effect() && stamp.effect_icon != null
-	effect_icon_label.visible = value && !face_down && stamp != null && stamp.has_effect() && stamp.effect_icon == null
+	effect_art.visible = value && !face_down && _get_effect_art_texture() != null
+	trigger_art.visible = value && !face_down && _get_trigger_art_texture() != null
 	seeker_icon_label.visible = false
 	name_label.visible = value && !face_down
 	pattern_view.visible = value && !face_down
@@ -572,15 +582,11 @@ func _apply_stamp() -> void:
 	if stamp == null:
 		name_label.text = ""
 		duration_label.text = ""
-		effect_icon_texture.texture = null
-		effect_icon_label.text = ""
 		seeker_icon_label.visible = false
 		pattern_view.set_stamp(null)
 	else:
 		name_label.text = stamp.stamp_name
 		duration_label.text = tr("INF") if stamp.duration < 0 else str(stamp.duration)
-		effect_icon_texture.texture = stamp.effect_icon
-		effect_icon_label.text = StampEffect.get_effect_label(stamp.effect_type)
 		pattern_view.set_stamp(stamp)
 
 	_apply_art_state()
@@ -590,6 +596,11 @@ func _apply_stamp() -> void:
 		apply_preview_alpha()
 
 func _apply_art_state() -> void:
+	stamp_square.visible = !face_down
+	if stamp_square_material != null:
+		stamp_square_material.set_shader_parameter("color_a", _get_square_color_a())
+		stamp_square_material.set_shader_parameter("color_b", _get_square_color_b())
+
 	var type_frame_texture: Texture2D = _get_type_frame_texture()
 	var type_mask_texture: Texture2D = _get_type_mask_texture()
 	var art_texture: Texture2D = _get_stamp_art_texture()
@@ -613,6 +624,38 @@ func _apply_art_state() -> void:
 	else:
 		stamp_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		stamp_art.material = null
+
+	var effect_art_texture: Texture2D = _get_effect_art_texture()
+	effect_art.texture = effect_art_texture
+	effect_art.visible = !face_down && effect_art_texture != null
+
+	var trigger_art_texture: Texture2D = _get_trigger_art_texture()
+	trigger_art.texture = trigger_art_texture
+	trigger_art.visible = !face_down && trigger_art_texture != null
+
+func _get_square_color_a() -> Color:
+	if stamp_print != null && stamp_print.has_square_color_a():
+		return stamp_print.square_color_a
+	if stamp != null && stamp.has_square_color_a():
+		return stamp.square_color_a
+	return DEFAULT_STAMP_SQUARE_COLOR
+
+func _get_square_color_b() -> Color:
+	if stamp_print != null && stamp_print.has_square_color_b():
+		return stamp_print.square_color_b
+	if stamp != null && stamp.has_square_color_b():
+		return stamp.square_color_b
+	return DEFAULT_STAMP_SQUARE_COLOR
+
+func _get_effect_art_texture() -> Texture2D:
+	if stamp == null || !stamp.has_effect():
+		return null
+	return StampEffect.get_effect_icon_texture(stamp.effect_type)
+
+func _get_trigger_art_texture() -> Texture2D:
+	if stamp == null || !stamp.has_effect():
+		return null
+	return StampEffect.get_trigger_icon_texture(stamp.effect_trigger)
 
 func _get_stamp_art_texture() -> Texture2D:
 	if stamp_print != null && stamp_print.stamp_art != null:
@@ -665,11 +708,8 @@ func _get_type_mask_texture() -> Texture2D:
 	return BASIC_TYPE_MASK_TEXTURE
 
 func _apply_face_state() -> void:
-	var has_effect_icon: bool = stamp != null && stamp.has_effect()
 	name_label.visible = !face_down
 	duration_label.visible = !face_down
-	effect_icon_texture.visible = !face_down && has_effect_icon && stamp.effect_icon != null
-	effect_icon_label.visible = !face_down && has_effect_icon && stamp.effect_icon == null
 	seeker_icon_label.visible = false
 	pattern_view.visible = !face_down
 	shimmer.visible = _is_stamp_shimmer_enabled() && !face_down

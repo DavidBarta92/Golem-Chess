@@ -27,8 +27,8 @@ func display_board() -> void:
 	if match_board == null:
 		return
 	DebugLog.info("display_board() called: white=%s side=%s" % [match_board.white, match_board.side])
-	match_board.get_stamp_interaction_controller().clear_stamp_attach_target_feedback()
-	match_board.clear_resolved_pending_stamp_attach_positions()
+	match_board.get_stamp_interaction_controller().clear_stamp_affix_target_feedback()
+	match_board.clear_resolved_pending_stamp_affix_positions()
 	match_board.update_board_markers()
 	for child in match_board.pieces_node.get_children():
 		child.queue_free()

@@ -17,7 +17,7 @@ const TYPE_DECREASE_OWN_DURATIONS: String = "decrease_own_durations"
 const TYPE_DECREASE_ENEMY_DURATIONS: String = "decrease_enemy_durations"
 const TYPE_INCREASE_SELF_DURATION: String = "increase_self_duration"
 
-const TRIGGER_ON_ATTACH: String = "on_attach"
+const TRIGGER_ON_AFFIX: String = "on_affix"
 const TRIGGER_ON_MOVE: String = "on_move"
 const TRIGGER_ON_CAPTURE: String = "on_capture"
 const TRIGGER_ON_CAPTURED: String = "on_captured"
@@ -29,6 +29,57 @@ const MOVEMENT_NONE: int = 0
 const MOVEMENT_MOVE_AND_CAPTURE: int = 1
 const MOVEMENT_MOVE_ONLY: int = 2
 const MOVEMENT_CAPTURE_ONLY: int = 3
+
+const EFFECT_ICON_TEXTURES: Dictionary = {
+	TYPE_STEAL_STAMP: preload("res://Assets/effect_icon_steal_stamp.svg"),
+	TYPE_GRANT_STAMP: preload("res://Assets/effect_icon_grant_stamp.svg"),
+	TYPE_GIVE_STAMP: preload("res://Assets/effect_icon_give_stamp.svg"),
+	TYPE_MOVE_BASE: preload("res://Assets/effect_icon_move_base.svg"),
+	TYPE_INVISIBLE_TO_ENEMY: preload("res://Assets/effect_icon_invisible_to_enemy.svg"),
+	TYPE_INVALID_SQUARES: preload("res://Assets/effect_icon_invalid_squares.svg"),
+	TYPE_FROZEN_SQUARES: preload("res://Assets/effect_icon_frozen_squares.svg"),
+	TYPE_BOMB: preload("res://Assets/effect_icon_bomb.svg"),
+	TYPE_UNCAPTURABLE: preload("res://Assets/effect_icon_uncapturable.svg"),
+	TYPE_INCREASE_OWN_DURATIONS: preload("res://Assets/effect_icon_incrase_own_duration.svg"),
+	TYPE_INCREASE_ENEMY_DURATIONS: preload("res://Assets/effect_icon_incrase_enemy_duration.svg"),
+	TYPE_DECREASE_OWN_DURATIONS: preload("res://Assets/effect_icon_decrease_own_duration.svg"),
+	TYPE_DECREASE_ENEMY_DURATIONS: preload("res://Assets/effect_icon_decrease_enemy_duration.svg"),
+	TYPE_INCREASE_SELF_DURATION: preload("res://Assets/effect_icon_incrase_self_duration.svg"),
+}
+
+const EFFECT_ICON_STANDALONE_TEXTURES: Dictionary = {
+	TYPE_STEAL_STAMP: preload("res://Assets/effect_icon_steal_stamp_standalone.svg"),
+	TYPE_GRANT_STAMP: preload("res://Assets/effect_icon_grant_stamp_standalone.svg"),
+	TYPE_GIVE_STAMP: preload("res://Assets/effect_icon_give_stamp_standalone.svg"),
+	TYPE_MOVE_BASE: preload("res://Assets/effect_icon_move_base_standalone.svg"),
+	TYPE_INVISIBLE_TO_ENEMY: preload("res://Assets/effect_icon_invisible_to_enemy_standalone.svg"),
+	TYPE_INVALID_SQUARES: preload("res://Assets/effect_icon_invalid_squares_standalone.svg"),
+	TYPE_FROZEN_SQUARES: preload("res://Assets/effect_icon_frozen_squares_standalone.svg"),
+	TYPE_BOMB: preload("res://Assets/effect_icon_bomb_standalone.svg"),
+	TYPE_UNCAPTURABLE: preload("res://Assets/effect_icon_uncapturable_standalone.svg"),
+	TYPE_INCREASE_OWN_DURATIONS: preload("res://Assets/effect_icon_incrase_own_duration_standalone.svg"),
+	TYPE_INCREASE_ENEMY_DURATIONS: preload("res://Assets/effect_icon_incrase_enemy_duration_standalone.svg"),
+	TYPE_DECREASE_OWN_DURATIONS: preload("res://Assets/effect_icon_decrease_own_duration_standalone.svg"),
+	TYPE_DECREASE_ENEMY_DURATIONS: preload("res://Assets/effect_icon_decrease_enemy_duration_standalone.svg"),
+	TYPE_INCREASE_SELF_DURATION: preload("res://Assets/effect_icon_incrase_self_duration_standalone.svg"),
+}
+
+const TRIGGER_ICON_TEXTURES: Dictionary = {
+	TRIGGER_ON_AFFIX: preload("res://Assets/trigger_on_affixed.svg"),
+	TRIGGER_ON_MOVE: preload("res://Assets/trigger_on_move.svg"),
+	TRIGGER_ON_CAPTURE: preload("res://Assets/trigger_on_captures.svg"),
+	TRIGGER_ON_CAPTURED: preload("res://Assets/trigger_on_captured.svg"),
+	TRIGGER_ON_EXPIRE: preload("res://Assets/trigger_expired.svg"),
+}
+
+static func get_effect_icon_texture(effect_type: String) -> Texture2D:
+	return EFFECT_ICON_TEXTURES.get(effect_type)
+
+static func get_effect_icon_standalone_texture(effect_type: String) -> Texture2D:
+	return EFFECT_ICON_STANDALONE_TEXTURES.get(effect_type)
+
+static func get_trigger_icon_texture(effect_trigger: String) -> Texture2D:
+	return TRIGGER_ICON_TEXTURES.get(effect_trigger)
 
 static func has_effect(effect_type: String) -> bool:
 	return !effect_type.is_empty() && effect_type != TYPE_NONE

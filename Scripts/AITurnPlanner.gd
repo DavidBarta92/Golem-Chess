@@ -2,16 +2,16 @@ extends RefCounted
 class_name AITurnPlanner
 
 const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
-const ACTION_ATTACH_STAMP: String = "attach_stamp"
+const ACTION_AFFIX_STAMP: String = "affix_stamp"
 const ACTION_TURN_PAGE: String = "turn_page"
 const ACTION_MOVE_PIECE: String = "move_piece"
 const ACTION_END_TURN: String = "end_turn"
-const MAX_SEQUENTIAL_ATTACH_ACTIONS: int = DeckManager.HAND_SIZE
-const MAX_PLAN_ATTACH_DEPTH: int = DeckManager.HAND_SIZE
-const MAX_PLAN_ATTACH_OPTIONS_PER_STATE: int = 2
+const MAX_SEQUENTIAL_AFFIX_ACTIONS: int = DeckManager.HAND_SIZE
+const MAX_PLAN_AFFIX_DEPTH: int = DeckManager.HAND_SIZE
+const MAX_PLAN_AFFIX_OPTIONS_PER_STATE: int = 2
 const MAX_PLAN_EXCHANGE_OPTIONS: int = 1
 const MAX_GENERATED_TURN_PLANS: int = 120
-const ATTACH_ACTION_DELAY: float = 1.00
+const AFFIX_ACTION_DELAY: float = 1.00
 const TACTICAL_SEARCH_SCRIPT = preload("res://Scripts/AITacticalSearch.gd")
 
 var planning_evaluator: AIMoveEvaluator = null
@@ -79,32 +79,32 @@ func execute_sequential_turn(
 	board_size: int = DEFAULT_BOARD_SIZE
 ) -> Dictionary:
 	var selected_actions: Array[Dictionary] = []
-	var setup_attach_actions: Array[Dictionary] = []
+	var setup_affix_actions: Array[Dictionary] = []
 	var selected_move: Dictionary = {}
 	var profile: Dictionary = evaluator.create_profile(0) if evaluator != null else {}
 	var turned_page: bool = false
-	var attach_actions_played: int = 0
+	var affix_actions_played: int = 0
 	var best_score_seen: float = -INF
 
 	if host == null or host.game_state == null or host.game_state.game_over or evaluator == null:
-		return create_sequential_plan(selected_actions, selected_move, setup_attach_actions, best_score_seen, profile)
+		return create_sequential_plan(selected_actions, selected_move, setup_affix_actions, best_score_seen, profile)
 
 	while can_continue_sequential_turn(host, player_id):
-		if attach_actions_played < MAX_SEQUENTIAL_ATTACH_ACTIONS:
-			var best_attach: Dictionary = find_best_attach_setup(host.game_state, player_id, evaluator, board_size, profile)
-			var attach_threshold: float = -INF if int(host.game_state.completed_turn_counts.get(player_id, 0)) == 0 else get_attach_setup_threshold(host.game_state, player_id)
-			best_score_seen = max(best_score_seen, float(best_attach.get("score", -INF)))
-			if float(best_attach.get("score", -INF)) >= attach_threshold:
-				var attach_action: Dictionary = best_attach.get("action", {})
-				if attach_action.is_empty():
+		if affix_actions_played < MAX_SEQUENTIAL_AFFIX_ACTIONS:
+			var best_affix: Dictionary = find_best_affix_setup(host.game_state, player_id, evaluator, board_size, profile)
+			var affix_threshold: float = -INF if int(host.game_state.completed_turn_counts.get(player_id, 0)) == 0 else get_affix_setup_threshold(host.game_state, player_id)
+			best_score_seen = max(best_score_seen, float(best_affix.get("score", -INF)))
+			if float(best_affix.get("score", -INF)) >= affix_threshold:
+				var affix_action: Dictionary = best_affix.get("action", {})
+				if affix_action.is_empty():
 					break
 
-				setup_attach_actions.append(attach_action)
-				await execute_ai_action(host, tree, attach_action, action_delay, selected_actions)
-				attach_actions_played += 1
+				setup_affix_actions.append(affix_action)
+				await execute_ai_action(host, tree, affix_action, action_delay, selected_actions)
+				affix_actions_played += 1
 				continue
 
-		if !turned_page and host.can_turn_page_for_player(player_id) and has_free_attach_piece(host.game_state, player_id):
+		if !turned_page and host.can_turn_page_for_player(player_id) and has_free_affix_piece(host.game_state, player_id):
 			var turn_page_action: Dictionary = make_turn_page_action(player_id)
 			await execute_ai_action(host, tree, turn_page_action, action_delay, selected_actions)
 			turned_page = true
@@ -120,7 +120,7 @@ func execute_sequential_turn(
 	if can_continue_sequential_turn(host, player_id) and host.can_end_turn_by_button(player_id):
 		await execute_ai_action(host, tree, make_end_turn_action(player_id), action_delay, selected_actions)
 
-	return create_sequential_plan(selected_actions, selected_move, setup_attach_actions, best_score_seen, profile)
+	return create_sequential_plan(selected_actions, selected_move, setup_affix_actions, best_score_seen, profile)
 
 func can_continue_sequential_turn(host: NetworkGameHost, player_id: int) -> bool:
 	return host != null \
@@ -144,7 +144,7 @@ func execute_ai_action(
 func create_sequential_plan(
 	actions: Array[Dictionary],
 	move: Dictionary,
-	setup_attach_actions: Array[Dictionary],
+	setup_affix_actions: Array[Dictionary],
 	best_score: float,
 	profile: Dictionary
 ) -> Dictionary:
@@ -154,12 +154,12 @@ func create_sequential_plan(
 	return {
 		"actions": actions,
 		"move": move,
-		"setup_attach_actions": setup_attach_actions,
+		"setup_affix_actions": setup_affix_actions,
 		"plan_type": "sequential",
 		"profile": profile,
 	}
 
-func find_best_attach_setup(
+func find_best_affix_setup(
 	game_state: GameStateData,
 	player_id: int,
 	evaluator: AIMoveEvaluator,
@@ -180,17 +180,17 @@ func find_best_attach_setup(
 		for position_value in game_state.pieces:
 			var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 			var piece: Piece = game_state.pieces[position_value] as Piece
-			if piece == null or piece.color != player_color or piece.attached_stamp != null:
+			if piece == null or piece.color != player_color or piece.affixed_stamp != null:
 				continue
-			if !MoveRules.can_attach_stamp_for_turn(game_state.pieces, player_color, stamp):
+			if !MoveRules.can_affix_stamp_for_turn(game_state.pieces, player_color, stamp):
 				continue
 
-			var attach_action: Dictionary = make_attach_action(player_id, stamp, piece_pos, hand_index)
-			var attach_score: float = evaluator.score_attach_setup(game_state, player_id, attach_action, board_size)
+			var affix_action: Dictionary = make_affix_action(player_id, stamp, piece_pos, hand_index)
+			var affix_score: float = evaluator.score_affix_setup(game_state, player_id, affix_action, board_size)
 			increment_profile_count(profile, "evaluated_own_plans")
-			if best_action.is_empty() or attach_score > best_score:
-				best_action = attach_action
-				best_score = attach_score
+			if best_action.is_empty() or affix_score > best_score:
+				best_action = affix_action
+				best_score = affix_score
 
 	return {
 		"action": best_action,
@@ -240,18 +240,18 @@ func score_best_fit_for_stamp(
 	for position_value in game_state.pieces:
 		var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_stamp != null:
+		if piece == null or piece.color != player_color or piece.affixed_stamp != null:
 			continue
 
-		var attach_action: Dictionary = make_attach_action(player_id, stamp, piece_pos, hand_index)
-		var attach_score: float = evaluator.score_attach_setup_for_exchange(game_state, player_id, attach_action, board_size)
+		var affix_action: Dictionary = make_affix_action(player_id, stamp, piece_pos, hand_index)
+		var affix_score: float = evaluator.score_affix_setup_for_exchange(game_state, player_id, affix_action, board_size)
 		increment_profile_count(profile, "evaluated_own_plans")
-		best_score = max(best_score, attach_score)
+		best_score = max(best_score, affix_score)
 
 	return best_score
 
-func get_attach_setup_threshold(game_state: GameStateData, player_id: int) -> float:
-	var free_piece_count: int = count_free_attach_pieces(game_state, player_id)
+func get_affix_setup_threshold(game_state: GameStateData, player_id: int) -> float:
+	var free_piece_count: int = count_free_affix_pieces(game_state, player_id)
 	if free_piece_count >= 6:
 		return 7.0
 	if free_piece_count == 5:
@@ -264,10 +264,10 @@ func get_attach_setup_threshold(game_state: GameStateData, player_id: int) -> fl
 		return 14.0
 	return 16.0
 
-func has_free_attach_piece(game_state: GameStateData, player_id: int) -> bool:
-	return count_free_attach_pieces(game_state, player_id) > 0
+func has_free_affix_piece(game_state: GameStateData, player_id: int) -> bool:
+	return count_free_affix_pieces(game_state, player_id) > 0
 
-func count_free_attach_pieces(game_state: GameStateData, player_id: int) -> int:
+func count_free_affix_pieces(game_state: GameStateData, player_id: int) -> int:
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var count: int = 0
 	for position_value in game_state.pieces:
@@ -331,14 +331,14 @@ func add_sequential_turn_plan_branches(
 	game_state: GameStateData,
 	player_id: int,
 	prefix_actions: Array[Dictionary],
-	setup_attach_actions: Array[Dictionary],
-	attach_depth: int,
+	setup_affix_actions: Array[Dictionary],
+	affix_depth: int,
 	board_size: int
 ) -> void:
 	if plans.size() >= MAX_GENERATED_TURN_PLANS or game_state == null or game_state.game_over:
 		return
 
-	add_current_state_finish_plans(plans, game_state, player_id, prefix_actions, setup_attach_actions, board_size)
+	add_current_state_finish_plans(plans, game_state, player_id, prefix_actions, setup_affix_actions, board_size)
 	if plans.size() >= MAX_GENERATED_TURN_PLANS:
 		return
 
@@ -354,37 +354,37 @@ func add_sequential_turn_plan_branches(
 				turn_page_state,
 				player_id,
 				turn_page_prefix,
-				duplicate_actions(setup_attach_actions),
-				attach_depth,
+				duplicate_actions(setup_affix_actions),
+				affix_depth,
 				board_size
 			)
 
-	if attach_depth >= MAX_PLAN_ATTACH_DEPTH:
+	if affix_depth >= MAX_PLAN_AFFIX_DEPTH:
 		return
 
-	var attach_actions: Array[Dictionary] = get_ranked_attach_actions_for_state(game_state, player_id, board_size)
-	for attach_action: Dictionary in attach_actions:
+	var affix_actions: Array[Dictionary] = get_ranked_affix_actions_for_state(game_state, player_id, board_size)
+	for affix_action: Dictionary in affix_actions:
 		if plans.size() >= MAX_GENERATED_TURN_PLANS:
 			return
 
 		var next_state: GameStateData = AIStateSimulator.clone_game_state(game_state)
-		var piece_pos: Vector2 = StampEffectResolver.as_vector2(attach_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
-		AIStateSimulator.apply_attach_action(next_state, player_id, attach_action, board_size)
-		var attached_piece: Piece = next_state.get_piece(piece_pos)
-		if attached_piece == null or attached_piece.attached_stamp == null:
+		var piece_pos: Vector2 = StampEffectResolver.as_vector2(affix_action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+		AIStateSimulator.apply_affix_action(next_state, player_id, affix_action, board_size)
+		var affixed_piece: Piece = next_state.get_piece(piece_pos)
+		if affixed_piece == null or affixed_piece.affixed_stamp == null:
 			continue
 
 		var next_prefix: Array[Dictionary] = duplicate_actions(prefix_actions)
-		next_prefix.append(attach_action)
-		var next_setup: Array[Dictionary] = duplicate_actions(setup_attach_actions)
-		next_setup.append(attach_action)
+		next_prefix.append(affix_action)
+		var next_setup: Array[Dictionary] = duplicate_actions(setup_affix_actions)
+		next_setup.append(affix_action)
 		add_sequential_turn_plan_branches(
 			plans,
 			next_state,
 			player_id,
 			next_prefix,
 			next_setup,
-			attach_depth + 1,
+			affix_depth + 1,
 			board_size
 		)
 
@@ -393,17 +393,17 @@ func add_current_state_finish_plans(
 	game_state: GameStateData,
 	player_id: int,
 	prefix_actions: Array[Dictionary],
-	setup_attach_actions: Array[Dictionary],
+	setup_affix_actions: Array[Dictionary],
 	board_size: int
 ) -> void:
 	if plans.size() >= MAX_GENERATED_TURN_PLANS:
 		return
 
 	var is_first_turn: bool = int(game_state.completed_turn_counts.get(player_id, 0)) == 0
-	if is_first_turn and !setup_attach_actions.is_empty():
+	if is_first_turn and !setup_affix_actions.is_empty():
 		var setup_only_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 		setup_only_actions.append(make_end_turn_action(player_id))
-		plans.append(create_plan(setup_only_actions, {}, duplicate_actions(setup_attach_actions), "setup_only"))
+		plans.append(create_plan(setup_only_actions, {}, duplicate_actions(setup_affix_actions), "setup_only"))
 		return
 
 	if bool(game_state.moved_piece_this_turn.get(player_id, false)):
@@ -422,25 +422,25 @@ func add_current_state_finish_plans(
 
 		var move_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 		move_actions.append(make_move_action(player_id, move))
-		var plan_type: String = "setup_move" if !setup_attach_actions.is_empty() else "move"
-		plans.append(create_plan(move_actions, move, duplicate_actions(setup_attach_actions), plan_type))
+		var plan_type: String = "setup_move" if !setup_affix_actions.is_empty() else "move"
+		plans.append(create_plan(move_actions, move, duplicate_actions(setup_affix_actions), plan_type))
 
-func get_ranked_attach_actions_for_state(game_state: GameStateData, player_id: int, board_size: int) -> Array[Dictionary]:
+func get_ranked_affix_actions_for_state(game_state: GameStateData, player_id: int, board_size: int) -> Array[Dictionary]:
 	var hand_stamps: Array[Stamp] = AIStateSimulator.get_hand_stamps_from_state(game_state, player_id)
-	var attach_actions: Array[Dictionary] = get_attach_actions_for_pieces(game_state.pieces, player_id, hand_stamps)
+	var affix_actions: Array[Dictionary] = get_affix_actions_for_pieces(game_state.pieces, player_id, hand_stamps)
 	var scored_actions: Array[Dictionary] = []
-	for attach_action: Dictionary in attach_actions:
+	for affix_action: Dictionary in affix_actions:
 		var score: float = 0.0
 		if planning_evaluator != null:
-			score = planning_evaluator.score_attach_setup(game_state, player_id, attach_action, board_size)
+			score = planning_evaluator.score_affix_setup(game_state, player_id, affix_action, board_size)
 		scored_actions.append({
-			"action": attach_action,
+			"action": affix_action,
 			"score": score,
 		})
 	scored_actions.sort_custom(Callable(self, "sort_scored_action_desc"))
 
 	var ranked_actions: Array[Dictionary] = []
-	var action_count: int = mini(MAX_PLAN_ATTACH_OPTIONS_PER_STATE, scored_actions.size())
+	var action_count: int = mini(MAX_PLAN_AFFIX_OPTIONS_PER_STATE, scored_actions.size())
 	for index in range(action_count):
 		ranked_actions.append(scored_actions[index].get("action", {}))
 	return ranked_actions
@@ -485,15 +485,15 @@ func add_branch_plans(
 	hand_stamps: Array[Stamp],
 	prefix_actions: Array[Dictionary],
 	can_move: bool,
-	can_attach: bool,
+	can_affix: bool,
 	board_size: int
 ) -> void:
-	if can_attach:
-		var attach_actions: Array[Dictionary] = get_attach_actions_for_pieces(pieces, player_id, hand_stamps)
-		for attach_action: Dictionary in attach_actions:
-			var attach_only_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
-			attach_only_actions.append(attach_action)
-			plans.append(create_plan(attach_only_actions, {}, [attach_action], "attach_only"))
+	if can_affix:
+		var affix_actions: Array[Dictionary] = get_affix_actions_for_pieces(pieces, player_id, hand_stamps)
+		for affix_action: Dictionary in affix_actions:
+			var affix_only_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
+			affix_only_actions.append(affix_action)
+			plans.append(create_plan(affix_only_actions, {}, [affix_action], "affix_only"))
 
 	if !can_move:
 		return
@@ -503,22 +503,22 @@ func add_branch_plans(
 		pieces,
 		player_color,
 		hand_stamps,
-		can_attach,
+		can_affix,
 		board_size,
 		game_state.board_effects
 	)
 
 	for move: Dictionary in valid_moves:
 		var move_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
-		if bool(move.get("requires_attach", false)):
-			var move_attach_action: Dictionary = make_attach_action(player_id, get_move_stamp(move), AIStateSimulator.get_move_from(move))
-			move_actions.append(move_attach_action)
+		if bool(move.get("requires_affix", false)):
+			var move_affix_action: Dictionary = make_affix_action(player_id, get_move_stamp(move), AIStateSimulator.get_move_from(move))
+			move_actions.append(move_affix_action)
 
 		move_actions.append(make_move_action(player_id, move))
 		plans.append(create_plan(move_actions, move, [], "move"))
 
 
-func add_move_then_attach_plans(
+func add_move_then_affix_plans(
 	plans: Array[Dictionary],
 	game_state: GameStateData,
 	player_id: int,
@@ -528,14 +528,14 @@ func add_move_then_attach_plans(
 	_board_size: int
 ) -> void:
 	var simulated_pieces: Dictionary = AIStateSimulator.apply_candidate_to_pieces(game_state.pieces, move)
-	var attach_actions: Array[Dictionary] = get_attach_actions_for_pieces(simulated_pieces, player_id, hand_stamps)
-	for attach_action: Dictionary in attach_actions:
+	var affix_actions: Array[Dictionary] = get_affix_actions_for_pieces(simulated_pieces, player_id, hand_stamps)
+	for affix_action: Dictionary in affix_actions:
 		var actions: Array[Dictionary] = duplicate_actions(prefix_actions)
 		actions.append(make_move_action(player_id, move))
-		actions.append(attach_action)
-		plans.append(create_plan(actions, move, [attach_action], "move_then_attach"))
+		actions.append(affix_action)
+		plans.append(create_plan(actions, move, [affix_action], "move_then_affix"))
 
-func get_attach_actions_for_pieces(pieces: Dictionary, player_id: int, hand_stamps: Array[Stamp]) -> Array[Dictionary]:
+func get_affix_actions_for_pieces(pieces: Dictionary, player_id: int, hand_stamps: Array[Stamp]) -> Array[Dictionary]:
 	var actions: Array[Dictionary] = []
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	for position_value in pieces:
@@ -547,9 +547,9 @@ func get_attach_actions_for_pieces(pieces: Dictionary, player_id: int, hand_stam
 		for stamp: Stamp in hand_stamps:
 			if !MoveRules.stamp_can_be_used(stamp):
 				continue
-			if !MoveRules.can_attach_stamp_for_turn(pieces, player_color, stamp):
+			if !MoveRules.can_affix_stamp_for_turn(pieces, player_color, stamp):
 				continue
-			actions.append(make_attach_action(player_id, stamp, piece_position))
+			actions.append(make_affix_action(player_id, stamp, piece_position))
 
 	return actions
 
@@ -579,17 +579,17 @@ func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, p
 
 	return true
 
-func create_plan(actions: Array[Dictionary], move: Dictionary, setup_attach_actions: Array, plan_type: String) -> Dictionary:
+func create_plan(actions: Array[Dictionary], move: Dictionary, setup_affix_actions: Array, plan_type: String) -> Dictionary:
 	return {
 		"actions": actions,
 		"move": move,
-		"setup_attach_actions": setup_attach_actions,
+		"setup_affix_actions": setup_affix_actions,
 		"plan_type": plan_type,
 	}
 
-func make_attach_action(player_id: int, stamp: Stamp, piece_pos: Vector2, hand_index: int = -1) -> Dictionary:
+func make_affix_action(player_id: int, stamp: Stamp, piece_pos: Vector2, hand_index: int = -1) -> Dictionary:
 	return {
-		"type": ACTION_ATTACH_STAMP,
+		"type": ACTION_AFFIX_STAMP,
 		"player_id": player_id,
 		"stamp_name": stamp.stamp_name if stamp != null else "",
 		"piece_pos": piece_pos,
@@ -634,8 +634,8 @@ func make_executable_action(action: Dictionary) -> Dictionary:
 func get_ai_action_delay(action: Dictionary, action_delay: float) -> float:
 	if action_delay <= 0.0:
 		return 0.0
-	if str(action.get("type", "")) == ACTION_ATTACH_STAMP:
-		return maxf(action_delay, ATTACH_ACTION_DELAY)
+	if str(action.get("type", "")) == ACTION_AFFIX_STAMP:
+		return maxf(action_delay, AFFIX_ACTION_DELAY)
 	return action_delay
 
 func duplicate_actions(source_actions: Array[Dictionary]) -> Array[Dictionary]:

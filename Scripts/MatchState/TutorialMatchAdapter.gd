@@ -40,11 +40,11 @@ func is_action_allowed(action_name: String, context: Dictionary = {}, emit_rejec
 		match_board.TUTORIAL_ACTION_SELECT_PIECE:
 			if context.has("piece_pos"):
 				allowed = vector_allowed(["allowed_select_piece_positions", "allowed_move_sources", "allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
-		match_board.TUTORIAL_ACTION_ATTACH_STAMP:
+		match_board.TUTORIAL_ACTION_AFFIX_STAMP:
 			if context.has("piece_pos"):
-				allowed = allowed and vector_allowed(["allowed_attach_piece_positions", "allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
+				allowed = allowed and vector_allowed(["allowed_affix_piece_positions", "allowed_piece_positions", "allowed_pieces"], context.get("piece_pos"))
 			if context.has("stamp_name"):
-				allowed = allowed and string_allowed(["allowed_attach_stamp_names", "allowed_stamp_names", "allowed_stamps"], str(context.get("stamp_name", "")))
+				allowed = allowed and string_allowed(["allowed_affix_stamp_names", "allowed_stamp_names", "allowed_stamps"], str(context.get("stamp_name", "")))
 		match_board.TUTORIAL_ACTION_MOVE_PIECE:
 			if context.has("from_pos"):
 				allowed = allowed and vector_allowed(["allowed_move_sources", "allowed_piece_positions", "allowed_pieces"], context.get("from_pos"))
@@ -115,8 +115,8 @@ func can_auto_end_turn_now() -> bool:
 func apply_setup(setup: Dictionary) -> void:
 	if setup.has("board"):
 		set_board_from_array(setup.get("board", []))
-	if setup.has("attached_stamps"):
-		set_attached_stamps(setup.get("attached_stamps", []))
+	if setup.has("affixed_stamps"):
+		set_affixed_stamps(setup.get("affixed_stamps", []))
 	if setup.has("white_hand"):
 		set_stamp_hand(1, setup.get("white_hand", []))
 	if setup.has("black_hand"):
@@ -150,8 +150,8 @@ func set_board_from_array(board_data: Array) -> void:
 	match_board.state = false
 	match_board.delete_dots()
 
-func set_attached_stamps(attached_stamps: Array) -> void:
-	for entry_value in attached_stamps:
+func set_affixed_stamps(affixed_stamps: Array) -> void:
+	for entry_value in affixed_stamps:
 		if !(entry_value is Dictionary):
 			continue
 
@@ -163,17 +163,17 @@ func set_attached_stamps(attached_stamps: Array) -> void:
 		var stamp_name: String = str(entry.get("stamp_name", ""))
 		var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
 		if stamp == null:
-			push_warning("Tutorial attached stamp not found: %s" % stamp_name)
+			push_warning("Tutorial affixed stamp not found: %s" % stamp_name)
 			continue
 
 		var piece: Piece = match_board.piece_objects[piece_pos] as Piece
-		piece.attach_stamp(stamp, bool(entry.get("exhausted", false)))
+		piece.affix_stamp(stamp, bool(entry.get("exhausted", false)))
 		piece.turns_remaining = int(entry.get("turns_remaining", stamp.duration))
 
 func reset_turn_state() -> void:
 	for owner_color in [1, -1]:
-		match_board.attached_stamp_this_turn[owner_color] = false
-		match_board.attached_stamp_count_this_turn[match_board.get_player_id_for_color(owner_color)] = 0
+		match_board.affixed_stamp_this_turn[owner_color] = false
+		match_board.affixed_stamp_count_this_turn[match_board.get_player_id_for_color(owner_color)] = 0
 		match_board.moved_piece_this_turn[owner_color] = false
 		match_board.exchanged_stamp_this_turn[owner_color] = false
 		match_board.has_turned_page_this_turn[owner_color] = false
@@ -227,4 +227,4 @@ func set_turn(owner_color: int) -> void:
 	var was_white_turn: bool = match_board.white
 	match_board.white = owner_color == 1
 	if was_white_turn != match_board.white:
-		match_board.get_turn_action_state_controller().reset_current_turn_stamp_attach()
+		match_board.get_turn_action_state_controller().reset_current_turn_stamp_affix()

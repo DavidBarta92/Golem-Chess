@@ -87,7 +87,7 @@ static func get_context_stamp(context: Dictionary) -> Stamp:
 
 	var piece: Piece = context.get("piece", null) as Piece
 	if piece != null:
-		return piece.attached_stamp
+		return piece.affixed_stamp
 
 	return null
 
@@ -391,8 +391,8 @@ static func resolve_bomb(game_state: GameStateData, player_id: int, stamp: Stamp
 		var target_piece: Piece = game_state.get_piece(target_pos)
 		if target_piece != null:
 			positions_to_remove.append(target_pos)
-			if target_piece.attached_stamp != null:
-				affected_stamp_names.append(target_piece.attached_stamp.stamp_name)
+			if target_piece.affixed_stamp != null:
+				affected_stamp_names.append(target_piece.affixed_stamp.stamp_name)
 			var target_player_id: int = get_player_id_for_color(target_piece.color)
 			if target_player_id == player_id:
 				own_pieces_affected += 1
@@ -432,7 +432,7 @@ static func register_bomb_effect(game_state: GameStateData, player_id: int, stam
 	})
 
 static func resolve_self_duration_adjustment(game_state: GameStateData, player_id: int, source_piece: Piece, source_pos: Vector2, board_size: int, delta: int) -> Dictionary:
-	if source_piece == null or source_piece.attached_stamp == null:
+	if source_piece == null or source_piece.affixed_stamp == null:
 		return {}
 
 	var source_player_id: int = get_player_id_for_color(source_piece.color)
@@ -450,7 +450,7 @@ static func resolve_duration_adjustment(game_state: GameStateData, effect_owner_
 	for position_value in positions:
 		var piece_pos: Vector2 = as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.get_piece(piece_pos)
-		if piece == null or piece.attached_stamp == null:
+		if piece == null or piece.affixed_stamp == null:
 			continue
 
 		var piece_player_id: int = get_player_id_for_color(piece.color)
@@ -486,12 +486,12 @@ static func resolve_duration_adjustment(game_state: GameStateData, effect_owner_
 	}
 
 static func adjust_piece_duration(game_state: GameStateData, effect_owner_player_id: int, piece_owner_player_id: int, piece_pos: Vector2, piece: Piece, delta: int, board_size: int) -> Dictionary:
-	if piece == null or piece.attached_stamp == null or piece.turns_remaining == -1 or delta == 0:
+	if piece == null or piece.affixed_stamp == null or piece.turns_remaining == -1 or delta == 0:
 		return {}
 
 	var before: int = piece.turns_remaining
 	piece.turns_remaining += delta
-	var affected_stamp: Stamp = piece.attached_stamp
+	var affected_stamp: Stamp = piece.affixed_stamp
 	var result: Dictionary = {
 		"stamp_name": affected_stamp.stamp_name,
 		"turns_before": before,
@@ -541,7 +541,7 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 		return
 
 	var target_player_id: int = get_player_id_for_color(target_piece.color)
-	var target_stamp: Stamp = target_piece.attached_stamp
+	var target_stamp: Stamp = target_piece.affixed_stamp
 	var target_was_seeker: bool = is_seeker_piece(target_piece)
 
 	if target_stamp != null:
@@ -737,7 +737,7 @@ static func player_has_available_seeker_stamp(game_state: GameStateData, player_
 	var player_color: int = get_color_for_player_id(player_id)
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && MoveRules.is_seeker_stamp(piece.attached_stamp):
+		if piece != null && piece.color == player_color && MoveRules.is_seeker_stamp(piece.affixed_stamp):
 			return true
 	return false
 
@@ -790,7 +790,7 @@ static func can_player_control_piece(piece: Piece, player_id: int) -> bool:
 	var player_color: int = get_color_for_player_id(player_id)
 	if piece.color == player_color:
 		return true
-	return MoveRules.is_shared_stamp(piece.attached_stamp)
+	return MoveRules.is_shared_stamp(piece.affixed_stamp)
 
 static func is_piece_visible_to_player(piece: Piece, viewer_player_id: int) -> bool:
 	if piece == null:
@@ -798,10 +798,10 @@ static func is_piece_visible_to_player(piece: Piece, viewer_player_id: int) -> b
 	var owner_player_id: int = get_player_id_for_color(piece.color)
 	if owner_player_id == viewer_player_id:
 		return true
-	return !piece_has_attached_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
+	return !piece_has_affixed_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
 
-static func piece_has_attached_effect(piece: Piece, effect_type: String) -> bool:
-	return piece != null && piece.attached_stamp != null && piece.attached_stamp.effect_type == effect_type
+static func piece_has_affixed_effect(piece: Piece, effect_type: String) -> bool:
+	return piece != null && piece.affixed_stamp != null && piece.affixed_stamp.effect_type == effect_type
 
 static func count_symbol_pieces_for_player(game_state: GameStateData, player_id: int, symbol: String) -> int:
 	if game_state == null or symbol.strip_edges().is_empty():
@@ -811,14 +811,14 @@ static func count_symbol_pieces_for_player(game_state: GameStateData, player_id:
 	var count: int = 0
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_stamp == null:
+		if piece == null or piece.color != player_color or piece.affixed_stamp == null:
 			continue
-		if piece.attached_stamp.symbol.strip_edges() == symbol:
+		if piece.affixed_stamp.symbol.strip_edges() == symbol:
 			count += 1
 	return count
 
 static func is_seeker_piece(piece: Piece) -> bool:
-	return piece != null && MoveRules.is_seeker_stamp(piece.attached_stamp)
+	return piece != null && MoveRules.is_seeker_stamp(piece.affixed_stamp)
 
 static func clear_seeker_position_if_needed(game_state: GameStateData, player_id: int, was_seeker: bool) -> void:
 	if !was_seeker:

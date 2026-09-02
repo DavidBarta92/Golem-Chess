@@ -1,8 +1,6 @@
 extends RefCounted
 
 var match_board
-var panel_size: Vector2 = Vector2(244, 116)
-var panel_margin: Vector2 = Vector2(22, 24)
 
 var white_page_index: int = 0
 var black_page_index: int = 0
@@ -19,74 +17,26 @@ var count_labels: Array[Label] = []
 
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
-	panel_size = config.get("panel_size", panel_size)
-	panel_margin = config.get("panel_margin", panel_margin)
 
 func create_ui() -> void:
 	if match_board.canvas_layer == null or codex_panel != null:
 		return
 
-	codex_panel = PanelContainer.new()
-	codex_panel.name = "CodexPanel"
-	codex_panel.anchor_left = 0.0
-	codex_panel.anchor_right = 0.0
-	codex_panel.anchor_top = 1.0
-	codex_panel.anchor_bottom = 1.0
-	codex_panel.offset_left = panel_margin.x
-	codex_panel.offset_right = panel_margin.x + panel_size.x
-	codex_panel.offset_top = -panel_margin.y - panel_size.y
-	codex_panel.offset_bottom = -panel_margin.y
-	codex_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	codex_panel.z_index = 920
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.045, 0.042, 0.038, 0.88)
-	panel_style.border_color = Color(1.0, 0.92, 0.72, 0.34)
-	panel_style.border_width_left = 1
-	panel_style.border_width_top = 1
-	panel_style.border_width_right = 1
-	panel_style.border_width_bottom = 1
-	panel_style.corner_radius_top_left = 6
-	panel_style.corner_radius_top_right = 6
-	panel_style.corner_radius_bottom_left = 6
-	panel_style.corner_radius_bottom_right = 6
-	panel_style.content_margin_left = 12
-	panel_style.content_margin_top = 10
-	panel_style.content_margin_right = 12
-	panel_style.content_margin_bottom = 10
-	codex_panel.add_theme_stylebox_override("panel", panel_style)
-	match_board.canvas_layer.add_child(codex_panel)
+	codex_panel = match_board.canvas_layer.get_node_or_null("CodexPanel")
+	if codex_panel == null:
+		return
 
-	var root := VBoxContainer.new()
-	codex_panel.add_child(root)
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_theme_constant_override("separation", 8)
+	var root: VBoxContainer = codex_panel.get_node("VBoxContainer")
+	page_label = root.get_node("PageLabel")
+	counts_row = root.get_node("CountsRow")
+	turn_page_button = root.get_node("TurnPageButton")
 
-	page_label = Label.new()
-	root.add_child(page_label)
-	page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	page_label.add_theme_font_size_override("font_size", 16)
-	page_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.82))
-
-	counts_row = HBoxContainer.new()
-	root.add_child(counts_row)
-	counts_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	counts_row.add_theme_constant_override("separation", 6)
 	count_labels.clear()
-	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
-		var count_label := Label.new()
-		counts_row.add_child(count_label)
-		count_label.custom_minimum_size = Vector2(34, 24)
-		count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		count_label.add_theme_font_size_override("font_size", 14)
-		count_labels.append(count_label)
+	for child in counts_row.get_children():
+		if child is Label:
+			count_labels.append(child)
 
-	turn_page_button = Button.new()
-	root.add_child(turn_page_button)
 	turn_page_button.text = tr("Turn Page")
-	turn_page_button.custom_minimum_size = Vector2(0, 34)
-	turn_page_button.set_meta("sfx_click", "codex_fold")
 	turn_page_button.pressed.connect(on_turn_page_pressed)
 	update_ui()
 
@@ -160,6 +110,7 @@ func apply_state_from_server(player_codex_state: Dictionary) -> void:
 		set_page_index(owner_color, new_page_index)
 		if new_page_index != previous_page_index and owner_color != match_board.get_own_color() and !match_board.should_skip_visual_animations():
 			SFXManager.play("codex_fold")
+			match_board.play_opponent_codex_page_turn_animation()
 		var pages_value = state.get("pages", [])
 		if pages_value is Array:
 			set_pages(owner_color, parse_pages_from_state(pages_value))
@@ -203,7 +154,7 @@ func can_turn_page_locally(owner_color: int) -> bool:
 		return false
 	if bool(match_board.has_turned_page_this_turn.get(owner_color, false)):
 		return false
-	if bool(match_board.attached_stamp_this_turn.get(owner_color, false)):
+	if bool(match_board.affixed_stamp_this_turn.get(owner_color, false)):
 		return false
 	return count_non_empty_pages(owner_color) > 1
 
@@ -224,6 +175,7 @@ func on_turn_page_pressed() -> void:
 	if !can_turn_page_locally(owner_color):
 		update_ui()
 		return
+	match_board.play_codex_page_turn_animation()
 	if GameController.current_game_host:
 		send_turn_page_action(owner_color)
 		return
@@ -241,8 +193,15 @@ func turn_page_locally(owner_color: int) -> void:
 		return
 	set_page_index(owner_color, next_page_index)
 	match_board.has_turned_page_this_turn[owner_color] = true
-	sync_hand_from_local_codex(owner_color)
 	match_board.codex_page_turned.emit(owner_color, next_page_index)
+	match_board.update_stamp_presentation()
+	# Swap the visible cards only once the codex has actually left the
+	# screen, not right away -- otherwise the old->new hand change would be
+	# visible while it's still sliding down.
+	match_board.run_when_codex_off_screen(Callable(self, "finish_turn_page_locally").bind(owner_color))
+
+func finish_turn_page_locally(owner_color: int) -> void:
+	sync_hand_from_local_codex(owner_color)
 	match_board.update_stamp_presentation()
 
 func find_next_non_empty_page(owner_color: int, start_index: int) -> int:

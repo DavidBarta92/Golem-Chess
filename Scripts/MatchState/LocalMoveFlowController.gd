@@ -86,7 +86,7 @@ func apply_local_move_post_move_effects(move_context: Dictionary) -> void:
 	var moving_piece: Piece = match_board.piece_objects[end_pos] as Piece if match_board.piece_objects.has(end_pos) else null
 	var pending_respawn_arrivals: Array = move_context.get("pending_respawn_arrivals", [])
 	if moving_piece != null and !GameController.current_game_host:
-		pending_respawn_arrivals.append_array(match_board.get_local_state_mutator().apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_MOVE, end_pos, moving_piece, moving_piece.attached_stamp))
+		pending_respawn_arrivals.append_array(match_board.get_local_state_mutator().apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_MOVE, end_pos, moving_piece, moving_piece.affixed_stamp))
 	consume_moved_piece_duration_locally(moving_piece, end_pos)
 	move_context["pending_respawn_arrivals"] = pending_respawn_arrivals
 
@@ -123,13 +123,13 @@ func restore_local_move_selection(move_context: Dictionary) -> void:
 		match_board.state = true
 
 func return_captured_seeker_stamp_to_deck(captured_piece: Piece) -> void:
-	if captured_piece == null or captured_piece.attached_stamp == null:
+	if captured_piece == null or captured_piece.affixed_stamp == null:
 		return
-	match_board.get_stamp_animation_controller().queue_seeker_stamp_return_to_deck_animation(captured_piece.color, captured_piece.attached_stamp, captured_piece.position)
-	match_board.get_match_codex_controller().return_local_seeker_stamp(captured_piece.color, captured_piece.attached_stamp)
+	match_board.get_stamp_animation_controller().queue_seeker_stamp_return_to_deck_animation(captured_piece.color, captured_piece.affixed_stamp, captured_piece.position)
+	match_board.get_match_codex_controller().return_local_seeker_stamp(captured_piece.color, captured_piece.affixed_stamp)
 
 func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> void:
-	if piece == null or piece.attached_stamp == null:
+	if piece == null or piece.affixed_stamp == null:
 		return
 
 	var owner_color: int = piece.color

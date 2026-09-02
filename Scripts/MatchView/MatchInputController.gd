@@ -147,10 +147,10 @@ func show_hover_piece_details(board_pos: Vector2) -> void:
 		return
 
 	var piece: Piece = match_board.piece_objects[board_pos] as Piece
-	if piece.attached_stamp == null:
+	if piece.affixed_stamp == null:
 		return
 
-	var preview_stamp: Stamp = piece.attached_stamp.duplicate() as Stamp
+	var preview_stamp: Stamp = piece.affixed_stamp.duplicate() as Stamp
 	if preview_stamp:
 		preview_stamp.duration = piece.turns_remaining
 		var preview_texture: Texture2D = match_board.get_piece_texture_resolver().get_stamp_piece_preview_texture(preview_stamp, piece.color)

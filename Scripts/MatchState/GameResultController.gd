@@ -1,5 +1,7 @@
 extends RefCounted
 
+const RESULT_MESSAGE_DELAY_SECONDS: float = 0.25
+
 var match_board
 var main_menu_scene: String = "res://Scenes/MainMenu.tscn"
 var match_end_feedback_scene: String = "res://Scenes/MatchEndFeedback.tscn"
@@ -36,6 +38,11 @@ func finish_game(winner_color: int) -> void:
 	match_board.update_stamp_drag_permissions()
 	match_board.update_end_turn_button()
 	award_win_points_if_applicable(winner_color)
+
+	var result_message_delay: float = 0.0 if match_board.should_skip_visual_animations() else RESULT_MESSAGE_DELAY_SECONDS
+	await match_board.get_tree().create_timer(result_message_delay).timeout
+	if match_board == null or !is_instance_valid(match_board):
+		return
 	show_result_message(winner_color)
 
 	var result_wait_seconds: float = 0.05 if match_board.should_skip_visual_animations() else 8.0

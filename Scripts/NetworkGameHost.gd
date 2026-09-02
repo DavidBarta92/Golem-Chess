@@ -90,8 +90,8 @@ func on_player_action(action: Dictionary):
 	DebugLog.info("Action received: %s" % [action])
 
 	match action.type:
-		"attach_stamp":
-			handle_attach_stamp(action)
+		"affix_stamp":
+			handle_affix_stamp(action)
 		"turn_page":
 			return handle_turn_page(action)
 		"exchange_stamp":
@@ -106,13 +106,13 @@ func on_player_action(action: Dictionary):
 
 	return true
 
-func handle_attach_stamp(action: Dictionary):
+func handle_affix_stamp(action: Dictionary):
 	var player_id: int = int(action.player_id)
 	var stamp_name: String = str(action.stamp_name)
 	var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.piece_pos, Vector2(-1, -1))
 	var hand_index: int = int(action.get("hand_index", -1))
 
-	DebugLog.info("Attach stamp: player=%s, stamp=%s, position=%s" % [player_id, stamp_name, piece_pos])
+	DebugLog.info("Affix stamp: player=%s, stamp=%s, position=%s" % [player_id, stamp_name, piece_pos])
 
 	if game_state.game_over:
 		return
@@ -142,7 +142,7 @@ func handle_attach_stamp(action: Dictionary):
 		var hand_before: Array = duplicate_player_stamp_list(game_state.player_hands[player_id])
 		var deck_before: Array = duplicate_player_stamp_list(game_state.player_decks[player_id])
 		var deck_top_before: String = str(deck_before[0]) if !deck_before.is_empty() else ""
-		var piece_stamp_before: String = piece.attached_stamp.stamp_name if piece.attached_stamp != null else ""
+		var piece_stamp_before: String = piece.affixed_stamp.stamp_name if piece.affixed_stamp != null else ""
 		var piece_turns_before: int = piece.turns_remaining
 		var consumed_stamp: Dictionary = game_state.consume_current_page_stamp_by_name(player_id, stamp_name, hand_index)
 		if consumed_stamp.is_empty():
@@ -151,35 +151,35 @@ func handle_attach_stamp(action: Dictionary):
 		stamp.set_meta("codex_owner_player_id", player_id)
 		stamp.set_meta("codex_page_index", int(consumed_stamp.get("page_index", game_state.get_current_page_index(player_id))))
 		stamp.set_meta("codex_stamp_index", int(consumed_stamp.get("stamp_index", hand_index)))
-		piece.attach_stamp(stamp, true)
-		game_state.attached_stamp_this_turn[player_id] = true
-		game_state.attached_stamp_count_this_turn[player_id] = int(game_state.attached_stamp_count_this_turn.get(player_id, 0)) + 1
+		piece.affix_stamp(stamp, true)
+		game_state.affixed_stamp_this_turn[player_id] = true
+		game_state.affixed_stamp_count_this_turn[player_id] = int(game_state.affixed_stamp_count_this_turn.get(player_id, 0)) + 1
 		if MoveRules.is_seeker_stamp(stamp):
 			if player_id == 0:
 				game_state.white_seeker_position = piece_pos
 			else:
 				game_state.black_seeker_position = piece_pos
-		log_stamp_attached(player_id, stamp, piece, piece_pos, hand_before, deck_before, deck_top_before, piece_stamp_before, piece_turns_before)
-		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_ATTACH, game_state, {
+		log_stamp_affixed(player_id, stamp, piece, piece_pos, hand_before, deck_before, deck_top_before, piece_stamp_before, piece_turns_before)
+		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_AFFIX, game_state, {
 			"player_id": player_id,
 			"piece": piece,
 			"piece_pos": piece_pos,
 			"stamp": stamp,
 		})
 		if game_state.game_over:
-			log_turn_snapshot("after_attach")
+			log_turn_snapshot("after_affix")
 			broadcast_full_state()
 			return
 		StampEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, stamp, BoardConfig.BOARD_SIZE)
 		if game_state.game_over:
-			log_turn_snapshot("after_attach")
+			log_turn_snapshot("after_affix")
 			broadcast_full_state()
 			return
-		log_turn_snapshot("after_attach")
+		log_turn_snapshot("after_affix")
 
-		DebugLog.info("Stamp attached successfully")
-		if is_first_turn_for_player(player_id) and int(game_state.attached_stamp_count_this_turn.get(player_id, 0)) >= DeckManager.HAND_SIZE:
-			DebugLog.info("Three first-turn stamps attached. Ending turn for player: %d" % player_id)
+		DebugLog.info("Stamp affixed successfully")
+		if is_first_turn_for_player(player_id) and int(game_state.affixed_stamp_count_this_turn.get(player_id, 0)) >= DeckManager.HAND_SIZE:
+			DebugLog.info("Three first-turn stamps affixed. Ending turn for player: %d" % player_id)
 			end_current_turn()
 			return
 		broadcast_full_state()
@@ -256,16 +256,16 @@ func handle_move_piece(action: Dictionary):
 	var captured_seeker: bool = is_seeker_piece(captured_piece)
 	var captured_piece_owner_player_id: int = StampEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
 	var move_log_context: Dictionary = create_move_log_context(player_id, from_pos, to_pos, piece, captured_piece)
-	var moving_piece_visible_to_enemy: bool = !StampEffectResolver.piece_has_attached_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
+	var moving_piece_visible_to_enemy: bool = !StampEffectResolver.piece_has_affixed_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
 
 	if captured_piece != null:
 		DebugLog.info("Piece captured at: %s" % to_pos)
-		if captured_piece.attached_stamp != null:
+		if captured_piece.affixed_stamp != null:
 			StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_CAPTURED, game_state, {
 				"player_id": 1 - player_id,
 				"piece": captured_piece,
 				"piece_pos": to_pos,
-				"stamp": captured_piece.attached_stamp,
+				"stamp": captured_piece.affixed_stamp,
 				"capturing_piece": piece,
 				"capturing_piece_pos": from_pos,
 			})
@@ -280,15 +280,15 @@ func handle_move_piece(action: Dictionary):
 				end_current_turn()
 				return
 
-		if captured_seeker && captured_piece.attached_stamp != null:
-			return_stamp_to_player_deck(captured_piece_owner_player_id, captured_piece.attached_stamp, "captured_seeker", to_pos)
+		if captured_seeker && captured_piece.affixed_stamp != null:
+			return_stamp_to_player_deck(captured_piece_owner_player_id, captured_piece.affixed_stamp, "captured_seeker", to_pos)
 
 	game_state.remove_piece(from_pos)
 	piece.position = to_pos
 	game_state.set_piece(to_pos, piece)
 	record_last_move(player_id, from_pos, to_pos, moving_piece_visible_to_enemy, captured_piece)
 
-	if MoveRules.is_seeker_stamp(piece.attached_stamp):
+	if MoveRules.is_seeker_stamp(piece.affixed_stamp):
 		var moved_piece_owner_player_id: int = StampEffectResolver.get_player_id_for_color(piece.color)
 		if moved_piece_owner_player_id == 0:
 			game_state.white_seeker_position = to_pos
@@ -300,12 +300,12 @@ func handle_move_piece(action: Dictionary):
 		StampEffectResolver.clear_seeker_position_if_needed(game_state, captured_player_id, true)
 		DebugLog.info("Seeker piece captured. Seeker stamp returned to player %d deck." % captured_player_id)
 
-	if captured_piece != null && piece.attached_stamp != null:
+	if captured_piece != null && piece.affixed_stamp != null:
 		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_CAPTURE, game_state, {
 			"player_id": player_id,
 			"piece": piece,
 			"piece_pos": to_pos,
-			"stamp": piece.attached_stamp,
+			"stamp": piece.affixed_stamp,
 			"captured_piece": captured_piece,
 			"captured_piece_pos": to_pos,
 		})
@@ -329,12 +329,12 @@ func handle_move_piece(action: Dictionary):
 		broadcast_full_state()
 		return
 
-	if piece.attached_stamp != null:
+	if piece.affixed_stamp != null:
 		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_MOVE, game_state, {
 			"player_id": player_id,
 			"piece": piece,
 			"piece_pos": to_pos,
-			"stamp": piece.attached_stamp,
+			"stamp": piece.affixed_stamp,
 			"from_pos": from_pos,
 			"to_pos": to_pos,
 		})
@@ -396,7 +396,7 @@ func handle_expired_seeker_stamp(player_id: int, expired_stamp: Stamp, piece_pos
 	return_stamp_to_player_deck(player_id, expired_stamp, "expired_seeker", piece_pos)
 
 func consume_moved_piece_duration(player_id: int, piece: Piece, piece_pos: Vector2) -> void:
-	if piece == null or piece.attached_stamp == null:
+	if piece == null or piece.affixed_stamp == null:
 		return
 
 	var expired_stamp: Stamp = piece.use_turn()
@@ -432,7 +432,7 @@ func is_first_turn_for_player(player_id: int) -> bool:
 	return int(game_state.completed_turn_counts.get(player_id, 0)) == 0
 
 func player_has_remaining_turn_action(player_id: int) -> bool:
-	if can_attach_any_stamp_for_player(player_id):
+	if can_affix_any_stamp_for_player(player_id):
 		return true
 	if can_move_any_piece_for_player(player_id):
 		return true
@@ -440,7 +440,7 @@ func player_has_remaining_turn_action(player_id: int) -> bool:
 		return true
 	return false
 
-func can_attach_any_stamp_for_player(player_id: int) -> bool:
+func can_affix_any_stamp_for_player(player_id: int) -> bool:
 	if !game_state.player_hands.has(player_id):
 		return false
 
@@ -451,13 +451,13 @@ func can_attach_any_stamp_for_player(player_id: int) -> bool:
 
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_stamp != null:
+		if piece == null or piece.color != player_color or piece.affixed_stamp != null:
 			continue
 
 		for stamp: Stamp in hand_stamps:
 			if !MoveRules.stamp_can_be_used(stamp):
 				continue
-			if MoveRules.can_attach_stamp_for_turn(game_state.pieces, player_color, stamp):
+			if MoveRules.can_affix_stamp_for_turn(game_state.pieces, player_color, stamp):
 				return true
 
 	return false
@@ -489,10 +489,10 @@ func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 
 func player_has_valid_turn_action(player_id: int) -> bool:
 	if is_first_turn_for_player(player_id):
-		return int(game_state.attached_stamp_count_this_turn.get(player_id, 0)) > 0 or can_attach_any_stamp_for_player(player_id) or can_turn_page_for_player(player_id)
+		return int(game_state.affixed_stamp_count_this_turn.get(player_id, 0)) > 0 or can_affix_any_stamp_for_player(player_id) or can_turn_page_for_player(player_id)
 	if can_move_any_piece_for_player(player_id):
 		return true
-	if can_attach_any_stamp_for_player(player_id):
+	if can_affix_any_stamp_for_player(player_id):
 		return true
 	if can_turn_page_for_player(player_id):
 		return true
@@ -502,7 +502,7 @@ func player_has_valid_turn_action(player_id: int) -> bool:
 
 func can_end_turn_by_button(player_id: int) -> bool:
 	if is_first_turn_for_player(player_id):
-		return int(game_state.attached_stamp_count_this_turn.get(player_id, 0)) >= 1
+		return int(game_state.affixed_stamp_count_this_turn.get(player_id, 0)) >= 1
 	return can_end_turn_due_to_frozen_piece(player_id)
 
 func can_end_turn_due_to_frozen_piece(player_id: int) -> bool:
@@ -555,7 +555,7 @@ func should_hold_turn_for_optional_exchange(player_id: int) -> bool:
 	return false
 
 func is_seeker_piece(piece: Piece) -> bool:
-	return piece != null && MoveRules.is_seeker_stamp(piece.attached_stamp)
+	return piece != null && MoveRules.is_seeker_stamp(piece.affixed_stamp)
 
 func get_hand_stamps_for_player(player_id: int) -> Array[Stamp]:
 	var hand_stamps: Array[Stamp] = []
@@ -683,7 +683,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		data.pieces.append({
 			"position": [pos.x, pos.y],
 			"color": piece.color,
-			"stamp_name": "" if hidden_from_viewer else (piece.attached_stamp.stamp_name if piece.attached_stamp else ""),
+			"stamp_name": "" if hidden_from_viewer else (piece.affixed_stamp.stamp_name if piece.affixed_stamp else ""),
 			"turns_remaining": 0 if hidden_from_viewer else piece.turns_remaining,
 			"exhausted_this_turn": true if hidden_from_viewer else piece.exhausted_this_turn,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
@@ -694,11 +694,11 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 
 func serialize_turn_action_state() -> Dictionary:
 	return {
-		"attached_stamp_this_turn": duplicate_bool_dictionary(game_state.attached_stamp_this_turn),
+		"affixed_stamp_this_turn": duplicate_bool_dictionary(game_state.affixed_stamp_this_turn),
 		"moved_piece_this_turn": duplicate_bool_dictionary(game_state.moved_piece_this_turn),
 		"exchanged_stamp_this_turn": duplicate_bool_dictionary(game_state.exchanged_stamp_this_turn),
 		"has_turned_page_this_turn": duplicate_bool_dictionary(game_state.has_turned_page_this_turn),
-		"attached_stamp_count_this_turn": game_state.attached_stamp_count_this_turn.duplicate(),
+		"affixed_stamp_count_this_turn": game_state.affixed_stamp_count_this_turn.duplicate(),
 		"completed_turn_counts": game_state.completed_turn_counts.duplicate(),
 	}
 
@@ -847,11 +847,11 @@ func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 	return serialized_last_move
 
 func append_hidden_stamp_data(hidden_stamps: Array, piece: Piece) -> void:
-	if piece == null or piece.attached_stamp == null:
+	if piece == null or piece.affixed_stamp == null:
 		return
 
 	hidden_stamps.append({
-		"stamp_name": piece.attached_stamp.stamp_name,
+		"stamp_name": piece.affixed_stamp.stamp_name,
 		"turns_remaining": piece.turns_remaining,
 		"owner_player_id": StampEffectResolver.get_player_id_for_color(piece.color),
 	})
@@ -930,7 +930,7 @@ func record_last_move(player_id: int, from_pos: Vector2, to_pos: Vector2, visibl
 	}
 	if captured_piece != null:
 		game_state.last_move["captured_piece_color"] = captured_piece.color
-		game_state.last_move["captured_stamp_name"] = captured_piece.attached_stamp.stamp_name if captured_piece.attached_stamp != null else ""
+		game_state.last_move["captured_stamp_name"] = captured_piece.affixed_stamp.stamp_name if captured_piece.affixed_stamp != null else ""
 
 func play_stamp_from_player_hand(player_id: int, stamp_name: String, hand_index: int) -> bool:
 	if !game_state.player_hands.has(player_id):
@@ -1020,21 +1020,21 @@ func player_has_available_seeker_stamp(player_id: int) -> bool:
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && MoveRules.is_seeker_stamp(piece.attached_stamp):
+		if piece != null && piece.color == player_color && MoveRules.is_seeker_stamp(piece.affixed_stamp):
 			return true
 	return false
 
 func setup_logger_if_needed() -> MatchCsvLogger:
 	return game_state.match_logger
 
-func log_stamp_attached(player_id: int, stamp: Stamp, piece: Piece, piece_pos: Vector2, hand_before: Array, deck_before: Array, deck_top_before: String, piece_stamp_before: String, piece_turns_before: int) -> void:
+func log_stamp_affixed(player_id: int, stamp: Stamp, piece: Piece, piece_pos: Vector2, hand_before: Array, deck_before: Array, deck_top_before: String, piece_stamp_before: String, piece_turns_before: int) -> void:
 	if game_state.match_logger == null:
 		return
 
 	var drawn_stamp: String = ""
 	if deck_before.size() > game_state.player_decks[player_id].size():
 		drawn_stamp = deck_top_before
-	game_state.match_logger.log_stamp_event(game_state, "attach_stamp", {
+	game_state.match_logger.log_stamp_event(game_state, "affix_stamp", {
 		"player_id": player_id,
 		"stamp": stamp,
 		"piece": piece,

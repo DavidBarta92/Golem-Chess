@@ -142,7 +142,7 @@ func count_active_seeker_pieces(game_state: GameStateData, player_id: int) -> in
 	var count: int = 0
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null and piece.color == player_color and MoveRules.is_seeker_stamp(piece.attached_stamp):
+		if piece != null and piece.color == player_color and MoveRules.is_seeker_stamp(piece.affixed_stamp):
 			count += 1
 	return count
 
@@ -164,7 +164,7 @@ func get_enemy_seeker_min_base_distance(game_state: GameStateData, player_id: in
 	for position_value in game_state.pieces:
 		var pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null and piece.color == enemy_color and MoveRules.is_seeker_stamp(piece.attached_stamp):
+		if piece != null and piece.color == enemy_color and MoveRules.is_seeker_stamp(piece.affixed_stamp):
 			best_distance = minf(best_distance, get_manhattan_distance(pos, own_base))
 	return best_distance
 

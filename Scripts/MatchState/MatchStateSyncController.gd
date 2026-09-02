@@ -148,7 +148,7 @@ func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
 		if !stamp_name.is_empty():
 			var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
 			if stamp:
-				piece.attach_stamp(stamp)
+				piece.affix_stamp(stamp)
 				piece.turns_remaining = int(data.turns_remaining)
 				piece.exhausted_this_turn = bool(data.get("exhausted_this_turn", false))
 		piece.respawn_cooldown_turns = int(data.get("respawn_cooldown_turns", 0))
@@ -222,7 +222,7 @@ func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_sta
 			continue
 
 		var piece: Piece = piece_objects[board_pos] as Piece
-		if piece == null or piece.attached_stamp != null:
+		if piece == null or piece.affixed_stamp != null:
 			continue
 		if int(previous_state.get("color", 0)) != piece.color:
 			continue
@@ -264,7 +264,7 @@ func collect_piece_revert_animations(previous_snapshot: Dictionary, stamp_expira
 			continue
 
 		var piece: Piece = piece_objects[board_pos] as Piece
-		if piece == null or piece.attached_stamp != null:
+		if piece == null or piece.affixed_stamp != null:
 			continue
 
 		var expiration_player_id: int = int(expiration.get("player_id", -1))
@@ -404,7 +404,7 @@ func get_new_hidden_stamp_counts(hidden_stamps: Array, previous_hidden_stamp_cou
 func get_hidden_stamp_signature(owner_player_id: int, stamp_name: String) -> String:
 	return "%d:%s" % [owner_player_id, stamp_name]
 
-func collect_state_attach_animations(previous_snapshot: Dictionary, piece_objects: Dictionary, hidden_stamps: Array, previous_hidden_stamp_counts: Dictionary, own_player_id: int, has_received_state: bool, skip_visual_animations: bool) -> Array[Dictionary]:
+func collect_state_affix_animations(previous_snapshot: Dictionary, piece_objects: Dictionary, hidden_stamps: Array, previous_hidden_stamp_counts: Dictionary, own_player_id: int, has_received_state: bool, skip_visual_animations: bool) -> Array[Dictionary]:
 	var animations: Array[Dictionary] = []
 	if !has_received_state or skip_visual_animations:
 		return animations
@@ -416,23 +416,23 @@ func collect_state_attach_animations(previous_snapshot: Dictionary, piece_object
 			continue
 
 		var piece: Piece = piece_objects[position_value] as Piece
-		if piece == null or piece.attached_stamp == null:
+		if piece == null or piece.affixed_stamp == null:
 			continue
 
 		var previous_state: Dictionary = previous_snapshot[board_pos]
 		if int(previous_state.get("color", 0)) != piece.color:
 			continue
-		if str(previous_state.get("stamp_name", "")) == piece.attached_stamp.stamp_name:
+		if str(previous_state.get("stamp_name", "")) == piece.affixed_stamp.stamp_name:
 			continue
 
 		animations.append({
 			"position": board_pos,
-			"stamp": piece.attached_stamp,
+			"stamp": piece.affixed_stamp,
 			"start_texture": get_previous_state_texture(previous_state, piece.color),
 		})
 		animated_positions[board_pos] = true
 
-	append_hidden_invisibility_attach_animations(
+	append_hidden_invisibility_affix_animations(
 		animations,
 		animated_positions,
 		previous_snapshot,
@@ -444,7 +444,7 @@ func collect_state_attach_animations(previous_snapshot: Dictionary, piece_object
 
 	return animations
 
-func append_hidden_invisibility_attach_animations(animations: Array[Dictionary], animated_positions: Dictionary, previous_snapshot: Dictionary, piece_objects: Dictionary, hidden_stamps: Array, previous_hidden_stamp_counts: Dictionary, own_player_id: int) -> void:
+func append_hidden_invisibility_affix_animations(animations: Array[Dictionary], animated_positions: Dictionary, previous_snapshot: Dictionary, piece_objects: Dictionary, hidden_stamps: Array, previous_hidden_stamp_counts: Dictionary, own_player_id: int) -> void:
 	var used_positions: Dictionary = animated_positions.duplicate()
 	var new_hidden_stamp_counts: Dictionary = get_new_hidden_stamp_counts(hidden_stamps, previous_hidden_stamp_counts)
 	for hidden_stamp_value in hidden_stamps:
@@ -477,7 +477,7 @@ func append_hidden_invisibility_attach_animations(animations: Array[Dictionary],
 			"stamp": stamp,
 			"start_texture": get_previous_state_texture(previous_state, piece_color),
 			"piece_color": piece_color,
-			"hide_after_attach": true,
+			"hide_after_affix": true,
 		})
 		used_positions[hidden_pos] = true
 		new_hidden_stamp_counts[hidden_signature] = new_count - 1

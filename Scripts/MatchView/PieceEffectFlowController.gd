@@ -7,31 +7,31 @@ func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
 	invalid_board_pos = config.get("invalid_board_pos", invalid_board_pos)
 
-func play_state_attach_animations(animations: Array[Dictionary]) -> void:
+func play_state_affix_animations(animations: Array[Dictionary]) -> void:
 	if match_board == null:
 		return
 
-	match_board.begin_visual_process(match_board.VISUAL_PROCESS_STATE_STAMP_ATTACH)
+	match_board.begin_visual_process(match_board.VISUAL_PROCESS_STATE_STAMP_AFFIX)
 	for animation: Dictionary in animations:
 		var board_pos: Vector2 = match_board.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos)
 		var stamp: Stamp = animation.get("stamp", null) as Stamp
 		var start_texture: Texture2D = animation.get("start_texture", null) as Texture2D
-		var hide_after_attach: bool = bool(animation.get("hide_after_attach", false))
+		var hide_after_affix: bool = bool(animation.get("hide_after_affix", false))
 		if !match_board.is_valid_position(board_pos) or stamp == null:
-			match_board.finish_stamp_attach_process(board_pos)
+			match_board.finish_stamp_affix_process(board_pos)
 			continue
 
-		if hide_after_attach:
+		if hide_after_affix:
 			var piece_color: int = int(animation.get("piece_color", 0))
 			if piece_color == 0:
 				piece_color = match_board.get_color_for_player_id(1 - match_board.get_own_player_id())
-			await play_hidden_piece_invisibility_attach_animation(board_pos, stamp, start_texture, piece_color)
+			await play_hidden_piece_invisibility_affix_animation(board_pos, stamp, start_texture, piece_color)
 		else:
-			await play_piece_stamp_attach_animation(board_pos, stamp, start_texture)
-		match_board.finish_stamp_attach_process(board_pos)
-	match_board.finish_visual_process(match_board.VISUAL_PROCESS_STATE_STAMP_ATTACH)
+			await play_piece_stamp_affix_animation(board_pos, stamp, start_texture)
+		match_board.finish_stamp_affix_process(board_pos)
+	match_board.finish_visual_process(match_board.VISUAL_PROCESS_STATE_STAMP_AFFIX)
 
-func play_piece_stamp_attach_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D = null) -> void:
+func play_piece_stamp_affix_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D = null) -> void:
 	if match_board == null or match_board.should_skip_visual_animations() or !match_board.is_inside_tree():
 		return
 	if stamp == null or !match_board.piece_objects.has(piece_position):
@@ -41,8 +41,8 @@ func play_piece_stamp_attach_animation(piece_position: Vector2, stamp: Stamp, st
 	if piece == null:
 		return
 
-	var attached_texture: Texture2D = match_board.get_piece_texture_resolver().get_stamp_piece_texture_for_color(stamp, piece.color)
-	if attached_texture == null:
+	var affixed_texture: Texture2D = match_board.get_piece_texture_resolver().get_stamp_piece_texture_for_color(stamp, piece.color)
+	if affixed_texture == null:
 		return
 
 	var holder: Sprite2D = match_board.get_piece_holder_at(piece_position)
@@ -54,19 +54,19 @@ func play_piece_stamp_attach_animation(piece_position: Vector2, stamp: Stamp, st
 		match_board.refresh_piece_holder_visual(holder, piece_position)
 
 	SFXManager.play("attach_stamp")
-	await match_board.get_piece_effect_animator().play_attach_sequence(holder, piece_position, attached_texture, {
-		"post_morph_callback": Callable(self, "apply_visible_piece_attach_morph_result").bind(piece_position, attached_texture),
+	await match_board.get_piece_effect_animator().play_affix_sequence(holder, piece_position, affixed_texture, {
+		"post_morph_callback": Callable(self, "apply_visible_piece_attach_morph_result").bind(piece_position, affixed_texture),
 		"disable_holder_occluder": true,
 	})
 
-func apply_visible_piece_attach_morph_result(holder: Sprite2D, piece_position: Vector2, attached_texture: Texture2D) -> void:
+func apply_visible_piece_attach_morph_result(holder: Sprite2D, piece_position: Vector2, affixed_texture: Texture2D) -> void:
 	if match_board == null or holder == null or !is_instance_valid(holder):
 		return
 
-	holder.texture = attached_texture
+	holder.texture = affixed_texture
 	match_board.refresh_piece_holder_visual(holder, piece_position)
 
-func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D, piece_color: int) -> void:
+func play_hidden_piece_invisibility_affix_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D, piece_color: int) -> void:
 	if match_board == null or match_board.should_skip_visual_animations() or !match_board.is_inside_tree():
 		return
 	if stamp == null or !match_board.is_valid_position(piece_position):
@@ -80,13 +80,13 @@ func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, st
 	if holder == null:
 		return
 
-	var attached_texture: Texture2D = match_board.get_piece_texture_resolver().get_stamp_piece_texture_for_color(stamp, piece_color)
-	if attached_texture == null:
-		attached_texture = start_texture
+	var affixed_texture: Texture2D = match_board.get_piece_texture_resolver().get_stamp_piece_texture_for_color(stamp, piece_color)
+	if affixed_texture == null:
+		affixed_texture = start_texture
 
 	SFXManager.play("attach_stamp")
-	var completed: bool = await match_board.get_piece_effect_animator().play_attach_sequence(holder, piece_position, attached_texture, {
-		"post_morph_callback": Callable(self, "apply_hidden_piece_attach_morph_result").bind(piece_position, attached_texture),
+	var completed: bool = await match_board.get_piece_effect_animator().play_affix_sequence(holder, piece_position, affixed_texture, {
+		"post_morph_callback": Callable(self, "apply_hidden_piece_attach_morph_result").bind(piece_position, affixed_texture),
 		"disable_holder_occluder": false,
 	})
 	if !completed:
@@ -95,11 +95,11 @@ func play_hidden_piece_invisibility_attach_animation(piece_position: Vector2, st
 	SFXManager.play("invisibility_effect")
 	await match_board.get_piece_effect_animator().play_invisibility_exit(holder)
 
-func apply_hidden_piece_attach_morph_result(holder: Sprite2D, piece_position: Vector2, attached_texture: Texture2D) -> void:
+func apply_hidden_piece_attach_morph_result(holder: Sprite2D, piece_position: Vector2, affixed_texture: Texture2D) -> void:
 	if match_board == null or holder == null or !is_instance_valid(holder):
 		return
 
-	holder.texture = attached_texture
+	holder.texture = affixed_texture
 	match_board.get_piece_visuals().apply_visual_size(holder, piece_position)
 
 func play_local_move_transition(move_context: Dictionary) -> void:
@@ -287,6 +287,6 @@ func get_capturing_cast_sound_name(capturing_piece_pos: Vector2) -> String:
 	if match_board == null:
 		return ""
 	var capturing_piece: Piece = match_board.piece_objects.get(capturing_piece_pos, null) as Piece
-	if capturing_piece == null or capturing_piece.attached_stamp == null:
+	if capturing_piece == null or capturing_piece.affixed_stamp == null:
 		return ""
-	return "%s_capture" % capturing_piece.attached_stamp.Set.to_lower()
+	return "%s_capture" % capturing_piece.affixed_stamp.Set.to_lower()

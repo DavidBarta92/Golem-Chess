@@ -12,7 +12,7 @@ var dialogue_panel
 var mentor_portrait: PortraitConfig
 var steps: Array[Dictionary] = []
 var current_step_index: int = -1
-var attached_this_step: int = 0
+var affixed_this_step: int = 0
 var moved_this_step: int = 0
 var waiting_for_continue_after_completion: bool = false
 
@@ -36,7 +36,7 @@ func begin_tutorial() -> void:
 	start_step(0)
 
 func connect_board_signals() -> void:
-	board.stamp_attached.connect(_on_stamp_attached)
+	board.stamp_affixed.connect(_on_stamp_affixed)
 	board.stamp_exchanged.connect(_on_stamp_exchanged)
 	board.codex_page_turned.connect(_on_codex_page_turned)
 	board.piece_moved.connect(_on_piece_moved)
@@ -57,7 +57,7 @@ func build_steps() -> void:
 		{
 			"speaker": MENTOR_NAME,
 			"text": "TUTORIAL_STEP_2",
-			"completion": "stamp_attached",
+			"completion": "stamp_affixed",
 			"expected_stamp_name": "Numero_1",
 			"setup": {
 				"board": starting_board(),
@@ -68,8 +68,8 @@ func build_steps() -> void:
 				"turn_color": PLAYER_COLOR,
 			},
 			"constraints": {
-				"allowed_actions": ["attach_stamp"],
-				"allowed_attach_stamp_names": ["Numero_1"],
+				"allowed_actions": ["affix_stamp"],
+				"allowed_affix_stamp_names": ["Numero_1"],
 				"allow_auto_end_turn": false,
 			},
 		},
@@ -88,7 +88,7 @@ func build_steps() -> void:
 			"completion": "piece_moved",
 			"setup": {
 				"board": starting_board(),
-				"attached_stamps": [{"pos": Vector2(0, 1), "stamp_name": "Numero_1", "turns_remaining": 3, "exhausted": false}],
+				"affixed_stamps": [{"pos": Vector2(0, 1), "stamp_name": "Numero_1", "turns_remaining": 3, "exhausted": false}],
 				"white_hand": [],
 				"white_deck": ["Numero_2", "Numero_3", "Numero_4"],
 				"black_hand": [],
@@ -110,11 +110,11 @@ func build_steps() -> void:
 		{
 			"speaker": MENTOR_NAME,
 			"text": "TUTORIAL_STEP_6",
-			"completion": "stamp_attached",
+			"completion": "stamp_affixed",
 			"required_count": 2,
 			"setup": {
 				"board": starting_board(),
-				"attached_stamps": [{"pos": Vector2(0, 1), "stamp_name": "Numero_1", "turns_remaining": 3, "exhausted": false}],
+				"affixed_stamps": [{"pos": Vector2(0, 1), "stamp_name": "Numero_1", "turns_remaining": 3, "exhausted": false}],
 				"white_hand": ["Numero_2", "Numero_3"],
 				"white_deck": ["Numero_4", "Numero_5", "Numero_6"],
 				"black_hand": [],
@@ -122,8 +122,8 @@ func build_steps() -> void:
 				"turn_color": PLAYER_COLOR,
 			},
 			"constraints": {
-				"allowed_actions": ["attach_stamp"],
-				"allowed_attach_stamp_names": ["Numero_2", "Numero_3"],
+				"allowed_actions": ["affix_stamp"],
+				"allowed_affix_stamp_names": ["Numero_2", "Numero_3"],
 				"allow_auto_end_turn": false,
 			},
 		},
@@ -165,7 +165,7 @@ func build_steps() -> void:
 		{
 			"speaker": MENTOR_NAME,
 			"text": "TUTORIAL_STEP_10",
-			"completion": "stamp_attached",
+			"completion": "stamp_affixed",
 			"expected_stamp_name": "Training Seal",
 			"setup": {
 				"board": starting_board(),
@@ -176,8 +176,8 @@ func build_steps() -> void:
 				"turn_color": PLAYER_COLOR,
 			},
 			"constraints": {
-				"allowed_actions": ["attach_stamp"],
-				"allowed_attach_stamp_names": ["Training Seal"],
+				"allowed_actions": ["affix_stamp"],
+				"allowed_affix_stamp_names": ["Training Seal"],
 				"allow_auto_end_turn": false,
 			},
 		},
@@ -197,7 +197,7 @@ func build_steps() -> void:
 			"expected_to": Vector2(3, 3),
 			"setup": {
 				"board": capture_board(),
-				"attached_stamps": [
+				"affixed_stamps": [
 					{
 						"pos": Vector2(3, 2),
 						"stamp_name": "Training Seal",
@@ -221,7 +221,7 @@ func build_steps() -> void:
 		{
 			"speaker": MENTOR_NAME,
 			"text": "TUTORIAL_STEP_13",
-			"completion": "stamp_attached",
+			"completion": "stamp_affixed",
 			"expected_stamp_name": "Crown",
 			"setup": {
 				"board": starting_board(),
@@ -232,8 +232,8 @@ func build_steps() -> void:
 				"turn_color": PLAYER_COLOR,
 			},
 			"constraints": {
-				"allowed_actions": ["attach_stamp"],
-				"allowed_attach_stamp_names": ["Crown"],
+				"allowed_actions": ["affix_stamp"],
+				"allowed_affix_stamp_names": ["Crown"],
 				"allow_auto_end_turn": false,
 			},
 		},
@@ -245,7 +245,7 @@ func build_steps() -> void:
 			"expected_to": Vector2(6, 3),
 			"setup": {
 				"board": win_board(),
-				"attached_stamps": [
+				"affixed_stamps": [
 					{
 						"pos": Vector2(5, 3),
 						"stamp_name": "Crown",
@@ -314,7 +314,7 @@ func start_step(step_index: int) -> void:
 		return
 
 	current_step_index = step_index
-	attached_this_step = 0
+	affixed_this_step = 0
 	moved_this_step = 0
 	waiting_for_continue_after_completion = false
 
@@ -347,8 +347,8 @@ func _on_dialogue_continue_requested() -> void:
 		return
 	advance_current_step()
 
-func _on_stamp_attached(piece_pos: Vector2, stamp_name: String, owner_color: int, _hand_index: int) -> void:
-	if !is_current_completion("stamp_attached"):
+func _on_stamp_affixed(piece_pos: Vector2, stamp_name: String, owner_color: int, _hand_index: int) -> void:
+	if !is_current_completion("stamp_affixed"):
 		return
 
 	var step: Dictionary = get_current_step()
@@ -358,8 +358,8 @@ func _on_stamp_attached(piece_pos: Vector2, stamp_name: String, owner_color: int
 	if !expected_stamp_name.is_empty() and stamp_name != expected_stamp_name:
 		return
 
-	attached_this_step += 1
-	if attached_this_step >= int(step.get("required_count", 1)):
+	affixed_this_step += 1
+	if affixed_this_step >= int(step.get("required_count", 1)):
 		complete_current_action_step()
 
 func _on_stamp_exchanged(stamp_name: String, owner_color: int, _hand_index: int) -> void:

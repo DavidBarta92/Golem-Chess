@@ -136,8 +136,8 @@ func serialize_pieces(game_state: GameStateData) -> Array:
 			"position": vector2_to_array(pos),
 			"color": piece.color,
 			"player_id": StampEffectResolver.get_player_id_for_color(piece.color),
-			"stamp": serialize_stamp(piece.attached_stamp),
-			"stamp_name": piece.attached_stamp.stamp_name if piece.attached_stamp != null else "",
+			"stamp": serialize_stamp(piece.affixed_stamp),
+			"stamp_name": piece.affixed_stamp.stamp_name if piece.affixed_stamp != null else "",
 			"turns_remaining": piece.turns_remaining,
 			"exhausted_this_turn": piece.exhausted_this_turn,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
@@ -189,7 +189,7 @@ func serialize_legal_actions(host) -> Dictionary:
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var legal_actions: Dictionary = {
 		"player_id": player_id,
-		"attach_stamp": [],
+		"affix_stamp": [],
 		"move_piece": [],
 		"turn_page": [],
 		"end_turn": [{
@@ -202,21 +202,21 @@ func serialize_legal_actions(host) -> Dictionary:
 	for position_value in game_state.pieces:
 		var pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.attached_stamp != null:
+		if piece == null or piece.color != player_color or piece.affixed_stamp != null:
 			continue
 		for hand_index in range(hand_stamp_names.size()):
 			var stamp_name: String = str(hand_stamp_names[hand_index])
 			var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
-			if !MoveRules.stamp_can_be_used(stamp) or !MoveRules.can_attach_stamp_for_turn(game_state.pieces, player_color, stamp):
+			if !MoveRules.stamp_can_be_used(stamp) or !MoveRules.can_affix_stamp_for_turn(game_state.pieces, player_color, stamp):
 				continue
-			legal_actions["attach_stamp"].append({
-				"type": "attach_stamp",
+			legal_actions["affix_stamp"].append({
+				"type": "affix_stamp",
 				"player_id": player_id,
 				"stamp_name": stamp_name,
 				"hand_index": hand_index,
 				"piece_pos": vector2_to_array(pos),
-				"next_turn_moves_after_attach": serialize_vector_array(MoveRules.get_stamp_moves_for_piece(game_state.pieces, pos, player_color, stamp, BoardConfig.BOARD_SIZE, game_state.board_effects)),
-				"note": "Attach exhausts the piece this turn; these moves are for later turns.",
+				"next_turn_moves_after_affix": serialize_vector_array(MoveRules.get_stamp_moves_for_piece(game_state.pieces, pos, player_color, stamp, BoardConfig.BOARD_SIZE, game_state.board_effects)),
+				"note": "Affix exhausts the piece this turn; these moves are for later turns.",
 			})
 
 	if !bool(game_state.moved_piece_this_turn.get(player_id, false)):
@@ -263,7 +263,7 @@ func serialize_base_fields(game_state: GameStateData) -> Dictionary:
 
 func serialize_turn_flags(game_state: GameStateData) -> Dictionary:
 	return {
-		"attached_stamp_this_turn": stringify_key_dictionary(game_state.attached_stamp_this_turn),
+		"affixed_stamp_this_turn": stringify_key_dictionary(game_state.affixed_stamp_this_turn),
 		"moved_piece_this_turn": stringify_key_dictionary(game_state.moved_piece_this_turn),
 		"exchanged_stamp_this_turn": stringify_key_dictionary(game_state.exchanged_stamp_this_turn),
 		"has_turned_page_this_turn": stringify_key_dictionary(game_state.has_turned_page_this_turn),
@@ -278,7 +278,7 @@ func stringify_key_dictionary(source: Dictionary) -> Dictionary:
 func normalize_action(action_value: Dictionary) -> Dictionary:
 	var action: Dictionary = action_value.duplicate()
 	match str(action.get("type", "")):
-		"attach_stamp":
+		"affix_stamp":
 			action["piece_pos"] = array_to_vector2(action.get("piece_pos", Vector2(-1, -1)))
 			action["hand_index"] = int(action.get("hand_index", -1))
 		"move_piece":
@@ -298,10 +298,10 @@ func create_action_snapshot(host, action: Dictionary) -> Dictionary:
 		"game_over": bool(game_state.game_over),
 	}
 	match str(action.get("type", "")):
-		"attach_stamp":
+		"affix_stamp":
 			var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 			var piece: Piece = game_state.get_piece(piece_pos)
-			snapshot["piece_stamp_name"] = piece.attached_stamp.stamp_name if piece != null and piece.attached_stamp != null else ""
+			snapshot["piece_stamp_name"] = piece.affixed_stamp.stamp_name if piece != null and piece.affixed_stamp != null else ""
 			snapshot["hand"] = duplicate_stamp_names(game_state.player_hands.get(int(action.get("player_id", -1)), []))
 		"move_piece":
 			var from_pos: Vector2 = StampEffectResolver.as_vector2(action.get("from", Vector2(-1, -1)), Vector2(-1, -1))
@@ -324,13 +324,13 @@ func was_action_applied(host, action: Dictionary, before_snapshot: Dictionary) -
 		return true
 
 	match str(action.get("type", "")):
-		"attach_stamp":
+		"affix_stamp":
 			var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 			var piece: Piece = game_state.get_piece(piece_pos)
 			return piece != null \
-				&& piece.attached_stamp != null \
-				&& piece.attached_stamp.stamp_name == str(action.get("stamp_name", "")) \
-				&& str(before_snapshot.get("piece_stamp_name", "")) != piece.attached_stamp.stamp_name
+				&& piece.affixed_stamp != null \
+				&& piece.affixed_stamp.stamp_name == str(action.get("stamp_name", "")) \
+				&& str(before_snapshot.get("piece_stamp_name", "")) != piece.affixed_stamp.stamp_name
 		"move_piece":
 			var from_pos: Vector2 = StampEffectResolver.as_vector2(action.get("from", Vector2(-1, -1)), Vector2(-1, -1))
 			var to_pos: Vector2 = StampEffectResolver.as_vector2(action.get("to", Vector2(-1, -1)), Vector2(-1, -1))
@@ -356,7 +356,7 @@ func duplicate_stamp_names(source) -> Array:
 	return output
 
 func get_piece_stamp_name(piece: Piece) -> String:
-	return piece.attached_stamp.stamp_name if piece != null and piece.attached_stamp != null else ""
+	return piece.affixed_stamp.stamp_name if piece != null and piece.affixed_stamp != null else ""
 
 func action_to_json(action: Dictionary) -> Dictionary:
 	var output: Dictionary = action.duplicate()

@@ -30,17 +30,17 @@ func complete_stamp_exchange(owner_color: int, stamp_name: String, hand_index: i
 func send_stamp_exchange_action(_owner_color: int, _stamp_name: String, _hand_index: int) -> bool:
 	return false
 
-func attach_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vector2) -> void:
+func affix_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vector2) -> void:
 	if stamp_visual == null or !is_instance_valid(stamp_visual):
 		return
 	if not match_board.piece_objects.has(piece_position) or stamp_visual.stamp == null:
 		stamp_visual.fly_home()
 		return
-	var attach_stamp: Stamp = stamp_visual.stamp
-	var stamp_name: String = attach_stamp.stamp_name
+	var affix_stamp: Stamp = stamp_visual.stamp
+	var stamp_name: String = affix_stamp.stamp_name
 	var owner_color: int = stamp_visual.owner_color
 	var hand_index: int = match_board.get_stamp_visual_index(stamp_visual)
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_STAMP, {
+	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, {
 		"owner_color": owner_color,
 		"piece_pos": piece_position,
 		"stamp_name": stamp_name,
@@ -48,7 +48,7 @@ func attach_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vec
 	}, true):
 		stamp_visual.fly_home()
 		return
-	if !can_attach_stamp_to_piece(piece_position, stamp_name, owner_color):
+	if !can_affix_stamp_to_piece(piece_position, stamp_name, owner_color):
 		stamp_visual.fly_home()
 		return
 
@@ -57,20 +57,20 @@ func attach_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vec
 	if holder != null and is_instance_valid(holder):
 		start_texture = holder.texture
 
-	match_board.begin_stamp_attach_process(piece_position)
+	match_board.begin_stamp_affix_process(piece_position)
 
 	if GameController.current_game_host:
 		match_board.get_local_state_mutator().record_played_stamp_hand_slot(owner_color, hand_index)
 		stamp_visual.assign_and_hide()
-		if !send_stamp_attach_action(owner_color, stamp_name, piece_position, hand_index):
-			match_board.finish_stamp_attach_process(piece_position)
+		if !send_stamp_affix_action(owner_color, stamp_name, piece_position, hand_index):
+			match_board.finish_stamp_affix_process(piece_position)
 			return
-		match_board.get_turn_action_state_controller().mark_stamp_attached_this_turn(owner_color)
-		match_board.stamp_attached.emit(piece_position, stamp_name, owner_color, hand_index)
+		match_board.get_turn_action_state_controller().mark_stamp_affixed_this_turn(owner_color)
+		match_board.stamp_affixed.emit(piece_position, stamp_name, owner_color, hand_index)
 		return
 
 	if !apply_stamp_to_piece(piece_position, stamp_name):
-		match_board.finish_stamp_attach_process(piece_position)
+		match_board.finish_stamp_affix_process(piece_position)
 		if is_instance_valid(stamp_visual):
 			stamp_visual.fly_home()
 		return
@@ -80,18 +80,18 @@ func attach_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vec
 		match_board.remove_stamp_from_hand(stamp_visual)
 	else:
 		match_board.get_stamp_hand_state_controller().remove_stamp_from_hand_index(owner_color, hand_index, false)
-	match_board.get_turn_action_state_controller().mark_stamp_attached_this_turn(owner_color)
-	match_board.stamp_attached.emit(piece_position, stamp_name, owner_color, hand_index)
+	match_board.get_turn_action_state_controller().mark_stamp_affixed_this_turn(owner_color)
+	match_board.stamp_affixed.emit(piece_position, stamp_name, owner_color, hand_index)
 
-	if match_board.get_parent().has_method("send_stamp_attach"):
-		match_board.get_parent().send_stamp_attach(piece_position, stamp_name, owner_color, hand_index, "")
+	if match_board.get_parent().has_method("send_stamp_affix"):
+		match_board.get_parent().send_stamp_affix(piece_position, stamp_name, owner_color, hand_index, "")
 
-	await match_board.get_piece_effect_flow_controller().play_piece_stamp_attach_animation(piece_position, attach_stamp, start_texture)
-	match_board.finish_stamp_attach_process(piece_position)
+	await match_board.get_piece_effect_flow_controller().play_piece_stamp_affix_animation(piece_position, affix_stamp, start_texture)
+	match_board.finish_stamp_affix_process(piece_position)
 
-func send_stamp_attach_action(owner_color: int, stamp_name: String, piece_position: Vector2, hand_index: int) -> bool:
+func send_stamp_affix_action(owner_color: int, stamp_name: String, piece_position: Vector2, hand_index: int) -> bool:
 	var action: Dictionary = {
-		"type": "attach_stamp",
+		"type": "affix_stamp",
 		"player_id": match_board.get_player_id_for_color(owner_color),
 		"stamp_name": stamp_name,
 		"piece_pos": piece_position,
@@ -99,13 +99,13 @@ func send_stamp_attach_action(owner_color: int, stamp_name: String, piece_positi
 	}
 	return bool(GameController.send_action(action))
 
-func can_attach_stamp_to_piece(piece_position: Vector2, stamp_name: String = "", owner_color: int = 0) -> bool:
+func can_affix_stamp_to_piece(piece_position: Vector2, stamp_name: String = "", owner_color: int = 0) -> bool:
 	if not match_board.piece_objects.has(piece_position):
 		return false
-	if match_board.pending_stamp_attach_positions.has(piece_position):
+	if match_board.pending_stamp_affix_positions.has(piece_position):
 		return false
 	var action_owner_color: int = owner_color if owner_color != 0 else match_board.get_controllable_color()
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_ATTACH_STAMP, {
+	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, {
 		"owner_color": action_owner_color,
 		"piece_pos": piece_position,
 		"stamp_name": stamp_name,
@@ -126,7 +126,7 @@ func apply_stamp_to_piece(piece_position: Vector2, stamp_name: String) -> bool:
 
 	var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
 	if stamp == null:
-		push_warning("Stamp not found for attach: %s" % stamp_name)
+		push_warning("Stamp not found for affix: %s" % stamp_name)
 		return false
 
 	var owner_player_id: int = match_board.get_player_id_for_color(piece.color)
@@ -139,16 +139,16 @@ func apply_stamp_to_piece(piece_position: Vector2, stamp_name: String) -> bool:
 	stamp.set_meta("codex_owner_player_id", owner_player_id)
 	stamp.set_meta("codex_page_index", local_codex_page_index)
 	stamp.set_meta("codex_stamp_index", local_codex_page.find(stamp_name))
-	piece.attach_stamp(stamp, true)
+	piece.affix_stamp(stamp, true)
 	var pending_respawn_arrivals: Array[Dictionary] = []
 	if !GameController.current_game_host:
-		pending_respawn_arrivals = match_board.get_local_state_mutator().apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_ATTACH, piece_position, piece, stamp)
+		pending_respawn_arrivals = match_board.get_local_state_mutator().apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_AFFIX, piece_position, piece, stamp)
 	match_board.get_piece_respawn_fragment_coordinator().prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrivals)
 	match_board.display_board()
 	if !pending_respawn_arrivals.is_empty():
 		match_board.get_piece_respawn_fragment_coordinator().play_pending_edge_respawn_arrival_animations(pending_respawn_arrivals)
 	return true
 
-func apply_remote_stamp_attach(piece_position: Vector2, stamp_name: String, owner_color: int, hand_index: int, replacement_stamp_name: String = "") -> void:
+func apply_remote_stamp_affix(piece_position: Vector2, stamp_name: String, owner_color: int, hand_index: int, replacement_stamp_name: String = "") -> void:
 	if apply_stamp_to_piece(piece_position, stamp_name):
 		match_board.get_stamp_hand_state_controller().remove_stamp_from_hand_index(owner_color, hand_index, false, replacement_stamp_name)

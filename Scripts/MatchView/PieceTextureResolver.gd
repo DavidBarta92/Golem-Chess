@@ -18,20 +18,20 @@ func get_default_piece_texture(piece_value: int) -> Texture2D:
 		return own_default_piece_texture
 	return default_piece_texture
 
-func get_attached_stamp_piece_texture(piece: Piece) -> Texture2D:
-	if piece == null or piece.attached_stamp == null:
+func get_affixed_stamp_piece_texture(piece: Piece) -> Texture2D:
+	if piece == null or piece.affixed_stamp == null:
 		return null
-	return piece.attached_stamp.get_piece_texture(piece.color, get_piece_board_view(piece.color))
+	return piece.affixed_stamp.get_piece_texture(piece.color, get_piece_board_view(piece.color))
 
 func get_piece_texture_for_position(board_pos: Vector2, piece_value: int) -> Texture2D:
-	var attached_texture: Texture2D = null
+	var affixed_texture: Texture2D = null
 	if match_board != null and match_board.piece_objects.has(board_pos):
 		var piece: Piece = match_board.piece_objects[board_pos] as Piece
 		if piece != null and piece.hidden_from_viewer:
 			return null
-		attached_texture = get_attached_stamp_piece_texture(piece)
-	if attached_texture != null:
-		return attached_texture
+		affixed_texture = get_affixed_stamp_piece_texture(piece)
+	if affixed_texture != null:
+		return affixed_texture
 	return get_default_piece_texture(piece_value)
 
 func get_stamp_piece_texture_for_color(stamp: Stamp, piece_color: int) -> Texture2D:
@@ -53,9 +53,9 @@ func get_piece_visual_texture(piece: Piece) -> Texture2D:
 	if piece == null or piece.hidden_from_viewer:
 		return null
 
-	var attached_texture: Texture2D = get_attached_stamp_piece_texture(piece)
-	if attached_texture != null:
-		return attached_texture
+	var affixed_texture: Texture2D = get_affixed_stamp_piece_texture(piece)
+	if affixed_texture != null:
+		return affixed_texture
 	return get_default_piece_texture(piece.color)
 
 func get_piece_visual_state_snapshot() -> Dictionary:
@@ -71,7 +71,7 @@ func get_piece_visual_state_snapshot() -> Dictionary:
 
 		snapshot[board_pos] = {
 			"color": piece.color,
-			"stamp_name": piece.attached_stamp.stamp_name if piece.attached_stamp != null else "",
+			"stamp_name": piece.affixed_stamp.stamp_name if piece.affixed_stamp != null else "",
 			"texture": get_piece_visual_texture(piece),
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
 		}

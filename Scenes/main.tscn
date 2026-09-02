@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://cwftxr73pdl8"]
 
 [ext_resource type="Script" uid="uid://bmwxm03yki7x2" path="res://Scenes/Multiplayer.gd" id="1_hptm8"]
-[ext_resource type="PackedScene" path="res://Scenes/MatchBoard.tscn" id="1_jjgbg"]
+[ext_resource type="PackedScene" uid="uid://cc03qg5anporg" path="res://Scenes/MatchBoard.tscn" id="1_jjgbg"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="1_ynf5e"]
-[ext_resource type="PackedScene" path="res://Scenes/MatchBackground.tscn" id="2_r3s2l"]
 [ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="2_hptm8"]
+[ext_resource type="PackedScene" uid="uid://bd4avsx325i0l" path="res://Scenes/MatchBackground.tscn" id="2_r3s2l"]
 [ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="3_d1ilt"]
 [ext_resource type="Texture2D" uid="uid://dtqaapxigua1r" path="res://Assets/white_queen.png" id="4_6iyac"]
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="5_fdnlq"]
@@ -12,6 +12,10 @@
 [ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="7_wsu2k"]
 [ext_resource type="Texture2D" uid="uid://c56dxei2cm0ig" path="res://Assets/black_queen.png" id="8_k12tt"]
 [ext_resource type="Script" uid="uid://dqcyoelgvjck5" path="res://Scenes/host_label.gd" id="12_6iyac"]
+[ext_resource type="Texture2D" uid="uid://c6xbpi24shq5t" path="res://Assets/codex.png" id="13_fdnlq"]
+[ext_resource type="Script" uid="uid://ddoy1bnauv504" path="res://Scenes/codex_visual.gd" id="14_codex"]
+[ext_resource type="Shader" uid="uid://cq2wpk53gbihw" path="res://Shaders/paper_texture.gdshader" id="15_paper_texture_shader"]
+[ext_resource type="Script" uid="uid://bk8rxwxvuix45" path="res://Scenes/opponent_codex_visual.gd" id="16_opponent_codex"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_h1bgf"]
 texture = ExtResource("1_ynf5e")
@@ -59,6 +63,45 @@ texture = ExtResource("7_wsu2k")
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_kltya"]
 texture = ExtResource("8_k12tt")
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_codexpanel"]
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+bg_color = Color(0.045, 0.042, 0.038, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.92, 0.72, 0.34)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_paper"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_paper"]
+noise = SubResource("FastNoiseLite_paper")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_paper_texture"]
+shader = ExtResource("15_paper_texture_shader")
+shader_parameter/noise_texture = SubResource("NoiseTexture2D_paper")
+shader_parameter/fold_scale = Vector2(2.2, 2.2)
+shader_parameter/fiber_scale = 39.9600017081
+shader_parameter/fiber_stretch = 13.2850005835375
+shader_parameter/fiber_edge = 0.04500000143898
+shader_parameter/fiber_strength = 0.0450000021375
+shader_parameter/grain_strength = 0.062000002945
+shader_parameter/highlight_tint = Color(1.04, 1.04, 1.04, 1)
+shader_parameter/shadow_tint = Color(0.68651277, 0.6474813, 0.5577221, 1)
+shader_parameter/light_dir = Vector3(0.35, 0.55, 0.75)
+shader_parameter/bump_strength = 2.5
+shader_parameter/light_strength = 0.55
+shader_parameter/contrast = 1.25
+shader_parameter/effect_opacity = 0.5
+
 [node name="Main" type="Node2D" unique_id=806867114]
 script = ExtResource("1_hptm8")
 
@@ -67,12 +110,36 @@ position = Vector2(72, -72)
 ignore_rotation = false
 zoom = Vector2(3, 3)
 
-[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+[node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=1065855336]
 layer = -100
 
-[node name="MatchBackground" parent="BackgroundLayer" instance=ExtResource("2_r3s2l")]
+[node name="MatchBackground" parent="BackgroundLayer" unique_id=562392244 instance=ExtResource("2_r3s2l")]
+
+[node name="Codex" type="Sprite2D" parent="BackgroundLayer/MatchBackground" unique_id=1342260843]
+position = Vector2(778.75, 175.29688)
+scale = Vector2(0.2866927, 0.28669274)
+texture = ExtResource("13_fdnlq")
+script = ExtResource("16_opponent_codex")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=348762509]
+
+[node name="Codex" type="TextureRect" parent="CanvasLayer" unique_id=1228433567]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -625.0
+offset_top = -210.0
+offset_right = -204.0
+offset_bottom = 289.66052
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+texture = ExtResource("13_fdnlq")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("14_codex")
 
 [node name="white_pieces" type="Control" parent="CanvasLayer" unique_id=1440425958]
 visible = false
@@ -190,6 +257,85 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_kltya")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
+[node name="CodexPanel" type="PanelContainer" parent="CanvasLayer" unique_id=-1283521730]
+z_index = 920
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -122.0
+offset_top = -140.0
+offset_right = 122.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_codexpanel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/CodexPanel" unique_id=-1283521729]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="PageLabel" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer" unique_id=-1283521728]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.95, 0.82, 1)
+theme_override_font_sizes/font_size = 16
+text = "Page 1 / 5"
+horizontal_alignment = 1
+
+[node name="CountsRow" type="HBoxContainer" parent="CanvasLayer/CodexPanel/VBoxContainer" unique_id=-1283521727]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="CountLabel0" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521726]
+custom_minimum_size = Vector2(34, 24)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "1:0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CountLabel1" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521725]
+custom_minimum_size = Vector2(34, 24)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "2:0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CountLabel2" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521724]
+custom_minimum_size = Vector2(34, 24)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "3:0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CountLabel3" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521723]
+custom_minimum_size = Vector2(34, 24)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "4:0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CountLabel4" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521722]
+custom_minimum_size = Vector2(34, 24)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "5:0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TurnPageButton" type="Button" parent="CanvasLayer/CodexPanel/VBoxContainer" unique_id=-1283521721]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "Turn Page"
+metadata/sfx_click = "codex_fold"
+
 [node name="MatchBoard" parent="." unique_id=171164572 instance=ExtResource("1_jjgbg")]
 
 [node name="host_label" type="Label" parent="." unique_id=261984928]
@@ -205,5 +351,17 @@ offset_left = -64.0
 offset_top = -99.0
 offset_right = 12.0
 offset_bottom = -63.0
+
+[node name="PaperTextureLayer" type="CanvasLayer" parent="." unique_id=-1283521716]
+layer = 10
+
+[node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer" unique_id=-1283521715]
+material = SubResource("ShaderMaterial_paper_texture")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [editable path="BackgroundLayer/MatchBackground"]

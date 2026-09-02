@@ -9,7 +9,7 @@ func configure(config: Dictionary) -> void:
 
 func set_turn(turn_value) -> void:
 	match_board.side = turn_value
-	match_board.get_turn_action_state_controller().reset_current_turn_stamp_attach()
+	match_board.get_turn_action_state_controller().reset_current_turn_stamp_affix()
 	match_board.update_stamp_presentation()
 	match_board.get_board_tile_controller().create_board_tiles()
 	match_board.display_board()

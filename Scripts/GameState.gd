@@ -41,11 +41,11 @@ var pending_respawns: Dictionary = {
 	0: [],
 	1: [],
 }
-var attached_stamp_this_turn: Dictionary = {
+var affixed_stamp_this_turn: Dictionary = {
 	0: false,
 	1: false,
 }
-var attached_stamp_count_this_turn: Dictionary = {
+var affixed_stamp_count_this_turn: Dictionary = {
 	0: 0,
 	1: 0,
 }
@@ -87,8 +87,8 @@ func is_white_turn() -> bool:
 
 func switch_turn():
 	current_turn_player = 1 - current_turn_player
-	attached_stamp_this_turn[current_turn_player] = false
-	attached_stamp_count_this_turn[current_turn_player] = 0
+	affixed_stamp_this_turn[current_turn_player] = false
+	affixed_stamp_count_this_turn[current_turn_player] = 0
 	moved_piece_this_turn[current_turn_player] = false
 	exchanged_stamp_this_turn[current_turn_player] = false
 	played_stamp_hand_slots_this_turn[current_turn_player] = []
@@ -141,7 +141,7 @@ func has_stamps_on_page(player_id: int, page_index: int) -> bool:
 func can_turn_page(player_id: int) -> bool:
 	if bool(has_turned_page_this_turn.get(player_id, false)):
 		return false
-	if bool(attached_stamp_this_turn.get(player_id, false)):
+	if bool(affixed_stamp_this_turn.get(player_id, false)):
 		return false
 	if count_non_empty_pages(player_id) <= 1:
 		return false

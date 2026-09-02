@@ -20,7 +20,7 @@ func get_valid_turn_moves(host: NetworkGameHost) -> Array[Dictionary]:
 		return valid_moves
 
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
-	var can_attach_stamp: bool = true
+	var can_affix_stamp: bool = true
 	if bool(host.game_state.moved_piece_this_turn.get(player_id, false)):
 		return valid_moves
 	var hand_stamps: Array[Stamp] = host.get_hand_stamps_for_player(player_id)
@@ -28,7 +28,7 @@ func get_valid_turn_moves(host: NetworkGameHost) -> Array[Dictionary]:
 		host.game_state.pieces,
 		player_color,
 		hand_stamps,
-		can_attach_stamp,
+		can_affix_stamp,
 		BOARD_SIZE,
 		host.game_state.board_effects
 	)
@@ -45,19 +45,19 @@ func execute_turn_move(host: NetworkGameHost, tree: SceneTree, selected_move: Di
 		end_turn(host)
 		return false
 
-	if bool(selected_move.get("requires_attach", false)):
+	if bool(selected_move.get("requires_affix", false)):
 		var stamp: Stamp = selected_move.get("stamp", null) as Stamp
 		if stamp == null:
 			return false
 
-		var attach_action: Dictionary = {
-			"type": "attach_stamp",
+		var affix_action: Dictionary = {
+			"type": "affix_stamp",
 			"player_id": player_id,
 			"stamp_name": stamp.stamp_name,
 			"piece_pos": AIStateSimulator.get_move_from(selected_move),
 			"hand_index": -1,
 		}
-		host.on_player_action(attach_action)
+		host.on_player_action(affix_action)
 
 		if host.game_state.game_over:
 			return true

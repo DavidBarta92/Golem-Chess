@@ -22,7 +22,12 @@ var hover_stamp_preview: StampVisual
 var hover_piece_preview: TextureRect
 var hover_duration_label: Label
 var hover_description_panel: Control
-var hover_description_label: Label
+var hover_description_label: RichTextLabel
+var description_icon_font_size: int = 16
+var hover_fade_in_duration: float = 0.16
+
+var _stamp_group_fade_tween: Tween
+var _piece_preview_fade_tween: Tween
 
 func configure(config: Dictionary) -> void:
 	canvas_layer = config.get("canvas_layer", canvas_layer)
@@ -125,8 +130,11 @@ func create_description_panel() -> void:
 		edge.offset_top = float(edge_data["y"])
 		edge.offset_bottom = float(edge_data["y"]) + description_frame_edge_thickness
 
-	hover_description_label = Label.new()
+	hover_description_label = RichTextLabel.new()
 	hover_description_panel.add_child(hover_description_label)
+	hover_description_label.bbcode_enabled = true
+	hover_description_label.fit_content = false
+	hover_description_label.scroll_active = false
 	hover_description_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hover_description_label.anchor_left = 0.0
 	hover_description_label.anchor_right = 1.0
@@ -139,8 +147,8 @@ func create_description_panel() -> void:
 	hover_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hover_description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hover_description_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hover_description_label.add_theme_font_size_override("font_size", 16)
-	hover_description_label.add_theme_color_override("font_color", Color(0.12, 0.085, 0.055))
+	hover_description_label.add_theme_font_size_override("normal_font_size", description_icon_font_size)
+	hover_description_label.add_theme_color_override("default_color", Color(0.12, 0.085, 0.055))
 	hover_description_label.add_theme_color_override("font_shadow_color", Color(1.0, 0.96, 0.82, 0.48))
 	hover_description_label.add_theme_constant_override("shadow_offset_x", 1)
 	hover_description_label.add_theme_constant_override("shadow_offset_y", 1)
@@ -210,9 +218,12 @@ func show_piece_details(preview_stamp: Stamp, preview_texture: Texture2D, durati
 		hover_stamp_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		hover_stamp_preview.rotation_degrees = 0.0
 		hover_stamp_preview.set_rest_scale(Vector2.ONE)
+		var was_group_visible: bool = hover_stamp_group.visible
 		hover_stamp_group.visible = true
 		hover_stamp_preview.visible = true
 		show_description(preview_stamp.description.strip_edges())
+		if !was_group_visible:
+			fade_in_stamp_group()
 
 	show_piece_preview(preview_texture)
 	if hover_duration_label != null:
@@ -222,7 +233,7 @@ func show_piece_details(preview_stamp: Stamp, preview_texture: Texture2D, durati
 func show_description(description: String) -> void:
 	if hover_description_label == null or hover_description_panel == null:
 		return
-	hover_description_label.text = description
+	hover_description_label.text = DescriptionMarkup.to_bbcode(description, description_icon_font_size)
 	hover_description_panel.visible = !description.is_empty()
 	if !description.is_empty() and hover_stamp_group != null:
 		hover_stamp_group.visible = true
@@ -235,17 +246,44 @@ func show_piece_preview(preview_texture: Texture2D) -> void:
 		hover_piece_preview.texture = null
 		return
 
+	var was_visible: bool = hover_piece_preview.visible
 	hover_piece_preview.texture = preview_texture
 	hover_piece_preview.visible = true
+	if !was_visible:
+		fade_in_piece_preview()
+
+func fade_in_stamp_group() -> void:
+	if hover_stamp_group == null or !is_instance_valid(hover_stamp_group):
+		return
+	if _stamp_group_fade_tween != null and _stamp_group_fade_tween.is_valid():
+		_stamp_group_fade_tween.kill()
+	hover_stamp_group.modulate.a = 0.0
+	_stamp_group_fade_tween = hover_stamp_group.create_tween()
+	_stamp_group_fade_tween.tween_property(hover_stamp_group, "modulate:a", 1.0, hover_fade_in_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+
+func fade_in_piece_preview() -> void:
+	if hover_piece_preview == null or !is_instance_valid(hover_piece_preview):
+		return
+	if _piece_preview_fade_tween != null and _piece_preview_fade_tween.is_valid():
+		_piece_preview_fade_tween.kill()
+	hover_piece_preview.modulate.a = 0.0
+	_piece_preview_fade_tween = hover_piece_preview.create_tween()
+	_piece_preview_fade_tween.tween_property(hover_piece_preview, "modulate:a", 1.0, hover_fade_in_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 
 func hide() -> void:
+	if _stamp_group_fade_tween != null and _stamp_group_fade_tween.is_valid():
+		_stamp_group_fade_tween.kill()
+	if _piece_preview_fade_tween != null and _piece_preview_fade_tween.is_valid():
+		_piece_preview_fade_tween.kill()
 	if hover_stamp_group:
 		hover_stamp_group.visible = false
+		hover_stamp_group.modulate.a = 1.0
 	if hover_stamp_preview:
 		hover_stamp_preview.visible = false
 	if hover_piece_preview:
 		hover_piece_preview.visible = false
 		hover_piece_preview.texture = null
+		hover_piece_preview.modulate.a = 1.0
 	if hover_description_panel:
 		hover_description_panel.visible = false
 	if hover_description_label:

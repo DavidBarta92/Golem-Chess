@@ -71,6 +71,7 @@ const MAGNIFIER_GLASS_SOURCE_SIZE: Vector2 = Vector2(337, 570)
 const MAGNIFIER_GLASS_LENS_SOURCE_RECT: Rect2 = Rect2(15, 15, 305, 305)
 const MAGNIFIER_GLASS_ROTATION_DEGREES: float = -36.0
 const HOVER_DESCRIPTION_SIZE: Vector2 = Vector2(300, 132)
+const HOVER_DESCRIPTION_FONT_SIZE: int = 16
 const STAMP_SLOT_SCALE_MULTIPLIER: float = 0.88
 const STACKBUILDER_BACKGROUND_COLOR: Color = Color("#f9e7ce")
 const STACKBUILDER_GRID_LINE_COLOR: Color = Color("#d9d0d5")
@@ -150,7 +151,7 @@ var magnifier_group: Control
 var magnifier_material: ShaderMaterial
 var magnifier_screen_lens: ColorRect
 var hover_description_panel: PanelContainer
-var hover_description_label: Label
+var hover_description_label: RichTextLabel
 var grid_background_material: ShaderMaterial
 var magnifier_enabled: bool = false
 var magnifier_previous_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
@@ -498,17 +499,20 @@ func _setup_hover_description_panel() -> void:
 		style.content_margin_bottom = 14
 		hover_description_panel.add_theme_stylebox_override("panel", style)
 
-		hover_description_label = Label.new()
+		hover_description_label = RichTextLabel.new()
 		hover_description_panel.add_child(hover_description_label)
+		hover_description_label.bbcode_enabled = true
+		hover_description_label.fit_content = false
+		hover_description_label.scroll_active = false
 		hover_description_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hover_description_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		hover_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		hover_description_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		hover_description_label.add_theme_font_size_override("font_size", 16)
-		hover_description_label.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
+		hover_description_label.add_theme_font_size_override("normal_font_size", HOVER_DESCRIPTION_FONT_SIZE)
+		hover_description_label.add_theme_color_override("default_color", Color(0.08, 0.08, 0.08))
 	elif hover_description_label == null or !is_instance_valid(hover_description_label):
 		if hover_description_panel.get_child_count() > 0:
-			hover_description_label = hover_description_panel.get_child(0) as Label
+			hover_description_label = hover_description_panel.get_child(0) as RichTextLabel
 
 func _layout_hover_description_panel() -> void:
 	if hover_description_panel == null or !is_instance_valid(hover_description_panel):
@@ -1935,7 +1939,7 @@ func _show_stamp_preview(stamp: Stamp, stamp_print: StampPrint = null) -> void:
 	hovered_browser_stamp_name = stamp.stamp_name
 	var description: String = stamp.description.strip_edges()
 	if hover_description_label != null:
-		hover_description_label.text = description
+		hover_description_label.text = DescriptionMarkup.to_bbcode(description, HOVER_DESCRIPTION_FONT_SIZE)
 	if hover_description_panel != null:
 		hover_description_panel.visible = !description.is_empty()
 		if hover_description_panel.visible:

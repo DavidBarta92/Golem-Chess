@@ -13,7 +13,7 @@ const REPORT_HEADERS: Array[String] = [
 	"stamp_value",
 	"trend_score",
 	"ai_score_adjustment",
-	"ai_attach_score_adjustment",
+	"ai_affix_score_adjustment",
 	"ai_value_multiplier",
 	"sample_confidence",
 	"matches_analyzed",
@@ -23,8 +23,8 @@ const REPORT_HEADERS: Array[String] = [
 	"seeker_stamp_lost_match_count",
 	"unknown_win_condition_match_count",
 	"seen_count",
-	"attach_count",
-	"attach_rate",
+	"affix_count",
+	"affix_rate",
 	"move_count",
 	"move_win_count",
 	"move_win_rate",
@@ -34,7 +34,7 @@ const REPORT_HEADERS: Array[String] = [
 	"base_entry_count",
 	"progress_sum",
 	"avg_progress_per_move",
-	"delta_attach_per_player_match",
+	"delta_affix_per_player_match",
 	"delta_moves_per_player_match",
 	"delta_progress_per_player_match",
 	"delta_captures_per_player_match",
@@ -47,8 +47,8 @@ const REPORT_HEADERS: Array[String] = [
 	"affected_count_by_effect",
 	"win_slot_count",
 	"lose_slot_count",
-	"win_attach_sum",
-	"lose_attach_sum",
+	"win_affix_sum",
+	"lose_affix_sum",
 	"win_moves_sum",
 	"lose_moves_sum",
 	"win_progress_sum",
@@ -121,11 +121,11 @@ func build_raw_report_rows(
 
 	var stamp_names: Dictionary = {}
 	var seen_by_stamp: Dictionary = {}
-	var attach_by_stamp: Dictionary = {}
+	var affix_by_stamp: Dictionary = {}
 	var expire_by_stamp: Dictionary = {}
 	var return_deck_by_stamp: Dictionary = {}
 	var return_hand_by_stamp: Dictionary = {}
-	var attach_by_slot_stamp: Dictionary = {}
+	var affix_by_slot_stamp: Dictionary = {}
 	var seen_by_slot_stamp: Dictionary = {}
 
 	for event_row: Dictionary in stamp_events:
@@ -139,9 +139,9 @@ func build_raw_report_rows(
 			"starting_hand", "draw_stamp":
 				increment_count(seen_by_stamp, stamp_name)
 				increment_count(seen_by_slot_stamp, slot_key)
-			"attach_stamp":
-				increment_count(attach_by_stamp, stamp_name)
-				increment_count(attach_by_slot_stamp, slot_key)
+			"affix_stamp":
+				increment_count(affix_by_stamp, stamp_name)
+				increment_count(affix_by_slot_stamp, slot_key)
 			"expire_stamp":
 				increment_count(expire_by_stamp, stamp_name)
 			"return_to_deck":
@@ -211,22 +211,22 @@ func build_raw_report_rows(
 			stamp_name_string,
 			match_ids,
 			winner_by_match,
-			attach_by_slot_stamp,
+			affix_by_slot_stamp,
 			move_by_slot_stamp,
 			progress_by_slot_stamp,
 			capture_by_slot_stamp
 		)
 		var move_count: int = int(moves_by_stamp.get(stamp_name_string, 0))
 		var seen_count: int = int(seen_by_stamp.get(stamp_name_string, 0))
-		var attach_count: int = int(attach_by_stamp.get(stamp_name_string, 0))
+		var affix_count: int = int(affix_by_stamp.get(stamp_name_string, 0))
 		var capture_count: int = int(captures_by_stamp.get(stamp_name_string, 0))
 		var move_win_count: int = int(move_wins_by_stamp.get(stamp_name_string, 0))
 		var progress_sum: float = float(progress_by_stamp.get(stamp_name_string, 0.0))
 		raw_rows.append({
 			"stamp_name": stamp_name_string,
 			"seen_count": seen_count,
-			"attach_count": attach_count,
-			"attach_rate": safe_div(float(attach_count), float(seen_count)),
+			"affix_count": affix_count,
+			"affix_rate": safe_div(float(affix_count), float(seen_count)),
 			"move_count": move_count,
 			"move_win_count": move_win_count,
 			"move_win_rate": safe_div(float(move_win_count), float(move_count)),
@@ -236,14 +236,14 @@ func build_raw_report_rows(
 			"base_entry_count": int(base_entries_by_stamp.get(stamp_name_string, 0)),
 			"progress_sum": progress_sum,
 			"avg_progress_per_move": safe_div(progress_sum, float(move_count)),
-			"delta_attach_per_player_match": float(association.get("delta_attach_per_player_match", 0.0)),
+			"delta_affix_per_player_match": float(association.get("delta_affix_per_player_match", 0.0)),
 			"delta_moves_per_player_match": float(association.get("delta_moves_per_player_match", 0.0)),
 			"delta_progress_per_player_match": float(association.get("delta_progress_per_player_match", 0.0)),
 			"delta_captures_per_player_match": float(association.get("delta_captures_per_player_match", 0.0)),
 			"win_slot_count": int(association.get("win_slot_count", 0)),
 			"lose_slot_count": int(association.get("lose_slot_count", 0)),
-			"win_attach_sum": float(association.get("win_attach_sum", 0.0)),
-			"lose_attach_sum": float(association.get("lose_attach_sum", 0.0)),
+			"win_affix_sum": float(association.get("win_affix_sum", 0.0)),
+			"lose_affix_sum": float(association.get("lose_affix_sum", 0.0)),
 			"win_moves_sum": float(association.get("win_moves_sum", 0.0)),
 			"lose_moves_sum": float(association.get("lose_moves_sum", 0.0)),
 			"win_progress_sum": float(association.get("win_progress_sum", 0.0)),
@@ -287,15 +287,15 @@ func calculate_stamp_association(
 	stamp_name: String,
 	match_ids: Array[String],
 	winner_by_match: Dictionary,
-	attach_by_slot_stamp: Dictionary,
+	affix_by_slot_stamp: Dictionary,
 	move_by_slot_stamp: Dictionary,
 	progress_by_slot_stamp: Dictionary,
 	capture_by_slot_stamp: Dictionary
 ) -> Dictionary:
 	var win_count: int = 0
 	var lose_count: int = 0
-	var win_attach: float = 0.0
-	var lose_attach: float = 0.0
+	var win_affix: float = 0.0
+	var lose_affix: float = 0.0
 	var win_moves: float = 0.0
 	var lose_moves: float = 0.0
 	var win_progress: float = 0.0
@@ -308,26 +308,26 @@ func calculate_stamp_association(
 			var key: String = make_slot_key(match_id, player_id, stamp_name)
 			if int(winner_by_match.get(match_id, -1)) == player_id:
 				win_count += 1
-				win_attach += float(attach_by_slot_stamp.get(key, 0))
+				win_affix += float(affix_by_slot_stamp.get(key, 0))
 				win_moves += float(move_by_slot_stamp.get(key, 0))
 				win_progress += float(progress_by_slot_stamp.get(key, 0.0))
 				win_captures += float(capture_by_slot_stamp.get(key, 0))
 			else:
 				lose_count += 1
-				lose_attach += float(attach_by_slot_stamp.get(key, 0))
+				lose_affix += float(affix_by_slot_stamp.get(key, 0))
 				lose_moves += float(move_by_slot_stamp.get(key, 0))
 				lose_progress += float(progress_by_slot_stamp.get(key, 0.0))
 				lose_captures += float(capture_by_slot_stamp.get(key, 0))
 
 	return {
-		"delta_attach_per_player_match": safe_div(win_attach, float(win_count)) - safe_div(lose_attach, float(lose_count)),
+		"delta_affix_per_player_match": safe_div(win_affix, float(win_count)) - safe_div(lose_affix, float(lose_count)),
 		"delta_moves_per_player_match": safe_div(win_moves, float(win_count)) - safe_div(lose_moves, float(lose_count)),
 		"delta_progress_per_player_match": safe_div(win_progress, float(win_count)) - safe_div(lose_progress, float(lose_count)),
 		"delta_captures_per_player_match": safe_div(win_captures, float(win_count)) - safe_div(lose_captures, float(lose_count)),
 		"win_slot_count": win_count,
 		"lose_slot_count": lose_count,
-		"win_attach_sum": win_attach,
-		"lose_attach_sum": lose_attach,
+		"win_affix_sum": win_affix,
+		"lose_affix_sum": lose_affix,
 		"win_moves_sum": win_moves,
 		"lose_moves_sum": lose_moves,
 		"win_progress_sum": win_progress,
@@ -362,12 +362,12 @@ func add_stamp_values(rows: Array[Dictionary]) -> void:
 		)
 		var trend_score: float = 50.0 + (raw_score - 50.0) * usage_confidence
 		var ai_score_adjustment: float = clampf((trend_score - 50.0) * 2.0, -30.0, 30.0)
-		var ai_attach_score_adjustment: float = clampf((trend_score - 50.0) * 0.8, -12.0, 12.0)
+		var ai_affix_score_adjustment: float = clampf((trend_score - 50.0) * 0.8, -12.0, 12.0)
 		row["sample_confidence"] = usage_confidence
 		row["trend_score"] = trend_score
 		row["stamp_value"] = ai_score_adjustment
 		row["ai_score_adjustment"] = ai_score_adjustment
-		row["ai_attach_score_adjustment"] = ai_attach_score_adjustment
+		row["ai_affix_score_adjustment"] = ai_affix_score_adjustment
 		row["ai_value_multiplier"] = clampf(1.0 + ai_score_adjustment / 100.0, 0.70, 1.30)
 
 func format_report_rows(rows: Array[Dictionary]) -> Array[Dictionary]:
