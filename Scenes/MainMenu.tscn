@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/InputRebindDialog.tscn" id="13_input_rebind_dialog"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/GeneralSection.tscn" id="14_general_section"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/UISection.tscn" id="15_ui_section"]
+[ext_resource type="Shader" uid="uid://cc0ua2v4vaki6" path="res://Shaders/vignette.gdshader" id="16_vignette_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_lines"]
 shader = ExtResource("4_bg_line_shader")
@@ -47,6 +48,13 @@ shader_parameter/bump_strength = 2.5
 shader_parameter/light_strength = 0.55
 shader_parameter/contrast = 1.25
 shader_parameter/effect_opacity = 0.5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("16_vignette_shader")
+shader_parameter/vignette_color = Color(0, 0, 0, 1)
+shader_parameter/inner_radius = 0.5530000262675
+shader_parameter/outer_radius = 1.578000074955
+shader_parameter/intensity = 0.55
 
 [node name="MainMenu" type="Control" unique_id=683751200]
 layout_mode = 3
@@ -251,6 +259,18 @@ layer = 10
 
 [node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer" unique_id=1372048643]
 material = SubResource("ShaderMaterial_paper_texture")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VignetteLayer" type="CanvasLayer" parent="." unique_id=1167201498]
+layer = 11
+
+[node name="VignetteOverlay" type="ColorRect" parent="VignetteLayer" unique_id=1372048644]
+material = SubResource("ShaderMaterial_vignette")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

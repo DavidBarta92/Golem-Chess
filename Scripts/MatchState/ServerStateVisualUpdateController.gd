@@ -41,6 +41,14 @@ func finish(visual_context: Dictionary) -> void:
 	if !pending_respawn_arrival_animations.is_empty():
 		match_board.get_piece_respawn_fragment_coordinator().call_deferred("play_pending_edge_respawn_arrival_animations", pending_respawn_arrival_animations)
 
+	# Recompute the active-effects grid before the activation flash below, so
+	# an effect that both appears AND fires for the first time in the same
+	# sync already has a cell to flash. recent_effect_activations is passed
+	# in too so a persistent entry whose trigger fires on the same sync it
+	# leaves the active set (on_captured/on_expire) still flashes before it
+	# burns away instead of silently vanishing.
+	match_board.get_board_effect_icon_grid_controller().refresh_active_effects(visual_context.get("recent_effect_activations", []))
+
 	if bool(visual_context.get("should_play_post_state_animations", false)):
 		play_post_state_stamp_animations(visual_context)
 
@@ -70,6 +78,7 @@ func play_post_state_stamp_animations(visual_context: Dictionary) -> void:
 	else:
 		match_board.get_stamp_animation_controller().animate_recent_stamp_transfers(recent_stamp_transfers, previous_white_hand_names, current_white_hand_names, previous_black_hand_names, current_black_hand_names)
 	match_board.get_stamp_animation_controller().animate_recent_stamp_expirations(visual_context.get("stamp_expiration_events", []))
+	match_board.get_board_effect_icon_grid_controller().animate_recent_effect_activations(visual_context.get("recent_effect_activations", []))
 
 func reveal_hidden_last_move_arrow_for_game_over() -> void:
 	if match_board.current_last_move.is_empty() or bool(match_board.current_last_move.get("visible_to_enemy", true)):

@@ -17,6 +17,8 @@ static func clone_piece(piece: Piece) -> Piece:
 	cloned_piece.turns_remaining = piece.turns_remaining
 	cloned_piece.exhausted_this_turn = piece.exhausted_this_turn
 	cloned_piece.respawn_cooldown_turns = piece.respawn_cooldown_turns
+	cloned_piece.protection_turns_remaining = piece.protection_turns_remaining
+	cloned_piece.protection_skip_next_tick = piece.protection_skip_next_tick
 	return cloned_piece
 
 static func clone_game_state(source_state: GameStateData) -> GameStateData:
@@ -42,6 +44,7 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.recent_stamp_transfers = []
 	cloned_state.recent_stamp_expirations = []
 	cloned_state.recent_bomb_effects = []
+	cloned_state.recent_effect_activations = []
 	cloned_state.recent_pending_respawn_queues = []
 	cloned_state.recent_pending_respawn_arrivals = []
 	cloned_state.last_move = source_state.last_move.duplicate(true)
@@ -350,6 +353,7 @@ static func end_simulated_turn(game_state: GameStateData, player_id: int, board_
 	game_state.completed_turn_counts[player_id] = int(game_state.completed_turn_counts.get(player_id, 0)) + 1
 	game_state.switch_turn()
 	StampEffectResolver.tick_board_effects(game_state)
+	StampEffectResolver.tick_piece_protection_windows(game_state)
 
 static func clear_piece_exhaustion_for_player(game_state: GameStateData, player_id: int) -> void:
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)

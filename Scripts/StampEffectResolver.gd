@@ -5,7 +5,7 @@ const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const DEFAULT_MAX_HAND_SIZE: int = DeckManager.HAND_SIZE
 const DEFAULT_WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const DEFAULT_BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
-const BOARD_ZONE_EFFECT_TURNS: int = 1  # invalid_squares/frozen_squares always last exactly one round, independent of stamp.duration
+const BOARD_ZONE_EFFECT_TURNS: int = 3  # invalid_squares/frozen_squares (and the invisible_to_enemy/uncapturable protection window) always last exactly this many turn-ticks -- creator's turn, opponent's turn, creator's turn, opponent's turn, then expires -- independent of stamp.duration
 
 static func resolve_trigger(trigger: String, game_state: GameStateData, context: Dictionary, board_size: int = DEFAULT_BOARD_SIZE) -> bool:
 	if game_state == null or game_state.game_over:
@@ -23,6 +23,8 @@ static func resolve_trigger(trigger: String, game_state: GameStateData, context:
 	if game_state.match_logger != null:
 		effect_log_context = game_state.match_logger.create_effect_context(game_state, trigger, player_id, stamp, source_pos, context)
 
+	register_effect_activation(game_state, player_id, stamp.stamp_name, source_pos)
+
 	var result: Dictionary = {}
 	match stamp.effect_type:
 		StampEffect.TYPE_STEAL_STAMP:
@@ -39,6 +41,9 @@ static func resolve_trigger(trigger: String, game_state: GameStateData, context:
 			result = resolve_board_zone_effect(game_state, player_id, stamp, source_pos, board_size, effect_color)
 		StampEffect.TYPE_BOMB:
 			result = resolve_bomb(game_state, player_id, stamp, source_pos, board_size, effect_color)
+		StampEffect.TYPE_INVISIBLE_TO_ENEMY, StampEffect.TYPE_UNCAPTURABLE:
+			if source_piece != null:
+				source_piece.start_protection_window(BOARD_ZONE_EFFECT_TURNS)
 		StampEffect.TYPE_INCREASE_OWN_DURATIONS:
 			result = resolve_duration_adjustment(game_state, player_id, stamp, source_piece, source_pos, board_size, player_id, 1)
 		StampEffect.TYPE_INCREASE_ENEMY_DURATIONS:
@@ -346,6 +351,7 @@ static func resolve_board_zone_effect(game_state: GameStateData, player_id: int,
 		"squares": squares,
 		"turns_remaining": BOARD_ZONE_EFFECT_TURNS,
 		"skip_next_tick": true,
+		"source_pos": [source_pos.x, source_pos.y],
 	})
 	DebugLog.info("Board effect added: type=%s, squares=%d" % [stamp.effect_type, squares.size()])
 	return {
@@ -429,6 +435,16 @@ static func register_bomb_effect(game_state: GameStateData, player_id: int, stam
 		"source_pos": source_pos,
 		"squares": squares,
 		"affected_positions": affected_positions,
+	})
+
+static func register_effect_activation(game_state: GameStateData, player_id: int, stamp_name: String, source_pos: Vector2) -> void:
+	if game_state == null or stamp_name.is_empty():
+		return
+
+	game_state.recent_effect_activations.append({
+		"player_id": player_id,
+		"stamp_name": stamp_name,
+		"source_pos": source_pos,
 	})
 
 static func resolve_self_duration_adjustment(game_state: GameStateData, player_id: int, source_piece: Piece, source_pos: Vector2, board_size: int, delta: int) -> Dictionary:
@@ -762,6 +778,16 @@ static func tick_board_effects(game_state: GameStateData) -> void:
 
 	game_state.board_effects = remaining_effects
 
+# Ticks every piece's protection window (invisible_to_enemy/uncapturable) the
+# same way tick_board_effects ages zone effects -- once per end_current_turn,
+# regardless of whether the piece itself moved. See
+# Piece.tick_protection_window() / BOARD_ZONE_EFFECT_TURNS.
+static func tick_piece_protection_windows(game_state: GameStateData) -> void:
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null:
+			piece.tick_protection_window()
+
 static func is_square_invalid(board_effects: Array, pos: Vector2, player_id: int = -1) -> bool:
 	return has_square_effect(board_effects, StampEffect.TYPE_INVALID_SQUARES, pos, player_id)
 
@@ -801,7 +827,7 @@ static func is_piece_visible_to_player(piece: Piece, viewer_player_id: int) -> b
 	return !piece_has_affixed_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
 
 static func piece_has_affixed_effect(piece: Piece, effect_type: String) -> bool:
-	return piece != null && piece.affixed_stamp != null && piece.affixed_stamp.effect_type == effect_type
+	return piece != null && piece.affixed_stamp != null && piece.affixed_stamp.effect_type == effect_type && piece.has_active_protection()
 
 static func count_symbol_pieces_for_player(game_state: GameStateData, player_id: int, symbol: String) -> int:
 	if game_state == null or symbol.strip_edges().is_empty():

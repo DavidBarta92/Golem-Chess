@@ -134,8 +134,15 @@ func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> v
 
 	var owner_color: int = piece.color
 	var expiring_piece_texture: Texture2D = match_board.get_piece_texture_resolver().get_piece_visual_texture(piece)
+	var old_duration: int = piece.turns_remaining
 	var expired_stamp: Stamp = piece.use_turn()
 	if expired_stamp == null:
+		# Infinite-duration stamps (turns_remaining == -1) never change here,
+		# so only a genuine decrement (still affixed, not yet expired) gets
+		# the animation -- an actual expiry plays queue_stamp_expire_animation
+		# below instead, so the two don't overlap.
+		if piece.affixed_stamp != null and piece.turns_remaining != old_duration and !match_board.should_skip_visual_animations():
+			match_board.play_duration_change_animation(piece_pos, old_duration, piece.turns_remaining)
 		return
 
 	match_board.queue_piece_revert_animation(piece_pos, expiring_piece_texture)

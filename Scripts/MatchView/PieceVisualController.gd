@@ -228,6 +228,11 @@ func remove_shadow(holder: Sprite2D) -> void:
 	if existing_shadow != null:
 		existing_shadow.free()
 
+func get_shadow_light(holder: Sprite2D) -> PointLight2D:
+	if holder == null or !is_instance_valid(holder):
+		return null
+	return holder.get_node_or_null(piece_shadow_name) as PointLight2D
+
 func apply_light_occluder(holder: Sprite2D, has_piece: bool) -> void:
 	remove_light_occluder(holder)
 	if holder == null or !is_instance_valid(holder) or holder.texture == null or !has_piece:

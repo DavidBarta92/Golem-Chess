@@ -54,10 +54,12 @@ func play_piece_stamp_affix_animation(piece_position: Vector2, stamp: Stamp, sta
 		match_board.refresh_piece_holder_visual(holder, piece_position)
 
 	SFXManager.play("attach_stamp")
+	var reveal_visual: StampVisual = match_board.get_stamp_animation_controller().play_stamp_affix_reveal(stamp, piece.color)
 	await match_board.get_piece_effect_animator().play_affix_sequence(holder, piece_position, affixed_texture, {
 		"post_morph_callback": Callable(self, "apply_visible_piece_attach_morph_result").bind(piece_position, affixed_texture),
 		"disable_holder_occluder": true,
 	})
+	match_board.get_stamp_animation_controller().finish_stamp_affix_reveal(reveal_visual)
 
 func apply_visible_piece_attach_morph_result(holder: Sprite2D, piece_position: Vector2, affixed_texture: Texture2D) -> void:
 	if match_board == null or holder == null or !is_instance_valid(holder):
@@ -182,6 +184,18 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 		capture_placeholder.queue_free()
 	if move_piece_color != 0:
 		match_board.piece_moved.emit(move_from_pos, move_to_pos, move_piece_color)
+
+	# A stamp that expired as part of this move (turns_remaining hit 0) gets
+	# its own expire animation elsewhere instead -- only a genuine decrement
+	# that the piece is still carrying afterward gets this one, same as the
+	# local-move path in LocalMoveFlowController.consume_moved_piece_duration_locally().
+	if state_piece_move_animation.has("old_duration"):
+		var old_duration: int = int(state_piece_move_animation.get("old_duration", 0))
+		var new_duration: int = int(state_piece_move_animation.get("new_duration", 0))
+		if old_duration != new_duration:
+			var moved_piece: Piece = match_board.piece_objects.get(move_to_pos, null) as Piece
+			if moved_piece != null and moved_piece.affixed_stamp != null:
+				match_board.play_duration_change_animation(move_to_pos, old_duration, new_duration)
 
 func should_play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool = true) -> bool:
 	if match_board == null:

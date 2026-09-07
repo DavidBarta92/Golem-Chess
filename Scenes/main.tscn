@@ -16,6 +16,7 @@
 [ext_resource type="Script" uid="uid://ddoy1bnauv504" path="res://Scenes/codex_visual.gd" id="14_codex"]
 [ext_resource type="Shader" uid="uid://cq2wpk53gbihw" path="res://Shaders/paper_texture.gdshader" id="15_paper_texture_shader"]
 [ext_resource type="Script" uid="uid://bk8rxwxvuix45" path="res://Scenes/opponent_codex_visual.gd" id="16_opponent_codex"]
+[ext_resource type="Shader" uid="uid://cc0ua2v4vaki6" path="res://Shaders/vignette.gdshader" id="17_vignette_shader"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_h1bgf"]
 texture = ExtResource("1_ynf5e")
@@ -101,6 +102,13 @@ shader_parameter/bump_strength = 2.5
 shader_parameter/light_strength = 0.55
 shader_parameter/contrast = 1.25
 shader_parameter/effect_opacity = 0.5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("17_vignette_shader")
+shader_parameter/vignette_color = Color(0, 0, 0, 1)
+shader_parameter/inner_radius = 0.5600000266
+shader_parameter/outer_radius = 1.578000074955
+shader_parameter/intensity = 0.55
 
 [node name="Main" type="Node2D" unique_id=806867114]
 script = ExtResource("1_hptm8")
@@ -357,6 +365,18 @@ layer = 10
 
 [node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer" unique_id=-1283521715]
 material = SubResource("ShaderMaterial_paper_texture")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VignetteLayer" type="CanvasLayer" parent="." unique_id=-1283521714]
+layer = 11
+
+[node name="VignetteOverlay" type="ColorRect" parent="VignetteLayer" unique_id=-1283521713]
+material = SubResource("ShaderMaterial_vignette")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

@@ -74,6 +74,7 @@ func get_piece_visual_state_snapshot() -> Dictionary:
 			"stamp_name": piece.affixed_stamp.stamp_name if piece.affixed_stamp != null else "",
 			"texture": get_piece_visual_texture(piece),
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
+			"turns_remaining": piece.turns_remaining,
 		}
 
 	return snapshot

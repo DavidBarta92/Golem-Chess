@@ -36,7 +36,7 @@ func ready() -> void:
 	match_board.get_board_environment_controller().create_board_shader_overlay()
 	match_board.setup_player_stamp_hands()
 	match_board.create_hover_piece_ui()
-	match_board.get_hidden_stamp_preview_controller().create_ui()
+	match_board.get_board_effect_icon_grid_controller().create_ui()
 	match_board.get_turn_hud_controller().create_result_ui()
 	match_board.get_deck_counter_controller().create_deck_count_ui()
 	match_board.get_deck_counter_controller().create_deck_counter_ui()

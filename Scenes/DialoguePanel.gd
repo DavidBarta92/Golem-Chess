@@ -5,11 +5,6 @@ signal continue_requested
 
 const PORTRAIT_VIEW = preload("res://Scenes/PortraitView.tscn")
 const TYPEWRITER_CHARS_PER_SECOND: float = 42.0
-const DIALOGUE_ROOT_LEFT: float = 24.0
-const DIALOGUE_ROOT_RIGHT: float = 392.0
-const DIALOGUE_ROOT_TOP: float = -150.0
-const DIALOGUE_ROOT_BOTTOM: float = 150.0
-const PROFILE_ROOT_BOTTOM: float = 20.0
 const DIALOGUE_LINE_WIDTH: float = 1.5
 const DIALOGUE_LINE_MIN_HEIGHT: float = 14.0
 const DIALOGUE_LINE_DRAW_PIXELS_PER_SECOND: float = 420.0
@@ -106,10 +101,6 @@ func show_line(speaker: String, text: String, portrait = null, allow_continue: b
 func set_dialogue_content_visible(show_content: bool) -> void:
 	text_panel.visible = show_content
 	button_row.visible = show_content
-	dialogue_root.offset_left = DIALOGUE_ROOT_LEFT
-	dialogue_root.offset_right = DIALOGUE_ROOT_RIGHT
-	dialogue_root.offset_top = DIALOGUE_ROOT_TOP
-	dialogue_root.offset_bottom = DIALOGUE_ROOT_BOTTOM if show_content else PROFILE_ROOT_BOTTOM
 	dialogue_root.mouse_filter = Control.MOUSE_FILTER_STOP if show_content else Control.MOUSE_FILTER_IGNORE
 
 func update_portrait(speaker: String, portrait) -> void:

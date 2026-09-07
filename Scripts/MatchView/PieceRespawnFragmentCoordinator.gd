@@ -147,7 +147,7 @@ func play_piece_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, pie
 	if match_board.piece_effects_node == null:
 		return
 
-	play_capture_flash_animation(source_pos)
+	play_capture_impact_effects(source_pos)
 
 	var resolved_fragment_group: String = fragment_group
 	if resolved_fragment_group.is_empty():
@@ -173,14 +173,14 @@ func play_piece_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, pie
 	elif can_return_fragments:
 		play_piece_shatter_return_fragments(source_pos, respawn_pos, fragment_textures, resolved_fragment_group)
 
-func play_capture_flash_animation(board_pos: Vector2) -> void:
+func play_capture_impact_effects(board_pos: Vector2) -> void:
 	if !match_board.is_valid_position(board_pos):
 		return
 	if match_board.piece_effects_node == null or !is_instance_valid(match_board.piece_effects_node):
 		match_board.create_piece_effects_node()
 	if match_board.piece_effects_node == null:
 		return
-	match_board.get_piece_effect_animator().play_capture_flash(board_pos)
+	match_board.get_piece_effect_animator().play_capture_sparkle(board_pos)
 
 func get_piece_shatter_fragment_textures(fragment_group: String) -> Array[Texture2D]:
 	var textures: Array[Texture2D] = []

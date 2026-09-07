@@ -13,7 +13,6 @@ const CELL_WIDTH: int = BoardConfig.CELL_WIDTH
 
 const MATCH_BOARD_CONTROLLER_REGISTRY_SCRIPT = preload("res://Scripts/MatchView/MatchBoardControllerRegistry.gd")
 const RESPONSIVE_REFERENCE_VIEWPORT_SIZE = Vector2(1280.0, 720.0)
-const HOVER_DESCRIPTION_STAMP_BASE_TEXTURE = preload("res://Assets/stamp_base.svg")
 
 const BOARD_TILE_TEXTURE = preload("res://Assets/board_tile.svg")
 const BOARD_TILE_BASE_WHITE_TEXTURE = preload("res://Assets/board_tile_base_white.svg")
@@ -29,7 +28,6 @@ const GOLEM_FRAGMENT_TOP_RIGHT_TEXTURE = preload("res://Assets/golem_fragment_to
 const GOLEM_FRAGMENT_BOTTOM_LEFT_TEXTURE = preload("res://Assets/golem_fragment_bottom_left.svg")
 const GOLEM_FRAGMENT_BOTTOM_CENTER_TEXTURE = preload("res://Assets/golem_fragment_bottom_center.svg")
 const GOLEM_FRAGMENT_BOTTOM_RIGHT_TEXTURE = preload("res://Assets/golem_fragment_bottom_right.svg")
-const CAPTURE_FLASH_TEXTURE = preload("res://Assets/stamp_pattern_capture_only.svg")
 const BOMB_WARNING_TEXTURE = preload("res://Assets/stamp_pattern_bomb.svg")
 
 const DECK_COUNTER_DIGITS_TEXTURE = preload("res://Assets/deck_counter_digits.png")
@@ -45,8 +43,8 @@ const PIECE_ATTACH_RAYS_SHADER = preload("res://Shaders/piece_attach_rays.gdshad
 const PIECE_TEXTURE_MORPH_SHADER = preload("res://Shaders/piece_texture_morph.gdshader")
 const PIECE_INVISIBILITY_REFRACT_SHADER = preload("res://Shaders/piece_invisibility_refract.gdshader")
 const PIECE_EXPIRE_DISSOLVE_SHADER = preload("res://Shaders/piece_expire_dissolve.gdshader")
+const PIECE_CAPTURE_SPARKLE_SHADER = preload("res://Shaders/piece_capture_sparkle.gdshader")
 const MOVE_OPTION_DOT_SHADER = preload("res://Shaders/move_option_dot.gdshader")
-const HIDDEN_STAMP_INVISIBILITY_SHADER = preload("res://Shaders/hidden_stamp_invisibility.gdshader")
 const BOARD_KUWAHARA_SHADER = preload("res://Shaders/board_kuwahara.gdshader")
 const PIECE_KUWAHARA_SHADER = preload("res://Shaders/piece_kuwahara.gdshader")
 const MOVE_OPTION_DOT_CELL_WIDTH_RATIO: float = 0.58
@@ -56,10 +54,6 @@ const MOVE_OPTION_DOT_SHADER_EDGE_SOFTNESS: float = 0.85
 const MOVE_OPTION_DOT_SHADER_PULSE_MIN_SCALE: float = 0.88
 const MOVE_OPTION_DOT_SHADER_PULSE_MAX_SCALE: float = 1.18
 const MOVE_OPTION_DOT_SHADER_COLOR = Color(1.0, 0.94, 0.78, 1.0)
-const HIDDEN_STAMP_INVISIBILITY_RADIUS: float = 0.32
-const HIDDEN_STAMP_INVISIBILITY_EFFECT_CONTROL: float = 0.76
-const HIDDEN_STAMP_INVISIBILITY_BURN_SPEED: float = 0.0
-const HIDDEN_STAMP_INVISIBILITY_SHAPE: float = 0.2
 const BOARD_VISUAL_SCALE: float = 1.08
 # Adjust these values to tune the board-only perspective tilt.
 const BOARD_PERSPECTIVE_ENABLED: bool = true
@@ -158,21 +152,19 @@ const STAMP_UI_GAP = 10
 const TOP_STAMP_HAND_MARGIN = -28
 const BOTTOM_STAMP_HAND_MARGIN = 34
 const HOVER_STAMP_MARGIN = 24
+const HOVER_STAMP_EXTRA_LEFT_OFFSET: float = 16.0
 const HOVER_STAMP_PREVIEW_SCALE: float = 0.82
 const HOVER_STAMP_VERTICAL_OFFSET: float = 54.0
 const HOVER_STAMP_ROTATION_DEGREES: float = -4.0
-const HOVER_STAMP_VISUAL_EDGE_OVERLAP: float = 12.0
 const HOVER_PIECE_PREVIEW_SIZE = Vector2(188, 224)
 const HOVER_PIECE_PREVIEW_VERTICAL_OFFSET: float = -78.0
 const HOVER_DESCRIPTION_TEXT_MARGIN = Vector2(22, 30)
-const HOVER_DESCRIPTION_FRAME_EDGE_COLOR = Color(0.12, 0.085, 0.055, 0.62)
-const HOVER_DESCRIPTION_FRAME_EDGE_THICKNESS: float = 2.0
-const HOVER_DESCRIPTION_FRAME_EDGE_HORIZONTAL_INSET: float = 18.0
-const HOVER_DESCRIPTION_FRAME_EDGE_VERTICAL_INSET: float = 19.0
-const HIDDEN_STAMP_MARGIN = 24
-const HIDDEN_STAMP_GAP = 10
-const HIDDEN_STAMP_SCALE = 0.70 * 0.75
-const HIDDEN_STAMP_PREVIEW_ALPHA: float = 0.70
+const HOVER_DESCRIPTION_PANEL_GAP: float = 8.0
+const HOVER_DESCRIPTION_PANEL_WIDTH: float = 271.6
+const HOVER_DESCRIPTION_PANEL_HEIGHT: float = 229.0
+const HOVER_DURATION_SHADOW_COLOR: Color = Color(0.070588, 0.070588, 0.474510, 0.9)
+const HOVER_DURATION_SHADOW_BLUR: float = 1.6
+const HOVER_DURATION_OUTLINE_SIZE: int = 3
 const BOARD_MARKER_LINE_WIDTH = 1.8
 const STAMP_AFFIX_TARGET_FILL_COLOR = Color(1.0, 0.92, 0.58, 0.24)
 const STAMP_AFFIX_TARGET_FILL_INSET: float = 1.0
@@ -182,6 +174,8 @@ const STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION: float = 0.105
 const SELECTED_PIECE_GLOW_NAME = "SelectedPieceGlow"
 const SELECTED_PIECE_GLOW_Z_INDEX = 24
 const SELECTED_PIECE_GLOW_STRENGTH: float = 1.0
+const PIECE_HOVER_DIM_COLOR: Color = Color(0.68, 0.68, 0.68, 1.0)
+const PIECE_HOVER_DIM_TWEEN_DURATION: float = 0.18
 const PIECE_FREEZE_CRACK_NAME = "PieceFreezeCrack"
 const PIECE_FREEZE_CRACK_Z_INDEX = 0
 const PIECE_FREEZE_CRACK_DURATION: float = 1.5
@@ -341,12 +335,18 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @export var piece_shatter_avoid_occupied_cells: bool = true
 @export_range(0.0, 0.45, 0.01) var piece_shatter_route_jitter_ratio: float = 0.12
 
-@export_group("Capture Flash")
-@export var capture_flash_color: Color = Color(1.0, 0.92, 0.56, 1.0)
-@export_range(0.05, 1.5, 0.01) var capture_flash_duration: float = 0.75
-@export_range(0.2, 5.0, 0.05) var capture_flash_size_ratio: float = 1.95
-@export_range(0.05, 1.0, 0.01) var capture_flash_start_scale_ratio: float = 0.16
-@export_range(0.0, 180.0, 1.0) var capture_flash_rotation_degrees: float = 22.0
+@export_group("Capture Sparkle")
+@export var capture_sparkle_color: Color = Color(1.0, 0.95, 0.78, 1.0)
+@export_range(0.05, 2.0, 0.01) var capture_sparkle_duration: float = 0.4
+@export_range(0.05, 1.0, 0.01) var capture_sparkle_fade_out_ratio: float = 0.65
+@export_range(0.2, 6.0, 0.05) var capture_sparkle_size_ratio: float = 2.15
+@export_range(100.0, 10000.0, 50.0) var capture_sparkle_shader_scale: float = 10000.0
+@export_range(0.0, 1.0, 0.01) var capture_sparkle_decay_magnitude: float = 0.06
+@export_range(-20.0, 20.0, 0.05) var capture_sparkle_rotate_speed: float = 2.25
+@export_range(0.0, 5.0, 0.01) var capture_sparkle_time_speed: float = 2.76
+@export_range(0.0, 10.0, 0.01) var capture_sparkle_frequency_base: float = 1.0
+@export_range(0.0, 10.0, 0.01) var capture_sparkle_frequency_disturbance_scale: float = 0.16
+@export_range(0.0, 20.0, 0.1) var capture_sparkle_circle_ratio: float = 0.0
 
 @export_group("Piece Movement")
 @export var piece_move_animation_enabled: bool = true
@@ -414,6 +414,7 @@ var state : bool = false
 var moves = []
 var selected_piece : Vector2
 var hovered_piece : Vector2 = Vector2(-1, -1)
+var hover_highlighted_piece : Vector2 = Vector2(-1, -1)
 var white_stamp_deck: Array[String] = []
 var black_stamp_deck: Array[String] = []
 var white_stamp_hand: Array[Stamp] = []
@@ -455,7 +456,7 @@ var hover_stamp_preview: StampVisual
 var hover_piece_preview: TextureRect
 var hover_duration_label: Label
 var hover_description_panel: Control
-var hover_description_label: Label
+var hover_description_label: RichTextLabel
 var has_received_server_state: bool = false
 var quit_confirmation_dialog: ConfirmationDialog
 var white_deck_count_override: int = -1
@@ -625,8 +626,8 @@ func get_piece_effect_flow_controller():
 func get_freeze_effect_animator():
 	return get_controller_registry().get_freeze_effect_animator()
 
-func get_hidden_stamp_preview_controller():
-	return get_controller_registry().get_hidden_stamp_preview_controller()
+func get_board_effect_icon_grid_controller():
+	return get_controller_registry().get_board_effect_icon_grid_controller()
 
 func get_stamp_hud_controller():
 	return get_controller_registry().get_stamp_hud_controller()
@@ -671,11 +672,20 @@ func set_opponent_codex_turn_active(active: bool) -> void:
 func get_stamp_hover_preview_controller():
 	return get_controller_registry().get_stamp_hover_preview_controller()
 
+func get_piece_duration_change_animator():
+	return get_controller_registry().get_piece_duration_change_animator()
+
+func play_duration_change_animation(board_pos: Vector2, old_duration: int, new_duration: int) -> void:
+	get_piece_duration_change_animator().play(board_pos, old_duration, new_duration)
+
 func get_stamp_interaction_controller():
 	return get_controller_registry().get_stamp_interaction_controller()
 
 func get_stamp_animation_controller():
 	return get_controller_registry().get_stamp_animation_controller()
+
+func is_stamp_affix_reveal_active() -> bool:
+	return get_stamp_animation_controller().is_stamp_affix_reveal_active()
 
 func get_visible_viewport_size() -> Vector2:
 	return get_viewport().get_visible_rect().size
@@ -982,11 +992,7 @@ func show_hover_stamp_description(stamp: Stamp) -> void:
 		return
 
 	hide_hover_piece_details()
-	var description: String = stamp.description.strip_edges()
-	if description.is_empty():
-		return
-
-	get_stamp_hover_preview_controller().show_description(description)
+	get_stamp_hover_preview_controller().show_stamp_only(stamp)
 
 func can_exchange_stamp_locally(owner_color: int) -> bool:
 	return get_local_stamp_action_controller().can_exchange_stamp_locally(owner_color)
@@ -1154,6 +1160,7 @@ func show_hover_piece_details(board_pos: Vector2):
 
 func hide_hover_piece_details():
 	get_match_input_controller().hide_hover_piece_details()
+	clear_hover_highlighted_piece()
 
 func update_hover_duration_label_position():
 	get_match_input_controller().update_hover_duration_label_position()
@@ -1226,6 +1233,18 @@ func remove_selected_piece_glow(holder: Sprite2D) -> void:
 func update_selected_piece_glow() -> void:
 	get_piece_display_controller().update_selected_piece_glow()
 
+func set_hover_highlighted_piece(board_pos: Vector2) -> void:
+	if hover_highlighted_piece == board_pos:
+		return
+	hover_highlighted_piece = board_pos
+	update_piece_hover_dim()
+
+func clear_hover_highlighted_piece() -> void:
+	set_hover_highlighted_piece(INVALID_BOARD_POS)
+
+func update_piece_hover_dim() -> void:
+	get_piece_display_controller().update_piece_hover_dim()
+
 func apply_piece_exhausted_material(holder: Sprite2D, board_pos: Vector2) -> void:
 	get_piece_display_controller().apply_piece_exhausted_material(holder, board_pos)
 
@@ -1295,7 +1314,7 @@ func can_control_current_turn() -> bool:
 		return GameConfig.is_singleplayer or tutorial_mode_active
 	return side == white
 
-func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, player_codex_state: Dictionary = {}, hidden_stamps: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_stamp_transfers: Array = [], recent_stamp_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}, viewer_player_id: int = -1, turn_action_state: Dictionary = {}, player_clock_seconds: Dictionary = {}):
+func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary, current_turn: int, server_game_over: bool = false, winner_player: int = -1, player_deck_sizes: Dictionary = {}, player_codex_state: Dictionary = {}, hidden_stamps: Array = [], player_base_fields: Dictionary = {}, board_effects: Array = [], player_names: Dictionary = {}, recent_stamp_transfers: Array = [], recent_stamp_expirations: Array = [], recent_bomb_effects: Array = [], recent_pending_respawn_queues: Array = [], recent_pending_respawn_arrivals: Array = [], last_move: Dictionary = {}, player_portraits: Dictionary = {}, viewer_player_id: int = -1, turn_action_state: Dictionary = {}, player_clock_seconds: Dictionary = {}, recent_effect_activations: Array = []):
 	get_server_state_update_controller().update_from_server_state(
 		pieces_data,
 		player_hands,
@@ -1317,7 +1336,8 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 		player_portraits,
 		viewer_player_id,
 		turn_action_state,
-		player_clock_seconds
+		player_clock_seconds,
+		recent_effect_activations
 	)
 
 func should_skip_visual_animations() -> bool:

@@ -169,6 +169,7 @@ func end_current_turn_locally() -> void:
 	var ending_player_id: int = match_board.get_player_id_for_color(ending_color)
 	match_board.get_stamp_hand_state_controller().clear_exchanged_stamp_names_this_turn(ending_color)
 	match_board.get_local_state_mutator().tick_board_effects()
+	match_board.get_local_state_mutator().tick_piece_protection_windows()
 	match_board.get_local_state_mutator().clear_piece_exhaustion_for_color(ending_color)
 	match_board.completed_turn_counts[ending_player_id] = int(match_board.completed_turn_counts.get(ending_player_id, 0)) + 1
 	match_board.white = !match_board.white

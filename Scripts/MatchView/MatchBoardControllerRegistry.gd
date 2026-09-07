@@ -29,10 +29,11 @@ const PIECE_DISPLAY_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/PieceDi
 const PIECE_EFFECT_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/PieceEffectAnimator.gd")
 const PIECE_EFFECT_FLOW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/PieceEffectFlowController.gd")
 const FREEZE_EFFECT_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/FreezeEffectAnimator.gd")
-const HIDDEN_STAMP_PREVIEW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/HiddenStampPreviewController.gd")
+const BOARD_EFFECT_ICON_GRID_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/BoardEffectIconGridController.gd")
 const MATCH_STAMP_HUD_SCRIPT = preload("res://Scripts/MatchView/MatchStampHud.gd")
 const MATCH_CODEX_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchCodexController.gd")
 const STAMP_HOVER_PREVIEW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampHoverPreviewController.gd")
+const PIECE_DURATION_CHANGE_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/PieceDurationChangeAnimator.gd")
 const STAMP_INTERACTION_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampInteractionController.gd")
 const STAMP_ANIMATION_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampAnimationController.gd")
 const TURN_HUD_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/TurnHudController.gd")
@@ -70,10 +71,11 @@ var piece_display_controller
 var piece_effect_animator
 var piece_effect_flow_controller
 var freeze_effect_animator
-var hidden_stamp_preview_controller
+var board_effect_icon_grid_controller
 var stamp_hud_controller
 var match_codex_controller
 var stamp_hover_preview_controller
+var piece_duration_change_animator
 var stamp_interaction_controller
 var stamp_animation_controller
 var deck_counter_controller
@@ -746,6 +748,9 @@ func sync_piece_display_controller() -> void:
 		"selected_piece_glow_name": match_board.SELECTED_PIECE_GLOW_NAME,
 		"selected_piece_glow_z_index": match_board.SELECTED_PIECE_GLOW_Z_INDEX,
 		"selected_piece_glow_strength": match_board.SELECTED_PIECE_GLOW_STRENGTH,
+		"piece_hover_dim_color": match_board.PIECE_HOVER_DIM_COLOR,
+		"piece_hover_dim_tween_duration": match_board.PIECE_HOVER_DIM_TWEEN_DURATION,
+		"piece_shadow_light_energy": match_board.PIECE_SHADOW_LIGHT_ENERGY,
 		"invalid_board_pos": match_board.INVALID_BOARD_POS,
 	})
 
@@ -777,13 +782,19 @@ func sync_piece_effect_animator() -> void:
 		"piece_effect_light_receive_mask": match_board.PIECE_EFFECT_LIGHT_RECEIVE_MASK,
 		"piece_light_occluder_mask": match_board.PIECE_LIGHT_OCCLUDER_MASK,
 		"flipped_view": match_board.side != null && !match_board.side,
-		"capture_flash_texture": match_board.CAPTURE_FLASH_TEXTURE,
-		"capture_flash_color": match_board.capture_flash_color,
-		"capture_flash_duration": match_board.capture_flash_duration,
-		"capture_flash_size_ratio": match_board.capture_flash_size_ratio,
-		"capture_flash_start_scale_ratio": match_board.capture_flash_start_scale_ratio,
-		"capture_flash_rotation_degrees": match_board.capture_flash_rotation_degrees,
 		"default_piece_visual_height": match_board.DEFAULT_PIECE_VISUAL_HEIGHT,
+		"piece_capture_sparkle_shader": match_board.PIECE_CAPTURE_SPARKLE_SHADER,
+		"capture_sparkle_color": match_board.capture_sparkle_color,
+		"capture_sparkle_duration": match_board.capture_sparkle_duration,
+		"capture_sparkle_fade_out_ratio": match_board.capture_sparkle_fade_out_ratio,
+		"capture_sparkle_size_ratio": match_board.capture_sparkle_size_ratio,
+		"capture_sparkle_shader_scale": match_board.capture_sparkle_shader_scale,
+		"capture_sparkle_decay_magnitude": match_board.capture_sparkle_decay_magnitude,
+		"capture_sparkle_rotate_speed": match_board.capture_sparkle_rotate_speed,
+		"capture_sparkle_time_speed": match_board.capture_sparkle_time_speed,
+		"capture_sparkle_frequency_base": match_board.capture_sparkle_frequency_base,
+		"capture_sparkle_frequency_disturbance_scale": match_board.capture_sparkle_frequency_disturbance_scale,
+		"capture_sparkle_circle_ratio": match_board.capture_sparkle_circle_ratio,
 		"bomb_warning_texture": match_board.BOMB_WARNING_TEXTURE,
 		"bomb_warning_color": match_board.bomb_warning_color,
 		"bomb_warning_duration": match_board.bomb_warning_duration,
@@ -930,35 +941,22 @@ func get_freeze_effect_animator():
 	initialize_freeze_effect_animator()
 	return freeze_effect_animator
 
-func initialize_hidden_stamp_preview_controller() -> void:
-	if hidden_stamp_preview_controller == null:
-		hidden_stamp_preview_controller = HIDDEN_STAMP_PREVIEW_CONTROLLER_SCRIPT.new()
-	sync_hidden_stamp_preview_controller()
+func initialize_board_effect_icon_grid_controller() -> void:
+	if board_effect_icon_grid_controller == null:
+		board_effect_icon_grid_controller = BOARD_EFFECT_ICON_GRID_CONTROLLER_SCRIPT.new()
+	sync_board_effect_icon_grid_controller()
 
-func sync_hidden_stamp_preview_controller() -> void:
-	if hidden_stamp_preview_controller == null:
+func sync_board_effect_icon_grid_controller() -> void:
+	if board_effect_icon_grid_controller == null:
 		return
-	hidden_stamp_preview_controller.configure({
+	board_effect_icon_grid_controller.configure({
+		"match_board": match_board,
 		"canvas_layer": match_board.canvas_layer,
-		"stamp_visual_scene": STAMP_VISUAL,
-		"stamp_ui_size": match_board.STAMP_UI_SIZE,
-		"hidden_stamp_margin": match_board.HIDDEN_STAMP_MARGIN,
-		"hidden_stamp_gap": match_board.HIDDEN_STAMP_GAP,
-		"hidden_stamp_scale": match_board.HIDDEN_STAMP_SCALE,
-		"hidden_stamp_preview_alpha": match_board.HIDDEN_STAMP_PREVIEW_ALPHA,
-		"board_size": match_board.BOARD_SIZE,
-		"cell_width": match_board.CELL_WIDTH,
-		"hidden_stamp_invisibility_shader": match_board.HIDDEN_STAMP_INVISIBILITY_SHADER,
-		"hidden_stamp_invisibility_radius": match_board.HIDDEN_STAMP_INVISIBILITY_RADIUS,
-		"hidden_stamp_invisibility_effect_control": match_board.HIDDEN_STAMP_INVISIBILITY_EFFECT_CONTROL,
-		"hidden_stamp_invisibility_burn_speed": match_board.HIDDEN_STAMP_INVISIBILITY_BURN_SPEED,
-		"hidden_stamp_invisibility_shape": match_board.HIDDEN_STAMP_INVISIBILITY_SHAPE,
-		"board_screen_scale_provider": Callable(match_board, "get_board_screen_scale"),
 	})
 
-func get_hidden_stamp_preview_controller():
-	initialize_hidden_stamp_preview_controller()
-	return hidden_stamp_preview_controller
+func get_board_effect_icon_grid_controller():
+	initialize_board_effect_icon_grid_controller()
+	return board_effect_icon_grid_controller
 
 func initialize_stamp_hud_controller() -> void:
 	if stamp_hud_controller == null:
@@ -1012,24 +1010,46 @@ func sync_stamp_hover_preview_controller() -> void:
 		"canvas_layer": match_board.canvas_layer,
 		"stamp_visual_scene": STAMP_VISUAL,
 		"stamp_ui_size": match_board.STAMP_UI_SIZE,
-		"stamp_base_texture": match_board.HOVER_DESCRIPTION_STAMP_BASE_TEXTURE,
 		"hover_stamp_margin": match_board.HOVER_STAMP_MARGIN,
+		"hover_stamp_extra_left_offset": match_board.HOVER_STAMP_EXTRA_LEFT_OFFSET,
 		"hover_stamp_preview_scale": match_board.HOVER_STAMP_PREVIEW_SCALE,
 		"hover_stamp_vertical_offset": match_board.HOVER_STAMP_VERTICAL_OFFSET,
 		"hover_stamp_rotation_degrees": match_board.HOVER_STAMP_ROTATION_DEGREES,
-		"hover_stamp_visual_edge_overlap": match_board.HOVER_STAMP_VISUAL_EDGE_OVERLAP,
 		"hover_piece_preview_size": match_board.HOVER_PIECE_PREVIEW_SIZE,
 		"hover_piece_preview_vertical_offset": match_board.HOVER_PIECE_PREVIEW_VERTICAL_OFFSET,
 		"description_text_margin": match_board.HOVER_DESCRIPTION_TEXT_MARGIN,
-		"description_frame_edge_color": match_board.HOVER_DESCRIPTION_FRAME_EDGE_COLOR,
-		"description_frame_edge_thickness": match_board.HOVER_DESCRIPTION_FRAME_EDGE_THICKNESS,
-		"description_frame_edge_horizontal_inset": match_board.HOVER_DESCRIPTION_FRAME_EDGE_HORIZONTAL_INSET,
-		"description_frame_edge_vertical_inset": match_board.HOVER_DESCRIPTION_FRAME_EDGE_VERTICAL_INSET,
+		"description_panel_gap": match_board.HOVER_DESCRIPTION_PANEL_GAP,
+		"description_panel_width": match_board.HOVER_DESCRIPTION_PANEL_WIDTH,
+		"description_panel_height": match_board.HOVER_DESCRIPTION_PANEL_HEIGHT,
+		"duration_shadow_color": match_board.HOVER_DURATION_SHADOW_COLOR,
+		"duration_shadow_blur": match_board.HOVER_DURATION_SHADOW_BLUR,
+		"duration_outline_size": match_board.HOVER_DURATION_OUTLINE_SIZE,
+		"is_reveal_blocked_provider": Callable(match_board, "is_stamp_affix_reveal_active"),
 	})
 
 func get_stamp_hover_preview_controller():
 	initialize_stamp_hover_preview_controller()
 	return stamp_hover_preview_controller
+
+func initialize_piece_duration_change_animator() -> void:
+	if piece_duration_change_animator == null:
+		piece_duration_change_animator = PIECE_DURATION_CHANGE_ANIMATOR_SCRIPT.new()
+	sync_piece_duration_change_animator()
+
+func sync_piece_duration_change_animator() -> void:
+	if piece_duration_change_animator == null:
+		return
+	piece_duration_change_animator.configure({
+		"match_board": match_board,
+		"canvas_layer": match_board.canvas_layer,
+		"shadow_color": match_board.HOVER_DURATION_SHADOW_COLOR,
+		"shadow_blur": match_board.HOVER_DURATION_SHADOW_BLUR,
+		"outline_size": match_board.HOVER_DURATION_OUTLINE_SIZE,
+	})
+
+func get_piece_duration_change_animator():
+	initialize_piece_duration_change_animator()
+	return piece_duration_change_animator
 
 func initialize_stamp_interaction_controller() -> void:
 	if stamp_interaction_controller == null:
@@ -1094,6 +1114,7 @@ func sync_stamp_animation_controller() -> void:
 		"return_to_deck_start_scale": match_board.STAMP_RETURN_TO_DECK_START_SCALE,
 		"return_to_deck_end_scale": match_board.STAMP_RETURN_TO_DECK_END_SCALE,
 		"return_to_deck_duration": match_board.STAMP_RETURN_TO_DECK_DURATION,
+		"stamp_side_reveal_scale": match_board.HOVER_STAMP_PREVIEW_SCALE,
 		"color_for_player_provider": Callable(match_board, "get_color_for_player_id"),
 		"player_id_for_color_provider": Callable(match_board, "get_player_id_for_color"),
 		"local_view_color_provider": Callable(match_board, "get_local_view_color"),
@@ -1104,6 +1125,7 @@ func sync_stamp_animation_controller() -> void:
 		"stamp_hand_source_position_provider": Callable(match_board, "get_stamp_hand_source_position"),
 		"deck_visual_provider": Callable(match_board, "get_deck_visual"),
 		"viewport_size_provider": Callable(match_board, "get_visible_viewport_size"),
+		"board_screen_size_provider": Callable(match_board, "get_board_screen_size"),
 		"value_to_vector2_provider": Callable(match_board, "value_to_vector2"),
 		"stamp_visuals_provider": Callable(match_board, "get_stamp_visuals"),
 	})

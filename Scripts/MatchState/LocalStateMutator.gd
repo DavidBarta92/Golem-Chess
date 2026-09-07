@@ -279,6 +279,8 @@ func apply_stamp_effect_trigger(trigger: String, source_pos: Vector2, piece: Pie
 			pending_respawn_arrivals.append_array(move_base_effect(source_pos, piece, stamp))
 		StampEffect.TYPE_INVALID_SQUARES, StampEffect.TYPE_FROZEN_SQUARES:
 			add_board_zone_effect(source_pos, piece, stamp)
+		StampEffect.TYPE_INVISIBLE_TO_ENEMY, StampEffect.TYPE_UNCAPTURABLE:
+			piece.start_protection_window(StampEffectResolver.BOARD_ZONE_EFFECT_TURNS)
 	return pending_respawn_arrivals
 
 func add_board_zone_effect(source_pos: Vector2, piece: Piece, stamp: Stamp) -> void:
@@ -298,6 +300,7 @@ func add_board_zone_effect(source_pos: Vector2, piece: Piece, stamp: Stamp) -> v
 		"squares": squares,
 		"turns_remaining": StampEffectResolver.BOARD_ZONE_EFFECT_TURNS,
 		"skip_next_tick": true,
+		"source_pos": [source_pos.x, source_pos.y],
 	})
 
 func tick_board_effects() -> void:
@@ -326,6 +329,12 @@ func tick_board_effects() -> void:
 
 	board_effects.clear()
 	board_effects.append_array(remaining_effects)
+
+func tick_piece_protection_windows() -> void:
+	for position_value in piece_objects:
+		var piece: Piece = piece_objects[position_value] as Piece
+		if piece != null:
+			piece.tick_protection_window()
 
 func clear_piece_exhaustion_for_color(owner_color: int) -> void:
 	for position_value in piece_objects:

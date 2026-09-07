@@ -8,6 +8,17 @@ var turns_remaining: int = 0
 var exhausted_this_turn: bool = false
 var respawn_cooldown_turns: int = 0
 var hidden_from_viewer: bool = false
+# Real turn-calendar window for effects whose protection is meant to be
+# temporary and independent of the affixed stamp's own (move-based)
+# duration -- currently invisible_to_enemy and uncapturable. -1 means "no
+# such window running" (either the piece doesn't carry one of those effects,
+# or it hasn't been started). Ticks once per end_current_turn() regardless
+# of whether this piece itself moves, mirroring how board_effects zones
+# (frozen/invalid squares) already tick down independently of stamp
+# duration -- see StampEffectResolver.tick_piece_protection_windows() and
+# BOARD_ZONE_EFFECT_TURNS.
+var protection_turns_remaining: int = -1
+var protection_skip_next_tick: bool = false
 
 func _init(pos: Vector2, col: int):
 	position = pos
@@ -19,11 +30,28 @@ func affix_stamp(stamp: Stamp, exhaust_for_turn: bool = true):
 	exhausted_this_turn = exhaust_for_turn
 	DebugLog.info("Stamp affixed: %s to %s piece (position: %s, turns: %d)" % [stamp.stamp_name, "white" if color > 0 else "black", position, turns_remaining])
 
+func start_protection_window(turns: int) -> void:
+	protection_turns_remaining = turns
+	protection_skip_next_tick = true
+
+func tick_protection_window() -> void:
+	if protection_turns_remaining <= 0:
+		return
+	if protection_skip_next_tick:
+		protection_skip_next_tick = false
+		return
+	protection_turns_remaining -= 1
+
+func has_active_protection() -> bool:
+	return protection_turns_remaining > 0
+
 func detach_stamp() -> Stamp:
 	var old_stamp = affixed_stamp
 	affixed_stamp = null
 	turns_remaining = 0
 	exhausted_this_turn = false
+	protection_turns_remaining = -1
+	protection_skip_next_tick = false
 	DebugLog.info("Stamp detached: %s" % old_stamp.stamp_name if old_stamp else "")
 	return old_stamp
 

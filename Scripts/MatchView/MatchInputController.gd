@@ -56,6 +56,7 @@ func clear_piece_selection() -> void:
 	match_board.update_selected_piece_glow()
 	match_board.hovered_piece = Vector2(-1, -1)
 	hide_hover_piece_details()
+	match_board.clear_hover_highlighted_piece()
 
 func handle_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
@@ -89,7 +90,12 @@ func handle_input(event: InputEvent) -> void:
 				elif match_board.state:
 					if match_board.moves.has(clicked_pos):
 						try_move_selected_piece(clicked_pos)
-					clear_piece_selection()
+						clear_piece_selection()
+					elif clicked_pos != match_board.selected_piece and match_board.can_player_control_piece_at(clicked_pos, match_board.get_own_player_id()):
+						clear_piece_selection()
+						select_piece_for_action(clicked_pos)
+					else:
+						clear_piece_selection()
 
 func send_move_action(from_pos: Vector2, to_pos: Vector2) -> void:
 	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
@@ -126,6 +132,7 @@ func update_hovered_piece() -> void:
 			match_board.hovered_piece = Vector2(-1, -1)
 			delete_dots()
 			hide_hover_piece_details()
+			match_board.clear_hover_highlighted_piece()
 		return
 
 	var board_pos: Vector2 = match_board.get_mouse_board_position()
@@ -136,11 +143,23 @@ func update_hovered_piece() -> void:
 	match_board.hovered_piece = board_pos
 	delete_dots()
 	hide_hover_piece_details()
+	match_board.clear_hover_highlighted_piece()
 
 	if match_board.is_valid_position(board_pos) and !match_board.is_empty(board_pos):
 		match_board.moves = match_board.get_local_gameplay_controller().get_moves(board_pos)
 		show_dots(board_pos)
 		show_hover_piece_details(board_pos)
+		if can_move_hovered_piece(board_pos):
+			match_board.set_hover_highlighted_piece(board_pos)
+
+func can_move_hovered_piece(board_pos: Vector2) -> bool:
+	if !match_board.can_control_current_turn():
+		return false
+	if match_board.get_turn_action_state_controller().has_moved_piece_this_turn(match_board.get_controllable_color()):
+		return false
+	if !match_board.can_player_control_piece_at(board_pos, match_board.get_own_player_id()):
+		return false
+	return match_board.moves.size() > 0
 
 func show_hover_piece_details(board_pos: Vector2) -> void:
 	if !match_board.piece_objects.has(board_pos):
@@ -156,7 +175,14 @@ func show_hover_piece_details(board_pos: Vector2) -> void:
 		var preview_texture: Texture2D = match_board.get_piece_texture_resolver().get_stamp_piece_preview_texture(preview_stamp, piece.color)
 		var duration_text: String = "INF" if piece.turns_remaining < 0 else str(piece.turns_remaining)
 		match_board.get_stamp_hover_preview_controller().show_piece_details(preview_stamp, preview_texture, duration_text)
-	update_hover_duration_label_position()
+	# Position the label from board_pos directly rather than
+	# update_hover_duration_label_position()/match_board.hovered_piece: that
+	# state only tracks the real cursor's own last position over the board
+	# itself, which is stale/wrong when this is called for a different piece
+	# (e.g. hovering its effect icon in the corner grid instead of the piece
+	# on the board).
+	var piece_screen_position: Vector2 = match_board.get_board_position_screen_position(board_pos)
+	match_board.get_stamp_hover_preview_controller().update_duration_label_position(piece_screen_position)
 
 func hide_hover_piece_details() -> void:
 	match_board.get_stamp_hover_preview_controller().hide()
@@ -179,10 +205,12 @@ func show_options() -> void:
 	if match_board.moves == []:
 		match_board.state = false
 		match_board.update_selected_piece_glow()
+		match_board.clear_hover_highlighted_piece()
 		return
 	delete_dots()
 	show_dots(match_board.selected_piece)
 	match_board.update_selected_piece_glow()
+	match_board.set_hover_highlighted_piece(match_board.selected_piece)
 	show_hover_piece_details(match_board.selected_piece)
 
 func show_dots(source_pos: Vector2 = Vector2(-1, -1)) -> void:

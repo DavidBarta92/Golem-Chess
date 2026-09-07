@@ -111,6 +111,7 @@ func parse_board_effects(board_effects: Array) -> Array:
 		parsed_effects.append({
 			"effect_type": str(effect.get("effect_type", "")),
 			"squares": parsed_squares,
+			"source_pos": value_to_vector2(effect.get("source_pos", invalid_board_pos), invalid_board_pos),
 		})
 
 	return parsed_effects
@@ -151,6 +152,7 @@ func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
 				piece.affix_stamp(stamp)
 				piece.turns_remaining = int(data.turns_remaining)
 				piece.exhausted_this_turn = bool(data.get("exhausted_this_turn", false))
+				piece.protection_turns_remaining = int(data.get("protection_turns_remaining", -1))
 		piece.respawn_cooldown_turns = int(data.get("respawn_cooldown_turns", 0))
 
 		parsed_piece_objects[piece_position] = piece
@@ -343,6 +345,8 @@ func collect_state_piece_move_animation(previous_snapshot: Dictionary, piece_obj
 		"start_texture": get_previous_state_texture(previous_state, current_piece.color),
 		"visible_to_enemy": visible_to_enemy,
 		"piece_color": current_piece.color,
+		"old_duration": int(previous_state.get("turns_remaining", current_piece.turns_remaining)),
+		"new_duration": current_piece.turns_remaining,
 	}
 	if previous_snapshot.has(to_pos):
 		var captured_state: Dictionary = previous_snapshot[to_pos]

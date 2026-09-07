@@ -141,6 +141,7 @@ func serialize_pieces(game_state: GameStateData) -> Array:
 			"turns_remaining": piece.turns_remaining,
 			"exhausted_this_turn": piece.exhausted_this_turn,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
+			"protection_turns_remaining": piece.protection_turns_remaining,
 		})
 	return pieces
 

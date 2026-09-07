@@ -15,13 +15,20 @@ var piece_effect_light_receive_mask: int = 0
 var piece_light_occluder_mask: int = 1
 var flipped_view: bool = false
 
-var capture_flash_texture: Texture2D
-var capture_flash_color: Color = Color(1.0, 0.92, 0.56, 1.0)
-var capture_flash_duration: float = 0.75
-var capture_flash_size_ratio: float = 1.95
-var capture_flash_start_scale_ratio: float = 0.16
-var capture_flash_rotation_degrees: float = 22.0
 var default_piece_visual_height: float = 24.0
+
+var piece_capture_sparkle_shader: Shader
+var capture_sparkle_color: Color = Color(1.0, 0.95, 0.78, 1.0)
+var capture_sparkle_duration: float = 0.85
+var capture_sparkle_fade_out_ratio: float = 0.6
+var capture_sparkle_size_ratio: float = 2.2
+var capture_sparkle_shader_scale: float = 7500.0
+var capture_sparkle_decay_magnitude: float = 0.1
+var capture_sparkle_rotate_speed: float = 0.6
+var capture_sparkle_time_speed: float = 1.0
+var capture_sparkle_frequency_base: float = 1.0
+var capture_sparkle_frequency_disturbance_scale: float = 0.4
+var capture_sparkle_circle_ratio: float = 0.0
 
 var bomb_warning_texture: Texture2D
 var bomb_warning_color: Color = Color(1.0, 0.56, 0.56, 1.0)
@@ -115,14 +122,20 @@ func configure(config: Dictionary) -> void:
 	piece_effect_light_receive_mask = int(config.get("piece_effect_light_receive_mask", piece_effect_light_receive_mask))
 	piece_light_occluder_mask = int(config.get("piece_light_occluder_mask", piece_light_occluder_mask))
 	flipped_view = bool(config.get("flipped_view", flipped_view))
-
-	capture_flash_texture = config.get("capture_flash_texture", capture_flash_texture)
-	capture_flash_color = config.get("capture_flash_color", capture_flash_color)
-	capture_flash_duration = float(config.get("capture_flash_duration", capture_flash_duration))
-	capture_flash_size_ratio = float(config.get("capture_flash_size_ratio", capture_flash_size_ratio))
-	capture_flash_start_scale_ratio = float(config.get("capture_flash_start_scale_ratio", capture_flash_start_scale_ratio))
-	capture_flash_rotation_degrees = float(config.get("capture_flash_rotation_degrees", capture_flash_rotation_degrees))
 	default_piece_visual_height = float(config.get("default_piece_visual_height", default_piece_visual_height))
+
+	piece_capture_sparkle_shader = config.get("piece_capture_sparkle_shader", piece_capture_sparkle_shader)
+	capture_sparkle_color = config.get("capture_sparkle_color", capture_sparkle_color)
+	capture_sparkle_duration = float(config.get("capture_sparkle_duration", capture_sparkle_duration))
+	capture_sparkle_fade_out_ratio = float(config.get("capture_sparkle_fade_out_ratio", capture_sparkle_fade_out_ratio))
+	capture_sparkle_size_ratio = float(config.get("capture_sparkle_size_ratio", capture_sparkle_size_ratio))
+	capture_sparkle_shader_scale = float(config.get("capture_sparkle_shader_scale", capture_sparkle_shader_scale))
+	capture_sparkle_decay_magnitude = float(config.get("capture_sparkle_decay_magnitude", capture_sparkle_decay_magnitude))
+	capture_sparkle_rotate_speed = float(config.get("capture_sparkle_rotate_speed", capture_sparkle_rotate_speed))
+	capture_sparkle_time_speed = float(config.get("capture_sparkle_time_speed", capture_sparkle_time_speed))
+	capture_sparkle_frequency_base = float(config.get("capture_sparkle_frequency_base", capture_sparkle_frequency_base))
+	capture_sparkle_frequency_disturbance_scale = float(config.get("capture_sparkle_frequency_disturbance_scale", capture_sparkle_frequency_disturbance_scale))
+	capture_sparkle_circle_ratio = float(config.get("capture_sparkle_circle_ratio", capture_sparkle_circle_ratio))
 
 	bomb_warning_texture = config.get("bomb_warning_texture", bomb_warning_texture)
 	bomb_warning_color = config.get("bomb_warning_color", bomb_warning_color)
@@ -805,54 +818,54 @@ func play_invisibility_reveal(holder: Sprite2D) -> void:
 		holder.material = null
 		holder.self_modulate.a = 1.0
 
-func play_capture_flash(board_pos: Vector2) -> void:
-	if capture_flash_texture == null or !has_effect_parent():
+func play_capture_sparkle(board_pos: Vector2) -> void:
+	if piece_capture_sparkle_shader == null or !has_effect_parent():
 		return
 
-	var flash := Sprite2D.new()
+	var sparkle := Sprite2D.new()
 	if flipped_view:
-		flash.global_rotation_degrees = 180
-	piece_effects_node.add_child(flash)
-	flash.name = "CaptureFlash"
-	flash.light_mask = piece_effect_light_receive_mask
-	flash.texture_filter = texture_filter_value
-	flash.texture = capture_flash_texture
-	flash.position = get_position_local(board_pos) + Vector2(
+		sparkle.global_rotation_degrees = 180
+	piece_effects_node.add_child(sparkle)
+	sparkle.name = "CaptureSparkle"
+	sparkle.light_mask = piece_effect_light_receive_mask
+	sparkle.texture_filter = texture_filter_value
+	sparkle.texture = get_attach_rays_square_texture()
+	sparkle.position = get_position_local(board_pos) + Vector2(
 		0.0,
 		-default_piece_visual_height * 0.18 * get_perspective_scale(board_pos)
 	)
-	flash.z_as_relative = true
-	flash.z_index = 96
-	flash.self_modulate = capture_flash_color
+	sparkle.z_as_relative = false
+	sparkle.z_index = get_piece_effect_z_index(board_pos)
 
-	var texture_size: Vector2 = capture_flash_texture.get_size()
+	var material := ShaderMaterial.new()
+	material.shader = piece_capture_sparkle_shader
+	material.set_shader_parameter("color", capture_sparkle_color)
+	material.set_shader_parameter("scale", capture_sparkle_shader_scale)
+	material.set_shader_parameter("circle_ratio", capture_sparkle_circle_ratio)
+	material.set_shader_parameter("decay_magnitude", capture_sparkle_decay_magnitude)
+	material.set_shader_parameter("rotate_speed", capture_sparkle_rotate_speed)
+	material.set_shader_parameter("time_speed", capture_sparkle_time_speed)
+	material.set_shader_parameter("frequency_base", capture_sparkle_frequency_base)
+	material.set_shader_parameter("frequency_disturbance_scale", capture_sparkle_frequency_disturbance_scale)
+	material.set_shader_parameter("alpha_strength", 1.0)
+	sparkle.material = material
+
+	var texture_size: Vector2 = sparkle.texture.get_size()
 	var texture_extent: float = maxf(texture_size.x, texture_size.y)
-	var target_scale := Vector2.ONE
 	if texture_extent > 0.0:
-		var target_size: float = float(cell_width) * capture_flash_size_ratio * get_perspective_scale(board_pos)
-		target_scale = Vector2.ONE * (target_size / texture_extent)
-
-	flash.scale = target_scale * capture_flash_start_scale_ratio
-	var rotation_direction: float = 1.0 if randf() >= 0.5 else -1.0
-	flash.rotation = randf_range(-0.08, 0.08)
-	var end_rotation: float = flash.rotation + deg_to_rad(capture_flash_rotation_degrees) * rotation_direction
-	var motion_tween: Tween = create_animation_tween()
-	if motion_tween == null:
-		flash.queue_free()
-		return
-	motion_tween.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	motion_tween.tween_property(flash, "scale", target_scale, capture_flash_duration)
-	motion_tween.parallel().tween_property(flash, "rotation", end_rotation, capture_flash_duration)
+		var target_size: float = float(cell_width) * capture_sparkle_size_ratio * get_perspective_scale(board_pos)
+		sparkle.scale = Vector2.ONE * (target_size / texture_extent)
 
 	var fade_tween: Tween = create_animation_tween()
 	if fade_tween == null:
+		sparkle.queue_free()
 		return
 	fade_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	fade_tween.tween_interval(capture_flash_duration * 0.18)
-	fade_tween.tween_property(flash, "self_modulate:a", 0.0, capture_flash_duration * 0.82)
+	fade_tween.tween_interval(capture_sparkle_duration * (1.0 - capture_sparkle_fade_out_ratio))
+	fade_tween.tween_property(material, "shader_parameter/alpha_strength", 0.0, capture_sparkle_duration * capture_sparkle_fade_out_ratio)
 	fade_tween.finished.connect(func():
-		if is_instance_valid(flash):
-			flash.queue_free()
+		if is_instance_valid(sparkle):
+			sparkle.queue_free()
 	)
 
 func play_bomb_warning(target_pos: Vector2) -> void:

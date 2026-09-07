@@ -1016,7 +1016,8 @@ func apply_game_state(state_data: Dictionary):
 		state_data.get("player_portraits", {}),
 		int(state_data.get("viewer_player_id", -1)),
 		state_data.get("turn_action_state", {}),
-		state_data.get("player_clock_seconds", {})
+		state_data.get("player_clock_seconds", {}),
+		state_data.get("recent_effect_activations", [])
 	)
 
 	DebugLog.info("apply_game_state() end")

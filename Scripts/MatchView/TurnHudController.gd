@@ -158,12 +158,15 @@ func create_end_turn_ui() -> void:
 	end_turn_button = Button.new()
 	canvas_layer.add_child(end_turn_button)
 	end_turn_button.text = tr("END TURN")
-	end_turn_button.anchor_left = 1.0
-	end_turn_button.anchor_right = 1.0
+	# Anchored bottom-left (mirrored from its old bottom-right spot) so it no
+	# longer sits on top of the board-effect icon grid, which lives in the
+	# same bottom-right corner (see BoardEffectIconGridController.gd).
+	end_turn_button.anchor_left = 0.0
+	end_turn_button.anchor_right = 0.0
 	end_turn_button.anchor_top = 1.0
 	end_turn_button.anchor_bottom = 1.0
-	end_turn_button.offset_left = -152.0
-	end_turn_button.offset_right = -24.0
+	end_turn_button.offset_left = 24.0
+	end_turn_button.offset_right = 152.0
 	end_turn_button.offset_top = -64.0
 	end_turn_button.offset_bottom = -24.0
 	end_turn_button.z_index = 960
@@ -340,17 +343,21 @@ func create_rules_info_ui() -> void:
 	canvas_layer.add_child(rules_info_button)
 	rules_info_button.text = "i"
 	rules_info_button.tooltip_text = tr("Rules")
-	rules_info_button.anchor_left = 1.0
-	rules_info_button.anchor_right = 1.0
+	rules_info_button.anchor_left = 0.0
+	rules_info_button.anchor_right = 0.0
 	rules_info_button.anchor_top = 1.0
 	rules_info_button.anchor_bottom = 1.0
-	var button_right_offset: float = -160.0
-	if end_turn_button != null:
-		button_right_offset = end_turn_button.offset_left - 8.0
-	rules_info_button.offset_left = button_right_offset - rules_info_button_size.x
-	rules_info_button.offset_right = button_right_offset
-	rules_info_button.offset_top = end_turn_button.offset_top if end_turn_button != null else -64.0
-	rules_info_button.offset_bottom = end_turn_button.offset_bottom if end_turn_button != null else -24.0
+	# Anchored bottom-left alongside end_turn_button now (mirrored from its old
+	# bottom-right spot just left of the button) -- staying bottom-right here
+	# would put it right back on top of the board-effect icon grid, which is
+	# the exact corner conflict end_turn_button was moved away from (see
+	# BoardEffectIconGridController.gd). Sits just to the right of the button,
+	# mirroring the old "just to the left of the button" placement.
+	var button_left_offset: float = 152.0 + 8.0
+	rules_info_button.offset_left = button_left_offset
+	rules_info_button.offset_right = button_left_offset + rules_info_button_size.x
+	rules_info_button.offset_top = -64.0
+	rules_info_button.offset_bottom = -24.0
 	rules_info_button.z_index = 960
 	rules_info_button.focus_mode = Control.FOCUS_NONE
 	rules_info_button.pressed.connect(toggle_rules_info_panel)
@@ -633,16 +640,18 @@ func arrange_action_status_ui() -> void:
 	if action_status_container == null:
 		return
 
-	action_status_container.anchor_left = 1.0
-	action_status_container.anchor_right = 1.0
+	action_status_container.anchor_left = 0.0
+	action_status_container.anchor_right = 0.0
 	action_status_container.anchor_top = 1.0
 	action_status_container.anchor_bottom = 1.0
 
-	var button_center_x: float = -action_status_margin - action_status_size.x * 0.5
-	var bottom_offset: float = -action_status_margin - action_status_size.y
-	if end_turn_button != null:
-		button_center_x = (end_turn_button.offset_left + end_turn_button.offset_right) * 0.5
-		bottom_offset = end_turn_button.offset_top - 8.0
+	# Anchored bottom-left alongside end_turn_button now (mirrored from its
+	# old bottom-right spot directly above the button) -- staying bottom-right
+	# would put it right back on top of the board-effect icon grid, which is
+	# the exact corner conflict end_turn_button was moved away from (see
+	# BoardEffectIconGridController.gd).
+	var button_center_x: float = (24.0 + 152.0) * 0.5
+	var bottom_offset: float = -64.0 - 8.0
 	var left_offset: float = button_center_x - action_status_size.x * 0.5
 	var top_offset: float = bottom_offset - action_status_size.y
 	action_status_container.offset_left = left_offset
@@ -654,19 +663,22 @@ func arrange_turn_timer_ui() -> void:
 	if turn_timer_counter_container == null:
 		return
 
-	turn_timer_counter_container.anchor_left = 1.0
-	turn_timer_counter_container.anchor_right = 1.0
+	turn_timer_counter_container.anchor_left = 0.0
+	turn_timer_counter_container.anchor_right = 0.0
 	turn_timer_counter_container.anchor_top = 1.0
 	turn_timer_counter_container.anchor_bottom = 1.0
 
-	var button_center_x: float = -action_status_margin - deck_counter_size.x * 0.5
+	var button_center_x: float = action_status_margin + deck_counter_size.x * 0.5
 	var bottom_offset: float = -action_status_margin - action_status_size.y - turn_timer_gap
 	if action_status_container != null:
 		button_center_x = (action_status_container.offset_left + action_status_container.offset_right) * 0.5
 		bottom_offset = action_status_container.offset_top - turn_timer_gap
-	elif end_turn_button != null:
-		button_center_x = (end_turn_button.offset_left + end_turn_button.offset_right) * 0.5
-		bottom_offset = end_turn_button.offset_top - turn_timer_gap
+	else:
+		# Fallback only (action_status_container is normally already set up
+		# by the time this runs); anchored bottom-left alongside
+		# end_turn_button now, same reasoning as arrange_action_status_ui().
+		button_center_x = (24.0 + 152.0) * 0.5
+		bottom_offset = -64.0 - turn_timer_gap
 
 	var timer_size: Vector2 = turn_timer_counter_container.size
 	var left_offset: float = button_center_x - timer_size.x * 0.5

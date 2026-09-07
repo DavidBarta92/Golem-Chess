@@ -1,0 +1,19 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Scenes/CaptureSparklePreview.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Assets/board_tile_base_white.svg" id="2_tile"]
+[ext_resource type="Texture2D" path="res://Assets/golem_front.svg" id="3_piece"]
+[ext_resource type="Texture2D" path="res://Assets/dot.svg" id="4_dot"]
+
+[node name="CaptureSparklePreview" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="BoardTile" type="Sprite2D" parent="."]
+texture = ExtResource("2_tile")
+
+[node name="PieceTexture" type="Sprite2D" parent="."]
+texture = ExtResource("3_piece")
+
+[node name="Sparkle" type="Sprite2D" parent="."]
+z_index = 5
+texture = ExtResource("4_dot")

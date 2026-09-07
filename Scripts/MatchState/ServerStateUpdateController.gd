@@ -26,7 +26,8 @@ func update_from_server_state(
 	player_portraits: Dictionary = {},
 	viewer_player_id: int = -1,
 	turn_action_state: Dictionary = {},
-	player_clock_seconds: Dictionary = {}
+	player_clock_seconds: Dictionary = {},
+	recent_effect_activations: Array = []
 ) -> void:
 	await wait_for_active_state_visual_animations()
 
@@ -92,7 +93,6 @@ func update_from_server_state(
 
 	match_board.delete_dots()
 	match_board.hide_hover_piece_details()
-	match_board.get_hidden_stamp_preview_controller().update_previews(hidden_stamps)
 	match_board.update_stamp_presentation()
 	var stamp_expiration_events: Array[Dictionary] = match_board.get_state_stamp_expiration_events(previous_piece_visual_state, recent_stamp_expirations)
 	var state_affix_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().collect_state_affix_animations(
@@ -149,6 +149,7 @@ func update_from_server_state(
 		"pending_respawn_arrival_animations": pending_respawn_arrival_animations,
 		"should_play_post_state_animations": match_board.has_received_server_state and !match_board.should_skip_visual_animations(),
 		"recent_stamp_transfers": recent_stamp_transfers,
+		"recent_effect_activations": recent_effect_activations,
 		"previous_white_hand_names": previous_white_hand_names,
 		"current_white_hand_names": current_white_hand_names,
 		"previous_black_hand_names": previous_black_hand_names,

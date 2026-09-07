@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://bthcwpocferx0" path="res://Assets/magnifying_glass_case_opened.png" id="6_case_opened"]
 [ext_resource type="Texture2D" uid="uid://b2rdnleh8sbn" path="res://ui/themes/icons/back.png" id="7_page_back"]
 [ext_resource type="Texture2D" uid="uid://byelcob5i8chv" path="res://ui/themes/icons/next.png" id="8_page_next"]
+[ext_resource type="Shader" uid="uid://cc0ua2v4vaki6" path="res://Shaders/vignette.gdshader" id="9_vignette_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_grid_bg"]
 shader = ExtResource("2_grid_bg")
@@ -59,6 +60,13 @@ border_width_bottom = 1
 border_color = Color(1, 1, 1, 0.18)
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("9_vignette_shader")
+shader_parameter/vignette_color = Color(0, 0, 0, 1)
+shader_parameter/inner_radius = 0.5530000262675
+shader_parameter/outer_radius = 1.578000074955
+shader_parameter/intensity = 0.55
 
 [node name="Collection" type="Control" unique_id=1188233061]
 layout_mode = 3
@@ -702,3 +710,15 @@ text = "X"
 
 [node name="RemoveStampTimer" type="Timer" parent="." unique_id=951392258]
 one_shot = true
+
+[node name="VignetteLayer" type="CanvasLayer" parent="." unique_id=951392259]
+layer = 11
+
+[node name="VignetteOverlay" type="ColorRect" parent="VignetteLayer" unique_id=951392260]
+material = SubResource("ShaderMaterial_vignette")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

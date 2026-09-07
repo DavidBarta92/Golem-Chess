@@ -1,6 +1,7 @@
 extends RefCounted
 
 const INVALID_BOARD_POS = Vector2(-1, -1)
+const STAMP_TILT_SHADER = preload("res://Shaders/stamp_tilt.gdshader")
 
 var canvas_layer: CanvasLayer
 var tween_owner: Node
@@ -10,6 +11,18 @@ var stamp_burn_sequence_gap: float = 0.08
 var return_to_deck_start_scale: float = 0.555
 var return_to_deck_end_scale: float = 0.324
 var return_to_deck_duration: float = 0.62
+var stamp_side_reveal_scale: float = 0.82
+var stamp_side_reveal_z_index: int = 905
+var stamp_affix_reveal_grow_duration: float = 0.16
+var stamp_affix_reveal_settle_duration: float = 0.36
+var stamp_affix_reveal_overshoot_ratio: float = 1.22
+var stamp_affix_reveal_start_scale_ratio: float = 0.08
+var stamp_affix_reveal_travel_distance: float = 260.0
+var stamp_affix_reveal_fade_out_duration: float = 0.25
+var stamp_affix_reveal_tilt_peak_degrees: float = 46.0
+var stamp_affix_reveal_warp_strength: float = 0.16
+
+var _active_affix_reveal_visuals: Array = []
 
 var color_for_player_provider: Callable
 var player_id_for_color_provider: Callable
@@ -21,6 +34,7 @@ var stamp_return_to_deck_target_position_provider: Callable
 var stamp_hand_source_position_provider: Callable
 var deck_visual_provider: Callable
 var viewport_size_provider: Callable
+var board_screen_size_provider: Callable
 var value_to_vector2_provider: Callable
 var stamp_visuals_provider: Callable
 
@@ -36,6 +50,16 @@ func configure(config: Dictionary) -> void:
 	return_to_deck_start_scale = float(config.get("return_to_deck_start_scale", return_to_deck_start_scale))
 	return_to_deck_end_scale = float(config.get("return_to_deck_end_scale", return_to_deck_end_scale))
 	return_to_deck_duration = float(config.get("return_to_deck_duration", return_to_deck_duration))
+	stamp_side_reveal_scale = float(config.get("stamp_side_reveal_scale", stamp_side_reveal_scale))
+	stamp_side_reveal_z_index = int(config.get("stamp_side_reveal_z_index", stamp_side_reveal_z_index))
+	stamp_affix_reveal_grow_duration = float(config.get("stamp_affix_reveal_grow_duration", stamp_affix_reveal_grow_duration))
+	stamp_affix_reveal_settle_duration = float(config.get("stamp_affix_reveal_settle_duration", stamp_affix_reveal_settle_duration))
+	stamp_affix_reveal_overshoot_ratio = float(config.get("stamp_affix_reveal_overshoot_ratio", stamp_affix_reveal_overshoot_ratio))
+	stamp_affix_reveal_start_scale_ratio = float(config.get("stamp_affix_reveal_start_scale_ratio", stamp_affix_reveal_start_scale_ratio))
+	stamp_affix_reveal_travel_distance = float(config.get("stamp_affix_reveal_travel_distance", stamp_affix_reveal_travel_distance))
+	stamp_affix_reveal_fade_out_duration = float(config.get("stamp_affix_reveal_fade_out_duration", stamp_affix_reveal_fade_out_duration))
+	stamp_affix_reveal_tilt_peak_degrees = float(config.get("stamp_affix_reveal_tilt_peak_degrees", stamp_affix_reveal_tilt_peak_degrees))
+	stamp_affix_reveal_warp_strength = float(config.get("stamp_affix_reveal_warp_strength", stamp_affix_reveal_warp_strength))
 	color_for_player_provider = config.get("color_for_player_provider", color_for_player_provider)
 	player_id_for_color_provider = config.get("player_id_for_color_provider", player_id_for_color_provider)
 	local_view_color_provider = config.get("local_view_color_provider", local_view_color_provider)
@@ -46,6 +70,7 @@ func configure(config: Dictionary) -> void:
 	stamp_hand_source_position_provider = config.get("stamp_hand_source_position_provider", stamp_hand_source_position_provider)
 	deck_visual_provider = config.get("deck_visual_provider", deck_visual_provider)
 	viewport_size_provider = config.get("viewport_size_provider", viewport_size_provider)
+	board_screen_size_provider = config.get("board_screen_size_provider", board_screen_size_provider)
 	value_to_vector2_provider = config.get("value_to_vector2_provider", value_to_vector2_provider)
 	stamp_visuals_provider = config.get("stamp_visuals_provider", stamp_visuals_provider)
 
@@ -339,6 +364,173 @@ func play_stamp_return_to_deck_animation(transfer: Dictionary) -> StampVisual:
 		)
 	stamp_visual.play_return_to_deck_and_free(target_position, target_scale, return_to_deck_duration)
 	return stamp_visual
+
+func _create_reveal_stamp_visual(stamp: Stamp) -> StampVisual:
+	if stamp == null or canvas_layer == null or stamp_visual_scene == null:
+		return null
+
+	var stamp_visual: StampVisual = stamp_visual_scene.instantiate() as StampVisual
+	if stamp_visual == null:
+		return null
+
+	canvas_layer.add_child(stamp_visual)
+	stamp_visual.set_stamp(stamp)
+	stamp_visual.set_face_down(false)
+	stamp_visual.draggable = false
+	stamp_visual.disabled = true
+	stamp_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stamp_visual.set_rest_scale(Vector2.ONE * stamp_side_reveal_scale)
+	stamp_visual.scale = Vector2.ONE * stamp_side_reveal_scale
+	stamp_visual.z_index = stamp_side_reveal_z_index
+
+	var final_position: Vector2 = get_stamp_side_reveal_position(stamp_side_reveal_scale)
+	stamp_visual.home_position = final_position
+	stamp_visual.position = final_position
+	return stamp_visual
+
+func capture_stamp_front_snapshot(stamp: Stamp) -> Texture2D:
+	if stamp == null or canvas_layer == null or stamp_visual_scene == null:
+		return null
+
+	var snapshot_source: StampVisual = stamp_visual_scene.instantiate() as StampVisual
+	if snapshot_source == null:
+		return null
+
+	canvas_layer.add_child(snapshot_source)
+	snapshot_source.position = Vector2(-8000.0, -8000.0)
+	snapshot_source.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	snapshot_source.draggable = false
+	snapshot_source.disabled = true
+	snapshot_source.set_stamp(stamp)
+	snapshot_source.set_face_down(false)
+
+	var snapshot_texture: Texture2D = await snapshot_source.create_stamp_snapshot_texture()
+
+	if is_instance_valid(snapshot_source):
+		snapshot_source.queue_free()
+
+	return snapshot_texture
+
+func is_stamp_affix_reveal_active() -> bool:
+	return !_active_affix_reveal_visuals.is_empty()
+
+func play_stamp_affix_reveal(stamp: Stamp, owner_color: int) -> StampVisual:
+	var stamp_visual: StampVisual = _create_reveal_stamp_visual(stamp)
+	if stamp_visual == null:
+		return null
+
+	_active_affix_reveal_visuals.append(stamp_visual)
+
+	# The live StampVisual stays hidden until the intro below hands off to it
+	# -- the "bend" only reads clearly on a single flattened snapshot of the
+	# whole card (see _play_stamp_affix_intro), not on the live node, whose
+	# tilt shader only covers its background layer and leaves the art/text on
+	# top rigid.
+	stamp_visual.visible = false
+	var is_local: bool = owner_color == get_local_view_color()
+	_play_stamp_affix_intro(stamp, stamp_visual, is_local)
+	return stamp_visual
+
+func _play_stamp_affix_intro(stamp: Stamp, stamp_visual: StampVisual, is_local: bool) -> void:
+	var front_snapshot: Texture2D = await capture_stamp_front_snapshot(stamp)
+	if !is_instance_valid(stamp_visual):
+		return
+	if front_snapshot == null or canvas_layer == null or !is_instance_valid(canvas_layer):
+		_reveal_settled_stamp_visual(stamp_visual)
+		return
+
+	var final_position: Vector2 = stamp_visual.home_position
+	var direction_sign: float = 1.0 if is_local else -1.0
+	var vertical_offset: float = stamp_affix_reveal_travel_distance * direction_sign
+	var final_scale: Vector2 = Vector2.ONE * stamp_side_reveal_scale
+	var overshoot_scale: Vector2 = final_scale * stamp_affix_reveal_overshoot_ratio
+
+	var intro_material := ShaderMaterial.new()
+	intro_material.shader = STAMP_TILT_SHADER
+	intro_material.set_shader_parameter("x_rot", stamp_affix_reveal_tilt_peak_degrees * direction_sign)
+	intro_material.set_shader_parameter("warp_strength", stamp_affix_reveal_warp_strength)
+
+	var intro_rect := TextureRect.new()
+	canvas_layer.add_child(intro_rect)
+	intro_rect.name = "StampAffixRevealIntro"
+	intro_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_rect.texture = front_snapshot
+	intro_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	intro_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	intro_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	intro_rect.material = intro_material
+	intro_rect.z_index = stamp_side_reveal_z_index
+	intro_rect.size = stamp_ui_size
+	intro_rect.pivot_offset = stamp_ui_size * 0.5
+	intro_rect.position = final_position + Vector2(0.0, vertical_offset)
+	intro_rect.scale = final_scale * stamp_affix_reveal_start_scale_ratio
+	stamp_visual.set_meta("affix_intro_rect", intro_rect)
+
+	var total_duration: float = stamp_affix_reveal_grow_duration + stamp_affix_reveal_settle_duration
+
+	# Scale is split in two: a quick burst past the final size, then a
+	# slower settle back down to it -- position and tilt just ease over the
+	# whole span so they land in sync with the end of the settle.
+	var reveal_tween: Tween = intro_rect.create_tween()
+	reveal_tween.tween_property(intro_rect, "scale", overshoot_scale, stamp_affix_reveal_grow_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	reveal_tween.parallel().tween_property(intro_rect, "position", final_position, total_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	reveal_tween.parallel().tween_property(intro_material, "shader_parameter/x_rot", 0.0, total_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	reveal_tween.tween_property(intro_rect, "scale", final_scale, stamp_affix_reveal_settle_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	reveal_tween.tween_callback(Callable(self, "_finish_stamp_affix_intro").bind(intro_rect, stamp_visual))
+
+func _finish_stamp_affix_intro(intro_rect: TextureRect, stamp_visual: StampVisual) -> void:
+	if is_instance_valid(intro_rect):
+		intro_rect.queue_free()
+	if is_instance_valid(stamp_visual):
+		stamp_visual.remove_meta("affix_intro_rect")
+	_reveal_settled_stamp_visual(stamp_visual)
+
+func _reveal_settled_stamp_visual(stamp_visual: StampVisual) -> void:
+	if stamp_visual == null or !is_instance_valid(stamp_visual):
+		return
+
+	stamp_visual.visible = true
+	stamp_visual.set_ambient_motion_enabled(true)
+
+func finish_stamp_affix_reveal(stamp_visual: StampVisual) -> void:
+	if stamp_visual == null:
+		return
+
+	if !is_instance_valid(stamp_visual):
+		_active_affix_reveal_visuals.erase(stamp_visual)
+		return
+
+	if stamp_visual.has_meta("affix_intro_rect"):
+		var intro_rect: Object = stamp_visual.get_meta("affix_intro_rect")
+		if intro_rect is TextureRect and is_instance_valid(intro_rect):
+			(intro_rect as TextureRect).queue_free()
+		stamp_visual.remove_meta("affix_intro_rect")
+	stamp_visual.visible = true
+
+	stamp_visual.set_ambient_motion_enabled(false)
+	var fade_tween: Tween = stamp_visual.create_tween()
+	fade_tween.tween_property(stamp_visual, "modulate:a", 0.0, stamp_affix_reveal_fade_out_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	fade_tween.tween_callback(Callable(self, "_finish_stamp_affix_reveal_visual").bind(stamp_visual))
+
+func _finish_stamp_affix_reveal_visual(stamp_visual: StampVisual) -> void:
+	_active_affix_reveal_visuals.erase(stamp_visual)
+	if is_instance_valid(stamp_visual):
+		stamp_visual.queue_free()
+
+func get_stamp_side_reveal_position(scale: float) -> Vector2:
+	var viewport_size: Vector2 = get_viewport_size()
+	var board_screen_size: float = get_board_screen_size()
+	var offset_from_right_edge: float = maxf((viewport_size.x - board_screen_size) * 0.25, 0.0)
+	var center: Vector2 = Vector2(viewport_size.x - offset_from_right_edge, viewport_size.y * 0.5)
+	var visual_size: Vector2 = stamp_ui_size * scale
+	return center - visual_size * 0.5
+
+func get_board_screen_size() -> float:
+	if board_screen_size_provider.is_valid():
+		var value = board_screen_size_provider.call()
+		if value is float or value is int:
+			return float(value)
+	return 0.0
 
 func play_transfer_source_pulse(transfer: Dictionary) -> void:
 	var source_zone: String = str(transfer.get("source_zone", ""))

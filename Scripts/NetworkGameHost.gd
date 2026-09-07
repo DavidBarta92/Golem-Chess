@@ -377,6 +377,7 @@ func end_current_turn():
 	game_state.switch_turn()
 	advance_logged_turn()
 	StampEffectResolver.tick_board_effects(game_state)
+	StampEffectResolver.tick_piece_protection_windows(game_state)
 	finish_if_player_has_no_valid_turn(game_state.current_turn_player)
 	log_turn_snapshot("turn_end")
 	DebugLog.info("Turn ended. Next player: %s" % game_state.current_turn_player)
@@ -599,7 +600,8 @@ func broadcast_full_state():
 				"turns_remaining": piece_data.turns_remaining,
 				"exhausted_this_turn": piece_data.exhausted_this_turn,
 				"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0)),
-				"hidden_from_viewer": bool(piece_data.get("hidden_from_viewer", false))
+				"hidden_from_viewer": bool(piece_data.get("hidden_from_viewer", false)),
+				"protection_turns_remaining": int(piece_data.get("protection_turns_remaining", -1))
 			}
 		match_board.update_from_server_state(
 			pieces_data,
@@ -622,7 +624,8 @@ func broadcast_full_state():
 			local_state_data.player_portraits,
 			int(local_state_data.get("viewer_player_id", -1)),
 			local_state_data.turn_action_state,
-			local_state_data.player_clock_seconds
+			local_state_data.player_clock_seconds,
+			local_state_data.recent_effect_activations
 		)
 
 	for peer_id in multiplayer_node.connected_peer_ids:
@@ -640,6 +643,7 @@ func broadcast_full_state():
 	game_state.recent_stamp_transfers.clear()
 	game_state.recent_stamp_expirations.clear()
 	game_state.recent_bomb_effects.clear()
+	game_state.recent_effect_activations.clear()
 	game_state.recent_pending_respawn_queues.clear()
 	game_state.recent_pending_respawn_arrivals.clear()
 	DebugLog.info("State broadcast complete")
@@ -668,6 +672,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"recent_stamp_transfers": serialize_recent_stamp_transfers(viewer_player_id),
 		"recent_stamp_expirations": serialize_recent_stamp_expirations(),
 		"recent_bomb_effects": serialize_recent_bomb_effects(),
+		"recent_effect_activations": serialize_recent_effect_activations(),
 		"recent_pending_respawn_queues": serialize_recent_pending_respawn_queues(),
 		"recent_pending_respawn_arrivals": serialize_recent_pending_respawn_arrivals(),
 		"last_move": serialize_last_move_for_player(viewer_player_id),
@@ -688,6 +693,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 			"exhausted_this_turn": true if hidden_from_viewer else piece.exhausted_this_turn,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
 			"hidden_from_viewer": hidden_from_viewer,
+			"protection_turns_remaining": -1 if hidden_from_viewer else piece.protection_turns_remaining,
 		})
 
 	return data
@@ -788,6 +794,18 @@ func serialize_recent_bomb_effects() -> Array:
 
 	return serialized_effects
 
+func serialize_recent_effect_activations() -> Array:
+	var serialized_activations: Array = []
+	for activation_value in game_state.recent_effect_activations:
+		var activation: Dictionary = activation_value
+		serialized_activations.append({
+			"player_id": int(activation.get("player_id", -1)),
+			"stamp_name": str(activation.get("stamp_name", "")),
+			"source_pos": vector2_to_array(StampEffectResolver.as_vector2(activation.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
+		})
+
+	return serialized_activations
+
 func serialize_recent_pending_respawn_queues() -> Array:
 	var serialized_queues: Array = []
 	for queue_value in game_state.recent_pending_respawn_queues:
@@ -884,6 +902,7 @@ func serialize_board_effects() -> Array:
 			"target_player_id": int(effect.get("target_player_id", -1)),
 			"squares": serialized_squares,
 			"turns_remaining": int(effect.get("turns_remaining", -1)),
+			"source_pos": vector2_to_array(StampEffectResolver.as_vector2(effect.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
 		})
 
 	return serialized_effects

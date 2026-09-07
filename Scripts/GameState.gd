@@ -34,6 +34,7 @@ var board_effects: Array = []
 var recent_stamp_transfers: Array = []
 var recent_stamp_expirations: Array = []
 var recent_bomb_effects: Array = []
+var recent_effect_activations: Array = []
 var recent_pending_respawn_queues: Array = []
 var recent_pending_respawn_arrivals: Array = []
 var last_move: Dictionary = {}
