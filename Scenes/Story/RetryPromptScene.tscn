@@ -1,0 +1,64 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Story/RetryPromptScene.gd" id="1_retry_prompt"]
+[ext_resource type="Theme" uid="uid://dicvefuprprvl" path="res://ui/themes/global_theme.tres" id="2_theme"]
+
+[node name="RetryPromptScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_retry_prompt")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.956863, 0.941176, 0.901961, 1)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -90.0
+offset_right = 220.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Layout" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/Layout"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "RETRY_PROMPT_TITLE"
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="YesButton" type="Button" parent="Panel/Layout/Buttons"]
+custom_minimum_size = Vector2(150, 44)
+layout_mode = 2
+text = "RETRY_PROMPT_YES"
+
+[node name="NoButton" type="Button" parent="Panel/Layout/Buttons"]
+custom_minimum_size = Vector2(150, 44)
+layout_mode = 2
+text = "RETRY_PROMPT_NO"

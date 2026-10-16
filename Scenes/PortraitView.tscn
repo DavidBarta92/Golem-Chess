@@ -16,7 +16,6 @@ png_part_ids = {
 "body": "A1",
 "eyebrows": "A2",
 "eyelash": "A1",
-"eyewhite": "A1",
 "facial_hair": "A1",
 "hair": "A2",
 "head": "A1",
@@ -28,7 +27,7 @@ png_part_ids = {
 head_id = "A1"
 torso_id = "A1"
 hair_id = "A2"
-eyes_id = "A1"
+eyes_id = ""
 closed_eyes_id = ""
 pupils_id = "A1"
 nose_id = "A1"
@@ -41,7 +40,6 @@ layer_offsets = {
 "body": Vector2(0, 0),
 "eyebrows": Vector2(0, 0),
 "eyelash": Vector2(0, 0),
-"eyewhite": Vector2(0, 0),
 "facial_hair": Vector2(0, 0),
 "hair": Vector2(0, 0),
 "head": Vector2(0, 0),
@@ -56,7 +54,6 @@ look_down_head_offset = Vector2(0, 2.2)
 look_down_layer_offsets = {
 "eyebrows": Vector2(0, 2),
 "eyelash": Vector2(0, 2.8),
-"eyewhite": Vector2(0, 1.4),
 "facial_hair": Vector2(0, 1),
 "hair": Vector2(0, -0.8),
 "mouth": Vector2(0, 0.8),
@@ -141,11 +138,6 @@ position = Vector2(-124.5, -170)
 centered = false
 
 [node name="Eyelash_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1334185174]
-texture_filter = 1
-position = Vector2(-124.5, -170)
-centered = false
-
-[node name="Eyewhite_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=471686519]
 texture_filter = 1
 position = Vector2(-124.5, -170)
 centered = false

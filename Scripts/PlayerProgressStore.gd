@@ -13,15 +13,12 @@ func ensure_loaded() -> void:
 	if is_loaded:
 		return
 
-	if FileAccess.file_exists(PROGRESS_PATH):
-		var file := FileAccess.open(PROGRESS_PATH, FileAccess.READ)
-		if file != null:
-			var parsed = JSON.parse_string(file.get_as_text())
-			if parsed is Dictionary:
-				progress_data = _normalize_progress(parsed)
-				is_loaded = true
-				save_progress()
-				return
+	var raw_data: Dictionary = SaveIO.read_json(PROGRESS_PATH)
+	if !raw_data.is_empty():
+		progress_data = _normalize_progress(raw_data)
+		is_loaded = true
+		save_progress()
+		return
 
 	progress_data = _create_default_progress()
 	is_loaded = true
@@ -171,14 +168,7 @@ func get_max_affordable_pack_count(pack_price: int = PACK_COST) -> int:
 func save_progress() -> bool:
 	if progress_data.is_empty():
 		progress_data = _create_default_progress()
-
-	var file := FileAccess.open(PROGRESS_PATH, FileAccess.WRITE)
-	if file == null:
-		push_error("Could not save player progress to %s" % PROGRESS_PATH)
-		return false
-
-	file.store_string(JSON.stringify(progress_data, "\t"))
-	return true
+	return SaveIO.write_json(PROGRESS_PATH, progress_data, PROGRESS_SCHEMA_VERSION)
 
 func _create_default_progress() -> Dictionary:
 	return {

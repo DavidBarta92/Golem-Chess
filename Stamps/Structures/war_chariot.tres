@@ -12,4 +12,6 @@ Set = "Structures"
 white_piece_texture = ExtResource("3_touq0")
 black_piece_texture = ExtResource("1_jln8b")
 description = "No special effect."
+square_color_a = Color(0.4, 0.24705882, 0.32941177, 1)
+square_color_b = Color(0.4, 0.24705882, 0.32941177, 1)
 movement_pattern = Array[Array]([[0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [2, 2, 0, 2, 2], [0, 0, 2, 0, 0], [0, 0, 2, 0, 0]])

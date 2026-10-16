@@ -88,13 +88,32 @@ func create_deck_counter_ui() -> void:
 
 	update_deck_counter_ui(false)
 
-func create_digit_counter_container(counter_name: String, digit_owner_key: int, digit_count: int = 2, show_middle_separator: bool = false) -> Control:
+## `options` covers the cases the deck counters do not need:
+##   show_frame       - off when the caller draws its own frame over the top
+##   separator_glyph  - off when that frame already has a colon printed on it
+##   span_width       - total width the digits and the gap must fill; the gap
+##                      is whatever is left over once the digits are laid out
+##   separator_width  - the gap directly, when span_width is not given
+##   content_inset_x  - horizontal inset of the digits; the vertical one is
+##                      what centres them, so it is left alone
+func create_digit_counter_container(counter_name: String, digit_owner_key: int, digit_count: int = 2, show_middle_separator: bool = false, options: Dictionary = {}) -> Control:
 	if canvas_layer == null or !is_instance_valid(canvas_layer):
 		return null
 	digit_count = maxi(digit_count, 1)
-	var separator_width: float = 14.0 if show_middle_separator and digit_count == 4 else 0.0
-	var content_width: float = deck_counter_background_size.x * float(digit_count) + deck_counter_digit_gap * float(digit_count - 1) + separator_width
-	var counter_frame_size := Vector2(content_width + deck_counter_content_offset.x * 2.0, deck_counter_frame_size.y)
+	var show_frame: bool = bool(options.get("show_frame", true))
+	var separator_glyph: bool = bool(options.get("separator_glyph", true))
+	var content_offset := Vector2(
+		float(options.get("content_inset_x", deck_counter_content_offset.x)),
+		deck_counter_content_offset.y)
+	var digits_width: float = deck_counter_background_size.x * float(digit_count) + deck_counter_digit_gap * float(digit_count - 1)
+	var separator_width: float = 0.0
+	if show_middle_separator and digit_count == 4:
+		if options.has("span_width"):
+			separator_width = maxf(float(options["span_width"]) - digits_width, 0.0)
+		else:
+			separator_width = float(options.get("separator_width", 14.0))
+	var content_width: float = digits_width + separator_width
+	var counter_frame_size := Vector2(content_width + content_offset.x * 2.0, deck_counter_frame_size.y)
 
 	var counter_container := Control.new()
 	canvas_layer.add_child(counter_container)
@@ -104,22 +123,12 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int, 
 	counter_container.size = counter_frame_size
 	counter_container.z_index = deck_counter_z_index
 
-	var frame_rect := TextureRect.new()
-	counter_container.add_child(frame_rect)
-	frame_rect.name = "Frame"
-	frame_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame_rect.texture = deck_counter_frame_texture
-	frame_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	frame_rect.stretch_mode = TextureRect.STRETCH_SCALE
-	frame_rect.size = counter_frame_size
-	frame_rect.position = Vector2.ZERO
-	frame_rect.z_index = 0
-
+	if show_frame:
+		_add_counter_frame(counter_container, counter_frame_size)
 	var digit_nodes: Array = []
 	for digit_index in range(digit_count):
 		var separator_offset: float = separator_width if digit_index >= 2 else 0.0
-		var digit_position := deck_counter_content_offset + Vector2(digit_index * (deck_counter_background_size.x + deck_counter_digit_gap) + separator_offset, 0.0)
+		var digit_position := content_offset + Vector2(digit_index * (deck_counter_background_size.x + deck_counter_digit_gap) + separator_offset, 0.0)
 
 		var background_rect := TextureRect.new()
 		counter_container.add_child(background_rect)
@@ -172,6 +181,33 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int, 
 		shadow_rect.z_index = 3
 
 	if separator_width > 0.0:
+		# The digits leave a gap here for the colon, and with nothing in it the
+		# frame shows through as a dark band straight across the counter. A
+		# slice of the same card face and shadow closes it, so the whole thing
+		# reads as one strip with a colon printed on it.
+		var gap_position: Vector2 = content_offset + Vector2(
+			deck_counter_background_size.x * 2.0 + deck_counter_digit_gap * 2.0, 0.0)
+		var gap_size := Vector2(separator_width, deck_counter_background_size.y)
+		for part in [
+			{"name": "SeparatorBackground", "texture": deck_counter_background_texture, "z": 1},
+			{"name": "SeparatorShadow", "texture": deck_counter_shadow_texture, "z": 3},
+		]:
+			var slice := TextureRect.new()
+			counter_container.add_child(slice)
+			slice.name = str(part["name"])
+			slice.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			slice.texture = part["texture"]
+			slice.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+			slice.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			slice.stretch_mode = TextureRect.STRETCH_SCALE
+			slice.size = gap_size
+			slice.position = gap_position
+			slice.z_index = int(part["z"])
+
+		if !separator_glyph:
+			deck_counter_digit_nodes[digit_owner_key] = digit_nodes
+			return counter_container
+
 		var separator := Label.new()
 		counter_container.add_child(separator)
 		separator.name = "Separator"
@@ -181,12 +217,25 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int, 
 		separator.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		separator.add_theme_font_size_override("font_size", 22)
 		separator.add_theme_color_override("font_color", Color(0.08, 0.075, 0.065, 1.0))
-		separator.position = deck_counter_content_offset + Vector2(deck_counter_background_size.x * 2.0, 0.0)
+		separator.position = content_offset + Vector2(deck_counter_background_size.x * 2.0, 0.0)
 		separator.size = Vector2(separator_width, deck_counter_background_size.y)
 		separator.z_index = 4
 
 	deck_counter_digit_nodes[digit_owner_key] = digit_nodes
 	return counter_container
+
+func _add_counter_frame(counter_container: Control, counter_frame_size: Vector2) -> void:
+	var frame_rect := TextureRect.new()
+	counter_container.add_child(frame_rect)
+	frame_rect.name = "Frame"
+	frame_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_rect.texture = deck_counter_frame_texture
+	frame_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	frame_rect.size = counter_frame_size
+	frame_rect.position = Vector2.ZERO
+	frame_rect.z_index = 0
 
 func update_deck_counter_ui(animate: bool = true) -> void:
 	for owner_color in [1, -1]:

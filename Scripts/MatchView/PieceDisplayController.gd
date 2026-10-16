@@ -159,7 +159,9 @@ func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool =
 	var shadow_light: PointLight2D = piece_visuals.get_shadow_light(holder) if piece_visuals != null else null
 	var target_shadow_energy: float = 0.0 if should_dim else piece_shadow_light_energy
 
-	var existing_tween: Tween = holder.get_meta(PIECE_HOVER_DIM_TWEEN_META, null) as Tween
+	# get_meta() reads a null default as "no default" and reports the key as
+	# missing, so ask first.
+	var existing_tween: Tween = holder.get_meta(PIECE_HOVER_DIM_TWEEN_META) as Tween if holder.has_meta(PIECE_HOVER_DIM_TWEEN_META) else null
 	if existing_tween != null and existing_tween.is_valid():
 		existing_tween.kill()
 

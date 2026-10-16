@@ -47,8 +47,6 @@ func ready() -> void:
 	match_board.get_turn_hud_controller().create_player_name_ui()
 	match_board.create_quit_confirmation_ui()
 	match_board.get_turn_hud_controller().create_end_turn_ui()
-	match_board.get_turn_hud_controller().create_rules_info_ui()
-	match_board.get_turn_hud_controller().create_action_status_ui()
 	match_board.get_turn_hud_controller().create_turn_timer_ui()
 	var hud_controller = match_board.get_turn_hud_controller()
 	var resize_callable := Callable(self, "on_viewport_size_changed")

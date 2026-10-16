@@ -6,6 +6,11 @@ const SLIDE_UP_DURATION: float = 0.35
 const SLIDE_HOLD_DURATION: float = 0.6
 
 const TURN_SINK_VISIBLE_HEIGHT: float = 20.0
+## Canvas y at which the table starts covering this codex, measured from
+## bg_table_base and bg_table_line across the codex's own span. The codex sits
+## behind the table, so how far it can sink before disappearing altogether is
+## set by the table's edge, not by its own height.
+const TABLE_EDGE_CANVAS_Y: float = 283.0
 const SINK_FALL_DURATION: float = 0.22
 const SINK_BOUNCE_DISTANCE: float = 10.0
 const SINK_BOUNCE_DURATION: float = 0.11
@@ -21,11 +26,24 @@ var is_turn_active: bool = true
 
 func _ready() -> void:
 	rest_position = position
-	# Sprite2D is center-anchored, so sinking by (rendered height - the
-	# desired peek) pushes the sprite down almost its own height -- leaving
-	# only a sliver of its top edge (the last part to go) still in view.
-	var rendered_height: float = texture.get_height() * scale.y if texture != null else 0.0
-	turn_sink_distance = max(rendered_height - TURN_SINK_VISIBLE_HEIGHT, 0.0)
+	_update_turn_sink_distance()
+	get_viewport().size_changed.connect(_update_turn_sink_distance)
+
+## Works out how far down the codex has to go to leave only
+## TURN_SINK_VISIBLE_HEIGHT of its top edge showing above the table. Sinking
+## by its own height would be too far now that the table covers it -- it would
+## vanish completely instead of peeking. The table's edge moves when the window
+## changes shape, because the art is scaled to cover the viewport, so this is
+## worked out again each time.
+func _update_turn_sink_distance() -> void:
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var cover: float = BoardCanvas.cover(viewport_size)
+	var table_edge_y: float = (TABLE_EDGE_CANVAS_Y - BoardCanvas.SIZE.y * 0.5) * cover + viewport_size.y * 0.5
+	var half_height: float = texture.get_height() * scale.y * 0.5 if texture != null else 0.0
+	var sunk_center_y: float = table_edge_y - TURN_SINK_VISIBLE_HEIGHT + half_height
+	turn_sink_distance = maxf(sunk_center_y - rest_position.y, 0.0)
+	if !is_turn_active:
+		set_turn_sink_offset(turn_sink_distance)
 
 func apply_position() -> void:
 	position = rest_position + Vector2(0.0, page_slide_offset + turn_sink_offset)

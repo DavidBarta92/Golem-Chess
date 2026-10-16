@@ -13,6 +13,8 @@ black_piece_texture = ExtResource("1_gux7p")
 description = "When the linked piece captures, take a Seeker stamp from your deck and add it to your hand."
 effect_type = "grant_stamp"
 effect_trigger = "on_capture"
+square_color_a = Color(0.61960787, 0.627451, 0.5568628, 1)
+square_color_b = Color(0.61960787, 0.627451, 0.5568628, 1)
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 effect_settings = {
 "stamp_name": "King"

@@ -13,6 +13,7 @@ var return_to_deck_end_scale: float = 0.324
 var return_to_deck_duration: float = 0.62
 var stamp_side_reveal_scale: float = 0.82
 var stamp_side_reveal_z_index: int = 905
+var stamp_side_reveal_vertical_offset: float = -14.0
 var stamp_affix_reveal_grow_duration: float = 0.16
 var stamp_affix_reveal_settle_duration: float = 0.36
 var stamp_affix_reveal_overshoot_ratio: float = 1.22
@@ -52,6 +53,7 @@ func configure(config: Dictionary) -> void:
 	return_to_deck_duration = float(config.get("return_to_deck_duration", return_to_deck_duration))
 	stamp_side_reveal_scale = float(config.get("stamp_side_reveal_scale", stamp_side_reveal_scale))
 	stamp_side_reveal_z_index = int(config.get("stamp_side_reveal_z_index", stamp_side_reveal_z_index))
+	stamp_side_reveal_vertical_offset = float(config.get("stamp_side_reveal_vertical_offset", stamp_side_reveal_vertical_offset))
 	stamp_affix_reveal_grow_duration = float(config.get("stamp_affix_reveal_grow_duration", stamp_affix_reveal_grow_duration))
 	stamp_affix_reveal_settle_duration = float(config.get("stamp_affix_reveal_settle_duration", stamp_affix_reveal_settle_duration))
 	stamp_affix_reveal_overshoot_ratio = float(config.get("stamp_affix_reveal_overshoot_ratio", stamp_affix_reveal_overshoot_ratio))
@@ -521,7 +523,9 @@ func get_stamp_side_reveal_position(scale: float) -> Vector2:
 	var viewport_size: Vector2 = get_viewport_size()
 	var board_screen_size: float = get_board_screen_size()
 	var offset_from_right_edge: float = maxf((viewport_size.x - board_screen_size) * 0.25, 0.0)
-	var center: Vector2 = Vector2(viewport_size.x - offset_from_right_edge, viewport_size.y * 0.5)
+	var center: Vector2 = Vector2(
+		viewport_size.x - offset_from_right_edge,
+		viewport_size.y * 0.5 + stamp_side_reveal_vertical_offset)
 	var visual_size: Vector2 = stamp_ui_size * scale
 	return center - visual_size * 0.5
 

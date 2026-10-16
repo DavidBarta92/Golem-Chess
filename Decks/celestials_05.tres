@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DeckDefinition" load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://Scripts/DeckDefinition.gd" id="1_deck_definition"]
+[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="2_stamp"]
+[ext_resource type="Resource" path="res://Stamps/numero_3.tres" id="9_stamp_01"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/comet.tres" id="9_stamp_02"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/nova.tres" id="9_stamp_03"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/mercury.tres" id="9_stamp_04"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/saturn.tres" id="9_stamp_05"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/neptune.tres" id="9_stamp_06"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/mars.tres" id="9_stamp_07"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/nebula.tres" id="9_stamp_08"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/jupiter.tres" id="9_stamp_09"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/north_star.tres" id="9_stamp_10"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/uranus.tres" id="9_stamp_11"]
+[ext_resource type="Resource" path="res://Stamps/Celestials/venus.tres" id="9_stamp_12"]
+
+[resource]
+script = ExtResource("1_deck_definition")
+deck_id = "celestials_05"
+deck_name = "Celestials deck 5"
+set_name = "Celestials"
+stamps = Array[ExtResource("2_stamp")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_01"), ExtResource("9_stamp_10"), ExtResource("9_stamp_10"), ExtResource("9_stamp_02"), ExtResource("9_stamp_11"), ExtResource("9_stamp_12")])

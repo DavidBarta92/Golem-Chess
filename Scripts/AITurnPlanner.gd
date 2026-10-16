@@ -17,6 +17,13 @@ const TACTICAL_SEARCH_SCRIPT = preload("res://Scripts/AITacticalSearch.gd")
 var planning_evaluator: AIMoveEvaluator = null
 var tactical_search = TACTICAL_SEARCH_SCRIPT.new()
 
+# Per-turn pacing budget (see begin_turn_pacing). Planning time and the
+# post-action animation delays count toward it, so it is measured from the
+# turn's start instead of being added on top of them.
+var turn_pacing_start_msec: int = 0
+var turn_pacing_total_seconds: float = 0.0
+var turn_pacing_scheduled_seconds: float = 0.0
+
 func execute_planned_turn(
 	host: NetworkGameHost,
 	tree: SceneTree,
@@ -92,13 +99,16 @@ func execute_sequential_turn(
 	while can_continue_sequential_turn(host, player_id):
 		if affix_actions_played < MAX_SEQUENTIAL_AFFIX_ACTIONS:
 			var best_affix: Dictionary = find_best_affix_setup(host.game_state, player_id, evaluator, board_size, profile)
+			var affix_action: Dictionary = best_affix.get("action", {})
 			var affix_threshold: float = -INF if int(host.game_state.completed_turn_counts.get(player_id, 0)) == 0 else get_affix_setup_threshold(host.game_state, player_id)
 			best_score_seen = max(best_score_seen, float(best_affix.get("score", -INF)))
-			if float(best_affix.get("score", -INF)) >= affix_threshold:
-				var affix_action: Dictionary = best_affix.get("action", {})
-				if affix_action.is_empty():
-					break
-
+			# With no piece able to move, affixing is the only thing that unlocks
+			# the end-turn button, so the best stamp goes down even if it scores low.
+			var must_affix: bool = affix_actions_played == 0 \
+				and !host.can_move_any_piece_for_player(player_id) \
+				and !host.can_end_turn_by_button(player_id)
+			# An empty action means nothing on this page fits: fall through to turning the page.
+			if !affix_action.is_empty() and (float(best_affix.get("score", -INF)) >= affix_threshold or must_affix):
 				setup_affix_actions.append(affix_action)
 				await execute_ai_action(host, tree, affix_action, action_delay, selected_actions)
 				affix_actions_played += 1
@@ -120,6 +130,14 @@ func execute_sequential_turn(
 	if can_continue_sequential_turn(host, player_id) and host.can_end_turn_by_button(player_id):
 		await execute_ai_action(host, tree, make_end_turn_action(player_id), action_delay, selected_actions)
 
+	# Nothing legal is left (no move, nothing to affix, no page to turn, and the
+	# end-turn exceptions don't apply): pass rather than sit on the turn forever.
+	if can_continue_sequential_turn(host, player_id):
+		var forced_end_action: Dictionary = make_end_turn_action(player_id)
+		await wait_turn_pacing_before_action(host, tree, forced_end_action)
+		if host.force_end_turn_for_ai(player_id):
+			selected_actions.append(forced_end_action)
+
 	return create_sequential_plan(selected_actions, selected_move, setup_affix_actions, best_score_seen, profile)
 
 func can_continue_sequential_turn(host: NetworkGameHost, player_id: int) -> bool:
@@ -135,11 +153,51 @@ func execute_ai_action(
 	action_delay: float,
 	selected_actions: Array[Dictionary]
 ) -> void:
+	await wait_turn_pacing_before_action(host, tree, action)
+	if !can_continue_sequential_turn(host, int(action.get("player_id", -1))):
+		return
 	host.on_player_action(make_executable_action(action))
 	selected_actions.append(action.duplicate())
 	var delay: float = get_ai_action_delay(action, action_delay)
 	if tree != null and delay > 0.0:
 		await tree.create_timer(delay).timeout
+
+## Rolls this turn's whole pause up front. Each action before the closing one
+## then takes a random slice of what is left, and the closing action (the move,
+## the end-turn button, or the stamp that auto-ends the first turn) waits out
+## the rest. A total of zero turns pacing off.
+func begin_turn_pacing(total_seconds: float) -> void:
+	turn_pacing_start_msec = Time.get_ticks_msec()
+	turn_pacing_total_seconds = maxf(total_seconds, 0.0)
+	turn_pacing_scheduled_seconds = 0.0
+
+func wait_turn_pacing_before_action(host: NetworkGameHost, tree: SceneTree, action: Dictionary) -> void:
+	if tree == null or turn_pacing_total_seconds <= 0.0:
+		return
+
+	if action_closes_turn(host, action):
+		turn_pacing_scheduled_seconds = turn_pacing_total_seconds
+	else:
+		var remaining_seconds: float = maxf(turn_pacing_total_seconds - turn_pacing_scheduled_seconds, 0.0)
+		turn_pacing_scheduled_seconds += randf_range(0.0, remaining_seconds)
+
+	var elapsed_seconds: float = float(Time.get_ticks_msec() - turn_pacing_start_msec) / 1000.0
+	var wait_seconds: float = turn_pacing_scheduled_seconds - elapsed_seconds
+	if wait_seconds > 0.0:
+		await tree.create_timer(wait_seconds).timeout
+
+func action_closes_turn(host: NetworkGameHost, action: Dictionary) -> bool:
+	match str(action.get("type", "")):
+		ACTION_MOVE_PIECE, ACTION_END_TURN:
+			return true
+		ACTION_AFFIX_STAMP:
+			# NetworkGameHost.handle_affix_stamp ends the first turn on the last hand stamp.
+			var player_id: int = int(action.get("player_id", -1))
+			return host != null \
+				and host.game_state != null \
+				and host.is_first_turn_for_player(player_id) \
+				and int(host.game_state.affixed_stamp_count_this_turn.get(player_id, 0)) + 1 >= DeckManager.HAND_SIZE
+	return false
 
 func create_sequential_plan(
 	actions: Array[Dictionary],
@@ -180,7 +238,7 @@ func find_best_affix_setup(
 		for position_value in game_state.pieces:
 			var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 			var piece: Piece = game_state.pieces[position_value] as Piece
-			if piece == null or piece.color != player_color or piece.affixed_stamp != null:
+			if piece == null or piece.color != player_color or !piece.can_receive_stamp():
 				continue
 			if !MoveRules.can_affix_stamp_for_turn(game_state.pieces, player_color, stamp):
 				continue
@@ -425,6 +483,22 @@ func add_current_state_finish_plans(
 		var plan_type: String = "setup_move" if !setup_affix_actions.is_empty() else "move"
 		plans.append(create_plan(move_actions, move, duplicate_actions(setup_affix_actions), plan_type))
 
+	# With nothing able to move, a turn can only close through the end-turn
+	# button, which needs a frozen or freshly stamped piece. Without these plans
+	# the planner finds nothing and the AI stalls.
+	if !is_first_turn and valid_moves.is_empty() and can_end_turn_without_move_in_plan(game_state, player_id, board_size):
+		var end_turn_actions: Array[Dictionary] = duplicate_actions(prefix_actions)
+		end_turn_actions.append(make_end_turn_action(player_id))
+		var end_plan_type: String = "setup_end_turn" if !setup_affix_actions.is_empty() else "end_turn"
+		plans.append(create_plan(end_turn_actions, {}, duplicate_actions(setup_affix_actions), end_plan_type))
+
+## Mirrors NetworkGameHost.can_end_turn_due_to_frozen_piece for a simulated state.
+func can_end_turn_without_move_in_plan(game_state: GameStateData, player_id: int, board_size: int) -> bool:
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	if MoveRules.has_valid_piece_move(game_state.pieces, player_color, board_size, game_state.board_effects):
+		return false
+	return MoveRules.has_frozen_movable_piece(game_state.pieces, player_color, board_size, game_state.board_effects)
+
 func get_ranked_affix_actions_for_state(game_state: GameStateData, player_id: int, board_size: int) -> Array[Dictionary]:
 	var hand_stamps: Array[Stamp] = AIStateSimulator.get_hand_stamps_from_state(game_state, player_id)
 	var affix_actions: Array[Dictionary] = get_affix_actions_for_pieces(game_state.pieces, player_id, hand_stamps)
@@ -566,6 +640,9 @@ func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, p
 			return true
 
 		var action: Dictionary = action_value
+		await wait_turn_pacing_before_action(host, tree, action)
+		if host.game_state.game_over or host.game_state.current_turn_player != player_id:
+			return true
 		host.on_player_action(make_executable_action(action))
 
 		if host.game_state.game_over or host.game_state.current_turn_player != player_id:
@@ -575,7 +652,10 @@ func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, p
 			await tree.create_timer(delay).timeout
 
 	if can_continue_sequential_turn(host, player_id) and host.can_end_turn_by_button(player_id):
-		host.on_player_action(make_executable_action(make_end_turn_action(player_id)))
+		var end_turn_action: Dictionary = make_end_turn_action(player_id)
+		await wait_turn_pacing_before_action(host, tree, end_turn_action)
+		if can_continue_sequential_turn(host, player_id):
+			host.on_player_action(make_executable_action(end_turn_action))
 
 	return true
 

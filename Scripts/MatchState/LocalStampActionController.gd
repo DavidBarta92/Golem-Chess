@@ -89,6 +89,31 @@ func affix_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vect
 	await match_board.get_piece_effect_flow_controller().play_piece_stamp_affix_animation(piece_position, affix_stamp, start_texture)
 	match_board.finish_stamp_affix_process(piece_position)
 
+## Puts a stamp from a colour's open codex page onto one of its pieces with no
+## one dragging it - the tutorial's opponent playing a scripted turn. It goes
+## the way a stamp the player drops goes: off the page, onto the piece, with
+## the same reveal and the same animation. Returns once the animation is over.
+func affix_hand_stamp_locally(owner_color: int, hand_index: int, piece_position: Vector2) -> void:
+	var stamps: Array[Stamp] = match_board.get_stamp_hand(owner_color)
+	if hand_index < 0 or hand_index >= stamps.size() or !match_board.piece_objects.has(piece_position):
+		return
+	var affix_stamp: Stamp = stamps[hand_index]
+	var start_texture: Texture2D = null
+	var holder: Sprite2D = match_board.get_piece_holder_at(piece_position)
+	if holder != null and is_instance_valid(holder):
+		start_texture = holder.texture
+
+	match_board.begin_stamp_affix_process(piece_position)
+	if !apply_stamp_to_piece(piece_position, affix_stamp.stamp_name):
+		match_board.finish_stamp_affix_process(piece_position)
+		return
+	match_board.get_local_state_mutator().record_played_stamp_hand_slot(owner_color, hand_index)
+	match_board.get_stamp_hand_state_controller().remove_stamp_from_hand_index(owner_color, hand_index, false)
+	match_board.get_turn_action_state_controller().mark_stamp_affixed_this_turn(owner_color)
+	match_board.stamp_affixed.emit(piece_position, affix_stamp.stamp_name, owner_color, hand_index)
+	await match_board.get_piece_effect_flow_controller().play_piece_stamp_affix_animation(piece_position, affix_stamp, start_texture)
+	match_board.finish_stamp_affix_process(piece_position)
+
 func send_stamp_affix_action(owner_color: int, stamp_name: String, piece_position: Vector2, hand_index: int) -> bool:
 	var action: Dictionary = {
 		"type": "affix_stamp",

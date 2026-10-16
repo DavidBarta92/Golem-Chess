@@ -8,10 +8,13 @@
 script = ExtResource("2_dvfe8")
 stamp_name = "Gold General"
 stamp_code = "gold_general"
+role = 1
 Set = "Courtyard"
 duration = 1
 white_piece_texture = ExtResource("3_ubhqc")
 black_piece_texture = ExtResource("1_dmw0c")
 description = "No special effect."
-movement_pattern = [[1, 0, 0, 0, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]]
+square_color_a = Color(0.91764706, 0.59607846, 0.29803923, 1)
+square_color_b = Color(0.91764706, 0.59607846, 0.29803923, 1)
+movement_pattern = [[1, 0, 0, 0, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]]
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

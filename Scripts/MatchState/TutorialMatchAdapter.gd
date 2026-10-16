@@ -25,7 +25,8 @@ func clear_constraints() -> void:
 func refresh_dependent_ui() -> void:
 	match_board.update_stamp_drag_permissions()
 	match_board.update_end_turn_button()
-	match_board.get_turn_hud_controller().update_action_status_ui()
+	# The page-turn tab rises and sinks with whether turning is allowed.
+	match_board.get_match_codex_controller().update_ui()
 	if match_board.state:
 		match_board.show_options()
 
@@ -144,6 +145,12 @@ func set_board_from_array(board_data: Array) -> void:
 			match_board.board[row][col] = int(row_data[col])
 
 	match_board.piece_objects.clear()
+	# Captured pieces still waiting for a free square to come back on belong
+	# to the board being replaced. Emptied in place: the state mutator holds
+	# the same dictionary.
+	for owner_color in [1, -1]:
+		match_board.local_pending_respawns[owner_color] = []
+	match_board.get_piece_respawn_fragment_coordinator().clear_all_fragment_markers()
 	match_board.create_pieces_from_board()
 	match_board.current_board_effects.clear()
 	match_board.current_last_move.clear()

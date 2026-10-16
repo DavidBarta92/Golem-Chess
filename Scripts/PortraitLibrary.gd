@@ -12,7 +12,6 @@ const PNG_LAYER_ORDER: Array[String] = [
 	"eyebrows",
 	"pupils",
 	"eyelash",
-	"eyewhite",
 	"nose",
 	"mouth",
 	"head",
@@ -26,7 +25,6 @@ const REQUIRED_PNG_CATEGORIES: Array[String] = [
 	"eyebrows",
 	"pupils",
 	"eyelash",
-	"eyewhite",
 	"nose",
 	"mouth",
 	"head",
@@ -41,7 +39,6 @@ const CATEGORY_ALIASES: Dictionary = {
 	"mustache": "facial_hair",
 	"pupil": "pupils",
 	"torso": "body",
-	"eyes": "eyewhite",
 }
 
 static var texture_cache: Dictionary = {}
@@ -188,7 +185,6 @@ static func create_base_portrait_config(seed: int) -> PortraitConfig:
 		"facial_hair": Vector2(0.0, 1.0),
 		"eyebrows": Vector2(0.0, 2.0),
 		"eyelash": Vector2(0.0, 2.8),
-		"eyewhite": Vector2(0.0, 1.4),
 		"pupils": Vector2(0.0, 1.8),
 		"nose": Vector2(0.0, 1.3),
 		"mouth": Vector2(0.0, 0.8),
@@ -343,13 +339,16 @@ static func apply_base_portrait_rig(config: PortraitConfig) -> void:
 	config.torso_breath_enabled = true
 	config.occasional_head_motion_enabled = true
 
+## Any complete set is valid on an existing portrait, including sets kept out of
+## random generation (Grandpa's C set belongs to the boss only). Unknown or
+## incomplete sets fall back to the first generator set.
 static func normalize_set_id(set_id: String) -> String:
 	var normalized: String = str(set_id).strip_edges().to_upper()
 	if normalized.is_empty():
 		normalized = PortraitConfig.DEFAULT_PORTRAIT_SET_ID
-	var enabled_sets: Array[String] = get_enabled_portrait_sets()
-	if enabled_sets.has(normalized):
+	if get_available_complete_sets().has(normalized):
 		return normalized
+	var enabled_sets: Array[String] = get_enabled_portrait_sets()
 	if !enabled_sets.is_empty():
 		return enabled_sets[0]
 	return PortraitConfig.DEFAULT_PORTRAIT_SET_ID
@@ -374,7 +373,7 @@ static func apply_legacy_part_aliases(config: PortraitConfig) -> void:
 	config.mustache_id = str(config.png_part_ids.get("facial_hair", ""))
 	config.brows_id = str(config.png_part_ids.get("eyebrows", ""))
 	config.pupils_id = str(config.png_part_ids.get("pupils", ""))
-	config.eyes_id = str(config.png_part_ids.get("eyewhite", ""))
+	config.eyes_id = ""
 	config.closed_eyes_id = ""
 	config.nose_id = str(config.png_part_ids.get("nose", ""))
 	config.mouth_id = str(config.png_part_ids.get("mouth", ""))

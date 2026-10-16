@@ -143,10 +143,13 @@ func get_perspective_scale(board_pos: Vector2) -> float:
 	var normalized_distance: float = clampf(row_delta_from_center / center_row, -1.0, 1.0)
 	return 1.0 + normalized_distance * piece_perspective_scale_variation
 
+## Where a square sits in the drawing order: the nearer the viewer, the higher.
+## Ranks are spaced `BoardConfig.DEPTH_Z_STRIDE` apart rather than one, so there
+## is room between them for a piece in flight; see that constant. This is the
+## only place the spacing is applied - everything else asks here.
 func get_depth_z_index(board_pos: Vector2) -> int:
-	if view_color < 0:
-		return int(board_pos.x)
-	return board_size - 1 - int(board_pos.x)
+	var rank: int = int(board_pos.x) if view_color < 0 else board_size - 1 - int(board_pos.x)
+	return rank * BoardConfig.DEPTH_Z_STRIDE
 
 func get_holder_at(pieces_node: Node, board_pos: Vector2, invalid_pos: Vector2) -> Sprite2D:
 	if pieces_node == null:

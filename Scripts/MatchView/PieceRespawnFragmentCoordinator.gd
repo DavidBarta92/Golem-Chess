@@ -52,6 +52,21 @@ func clear_piece_shatter_respawn_fragment_markers(respawn_pos: Vector2) -> void:
 			marker_node.queue_free()
 	match_board.respawn_piece_shatter_fragment_markers.erase(respawn_pos)
 
+## Every fragment lying around for a piece still to come back, removed at
+## once - for a board that is being replaced wholesale, as the tutorial's
+## setups do; the pieces those fragments were waiting for are gone with it.
+func clear_all_fragment_markers() -> void:
+	for respawn_pos in match_board.respawn_piece_shatter_fragment_markers.keys():
+		clear_piece_shatter_respawn_fragment_markers(respawn_pos)
+	for key in match_board.pending_edge_respawn_fragment_markers:
+		for marker in match_board.pending_edge_respawn_fragment_markers[key]:
+			var marker_node: Node = marker as Node
+			if marker_node != null and is_instance_valid(marker_node):
+				marker_node.queue_free()
+	match_board.pending_edge_respawn_fragment_markers.clear()
+	match_board.pending_piece_shatter_respawn_reveal_counts.clear()
+	match_board.pending_piece_shatter_respawn_reveal_groups.clear()
+
 func get_piece_shatter_return_fragment_count(fragment_group: String) -> int:
 	return mini(get_piece_shatter_fragment_textures(fragment_group).size(), maxi(0, match_board.piece_shatter_returning_debris_count))
 

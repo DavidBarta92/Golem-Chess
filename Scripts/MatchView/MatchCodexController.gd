@@ -9,11 +9,19 @@ var black_page_counts: Array[int] = [0, 0, 0, 0, 0]
 var white_pages: Array = []
 var black_pages: Array = []
 
-var codex_panel: PanelContainer
-var page_label: Label
+## Pale type on the dark rim, and the page in hand picked out in reverse.
+const PAGE_TEXT_COLOR: Color = Color(0.82, 0.80, 0.74)
+const CURRENT_PAGE_TEXT_COLOR: Color = Color(0.08, 0.08, 0.08)
+const CURRENT_PAGE_DISC_COLOR: Color = Color(1.0, 1.0, 1.0)
+
+var codex_panel: Control
 var counts_row: HBoxContainer
 var turn_page_button: Button
 var count_labels: Array[Label] = []
+var count_slots: Array[PanelContainer] = []
+
+var _current_page_style: StyleBoxFlat
+var _plain_slot_style: StyleBoxEmpty
 
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
@@ -26,19 +34,49 @@ func create_ui() -> void:
 	if codex_panel == null:
 		return
 
-	var root: VBoxContainer = codex_panel.get_node("VBoxContainer")
-	page_label = root.get_node("PageLabel")
-	counts_row = root.get_node("CountsRow")
-	turn_page_button = root.get_node("TurnPageButton")
+	counts_row = codex_panel.find_child("CountsRow", true, false) as HBoxContainer
+	turn_page_button = codex_panel.find_child("TurnPageButton", true, false) as Button
+	if counts_row == null or turn_page_button == null:
+		return
 
 	count_labels.clear()
+	count_slots.clear()
 	for child in counts_row.get_children():
-		if child is Label:
-			count_labels.append(child)
+		var slot := child as PanelContainer
+		if slot != null:
+			count_slots.append(slot)
+			count_labels.append(slot.get_node("CountLabel") as Label)
+			continue
+	_build_page_disc_style()
 
 	turn_page_button.text = tr("Turn Page")
 	turn_page_button.pressed.connect(on_turn_page_pressed)
+	counts_row.get_viewport().size_changed.connect(place_counts_row)
 	update_ui()
+
+## A disc, not a rounded box: the slots are square and the radius is half their
+## side, so the page the player is on reads as a filled white dot with its
+## number sitting in it.
+func _build_page_disc_style() -> void:
+	_current_page_style = StyleBoxFlat.new()
+	_current_page_style.bg_color = CURRENT_PAGE_DISC_COLOR
+	var radius: int = int(count_slots[0].custom_minimum_size.y * 0.5)
+	_current_page_style.corner_radius_top_left = radius
+	_current_page_style.corner_radius_top_right = radius
+	_current_page_style.corner_radius_bottom_left = radius
+	_current_page_style.corner_radius_bottom_right = radius
+	_plain_slot_style = StyleBoxEmpty.new()
+
+## Stands the counter on the board's near rim. The room's art is scaled to
+## cover the viewport, so where that rim lands depends on the window's shape;
+## BoardCanvas knows the conversion.
+func place_counts_row() -> void:
+	if counts_row == null or !is_instance_valid(counts_row):
+		return
+	var viewport_size: Vector2 = counts_row.get_viewport_rect().size
+	var centre: Vector2 = BoardCanvas.to_viewport(BoardCanvas.RIM_CENTRE, viewport_size)
+	counts_row.size = counts_row.get_combined_minimum_size()
+	counts_row.position = centre - counts_row.size * 0.5
 
 func update_ui() -> void:
 	if codex_panel == null:
@@ -47,17 +85,28 @@ func update_ui() -> void:
 	var owner_color: int = get_display_color()
 	var page_index: int = get_page_index(owner_color)
 	var page_counts: Array[int] = get_page_counts(owner_color)
-	page_label.text = tr("PAGE_OF_TOTAL") % [page_index + 1, DeckManager.CODEX_PAGE_COUNT]
 	for index in range(count_labels.size()):
 		var count_label: Label = count_labels[index]
 		var page_count: int = int(page_counts[index]) if index < page_counts.size() else 0
 		count_label.text = "%d:%d" % [index + 1, page_count]
-		count_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.44) if index == page_index else Color(0.82, 0.80, 0.74))
+		var is_current_page: bool = index == page_index
+		count_label.add_theme_color_override(
+			"font_color",
+			CURRENT_PAGE_TEXT_COLOR if is_current_page else PAGE_TEXT_COLOR
+		)
+		count_slots[index].add_theme_stylebox_override(
+			"panel",
+			_current_page_style if is_current_page else _plain_slot_style
+		)
+	place_counts_row()
 	if turn_page_button != null:
 		turn_page_button.disabled = !can_turn_page_locally(owner_color)
 
-func get_panel() -> PanelContainer:
-	return codex_panel
+## Where a stamp flies from and back to when there is no deck visual to aim
+## at. The counter now stands in for the old box, since that is where the
+## codex reads from on screen.
+func get_panel() -> Control:
+	return counts_row
 
 func get_display_color() -> int:
 	if match_board.can_control_current_turn():

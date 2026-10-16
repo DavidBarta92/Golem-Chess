@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://kba3oirpnhnc"]
+
+[ext_resource type="PackedScene" path="res://Scenes/Reward/RewardScene.tscn" id="1_reward_base"]
+[ext_resource type="Script" uid="uid://b11j74v06r3ax" path="res://Scripts/Story/Rewards/CoinDropPresenter.gd" id="9_presenter"]
+
+[node name="RewardScene" unique_id=1133455441 instance=ExtResource("1_reward_base")]
+reward_id = "reward_04_coins"
+dialogue_lines = Array[String](["REWARD_04_LINE_1"])
+grant_points = 3
+
+[node name="Presenter" type="Control" parent="RightColumn" index="0" unique_id=1933573327]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("9_presenter")

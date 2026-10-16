@@ -181,11 +181,16 @@ func play_release_animation(holder: Sprite2D, board_pos: Vector2) -> void:
 	var square_release: Polygon2D = create_square_overlay(board_pos, freeze_material, square_release_name)
 	var tween: Tween = tween_owner.create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(freeze_material, "shader_parameter/crack_width", crack_start_width, crack_release_duration)
+	# Held weakly: a refresh while the release is still playing frees both
+	# overlays at once (apply_overlay), and a lambda that had captured them
+	# outright would then be called with freed objects.
+	var release_ref: WeakRef = weakref(release_overlay)
+	var square_ref: WeakRef = weakref(square_release)
 	tween.finished.connect(func():
-		if is_instance_valid(release_overlay):
-			release_overlay.queue_free()
-		if is_instance_valid(square_release):
-			square_release.queue_free()
+		for overlay_ref: WeakRef in [release_ref, square_ref]:
+			var overlay: Node = overlay_ref.get_ref() as Node
+			if overlay != null:
+				overlay.queue_free()
 	)
 
 func remove_overlay(holder: Sprite2D) -> void:

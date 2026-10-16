@@ -1,0 +1,93 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Story/RewardSceneBase.gd" id="1_reward_base"]
+[ext_resource type="PackedScene" uid="uid://7r8rqxo7x633" path="res://Scenes/DialoguePanel.tscn" id="2_dialogue_panel"]
+[ext_resource type="Shader" uid="uid://cq2wpk53gbihw" path="res://Shaders/paper_texture.gdshader" id="3_paper_texture_shader"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_reward_paper"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_reward_paper"]
+noise = SubResource("FastNoiseLite_reward_paper")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_reward_paper"]
+shader = ExtResource("3_paper_texture_shader")
+shader_parameter/noise_texture = SubResource("NoiseTexture2D_reward_paper")
+shader_parameter/fold_scale = Vector2(2.2, 2.2)
+shader_parameter/fiber_scale = 39.9600017081
+shader_parameter/fiber_stretch = 13.2850005835375
+shader_parameter/fiber_edge = 0.04500000143898
+shader_parameter/fiber_strength = 0.0450000021375
+shader_parameter/grain_strength = 0.062000002945
+shader_parameter/highlight_tint = Color(1.04, 1.04, 1.04, 1)
+shader_parameter/shadow_tint = Color(0.68651277, 0.6474813, 0.5577221, 1)
+shader_parameter/light_dir = Vector3(0.35, 0.55, 0.75)
+shader_parameter/bump_strength = 2.5
+shader_parameter/light_strength = 0.55
+shader_parameter/contrast = 1.25
+shader_parameter/effect_opacity = 0.5
+
+[node name="RewardScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_reward_base")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.956863, 0.941176, 0.901961, 1)
+
+[node name="RewardImage" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 48.0
+offset_top = 92.0
+offset_right = 470.0
+offset_bottom = 392.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RightColumn" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 512.0
+offset_top = 92.0
+offset_right = 1232.0
+offset_bottom = 690.0
+mouse_filter = 1
+
+[node name="DialoguePanel" parent="." instance=ExtResource("2_dialogue_panel")]
+layout_mode = 1
+
+[node name="DialogueRoot" parent="DialoguePanel" index="0"]
+anchors_preset = 0
+anchor_top = 0.0
+anchor_bottom = 0.0
+offset_left = 48.0
+offset_top = 404.0
+offset_right = 470.0
+offset_bottom = 700.0
+grow_vertical = 1
+
+[node name="PaperTextureLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer"]
+material = SubResource("ShaderMaterial_reward_paper")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

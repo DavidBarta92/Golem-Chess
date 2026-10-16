@@ -26,6 +26,19 @@ uniform float bump_strength : hint_range(0.0, 8.0) = 2.5;
 uniform float light_strength : hint_range(0.0, 2.0) = 0.55;
 uniform float contrast : hint_range(0.5, 3.0) = 1.25;
 uniform float effect_opacity : hint_range(0.0, 1.0) = 0.5;
+// Multiplied into the screen before the paper look, for scenes whose art is
+// opaque white rather than drawn over the cream paper ColorRect the other
+// scenes use. White (the default) leaves the screen as it is.
+uniform vec4 paper_color : source_color = vec4(1.0);
+
+// Optional cut-out the overlay leaves untouched: a rect in the overlay's own
+// pixels (x, y, width, height) with rounded bottom corners, so a UI panel can
+// stay clean while the room around it gets the paper look. cutout_amount 0
+// (the default) turns it off.
+uniform vec4 cutout_rect = vec4(0.0);
+uniform float cutout_bottom_radius = 0.0;
+uniform float cutout_amount : hint_range(0.0, 1.0) = 0.0;
+uniform vec2 cutout_canvas_size = vec2(1.0);
 
 float pixel_hash(vec2 point) {
 	point = fract(point * vec2(123.34, 456.21));
@@ -50,8 +63,23 @@ float fiber_line(vec2 uv, float scale, float stretch, float angle) {
 	return 1.0 - smoothstep(0.0, fiber_edge, abs(n - 0.5));
 }
 
+// 1.0 inside the cut-out, 0.0 outside, with a one-pixel soft edge.
+float cutout_coverage(vec2 uv) {
+	if (cutout_amount <= 0.0) {
+		return 0.0;
+	}
+	vec2 half_size = cutout_rect.zw * 0.5;
+	vec2 q = uv * cutout_canvas_size - (cutout_rect.xy + half_size);
+	float radius = q.y > 0.0 ? cutout_bottom_radius : 0.0;
+	vec2 d = abs(q) - half_size + vec2(radius);
+	float dist = length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - radius;
+	return (1.0 - clamp(dist + 0.5, 0.0, 1.0)) * cutout_amount;
+}
+
 void fragment() {
 	vec4 screen_color = texture(screen_texture, SCREEN_UV);
+	float keep_out = 1.0 - cutout_coverage(UV);
+	vec3 paper_base = screen_color.rgb * mix(vec3(1.0), paper_color.rgb, keep_out);
 
 	float fibers = fiber_line(UV, fiber_scale, fiber_stretch, 0.0) * 0.65;
 	fibers += fiber_line(UV, fiber_scale * 1.4, fiber_stretch * 0.6, 0.6) * 0.35;
@@ -67,9 +95,9 @@ void fragment() {
 	shade = clamp((shade - 0.5) * contrast + 0.5, 0.0, 1.0);
 
 	vec3 tint = mix(shadow_tint.rgb, highlight_tint.rgb, shade);
-	vec3 color = screen_color.rgb * tint;
+	vec3 color = paper_base * tint;
 	color += fibers * fiber_strength;
 	color += (pixel_hash(FRAGCOORD.xy) - 0.5) * grain_strength;
 
-	COLOR = vec4(mix(screen_color.rgb, clamp(color, 0.0, 1.0), effect_opacity), screen_color.a);
+	COLOR = vec4(mix(paper_base, clamp(color, 0.0, 1.0), effect_opacity * keep_out), screen_color.a);
 }

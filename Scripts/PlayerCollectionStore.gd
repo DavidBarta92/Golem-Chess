@@ -6,19 +6,11 @@ const SAVED_DECKS_PATH: String = "user://decks.json"
 const LOCAL_PROVIDER: String = "local_json"
 const DEFAULT_VARIANT_ID: String = "standard"
 const DEFAULT_VARIANT_NAME: String = "Standard"
-const DEFAULT_COLLECTION_STAMP_NAMES: Array[String] = [
-	"Numero_1",
-	"Numero_2",
-	"Numero_3",
-	"Numero_4",
-	"Numero_5",
-	"Numero_6",
-	"Numero_7",
-	"Prince",
-	"Rajah",
-	"Khan",
-	"Debater",
-]
+## Stamps every new save owns outright. Empty on purpose: the story hands the
+## player their first cards (Grandpa's deck) in the first reward scene. The
+## default saved deck still guarantees one copy of each stamp it plays, so the
+## starting deck is always playable.
+const DEFAULT_COLLECTION_STAMP_NAMES: Array[String] = []
 
 var collection_data: Dictionary = {}
 var is_loaded: bool = false
@@ -31,21 +23,18 @@ func ensure_loaded() -> void:
 		StampLibrary.load_all_stamps()
 	StampPrintLibrary.ensure_loaded()
 
-	if FileAccess.file_exists(COLLECTION_PATH):
-		var file := FileAccess.open(COLLECTION_PATH, FileAccess.READ)
-		if file != null:
-			var parsed = JSON.parse_string(file.get_as_text())
-			if parsed is Dictionary:
-				var previous_schema_version: int = int(parsed.get("schema_version", 1))
-				collection_data = _normalize_collection(parsed)
-				is_loaded = true
-				if _should_reset_outdated_local_collection(previous_schema_version, collection_data):
-					collection_data = _create_default_collection()
-				else:
-					_add_missing_default_collection_prints()
-				_add_missing_saved_deck_prints()
-				save_collection()
-				return
+	var raw_data: Dictionary = SaveIO.read_json(COLLECTION_PATH)
+	if !raw_data.is_empty():
+		var previous_schema_version: int = int(raw_data.get("schema_version", 1))
+		collection_data = _normalize_collection(raw_data)
+		is_loaded = true
+		if _should_reset_outdated_local_collection(previous_schema_version, collection_data):
+			collection_data = _create_default_collection()
+		else:
+			_add_missing_default_collection_prints()
+		_add_missing_saved_deck_prints()
+		save_collection()
+		return
 
 	collection_data = _create_default_collection()
 	is_loaded = true
@@ -172,14 +161,7 @@ func remove_stamp_instance(instance_id: String) -> bool:
 
 func save_collection() -> bool:
 	ensure_loaded()
-
-	var file := FileAccess.open(COLLECTION_PATH, FileAccess.WRITE)
-	if file == null:
-		push_error("Could not save player stamp collection to %s" % COLLECTION_PATH)
-		return false
-
-	file.store_string(JSON.stringify(collection_data, "\t"))
-	return true
+	return SaveIO.write_json(COLLECTION_PATH, collection_data, COLLECTION_SCHEMA_VERSION)
 
 func get_stamp_code(stamp: Stamp) -> String:
 	if stamp == null:
@@ -355,14 +337,10 @@ func _add_missing_saved_deck_prints() -> void:
 
 func _get_saved_deck_prints() -> Array:
 	var saved_prints: Dictionary = {}
-	if !FileAccess.file_exists(SAVED_DECKS_PATH):
+	var parsed = SaveIO.read_json_value(SAVED_DECKS_PATH)
+	if parsed == null:
 		return []
 
-	var file := FileAccess.open(SAVED_DECKS_PATH, FileAccess.READ)
-	if file == null:
-		return []
-
-	var parsed = JSON.parse_string(file.get_as_text())
 	var decks: Array = []
 	if parsed is Dictionary:
 		var parsed_decks = parsed.get("decks", [])

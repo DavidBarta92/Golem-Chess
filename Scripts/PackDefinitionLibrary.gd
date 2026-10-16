@@ -51,11 +51,17 @@ func get_all_packs() -> Array[PackDefinition]:
 			packs.append(pack_definition)
 	return packs
 
+## Packs the shop offers right now: switched on in their definition *and*
+## unlocked by the story for this save. Opening an already-owned pack goes
+## through get_pack() and is not affected.
 func get_available_packs() -> Array[PackDefinition]:
 	var available_packs: Array[PackDefinition] = []
 	for pack_definition in get_all_packs():
-		if pack_definition.available:
-			available_packs.append(pack_definition)
+		if !pack_definition.available:
+			continue
+		if !StoryProgressStore.is_pack_unlocked(pack_definition.get_resolved_id()):
+			continue
+		available_packs.append(pack_definition)
 	return available_packs
 
 func get_first_available_pack() -> PackDefinition:

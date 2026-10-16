@@ -3,8 +3,8 @@ class_name StoryNode
 
 @export var id: String = ""
 @export var display_name: String = ""
-@export var unlocks_feature: String = ""
 
+@export_group("Flow")
 ## If true, finishing this node immediately starts the next one (chained,
 ## no hub in between - e.g. a comic intro sliding straight into its boss
 ## fight). If false, finishing it returns to the hub scene and the story
@@ -17,6 +17,19 @@ class_name StoryNode
 ## onboarding like the base tutorial. Leave false for anything that should
 ## only start when the player presses Play from the hub.
 @export var blocks_hub_until_completed: bool = false
+
+## Where to go after this node completes when it does not auto-continue.
+## Empty means the hub. Set it when a beat should land the player somewhere
+## specific - the Buy Pack explainer, for instance, drops them into the
+## Collection right next to the button it just introduced.
+@export var completion_scene: PackedScene
+
+@export_group("Unlocks")
+## A StoryFeatures id (a menu button) that becomes usable once this node is
+## completed. Empty means nothing.
+@export var unlocks_feature: String = ""
+## Pack ids that become purchasable once this node is completed.
+@export var unlocks_packs: Array[String] = []
 
 @export_group("Debug")
 @export var force_completed: bool = false

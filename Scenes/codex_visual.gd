@@ -21,6 +21,7 @@ const SINK_BOUNCE_DISTANCE: float = 10.0
 const SINK_BOUNCE_DURATION: float = 0.11
 
 var rest_position: Vector2
+var base_offset: Vector2
 var rest_center_x: float
 var rest_visible_center_y: float
 var hand_follower: Control
@@ -43,12 +44,32 @@ var pending_screen_exit_callback: Callable
 var is_hovered: bool = false
 
 func _ready() -> void:
-	rest_position = position
-	rest_center_x = rest_position.x + size.x * 0.5
-	rest_visible_center_y = (rest_position.y + get_viewport_rect().size.y) * 0.5
+	# The offsets as authored, kept because apply_position() overwrites them
+	# the first time anything moves the codex.
+	base_offset = Vector2(offset_left, offset_top)
+	capture_rest_position()
+	get_viewport().size_changed.connect(capture_rest_position)
 	pivot_offset = Vector2(size.x * 0.5, 0.0)
 	set_process(true)
 	start_sway()
+
+## Where the codex sits with nothing moving it.
+##
+## Worked out from the anchors rather than read off `position`, and worked out
+## again whenever the window changes shape. The codex is anchored to the middle
+## of the screen's bottom edge, so its resting place moves with the viewport's
+## width - while `apply_position()` puts it back wherever this says. Capture it
+## once at startup and the first hover, page turn or sink after a resize yanks
+## the codex to where it used to belong.
+func capture_rest_position() -> void:
+	var parent_size: Vector2 = get_parent_area_size()
+	rest_position = Vector2(
+		anchor_left * parent_size.x + base_offset.x,
+		anchor_top * parent_size.y + base_offset.y
+	)
+	rest_center_x = rest_position.x + size.x * 0.5
+	rest_visible_center_y = (rest_position.y + get_viewport_rect().size.y) * 0.5
+	apply_position()
 
 func _process(_delta: float) -> void:
 	update_hover_state()

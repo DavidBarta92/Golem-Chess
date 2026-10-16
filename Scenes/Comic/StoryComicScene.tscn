@@ -1,0 +1,93 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Story/StoryComicPlayer.gd" id="1_comic_player"]
+[ext_resource type="Shader" uid="uid://cq2wpk53gbihw" path="res://Shaders/paper_texture.gdshader" id="2_paper_texture_shader"]
+[ext_resource type="ShaderMaterial" path="res://Shaders/vignette_material.tres" id="90_vignette_material"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_comic_paper"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_comic_paper"]
+noise = SubResource("FastNoiseLite_comic_paper")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_comic_paper"]
+shader = ExtResource("2_paper_texture_shader")
+shader_parameter/noise_texture = SubResource("NoiseTexture2D_comic_paper")
+shader_parameter/fold_scale = Vector2(2.2, 2.2)
+shader_parameter/fiber_scale = 39.9600017081
+shader_parameter/fiber_stretch = 13.2850005835375
+shader_parameter/fiber_edge = 0.04500000143898
+shader_parameter/fiber_strength = 0.0450000021375
+shader_parameter/grain_strength = 0.062000002945
+shader_parameter/highlight_tint = Color(1.04, 1.04, 1.04, 1)
+shader_parameter/shadow_tint = Color(0.68651277, 0.6474813, 0.5577221, 1)
+shader_parameter/light_dir = Vector3(0.35, 0.55, 0.75)
+shader_parameter/bump_strength = 2.5
+shader_parameter/light_strength = 0.55
+shader_parameter/contrast = 1.25
+shader_parameter/effect_opacity = 0.5
+
+[node name="StoryComicScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_comic_player")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.956863, 0.941176, 0.901961, 1)
+
+[node name="PageHost" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PaperTextureLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer"]
+material = SubResource("ShaderMaterial_comic_paper")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VignetteLayer" type="CanvasLayer" parent="."]
+layer = 11
+
+[node name="VignetteOverlay" type="ColorRect" parent="VignetteLayer"]
+material = ExtResource("90_vignette_material")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="FadeLayer" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="FadeOverlay" type="ColorRect" parent="FadeLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.956863, 0.941176, 0.901961, 1)

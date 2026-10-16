@@ -15,7 +15,9 @@
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/InputRebindDialog.tscn" id="13_input_rebind_dialog"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/GeneralSection.tscn" id="14_general_section"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/UISection.tscn" id="15_ui_section"]
-[ext_resource type="Shader" uid="uid://cc0ua2v4vaki6" path="res://Shaders/vignette.gdshader" id="16_vignette_shader"]
+[ext_resource type="Script" uid="uid://dta7wq16l8wau" path="res://Scripts/Story/FeatureHint.gd" id="17_feature_hint"]
+[ext_resource type="Script" uid="uid://e2vu03ic5b55" path="res://Scripts/Story/SceneLinkButton.gd" id="18_scene_link_button"]
+[ext_resource type="Material" path="res://Shaders/vignette_material.tres" id="90_vignette_material"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_lines"]
 shader = ExtResource("4_bg_line_shader")
@@ -48,13 +50,11 @@ shader_parameter/bump_strength = 2.5
 shader_parameter/light_strength = 0.55
 shader_parameter/contrast = 1.25
 shader_parameter/effect_opacity = 0.5
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
-shader = ExtResource("16_vignette_shader")
-shader_parameter/vignette_color = Color(0, 0, 0, 1)
-shader_parameter/inner_radius = 0.5530000262675
-shader_parameter/outer_radius = 1.578000074955
-shader_parameter/intensity = 0.55
+shader_parameter/paper_color = Color(0.956863, 0.941176, 0.901961, 1)
+shader_parameter/cutout_rect = Vector4(0, 0, 0, 0)
+shader_parameter/cutout_bottom_radius = 0.0
+shader_parameter/cutout_amount = 0.0
+shader_parameter/cutout_canvas_size = Vector2(1, 1)
 
 [node name="MainMenu" type="Control" unique_id=683751200]
 layout_mode = 3
@@ -270,13 +270,77 @@ mouse_filter = 2
 layer = 11
 
 [node name="VignetteOverlay" type="ColorRect" parent="VignetteLayer" unique_id=1372048644]
-material = SubResource("ShaderMaterial_vignette")
+material = ExtResource("90_vignette_material")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="CollectionFeatureHint" type="Node" parent="." unique_id=923919494]
+script = ExtResource("17_feature_hint")
+feature_id = "collection"
+target_path = NodePath("../CollectionButton")
+arrow_side = 1
+
+[node name="PlayFeatureHint" type="Node" parent="." unique_id=1569612386]
+script = ExtResource("17_feature_hint")
+feature_id = "play"
+target_path = NodePath("../PlayButton")
+lock_target_until_unlocked = false
+arrow_side = 1
+
+[node name="StoryButtons" type="VBoxContainer" parent="." unique_id=405665921]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -216.0
+offset_top = -196.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 12
+
+[node name="MultiplayerButton" type="Button" parent="StoryButtons" unique_id=1484885820]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "STORY_MULTIPLAYER_BUTTON"
+script = ExtResource("18_scene_link_button")
+target_scene_path = "res://Scenes/StoryMultiplayer.tscn"
+
+[node name="QuestsButton" type="Button" parent="StoryButtons" unique_id=1577467532]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "QUESTS_BUTTON"
+script = ExtResource("18_scene_link_button")
+target_scene_path = "res://Scenes/Quests.tscn"
+
+[node name="TradeButton" type="Button" parent="StoryButtons" unique_id=53472299]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "TRADE_BUTTON"
+script = ExtResource("18_scene_link_button")
+target_scene_path = "res://Scenes/Trade.tscn"
+
+[node name="MultiplayerFeatureHint" type="Node" parent="." unique_id=326675959]
+script = ExtResource("17_feature_hint")
+feature_id = "multiplayer"
+target_path = NodePath("../StoryButtons/MultiplayerButton")
+
+[node name="QuestsFeatureHint" type="Node" parent="." unique_id=140696544]
+script = ExtResource("17_feature_hint")
+feature_id = "quests"
+target_path = NodePath("../StoryButtons/QuestsButton")
+
+[node name="TradeFeatureHint" type="Node" parent="." unique_id=1180891715]
+script = ExtResource("17_feature_hint")
+feature_id = "trade"
+target_path = NodePath("../StoryButtons/TradeButton")
 
 [connection signal="pressed" from="CollectionButton" to="." method="_on_collection_button_pressed"]
 [connection signal="canceled" from="SettingsDialog" to="." method="_on_settings_canceled"]

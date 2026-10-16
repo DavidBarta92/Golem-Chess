@@ -44,6 +44,10 @@ func finish_game(winner_color: int) -> void:
 	if match_board == null or !is_instance_valid(match_board):
 		return
 	show_result_message(winner_color)
+	notify_boss_dialogue_of_result(did_local_player_win(winner_color))
+	match_board.game_finished.emit(winner_color)
+	if match_board.hold_after_result:
+		return
 
 	var result_wait_seconds: float = 0.05 if match_board.should_skip_visual_animations() else 8.0
 	await match_board.get_tree().create_timer(result_wait_seconds).timeout
@@ -62,9 +66,29 @@ func finish_game(winner_color: int) -> void:
 	if scene_tree != null:
 		SceneTransition.change_scene(next_scene)
 
+## Gives a story boss the last word. On a loss it speaks over the finished
+## board during the wait before the defeat comic; on a win it hands its line to
+## the reward scene instead. Does nothing in a non-story match.
+func notify_boss_dialogue_of_result(player_won: bool) -> void:
+	if !StoryManager.is_story_match_active():
+		return
+	var scene_tree: SceneTree = match_board.get_tree()
+	if scene_tree == null:
+		return
+	for director in scene_tree.get_nodes_in_group(BossDialogueDirector.GROUP_NAME):
+		if director.has_method("on_match_finished"):
+			director.on_match_finished(player_won)
+
 func get_next_scene_after_game(winner_color: int) -> String:
 	if match_board.tutorial_mode_active:
 		StoryManager.finish_current_node()
+		return ""
+
+	# A story boss fight reports back instead of going to the feedback screen:
+	# winning completes the story node, losing plays the defeat comic and
+	# leaves the node pending so Play restarts the same fight.
+	if StoryManager.is_story_match_active():
+		StoryManager.report_story_match_result(did_local_player_win(winner_color))
 		return ""
 
 	if GameConfig.is_ai_vs_ai_batch:
@@ -97,6 +121,12 @@ func should_award_win_points(winner_color: int) -> bool:
 	if GameConfig.is_ai_vs_ai_batch:
 		return false
 
+	return did_local_player_win(winner_color)
+
+## True when the player sitting at this machine won. In a singleplayer match
+## there is no "own colour" to compare against, so the winning side is decided
+## by which controller owns it.
+func did_local_player_win(winner_color: int) -> bool:
 	if match_board.side == null:
 		if GameConfig.is_singleplayer:
 			var winner_player_id: int = match_board.get_player_id_for_color(winner_color)

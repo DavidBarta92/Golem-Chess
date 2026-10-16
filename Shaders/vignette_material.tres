@@ -1,0 +1,16 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" uid="uid://cc0ua2v4vaki6" path="res://Shaders/vignette.gdshader" id="1_vignette_shader"]
+
+; The lamp over the scene: the frame falls off a little into the corners and
+; the middle stays bright, which on a 16:9 window reads as a soft oval. Every
+; scene points at this one resource rather than carrying its own copy, so the
+; room is lit the same wherever the player is. Re-tune here and it lands
+; everywhere at once.
+
+[resource]
+shader = ExtResource("1_vignette_shader")
+shader_parameter/vignette_color = Color(0, 0, 0, 1)
+shader_parameter/inner_radius = 0.553
+shader_parameter/outer_radius = 1.578
+shader_parameter/intensity = 0.55

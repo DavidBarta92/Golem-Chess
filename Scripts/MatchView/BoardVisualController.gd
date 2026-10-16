@@ -150,9 +150,19 @@ func add_arrow(
 	start_point += normalized_direction * endpoint_inset
 	end_point -= normalized_direction * endpoint_inset
 
+	# The arrow points at a square, so it has to be read against the drawn grid
+	# rather than under it - unlike the tints and fills its sibling markers put
+	# on the board. One above the grid puts it back where it has always been:
+	# over the lines, still behind every piece.
+	var arrow_root := Node2D.new()
+	arrow_root.name = "LastMoveArrow"
+	arrow_root.z_as_relative = false
+	arrow_root.z_index = BoardGridOverlay.Z_INDEX + 1
+	board_markers_node.add_child(arrow_root)
+
 	var arrow_head := Polygon2D.new()
 	var head_base: Vector2 = end_point - normalized_direction * head_length
-	add_line(board_markers_node, [start_point, head_base], arrow_color, line_width)
+	add_line(arrow_root, [start_point, head_base], arrow_color, line_width)
 	arrow_head.color = arrow_color
 	arrow_head.polygon = PackedVector2Array([
 		end_point,
@@ -160,7 +170,7 @@ func add_arrow(
 		head_base - perpendicular * head_half_width,
 	])
 	enable_canvas_item_antialiasing(arrow_head)
-	board_markers_node.add_child(arrow_head)
+	arrow_root.add_child(arrow_head)
 	return arrow_head
 
 func get_cell_polygon_uvs(points: PackedVector2Array) -> PackedVector2Array:

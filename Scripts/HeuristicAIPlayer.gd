@@ -4,13 +4,35 @@ class_name HeuristicAIPlayer
 const AI_TURN_PLANNER_SCRIPT = preload("res://Scripts/AITurnPlanner.gd")
 const AI_STRATEGY_DIRECTOR_SCRIPT = preload("res://Scripts/AIStrategyDirector.gd")
 const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
+## Seconds from the start of an AI turn to its closing action, rolled once per
+## turn from [x, y] by difficulty level and spread over the turn's actions
+## (see AITurnPlanner.begin_turn_pacing). Level 1 is deliberately quick.
+const TURN_DELAY_RANGES: Dictionary = {
+	1: Vector2(0.0, 4.0),
+	2: Vector2(9.0, 14.0),
+	3: Vector2(8.0, 13.0),
+	4: Vector2(7.0, 12.0),
+	5: Vector2(6.0, 11.0),
+	6: Vector2(5.0, 10.0),
+	7: Vector2(4.0, 9.0),
+	8: Vector2(3.0, 8.0),
+	9: Vector2(2.0, 7.0),
+	10: Vector2(2.0, 6.0),
+	11: Vector2(1.0, 5.0),
+	12: Vector2(0.0, 4.0),
+}
 
 var player_id: int = 1
 var action_delay: float = 0.35
+var turn_delay_enabled: bool = true
 var evaluator
 var planner
 var strategy_director
 var strategy_memory: Dictionary = {}
+## Stamp names affixed during the last completed turn, in play order. Read by
+## the boss dialogue director so a boss can react to putting down a specific
+## stamp; nothing in the AI itself depends on it.
+var last_turn_affixed_stamp_names: Array[String] = []
 
 # Owned exclusively by the AI-thinking call chain (choose_plan_threaded's
 # background thread, or its same-thread fallback) and never touched by the
@@ -44,6 +66,8 @@ func play_turn(host: NetworkGameHost, tree: SceneTree) -> bool:
 	if !can_play_turn(host):
 		return false
 
+	# Started before planning so the thinking time counts toward the turn's pause.
+	planner.begin_turn_pacing(roll_turn_delay_seconds())
 	var planner_start_usec: int = Time.get_ticks_usec()
 	var selected_plan: Dictionary = await choose_plan_threaded(host, tree)
 	var own_planner_ms: float = float(Time.get_ticks_usec() - planner_start_usec) / 1000.0
@@ -55,12 +79,43 @@ func play_turn(host: NetworkGameHost, tree: SceneTree) -> bool:
 	else:
 		await execute_turn_plan(host, tree, selected_plan)
 
+	# A plan the host partly rejected leaves the turn open. The step-by-step
+	# fallback (turn page, affix, move, end turn) always closes it.
+	if can_play_turn(host):
+		var fallback_plan: Dictionary = await execute_sequential_turn(host, tree)
+		if selected_plan.is_empty():
+			selected_plan = fallback_plan
+		else:
+			var combined_actions: Array = selected_plan.get("actions", []).duplicate()
+			combined_actions.append_array(fallback_plan.get("actions", []))
+			selected_plan["actions"] = combined_actions
+
+	last_turn_affixed_stamp_names = collect_affixed_stamp_names(selected_plan)
 	var profile: Dictionary = selected_plan.get("profile", {}).duplicate()
 	profile["own_planner_ms"] = own_planner_ms
 	evaluator.last_profile = profile
 	update_strategy_memory_from_profile(profile)
 	AIPerformanceCsvLogger.log_decision(host.game_state, player_id, profile, selected_plan)
 	return !selected_plan.is_empty()
+
+func roll_turn_delay_seconds() -> float:
+	if !turn_delay_enabled or evaluator == null:
+		return 0.0
+	var delay_range: Vector2 = TURN_DELAY_RANGES.get(int(evaluator.difficulty_level), Vector2.ZERO)
+	return randf_range(delay_range.x, delay_range.y)
+
+func collect_affixed_stamp_names(plan: Dictionary) -> Array[String]:
+	var stamp_names: Array[String] = []
+	for action_value in plan.get("actions", []):
+		if !(action_value is Dictionary):
+			continue
+		var action: Dictionary = action_value
+		if str(action.get("type", "")) != AITurnPlanner.ACTION_AFFIX_STAMP:
+			continue
+		var stamp_name: String = str(action.get("stamp_name", "")).strip_edges()
+		if !stamp_name.is_empty():
+			stamp_names.append(stamp_name)
+	return stamp_names
 
 func choose_plan_threaded(host: NetworkGameHost, tree: SceneTree) -> Dictionary:
 	if host == null or host.game_state == null or evaluator == null:

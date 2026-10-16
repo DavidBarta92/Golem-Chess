@@ -1,0 +1,115 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPage.tscn" id="1_comic_page"]
+[ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPanel.tscn" id="2_comic_panel"]
+[ext_resource type="Script" path="res://Scripts/Story/ComicDialogueLine.gd" id="3_dialogue_line"]
+[ext_resource type="Texture2D" uid="uid://c0r277xbo70io" path="res://Assets/Comic/1_1_line_reveal_mask.png" id="11_mask"]
+[ext_resource type="Texture2D" uid="uid://coyp51dysharw" path="res://Assets/Comic/1_1_color.png" id="11_color"]
+[ext_resource type="Texture2D" uid="uid://dm404dx0ba1wk" path="res://Assets/Comic/1_2_line_reveal_mask.png" id="12_mask"]
+[ext_resource type="Texture2D" uid="uid://4yofnpe82rtj" path="res://Assets/Comic/1_2_color.png" id="12_color"]
+[ext_resource type="Texture2D" uid="uid://dqfrhy2j1swf" path="res://Assets/Comic/1_3_line_reveal_mask.png" id="13_mask"]
+[ext_resource type="Texture2D" uid="uid://dcgvtknnc03af" path="res://Assets/Comic/1_3_color.png" id="13_color"]
+[ext_resource type="Texture2D" uid="uid://c22s0tk5gjiuk" path="res://Assets/Comic/1_4_line_reveal_mask.png" id="14_mask"]
+[ext_resource type="Texture2D" uid="uid://dfbvxfrq8xnwc" path="res://Assets/Comic/1_4_color.png" id="14_color"]
+[ext_resource type="Texture2D" uid="uid://4bnrta1oy417" path="res://Assets/Comic/1_5_line_reveal_mask.png" id="15_mask"]
+[ext_resource type="Texture2D" uid="uid://b4m3s4i41knug" path="res://Assets/Comic/1_5_color.png" id="15_color"]
+[ext_resource type="Texture2D" uid="uid://dqtw4optcek6b" path="res://Assets/Comic/1_6_line_reveal_mask.png" id="16_mask"]
+[ext_resource type="Texture2D" uid="uid://c3hm4ua83gd06" path="res://Assets/Comic/1_6_color.png" id="16_color"]
+[ext_resource type="Texture2D" uid="uid://cdeggeu5exwm4" path="res://Assets/Comic/1_7_line_reveal_mask.png" id="17_mask"]
+[ext_resource type="Texture2D" uid="uid://d1r1u4d18jcqe" path="res://Assets/Comic/1_7_color.png" id="17_color"]
+
+[sub_resource type="Resource" id="Resource_line_7_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "GABI"
+text = "COMIC_1_7_GABI_1"
+
+[node name="ComicPage" instance=ExtResource("1_comic_page")]
+music_mode = 2
+
+[node name="Panel1" parent="Panels" index="0" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("11_mask")
+fill_texture = ExtResource("11_color")
+
+[node name="Panel2" parent="Panels" index="1" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("12_mask")
+fill_texture = ExtResource("12_color")
+
+[node name="Panel3" parent="Panels" index="2" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("13_mask")
+fill_texture = ExtResource("13_color")
+
+[node name="Panel4" parent="Panels" index="3" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("14_mask")
+fill_texture = ExtResource("14_color")
+
+[node name="Panel5" parent="Panels" index="4" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("15_mask")
+fill_texture = ExtResource("15_color")
+
+[node name="Panel6" parent="Panels" index="5" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("16_mask")
+fill_texture = ExtResource("16_color")
+
+[node name="Panel7" parent="Panels" index="6" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("17_mask")
+fill_texture = ExtResource("17_color")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_7_1")])
+dialogue_rect = Rect2(845, 372, 400, 220)
+
+[editable path="Panels"]

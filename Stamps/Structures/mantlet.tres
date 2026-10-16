@@ -14,5 +14,7 @@ black_piece_texture = ExtResource("1_npp0d")
 description = "No special effect."
 effect_type = "invalid_squares"
 effect_trigger = "on_move"
+square_color_a = Color(0.3137255, 0.39607844, 0.3019608, 1)
+square_color_b = Color(0.3137255, 0.39607844, 0.3019608, 1)
 effect_params = Array[Array]([[0, 0, 0, 0, 0], [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 movement_pattern = [[0, 0, 0, 0, 0], [0, 0, 2, 0, 0], [0, 2, 0, 2, 0], [0, 0, 2, 0, 0], [0, 0, 0, 0, 0]]

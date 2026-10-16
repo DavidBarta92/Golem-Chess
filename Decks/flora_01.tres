@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="DeckDefinition" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://Scripts/DeckDefinition.gd" id="1_deck_definition"]
+[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="2_stamp"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cactus.tres" id="9_stamp_01"]
+[ext_resource type="Resource" path="res://Stamps/Flora/fly_agaric.tres" id="9_stamp_02"]
+[ext_resource type="Resource" path="res://Stamps/Flora/oak.tres" id="9_stamp_03"]
+[ext_resource type="Resource" path="res://Stamps/Flora/rose.tres" id="9_stamp_04"]
+[ext_resource type="Resource" path="res://Stamps/Flora/baobab.tres" id="9_stamp_05"]
+[ext_resource type="Resource" path="res://Stamps/Flora/magnolia.tres" id="9_stamp_06"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cherry_tree.tres" id="9_stamp_07"]
+[ext_resource type="Resource" path="res://Stamps/Flora/orchid.tres" id="9_stamp_08"]
+[ext_resource type="Resource" path="res://Stamps/Flora/larch.tres" id="9_stamp_09"]
+[ext_resource type="Resource" path="res://Stamps/Flora/olive_tree.tres" id="9_stamp_10"]
+[ext_resource type="Resource" path="res://Stamps/Flora/lotus.tres" id="9_stamp_11"]
+
+[resource]
+script = ExtResource("1_deck_definition")
+deck_id = "flora_01"
+deck_name = "Flora deck 1"
+set_name = "Flora"
+stamps = Array[ExtResource("2_stamp")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_02"), ExtResource("9_stamp_01"), ExtResource("9_stamp_06"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_10"), ExtResource("9_stamp_11")])

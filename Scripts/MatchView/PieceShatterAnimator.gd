@@ -656,9 +656,8 @@ func get_perspective_scale(board_pos: Vector2) -> float:
 func get_depth_z_index(board_pos: Vector2) -> int:
 	if piece_visuals != null:
 		return piece_visuals.get_depth_z_index(board_pos)
-	if view_color < 0:
-		return int(board_pos.x)
-	return board_size - 1 - int(board_pos.x)
+	var rank: int = int(board_pos.x) if view_color < 0 else board_size - 1 - int(board_pos.x)
+	return rank * BoardConfig.DEPTH_Z_STRIDE
 
 func is_route_cell_blocked(board_pos: Vector2, source_pos: Vector2, respawn_pos: Vector2) -> bool:
 	if route_cell_blocked_provider.is_valid():

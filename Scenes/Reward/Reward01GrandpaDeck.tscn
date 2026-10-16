@@ -1,0 +1,22 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/Reward/RewardScene.tscn" id="1_reward_base"]
+[ext_resource type="Script" path="res://Scripts/Story/RewardGrandpaDeck.gd" id="2_grandpa_deck"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_01.tres" id="3_boss_01"]
+[ext_resource type="Script" path="res://Scripts/Story/Rewards/CardFlipPresenter.gd" id="9_presenter"]
+
+[node name="RewardScene" instance=ExtResource("1_reward_base")]
+script = ExtResource("2_grandpa_deck")
+boss = ExtResource("3_boss_01")
+reward_id = "reward_01_grandpa_deck"
+speaker_name = "Mentor"
+dialogue_lines = Array[String](["REWARD_01_LINE_1"])
+
+[node name="Presenter" type="Control" parent="RightColumn"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("9_presenter")

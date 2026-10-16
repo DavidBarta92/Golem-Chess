@@ -84,7 +84,7 @@ func get_stamp_draw_start_position(owner_color: int) -> Vector2:
 	var deck_visual: StampVisual = get_deck_visual(owner_color)
 	if deck_visual and is_instance_valid(deck_visual):
 		return deck_visual.global_position
-	var codex_panel: PanelContainer = match_board.get_match_codex_controller().get_panel()
+	var codex_panel: Control = match_board.get_match_codex_controller().get_panel()
 	if codex_panel != null and is_instance_valid(codex_panel):
 		return codex_panel.get_global_rect().get_center()
 
@@ -96,7 +96,7 @@ func get_stamp_return_to_deck_target_position(owner_color: int, target_scale: fl
 	var deck_visual: StampVisual = get_deck_visual(owner_color)
 	if deck_visual != null and is_instance_valid(deck_visual):
 		return deck_visual.get_global_rect().get_center() - target_size * 0.5
-	var codex_panel: PanelContainer = match_board.get_match_codex_controller().get_panel()
+	var codex_panel: Control = match_board.get_match_codex_controller().get_panel()
 	if codex_panel != null and is_instance_valid(codex_panel):
 		return codex_panel.get_global_rect().get_center() - target_size * 0.5
 
@@ -117,8 +117,6 @@ func update_stamp_presentation() -> void:
 	match_board.get_turn_hud_controller().update_player_name_labels()
 	match_board.get_turn_hud_controller().update_player_portrait_views()
 	match_board.update_end_turn_button()
-	match_board.get_turn_hud_controller().update_rules_info_ui()
-	match_board.get_turn_hud_controller().update_action_status_ui()
 	match_board.get_match_codex_controller().update_ui()
 
 func update_stamp_drag_permissions() -> void:

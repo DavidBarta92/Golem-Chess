@@ -27,6 +27,9 @@ var movement_shadow_lifted_edge_softness: float = 0.72
 var movement_shadow_lifted_scale: Vector2 = Vector2(1.38, 1.28)
 var movement_shadow_lifted_alpha: float = 0.42
 var movement_shadow_z_offset: int = -2
+## How far a piece in the air is raised above the square it is over. This and
+## `route_z_front_offset` together must stay below `BoardConfig.DEPTH_Z_STRIDE`,
+## or a piece flying over one rank outranks a piece resting on the next one in.
 var lifted_z_offset: int = 2
 var corner_rounding_ratio: float = 0.28
 var corner_sample_count: int = 4
@@ -116,7 +119,7 @@ func play_move_sequence(
 	var movement_shadow: Sprite2D = create_movement_shadow(holder, from_pos)
 
 	holder.position = start_ground_pos
-	holder.z_index = get_z_index_for_local_position(start_ground_pos, holder) + lifted_z_offset
+	holder.z_index = get_z_index_for_local_position(start_ground_pos, holder, lifted_z_offset)
 	var lift_tween: Tween = create_animation_tween()
 	if lift_tween == null:
 		cleanup_movement_shadow(movement_shadow)
@@ -326,7 +329,7 @@ func update_capture_impact_motion(
 		return
 	holder.position = ground_pos + Vector2(0.0, -lift_height)
 	holder.rotation = rotation_value
-	holder.z_index = get_z_index_for_local_position(ground_pos, holder) + lifted_z_offset
+	holder.z_index = get_z_index_for_local_position(ground_pos, holder, lifted_z_offset)
 	update_movement_shadow_position(movement_shadow, holder, lift_height)
 
 func get_capture_push_rotation(push_direction: Vector2) -> float:
@@ -620,7 +623,7 @@ func get_direct_blocking_holders(from_pos: Vector2, to_pos: Vector2, moving_hold
 
 	var start_point: Vector2 = get_position_local(from_pos)
 	var end_point: Vector2 = get_position_local(to_pos)
-	var moving_footprint: Dictionary = get_footprint_board_geometry(moving_holder)
+	var moving_footprint: Dictionary = get_avoidance_board_geometry(moving_holder)
 	if bool(moving_footprint.get("empty", true)):
 		return blocking_holders
 
@@ -631,7 +634,7 @@ func get_direct_blocking_holders(from_pos: Vector2, to_pos: Vector2, moving_hold
 		if !should_consider_blocking_holder(holder, moving_holder, from_pos, to_pos):
 			continue
 
-		var blocker_footprint: Dictionary = get_footprint_board_geometry(holder)
+		var blocker_footprint: Dictionary = get_avoidance_board_geometry(holder)
 		if bool(blocker_footprint.get("empty", true)):
 			continue
 		var blocker_center: Vector2 = blocker_footprint.get("center", Vector2.ZERO)
@@ -666,6 +669,27 @@ func get_footprint_board_geometry(holder: Sprite2D) -> Dictionary:
 		"radius_x": absf(holder.scale.x) * float(footprint.get("radius_x", 0.0)),
 		"radius_y": absf(holder.scale.y) * float(footprint.get("radius_y", 0.0)),
 	}
+
+## The shape a route has to steer clear of.
+##
+## Not the footprint: that is the little ellipse the piece casts on the board,
+## about three units tall against a drawing some twenty-four units high. A route
+## that clears the footprint clears the *shadow* and leaves the two bodies still
+## overlapping on screen, which is where the swap in drawing order shows.
+##
+## So the sideways reach comes from the drawing itself, while the reach along
+## the board stays the footprint's. Widening that one too would make every piece
+## within a rank and a half count as in the way, and the board would be nothing
+## but detours; sideways is the direction that actually separates two silhouettes.
+func get_avoidance_board_geometry(holder: Sprite2D) -> Dictionary:
+	var geometry_data: Dictionary = get_footprint_board_geometry(holder)
+	if bool(geometry_data.get("empty", true)):
+		return geometry_data
+
+	var bounds: Rect2 = get_sprite_texture_bounds_local(holder)
+	if bounds.size.x > 0.0:
+		geometry_data["radius_x"] = maxf(float(geometry_data.get("radius_x", 0.0)), bounds.size.x * 0.5)
+	return geometry_data
 
 func does_segment_touch_footprint(
 	segment_start: Vector2,
@@ -702,7 +726,7 @@ func get_detour_route_points(from_pos: Vector2, to_pos: Vector2, moving_holder: 
 	if travel_length <= 0.0001:
 		return [start_point, end_point]
 
-	var moving_footprint: Dictionary = get_footprint_board_geometry(moving_holder)
+	var moving_footprint: Dictionary = get_avoidance_board_geometry(moving_holder)
 	var moving_radius_x: float = float(moving_footprint.get("radius_x", float(cell_width) * 0.25))
 	var moving_radius_y: float = float(moving_footprint.get("radius_y", footprint_fixed_radius_y))
 	var route_blockers: Array[Sprite2D] = []
@@ -770,7 +794,7 @@ func build_detour_route_points(
 	for blocker: Sprite2D in blocking_holders:
 		if blocker == null or !is_instance_valid(blocker):
 			continue
-		var blocker_footprint: Dictionary = get_footprint_board_geometry(blocker)
+		var blocker_footprint: Dictionary = get_avoidance_board_geometry(blocker)
 		if bool(blocker_footprint.get("empty", true)):
 			continue
 
@@ -845,7 +869,7 @@ func get_route_blocking_holders(route_points: Array[Vector2], moving_holder: Spr
 	if route_points.size() < 2 or pieces_node == null:
 		return blocking_holders
 
-	var moving_footprint: Dictionary = get_footprint_board_geometry(moving_holder)
+	var moving_footprint: Dictionary = get_avoidance_board_geometry(moving_holder)
 	if bool(moving_footprint.get("empty", true)):
 		return blocking_holders
 	var moving_radius_x: float = float(moving_footprint.get("radius_x", float(cell_width) * 0.25))
@@ -856,7 +880,7 @@ func get_route_blocking_holders(route_points: Array[Vector2], moving_holder: Spr
 		if !should_consider_blocking_holder(holder, moving_holder, from_pos, to_pos):
 			continue
 
-		var blocker_footprint: Dictionary = get_footprint_board_geometry(holder)
+		var blocker_footprint: Dictionary = get_avoidance_board_geometry(holder)
 		if bool(blocker_footprint.get("empty", true)):
 			continue
 		var blocker_center: Vector2 = blocker_footprint.get("center", Vector2.ZERO)
@@ -879,14 +903,21 @@ func does_segment_touch_any_occupied_footprint(segment_start: Vector2, segment_e
 	var route_points: Array[Vector2] = [segment_start, segment_end]
 	return !get_route_blocking_holders(route_points, moving_holder, from_pos, to_pos).is_empty()
 
-func get_z_index_for_local_position(local_pos: Vector2, moving_holder: Sprite2D = null) -> int:
+## Where a piece standing - or flying - at this spot belongs in the drawing
+## order. `lift_offset` is how far a piece in the air is raised above the square
+## it is over, and it is folded in *here* rather than added to the answer,
+## because the occlusion check below has to have the last word. Added afterwards
+## it simply outvoted that check: a lift of two against an occlusion offset of
+## one meant the piece stayed in front of whatever it was passing for the whole
+## journey, and only went behind on the frame it landed.
+func get_z_index_for_local_position(local_pos: Vector2, moving_holder: Sprite2D = null, lift_offset: int = 0) -> int:
 	var nearest_pos: Vector2 = get_nearest_board_position_for_local_position(local_pos)
 	if !_is_valid_position(nearest_pos):
 		return 0
 	var nearest_center: Vector2 = get_position_local(nearest_pos)
 	var front_side: bool = (local_pos.y - nearest_center.y) * float(view_color) >= 0.0
 	var side_offset: int = route_z_front_offset if front_side else route_z_back_offset
-	var base_z_index: int = get_depth_z_index(nearest_pos) + side_offset
+	var base_z_index: int = get_depth_z_index(nearest_pos) + side_offset + lift_offset
 	return get_occlusion_z_index_for_local_position(local_pos, moving_holder, base_z_index)
 
 func get_occlusion_z_index_for_local_position(local_pos: Vector2, moving_holder: Sprite2D, base_z_index: int) -> int:
@@ -960,7 +991,7 @@ func update_holder_travel(
 	holder.position = local_pos
 	holder.scale = start_scale.lerp(end_scale, progress)
 	holder.offset = start_offset.lerp(end_offset, progress)
-	holder.z_index = get_z_index_for_local_position(ground_pos, holder) + lifted_z_offset
+	holder.z_index = get_z_index_for_local_position(ground_pos, holder, lifted_z_offset)
 	holder.rotation = get_travel_rotation(route_points, progress, resting_rotation)
 	update_movement_shadow_position(movement_shadow, holder, lift_height)
 
@@ -1021,9 +1052,10 @@ func get_position_local(board_pos: Vector2) -> Vector2:
 	return geometry.get_position_local(board_pos)
 
 func get_depth_z_index(board_pos: Vector2) -> int:
-	if view_color < 0:
-		return int(board_pos.x)
-	return board_size - 1 - int(board_pos.x)
+	if piece_visuals != null:
+		return piece_visuals.get_depth_z_index(board_pos)
+	var rank: int = int(board_pos.x) if view_color < 0 else board_size - 1 - int(board_pos.x)
+	return rank * BoardConfig.DEPTH_Z_STRIDE
 
 func get_nearest_board_position_for_local_position(local_pos: Vector2) -> Vector2:
 	if geometry == null:

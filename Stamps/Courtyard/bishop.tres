@@ -8,8 +8,11 @@
 script = ExtResource("2_3isp8")
 stamp_name = "Bishop"
 stamp_code = "bishop"
+Set = "Courtyard"
 white_piece_texture = ExtResource("3_d1beu")
 black_piece_texture = ExtResource("1_wf0io")
 description = "No special effect."
-movement_pattern = [[1, 0, 0, 0, 1], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [1, 0, 0, 0, 1]]
+square_color_a = Color(0.4, 0.24705882, 0.32941177, 1)
+square_color_b = Color(0.4, 0.24705882, 0.32941177, 1)
+movement_pattern = Array[Array]([[1, 0, 0, 0, 1], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [1, 0, 0, 0, 1]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

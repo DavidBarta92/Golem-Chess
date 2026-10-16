@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://cunv3u4x4wna"]
+
+[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_r54b4"]
+[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_700c6"]
+[ext_resource type="Texture2D" uid="uid://5x4jsmr1r841" path="res://Assets/setenant_harmony.png" id="3_r54b4"]
+[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_3cf7m"]
+[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_jpmp2"]
+[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_8de0e"]
+[ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_52flt"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_d6kpg"]
+[ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_41cdo"]
+[ext_resource type="Resource" path="res://Stamps/Flora/baobab.tres" id="10_baobab"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cactus.tres" id="11_cactus"]
+[ext_resource type="Resource" path="res://Stamps/Flora/chanterelle.tres" id="12_chanterelle"]
+[ext_resource type="Resource" path="res://Stamps/Flora/cherry_tree.tres" id="13_cherry_tree"]
+[ext_resource type="Resource" path="res://Stamps/Flora/fly_agaric.tres" id="14_fly_agaric"]
+[ext_resource type="Resource" path="res://Stamps/Flora/larch.tres" id="15_larch"]
+[ext_resource type="Resource" path="res://Stamps/Flora/lotus.tres" id="16_lotus"]
+[ext_resource type="Resource" path="res://Stamps/Flora/magnolia.tres" id="17_magnolia"]
+[ext_resource type="Resource" path="res://Stamps/Flora/oak.tres" id="18_oak"]
+[ext_resource type="Resource" path="res://Stamps/Flora/olive_tree.tres" id="19_olive_tree"]
+[ext_resource type="Resource" path="res://Stamps/Flora/orchid.tres" id="20_orchid"]
+[ext_resource type="Resource" path="res://Stamps/Flora/puffball.tres" id="21_puffball"]
+[ext_resource type="Resource" path="res://Stamps/Flora/rose.tres" id="22_rose"]
+[ext_resource type="Resource" path="res://Stamps/Flora/shaggy_mane.tres" id="23_shaggy_mane"]
+[ext_resource type="Resource" path="res://Stamps/Flora/yellow_coral.tres" id="24_yellow_coral"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/adventurer.tres" id="25_adventurer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/advocate.tres" id="26_advocate"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/architect.tres" id="27_architect"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/campaigner.tres" id="28_campaigner"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/commander.tres" id="29_commander"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/consul.tres" id="30_consul"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/defender.tres" id="31_defender"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entertainer.tres" id="32_entertainer"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/entrepreneur.tres" id="33_entrepreneur"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/executive.tres" id="34_executive"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logician.tres" id="35_logician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/logistician.tres" id="36_logistician"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/mediator.tres" id="37_mediator"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/protagonist.tres" id="38_protagonist"]
+[ext_resource type="Resource" path="res://Stamps/Archetypes/virtuoso.tres" id="39_virtuoso"]
+
+[resource]
+script = ExtResource("9_41cdo")
+pack_id = "se-tenant_harmony"
+pack_name = "Se-tenant Harmony"
+pack_texture = ExtResource("3_r54b4")
+pack_front_texture = ExtResource("3_r54b4")
+pack_back_texture = ExtResource("1_r54b4")
+pack_height_texture = ExtResource("4_3cf7m")
+pack_normal_texture = ExtResource("5_jpmp2")
+pack_roughness_texture = ExtResource("6_8de0e")
+pack_foil_mask_texture = ExtResource("2_700c6")
+possible_stamps = Array[ExtResource("8_d6kpg")]([ExtResource("10_baobab"), ExtResource("11_cactus"), ExtResource("12_chanterelle"), ExtResource("13_cherry_tree"), ExtResource("14_fly_agaric"), ExtResource("15_larch"), ExtResource("16_lotus"), ExtResource("17_magnolia"), ExtResource("18_oak"), ExtResource("19_olive_tree"), ExtResource("20_orchid"), ExtResource("21_puffball"), ExtResource("22_rose"), ExtResource("23_shaggy_mane"), ExtResource("24_yellow_coral"), ExtResource("25_adventurer"), ExtResource("26_advocate"), ExtResource("27_architect"), ExtResource("28_campaigner"), ExtResource("29_commander"), ExtResource("30_consul"), ExtResource("31_defender"), ExtResource("32_entertainer"), ExtResource("33_entrepreneur"), ExtResource("34_executive"), ExtResource("35_logician"), ExtResource("36_logistician"), ExtResource("37_mediator"), ExtResource("38_protagonist"), ExtResource("39_virtuoso")])
+include_all_standard_prints = false
+price = 1

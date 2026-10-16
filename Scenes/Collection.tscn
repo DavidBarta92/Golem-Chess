@@ -1,23 +1,23 @@
 [gd_scene format=3 uid="uid://ckgpomhljdak2"]
 
 [ext_resource type="Script" uid="uid://cngqle2h6g57n" path="res://Scenes/Collection.gd" id="1_collection"]
-[ext_resource type="Shader" path="res://Shaders/collection_grid_background.gdshader" id="2_grid_bg"]
 [ext_resource type="Texture2D" uid="uid://dspxsiid41buh" path="res://Assets/booster.png" id="2_kbw0k"]
 [ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="4_u2t3u"]
 [ext_resource type="Texture2D" uid="uid://bdyr3etvetn3o" path="res://Assets/magnifying_glass_case_closed.png" id="5_case_closed"]
 [ext_resource type="Texture2D" uid="uid://bthcwpocferx0" path="res://Assets/magnifying_glass_case_opened.png" id="6_case_opened"]
 [ext_resource type="Texture2D" uid="uid://b2rdnleh8sbn" path="res://ui/themes/icons/back.png" id="7_page_back"]
 [ext_resource type="Texture2D" uid="uid://byelcob5i8chv" path="res://ui/themes/icons/next.png" id="8_page_next"]
-[ext_resource type="Shader" uid="uid://cc0ua2v4vaki6" path="res://Shaders/vignette.gdshader" id="9_vignette_shader"]
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_grid_bg"]
-shader = ExtResource("2_grid_bg")
-shader_parameter/base_color = Color(0.9764706, 0.90588236, 0.80784315, 1)
-shader_parameter/line_color = Color(0.8509804, 0.8156863, 0.8352941, 1)
-shader_parameter/cell_size = 32.0
-shader_parameter/line_width = 0.65
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_browser"]
+[ext_resource type="Script" uid="uid://dta7wq16l8wau" path="res://Scripts/Story/FeatureHint.gd" id="10_feature_hint"]
+[ext_resource type="Texture2D" uid="uid://clmujwhdim87t" path="res://Assets/collection_bg.png" id="11_collection_bg"]
+[ext_resource type="Texture2D" uid="uid://h6a2pc6lkom3" path="res://Assets/collection_book.png" id="12_collection_book"]
+[ext_resource type="Texture2D" uid="uid://c4ipbwefk2yyr" path="res://Assets/collection_tag_animals.png" id="13_tag_animals"]
+[ext_resource type="Texture2D" uid="uid://cwksnw3tk0er8" path="res://Assets/collection_tag_flora.png" id="14_tag_flora"]
+[ext_resource type="Texture2D" uid="uid://dao0fdm528mcy" path="res://Assets/collection_tag_celestials.png" id="15_tag_celestials"]
+[ext_resource type="Texture2D" uid="uid://rdl1erybcv6o" path="res://Assets/collection_tag_archetypes.png" id="16_tag_archetypes"]
+[ext_resource type="Texture2D" uid="uid://ftr0wuym1oj" path="res://Assets/collection_tag_courtyard.png" id="17_tag_courtyard"]
+[ext_resource type="Texture2D" uid="uid://bb5lgilng03rk" path="res://Assets/collection_tag_structures.png" id="18_tag_structures"]
+[ext_resource type="Shader" uid="uid://cq2wpk53gbihw" path="res://Shaders/paper_texture.gdshader" id="19_paper_texture_shader"]
+[ext_resource type="ShaderMaterial" path="res://Shaders/vignette_material.tres" id="90_vignette_material"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamp"]
 bg_color = Color(0.98, 0.98, 0.96, 1)
@@ -61,12 +61,29 @@ border_color = Color(1, 1, 1, 0.18)
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
-shader = ExtResource("9_vignette_shader")
-shader_parameter/vignette_color = Color(0, 0, 0, 1)
-shader_parameter/inner_radius = 0.5530000262675
-shader_parameter/outer_radius = 1.578000074955
-shader_parameter/intensity = 0.55
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_paper"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_paper"]
+noise = SubResource("FastNoiseLite_paper")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_paper_texture"]
+shader = ExtResource("19_paper_texture_shader")
+shader_parameter/noise_texture = SubResource("NoiseTexture2D_paper")
+shader_parameter/fold_scale = Vector2(2.2, 2.2)
+shader_parameter/fiber_scale = 39.9600017081
+shader_parameter/fiber_stretch = 13.2850005835375
+shader_parameter/fiber_edge = 0.04500000143898
+shader_parameter/fiber_strength = 0.0450000021375
+shader_parameter/grain_strength = 0.062000002945
+shader_parameter/highlight_tint = Color(1.04, 1.04, 1.04, 1)
+shader_parameter/shadow_tint = Color(0.68651277, 0.6474813, 0.5577221, 1)
+shader_parameter/light_dir = Vector3(0.35, 0.55, 0.75)
+shader_parameter/bump_strength = 2.5
+shader_parameter/light_strength = 0.55
+shader_parameter/contrast = 1.25
+shader_parameter/effect_opacity = 0.5
+shader_parameter/paper_color = Color(0.956863, 0.941176, 0.901961, 1)
 
 [node name="Collection" type="Control" unique_id=1188233061]
 layout_mode = 3
@@ -77,8 +94,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_collection")
 
-[node name="GridBackground" type="ColorRect" parent="." unique_id=1487340471]
-material = SubResource("ShaderMaterial_grid_bg")
+[node name="PaperBackground" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -86,7 +102,100 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.9764706, 0.90588236, 0.80784315, 1)
+
+[node name="BookStage" type="Control" parent="."]
+layout_mode = 0
+offset_right = 1919.0
+offset_bottom = 1079.0
+mouse_filter = 2
+
+[node name="CollectionBackground" type="TextureRect" parent="BookStage"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("11_collection_bg")
+expand_mode = 1
+
+[node name="AnimalsTag" type="TextureButton" parent="BookStage"]
+layout_mode = 0
+offset_left = 420.0
+offset_top = 230.0
+offset_right = 485.0
+offset_bottom = 352.0
+focus_mode = 0
+texture_normal = ExtResource("13_tag_animals")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="FloraTag" type="TextureButton" parent="BookStage"]
+layout_mode = 0
+offset_left = 490.0
+offset_top = 230.0
+offset_right = 557.0
+offset_bottom = 352.0
+focus_mode = 0
+texture_normal = ExtResource("14_tag_flora")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="CelestialsTag" type="TextureButton" parent="BookStage"]
+layout_mode = 0
+offset_left = 561.0
+offset_top = 231.0
+offset_right = 627.0
+offset_bottom = 353.0
+focus_mode = 0
+texture_normal = ExtResource("15_tag_celestials")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="ArchetypesTag" type="TextureButton" parent="BookStage"]
+layout_mode = 0
+offset_left = 631.0
+offset_top = 232.0
+offset_right = 697.0
+offset_bottom = 355.0
+focus_mode = 0
+texture_normal = ExtResource("16_tag_archetypes")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="CourtyardTag" type="TextureButton" parent="BookStage"]
+layout_mode = 0
+offset_left = 701.0
+offset_top = 232.0
+offset_right = 768.0
+offset_bottom = 354.0
+focus_mode = 0
+texture_normal = ExtResource("17_tag_courtyard")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="StructuresTag" type="TextureButton" parent="BookStage"]
+layout_mode = 0
+offset_left = 771.0
+offset_top = 232.0
+offset_right = 838.0
+offset_bottom = 355.0
+focus_mode = 0
+texture_normal = ExtResource("18_tag_structures")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="BookImage" type="TextureRect" parent="BookStage"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("12_collection_book")
+expand_mode = 1
 
 [node name="TopBackground" type="ColorRect" parent="." unique_id=2090701836]
 visible = false
@@ -228,238 +337,143 @@ texture = ExtResource("2_kbw0k")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="RootMargin" type="MarginContainer" parent="." unique_id=549132960]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_top = 84
-theme_override_constants/margin_bottom = 24
-
-[node name="MainCenter" type="HBoxContainer" parent="RootMargin" unique_id=1591124119]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="LeftLayoutSpacer" type="Control" parent="RootMargin/MainCenter" unique_id=337302710]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="MainLayout" type="HBoxContainer" parent="RootMargin/MainCenter" unique_id=1223238522]
-custom_minimum_size = Vector2(894, 0)
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 3
-theme_override_constants/separation = 14
-
-[node name="LeftColumn" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout" unique_id=1105168593]
-visible = false
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 18
-
-[node name="MiddleColumn" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout" unique_id=274786036]
-custom_minimum_size = Vector2(520, 0)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 10
-
-[node name="BrowserFrame" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn" unique_id=759912158]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxEmpty_browser")
-
-[node name="Browser" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame" unique_id=885763059]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 4
-
-[node name="BrowserTitle" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=2132303748]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 20
-text = "Inventory"
-horizontal_alignment = 1
-
-[node name="BrowserTools" type="HBoxContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=1643605959]
+[node name="BrowserTools" type="HBoxContainer" parent="." unique_id=1643605959]
 custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
+layout_mode = 0
+offset_right = 392.0
+offset_bottom = 42.0
 theme_override_constants/separation = 10
 
-[node name="OwnedOnlyCheck" type="CheckBox" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTools" unique_id=808986781]
+[node name="OwnedOnlyCheck" type="CheckBox" parent="BrowserTools" unique_id=808986781]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
 text = "My collection"
 
-[node name="ToolSpacer" type="Control" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTools" unique_id=145477775]
+[node name="ToolSpacer" type="Control" parent="BrowserTools" unique_id=145477775]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SearchField" type="LineEdit" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTools" unique_id=1366859969]
+[node name="SearchField" type="LineEdit" parent="BrowserTools" unique_id=1366859969]
 custom_minimum_size = Vector2(150, 34)
 layout_mode = 2
 placeholder_text = "Search"
 
-[node name="SetFilterButtons" type="HBoxContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=1987654321]
-custom_minimum_size = Vector2(0, 36)
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="AnimalsButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654322]
-custom_minimum_size = Vector2(0, 34)
-layout_mode = 2
-toggle_mode = true
-text = "Animals"
-
-[node name="FloraButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654323]
-custom_minimum_size = Vector2(0, 34)
-layout_mode = 2
-toggle_mode = true
-text = "Flora"
-
-[node name="CelestialsButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654324]
-custom_minimum_size = Vector2(0, 34)
-layout_mode = 2
-toggle_mode = true
-text = "Celestials"
-
-[node name="ArchetypesButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654325]
-custom_minimum_size = Vector2(0, 34)
-layout_mode = 2
-toggle_mode = true
-text = "Archetypes"
-
-[node name="CourtyardButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654326]
-custom_minimum_size = Vector2(0, 34)
-layout_mode = 2
-toggle_mode = true
-text = "Courtyard"
-
-[node name="StructuresButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons" unique_id=1987654327]
-custom_minimum_size = Vector2(0, 34)
-layout_mode = 2
-toggle_mode = true
-text = "Structures"
-
-[node name="StampGrid" type="GridContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=648111285]
+[node name="StampGrid" type="GridContainer" parent="." unique_id=648111285]
 custom_minimum_size = Vector2(0, 430)
-layout_mode = 2
-size_flags_horizontal = 3
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 430.0
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 2
 columns = 3
 
-[node name="StampSlot1" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=1212306153]
+[node name="StampSlot1" type="PanelContainer" parent="StampGrid" unique_id=1212306153]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot1" unique_id=1138657806]
+[node name="Label" type="Label" parent="StampGrid/StampSlot1" unique_id=1138657806]
 layout_mode = 2
 text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StampSlot2" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=762343269]
+[node name="StampSlot2" type="PanelContainer" parent="StampGrid" unique_id=762343269]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot2" unique_id=1360077366]
+[node name="Label" type="Label" parent="StampGrid/StampSlot2" unique_id=1360077366]
 layout_mode = 2
 text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StampSlot3" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=2064679408]
+[node name="StampSlot3" type="PanelContainer" parent="StampGrid" unique_id=2064679408]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot3" unique_id=877574140]
+[node name="Label" type="Label" parent="StampGrid/StampSlot3" unique_id=877574140]
 layout_mode = 2
 text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StampSlot4" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=593379074]
+[node name="StampSlot4" type="PanelContainer" parent="StampGrid" unique_id=593379074]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot4" unique_id=2112585396]
+[node name="Label" type="Label" parent="StampGrid/StampSlot4" unique_id=2112585396]
 layout_mode = 2
 text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StampSlot5" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=822588496]
+[node name="StampSlot5" type="PanelContainer" parent="StampGrid" unique_id=822588496]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot5" unique_id=1337036446]
+[node name="Label" type="Label" parent="StampGrid/StampSlot5" unique_id=1337036446]
 layout_mode = 2
 text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StampSlot6" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=1321099513]
+[node name="StampSlot6" type="PanelContainer" parent="StampGrid" unique_id=1321099513]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot6" unique_id=433779682]
+[node name="Label" type="Label" parent="StampGrid/StampSlot6" unique_id=433779682]
 layout_mode = 2
 text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StampSlot7" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=1860503650]
+[node name="StampSlot7" type="PanelContainer" parent="StampGrid" unique_id=1860503650]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot7" unique_id=465229182]
+[node name="Label" type="Label" parent="StampGrid/StampSlot7" unique_id=465229182]
 layout_mode = 2
 text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StampSlot8" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=138440234]
+[node name="StampSlot8" type="PanelContainer" parent="StampGrid" unique_id=138440234]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot8" unique_id=1169370107]
+[node name="Label" type="Label" parent="StampGrid/StampSlot8" unique_id=1169370107]
 layout_mode = 2
 text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StampSlot9" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid" unique_id=60431776]
+[node name="StampSlot9" type="PanelContainer" parent="StampGrid" unique_id=60431776]
 custom_minimum_size = Vector2(128, 142)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stamp")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid/StampSlot9" unique_id=711051637]
+[node name="Label" type="Label" parent="StampGrid/StampSlot9" unique_id=711051637]
 layout_mode = 2
 text = "Stamp"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Pager" type="HBoxContainer" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser" unique_id=793666953]
-custom_minimum_size = Vector2(0, 72)
-layout_mode = 2
+[node name="Pager" type="HBoxContainer" parent="." unique_id=793666953]
+layout_mode = 0
+offset_right = 248.0
+offset_bottom = 42.0
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="PreviousButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager" unique_id=305002767]
+[node name="PreviousButton" type="Button" parent="Pager" unique_id=305002767]
 custom_minimum_size = Vector2(54, 42)
 layout_mode = 2
 size_flags_vertical = 8
@@ -471,9 +485,10 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_pager_button")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pager_button")
 icon = ExtResource("7_page_back")
 flat = true
+icon_alignment = 1
 expand_icon = true
 
-[node name="PageLabel" type="Label" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager" unique_id=1190991235]
+[node name="PageLabel" type="Label" parent="Pager" unique_id=1190991235]
 custom_minimum_size = Vector2(92, 42)
 layout_mode = 2
 size_flags_vertical = 8
@@ -481,7 +496,7 @@ text = "1 / 3"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="NextButton" type="Button" parent="RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager" unique_id=94827727]
+[node name="NextButton" type="Button" parent="Pager" unique_id=94827727]
 custom_minimum_size = Vector2(54, 42)
 layout_mode = 2
 size_flags_vertical = 8
@@ -493,82 +508,84 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_pager_button")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pager_button")
 icon = ExtResource("8_page_next")
 flat = true
+icon_alignment = 1
 expand_icon = true
 
-[node name="DeckPanelFrame" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout" unique_id=376321816]
-custom_minimum_size = Vector2(360, 0)
-layout_mode = 2
-size_flags_vertical = 3
+[node name="DeckPanelFrame" type="PanelContainer" parent="." unique_id=376321816]
+custom_minimum_size = Vector2(388, 0)
+layout_mode = 0
+offset_right = 388.0
+offset_bottom = 696.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_light")
 
-[node name="RightColumn" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame" unique_id=369780059]
+[node name="RightColumn" type="VBoxContainer" parent="DeckPanelFrame" unique_id=369780059]
 custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="DeckTitle" type="Label" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=1334946907]
+[node name="DeckTitle" type="Label" parent="DeckPanelFrame/RightColumn" unique_id=1334946907]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
 theme_override_font_sizes/font_size = 22
 text = "My codexes"
 horizontal_alignment = 1
 
-[node name="NewDeckButton" type="Button" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=520008270]
+[node name="NewDeckButton" type="Button" parent="DeckPanelFrame/RightColumn" unique_id=520008270]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 text = "New codex"
 
-[node name="DeckNameEdit" type="LineEdit" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=943958489]
+[node name="DeckNameEdit" type="LineEdit" parent="DeckPanelFrame/RightColumn" unique_id=943958489]
 visible = false
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 placeholder_text = "Codex name"
 
-[node name="DeckListScroll" type="ScrollContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=1487729421]
+[node name="DeckListScroll" type="ScrollContainer" parent="DeckPanelFrame/RightColumn" unique_id=1487729421]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="DeckList" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckListScroll" unique_id=523429035]
+[node name="DeckList" type="VBoxContainer" parent="DeckPanelFrame/RightColumn/DeckListScroll" unique_id=523429035]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="DeckPreview" type="PanelContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckListScroll/DeckList" unique_id=1057435342]
+[node name="DeckPreview" type="PanelContainer" parent="DeckPanelFrame/RightColumn/DeckListScroll/DeckList" unique_id=1057435342]
 custom_minimum_size = Vector2(0, 84)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_dark")
 
-[node name="Label" type="Label" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckListScroll/DeckList/DeckPreview" unique_id=1271999219]
+[node name="Label" type="Label" parent="DeckPanelFrame/RightColumn/DeckListScroll/DeckList/DeckPreview" unique_id=1271999219]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.94, 0.94, 0.9, 1)
 text = "Codex 1     15/15"
 vertical_alignment = 1
 
-[node name="DeckStampScroll" type="ScrollContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=1430687519]
+[node name="DeckStampScroll" type="ScrollContainer" parent="DeckPanelFrame/RightColumn" unique_id=1430687519]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="DeckStampList" type="VBoxContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckStampScroll" unique_id=464413624]
+[node name="DeckStampList" type="VBoxContainer" parent="DeckPanelFrame/RightColumn/DeckStampScroll" unique_id=464413624]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="DeckPanelSpacer" type="Control" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=316897217]
+[node name="DeckPanelSpacer" type="Control" parent="DeckPanelFrame/RightColumn" unique_id=316897217]
 custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
 
-[node name="DeckFooter" type="HBoxContainer" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn" unique_id=1253995728]
+[node name="DeckFooter" type="HBoxContainer" parent="DeckPanelFrame/RightColumn" unique_id=1253995728]
 layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 2
 
-[node name="DeckCountLabel" type="Label" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter" unique_id=614960957]
+[node name="DeckCountLabel" type="Label" parent="DeckPanelFrame/RightColumn/DeckFooter" unique_id=614960957]
 visible = false
 custom_minimum_size = Vector2(64, 42)
 layout_mode = 2
@@ -576,21 +593,17 @@ text = "0/15"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DoneButton" type="Button" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter" unique_id=1313670158]
+[node name="DoneButton" type="Button" parent="DeckPanelFrame/RightColumn/DeckFooter" unique_id=1313670158]
 visible = false
 custom_minimum_size = Vector2(78, 42)
 layout_mode = 2
 text = "Done"
 
-[node name="DeckEditorBackButton" type="Button" parent="RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter" unique_id=12148855]
+[node name="DeckEditorBackButton" type="Button" parent="DeckPanelFrame/RightColumn/DeckFooter" unique_id=12148855]
 visible = false
 custom_minimum_size = Vector2(78, 42)
 layout_mode = 2
 text = "Cancel"
-
-[node name="RightLayoutSpacer" type="Control" parent="RootMargin/MainCenter" unique_id=165205635]
-layout_mode = 2
-size_flags_horizontal = 3
 
 [node name="BuyPacksPanel" type="PanelContainer" parent="." unique_id=1058526942]
 visible = false
@@ -711,14 +724,33 @@ text = "X"
 [node name="RemoveStampTimer" type="Timer" parent="." unique_id=951392258]
 one_shot = true
 
-[node name="VignetteLayer" type="CanvasLayer" parent="." unique_id=951392259]
-layer = 11
+[node name="PaperTextureLayer" type="CanvasLayer" parent="."]
+layer = 10
 
-[node name="VignetteOverlay" type="ColorRect" parent="VignetteLayer" unique_id=951392260]
-material = SubResource("ShaderMaterial_vignette")
+[node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer"]
+material = SubResource("ShaderMaterial_paper_texture")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="VignetteLayer" type="CanvasLayer" parent="." unique_id=951392259]
+layer = 11
+
+[node name="VignetteOverlay" type="ColorRect" parent="VignetteLayer" unique_id=951392260]
+material = ExtResource("90_vignette_material")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BuyPacksFeatureHint" type="Node" parent="."]
+script = ExtResource("10_feature_hint")
+feature_id = "buy_packs"
+top_bar_button_id = "buy_packs"
+arrow_side = 3
+arrow_offset = Vector2(0, 0)

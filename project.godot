@@ -15,9 +15,9 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Golem"
-config/version="0.0.9"
+config/version="0.1.0"
 run/main_scene="uid://b2oed0tahffou"
-config/features=PackedStringArray("4.6", "Mobile")
+config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
 
 [audio]
@@ -26,9 +26,11 @@ buses/default_bus_layout="uid://0axhvfpiw6je"
 
 [autoload]
 
+SaveIO="*res://Scripts/SaveIO.gd"
 StampLibrary="*res://Scripts/StampLibrary.gd"
 StampPrintLibrary="*res://Scripts/StampPrintLibrary.gd"
 PackDefinitionLibrary="*res://Scripts/PackDefinitionLibrary.gd"
+DeckDefinitionLibrary="*res://Scripts/DeckDefinitionLibrary.gd"
 PlayerCollectionStore="*res://Scripts/PlayerCollectionStore.gd"
 PlayerDeckStore="*res://Scripts/PlayerDeckStore.gd"
 PlayerProgressStore="*res://Scripts/PlayerProgressStore.gd"

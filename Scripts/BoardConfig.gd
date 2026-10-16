@@ -17,6 +17,16 @@ const BLACK_HOME_ROW: int = BOARD_SIZE - 1
 const WHITE_BASE_FIELD: Vector2 = Vector2(WHITE_HOME_ROW, CENTER_INDEX)
 const BLACK_BASE_FIELD: Vector2 = Vector2(BLACK_HOME_ROW, CENTER_INDEX)
 
+## How far apart two neighbouring ranks sit in the drawing order.
+##
+## More than one, so that a piece in flight can be slotted *between* two ranks:
+## just behind the piece it is passing, yet still in front of everything
+## further back. With a stride of one there is no such slot - a moving piece can
+## only ever be a whole rank out - and it has to snap past its neighbour in a
+## single frame, which reads as passing through it. Four leaves room inside a
+## rank for the near/far side offset and for the lift of a piece in the air.
+const DEPTH_Z_STRIDE: int = 4
+
 static func get_color_for_player_id(player_id: int) -> int:
 	return WHITE_COLOR if player_id == WHITE_PLAYER_ID else BLACK_COLOR
 

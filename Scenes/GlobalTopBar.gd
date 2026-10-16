@@ -2,6 +2,8 @@ extends CanvasLayer
 
 const MAIN_MENU_MODE: String = "main_menu"
 const COLLECTION_MODE: String = "collection"
+## Just the coin counter, for screens that pay coins out (reward scenes).
+const POINTS_ONLY_MODE: String = "points_only"
 const MAIN_MENU_SCENE: String = "res://Scenes/MainMenu.tscn"
 const COLLECTION_SCENE: String = "res://Scenes/Collection.tscn"
 const SLIDE_DISTANCE: float = 64.0
@@ -111,6 +113,43 @@ func show_collection(back_pressed: Callable, buy_packs_pressed: Callable = Calla
 	_replace_button_connection(buy_packs_button, buy_packs_pressed)
 	_show_mode(COLLECTION_MODE)
 
+
+## Shows only the bar and its coin counter - no menu items - so a reward scene
+## has a real counter for its coins to fly into. Leaving the scene hides it
+## again through prepare_for_scene_change like any other mode.
+func show_points_only() -> void:
+	if scene_items_tween != null and scene_items_tween.is_valid():
+		scene_items_tween.kill()
+	main_menu_items.visible = false
+	collection_items.visible = false
+	root.visible = true
+	top_background.visible = true
+	points_hud.visible = true
+	current_mode = POINTS_ONLY_MODE
+	pending_mode = ""
+	active_items = null
+	refresh_points()
+
+## Centre of the coin icon in screen space - the target for flying coins.
+func get_coin_global_center() -> Vector2:
+	if point_icon == null:
+		return Vector2.ZERO
+	return point_icon.global_position + point_icon.size * 0.5
+
+## Writes a number into the counter without touching the store, for count-up
+## animations. refresh_points() puts the real value back.
+func set_displayed_points(value: int) -> void:
+	if points_label != null:
+		points_label.text = str(maxi(0, value))
+
+## A quick grow-and-settle on the counter, for when a coin lands in it.
+func pulse_points_hud() -> void:
+	if points_hud == null:
+		return
+	points_hud.pivot_offset = points_hud.size * 0.5
+	var tween := points_hud.create_tween()
+	tween.tween_property(points_hud, "scale", Vector2.ONE * 1.18, 0.07).set_ease(Tween.EASE_OUT)
+	tween.tween_property(points_hud, "scale", Vector2.ONE, 0.16).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 func prepare_for_scene_change(target_scene_path: String) -> void:
 	var target_mode: String = _mode_for_scene_path(target_scene_path)
@@ -267,7 +306,9 @@ func _reset_container_items(container: HBoxContainer) -> void:
 	_remember_rest_positions(animated_items)
 	for item in animated_items:
 		var rest_position: Vector2 = rest_positions.get(item, item.position)
-		item.position = rest_position
+		# Only y is animated; x follows the item's anchors, which move it when
+		# its translated text makes it wider than when the rest was recorded.
+		item.position.y = rest_position.y
 
 
 func _remember_rest_positions(animated_items: Array[Control]) -> void:

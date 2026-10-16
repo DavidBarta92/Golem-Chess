@@ -37,10 +37,9 @@ func set_move(start_pos: Vector2, end_pos: Vector2) -> void:
 	DebugLog.info("set_move() end")
 
 	await play_local_move_transition(move_context)
-	if !match_board.tutorial_mode_active:
-		match_board.get_turn_flow_controller().end_current_turn_locally()
-		return
-	restore_local_move_selection(move_context)
+	# A move always ends the turn, in the tutorial too: it teaches the game as
+	# it is played.
+	match_board.get_turn_flow_controller().end_current_turn_locally()
 
 func create_local_move_context(start_pos: Vector2, end_pos: Vector2) -> Dictionary:
 	var start_piece: Piece = match_board.piece_objects[start_pos] as Piece if match_board.piece_objects.has(start_pos) else null
@@ -86,7 +85,12 @@ func apply_local_move_post_move_effects(move_context: Dictionary) -> void:
 	var moving_piece: Piece = match_board.piece_objects[end_pos] as Piece if match_board.piece_objects.has(end_pos) else null
 	var pending_respawn_arrivals: Array = move_context.get("pending_respawn_arrivals", [])
 	if moving_piece != null and !GameController.current_game_host:
-		pending_respawn_arrivals.append_array(match_board.get_local_state_mutator().apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_MOVE, end_pos, moving_piece, moving_piece.affixed_stamp))
+		var mutator = match_board.get_local_state_mutator()
+		pending_respawn_arrivals.append_array(mutator.apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_MOVE, end_pos, moving_piece, moving_piece.affixed_stamp))
+		# A capture wakes the capturing stamp's on-capture ability before the
+		# move is paid for, as on the host (NetworkGameHost.handle_move).
+		if move_context.get("captured_piece", null) != null:
+			pending_respawn_arrivals.append_array(mutator.apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_CAPTURE, end_pos, moving_piece, moving_piece.affixed_stamp))
 	consume_moved_piece_duration_locally(moving_piece, end_pos)
 	move_context["pending_respawn_arrivals"] = pending_respawn_arrivals
 
@@ -113,14 +117,6 @@ func finish_local_move_state_updates(move_context: Dictionary) -> void:
 
 func play_local_move_transition(move_context: Dictionary) -> void:
 	await match_board.get_piece_effect_flow_controller().play_local_move_transition(move_context)
-
-func restore_local_move_selection(move_context: Dictionary) -> void:
-	var start_pos: Vector2 = move_context.get("start_pos", invalid_board_pos)
-	var end_pos: Vector2 = move_context.get("end_pos", invalid_board_pos)
-	if (start_pos.x != end_pos.x || start_pos.y != end_pos.y) and (match_board.white and match_board.board[end_pos.x][end_pos.y] > 0 || !match_board.white and match_board.board[end_pos.x][end_pos.y] < 0):
-		match_board.selected_piece = end_pos
-		match_board.show_options()
-		match_board.state = true
 
 func return_captured_seeker_stamp_to_deck(captured_piece: Piece) -> void:
 	if captured_piece == null or captured_piece.affixed_stamp == null:

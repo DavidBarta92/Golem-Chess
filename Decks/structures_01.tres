@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="DeckDefinition" load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://Scripts/DeckDefinition.gd" id="1_deck_definition"]
+[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="2_stamp"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/prince.tres" id="9_stamp_01"]
+[ext_resource type="Resource" path="res://Stamps/Structures/bombard.tres" id="9_stamp_02"]
+[ext_resource type="Resource" path="res://Stamps/Structures/shrine.tres" id="9_stamp_03"]
+[ext_resource type="Resource" path="res://Stamps/Structures/mantlet.tres" id="9_stamp_04"]
+[ext_resource type="Resource" path="res://Stamps/Structures/citadel.tres" id="9_stamp_05"]
+[ext_resource type="Resource" path="res://Stamps/Structures/tortoise.tres" id="9_stamp_06"]
+[ext_resource type="Resource" path="res://Stamps/Structures/ballista.tres" id="9_stamp_07"]
+[ext_resource type="Resource" path="res://Stamps/Structures/bastion.tres" id="9_stamp_08"]
+[ext_resource type="Resource" path="res://Stamps/Structures/bicycle.tres" id="9_stamp_09"]
+[ext_resource type="Resource" path="res://Stamps/Structures/fortress.tres" id="9_stamp_10"]
+[ext_resource type="Resource" path="res://Stamps/Structures/castle.tres" id="9_stamp_11"]
+[ext_resource type="Resource" path="res://Stamps/Structures/war_chariot.tres" id="9_stamp_12"]
+[ext_resource type="Resource" path="res://Stamps/Structures/trebuchet.tres" id="9_stamp_13"]
+[ext_resource type="Resource" path="res://Stamps/Structures/gate.tres" id="9_stamp_14"]
+
+[resource]
+script = ExtResource("1_deck_definition")
+deck_id = "structures_01"
+deck_name = "Structures deck 1"
+set_name = "Structures"
+stamps = Array[ExtResource("2_stamp")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_01"), ExtResource("9_stamp_10"), ExtResource("9_stamp_11"), ExtResource("9_stamp_12"), ExtResource("9_stamp_13"), ExtResource("9_stamp_14")])

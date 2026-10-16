@@ -123,7 +123,7 @@ Körök menete:
 Ütések:
 - Az elsőként leütött bábu zárolva éled újra egy üres, nem bázis alapsor-mezőn. A következő ütés feloldja.
 - A rajta lévő bélyeg eltávolításra kerül. A Kereső bélyegek visszakerülnek az eredeti kódexoldalukra."
-END TURN,END TURN,KÖR VÉGE
+END_TURN,End turn,Kör vége
 How to Play,How to Play,Hogyan játssz
 Rules,Rules,Szabályok
 "%s WINS!
@@ -182,20 +182,748 @@ The lobby host disconnected.,The lobby host disconnected.,A lobbi hosztja bontot
 "Not connected to the custom server as a client. Status: %s. Target: %s:%d.","Not connected to the custom server as a client. Status: %s. Target: %s:%d.","Nem vagy kliensként csatlakozva az egyedi szerverhez. Állapot: %s. Cél: %s:%d."
 This game instance is the server. Start a separate client window for Server Room.,This game instance is the server. Start a separate client window for Server Room.,Ez a példány maga a szerver. Indíts egy külön kliens ablakot a szerverszobához.
 Opponent left. Returning to menu in 5 seconds.,Opponent left. Returning to menu in 5 seconds.,Az ellenfél kilépett. Visszatérés a menübe 5 másodperc múlva.
-TUTORIAL_STEP_1,"Welcome. We will play a guided version of the game: one rule, one action, then the next rule.","Üdvözlünk. Egy irányított verzióját fogjuk játszani a játéknak: egy szabály, egy lépés, aztán a következő szabály."
-TUTORIAL_STEP_2,"Stamps give pieces their movement. On your first turn every piece is frozen, so you must affix at least one stamp. Drag Numero_1 onto a piece.","A bélyegek adják a bábuk mozgását. Az első körödben minden bábu le van fagyasztva, ezért legalább egy bélyeget fel kell ragasztanod. Húzd a Numero_1-et egy bábura."
-TUTORIAL_STEP_3,"The End Turn button is now active. Press it to finish your first turn. If you affix all three stamps, the turn ends automatically.","A Kör vége gomb most már aktív. Nyomd meg, hogy befejezd az első köröd. Ha mindhárom bélyeget felragasztod, a kör automatikusan véget ér."
-TUTORIAL_STEP_4,"From your next turn onward, moving is mandatory and immediately ends your turn. Turn Codex pages and affix before moving. Select the ready piece, then move it to a highlighted square.","A következő köreidtől kezdve a lépés kötelező, és azonnal véget vet a körnek. Lapozz a kódexben és ragassz fel bélyegeket lépés előtt. Válaszd ki a kész bábut, majd lépj vele egy kiemelt mezőre."
-TUTORIAL_STEP_5,"After a piece moves, its stamp loses one duration and the turn ends. Stamps do not tick down merely because another piece moved.","Miután egy bábu lép, a rajta lévő bélyeg időtartama eggyel csökken, és a kör véget ér. A bélyegek nem csökkennek csak azért, mert egy másik bábu lépett."
-TUTORIAL_STEP_6,"You can affix more than one stamp in a turn. Put both stamps from your hand onto two empty pieces.","Egy körben több bélyeget is felragaszthatsz. Tedd fel mindkét kézben lévő bélyeget két üres bábura."
-TUTORIAL_STEP_7,"Good. Now move the piece that was already ready. A successful move ends the turn. Spent non-Seeker stamps stay out of the Codex.","Ügyes. Most mozgasd a bábut, ami már készen állt. A sikeres lépés véget vet a körnek. Az elhasznált, nem Kereső bélyegek a kódexen kívül maradnak."
-TUTORIAL_STEP_8,"Once per turn, before affixing any stamp, you may turn the Codex to the next non-empty page. Press Turn Page.","Körönként egyszer, bármelyik bélyeg felragasztása előtt lapozhatsz a kódex következő nem üres oldalára. Nyomd meg a Lapozás gombot."
-TUTORIAL_STEP_8_POST,"The new page is now open, and only that page's stamps are usable. Press Continue when you are ready.","Az új oldal most nyitva van, és csak az azon lévő bélyegek használhatók. Nyomd meg a Folytatás gombot, ha készen állsz."
-TUTORIAL_STEP_9,"In multiplayer, each player has five minutes for the whole match. Your clock runs only during your turns; reaching 00:00 loses the game.","Többjátékos módban minden játékosnak öt perce van a teljes meccsre. Az órád csak a te köreid alatt fut; ha eléri a 00:00-t, elveszíted a játékot."
-TUTORIAL_STEP_10,"Some stamps have effects. Drag Training Seal onto a piece; its effect will mark frozen squares around it.","Néhány bélyegnek van különleges hatása is. Húzd a Training Seal-t egy bábura; a hatása lefagyasztott mezőket fog jelölni körülötte."
-TUTORIAL_STEP_11,"Those blue marks are board effects. Effects can change what pieces may do, separate from the stamp's movement pattern.","Azok a kék jelölések tábla-hatások. A hatások megváltoztathatják, mit tehetnek a bábuk, függetlenül a bélyeg mozgásmintájától."
-TUTORIAL_STEP_12,"Now capture the enemy piece. The first captured piece returns locked to a non-base square on its starting row. A later capture unlocks it instead of creating another respawn.","Most üsd le az ellenfél bábuját. Az elsőként leütött bábu zárolva tér vissza egy nem bázis mezőre a kezdősorában. Egy későbbi ütés feloldja azt, ahelyett hogy újabb újraéledést hozna létre."
-TUTORIAL_STEP_12_POST,"The captured piece returned to its home row. Its affixed stamp is gone, and it stays locked until another piece is captured. Press Continue when you are ready.","A leütött bábu visszatért a kezdősorába. A rajta lévő bélyeg megszűnt, és zárolva marad, amíg egy másik bábut le nem ütnek. Nyomd meg a Folytatás gombot, ha készen állsz."
-TUTORIAL_STEP_13,"Seeker stamps are special. Affix Crown to a piece. If a Seeker is captured, it returns to its original Codex page.","A Kereső bélyegek különlegesek. Ragaszd fel a Crown-t egy bábura. Ha egy Keresőt leütnek, visszakerül az eredeti kódexoldalára."
-TUTORIAL_STEP_14,"To win, a piece with a Seeker must move onto the opponent's base. Make the winning move.","A győzelemhez egy Keresővel felszerelt bábunak az ellenfél bázisára kell lépnie. Tedd meg a győztes lépést."
-TUTORIAL_STEP_15,Tutorial complete. Good work.,Az oktatóprogram véget ért. Szép munka.
+TUTORIAL_INTRO_1,"These are special stamps. There is a long history to the ways the stampmakers, each and every one of them, call up the golems. When a stamp sticks to a figure like this, it enchants it, and the lifeless piece is transformed.","Ezek különleges bélyegek. Nagy múltja van ennek, hogy a bélyegkészítők mind-mind milyen módon idézik meg a gólemeket. Ha a bélyeg ráragad egy ilyen figurára, megigézi azt, és az élettelen bábu átalakul."
+TUTORIAL_INTRO_2,"At the heart of every stamp is the sigillum, the thing that truly brings the golem to life. The shape of the sigillum decides how the golem behaves and what you can do with the stamp during the game. The circle, for example, makes a simple moving golem, and you can play it only once per match.","Minden bélyeg központi eleme a szigillum, ami a gólemet ténylegesen életre kelti. A szigillum formája alapvetően befolyásolja a gólem viselkedését, és azt, hogy mit tehetsz a bélyeggel a játék során. Például a kör forma egyszerű, mozgatható gólemet hoz létre, amit csak egyszer játszhatsz ki egy parti folyamán."
+TUTORIAL_INTRO_3,"The stamps marked with a pentagon may matter even more. You can play them more than once, and a piece bearing one of them wins you the game if it reaches your opponent's court.","Eközben a pentagonnal ellátott bélyegek talán még fontosabbak: ezek többször is kijátszhatóak, és az ilyen bélyegekkel ellátott bábuk, ha az ellenfél udvarába érnek, megnyerik neked a játékot."
+TUTORIAL_INTRO_4,"The first kind are the foot soldiers; the second are the generals, the ones that can win you the game. In the middle of the sigillum you see small dots and marks. They show where the piece may step and in which direction it may capture. In the top left corner of the stamp there is a number. It tells you how many more turns you can use that stamp.","Az előbbiek inkább közkatonák, míg az utóbbiak a hadvezérek, amelyekkel megnyerheted a játékot. A szigillum közepén apró pontokat és jelzéseket látsz. Ezek mutatják, hova léphet a bábu, és melyik irányba üthet. A bélyeg bal felső sarkában látható egy szám. Ez mutatja neked, hogy még hány körig használhatod az adott bélyeget."
+TUTORIAL_INTRO_5,"During a game we keep the stamps in a little notebook; by tradition we call them codices. This is my codex - fifteen stamps, spread over five pages, three to a page. Each turn you can only choose from one page.","A bélyegeket a játék során egy kis füzetben tartjuk, hagyományosan mi ezeket kódexeknek hívjuk. Ez itt a kódexem – tizenöt bélyeg, öt lapon elosztva, oldalanként három. Minden körben csak egy oldalról választhatsz."
+TUTORIAL_INTRO_6,"So here is the board with the pieces on it, and the stamps in the codex. Why don't we get started? This is how the board looks at the very start of a game. In the middle of my base line is my court, and in the middle of yours is your court, with six pieces each, neatly side by side.","Tehát itt a tábla, rajta bábukkal, a bélyegek a kódexben. Miért is ne kezdjünk bele? Így néz ki a tábla a játék legelején. Az én alapvonalam közepén az én udvarom és a te alapvonalad közepén a te udvarod, illetve 6-6 bábu szépen, egymás mellett."
+TUTORIAL_INTRO_7,"On your first turn none of your golems can move - none of them has a stamp yet. So before you can do anything else, you have to stick at least one stamp onto one of your golems.","Az első körödben egyetlen gólemed sem tud lépni – hiszen egyiknek sincs bélyege. Ezért mielőtt bármi mást tehetnél, legalább egy bélyeget fel kell ragasztanod valamelyik gólemedre."
+TUTORIAL_STEP_END_TURN,"Nice. The golem you put a stamp on cannot move yet - but on your next turn it can. Now end your turn, so I can make my move.","Szép. Amelyik gólemre bélyeget ragasztottál, az most még nem léphet. A következő körödben viszont már igen. Most zárd le a kört, hogy én is léphessek."
+TUTORIAL_STEP_FIRST_MOVE,"From your second turn on I am asking for something else: now you may move, and you have to - a turn always ends with a move.
+Before that, if you like, you can turn one page of your codex and stick on more stamps, as many as you have empty golems and stamps for. But in the end you have to move one of your golems that can move - that is what closes the turn. The stamp on a golem shows you where it can go. Make a move, and watch the number in the top left corner of the stamp go down by one. That is how many moves you have left with that stamp.","A második körödtől kezdve már mást kérek: most már léphetsz is, és lépned is kell – a kör mindig egy lépéssel zárul.
+Előtte, ha akarod, lapozhatsz egyet a kódexeden, és ragaszthatsz újabb bélyeget, ahányra csak van üres gólemed és bélyeged. De a végén valamelyik léphető gólemeddel lépned kell – az zárja le a kört. A gólemre ragasztott bélyeg megmutatja, hogy hova léphetsz majd. Lépj egyet, és figyeld meg azt is, hogy a bélyeg bal felső sarkában a szám eggyel csökken. Már csak ennyi lépésed maradt ezzel a bélyeggel."
+TUTORIAL_STEP_EXPIRED,"It ran out. The stamp comes off, and the golem is bare stone again - but it can take another.
+I have said it before, but I will say it again: when that happens you get the pentagon stamps back, but not the others.","Elfogyott. A bélyeg lekerül róla, a gólem újra csupasz kő lett – de kaphat másikat.
+Már mondtam korábban, de megint szólok: ilyenkor a pentagonnal ellátott bélyegeket visszakapod, a többit nem."
+TUTORIAL_STEP_CAPTURE,"Now for a more interesting part! When you move onto a square where one of your opponent's pieces stands, you capture that piece.
+The piece does not vanish completely - it only loses its stamp, and a fragment of it goes back to the base line. Two such fragments make up a new golem. So for every second golem captured, a new one appears on its owner's base line.
+Try it - capture a golem!","No, most egy érdekesebb rész! Amikor egy olyan mezőre lépsz, ahol az ellenfél bábuja van, akkor azt a bábut leütöd.
+Ilyenkor nem tűnik el a bábu teljesen – csak a bélyegét veszíti el, és visszakerül egy töredéke az alapvonalra. Két ilyen töredék tesz ki egy új gólemet. Tehát minden második leütött gólemnél létrejön egy új, az ellenfél alapvonalán.
+Próbáld ki, üss le egy gólemet!"
+TUTORIAL_STEP_ABILITY,"Some stamps also have an ability of their own, which wakes at a particular moment - when you stick it on, when you move with it, when it captures, when it is captured, or when it runs out. The stamp called The Golem, for instance, gains one more move whenever it captures. Other stamps do other things - you will get to know them as they come.
+Now your task is to move twice with The Golem stamp.","Egyes bélyegeknek külön képességük is van, ami egy adott pillanatban ébred fel – amikor felragasztod, amikor lépsz vele, amikor üt, amikor leütik, vagy amikor lejár. A The Golem nevű bélyeg például eggyel növelni tudja a lépéseinek számát, amennyiben üt. Más bélyegek mást tudnak – majd megismered őket, ahogy jönnek.
+Most az a feladat, hogy lépj kétszer is a The Golem bélyeggel."
+TUTORIAL_STEP_DANGER,"You have surely noticed by now that some stamps can only move in certain directions and only capture in others, while some can both move and capture the same way. The circles and stars inside the sigillum show which is which. It will become obvious after a while.
+But you always have to watch the board: where your opponent can move, and where they can capture. Keep off the dangerous squares if you do not want to lose your piece. Now think, and make your move!","Biztos észrevetted már, hogy egyes bélyegek bizonyos irányba csak lépni, bizonyos irányba pedig csak ütni tudnak, de vannak olyanok is, amik egy irányba tudnak ütni és lépni is. Ezt a körök és a csillagok jelzik a szigillumon belül. Ez egy idő után egyértelmű lesz.
+Viszont mindig figyelned kell a táblára, hogy az ellenfél hova tud lépni és hova tud ütni. Kerüld a veszélyes mezőket, ha nem akarod elveszíteni a bábudat. Most gondolkodj, és lépj!"
+TUTORIAL_STEP_COURT,"Remember what I told you at the start? You can only win with the pentagon stamps. Get a golem close to my court, then step into the court with a pentagon stamp!","Emlékszel, amiről az elején beszéltem? Csak a pentagonnal ellátott bélyegekkel tudsz nyerni. Juttass el egy gólemet az én udvarom közelébe, majd egy pentagonos bélyeggel lépj be az udvarba!"
+TUTORIAL_OUTRO_1,"So now you understand everything. Shall we play a game from the very beginning?","Akkor most már mindent értesz. Mehet egy parti a legelejétől?"
+TUTORIAL_OUTRO_YES,"Yes!","Igen!"
+BOSS_NAME_GRANDPA,Grandpa,Nagypapa
+BOSS_01_INTRO_1,"Well then, let's get to it.",Hát akkor lássunk hozzá.
+BOSS_01_INTRO_2,A bit of practice. Come on!,Egy kis gyakorlás. Gyerünk!
+BOSS_01_INTRO_3,So you'd like to play? Excellent!,"Nos, játszani szeretnél? Kitűnő!"
+BOSS_01_INTRO_4,Let's try it for real. Ready?,Próbáljuk ki élőben. Kész vagy?
+BOSS_01_INTRO_5,Let's begin. Let's see what a real game feels like!,"Kezdjünk hozzá. Nézzük, milyen egy parti!"
+BOSS_01_ROUTE_1,Just watch how I play. That's what teaches you the most.,"Csak figyeld, ahogy én játszom. A legtöbbet abból tanulsz."
+BOSS_01_ROUTE_2,You really learn the most from real matches.,Igazán sokat tanulni a valódi meccsekből lehet.
+BOSS_01_ROUTE_3,Always have a plan at the start. Watch how I do it.,"Mindig legyen egy terved az elején. Figyeld, én hogy csinálom."
+BOSS_01_ROUTE_4,Now let's see... It's always worth thinking the opening through.,Na lássuk csak... A nyitást érdemes mindig átgondolni.
+BOSS_01_ROUTE_5,The opening always matters. Think it through carefully.,A nyitás mindig nagyon fontos. Gondold át alaposan.
+BOSS_01_PUSH_1,"From the opening on, build your position so you can reach the base square as soon as possible.","Fontos, hogy a nyitástól kezdődően úgy építsd a pozíciódat, hogy a bázismezőt mihamarabb elérd."
+BOSS_01_PUSH_2,"If you were watching, you may have noticed I built my position to reach your base square quickly.","Ha figyeltél, akkor talán már észrevetted, hogy a pozíciómat úgy építettem, hogy gyorsan elérjem a bázismeződet."
+BOSS_01_PUSH_3,"Until now I was making sure I had the right position on the board. Now that I have it, I'm going on the attack.","Idáig arra figyeltem, hogy meglegyen a megfelelő pozícióm a táblán. Most, hogy megvan, elkezdek támadni."
+BOSS_01_PUSH_4,See? Now I'm in a position to attack. Watch closely!,"Látod? Most olyan pozícióban vagyok, hogy támadhatok. Most figyelj!"
+BOSS_01_PUSH_5,"Everything is ready for the attack. First you take the strategically important points on the board, and only then comes the attack.","Minden készen áll a támadásra. Először el kell foglalni a stratégiailag fontos pontokat a táblán, és csak aztán jöhet a támadás."
+BOSS_01_ENDGAME_1,Well... now or never.,Hát... most vagy soha.
+BOSS_01_ENDGAME_2,"There's no other option, that's how it is.","Nincs más lehetőség, ez van."
+BOSS_01_DEFEND_1,"Oh, I didn't expect that! Well done! Now I have to defend.","Ó, ezt nem vártam! Ügyes vagy! Most védekeznem kell."
+BOSS_01_DEFEND_2,"Hmm, you're playing well. But I'm not giving up yet.","Hmm, jól játszol. De nem adom fel még."
+BOSS_01_DEFEND_3,This is a tough nut to crack. Well done!,Ez kemény dió. Ügyes vagy!
+BOSS_01_DEFEND_4,Interesting! How quickly you've understood the game!,Érdekes! Milyen gyorsan megértetted a játékot!
+BOSS_01_DEFEND_5,"Whoa, you're already giving your grandpa a hard time. Nicely done!","Huha, máris megszorongatod nagyapádat. Ügyes!"
+BOSS_01_EMERGENCY_1,"Uh oh, am I losing already? I'm still not giving up!","Úh, máris veszíteni fogok? Azért nem adom fel!"
+BOSS_01_EMERGENCY_2,"Hmm, I'm in real trouble. Well done!","Hmm, nagy bajban vagyok. Ügyes vagy!"
+BOSS_01_EMERGENCY_3,"Whoa, it seems I should have taken this game more seriously.","Húha, úgy látom, komolyabban kellett volna vennem a játékot."
+BOSS_01_EMERGENCY_4,"Not bad at all. Well done! Wait though, you haven't won yet.","Nem semmi. Ügyes vagy! Várj, azért még nem nyertél."
+BOSS_01_EMERGENCY_5,Hm... I see you learn fast. Might you beat your grandpa on the very first try?,"Hm... Látom, gyorsan tanulsz. Lehet, egyből le is győzöd nagyapádat?"
+BOSS_01_CAPTURE_1,"You need to look after your pieces, or I'll take them all.","Vigyáznod kell a bábuidra, mert leütöm mindet."
+BOSS_01_CAPTURE_2,"Whoops, see that? Pay closer attention to your pieces!","Hopp-hopp, látod? Figyelj a bábukra jobban!"
+BOSS_01_CAPTURE_3,"Every piece matters. To me, for taking it; to you, for keeping it.","Minden bábu nagyon fontos. Nekem azért, hogy leüssem, neked azért, hogy megtartsd."
+BOSS_01_CAPTURE_4,"Luckily it can come back into play, but for now you're behind.","Szerencsére még újra játékba kerülhet, de most hátrányban vagy."
+BOSS_01_CAPTURE_5,"Pay closer attention! You can't just sacrifice your pieces, or you'll fall behind!","Figyelj jobban! Nem áldozhatod fel a bábuidat, mert hátrányba kerülsz!"
+BOSS_01_CAPTURE_6,Poof! That piece is done for.,Puff! Ennek a bábunak annyi.
+BOSS_01_CAPTURE_7,"See, see - you weren't careful.","Látod-látod, nem vigyáztál."
+BOSS_01_CAPTURE_8,"Well, that one's finished. But don't worry, you still have pieces to move.","Hát ennek meszeltek. De ne aggódj, tudsz még mivel lépni."
+BOSS_01_CAPTURED_1,"Oh, that one was mine! Not bad at all.","Ó, az az enyém! Nem is rossz."
+BOSS_01_CAPTURED_2,Ah! You're playing well.,Ah! Jól játszol.
+BOSS_01_CAPTURED_3,Now that's more like it. That was nicely done!,"Na, ez a beszéd. Ez szép volt!"
+BOSS_01_CAPTURED_4,Oops! One fewer. Nice!,Upsz! Eggyel kevesebb. Szép!
+BOSS_01_CAPTURED_5,"Ah! True, that one wasn't in a good spot.","Áh! Valóban, az nem volt jó helyen."
+BOSS_01_CAPTURED_6,That hurt. I still had plans for that one. But you spotted it well - nicely done!,"Ez fájt. Azzal még tervem volt. De jól észrevetted, ügyes!"
+BOSS_01_CAPTURED_7,"I see your eye is getting used to it. You play quite well, I must say.","Látom, már ráállt a szemed. Egész jól játszol, azt kell, hogy mondjam."
+BOSS_01_CAPTURED_8,"You spot these situations well. I'm behind now, but I'm glad you understand the game.","Jól észreveszed ezeket a helyzeteket. Bár most hátrányban vagyok, de örülök, hogy érted a játékot."
+BOSS_01_LOSS_1,"That was a fine game! Congratulations, you were very good!","Szép parti volt! Gratulálok, nagyon jó voltál!"
+BOSS_01_WIN_1,"That was a good game, wasn't it? Don't worry, we can try again.","Jó parti volt, nem igaz? Ne aggódj, újrapróbálhatjuk."
+BOSS_01_WIN_2,"Don't be down, that was a good match. I hope you enjoyed it too.","Ne bánkódj, ez egy jó meccs volt. Remélem, te is jól érezted magad."
+BOSS_01_WIN_3,Don't look at whether you won or lost. What matters is whether you learned from the game.,"Ne azt nézd, hogy nyertél vagy vesztettél. A lényeg, hogy tanultál-e a játékból."
+BOSS_01_WIN_4,That was a fine game! Shall we go again?,Szép parti volt! Mehet még egy?
+BOSS_01_WIN_5,"Let's play another, I say. The next one will be much better, I promise.","Játszunk még egyet, én azt mondom. A következő sokkal jobb lesz, ígérem."
+BOSS_02_INTRO_1,"Whoa, how did the opening go again? I don't really remember anymore.","Húha, hogy is volt a nyitás? Már nem igazán emlékszem."
+BOSS_02_INTRO_2,"You'll help me if I get stuck, right? I don't remember everything.","Majd segítesz, ha elakadok? Nem emlékszem mindenre."
+BOSS_02_INTRO_3,"So at the start we just play the stamps, right?","Szóval most az elején csak kijátsszuk a bélyegeket, igaz?"
+BOSS_02_INTRO_4,"I'm curious, it's been ages since I played. Do you still remember the rules?","Kíváncsi vagyok, nagyon rég játszottam. Te emlékszel még a szabályokra?"
+BOSS_02_INTRO_5,"If I make an illegal move or do something wrong, please tell me!","Ha szabálytalanul lépek vagy valamit rosszul csinálok, szólj kérlek!"
+BOSS_02_ROUTE_1,Let me think... Is this a legal move?,Gondolkodom... Ez így valid lépés?
+BOSS_02_ROUTE_2,"We're supposed to hold the centre somehow, right?","Valahol a középteret kell megtartani, ugye?"
+BOSS_02_ROUTE_3,"I used to have a tactic that worked, just not with these pieces, so I'm not sure it'll work.","Régen volt egy bevált taktikám, csak nem ezekkel a bábukkal, szóval nem biztos, hogy működni fog."
+BOSS_02_ROUTE_4,Hm... let's see.,Hm... lássuk csak.
+BOSS_02_ROUTE_5,"I have an idea. This is still legal, right?","Van egy elképzelésem. Ez így még szabályos, igaz?"
+BOSS_02_PUSH_1,I don't quite remember how to go on from here.,"Nem teljesen emlékszem, innentől hogyan tovább."
+BOSS_02_PUSH_2,Is my plan very obvious?,Nagyon átlátszó a tervem?
+BOSS_02_PUSH_3,Maybe you can already see what I'm after.,"Lehet, már látod, hogy mit akarok."
+BOSS_02_PUSH_4,The memories are starting to come back.,Kezdenek visszajönni az emlékek.
+BOSS_02_PUSH_5,I'm a little unsure whether this will actually work.,"Kicsit bizonytalan vagyok, hogy ez most működni fog-e."
+BOSS_02_ENDGAME_1,"All right, I have no other choice.","Na jó, nincs más választásom."
+BOSS_02_ENDGAME_2,"Uh-oh, I shouldn't lose this.","Ajjaj, nem kéne veszíteni."
+BOSS_02_DEFEND_1,Do I have to defend already?,Máris védekeznem kéne?
+BOSS_02_DEFEND_2,Does this mean I have to defend now?,"Most ez azt jelenti, hogy védekeznem kell?"
+BOSS_02_DEFEND_3,Nice! You're much better at this than I am!,"Szép! Neked sokkal jobban megy, mint nekem!"
+BOSS_02_DEFEND_4,"Wow, nicely done!","Wow, ügyes!"
+BOSS_02_DEFEND_5,Interesting! Now I have to rethink my tactics.,Érdekes! Most újra kell gondolnom a taktikámat.
+BOSS_02_EMERGENCY_1,"Oh, this isn't going to end well...","Ó, ez nem fog jól végződni..."
+BOSS_02_EMERGENCY_2,"Hmm, this doesn't look good.","Hmm, ez nem néz ki jól."
+BOSS_02_EMERGENCY_3,I suppose I've already lost then.,"Gondolom, akkor máris vesztettem."
+BOSS_02_EMERGENCY_4,You didn't tell me you were this good at it!,"Nem mondtad, hogy te ennyire jó vagy ebben!"
+BOSS_02_EMERGENCY_5,"Well, this isn't looking too good.","Hát, ez nem fest túl jól."
+BOSS_02_CAPTURE_1,Hah! There you go!,Háh! Tessék!
+BOSS_02_CAPTURE_2,"All right, I can do this.","Rendben, megy ez nekem."
+BOSS_02_CAPTURE_3,Whoops! I'll get the hang of this.,Hoppá! Menni fog ez.
+BOSS_02_CAPTURE_4,One piece down.,Egy bábu mínusz.
+BOSS_02_CAPTURE_5,"Was that the plan, to take it? Because then it worked.","Ez volt a terv, hogy leüssem? Mert akkor sikerült."
+BOSS_02_CAPTURE_6,"It's been a while since you played too, hasn't it?","Neked is régen volt már, hogy játszottál, mi?"
+BOSS_02_CAPTURE_7,Not bad at all.,Nem is rossz.
+BOSS_02_CAPTURE_8,Whoopsie! I finally managed a capture.,Hoppáré! Végre tudtam ütni.
+BOSS_02_CAPTURED_1,"Oh no, I didn't see that.","Jaj, azt nem láttam."
+BOSS_02_CAPTURED_2,"Oh right, that one was in a bad spot.","Jaj tényleg, az rossz helyen volt."
+BOSS_02_CAPTURED_3,I still needed that one.,Arra szükségem lett volna még.
+BOSS_02_CAPTURED_4,"Well, I'm not happy about that.",Hát ennek nem örülök.
+BOSS_02_CAPTURED_5,I misread that. I told you you'd win.,"Ezt benéztem, mondtam én, hogy nyerni fogsz."
+BOSS_02_CAPTURED_6,But why did I put that piece there? I don't get it.,De miért tettem oda azt a bábut? Nem értem.
+BOSS_02_CAPTURED_7,"Nicely done, nicely done...",Ügyes-ügyes...
+BOSS_02_CAPTURED_8,"Well, this makes it even harder...",Hát így még nehezebb lesz...
+BOSS_02_LOSS_1,"Well played! Congratulations, you were good!","Szép volt! Gratulálok, jó voltál!"
+BOSS_02_WIN_1,Yes! I won! But you were very good too!,Jó! Nyertem! De te is nagyon jó voltál!
+BOSS_02_WIN_2,Nice! Another one?,Szép! Még egy?
+BOSS_02_WIN_3,I won! But I'd happily play some more!,Nyertem! De szívesen játszok még!
+BOSS_02_WIN_4,"Well, I remember more than I thought.","Na, többre emlékszem, mint gondoltam."
+BOSS_02_WIN_5,"Don't worry, I think we're at about the same level. Shall we do it again?","Ne aggódj, szerintem nagyjából egy szinten lehetünk. Ismételjük meg?"
+BOSS_03_INTRO_1,Now let us see what I ought to be doing.,"Na lássuk csak, mit kéne csinálnom."
+BOSS_03_INTRO_2,I am extremely pleased to have found a worthy opponent.,"Rendkívül örülök, hogy találtam egy méltó ellenfelet."
+BOSS_03_INTRO_3,What a pleasure! At last we can play. I did not think I would get the chance for a game in this town.,"Milyen öröm! Végre játszhatunk. Nem gondoltam, hogy lehetőségem lesz egy partira ebben a városban."
+BOSS_03_INTRO_4,"As I said, I am no great player, but to a good game with an agreeable opponent, how could I say no?","Mint mondtam, nem vagyok egy nagy játékos, de egy jó partira egy kedves ellenféllel, hogy mondhatnék nemet?"
+BOSS_03_INTRO_5,Excellent! Let the game begin.,Kiváló! Kezdődhet a játék.
+BOSS_03_ROUTE_1,I am thinking...,Gondolkodom...
+BOSS_03_ROUTE_2,"Interesting. Well, I do have an idea of what to do now. We shall see whether it succeeds.","Érdekes, hát van egy elképzelésem, mit csinálok most. Meglátjuk, hogy sikeres lesz-e."
+BOSS_03_ROUTE_3,So you play with quite different stamps. It would be better if...,"Egész más bélyegekkel játszik tehát, jobb lenne, ha..."
+BOSS_03_ROUTE_4,I wish you every success with your attacks.,Sok sikert kívánok a sikeres támadásokhoz.
+BOSS_03_ROUTE_5,I am curious how you will break through my defence.,"Kíváncsi vagyok, hogy hogyan tör majd át a védelmemen."
+BOSS_03_PUSH_1,Well then! Let us see whether we succeed.,"Nos! Lássuk, sikerrel járunk-e."
+BOSS_03_PUSH_2,I hope it is not too obvious what I am preparing.,"Remélem, nem túl átlátszó, hogy mire készülök."
+BOSS_03_PUSH_3,I do not believe you stand any chance against my attack.,"Nem gondolom, hogy bármi esélye lenne a támadásommal szemben."
+BOSS_03_PUSH_4,"Yes, yes, just as I suspected.","Igen-igen, ahogy sejtettem."
+BOSS_03_PUSH_5,"I must say, we are in for an interesting game.","Azt kell, hogy mondjam, érdekes partinak nézünk elébe."
+BOSS_03_ENDGAME_1,"I am sorry, I have no choice but to attack.","Sajnálom, nincs más választásom, csak a támadás."
+BOSS_03_ENDGAME_2,"It seems we shall be finished shortly, my dear friend.","Úgy tűnik, hamarosan végzünk is, kedves barátom."
+BOSS_03_DEFEND_1,Let me see. What shall I do now?,Lássuk csak. Mihez kezdjek most?
+BOSS_03_DEFEND_2,"Hmm, I must say I am dealing with a tough opponent.","Hmm, azt kell, hogy mondjam, kemény ellenféllel van dolgom."
+BOSS_03_DEFEND_3,"Interesting! But if you will forgive me, I must say you will not break through my defence.","Érdekes! De ha megbocsát, azt kell hogy mondjam, a védelmemen úgysem tör át."
+BOSS_03_DEFEND_4,A difficult matter... What shall I do now?,Nehéz ügy... Mihez kezdjek most?
+BOSS_03_DEFEND_5,Nicely done! But perhaps you are about to be surprised!,Szép! De talán most meg fog lepődni!
+BOSS_03_EMERGENCY_1,"Oh, things are not looking well for me...","Ó, nemigen áll jól a szénám..."
+BOSS_03_EMERGENCY_2,"Hmm, I am in serious trouble.","Hmm, nagy bajban vagyok."
+BOSS_03_EMERGENCY_3,Some manner of luck might still help me.,Valamiféle szerencse talán még segíthet.
+BOSS_03_EMERGENCY_4,"You are a tough nut to crack. I thought I might win, but perhaps not after all?","Kemény dió maga. Azt hittem, nyerhetek, de talán mégsem?"
+BOSS_03_EMERGENCY_5,"Well, I fear that is that.","Hát attól tartok, hogy ennyi volt."
+BOSS_03_CAPTURE_1,There we are! I would wager you did not expect that.,"Na tessék! Fogadni mernék, hogy erre nem számított."
+BOSS_03_CAPTURE_2,"If you will permit me, I shall remove this one.","Ha megengedi, ezt innen leveszem."
+BOSS_03_CAPTURE_3,I should venture to suggest that it might be worth guarding your pieces more closely.,"Bátorkodnék jelezni, talán érdemes lenne a bábuira jobban vigyázni."
+BOSS_03_CAPTURE_4,Perhaps it is best if we clear this part of the board.,"Talán a legjobb, ha kitisztítjuk ezt a részt a táblán."
+BOSS_03_CAPTURE_5,"My apologies, this too is part of the game, I am afraid.","Elnézés, sajnos ez is a játék része."
+BOSS_03_CAPTURE_6,"If you will forgive me, this piece is in my way.","Ha megbocsát, ez a bábu most nekem útban van."
+BOSS_03_CAPTURE_7,Please do not take it amiss. I am sure you will manage without this piece.,"Kérem, ne vegye zokon. Bizonyára boldogul e bábu nélkül is."
+BOSS_03_CAPTURE_8,Perhaps it is better this way; that piece was in the way regardless.,"Talán jobb is így, ez a bábu amúgy is útban volt."
+BOSS_03_CAPTURED_1,Perhaps it is better this way; I had no use for that piece in any case.,"Talán jobb is így, ezzel a bábuval egyébként sem tudtam mit kezdeni."
+BOSS_03_CAPTURED_2,"Ah! I must admit, you have surprised me.","Ah! Be kell ismernem, most meglepett."
+BOSS_03_CAPTURED_3,"Hmm, you must be pleased now. I shall let you in on it: that too was part of my plan.","Hmm, bár most biztosan örül. Elárulom önnek, ez is a tervem része volt."
+BOSS_03_CAPTURED_4,Oops! That stung. But never mind.,Upsz! Ez fájt. De oda se neki.
+BOSS_03_CAPTURED_5,"Well, yes... indeed, that was my mistake. That piece should not have been there.","Hát igen... valóban, az én hibám volt. Nem lett volna szabad ott lennie annak a bábunak."
+BOSS_03_CAPTURED_6,"Indeed... You see, that is the beauty of the game: one can learn from one's mistakes.","Valóban... Látja, ez a szép a játékban, a hibáiból tanulhat az ember."
+BOSS_03_CAPTURED_7,"Yes, I might have expected that.","Igen, erre számíthattam volna."
+BOSS_03_CAPTURED_8,"No trouble at all, please, no trouble...","Semmi gond, kérem, semmi gond..."
+BOSS_03_LOSS_1,"A splendid game, even though I lost. Thank you for it! Should I find you still here later on, I am open to a rematch.","Nagyszerű játék volt még így is, hogy vesztettem. Köszönöm a partit! Ha a későbbiekben még itt találom, részemről nyitott vagyok egy visszavágóra."
+BOSS_03_WIN_1,"A splendid game. Thank you for it! If you like, we may play a rematch.","Nagyszerű játék volt. Köszönöm a partit! Ha gondolja, játszhatunk egy visszavágót."
+BOSS_03_WIN_2,I have won! What a delight. Would you care to play another?,Nyertem! Micsoda öröm. Esetleg szeretne játszani még egyet?
+BOSS_03_WIN_3,It was a fine experience. Would you be up for another round?,Remek élmény volt. Benne lenne egy újabb körben?
+BOSS_03_WIN_4,"Splendid, splendid. Everything went according to plan. If you like, we may play a new game.","Remek-remek. Minden a terv szerint alakult. Ha gondolja, játszhatunk egy új partit."
+BOSS_03_WIN_5,An excellent game. Please do not be discouraged. We may play another.,"Kitűnő játék volt. Kérem, ne csüggedjen. Játszhatunk egy újat."
+BOSS_04_INTRO_1,Well then. Let us see how the stamps behave in play.,"Nos. Nézzük, hogy milyenek a bélyegek játék közben."
+BOSS_04_INTRO_2,Let us see what the granddaughter of the most esteemed Mr Kelemen is capable of.,"Lássuk, hogy a mélyen tisztelt Kelemen úr unokája mire képes."
+BOSS_04_INTRO_3,Let us see the stamps in play.,Lássuk a bélyegeket játék közben.
+BOSS_04_INTRO_4,"Fortunately I know your stamp series well. This will be a promising game, I think.","Szerencsére jól ismerem az ön bélyegsorozatát. Ígéretes játék lesz, azt gondolom."
+BOSS_04_INTRO_5,Please forgive me if the game is not so exciting. I am only a stamp maker.,"Kérem, nézze el nekem, ha a játék nem lesz olyan izgalmas. Én csak egy bélyegkészítő vagyok."
+BOSS_04_ROUTE_1,"I must think this through in advance. You know, I am better at inventing stamps than at tactics.","Át kell ezt gondolnom előre. Tudja, a bélyegek kitalálásában jobb vagyok, mint a taktikákban."
+BOSS_04_ROUTE_2,"I have an idea. We shall see if it works. Though I fear I am overthinking it. Perhaps I too ought to play as instinctively as animals, which always act according to the essence of their nature.","Van egy ötletem. Meglátjuk, beválik-e. Bár félek attól, túlgondolom a dolgot. Talán nekem is oly ösztönösen kéne csak játszanom, ahogyan az állatok is mindig természetük lényege szerint cselekednek."
+BOSS_04_ROUTE_3,"Every stamp has its time, miss. This one's has come now.","Minden bélyegnek megvan a maga ideje, kisasszony. Ennek itt most jött el."
+BOSS_04_ROUTE_4,Now we shall find out whether the stamps work. Often I simply do not consider that all these papers must one day hold their own in a game. For me it is the illustration and the colours that made me fall in love with this game.,"Na most majd kiderül, hogy a bélyegek működnek-e. Sokszor egyszerűen csak nem is gondolok bele, hogy mindezen papíroknak egyszer egy játékban kell helytállniuk. Számomra az illusztráció és a színek azok, melyek miatt beleszerettem e játékba."
+BOSS_04_ROUTE_5,"You know, of all the series made so far, the animals were always closest to my heart. Perhaps because they instinctively know what to do. That is partly why I chose them, in the hope that they will decide the match for me.","Tudja, az eddig elkészített sorozatok közül számomra mindig az állatok álltak legközelebb a szívemhez. Talán azért, mert ezek ösztönösen tudják, mit tegyenek. Azért is választottam ezeket, hátha helyettem eldöntik majd a mérkőzést."
+BOSS_04_PUSH_1,"Well then. As you see, I get the hang of it after a while too.","Nos. Mint látja, egy idő után belejövök én is."
+BOSS_04_PUSH_2,I hope my intention is not too transparent. Your grandfather certainly saw through me easily.,"Remélem, nem túl átlátszó a szándékom. A nagyapja bizony könnyen átlátott rajtam."
+BOSS_04_PUSH_3,"Patience is a weapon of sorts, but in this case I would rather not wait any longer.","A türelem is egyfajta fegyver, de ez esetben én inkább nem várok tovább."
+BOSS_04_PUSH_4,"Yes... as I suspected. Your series is considerably better on the attack than mine. In any case, I must win somehow.","Igen... ahogy sejtettem. Az ön sorozata lényegesen jobb támadásban, mint az enyém. Mindenesetre nyernem kell valahogy."
+BOSS_04_PUSH_5,"An interesting game, as though I were seeing your grandfather's style again.","Érdekes parti, mintha csak a nagyapja stílusát látnám újra."
+BOSS_04_ENDGAME_1,"I am sorry, I have no other choice; I must attack.","Sajnálom, nincs más választásom, támadnom kell."
+BOSS_04_ENDGAME_2,I am too old for half-measures. So be it...,Idős vagyok már a félmegoldásokhoz. Hát legyen...
+BOSS_04_DEFEND_1,Let me see... what shall I do?,Lássuk csak... mihez kezdjek?
+BOSS_04_DEFEND_2,"Hmm. I am dealing with a tough opponent, the very image of your grandfather.","Hmm. Kemény ellenféllel van dolgom, tiszta nagyapja."
+BOSS_04_DEFEND_3,Perhaps it would have been wiser to pick different stamps.,"Lehet, bölcsebb lett volna más bélyegeket válogatnom."
+BOSS_04_DEFEND_4,A difficult position... what shall I do now?,Nehéz helyzet... mihez kezdjek most?
+BOSS_04_DEFEND_5,A fine move. But perhaps I shall surprise you yet.,Szép lépés. De talán mégis meglepem majd.
+BOSS_04_EMERGENCY_1,"Oh, things are not looking well for me... Perhaps I shall even concede.","Ó, nem áll jól a szénám... Talán fel is adom."
+BOSS_04_EMERGENCY_2,"Hmm. I am in trouble, I think. But it was not the stamps' fault.","Hmm. Bajban vagyok, azt hiszem. De nem a bélyegeken múlott."
+BOSS_04_EMERGENCY_3,At home in Prague we would call this a defeat. And here? Here too...,"Otthon, Prágában, ezt vereségnek hívnánk. De itt? Itt is..."
+BOSS_04_EMERGENCY_4,"You are a tough nut to crack, miss. I saw that Edmund could not handle you either.","Kemény dió maga, kisasszony. Láttam, hogy Edmund sem bírt magával."
+BOSS_04_EMERGENCY_5,Sakra... I fear that is that.,"Sakra... attól tartok, ennyi volt."
+BOSS_04_CAPTURE_1,There we are. I would wager you did not expect that.,"Na tessék. Fogadni mernék, erre nem számított."
+BOSS_04_CAPTURE_2,Will you permit me to remove this one?,"Megengedi, hogy ezt levegyem?"
+BOSS_04_CAPTURE_3,Perhaps it would be worth guarding your pieces more closely.,Talán érdemes lenne jobban vigyázni a bábuira.
+BOSS_04_CAPTURE_4,"Do not worry, you will be able to use the piece again later.","Ne aggódjon, a későbbiekben újra tudja majd használni a bábut."
+BOSS_04_CAPTURE_5,"My apologies, but this too is part of the game.","Elnézést, de ez is a játék része."
+BOSS_04_CAPTURE_6,"If you will forgive me, this piece is in my way.","Ha megbocsát, ez a bábu most útban van nekem."
+BOSS_04_CAPTURE_7,Please do not take it amiss. I am sure you will manage without it.,"Kérem, ne vegye zokon. Bizonyára megvan e nélkül is."
+BOSS_04_CAPTURE_8,Perhaps it is better this way. That piece was in the way regardless.,Talán jobb is így. Ez a bábu amúgy is útban volt.
+BOSS_04_CAPTURED_1,Perhaps it is better this way. I would not have got far with that piece.,Talán jobb is így. Nem sokra mentem volna azzal a bábuval.
+BOSS_04_CAPTURED_2,"Well, I must admit, that surprised me.","Nos, be kell ismernem, ez meglepett."
+BOSS_04_CAPTURED_3,Hmm. You must be pleased now. I shall admit it: that too was part of my plan.,"Hmm. Bizonyára örül most. Elárulom, ez is a tervem része volt."
+BOSS_04_CAPTURED_4,"Well, I must bid this one farewell.","Nos, ettől el kell, hogy búcsúzzak."
+BOSS_04_CAPTURED_5,"Indeed, my mistake. I should not have left that piece there.",Valóban az én hibám. Nem lett volna szabad ott hagynom azt a bábut.
+BOSS_04_CAPTURED_6,I cannot understand how I failed to notice that.,"Nem is értem, hogy nem vettem ezt észre."
+BOSS_04_CAPTURED_7,"Yes, I might have expected that.","Igen, erre számíthattam volna."
+BOSS_04_CAPTURED_8,"No harm done, miss. No harm done...","Semmi baj, kisasszony. Semmi baj..."
+BOSS_04_LOSS_1,"You have won, miss. It seems the drawing board suits me better. Thank you for the game!","Ön nyert, kisasszony. Úgy tűnik, számomra a tervezőasztal testhezállóbb. Köszönöm a játékot!"
+BOSS_04_WIN_1,"A fine game. Thank you for it. If you like, we may play a rematch.","Szép játék volt. Köszönöm a partit. Ha gondolja, játszhatunk egy visszavágót."
+BOSS_04_WIN_2,"I have won. Výborně, what a delight. Would you play another?","Nyertem. Výborně, milyen öröm. Játszana még egyet?"
+BOSS_04_WIN_3,"Well now, it seems I have won. Perhaps a rematch?","Nahát, úgy tűnik, győztem. Esetleg egy visszavágó?"
+BOSS_04_WIN_4,"Everything went according to plan. If you like, we may start a new one.","Minden a terv szerint alakult. Ha gondolja, kezdhetünk egy újat."
+BOSS_04_WIN_5,"An excellent game. Do not be discouraged, miss. We may play another.","Kitűnő parti volt. Ne csüggedjen, kisasszony. Játszhatunk még egyet."
+BOSS_05_INTRO_1,"Well, let's see what you've got.","Na, lássuk, mit tudsz."
+BOSS_05_INTRO_2,"Hope you can keep up, because I'm fast.","Remélem, bírod a tempót, mert én gyors vagyok."
+BOSS_05_INTRO_3,"Just so you know, I rarely lose.","Csak hogy tudd, ritkán szoktam veszíteni."
+BOSS_05_INTRO_4,Shall we? It'll be over soon anyway.,Kezdhetjük? Úgyis hamar vége lesz.
+BOSS_05_INTRO_5,"Finally, a challenge. At least I hope that's what you'll be.","Na végre egy kihívás. Remélem, legalábbis az leszel."
+BOSS_05_ROUTE_1,Just watch how I do it.,"Figyeld csak, hogy csinálom."
+BOSS_05_ROUTE_2,This is just a warm-up.,Ez itt csak bemelegítés.
+BOSS_05_ROUTE_3,I have a plan. When don't I?,Van egy tervem. Mikor nincs?
+BOSS_05_ROUTE_4,"Don't fall asleep, at least you'll learn something.","Ne aludj el, legalább tanulsz valamit."
+BOSS_05_ROUTE_5,I'm starting simple. The best is yet to come.,Egyszerűen indulok. A java csak most jön.
+BOSS_05_PUSH_1,Now pay attention.,"Na, most figyelj oda."
+BOSS_05_PUSH_2,Looks like you started thinking about defence too late.,"Úgy tűnik, későn kezdtél a védelemmel foglalkozni."
+BOSS_05_PUSH_3,The fun begins.,Kezdődik a móka.
+BOSS_05_PUSH_4,"Get ready, here I come.","Készülj fel, jövök."
+BOSS_05_PUSH_5,This is going to hurt a little.,Ez most fájni fog egy kicsit.
+BOSS_05_ENDGAME_1,"Okay, I've had enough. Now I'm going to beat you.","Oké, elegem van. Most elverlek."
+BOSS_05_ENDGAME_2,"All right, let's finish this.","Rendben, most fejezzük be."
+BOSS_05_DEFEND_1,"That... wasn't in the plan, but okay.","Ez... nem volt a tervben, de oké."
+BOSS_05_DEFEND_2,"Wait, let me think for a minute.","Várj, hadd gondolkodjak egy percet."
+BOSS_05_EMERGENCY_1,This really doesn't look good.,Ez most tényleg nem néz ki jól.
+BOSS_05_EMERGENCY_2,"Okay, this isn't going according to plan.","Oké, ez nem a terv szerint alakul."
+BOSS_05_EMERGENCY_3,You're lucky. Enjoy it while it lasts.,"Szerencséd van. Élvezd, amíg tart."
+BOSS_05_EMERGENCY_4,"Hmm, this is really tight.","Hmm, ez most tényleg szoros."
+BOSS_05_EMERGENCY_5,"All right, that went a bit sideways, but just watch.","Na jó, ez most félrement egy kicsit, de figyelj csak."
+BOSS_05_CAPTURE_1,Boom. That's it.,Bumm. Ennyi volt.
+BOSS_05_CAPTURE_2,See? Told you.,Na ugye. Megmondtam.
+BOSS_05_CAPTURE_3,You shouldn't have left that there.,Ezt nem kellett volna ott hagynod.
+BOSS_05_CAPTURE_4,"Thanks, I'll take that.","Köszönöm, ezt elviszem."
+BOSS_05_CAPTURE_5,See? That's exactly what I'm talking about.,Látod? Pont erről beszélek.
+BOSS_05_CAPTURE_6,"Don't take it personally, I'm just good at this.","Ne vedd magadra, csak jó vagyok ebben."
+BOSS_05_CAPTURE_7,"That was easy, I must say.","Ez könnyű volt, mondhatom."
+BOSS_05_CAPTURE_8,"Whoosh, and it's gone.","Huss, és már nincs is itt."
+BOSS_05_CAPTURED_1,"Eh, it was useless anyway.","Eh, fölösleges volt úgyis."
+BOSS_05_CAPTURED_2,"I'll still win, don't worry.","Attól még nyerek, ne aggódj."
+BOSS_05_CAPTURED_3,"I meant that one for you, really.","Ezt szántam neked, tényleg."
+BOSS_05_CAPTURED_4,One piece. Big deal.,Egy bábu. Nagy ügy.
+BOSS_05_CAPTURED_5,"Fine, I'll let you have that one.","Rendben van, ezt hagyom neked."
+BOSS_05_CAPTURED_6,That doesn't count. You'll see.,Ez nem számít. Majd meglátod.
+BOSS_05_CAPTURED_7,"Is that all it's worth? Okay, go ahead.","Ennyit ér csak? Oké, mehet."
+BOSS_05_CAPTURED_8,"No problem, I've got plenty more.","Semmi gond, van még elég belőle."
+BOSS_05_LOSS_1,"All right, that didn't work out. But it was just one match, that's all. Here, take the stamp I promised you.","Na jó, ez most nem jött össze. De ez csak egy meccs volt, ennyi. Tessék, cserébe itt a bélyeg, amit megígértem."
+BOSS_05_WIN_1,See? Told you. Want to try again?,"Na ugye, megmondtam. Szeretnél még próbálkozni?"
+BOSS_05_WIN_2,That's it. Play another one?,Ennyi volt. Játszunk még egyet?
+BOSS_05_WIN_3,"Honestly, it wasn't even hard. If you want, you can try again.","Őszintén, nem is volt nehéz. Ha gondolod, megpróbálhatod ismét."
+BOSS_05_WIN_4,"Nice that you tried, at least. Want to try one more time?","Szép volt, hogy próbálkoztál legalább. Akarsz még egyszer próbálkozni?"
+BOSS_05_WIN_5,"So, who's next? Or is it just you here?","Na, ki a következő? Vagy csak te vagy itt?"
+BOSS_06_INTRO_1,"Let's see, will the memories come back?","Lássuk csak, visszajönnek vajon az emlékek?"
+BOSS_06_INTRO_2,"Whoa, this board... I haven't felt this tingle in a long time.","Hűha, ez a tábla... rég nem éreztem ezt a bizsergést."
+BOSS_06_INTRO_3,Let's see how it goes.,"Lássuk, hogy megy."
+BOSS_06_INTRO_4,This game once meant a great deal to me.,Ez a játék valaha nagyon sokat jelentett nekem.
+BOSS_06_INTRO_5,"Well, let's see if I still remember any of this.","Na, lássuk, emlékszem-e még valamire ebből az egészből."
+BOSS_06_ROUTE_1,"I learned this opening from an old boy back in Vegas. Joe, they called him. Knew a hell of a lot about the game, never really made his fortune though. Maybe he didn't even care about the money... I think he did it for the game itself. Maybe that's why he was so damn good at it.","Ezt a nyitást egy öregfiútól tanultam, még Vegasban. Úgy hívták, hogy Joe. Rengeteget tudott a játékról, mégsem szedte meg magát igazán. Talán nem is érdekelte igazán a pénz... Szerintem csak magáért a játékért csinálta. Talán ezért volt annyira piszkosul jó benne."
+BOSS_06_ROUTE_2,I've got an old trick. Curious whether I can pull it off. Learned it from Joe. Great guy. I don't even know what became of him. He always played on the Vegas Boulevard.,"Van egy régi trükköm. Kíváncsi vagyok, végig tudom-e vinni. Joe-tól tanultam. Remek fickó volt. Nem is tudom, mi lett vele. A Vegas Boulevard-on játszott mindig."
+BOSS_06_ROUTE_3,I always watch what an opponent's style says about their personality. Slow opening? Aggressive attack right from the start? I can smell uncertainty very quickly.,"Mindig figyelem, hogy milyen személyiségre vall az ellenfél játékstílusa. Lassú nyitás? Agresszív támadás már az elején? A bizonytalanságot nagyon hamar kiszagolom."
+BOSS_06_ROUTE_4,"I start slow, like always. I found opponents get nervous from it, because they don't know what I'm up to. People generally don't like uncertainty.","Lassan kezdek, mint mindig. Rájöttem, hogy az ellenfelek idegesek lesznek ettől, mert nem tudják, mire készülök. Az emberek jellemzően nem szeretik a bizonytalanságot."
+BOSS_06_ROUTE_5,"I remember, I worked this setup out over one long night. That's usually when I'm most creative: a good whiskey, a few curious pairs of eyes, that's what gets me going.","Emlékszem, ezt a felállást egy hosszú éjszaka alatt fejlesztettem ki. Általában ilyenkor vagyok a legkreatívabb, egy jó whiskey, pár érdeklődő szempár, ez az, ami felcsigáz."
+BOSS_06_PUSH_1,"Now, this is going to be interesting.","Na, ez érdekes lesz."
+BOSS_06_PUSH_2,I picked this manoeuvre up from an old friend. For money...,Ezt a manővert egy régi baráttól lestem el. Pénzért...
+BOSS_06_PUSH_3,We'll see where this gets us. Let's see...,"Meglátjuk, mire jutunk. Lássuk csak..."
+BOSS_06_PUSH_4,"Watch closely, not just how I attack, but how you defend too.","Figyeld csak meg, nem csak azt, hogy hogyan támadok, hanem azt is, hogy hogyan védekezel."
+BOSS_06_PUSH_5,"I'm in no hurry. Never was. Whoever hurries loses, sooner or later.","Nem sietek. Sosem siettem. Aki siet, az előbb-utóbb veszít."
+BOSS_06_ENDGAME_1,"Sorry, but I'm going to push a little harder now.","Bocsesz, de most kicsit keményebben nyomom."
+BOSS_06_ENDGAME_2,"This might even be too aggressive. But hey, you only live once.","Ez most talán túl agresszív is. De hát, egyszer élünk."
+BOSS_06_DEFEND_1,"Whoops. Well, I didn't see that coming.","Hoppá. Nos, ezt nem láttam előre."
+BOSS_06_DEFEND_2,"Well yes, I see what you're up to. I see what you're up to...","Hát igen, látom, mire készülsz. Látom, mire készülsz..."
+BOSS_06_DEFEND_3,"They say: every hand is a winning one and a losing one at the same time, depending on how you look at it.","Azt szokták mondani: Minden lapjárás egyszerre nyertes és vesztes is, attól függ, hogyan nézed."
+BOSS_06_DEFEND_4,That choice of stamp... interesting. I'm starting to figure out your style.,Ez a bélyegválasztás... érdekes. Már kezdem kiismerni a stílusodat.
+BOSS_06_DEFEND_5,I remember a very similar situation against a stamp series like yours. I got away with it then; I hope I do now.,"Emlékszem egy nagyon hasonló helyzetre egy ilyen bélyegsorozat ellen, mint a tiéd. Akkor megúsztam, remélem, most is."
+BOSS_06_EMERGENCY_1,"Well, this situation is familiar. It's exactly the ones like this that made me quit.","Nos, ez a helyzet ismerős. Pont az ilyenek miatt hagytam abba."
+BOSS_06_EMERGENCY_2,"Well, this doesn't look too good.","Hát, ez nem néz ki túl jól."
+BOSS_06_EMERGENCY_3,It's going to be tight. Just like the old days.,"Szoros lesz. Pont, mint régen."
+BOSS_06_EMERGENCY_4,You've got quite a knack for this. Go to Vegas some day.,Neked egészen jó érzéked van ehhez. Egyszer menj el Vegasba.
+BOSS_06_EMERGENCY_5,"I'm getting old, I think. But I still have a few tricks.","Öregszem, azt hiszem. De azért még van pár trükköm."
+BOSS_06_CAPTURE_1,"Well, that one's mine now.","Nos, ez most az enyém."
+BOSS_06_CAPTURE_2,"Yes, that's a typical mistake, but that's how you learn.","Igen, ez jellemző hiba, de hát abból tanul az ember."
+BOSS_06_CAPTURE_3,"Sorry, but that was necessary.","Bocs, de ez most szükséges volt."
+BOSS_06_CAPTURE_4,"See? Your tactics are good, but I hope you won't mind me saying they're pretty rudimentary.","Látod? A taktikád jó, de remélem, nem haragszol, ha azt mondom, elég kezdetleges."
+BOSS_06_CAPTURE_5,That's a lesson too.,Ez is egy lecke.
+BOSS_06_CAPTURE_6,"Well, unfortunately that's what the game demands.",Hát sajnos a játék ezt kívánja.
+BOSS_06_CAPTURE_7,I really needed that piece.,Ez a bábu nagyon kellett nekem.
+BOSS_06_CAPTURE_8,We used to call this a »closing move«.,Ezt hívtuk régen »záró lépésnek«.
+BOSS_06_CAPTURED_1,"Well, that hurt a bit, I admit.","Nos, ez fájt egy kicsit, elismerem."
+BOSS_06_CAPTURED_2,Nice. Surprisingly nice...,Szép volt. Meglepően szép...
+BOSS_06_CAPTURED_3,That's part of the game too. You have to know when to hold on to your pieces and when to throw them away.,"Ez is a játék része. Tudnod kell, mikor tartsd meg, és mikor dobd el a bábuidat."
+BOSS_06_CAPTURED_4,"Easy come, easy go, isn't that what they say?","Könnyen jött, könnyen ment, ugye ezt szokás mondani?"
+BOSS_06_CAPTURED_5,That's the game.,That's the game.
+BOSS_06_CAPTURED_6,I've been in tighter spots than this at this board.,Voltam már szorultabb helyzetben is ennél a táblánál.
+BOSS_06_CAPTURED_7,"Well, I lost a piece. Not the first, and not the last.","Nos, veszítettem egy bábut. Nem az első, és nem is az utolsó."
+BOSS_06_CAPTURED_8,You can't lose what you never really had.,You can't lose what you never really had.
+BOSS_06_LOSS_1,"Lady Luck wasn't with me. Still, I haven't enjoyed myself this much in a long time. Thank you!",Lady Luck wasn't with me. Ennek ellenére rég nem éreztem ilyen jól magam. Köszönöm!
+BOSS_06_WIN_1,"Better luck next time, huh? So, one more? Shall we?","Better luck next time, huh? Na, még egy? Mehet?"
+BOSS_06_WIN_2,"That didn't work out. Don't be down! Your luck's coming, I'm telling you!","Ez most nem jött össze. Ne bánkódj! Most lesz majd szerencséd, én mondom!"
+BOSS_06_WIN_3,"Come on, one more!","Na, még egyet!"
+BOSS_06_WIN_4,"Now that's the spirit! That's what I like! Rematch? Come on, don't make me talk you into it!","Na, ez a beszéd! Ezt szeretem! Visszavágó? Na, ne kelljen győzködni!"
+BOSS_06_WIN_5,Seems I haven't forgotten everything. Play a new one?,"Úgy tűnik, nem felejtettem el mindent. Játszunk egy újat?"
+BOSS_07_INTRO_1,Let us begin.,Kezdjük.
+BOSS_07_INTRO_2,I hope you will be a worthy opponent.,"Remélem, méltó ellenfél lesz."
+BOSS_07_INTRO_3,I am ready.,Készen állok.
+BOSS_07_INTRO_4,This game is an honour.,Megtiszteltetés ez a parti.
+BOSS_07_INTRO_5,I will play to the best of my ability.,A legjobb tudásom szerint fogok játszani.
+BOSS_07_ROUTE_1,"Interesting, right from the start.","Érdekes, már az elején."
+BOSS_07_ROUTE_2,This opening is safe.,Ez a nyitás biztonságos.
+BOSS_07_ROUTE_3,I will play attentively.,Figyelmesen fogok játszani.
+BOSS_07_ROUTE_4,One move. Nothing more.,Egy lépés. Semmi több.
+BOSS_07_ROUTE_5,Is this opening common around here?,Errefelé jellemző ez a nyitás?
+BOSS_07_PUSH_1,I believe that was the best option.,"Azt gondolom, ez volt a legjobb opció."
+BOSS_07_PUSH_2,I believe I understand what you are planning.,"Azt gondolom, értem, hogy ön mire készül."
+BOSS_07_PUSH_3,I learned this tactic from my master.,A mesteremtől tanultam ezt a taktikát.
+BOSS_07_PUSH_4,Everything is going according to plan.,Minden a terv szerint halad.
+BOSS_07_PUSH_5,"Your move surprised me a little; in any case, this suits me.","Kissé meglepett a lépése, mindenesetre nekem ez így megfelelő."
+BOSS_07_ENDGAME_1,It seems I have no other choice.,"Úgy tűnik, nincs más választásom."
+BOSS_07_ENDGAME_2,"More pressure, more performance.","Nagyobb nyomás, nagyobb teljesítmény."
+BOSS_07_DEFEND_1,"Hm, I did not expect that.","Hm, erre nem számítottam."
+BOSS_07_DEFEND_2,That was to be expected.,Ez várható volt.
+BOSS_07_DEFEND_3,Very well. It will be fine. It will be fine...,Rendben. Nem lesz gond. Nem lesz gond...
+BOSS_07_DEFEND_4,An acceptable position. I think.,Elfogadható helyzet. Azt hiszem.
+BOSS_07_DEFEND_5,Manageable. I will handle it.,Kezelhető. Megoldom.
+BOSS_07_EMERGENCY_1,This... is not right. I did something wrong.,Ez... nem helyes. Valamit rosszul csináltam.
+BOSS_07_EMERGENCY_2,I do not understand how I ended up in this position.,"Nem értem, hogyan kerültem ebbe a helyzetbe."
+BOSS_07_EMERGENCY_3,I cannot disappoint my master.,Nem okozhatok csalódást a mesteremnek.
+BOSS_07_EMERGENCY_4,It would be a disgrace to lose. I cannot lose.,"Ez szégyen lenne, ha veszítenék. Nem veszíthetek."
+BOSS_07_EMERGENCY_5,I must concentrate. I cannot bring shame upon my master.,Koncentrálnom kell. Nem hozhatok szégyent a mesteremre.
+BOSS_07_CAPTURE_1,This one is mine.,Ez az enyém.
+BOSS_07_CAPTURE_2,One fewer.,Eggyel kevesebb.
+BOSS_07_CAPTURE_3,I will take this.,Ezt leveszem.
+BOSS_07_CAPTURE_4,Exactly as I planned.,Pontosan így terveztem.
+BOSS_07_CAPTURE_5,One piece fewer.,Egy bábuval kevesebb.
+BOSS_07_CAPTURE_6,That was necessary.,Ez szükséges volt.
+BOSS_07_CAPTURE_7,Excellent.,Remek.
+BOSS_07_CAPTURE_8,Everything is going according to plan.,Minden a terv szerint halad.
+BOSS_07_CAPTURED_1,Oh no!,"Jaj, ne!"
+BOSS_07_CAPTURED_2,I did not expect this. Why did I not see it?,Nem számítottam erre. Miért nem vettem észre?
+BOSS_07_CAPTURED_3,I cannot allow any more mistakes.,Több hibát nem engedhetek meg.
+BOSS_07_CAPTURED_4,I should have seen that better. My master would be very angry to see this.,"Ezt jobban kellett volna látnom. A mesterem nagyon mérges lenne, ha ezt látná."
+BOSS_07_CAPTURED_5,I do not understand why I did not notice. It was so obvious.,"Nem értem, miért nem vettem észre. Pedig olyan nyilvánvaló volt."
+BOSS_07_CAPTURED_6,My master would not approve of this. I must not bring shame upon my master.,A mesterem ezt nem nézné jó szemmel. Nem hozhatok rá szégyent.
+BOSS_07_CAPTURED_7,I must concentrate. This cannot happen again.,Koncentrálnom kell. Ez nem történhet meg újra.
+BOSS_07_CAPTURED_8,I must not make any more mistakes.,Nem szabad több hibát vétenem.
+BOSS_07_LOSS_1,"I have lost. This is a disgrace to my master. I played terribly; in any case, you fought excellently. Thank you.","Vesztettem. Ez szégyen a mesteremre nézve. Rettenetesen játszottam, mindenesetre ön remekül küzdött. Köszönöm."
+BOSS_07_WIN_1,I have won. Thank you for the game. A new game?,Nyertem. Köszönöm a partit. Egy új játék?
+BOSS_07_WIN_2,I have won. Thank you. A new game?,Nyertem. Köszönöm. Egy új játék?
+BOSS_07_WIN_3,My master would be proud. Thank you for the opportunity. A new game?,A mesterem büszke lenne. Köszönöm a lehetőséget. Egy új játék?
+BOSS_07_WIN_4,It was a good game. My respectful thanks. A new game?,Jó parti volt. Tisztelettel köszönöm. Egy új játék?
+BOSS_07_WIN_5,I have won. I hope we may play again.,"Győztem. Remélem, ismét játszhatunk."
+BOSS_08_INTRO_1,Now let us see what I ought to be doing.,"Na lássuk csak, mit kéne csinálnom."
+BOSS_08_INTRO_2,I am extremely pleased that we can play again.,"Rendkívül örülök, hogy ismét játszhatunk."
+BOSS_08_INTRO_3,What a pleasure! At last we can play again before I depart.,"Milyen öröm! Végre játszhatunk ismét, mielőtt elutazom."
+BOSS_08_INTRO_4,"Splendid, splendid. Let us see how it goes the second time.","Remek-remek. Lássuk csak, másodjára hogy megy majd."
+BOSS_08_INTRO_5,Excellent! Let the game begin.,Kiváló! Kezdődhet a játék.
+BOSS_08_ROUTE_1,I am thinking...,Gondolkodom...
+BOSS_08_ROUTE_2,"Interesting. Well, I do have an idea of what to do now. We shall see whether it succeeds.","Érdekes, hát van egy elképzelésem, mit csinálok most. Meglátjuk, hogy sikeres lesz-e."
+BOSS_08_ROUTE_3,So you play with quite different stamps. It would be better if...,"Egész más bélyegekkel játszik tehát, jobb lenne, ha..."
+BOSS_08_ROUTE_4,I wish you every success with your attacks.,Sok sikert kívánok a sikeres támadásokhoz.
+BOSS_08_ROUTE_5,I am curious how you will break through my defence.,"Kíváncsi vagyok, hogy hogyan tör majd át a védelmemen."
+BOSS_08_PUSH_1,Well then! Let us see whether we succeed.,"Nos! Lássuk, sikerrel járunk-e."
+BOSS_08_PUSH_2,I hope it is not too obvious what I am preparing.,"Remélem, nem túl átlátszó, hogy mire készülök."
+BOSS_08_PUSH_3,I do not believe you stand any chance against my attack.,"Nem gondolom, hogy bármi esélye lenne a támadásommal szemben."
+BOSS_08_PUSH_4,"Yes, yes, just as I suspected.","Igen-igen, ahogy sejtettem."
+BOSS_08_PUSH_5,"I must say, we are in for an interesting game.","Azt kell, hogy mondjam, érdekes partinak nézünk elébe."
+BOSS_08_ENDGAME_1,"I am sorry, I have no choice but to attack.","Sajnálom, nincs más választásom, csak a támadás."
+BOSS_08_ENDGAME_2,"It seems we shall be finished shortly, my dear friend.","Úgy tűnik, hamarosan végzünk is, kedves barátom."
+BOSS_08_DEFEND_1,Let me see. What shall I do now?,Lássuk csak. Mihez kezdjek most?
+BOSS_08_DEFEND_2,"Hmm, I must say I am dealing with a tough opponent.","Hmm, azt kell, hogy mondjam, kemény ellenféllel van dolgom."
+BOSS_08_DEFEND_3,"Interesting! But if you will forgive me, I must say you will not break through my defence.","Érdekes! De ha megbocsát, azt kell hogy mondjam, a védelmemen úgysem tör át."
+BOSS_08_DEFEND_4,A difficult matter... What shall I do now?,Nehéz ügy... Mihez kezdjek most?
+BOSS_08_DEFEND_5,Nicely done! But perhaps you are about to be surprised!,Szép! De talán most meg fog lepődni!
+BOSS_08_EMERGENCY_1,"Oh, things are not looking well for me...","Ó, nemigen áll jól a szénám..."
+BOSS_08_EMERGENCY_2,"Hmm, I am in serious trouble.","Hmm, nagy bajban vagyok."
+BOSS_08_EMERGENCY_3,Some manner of luck might still help me.,Valamiféle szerencse talán még segíthet.
+BOSS_08_EMERGENCY_4,"You are a tough nut to crack. I thought I might win, but perhaps not after all?","Kemény dió maga. Azt hittem, nyerhetek, de talán mégsem?"
+BOSS_08_EMERGENCY_5,"Well, I fear that is that.","Hát attól tartok, hogy ennyi volt."
+BOSS_08_CAPTURE_1,There we are! I would wager you did not expect that.,"Na tessék! Fogadni mernék, hogy erre nem számított."
+BOSS_08_CAPTURE_2,"If you will permit me, I shall remove this one.","Ha megengedi, ezt innen leveszem."
+BOSS_08_CAPTURE_3,I should venture to suggest that it might be worth guarding your pieces more closely.,"Bátorkodnék jelezni, talán érdemes lenne a bábuira jobban vigyázni."
+BOSS_08_CAPTURE_4,Perhaps it is best if we clear this part of the board.,"Talán a legjobb, ha kitisztítjuk ezt a részt a táblán."
+BOSS_08_CAPTURE_5,"My apologies, this too is part of the game, I am afraid.","Elnézés, sajnos ez is a játék része."
+BOSS_08_CAPTURE_6,"If you will forgive me, this piece is in my way.","Ha megbocsát, ez a bábu most nekem útban van."
+BOSS_08_CAPTURE_7,Please do not take it amiss. I am sure you will manage without this piece.,"Kérem, ne vegye zokon. Bizonyára boldogul e bábu nélkül is."
+BOSS_08_CAPTURE_8,Perhaps it is better this way; that piece was in the way regardless.,"Talán jobb is így, ez a bábu amúgy is útban volt."
+BOSS_08_CAPTURED_1,Perhaps it is better this way; I had no use for that piece in any case.,"Talán jobb is így, ezzel a bábuval egyébként sem tudtam mit kezdeni."
+BOSS_08_CAPTURED_2,"Ah! I must admit, you have surprised me.","Ah! Be kell ismernem, most meglepett."
+BOSS_08_CAPTURED_3,"Hmm, you must be pleased now. I shall let you in on it: that too was part of my plan.","Hmm, bár most biztosan örül. Elárulom önnek, ez is a tervem része volt."
+BOSS_08_CAPTURED_4,Oops! That stung. But never mind.,Upsz! Ez fájt. De oda se neki.
+BOSS_08_CAPTURED_5,"Well, yes... indeed, that was my mistake. That piece should not have been there.","Hát igen... valóban, az én hibám volt. Nem lett volna szabad ott lennie annak a bábunak."
+BOSS_08_CAPTURED_6,"Indeed... You see, that is the beauty of the game: one can learn from one's mistakes.","Valóban... Látja, ez a szép a játékban, a hibáiból tanulhat az ember."
+BOSS_08_CAPTURED_7,"Yes, I might have expected that.","Igen, erre számíthattam volna."
+BOSS_08_CAPTURED_8,"No trouble at all, please, no trouble...","Semmi gond, kérem, semmi gond..."
+BOSS_08_LOSS_1,"A splendid game, even though I lost. Thank you for it! Should I find you still here later on, I am open to a rematch.","Nagyszerű játék volt még így is, hogy vesztettem. Köszönöm a partit! Ha a későbbiekben még itt találom, részemről nyitott vagyok egy visszavágóra."
+BOSS_08_WIN_1,"A splendid game. Thank you for it! If you like, we may play a rematch.","Nagyszerű játék volt. Köszönöm a partit! Ha gondolja, játszhatunk egy visszavágót."
+BOSS_08_WIN_2,I have won! What a delight. Would you care to play another?,Nyertem! Micsoda öröm. Esetleg szeretne játszani még egyet?
+BOSS_08_WIN_3,It was a fine experience. Would you be up for another round?,Remek élmény volt. Benne lenne egy újabb körben?
+BOSS_08_WIN_4,"Splendid, splendid. Everything went according to plan. If you like, we may play a new game.","Remek-remek. Minden a terv szerint alakult. Ha gondolja, játszhatunk egy új partit."
+BOSS_08_WIN_5,An excellent game. Please do not be discouraged. We may play another.,"Kitűnő játék volt. Kérem, ne csüggedjen. Játszhatunk egy újat."
+BOSS_09_INTRO_1,"I love playing, but I love my garden at home even more. I've got about twenty pots of mint and basil, and every one of them has a name.","Imádok játszani, de még jobban imádom a kertemet otthon. Van vagy húsz cserép mentám és bazsalikomom, mindegyiknek neve van."
+BOSS_09_INTRO_2,"I earned my grandmaster title as a little girl, but honestly my favourite things are cooking curry and working in the garden.","A nagymesteri címet még kislányként szereztem, de igazából a kedvenc dolgom a curry főzés és a kerti munka."
+BOSS_09_INTRO_3,"At home I think through my best moves next to a jasmine bush. I hope it inspires me today too, because I really want to play well against you!","Otthon egy jázminbokor mellett szoktam gondolkodni a legjobb lépéseken. Remélem, ma is inspirál majd, mert nagyon szeretnék jól játszani ellened!"
+BOSS_09_INTRO_4,"My favourite food is my mum's bhindi masala, and my favourite plant is the jasmine that grows under my window.","A kedvenc ételem anyukám bhindi masalája, a kedvenc növényem pedig a jázmin, ami az ablakom alatt nő."
+BOSS_09_INTRO_5,"In theory I'm a grandmaster, in practice more of a gardener. I have a little tomato patch at home that I adore looking after.","Elméletileg nagymester vagyok, gyakorlatilag inkább kertész. Van egy kis paradicsomültetvényem otthon, amit imádok gondozni."
+BOSS_09_ROUTE_1,"I like to start slowly, like when I plant something in the garden. First I study the soil, then I decide what goes where.","Szeretek lassan kezdeni, mint amikor a kertben ültetek valamit. Előbb figyelem a talajt, aztán döntök, hogy minek hova kell kerülnie."
+BOSS_09_ROUTE_2,"My grandmother said every good dish comes together from small, patient steps, like a good biryani. So... well, I like to think of the game as a good biryani too.","A nagymamám azt mondta, minden jó étel apró, türelmes lépésekből áll össze, mint egy jó biryani. Szóval... hát szeretek a játékra is úgy gondolni, mint egy jó biryanira."
+BOSS_09_ROUTE_3,"At home I water my flowers every morning before I do anything else. I'm doing something similar now. I like to make a move, then wait and see what happens.","Otthon minden reggel megöntözöm a virágaimat, mielőtt bármi mást csinálnék. Most is valami hasonlót teszek. Szeretek lépni, aztán várni, hogy mi történik."
+BOSS_09_ROUTE_4,"My favourite flower is the hibiscus, because it grows fast but has strong roots. What's your favourite flower?","A kedvenc virágom a hibiszkusz, mert gyorsan nő, de erős gyökerei vannak. Neked mi a kedvenc virágod?"
+BOSS_09_ROUTE_5,"I usually get bored of the game quickly, but Dad is very strict and I have to play every day to stay sharp. Do you play every day too?","Általában hamar elunom a játékot, de apa nagyon szigorú, és minden nap játszanom kell, hogy ügyes legyek. Te is minden nap játszol?"
+BOSS_09_PUSH_1,Now I'll attack a little!,Most támadok egy kicsit!
+BOSS_09_PUSH_2,"This move seems like a good idea, I think.","Ez a lépés jó ötletnek tűnik, szerintem."
+BOSS_09_PUSH_3,"Don't worry, we're just playing.","Ne aggódj, csak játszunk."
+BOSS_09_PUSH_4,"Oh, how exciting, I don't think I've ever played against a series like yours.","Jaj, de izgalmas, talán ilyen sorozat ellen még nem is játszottam, mint a tiéd."
+BOSS_09_PUSH_5,"Good, it seems the tactics so far are bearing fruit.","Jó, úgy tűnik, az eddigi taktika meghozza a gyümölcsét."
+BOSS_09_ENDGAME_1,"Uh-oh, I have no other choice.","Ajjaj, nincs más választásom."
+BOSS_09_ENDGAME_2,"Hm... I have to decide quickly, that's not good...","Hm... hirtelen kell döntenem, ez nem jó..."
+BOSS_09_DEFEND_1,"Oh, you're good! Then I'll defend.","Ó, ügyes vagy! Akkor védekezem."
+BOSS_09_DEFEND_2,"That was a good move of yours, I need to think.","Ez jó lépés volt tőled, gondolkodnom kell."
+BOSS_09_DEFEND_3,Nice move!,Szép húzás!
+BOSS_09_DEFEND_4,"That surprised me, in a good way.","Ez meglepett, de jó értelemben."
+BOSS_09_DEFEND_5,I need to be more careful. You're doing great!,Óvatosabbnak kell lennem. Remekül csinálod!
+BOSS_09_EMERGENCY_1,"Whoa, this is a tough spot. You're playing really well!","Hűha, ez most nehéz helyzet. Nagyon jól játszol!"
+BOSS_09_EMERGENCY_2,I think... am I losing? Oh no!,"Azt hiszem... Veszítek? Áh, nem!"
+BOSS_09_EMERGENCY_3,I'm not giving up.,Nem adom fel.
+BOSS_09_EMERGENCY_4,I thought you weren't a grandmaster. You play really well.,"Azt hittem, te nem vagy nagymester. Nagyon jól játszol."
+BOSS_09_EMERGENCY_5,You surprise me. But I'm enjoying it!,Meglepsz. De élvezem!
+BOSS_09_CAPTURE_1,"Sorry, I'll take this one, but you're playing really well.","Bocsi, ezt most elviszem, de nagyon ügyesen játszol."
+BOSS_09_CAPTURE_2,"That one's mine now, but it was a nice try.","Ez most az enyém lett, de szép próbálkozás volt tőled."
+BOSS_09_CAPTURE_3,"I feel a bit bad, but that's how this game is, you know...","Kicsit sajnálom, de ez egy ilyen játék, tudod..."
+BOSS_09_CAPTURE_4,May I take this one? Thank you.,Ezt most levehetem? Köszönöm.
+BOSS_09_CAPTURE_5,"Well, this one's going to be mine.",Hát ez most az enyém lesz.
+BOSS_09_CAPTURE_6,I hope you don't mind me taking this piece.,"Remélem, nem baj, hogy elviszem ezt a bábut."
+BOSS_09_CAPTURE_7,That worked! But you're doing really well too.,Ez most sikerült! De te is nagyon jól haladsz.
+BOSS_09_CAPTURE_8,"Nicely done, getting that piece this far.","Szép volt tőled, hogy idáig eljutott ez a bábu."
+BOSS_09_CAPTURED_1,"That went well for you, congratulations!","Ez most jól sikerült neked, gratulálok!"
+BOSS_09_CAPTURED_2,"Oh! That was clever of you, really.","Ó! Ez ügyes volt tőled, tényleg."
+BOSS_09_CAPTURED_3,"No problem, that's part of the game too.","Semmi baj, ez is a játék része."
+BOSS_09_CAPTURED_4,"That was a nice move, I'm learning from it.","Szép lépés volt, tanulok belőle."
+BOSS_09_CAPTURED_5,"That hurt a little, but you earned it.","Ez most fájt egy kicsit, de megérdemelted."
+BOSS_09_CAPTURED_6,See how good you are at this?,"Látod, milyen jó vagy ebben?"
+BOSS_09_CAPTURED_7,"Never mind, let's carry on!","Nem baj, folytatjuk!"
+BOSS_09_CAPTURED_8,"That was clever, really.","Ügyes voltál, tényleg."
+BOSS_09_LOSS_1,"That was a lovely game! You played really well! Thank you, I hope we can play again soon.","Nagyon szép parti volt! Igazán jól játszottál! Köszönöm, remélem, hamarosan játszhatunk megint."
+BOSS_09_WIN_1,"That was a great game, thank you! I really enjoyed it.","Nagyszerű parti volt, köszönöm! Nagyon élveztem."
+BOSS_09_WIN_2,That was wonderful! Will you play another one with me?,Ez remek volt! Játszol még egyet velem?
+BOSS_09_WIN_3,"Thank you for this lovely game, you really did well.","Köszönöm ezt a szép partit, tényleg jól haladtál."
+BOSS_09_WIN_4,That was good! I hope we play again next time.,"Ez jó volt! Remélem, legközelebb is játszunk."
+BOSS_09_WIN_5,"I won, but you were really good too. Thank you for the game!","Nyertem, de te is nagyon ügyes voltál. Köszönöm a partit!"
+BOSS_10_INTRO_1,I have come back. I had to try again.,Visszajöttem. Meg kellett próbálnom újra.
+BOSS_10_INTRO_2,That defeat gave me no peace. It will be different this time.,Nem hagyott nyugodni ez a vereség. Most másképp lesz.
+BOSS_10_INTRO_3,I remember you. I will play better this time.,Emlékszem magára. Most jobban fogok játszani.
+BOSS_10_INTRO_4,I have been thinking about this for two days. I am ready.,Két napja ezen gondolkodom. Készen állok.
+BOSS_10_INTRO_5,I am here again. I will do everything so that it ends differently this time.,"Megint itt vagyok. Mindent megteszek, hogy most más legyen a vége."
+BOSS_10_ROUTE_1,I know this opening. You started with it last time too.,Ismerem ezt a nyitást. Legutóbb is ezzel kezdett.
+BOSS_10_ROUTE_2,This time I start differently. I have learned from my mistake.,Ezúttal másképp indulok. Tanultam a hibámból.
+BOSS_10_ROUTE_3,I am choosing an entirely different tactic now.,Most egész más taktikát választok.
+BOSS_10_ROUTE_4,I watched your moves last time. I am better prepared now.,Figyeltem a lépéseit legutóbb. Most felkészültebb vagyok.
+BOSS_10_ROUTE_5,Let us begin. I hope the stars favour me this time.,"Kezdjük. Remélem, a csillagok most nekem kedveznek."
+BOSS_10_PUSH_1,I have seen this move from you before.,Ezt a lépést már láttam magától.
+BOSS_10_PUSH_2,Now I take the initiative; I will wait no longer.,"Most én kezdeményezek, nem várok tovább."
+BOSS_10_PUSH_3,I know this pattern. Last time it was my undoing.,Ismerem ezt a mintát. Legutóbb ez okozta a vesztem.
+BOSS_10_PUSH_4,I am responding differently than I did then.,"Most másképp reagálok, mint akkor."
+BOSS_10_PUSH_5,This time I will not make a mistake.,Ezúttal nem hibázom.
+BOSS_10_ENDGAME_1,I am pushing harder now. This time I will not hold back.,Most keményebben nyomok. Ez alkalommal nem fogom vissza magam.
+BOSS_10_ENDGAME_2,I cannot lose again.,Nem veszíthetek újra.
+BOSS_10_DEFEND_1,I know this position. This is where I lost the thread last time.,Ezt a helyzetet ismerem. Legutóbb itt vesztettem el a fonalat.
+BOSS_10_DEFEND_2,I am more attentive now. I will not make the same mistake.,Most figyelmesebb vagyok. Nem követem el ugyanazt a hibát.
+BOSS_10_DEFEND_3,Very well. This is harder than I remembered.,"Rendben. Ez nehezebb, mint emlékeztem."
+BOSS_10_DEFEND_4,My master said there is honour in defence too. I will try to keep that in mind.,"A mesterem azt mondta, a védekezésben is van becsület. Megpróbálom ezt tartani szem előtt."
+BOSS_10_DEFEND_5,I am concentrating. This time it will end differently.,Koncentrálok. Ezúttal másképp fog végződni.
+BOSS_10_EMERGENCY_1,It is happening again... I cannot understand it.,Megint ez történik... Nem érthetem.
+BOSS_10_EMERGENCY_2,"I have been preparing for this all along, and yet here I am.","Egészen eddig erre készültem, és mégis itt tartok."
+BOSS_10_EMERGENCY_3,This will be hard to tell my master.,A mesteremnek ezt nehéz lesz elmondanom.
+BOSS_10_EMERGENCY_4,Perhaps I was born in the wrong year for this game.,Talán rossz évben születtem ehhez a játékhoz.
+BOSS_10_EMERGENCY_5,I must not lose again. I cannot allow myself to.,Nem szabad megint veszítenem. Nem engedhetem meg magamnak.
+BOSS_10_CAPTURE_1,I made a note of this. Last time it was I who got it wrong.,Ezt megjegyeztem. Legutóbb ezt rontottam el én is.
+BOSS_10_CAPTURE_2,"Good, it is going well now.","Rendben, most jól megy."
+BOSS_10_CAPTURE_3,This move is mine.,Ez a lépés most az enyém.
+BOSS_10_CAPTURE_4,You see? I know this tactic now.,Látja? Most már ismerem ezt a taktikát.
+BOSS_10_CAPTURE_5,My master would be proud of this move.,A mesterem büszke lenne erre a lépésre.
+BOSS_10_CAPTURE_6,This time I calculated correctly.,Ezúttal jól számoltam.
+BOSS_10_CAPTURE_7,That one worked out for me.,Ez most nekem jött be.
+BOSS_10_CAPTURE_8,"I am on the right path now, I think.","Most jó úton járok, azt hiszem."
+BOSS_10_CAPTURED_1,This again. This pattern haunts me.,Megint ez. Ez a minta üldöz engem.
+BOSS_10_CAPTURED_2,I do not understand how this could happen again.,"Nem értem, hogyan történhetett ez megint."
+BOSS_10_CAPTURED_3,"My master would point this out, as before.",A mesterem ezt most is szóvá tenné.
+BOSS_10_CAPTURED_4,Perhaps this truly is not my year.,Talán tényleg nem az én évem ez.
+BOSS_10_CAPTURED_5,I must concentrate. I cannot make another mistake.,Koncentrálnom kell. Nem hibázhatok újra.
+BOSS_10_CAPTURED_6,"Oh no, it cannot be...","Jaj, nem, nem lehet..."
+BOSS_10_CAPTURED_7,"I have prepared for this all along, and yet this is what happens.","Eddig erre készültem, és mégis ez történik."
+BOSS_10_CAPTURED_8,"Well, I am not giving up all the same.","Jó, azért nem adom fel."
+BOSS_10_LOSS_1,"I have lost again. This hurts more than I would have thought, but thank you for the game. I may have to return a third time.","Megint vesztettem. Ez most jobban fáj, mint gondoltam volna, de köszönöm a partit. Lehet, hogy vissza kell térnem harmadszor is."
+BOSS_10_WIN_1,I have won. At last.,Nyertem. Végre.
+BOSS_10_WIN_2,This time I succeeded. My master would be proud.,Ezúttal sikerült. A mesterem büszke lenne.
+BOSS_10_WIN_3,I have won.,Győztem.
+BOSS_10_WIN_4,Thank you for the game. I will sleep more easily now.,Köszönöm a partit. Most már nyugodtabban alszom majd.
+BOSS_10_WIN_5,Thank you.,Köszönöm.
+BOSS_11_INTRO_1,"Well then, let's get to it.",Hát akkor lássunk hozzá.
+BOSS_11_INTRO_2,A bit of practice. Come on!,Egy kis gyakorlás. Gyerünk!
+BOSS_11_INTRO_3,So you'd like to play? Excellent!,"Nos, játszani szeretnél? Kitűnő!"
+BOSS_11_INTRO_4,Let's try it for real. Ready?,Próbáljuk ki élőben. Kész vagy?
+BOSS_11_INTRO_5,Let's begin. Let's see what a real game feels like!,"Kezdjünk hozzá. Nézzük, milyen egy parti!"
+BOSS_11_ROUTE_1,Just watch how I play. That's what teaches you the most.,"Csak figyeld, ahogy én játszom. A legtöbbet abból tanulsz."
+BOSS_11_ROUTE_2,You really learn the most from real matches.,Igazán sokat tanulni a valódi meccsekből lehet.
+BOSS_11_ROUTE_3,Always have a plan at the start. Watch how I do it.,"Mindig legyen egy terved az elején. Figyeld, én hogy csinálom."
+BOSS_11_ROUTE_4,Now let's see... It's always worth thinking the opening through.,Na lássuk csak... A nyitást érdemes mindig átgondolni.
+BOSS_11_ROUTE_5,The opening always matters. Think it through carefully.,A nyitás mindig nagyon fontos. Gondold át alaposan.
+BOSS_11_PUSH_1,"From the opening on, build your position so you can reach the base square as soon as possible.","Fontos, hogy a nyitástól kezdődően úgy építsd a pozíciódat, hogy a bázismezőt mihamarabb elérd."
+BOSS_11_PUSH_2,"If you were watching, you may have noticed I built my position to reach your base square quickly.","Ha figyeltél, akkor talán már észrevetted, hogy a pozíciómat úgy építettem, hogy gyorsan elérjem a bázismeződet."
+BOSS_11_PUSH_3,"Until now I was making sure I had the right position on the board. Now that I have it, I'm going on the attack.","Idáig arra figyeltem, hogy meglegyen a megfelelő pozícióm a táblán. Most, hogy megvan, elkezdek támadni."
+BOSS_11_PUSH_4,See? Now I'm in a position to attack. Watch closely!,"Látod? Most olyan pozícióban vagyok, hogy támadhatok. Most figyelj!"
+BOSS_11_PUSH_5,"Everything is ready for the attack. First you take the strategically important points on the board, and only then comes the attack.","Minden készen áll a támadásra. Először el kell foglalni a stratégiailag fontos pontokat a táblán, és csak aztán jöhet a támadás."
+BOSS_11_ENDGAME_1,Well... now or never.,Hát... most vagy soha.
+BOSS_11_ENDGAME_2,"There's no other option, that's how it is.","Nincs más lehetőség, ez van."
+BOSS_11_DEFEND_1,"Oh, I didn't expect that! Well done! Now I have to defend.","Ó, ezt nem vártam! Ügyes vagy! Most védekeznem kell."
+BOSS_11_DEFEND_2,"Hmm, you're playing well. But I'm not giving up yet.","Hmm, jól játszol. De nem adom fel még."
+BOSS_11_DEFEND_3,This is a tough nut to crack. Well done!,Ez kemény dió. Ügyes vagy!
+BOSS_11_DEFEND_4,Interesting! How quickly you've understood the game!,Érdekes! Milyen gyorsan megértetted a játékot!
+BOSS_11_DEFEND_5,"Whoa, you're already giving your grandpa a hard time. Nicely done!","Huha, máris megszorongatod nagyapádat. Ügyes!"
+BOSS_11_EMERGENCY_1,"Uh oh, am I losing already? I'm still not giving up!","Úh, máris veszíteni fogok? Azért nem adom fel!"
+BOSS_11_EMERGENCY_2,"Hmm, I'm in real trouble. Well done!","Hmm, nagy bajban vagyok. Ügyes vagy!"
+BOSS_11_EMERGENCY_3,"Whoa, it seems I should have taken this game more seriously.","Húha, úgy látom, komolyabban kellett volna vennem a játékot."
+BOSS_11_EMERGENCY_4,"Not bad at all. Well done! Wait though, you haven't won yet.","Nem semmi. Ügyes vagy! Várj, azért még nem nyertél."
+BOSS_11_EMERGENCY_5,Hm... I see you learn fast. Might you beat your grandpa on the very first try?,"Hm... Látom, gyorsan tanulsz. Lehet, egyből le is győzöd nagyapádat?"
+BOSS_11_CAPTURE_1,"You need to look after your pieces, or I'll take them all.","Vigyáznod kell a bábuidra, mert leütöm mindet."
+BOSS_11_CAPTURE_2,"Whoops, see that? Pay closer attention to your pieces!","Hopp-hopp, látod? Figyelj a bábukra jobban!"
+BOSS_11_CAPTURE_3,"Every piece matters. To me, for taking it; to you, for keeping it.","Minden bábu nagyon fontos. Nekem azért, hogy leüssem, neked azért, hogy megtartsd."
+BOSS_11_CAPTURE_4,"Luckily it can come back into play, but for now you're behind.","Szerencsére még újra játékba kerülhet, de most hátrányban vagy."
+BOSS_11_CAPTURE_5,"Pay closer attention! You can't just sacrifice your pieces, or you'll fall behind!","Figyelj jobban! Nem áldozhatod fel a bábuidat, mert hátrányba kerülsz!"
+BOSS_11_CAPTURE_6,Poof! That piece is done for.,Puff! Ennek a bábunak annyi.
+BOSS_11_CAPTURE_7,"See, see - you weren't careful.","Látod-látod, nem vigyáztál."
+BOSS_11_CAPTURE_8,"Well, that one's finished. But don't worry, you still have pieces to move.","Hát ennek meszeltek. De ne aggódj, tudsz még mivel lépni."
+BOSS_11_CAPTURED_1,"Oh, that one was mine! Not bad at all.","Ó, az az enyém! Nem is rossz."
+BOSS_11_CAPTURED_2,Ah! You're playing well.,Ah! Jól játszol.
+BOSS_11_CAPTURED_3,Now that's more like it. That was nicely done!,"Na, ez a beszéd. Ez szép volt!"
+BOSS_11_CAPTURED_4,Oops! One fewer. Nice!,Upsz! Eggyel kevesebb. Szép!
+BOSS_11_CAPTURED_5,"Ah! True, that one wasn't in a good spot.","Áh! Valóban, az nem volt jó helyen."
+BOSS_11_CAPTURED_6,That hurt. I still had plans for that one. But you spotted it well - nicely done!,"Ez fájt. Azzal még tervem volt. De jól észrevetted, ügyes!"
+BOSS_11_CAPTURED_7,"I see your eye is getting used to it. You play quite well, I must say.","Látom, már ráállt a szemed. Egész jól játszol, azt kell, hogy mondjam."
+BOSS_11_CAPTURED_8,"You spot these situations well. I'm behind now, but I'm glad you understand the game.","Jól észreveszed ezeket a helyzeteket. Bár most hátrányban vagyok, de örülök, hogy érted a játékot."
+BOSS_11_LOSS_1,"That was a fine game! Congratulations, you were very good!","Szép parti volt! Gratulálok, nagyon jó voltál!"
+BOSS_11_WIN_1,"That was a good game, wasn't it? Don't worry, we can try again.","Jó parti volt, nem igaz? Ne aggódj, újrapróbálhatjuk."
+BOSS_11_WIN_2,"Don't be down, that was a good match. I hope you enjoyed it too.","Ne bánkódj, ez egy jó meccs volt. Remélem, te is jól érezted magad."
+BOSS_11_WIN_3,Don't look at whether you won or lost. What matters is whether you learned from the game.,"Ne azt nézd, hogy nyertél vagy vesztettél. A lényeg, hogy tanultál-e a játékból."
+BOSS_11_WIN_4,That was a fine game! Shall we go again?,Szép parti volt! Mehet még egy?
+BOSS_11_WIN_5,"Let's play another, I say. The next one will be much better, I promise.","Játszunk még egyet, én azt mondom. A következő sokkal jobb lesz, ígérem."
+BOSS_12_INTRO_1,"I do not waste many words on introductions; the board says everything about who you really are anyway. Let us begin, before I change my mind.","Nem szoktam sok szót vesztegetni bemutatkozásra, a tábla úgyis mindent elmond arról, ki maga valójában. Kezdjük, mielőtt meggondolom magam."
+BOSS_12_INTRO_2,"Good day. This game is mental torture itself, someone far cleverer than me once said. I hope you are in the mood to suffer a little too.","Jó napot. Ez a játék maga a mentális kínzás, mondta valaki nálam sokkal okosabb. Remélem, magának is lesz kedve szenvedni egy kicsit."
+BOSS_12_INTRO_3,"I do not know you, but I can already guess what mistakes you will make.","Nem ismerem magát, de már most sejtem, milyen hibákat fog elkövetni."
+BOSS_12_INTRO_4,"Well, let us see. No need to be afraid. I do not bite; I only win, usually.","Na, lássuk. Nem kell félnie. Nem harapok, csak győzök, általában."
+BOSS_12_INTRO_5,"I warn you: I am not a cheerful conversationalist. But then, I rarely am at the board.",Figyelmeztetem: nem vagyok jókedvű társalgó. De a tábla mellett ritkán vagyok az.
+BOSS_12_ROUTE_1,"I try to get to know my opponent as well as I can before I move; that is not courtesy, merely efficiency. Let us see in what style you will err.","Az ellenfelemet igyekszem minél jobban megismerni, mielőtt lépek, ez nem udvariasság, csak hatékonyság. Lássuk, milyen stílusban hibázik majd."
+BOSS_12_ROUTE_2,"I start slowly. As we say back home: the good idea always comes too late. I prefer to think ahead, to avoid that.","Lassan kezdek. Ahogy nálunk mondják: a jó gondolat mindig csak utólag jön. Én inkább előre gondolkodom, hogy ezt elkerüljem."
+BOSS_12_ROUTE_3,An opening means nothing on its own. It is after the seventh or eighth move that I find out who I am dealing with.,"Egy nyitás önmagában semmit sem jelent. Majd a hetedik-nyolcadik lépés után derül ki, kivel van dolgom."
+BOSS_12_ROUTE_4,I observe how you think. That reveals more than any of your moves.,"Megfigyelem, hogyan gondolkodik. Ez többet elárul, mint bármelyik lépése."
+BOSS_12_ROUTE_5,"Let us start simply. I am saving the complications for later, for you.","Kezdjük egyszerűen. A bonyodalmakat inkább későbbre tartogatom, magának."
+BOSS_12_PUSH_1,"Now I attack. Do not take it personally; the board knows no courtesy, only precision.","Most támadok. Ne vegye személyeskedésnek, a tábla nem ismeri az udvariasságot, csak a pontosságot."
+BOSS_12_PUSH_2,"This move will hurt, I am telling you in advance. But at least you will have something to think about for a while.","Ez a lépés fájni fog, előre szólok. De legalább lesz miről gondolkodnia egy darabig."
+BOSS_12_PUSH_3,"As they say: whoever hesitates loses, and I do not hesitate.","Ahogy mondani szokták: aki habozik, az veszít, én pedig nem szoktam habozni."
+BOSS_12_PUSH_4,"Here I come. I hope you were expecting it, though I doubt it.","Most jövök. Remélem, számított rá, bár kétlem."
+BOSS_12_PUSH_5,"This attack is no improvisation. I calculated it long, long ago; I was merely waiting for the right moment.","Ez a támadás nem improvizáció. Ezt már réges-régen kiszámoltam, csak vártam a megfelelő pillanatra."
+BOSS_12_ENDGAME_1,Enough of the niceties.,Elég a finomkodásból.
+BOSS_12_ENDGAME_2,Do not expect mercy; there is no such thing on this board.,"Ne várjon kegyelmet, ezen a táblán nincs ilyesmi."
+BOSS_12_DEFEND_1,Hm. That move was better than I expected.,"Hm. Ez a lépés jobb volt, mint vártam."
+BOSS_12_DEFEND_2,"Very well, now I must think. It rarely happens, but it does.","Rendben, most gondolkodnom kell. Ritkán fordul elő, de megesik."
+BOSS_12_DEFEND_3,You surprised me. That is a rare experience; make a note of it.,"Meglepett. Ez ritka élmény, jegyezze meg magának."
+BOSS_12_DEFEND_4,"All right. That was a tough nut, I admit.","Na jó. Ez most kemény dió volt, elismerem."
+BOSS_12_DEFEND_5,I am defending. Do not imagine that this brings me any pleasure.,"Védekezem. Ne higgye, hogy ez örömet okoz."
+BOSS_12_EMERGENCY_1,"Hm. I do not like this, not at all.","Hm. Ez nem tetszik nekem, egyáltalán nem."
+BOSS_12_EMERGENCY_2,"Even a fool has luck, as we say back home. Perhaps now it is yours.","A bolondnak is szerencséje van, mondják nálunk. Talán most magának van."
+BOSS_12_EMERGENCY_3,"This is going badly. I do not like saying it, but so it is.","Ez most rosszul áll. Nem szeretem kimondani, de úgy áll."
+BOSS_12_EMERGENCY_4,"Well, this is an unpleasant turn. I must think, which is a bad sign in itself.","Nos, ez kellemetlen fordulat. Gondolkodnom kell, ami önmagában rossz jel."
+BOSS_12_EMERGENCY_5,"Perhaps I underestimated you. It rarely happens, but perhaps it has now.","Lehet, hogy alábecsültem magát. Ritkán fordul elő, de most talán ez történt."
+BOSS_12_CAPTURE_1,This one is mine. Do not take it amiss.,Ez most az enyém. Ne vegye zokon.
+BOSS_12_CAPTURE_2,I told you it would hurt.,"Mondtam, hogy fájni fog."
+BOSS_12_CAPTURE_3,I will take this. I expect no thanks.,Ezt most elviszem. Köszönetet nem várok.
+BOSS_12_CAPTURE_4,One piece fewer on your side. Count them.,Egy bábuval kevesebb magánál. Számoljon utána.
+BOSS_12_CAPTURE_5,"Well, that was to be expected.","Nos, ez várható volt."
+BOSS_12_CAPTURE_6,This is what happens when you leave your piece lying about.,"Ez történik, mikor ottfelejti a bábuját."
+BOSS_12_CAPTURE_7,One piece fewer.,Egy bábuval kevesebb.
+BOSS_12_CAPTURE_8,Perhaps you will miss it; I certainly will not.,"Lehet, magának hiányozni fog, nekem semmiképp."
+BOSS_12_CAPTURED_1,Hm...,Hm...
+BOSS_12_CAPTURED_2,I will survive.,Túlélem.
+BOSS_12_CAPTURED_3,The good idea always comes late. It should not have been there...,A jó gondolat mindig későn jön. Pedig nem kellett volna ott lennie...
+BOSS_12_CAPTURED_4,"That was clever of you, I must admit.","Ez ügyes volt magától, el kell ismernem."
+BOSS_12_CAPTURED_5,"All right, you earned that one.","Na jó, ezt most megérdemelte."
+BOSS_12_CAPTURED_6,One mistake. Just one. I hope.,Egy hiba. Csak egy. Remélem.
+BOSS_12_CAPTURED_7,"That was unpleasant, but it is not our last move.","Ez most kellemetlen volt, de nem az utolsó lépésünk."
+BOSS_12_CAPTURED_8,"Very well. Was that skill, or merely luck?","Rendben van. Most ez ügyes volt, vagy csak szerencse?"
+BOSS_12_LOSS_1,"Well, I have lost. I rarely say that word, but I say it with honour. It was a fine game, thank you.","Nos, vesztettem. Ritkán mondom ki ezt a szót, de becsülettel teszem. Szép parti volt, köszönöm."
+BOSS_12_WIN_1,"I have won. As I expected, if I am to be honest.","Nyertem. Ahogy vártam, ha őszinte akarok lenni."
+BOSS_12_WIN_2,"It was a fine game. Victory suits me better than defeat, of course.","Szép parti volt. A győzelem persze jobban áll nekem, mint a vereség."
+BOSS_12_WIN_3,"Thank you for the game. I do not often say that and mean it, but now I do.","Köszönöm a partit. Nem gyakran mondom ezt komolyan, de most igen."
+BOSS_12_WIN_4,"Well, this fills me with satisfaction. It rarely happens; I shall enjoy it while it lasts.","Nos, ez elégedettséggel tölt el. Ritkán fordul elő, élvezem, amíg tart."
+BOSS_12_WIN_5,"This was a good match. Perhaps there is something in you, but the victory is mine once again.","Jó volt ez a meccs. Talán van magában valami, de a győzelem most is az enyém."
+RETRY_PROMPT_TITLE,Play again right away?,Új játék azonnal?
+RETRY_PROMPT_YES,"Yes, again","Igen, újra"
+RETRY_PROMPT_NO,Not now,Most nem
+STORY_MULTIPLAYER_BUTTON,Multiplayer,Többjátékos
+QUESTS_BUTTON,Quests,Küldetések
+TRADE_BUTTON,Trade,Csere
+STORY_MULTIPLAYER_SCREEN_TITLE,Multiplayer,Többjátékos
+QUESTS_SCREEN_TITLE,Quests,Küldetések
+TRADE_SCREEN_TITLE,Trade,Csere
+PLACEHOLDER_SCREEN_NOTE,This screen is still being built.,Ez a képernyő még készül.
+REWARD_GRANDPA_DECK_NAME,Grandpa's deck,Nagypapa paklija
+REWARD_01_LINE_1,"These are Grandpa's stamps. From now on, they are yours.",Ezek Nagypapa bélyegei. Mostantól a tieid.
+REWARD_04_LINE_1,"Here, a few coins for the win.","Tessék, pár érme a győzelemért."
+REWARD_05_LINE_1,A new stamp for your collection.,Egy új bélyeg a gyűjteményedbe.
+REWARD_07_LINE_1,A new stamp for your collection.,Egy új bélyeg a gyűjteményedbe.
+REWARD_09_LINE_1,A new stamp for your collection.,Egy új bélyeg a gyűjteményedbe.
+REWARD_11_LINE_1,That was worth a lot of coins.,Ez sok érmét ért.
+REWARD_12_LINE_1,"You did it. Coins, and something truly valuable.","Megcsináltad. Érmék, és valami igazán értékes."
+GABI,Gabi,Gabi
+COMIC_1_7_GABI_1,"Hi, I'm here. How can I help?","Szia, itt is vagyok. Miben tudok segíteni?"
+ANNA,Anna,Anna
+COMIC_2_1_ANNA_1,"Thanks for coming. I'll tell you what I need in a minute. There'll be boxes to shift, I just want to sweep up first, it's so dusty in here.","Köszi, hogy jöttél. Mindjárt mondom, hogy miben tudsz segíteni. Majd dobozokat kell pakolni, csak még összesöprök, mert nagy a por."
+COMIC_2_2_GABI_1,What a mess. How long since you were last here?,Jó nagy rendetlenség van. Mióta nem jártál itt?
+COMIC_2_3_ANNA_1,"Me? It's been a very, very long time. Although nobody has opened the place up in over a year.",Én? Én már nagyon-nagyon régen nem jártam itt. De egyébként már több mint egy éve senki nem nyitotta ki a helyet.
+COMIC_2_4_GABI_1,What was it you said? It was your grandfather's?,Mit is mondtál? A nagypapádé volt?
+COMIC_2_4_ANNA_1,"Yes, this was his little shop and workshop. He worked here right up to the end. He came in every day for as long as he could.","Igen, ez volt a kis boltja, meg műhelye. Egészen az utolsó időkig, itt dolgozott. Amíg csak tudott, minden nap itt volt."
+COMIC_2_5_GABI_1,"And he made games, didn't he?","És ő ilyen játékkészítő volt, igaz?"
+COMIC_2_7_GABI_1,"Wow, that looks good! You must have played a lot together.","Hú, jól néz ki! Biztos sokat játszottatok együtt."
+COMIC_2_9_GRANDPA_1,"Forty-nine squares, and on them six sleeping golems each, yours and mine. Only one thing matters: you have to get one of them - just one - onto my square, there, where the gap is in the middle of my row. That's all there is to it. The rest is only about how you get there.","Negyvenkilenc mező és rajta hat-hat alvó gólem, a tiéd meg az enyém. Egyetlen dolog számít: az egyiket – csak az egyiket – el kell juttatnod az én mezőmre, oda, ahol most üres hely van a sorom közepén. Ennyi az egész. A többi csak arról szól, hogyan jutsz oda."
+COMIC_2_10_GRANDPA_1,"The golems don't move on their own, though. We say they sleep, right up until a stamp like this goes on them. A stamp gives a golem its movement: which way it may step, how far, and how many times. While it is on, you cannot take it off and you cannot swap it - it stays until it runs out, or until the golem is captured.","A gólemek viszont maguktól nem mozognak. Úgy mondjuk, hogy alszanak, egészen addig, amíg egy ilyen bélyeg rájuk nem kerül. Egy bélyeg adja neki a mozgást: hogy merre léphet, meddig, és hányszor. Amíg rajta van, nem veheted le, nem cserélheted – marad, amíg le nem jár, vagy le nem ütik."
+COMIC_2_11_GRANDPA_1,Watch this!,Nézd csak!
+COMIC_3_0_GABI_1,So?,Szóval?
+COMIC_3_1_ANNA_1,"Sorry, what? Oh, right... We played a few times. He even gave me stamps.","Tessék? Jah, persze... Játszottunk néhányszor. Kaptam is tőle bélyegeket."
+COMIC_3_2_GABI_1,"Nice! If you've still got them, we could play a game ourselves. I more or less remember the rules.","De jó! Ha megvannak még, akkor játszhatnánk most mi is egy meccset. Nagyjából emlékszem én is a szabályokra."
+COMIC_3_3_ANNA_1,Now?,Most?
+COMIC_3_4_GABI_1,"Sure, we've still got the whole day to clean.","Persze, még itt az egész nap takarítani."
+COMIC_3_BYLINE,A game by David Barta,Barta Dávid játéka
+Ok,Ok,Ok
+DONT_SHOW_AGAIN,Don't show again,Ne mutasd többet
+MOVE_ENDS_TURN_TITLE,A stamp is still waiting,Még van felragasztható bélyeged
+MOVE_ENDS_TURN_BODY,"You can still affix a stamp to a sleeping golem.
+Moving ends your turn, and that chance goes with it.","Még fel tudsz ragasztani egy bélyeget egy alvó gólemre.
+A lépéssel lezárod a köröd, és ezzel ez a lehetőség is elvész."
+"STAMP_DESC_ARCHER","A patient marksman who never wanders. The archer moves only when there is a target to strike, near or far.","Türelmes mesterlövész, aki sosem kóborol. Az íjász csak akkor mozdul, ha van mit eltalálnia, közel vagy távol."
+"STAMP_DESC_ASSASSIN","Strikes from the shadows. [b]When affixed[/b], it <invisible_to_enemy> [b]turns invisible[/b] to your opponent for [b]3 turns[/b].","Az árnyékból csap le. [b]Felragasztáskor[/b] <invisible_to_enemy> [b]3 körre láthatatlanná válik[/b] az ellenfél számára."
+"STAMP_DESC_BERSERK","Every fight only feeds its fury. [b]Each time it captures[/b], it <increase_self_duration> [b]gains +1 duration[/b].","A harc csak szítja a dühét. [b]Minden ütése után[/b] <increase_self_duration> [b]+1 időtartamot kap[/b]."
+"STAMP_DESC_BISHOP","A solemn cleric who never walks a straight path. The bishop glides along the diagonals, one or two squares at a time.","Ünnepélyes főpap, aki sosem jár egyenes úton. A püspök átlósan halad, egyszerre egy vagy két mezőt."
+"STAMP_DESC_DUKE","Goes wherever the duchy calls: a stately step forward or back, a broad stride to the side, or a sudden leap across the land.","Oda megy, ahová a birtoka szólítja: méltóságteljesen előre vagy hátra, széles léptekkel oldalra, vagy merész ugrással."
+"STAMP_DESC_GOLD_GENERAL","A seasoned general who rarely gives ground. Advances boldly on every front, and steps back only one square at a time.","Tapasztalt hadvezér, aki ritkán enged teret. Minden fronton bátran nyomul előre, hátrálni csak egy-egy lépést hajlandó."
+"STAMP_DESC_KNIGHT","A loyal cavalier in shining armor. Leaps over friend and foe alike in its famous L-shaped jump.","Hűséges, fényes páncélú lovag. Híres L alakú ugrásával barátot és ellenséget egyaránt átugrik."
+"STAMP_DESC_LANCE","A long spear for a straight fight. Thrusts one or two squares forward, and takes a single step back to regroup.","Hosszú dárda az egyenes harchoz. Egy vagy két mezőt döf előre, és egyetlen lépést hátrál, hogy rendezze sorait."
+"STAMP_DESC_PRINCE","A [b]Seeker[/b] heir traveling incognito. [b]When affixed[/b], it <invisible_to_enemy> [b]turns invisible[/b] to your opponent for [b]3 turns[/b].","Inkognitóban utazó [b]Kereső[/b] trónörökös. [b]Felragasztáskor[/b] <invisible_to_enemy> [b]3 körre láthatatlanná válik[/b] az ellenfél számára."
+"STAMP_DESC_SILVER_GENERAL","A [b]Seeker[/b] general who leads the final march: reach the enemy base with it to [b]win[/b]. If it falls or expires, it [b]returns to your codex[/b].","[b]Kereső[/b] hadvezér, aki a döntő rohamot vezeti: ha eléri az ellenfél bázisát, [b]győzöl[/b]. Ha elesik vagy lejár, [b]visszatér a kódexedbe[/b]."
+"STAMP_DESC_THE_GOLEM","The first of its kind, carved from living stone. [b]Each time it captures[/b], it <increase_self_duration> [b]gains +1 duration[/b].","Az első a fajtájából, élő kőből faragva. [b]Minden ütése után[/b] <increase_self_duration> [b]+1 időtartamot kap[/b]."
+"STAMP_DESC_WAR_DRUMMER","The beat that keeps the army marching. [b]When affixed[/b], <increase_own_durations> [b]all your stamped golems gain +1 duration[/b].","Az ütem, ami menetben tartja a sereget. [b]Felragasztáskor[/b] <increase_own_durations> [b]minden bélyeges gólemed +1 időtartamot kap[/b]."
+"STAMP_DESC_WARLORD","Wherever the warlord rides, the troops rally. [b]Each time it moves[/b], <increase_own_durations> [b]all your stamped golems gain +1 duration[/b].","Ahol a hadúr megjelenik, a csapatok összezárnak. [b]Minden lépésekor[/b] <increase_own_durations> [b]minden bélyeges gólemed +1 időtartamot kap[/b]."
+"STAMP_DESC_BEAR","Every feast is followed by a long sleep. [b]When it captures[/b], <decrease_own_durations> [b]all your stamped golems lose 1 duration[/b], itself included.","Minden lakomát hosszú álom követ. [b]Ha üt[/b], <decrease_own_durations> [b]minden bélyeges gólemed időtartama 1-gyel csökken[/b], a sajátja is."
+"STAMP_DESC_BLACKBIRD","A restless songbird that never picks a fight. It hops two squares in any direction, singing from a new branch each time.","Nyughatatlan énekesmadár, amely sosem keres bajt. Bármely irányba két mezőt szökken, és mindig új ágról fütyül."
+"STAMP_DESC_CAT","A [b]Seeker[/b] slinking toward the enemy base: get it there to [b]win[/b]. Cats land on their feet: if it falls or expires, it [b]returns to your codex[/b].","Az ellenfél bázisa felé osonó [b]Kereső[/b]: ha odaér, [b]győzöl[/b]. A macska mindig talpra esik: ha elesik vagy lejár, [b]visszatér a kódexedbe[/b]."
+"STAMP_DESC_CROCODILE","Snaps in a flash, then lies still for hours. [b]When it captures[/b], <decrease_own_durations> [b]all your stamped golems lose 1 duration[/b], itself included.","Villámgyorsan csap le, aztán órákig mozdulatlan. [b]Ha üt[/b], <decrease_own_durations> [b]minden bélyeges gólemed időtartama 1-gyel csökken[/b], a sajátja is."
+"STAMP_DESC_DOG","A loyal guard dog. It bites whatever stands right in front of it, bounds ahead across the field, and backs off a step when called.","Hűséges házőrző. Megharapja, ami közvetlenül előtte áll, nagy szökkenésekkel ront előre, és hátrál egy lépést, ha hívják."
+"STAMP_DESC_DRAGON","Wings spread wide, the dragon sweeps across the field, striking to the sides and diagonals, but never straight ahead or behind.","Szárnyait kitárva söpör végig a mezőn: oldalra és átlósan csap le, de egyenesen előre vagy hátra soha."
+"STAMP_DESC_DRAGONHORSE","Half dragon, half steed. It gallops in leaping arcs, but fights only up close, against foes beside it or on the diagonals.","Félig sárkány, félig paripa. Ívelt ugrásokkal vágtat, de csak közelről harcol, az oldalt vagy átlósan álló ellenféllel."
+"STAMP_DESC_DUCK","A [b]Shared[/b] stamp: [b]both players[/b] can move this golem on their own turn. A duck simply follows whoever has the breadcrumbs.","[b]Megosztott[/b] bélyeg: ezt a gólemet [b]mindkét játékos[/b] mozgathatja a saját körében. A kacsa mindig azt követi, akinél a morzsa van."
+"STAMP_DESC_ELEPHANT","Slow to start but impossible to stop. The elephant strides two squares diagonally, trampling whatever stands where it lands.","Nehezen indul, de megállíthatatlan. Az elefánt két mezőt lép átlósan, és letiporja, ami ott áll, ahová érkezik."
+"STAMP_DESC_FOX","Sly and quick-footed. The fox darts forward or back in zigzag leaps, snatching its prey wherever it lands.","Ravasz és fürge. A róka cikcakkos ugrásokkal szökken előre vagy hátra, és lecsap a zsákmányra, ahol földet ér."
+"STAMP_DESC_GOAT","Stubborn and unpredictable. The goat leaps wherever it pleases, rarely the way you'd expect, and butts whoever stands in its way.","Makacs és kiszámíthatatlan. A kecske oda ugrik, ahová kedve tartja, ritkán arra, amerre várnád, és felökleli, aki útjába áll."
+"STAMP_DESC_HERON","Wades with patient, careful steps, sometimes close, sometimes with a long stride, but never strikes. A calm presence on the field.","Türelmes, óvatos léptekkel gázol, hol közelre, hol hosszan lépve, de sosem csap le. Nyugodt jelenlét a táblán."
+"STAMP_DESC_HORSE","A riderless horse: it gallops across the field in great L-shaped leaps, but without a knight on its back, it never fights.","Lovas nélküli paripa: hatalmas L alakú ugrásokkal vágtat át a mezőn, de lovag nélkül sosem bocsátkozik harcba."
+"STAMP_DESC_RHINOCEROS","Head down, horn first. The rhino charges into anything ahead of it, near or far, but only shuffles quietly to the sides and back.","Fejjel előre, szarvval elöl. Az orrszarvú belerohan mindenbe, ami előtte van, oldalra és hátra viszont csak csendben totyog."
+"STAMP_DESC_TURTLE","Slow and steady wins the race. A [b]Seeker[/b]: reach the enemy base with it to [b]win[/b]. If it falls or expires, it [b]returns to your codex[/b].","Lassan járj, tovább érsz. [b]Kereső[/b]: ha eléri az ellenfél bázisát, [b]győzöl[/b]. Ha elesik vagy lejár, [b]visszatér a kódexedbe[/b]."
+"STAMP_DESC_BAOBAB","An ancient giant that has outlived a thousand droughts. It shifts slowly, one square in any direction, and never raises a branch in anger.","Ősi óriás, amely ezer aszályt túlélt. Lassan mozdul, egy mezőt bármely irányba, és soha nem emeli haragra ágait."
+"STAMP_DESC_CACTUS","A hardy [b]Seeker[/b] that thrives where nothing else can: reach the enemy base with it to [b]win[/b]. If it falls or expires, it [b]returns to your codex[/b].","Szívós [b]Kereső[/b], amely ott is kitart, ahol semmi más: ha eléri az ellenfél bázisát, [b]győzöl[/b]. Ha elesik vagy lejár, [b]visszatér a kódexedbe[/b]."
+"STAMP_DESC_CHANTERELLE","A golden treat for foragers, sealed with the [b]Overseal[/b] mark. It pops up after the rain, right where no one thought to look.","Az erdőjárók aranykincse, [b]Overseal[/b] pecséttel. Eső után bukkan fel, épp ott, ahol senki sem kereste."
+"STAMP_DESC_CHERRY_TREE","Blossoms for one short, sweet season. It drifts gently to any neighboring square, but strikes only with the branch reaching straight ahead.","Rövid, édes évszakban virágzik. Szelíden lebben bármely szomszédos mezőre, de csak az egyenesen előrenyúló ágával üt."
+"STAMP_DESC_FLY_AGARIC","Beautiful and deadly. It strikes like poison at anything diagonally beside it, and spreads two squares in a straight line.","Gyönyörű és halálos. Méregként csap le az átlósan mellette állókra, és egyenes vonalban két mezőnyit terjed."
+"STAMP_DESC_LARCH","The conifer that turns gold and sheds its needles every autumn. It wanders one square in any direction, peaceful as a forest at dusk.","A tűlevelű, amely ősszel aranyba borul és lehullatja tűit. Egy mezőt vándorol bármely irányba, békésen, mint az alkonyi erdő."
+"STAMP_DESC_LOTUS","Where one lotus blooms, another follows. [b]When affixed[/b], it <grant_stamp> [b]brings another Lotus[/b] from another page of your codex [b]to the open page[/b].","Ahol egy lótusz kinyílik, ott a másik is. [b]Felragasztáskor[/b] <grant_stamp> [b]egy másik Lotust hoz[/b] a kódexed egy másik oldaláról [b]a nyitott oldalra[/b]."
+"STAMP_DESC_MAGNOLIA","One of the oldest flowers on Earth, and one of the most fleeting. It drifts gracefully in long, airy steps, but cannot strike.","A Föld egyik legősibb virága, és az egyik legmúlandóbb. Hosszú, légies léptekkel lebeg tova, de ütni nem tud."
+"STAMP_DESC_OAK","Strong and steady, rooted for centuries. The oak moves one careful square at a time, sheltering rather than striking.","Erős és rendíthetetlen, évszázadok óta gyökerezik. A tölgy egy-egy megfontolt mezőt lép, és inkább óv, mint üt."
+"STAMP_DESC_OLIVE_TREE","A living symbol of peace. The olive tree offers a branch instead of a blade, stepping one square in any direction.","A béke élő jelképe. Az olajfa kard helyett ágat nyújt, és egy-egy mezőt lép bármely irányba."
+"STAMP_DESC_ORCHID","Exotic and elegant. The orchid sways gently along the diagonals, then leaps into a strike when it's least expected.","Egzotikus és elegáns. Az orchidea szelíden ring átlósan, majd egy ugrással lecsap, amikor a legkevésbé várják."
+"STAMP_DESC_PUFFBALL","Step on it and regret it. [b]When captured[/b], it <bomb> [b]bursts in a cloud of spores[/b], [b]capturing every golem next to it[/b], friend or foe.","Aki rálép, megbánja. [b]Ha leütik[/b], <bomb> [b]spórafelhőben szétpukkan[/b], és [b]minden mellette álló gólemet leüt[/b], barátot és ellenséget is."
+"STAMP_DESC_ROSE","Every rose has its thorns. It pricks anything diagonally beside it, and wanders two squares in any direction on a sweet scent.","Nincs rózsa tövis nélkül. Megszúrja, ami átlósan mellette áll, és édes illatával két mezőnyit vándorol bármely irányba."
+"STAMP_DESC_SHAGGY_MANE","A tall, ghostly mushroom that melts into ink by morning, sealed with the [b]Overseal[/b] mark.","Magas, kísérteties gomba, amely reggelre tintává oldódik, [b]Overseal[/b] pecséttel."
+"STAMP_DESC_YELLOW_CORAL","A branching coral of the forest floor, glowing sunny yellow, sealed with the [b]Overseal[/b] mark.","Az erdei avar ágas-bogas korallja, napsárgán ragyog, [b]Overseal[/b] pecséttel."
+"STAMP_DESC_BLACK_HOLE","Not even time escapes it. [b]Each time it moves[/b], <decrease_own_durations> [b]all your stamped golems lose 1 duration[/b], itself included.","Még az idő sem menekülhet előle. [b]Minden lépésekor[/b] <decrease_own_durations> [b]minden bélyeges gólemed időtartama 1-gyel csökken[/b], a sajátja is."
+"STAMP_DESC_COMET","A rare wanderer trailing fire across the sky, gliding one square at a time toward any of the four winds.","Ritka vándor, tűzcsóvát húz maga után az égen, és egy-egy mezőt siklik a négy égtáj bármelyike felé."
+"STAMP_DESC_EARTH","Our blue home. A [b]Se-tenant[/b] stamp, printed side by side with the Sun and the Moon on the same sheet.","Kék otthonunk. [b]Se-tenant[/b] bélyeg: egyazon ívre nyomták, a Nap és a Hold mellé."
+"STAMP_DESC_JUPITER","King of the gods and giant among planets. Jupiter moves with majestic calm, one square at a time in the four cardinal directions.","Az istenek királya, a bolygók óriása. A Jupiter fenséges nyugalommal halad, egy-egy mezőt a négy égtáj felé."
+"STAMP_DESC_MARS","The red planet, named for the god of war. Mars marches square by square, ahead, behind or to the side, always ready for battle.","A vörös bolygó, a hadisten nevét viseli. A Mars mezőről mezőre menetel előre, hátra vagy oldalra, mindig harcra készen."
+"STAMP_DESC_MERCURY","Swift messenger of the gods and the fastest planet around the Sun. Mercury darts one square at a time in any straight direction.","Az istenek fürge hírnöke, a Nap leggyorsabb bolygója. A Merkúr egy-egy mezőt cikázik bármely egyenes irányba."
+"STAMP_DESC_MOON","Silver companion of the night. A [b]Se-tenant[/b] stamp, printed side by side with the Earth and the Sun on the same sheet.","Az éjszaka ezüst társa. [b]Se-tenant[/b] bélyeg: egyazon ívre nyomták, a Föld és a Nap mellé."
+"STAMP_DESC_NEBULA","A cosmic cloud where new stars are born. The nebula drifts slowly, a single square at a time, toward the four cardinal directions.","Kozmikus felhő, ahol új csillagok születnek. A köd lassan sodródik, egyszerre egyetlen mezőt, a négy égtáj felé."
+"STAMP_DESC_NEPTUNE","Distant blue lord of the seas. Neptune rolls across the board like the tide, one square forward, back or to either side.","A tengerek távoli, kék ura. A Neptunusz úgy hullámzik végig a táblán, mint a dagály: egy mezőt előre, hátra vagy oldalra."
+"STAMP_DESC_NOTH_STAR","The fixed point every traveler steers by. The North Star shows the way along the four cardinal directions, one square at a time.","A biztos pont, amely minden utazót vezet. A Sarkcsillag a négy égtáj mentén mutatja az utat, egyszerre egy mezőt."
+"STAMP_DESC_NOVA","A dying star's final blaze. [b]When it expires[/b], it <bomb> [b]explodes[/b], [b]capturing every golem around it[/b], your own included.","Egy haldokló csillag utolsó fellángolása. [b]Amikor lejár[/b], <bomb> [b]felrobban[/b], és [b]minden körülötte álló gólemet leüt[/b], a tieidet is."
+"STAMP_DESC_SATURN","Crowned with rings, keeper of time. Saturn turns at its own patient pace, one square at a time toward the four cardinal directions.","Gyűrűkoronás, az idő őrzője. A Szaturnusz a maga türelmes tempójában halad, egy-egy mezőt a négy égtáj felé."
+"STAMP_DESC_SUN","The heart of the sky. A [b]Se-tenant[/b] stamp, printed side by side with the Earth and the Moon on the same sheet.","Az égbolt szíve. [b]Se-tenant[/b] bélyeg: egyazon ívre nyomták, a Föld és a Hold mellé."
+"STAMP_DESC_URANUS","The tilted ice giant that rolls around the Sun on its side. Uranus tumbles one square at a time in any straight direction.","A ferde jégóriás, amely az oldalán gurulva kerüli meg a Napot. Az Uránusz egy-egy mezőt bukfencezik bármely egyenes irányba."
+"STAMP_DESC_VENUS","The morning and evening star, named for the goddess of love. Venus glides gracefully, one square at a time, toward the four cardinal directions.","A hajnal és az alkony csillaga, a szerelem istennőjének nevét viseli. A Vénusz kecsesen suhan, egy-egy mezőt a négy égtáj felé."
+"STAMP_DESC_BALLISTA","A giant crossbow on wheels. It fires bolts straight ahead, up to two squares away, and is hauled into new positions along straight lines.","Kerekeken guruló óriás számszeríj. Egyenesen előre lő, akár két mezőnyire, és egyenes vonalban vontatják új állásba."
+"STAMP_DESC_BASTION","The jutting corner of the walls where defenders hold the line. It pushes forward to strike, and shifts along the walls to cover any gap.","A falak kiugró szöglete, ahol a védők tartják a vonalat. Előretör, hogy lecsapjon, és a fal mentén elmozdul, hogy befoltozza a réseket."
+"STAMP_DESC_BICYCLE","Hardly a siege engine, but it gets the job done. It pedals forward to bump into foes, and rolls sideways or back to try again.","Nem éppen ostromgép, de elvégzi a dolgát. Előre teker, hogy nekihajtson az ellenfélnek, oldalra vagy hátra gurulva pedig újra nekifut."
+"STAMP_DESC_BOMBARD","An early cannon with a thunderous roar. It blasts whatever lies straight ahead, close or two squares away, then rolls back to reload.","Korai ágyú mennydörgő hanggal. Szétlövi, ami egyenesen előtte áll, közel vagy két mezőnyire, aztán visszagurul újratölteni."
+"STAMP_DESC_CASTLE","A stronghold that strides in straight lines, like the rook of old chessboards. It attacks only forward, and regroups to the sides or back.","Egyenes vonalakban lépdelő vár, akár a régi sakktáblák bástyája. Csak előre támad, oldalra és hátra pedig átrendeződik."
+"STAMP_DESC_CITADEL","The inner keep, always the last to fall. It strikes only at what comes from the front, and yields ground to the sides or back only when it must.","A belső vár, amely mindig utolsóként esik el. Csak a szemből érkezőkre csap le, oldalra vagy hátra pedig csak akkor enged, ha muszáj."
+"STAMP_DESC_FORTRESS","Thick walls and a stubborn garrison. The fortress pushes its front line forward, and slides back or sideways to regroup.","Vastag falak és makacs helyőrség. Az erőd előre tolja a frontvonalat, oldalra vagy hátra csúszva pedig újrarendezi sorait."
+"STAMP_DESC_GATE","It swings open only for the charge. The gate rushes straight at its foes, and draws aside or back to let allies through.","Csak a rohamra tárul ki. A kapu egyenesen az ellenre ront, oldalra vagy hátra húzódva pedig utat enged a szövetségeseknek."
+"STAMP_DESC_MANTLET","A mobile shield wall for the siege. [b]Each time it moves[/b], it <invalid_squares> [b]seals off the row in front of it[/b] for [b]3 turns[/b]: no one can step there.","Mozgó pajzsfal az ostromhoz. [b]Minden lépésekor[/b] <invalid_squares> [b]3 körre lezárja az előtte lévő sort[/b]: oda senki nem léphet."
+"STAMP_DESC_SHRINE","A quiet roadside shrine. It moves gently in any straight line, but lashes out only at those who approach from the front.","Csendes útszéli szentély. Szelíden mozdul bármely egyenes irányba, de csak azokra sújt le, akik szemből közelednek."
+"STAMP_DESC_TEMPLE","A sanctuary of stone and incense. Its guardians strike only at foes before its doors, while the faithful carry it in any straight line.","Kőből és tömjénfüstből emelt szentély. Őrzői csak a kapuja előtt álló ellenre sújtanak, a hívek pedig bármely egyenes irányba viszik tovább."
+"STAMP_DESC_TORTOISE","Shields locked overhead, the Roman way. [b]When affixed[/b], it <invalid_squares> [b]seals off the marked squares[/b] for [b]3 turns[/b]: no one can step there.","Pajzsok összezárva, a rómaiak módjára. [b]Felragasztáskor[/b] <invalid_squares> [b]3 körre lezárja a jelölt mezőket[/b]: oda senki nem léphet."
+"STAMP_DESC_TOWER","A watchtower that sees every approach. It strikes ahead at anything in sight, and slides sideways or back to cover its flanks.","Őrtorony, amely minden közeledőt meglát. Előre lecsap bármire, ami a szeme elé kerül, oldalra vagy hátra csúszva pedig fedezi a szárnyait."
+"STAMP_DESC_TREBUCHET","A towering siege engine that hurls stones over walls. It strikes ahead at short or long range, and is slowly dragged into new positions.","Toronymagas ostromgép, amely köveket hajít át a falakon. Közelre és messzire is előre csap le, új állásba pedig lassan vonszolják."
+"STAMP_DESC_WAR_CHARIOT","Thundering hooves and spinning wheels. The war chariot charges straight into the enemy, then wheels sideways or back to charge again.","Dübörgő paták és pörgő kerekek. A harci szekér egyenesen az ellenségbe ront, majd oldalra vagy hátra kanyarodva újra nekifut."
+"STAMP_DESC_ADVENTURER","A free-spirited artist, always ready to try something new. Strikes at any neighbor, but wanders off only to one side or behind.","Szabad szellemű művész, mindig nyitott valami újra. Bármely szomszédjára lecsap, de elkószálni csak oldalra vagy hátra szokott."
+"STAMP_DESC_ADVOCATE","A quiet idealist who keeps faith to the end. [b]When it expires[/b], it <grant_stamp> [b]brings a King[/b] from another page of your codex [b]to the open page[/b].","Csendes idealista, aki a végsőkig kitart. [b]Amikor lejár[/b], <grant_stamp> [b]egy King bélyeget hoz[/b] a kódexed egy másik oldaláról [b]a nyitott oldalra[/b]."
+"STAMP_DESC_ARCHITECT","A strategist with a plan for everything, but blueprints leak. [b]When it expires[/b], it <give_stamp> [b]hands a random stamp[/b] from your open page [b]to your opponent[/b].","Stratéga, akinek mindenre van terve, de a tervrajzok kiszivárognak. [b]Amikor lejár[/b], <give_stamp> [b]egy véletlen bélyeget[/b] a nyitott oldaladról [b]az ellenfélnek ad[/b]."
+"STAMP_DESC_CAMPAIGNER","An enthusiastic free spirit who always finds a reason to smile. Strikes all around, and skips off forward or to the side on a whim.","Lelkes, szabad szellem, aki mindig talál okot a mosolyra. Körös-körül lecsap, és szeszélyesen szökken előre vagy oldalra."
+"STAMP_DESC_COMMANDER","A bold, strong-willed leader who always finds a way. Strikes in every direction and pushes forward or to the flank, never retreating.","Merész, erős akaratú vezér, aki mindig utat talál. Minden irányba lecsap, és előre vagy oldalra nyomul, de soha nem hátrál."
+"STAMP_DESC_CONSUL","Caring, sociable and always eager to help. Strikes at any neighbor, and steps over to whichever side needs a hand.","Gondoskodó, társaságkedvelő, mindig kész segíteni. Bármely szomszédjára lecsap, és arra lép, amerre éppen segítség kell."
+"STAMP_DESC_DEFENDER","A devoted, warm-hearted protector, always standing by loved ones. Strikes at any neighbor, but rarely strays far from its post.","Odaadó, melegszívű védelmező, aki mindig kiáll a szeretteiért. Bármely szomszédjára lecsap, de ritkán hagyja el az őrhelyét."
+"STAMP_DESC_ENTERTAINER","Spontaneous and full of energy: life is never boring around it. Strikes all around, and twirls across the stage in surprising directions.","Spontán és energikus: mellette sosem unalmas az élet. Körös-körül lecsap, és meglepő irányokba perdül a színpadon."
+"STAMP_DESC_ENTREPRENEUR","Smart, energetic and happiest living on the edge. Strikes at any neighbor, and darts off wherever an opportunity flashes.","Okos, energikus, és a kockázatban érzi elemében magát. Bármely szomszédjára lecsap, és arra cikázik, amerre lehetőséget lát."
+"STAMP_DESC_EXECUTIVE","A born organizer who keeps both things and people in order. Strikes all around, and advances by the book, forward or along its flank.","Született szervező, aki rendben tartja a dolgokat és az embereket. Körös-körül lecsap, és szabályosan halad: előre vagy a szárny mentén."
+"STAMP_DESC_LOGICIAN","An inventive thinker with an endless thirst for knowledge. [b]When it captures[/b], it <grant_stamp> [b]brings a King[/b] from another page of your codex [b]to the open page[/b].","Leleményes gondolkodó, csillapíthatatlan tudásvággyal. [b]Ha üt[/b], <grant_stamp> [b]egy King bélyeget hoz[/b] a kódexed egy másik oldaláról [b]a nyitott oldalra[/b]."
+"STAMP_DESC_LOGISTICIAN","Practical, fact-minded and utterly reliable. Strikes at any neighbor, but moves only along well-tested routes, to the flank or back.","Gyakorlatias, tényszerű és teljesen megbízható. Bármely szomszédjára lecsap, de csak bevált útvonalakon mozog: oldalra vagy hátra."
+"STAMP_DESC_MEDIATOR","A poetic, kind soul, always eager to help a good cause. Strikes only when it must, and would rather step aside or back from a conflict.","Költői lelkű, kedves idealista, mindig kész egy jó ügyért. Csak ha muszáj, akkor üt, inkább félre- vagy hátralép a konfliktus elől."
+"STAMP_DESC_PROTAGONIST","A charismatic leader who inspires everyone nearby. Strikes all around, and always steps forward, leading by example.","Karizmatikus vezető, aki mindenkit magával ragad. Körös-körül lecsap, és mindig elöl jár, példát mutatva."
+"STAMP_DESC_VIRTUOSO","A bold experimenter and master of every tool. Strikes at any neighbor, but prefers to work from behind the lines.","Merész kísérletező, minden szerszám mestere. Bármely szomszédjára lecsap, de szívesebben dolgozik a vonalak mögül."

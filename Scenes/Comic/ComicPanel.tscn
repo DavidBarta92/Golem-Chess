@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Story/ComicPanelView.gd" id="1_comic_panel"]
+
+[node name="ComicPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 320.0
+offset_bottom = 240.0
+mouse_filter = 2
+script = ExtResource("1_comic_panel")

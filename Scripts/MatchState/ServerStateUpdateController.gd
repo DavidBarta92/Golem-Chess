@@ -69,7 +69,6 @@ func update_from_server_state(
 	var black_page_turned_this_update: bool = !previous_black_turned_page and bool(match_board.has_turned_page_this_turn.get(-1, false))
 	match_board.get_turn_hud_controller().sync_player_clocks(player_clock_seconds)
 	match_board.update_end_turn_button()
-	match_board.get_turn_hud_controller().update_action_status_ui()
 	match_board.white_stamp_hand = match_board.create_stamp_hand_from_names(current_white_hand_names)
 	match_board.black_stamp_hand = match_board.create_stamp_hand_from_names(current_black_hand_names)
 

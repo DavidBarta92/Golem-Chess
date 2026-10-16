@@ -29,6 +29,7 @@ var current_page: int = 0
 var current_stamps_per_page: int = 9
 var current_stamp_columns: int = 3
 var current_stamp_slot_size: Vector2 = Vector2(128, 142)
+var current_stamp_grid_horizontal_gap: int = 8
 var current_stamp_grid_vertical_gap: int = 2
 var pager_button_press_tweens: Dictionary = {}
 
@@ -184,7 +185,9 @@ func set_active_set_filter(set_name: String) -> void:
 func create_browser_stamp_slot(stamp_visual: StampVisual, owned_count: int) -> Control:
 	var stamp_slot := Control.new()
 	stamp_slot.custom_minimum_size = current_stamp_slot_size
-	stamp_slot.mouse_filter = Control.MOUSE_FILTER_PASS
+	# The top row's slots reach above the drawn stamps, over the set tags that
+	# peek out above the book; only the stamp itself should catch the mouse.
+	stamp_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stamp_slot.clip_contents = false
 	stamp_slot.add_child(stamp_visual)
 	stamp_slot.add_child(create_print_count_badge(owned_count))
@@ -262,7 +265,7 @@ func update_print_count_badge_layout(stamp_slot: Control, stamp_visual: StampVis
 	badge.size = badge.custom_minimum_size
 	var scaled_stamp_size: Vector2 = stamp_visual_size * stamp_visual.rest_scale
 	var stamp_top_left: Vector2 = get_stamp_visual_draw_top_left(stamp_visual)
-	badge.position = stamp_top_left + Vector2(scaled_stamp_size.x - badge.size.x - 2.0, 2.0)
+	badge.position = stamp_top_left + scaled_stamp_size - badge.size - Vector2(2.0, 2.0)
 
 func on_browser_stamp_slot_resized(stamp_slot: Control, stamp_visual: StampVisual) -> void:
 	if stamp_visual != null:
@@ -324,6 +327,7 @@ func apply_layout(columns: int, stamps_per_page: int, slot_size: Vector2, horizo
 	current_stamp_columns = columns
 	current_stamps_per_page = stamps_per_page
 	current_stamp_slot_size = slot_size
+	current_stamp_grid_horizontal_gap = horizontal_gap
 	current_stamp_grid_vertical_gap = vertical_gap
 	if stamp_grid != null:
 		stamp_grid.columns = current_stamp_columns
@@ -339,6 +343,25 @@ func update_stamp_grid_reserved_size() -> void:
 	var reserved_height: float = current_stamp_slot_size.y * row_count + current_stamp_grid_vertical_gap * maxi(0, row_count - 1)
 	stamp_grid.custom_minimum_size = Vector2(0.0, reserved_height)
 	stamp_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+
+# Where a full page of stamps is actually drawn, relative to the grid's origin.
+# configure_browser_stamp_layout() places each visual as if it scaled from its
+# top-left corner, but it scales around its centre pivot, so every drawn stamp
+# sits half of the shrunk size further right and down inside its slot.
+func get_page_stamp_bounds() -> Rect2:
+	var columns: int = maxi(1, current_stamp_columns)
+	var rows: int = maxi(1, int(ceil(float(current_stamps_per_page) / float(columns))))
+	var scale_factor: float = get_stamp_scale_for_slot_size(current_stamp_slot_size)
+	var drawn_stamp_size: Vector2 = stamp_visual_size * scale_factor
+	var first_stamp_center: Vector2 = current_stamp_slot_size * 0.5 \
+		+ stamp_visual_size * (1.0 - scale_factor) * 0.5 \
+		+ Vector2(0.0, browser_stamp_vertical_offset)
+	var slot_pitch := Vector2(
+		current_stamp_slot_size.x + current_stamp_grid_horizontal_gap,
+		current_stamp_slot_size.y + current_stamp_grid_vertical_gap
+	)
+	var span: Vector2 = slot_pitch * Vector2(columns - 1, rows - 1) + drawn_stamp_size
+	return Rect2(first_stamp_center - drawn_stamp_size * 0.5, span)
 
 func update_existing_stamp_sizes() -> void:
 	if stamp_grid == null:

@@ -1,0 +1,254 @@
+[gd_scene load_steps=38 format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPage.tscn" id="1_comic_page"]
+[ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPanel.tscn" id="2_comic_panel"]
+[ext_resource type="Script" path="res://Scripts/Story/ComicDialogueLine.gd" id="3_dialogue_line"]
+[ext_resource type="Texture2D" uid="uid://c1xgq1m6sjdfh" path="res://Assets/Comic/2_1_line_reveal_mask.png" id="11_mask"]
+[ext_resource type="Texture2D" uid="uid://nswdx4cxvhkt" path="res://Assets/Comic/2_1_color.png" id="11_color"]
+[ext_resource type="Texture2D" uid="uid://caxsce603gdby" path="res://Assets/Comic/2_2_line_reveal_mask.png" id="12_mask"]
+[ext_resource type="Texture2D" uid="uid://lutm2xnuefvk" path="res://Assets/Comic/2_2_color.png" id="12_color"]
+[ext_resource type="Texture2D" uid="uid://ci1g3fbtay4bj" path="res://Assets/Comic/2_3_line_reveal_mask.png" id="13_mask"]
+[ext_resource type="Texture2D" uid="uid://dlxgvse34xh34" path="res://Assets/Comic/2_3_color.png" id="13_color"]
+[ext_resource type="Texture2D" uid="uid://ceapi4sols0yq" path="res://Assets/Comic/2_4_line_reveal_mask.png" id="14_mask"]
+[ext_resource type="Texture2D" uid="uid://bmn1u7wk18bff" path="res://Assets/Comic/2_4_color.png" id="14_color"]
+[ext_resource type="Texture2D" uid="uid://dftcp2b7jcl4j" path="res://Assets/Comic/2_5_line_reveal_mask.png" id="15_mask"]
+[ext_resource type="Texture2D" uid="uid://cfhhesorn8j2x" path="res://Assets/Comic/2_5_color.png" id="15_color"]
+[ext_resource type="Texture2D" uid="uid://b3802oejc1k0f" path="res://Assets/Comic/2_6_line_reveal_mask.png" id="16_mask"]
+[ext_resource type="Texture2D" uid="uid://c0ryt26spxrd8" path="res://Assets/Comic/2_6_color.png" id="16_color"]
+[ext_resource type="Texture2D" uid="uid://ob1r5a1fp5rk" path="res://Assets/Comic/2_7_line_reveal_mask.png" id="17_mask"]
+[ext_resource type="Texture2D" uid="uid://b3uapc7i6opvq" path="res://Assets/Comic/2_7_color.png" id="17_color"]
+[ext_resource type="Texture2D" uid="uid://baqtdqdk1b27f" path="res://Assets/Comic/2_8_line_reveal_mask.png" id="18_mask"]
+[ext_resource type="Texture2D" uid="uid://ccys2ry2srdth" path="res://Assets/Comic/2_8_color.png" id="18_color"]
+[ext_resource type="Texture2D" uid="uid://lrojeb7ybnmh" path="res://Assets/Comic/2_9_line_reveal_mask.png" id="19_mask"]
+[ext_resource type="Texture2D" uid="uid://cutooe1hcnaxi" path="res://Assets/Comic/2_9_color.png" id="19_color"]
+[ext_resource type="Texture2D" uid="uid://uqhfawhac5jk" path="res://Assets/Comic/2_10_line_reveal_mask.png" id="20_mask"]
+[ext_resource type="Texture2D" uid="uid://cgt8k2ldcdvbf" path="res://Assets/Comic/2_10_color.png" id="20_color"]
+[ext_resource type="Texture2D" uid="uid://cftho7bec204u" path="res://Assets/Comic/2_11_line_reveal_mask.png" id="21_mask"]
+[ext_resource type="Texture2D" uid="uid://dchaty7muj7pf" path="res://Assets/Comic/2_11_color.png" id="21_color"]
+[ext_resource type="Texture2D" uid="uid://bce5ifwe0tlis" path="res://Assets/Comic/2_12_line_reveal_mask.png" id="22_mask"]
+[ext_resource type="Texture2D" uid="uid://by6kswfqrpqil" path="res://Assets/Comic/2_12_color.png" id="22_color"]
+
+[sub_resource type="Resource" id="Resource_line_1_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "ANNA"
+text = "COMIC_2_1_ANNA_1"
+
+[sub_resource type="Resource" id="Resource_line_2_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "GABI"
+text = "COMIC_2_2_GABI_1"
+
+[sub_resource type="Resource" id="Resource_line_3_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "ANNA"
+text = "COMIC_2_3_ANNA_1"
+
+[sub_resource type="Resource" id="Resource_line_4_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "GABI"
+text = "COMIC_2_4_GABI_1"
+
+[sub_resource type="Resource" id="Resource_line_4_2"]
+script = ExtResource("3_dialogue_line")
+speaker = "ANNA"
+text = "COMIC_2_4_ANNA_1"
+
+[sub_resource type="Resource" id="Resource_line_5_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "GABI"
+text = "COMIC_2_5_GABI_1"
+
+[sub_resource type="Resource" id="Resource_line_7_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "GABI"
+text = "COMIC_2_7_GABI_1"
+speaker_gap = 0
+
+[sub_resource type="Resource" id="Resource_line_9_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "BOSS_NAME_GRANDPA"
+text = "COMIC_2_9_GRANDPA_1"
+
+[sub_resource type="Resource" id="Resource_line_10_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "BOSS_NAME_GRANDPA"
+text = "COMIC_2_10_GRANDPA_1"
+
+[sub_resource type="Resource" id="Resource_line_11_1"]
+script = ExtResource("3_dialogue_line")
+speaker = "BOSS_NAME_GRANDPA"
+text = "COMIC_2_11_GRANDPA_1"
+
+[node name="ComicPage" instance=ExtResource("1_comic_page")]
+music_mode = 2
+
+[node name="Panel1" parent="Panels" index="0" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("11_mask")
+fill_texture = ExtResource("11_color")
+hide_when_revealed = NodePath("../Panel6")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_1_1")])
+dialogue_rect = Rect2(873, 150, 205, 330)
+
+[node name="Panel2" parent="Panels" index="1" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("12_mask")
+fill_texture = ExtResource("12_color")
+hide_when_revealed = NodePath("../Panel9")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_2_1")])
+dialogue_rect = Rect2(200, 500, 232, 200)
+
+[node name="Panel3" parent="Panels" index="2" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("13_mask")
+fill_texture = ExtResource("13_color")
+hide_when_revealed = NodePath("../Panel8")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_3_1")])
+dialogue_rect = Rect2(873, 368, 205, 260)
+
+[node name="Panel4" parent="Panels" index="3" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("14_mask")
+fill_texture = ExtResource("14_color")
+hide_when_revealed = NodePath("../Panel10")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_4_1"), SubResource("Resource_line_4_2")])
+dialogue_rect = Rect2(200, 60, 232, 290)
+
+[node name="Panel5" parent="Panels" index="4" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("15_mask")
+fill_texture = ExtResource("15_color")
+hide_when_revealed = NodePath("../Panel8")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_5_1")])
+dialogue_rect = Rect2(480, 28, 420, 175)
+
+[node name="Panel6" parent="Panels" index="5" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("16_mask")
+fill_texture = ExtResource("16_color")
+hide_when_revealed = NodePath("../Panel9")
+
+[node name="Panel7" parent="Panels" index="6" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("17_mask")
+fill_texture = ExtResource("17_color")
+hide_when_revealed = NodePath("../Panel10")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_7_1")])
+dialogue_rect = Rect2(448, 232, 416, 175)
+
+[node name="Panel8" parent="Panels" index="7" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("18_mask")
+fill_texture = ExtResource("18_color")
+
+[node name="Panel9" parent="Panels" index="8" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("19_mask")
+fill_texture = ExtResource("19_color")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_9_1")])
+dialogue_rect = Rect2(726, 30, 385, 300)
+
+[node name="Panel10" parent="Panels" index="9" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("20_mask")
+fill_texture = ExtResource("20_color")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_10_1")])
+dialogue_rect = Rect2(880, 36, 250, 520)
+
+[node name="Panel11" parent="Panels" index="10" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("21_mask")
+fill_texture = ExtResource("21_color")
+dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_11_1")])
+dialogue_rect = Rect2(880, 36, 385, 420)
+
+[node name="Panel12" parent="Panels" index="11" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("22_mask")
+fill_texture = ExtResource("22_color")
+
+[editable path="Panels"]

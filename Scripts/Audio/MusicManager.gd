@@ -5,8 +5,12 @@ const BUS_NAME: String = "Music"
 const VALID_EXTENSIONS: Array[String] = ["wav", "ogg", "mp3"]
 const TRACK_COUNT: int = 3
 
+const SILENT_VOLUME_DB: float = -80.0
+
 var _player: AudioStreamPlayer
 var _synchronized_stream: AudioStreamSynchronized
+var _mute_tween: Tween
+var _is_muted: bool = false
 
 func _ready() -> void:
 	_synchronized_stream = AudioStreamSynchronized.new()
@@ -24,6 +28,25 @@ func _ready() -> void:
 	if !stem_paths.is_empty():
 		_player.finished.connect(Callable(_player, "play"))
 		_player.play()
+
+## Fades the music bed out, or back in, without touching the player's volume
+## setting (that lives on the bus). The opening comic runs on ambience alone.
+func set_muted(muted: bool, fade_seconds: float = 0.0) -> void:
+	if _player == null:
+		return
+	_is_muted = muted
+	if _mute_tween != null and _mute_tween.is_valid():
+		_mute_tween.kill()
+
+	var target_db: float = SILENT_VOLUME_DB if muted else 0.0
+	if fade_seconds <= 0.0:
+		_player.volume_db = target_db
+		return
+	_mute_tween = create_tween()
+	_mute_tween.tween_property(_player, "volume_db", target_db, fade_seconds)
+
+func is_muted() -> bool:
+	return _is_muted
 
 func set_stem_volume(stem_index: int, volume_db: float) -> void:
 	if _synchronized_stream == null or stem_index < 0 or stem_index >= TRACK_COUNT:

@@ -1,7 +1,9 @@
 [gd_scene format=3 uid="uid://cwftxr73pdl8"]
 
+[ext_resource type="Script" path="res://Scripts/MatchView/MatchIntroController.gd" id="1_match_intro"]
 [ext_resource type="Script" uid="uid://bmwxm03yki7x2" path="res://Scenes/Multiplayer.gd" id="1_hptm8"]
 [ext_resource type="PackedScene" uid="uid://cc03qg5anporg" path="res://Scenes/MatchBoard.tscn" id="1_jjgbg"]
+[ext_resource type="Script" path="res://Scripts/Story/BossDialogueDirector.gd" id="1_boss_dialogue"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="1_ynf5e"]
 [ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="2_hptm8"]
 [ext_resource type="PackedScene" uid="uid://bd4avsx325i0l" path="res://Scenes/MatchBackground.tscn" id="2_r3s2l"]
@@ -16,7 +18,9 @@
 [ext_resource type="Script" uid="uid://ddoy1bnauv504" path="res://Scenes/codex_visual.gd" id="14_codex"]
 [ext_resource type="Shader" uid="uid://cq2wpk53gbihw" path="res://Shaders/paper_texture.gdshader" id="15_paper_texture_shader"]
 [ext_resource type="Script" uid="uid://bk8rxwxvuix45" path="res://Scenes/opponent_codex_visual.gd" id="16_opponent_codex"]
-[ext_resource type="Shader" uid="uid://cc0ua2v4vaki6" path="res://Shaders/vignette.gdshader" id="17_vignette_shader"]
+[ext_resource type="Script" path="res://Scripts/MatchView/MatchCamera.gd" id="20_match_camera"]
+[ext_resource type="Script" path="res://Scripts/MatchView/MatchTabButton.gd" id="21_match_tab"]
+[ext_resource type="ShaderMaterial" path="res://Shaders/vignette_material.tres" id="90_vignette_material"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_h1bgf"]
 texture = ExtResource("1_ynf5e")
@@ -64,22 +68,6 @@ texture = ExtResource("7_wsu2k")
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_kltya"]
 texture = ExtResource("8_k12tt")
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_codexpanel"]
-content_margin_left = 12.0
-content_margin_top = 10.0
-content_margin_right = 12.0
-content_margin_bottom = 10.0
-bg_color = Color(0.045, 0.042, 0.038, 0.88)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(1, 0.92, 0.72, 0.34)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_paper"]
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_paper"]
@@ -103,13 +91,6 @@ shader_parameter/light_strength = 0.55
 shader_parameter/contrast = 1.25
 shader_parameter/effect_opacity = 0.5
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
-shader = ExtResource("17_vignette_shader")
-shader_parameter/vignette_color = Color(0, 0, 0, 1)
-shader_parameter/inner_radius = 0.5600000266
-shader_parameter/outer_radius = 1.578000074955
-shader_parameter/intensity = 0.55
-
 [node name="Main" type="Node2D" unique_id=806867114]
 script = ExtResource("1_hptm8")
 
@@ -117,13 +98,14 @@ script = ExtResource("1_hptm8")
 position = Vector2(72, -72)
 ignore_rotation = false
 zoom = Vector2(3, 3)
+script = ExtResource("20_match_camera")
 
 [node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=1065855336]
 layer = -100
 
 [node name="MatchBackground" parent="BackgroundLayer" unique_id=562392244 instance=ExtResource("2_r3s2l")]
 
-[node name="Codex" type="Sprite2D" parent="BackgroundLayer/MatchBackground" unique_id=1342260843]
+[node name="Codex" type="Sprite2D" parent="BackgroundLayer/MatchBackground/OpponentCodexSlot" unique_id=1342260843]
 position = Vector2(778.75, 175.29688)
 scale = Vector2(0.2866927, 0.28669274)
 texture = ExtResource("13_fdnlq")
@@ -137,9 +119,9 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -625.0
+offset_left = -637.0
 offset_top = -210.0
-offset_right = -204.0
+offset_right = -216.0
 offset_bottom = 289.66052
 grow_horizontal = 2
 grow_vertical = 0
@@ -265,83 +247,85 @@ theme_override_styles/hover = SubResource("StyleBoxTexture_kltya")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_hibaj")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_pdsj5")
 
-[node name="CodexPanel" type="PanelContainer" parent="CanvasLayer" unique_id=-1283521730]
+[node name="CodexPanel" type="Control" parent="CanvasLayer" unique_id=-1283521730]
 z_index = 920
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -122.0
-offset_top = -140.0
-offset_right = 122.0
-offset_bottom = -24.0
 grow_horizontal = 2
-grow_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_codexpanel")
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/CodexPanel" unique_id=-1283521729]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 8
-
-[node name="PageLabel" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer" unique_id=-1283521728]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.95, 0.82, 1)
-theme_override_font_sizes/font_size = 16
-text = "Page 1 / 5"
-horizontal_alignment = 1
-
-[node name="CountsRow" type="HBoxContainer" parent="CanvasLayer/CodexPanel/VBoxContainer" unique_id=-1283521727]
-layout_mode = 2
+[node name="CountsRow" type="HBoxContainer" parent="CanvasLayer/CodexPanel"]
+layout_mode = 0
 theme_override_constants/separation = 6
 alignment = 1
 
-[node name="CountLabel0" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521726]
-custom_minimum_size = Vector2(34, 24)
+[node name="CountSlot0" type="PanelContainer" parent="CanvasLayer/CodexPanel/CountsRow"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+
+[node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot0"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "1:0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CountLabel1" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521725]
-custom_minimum_size = Vector2(34, 24)
+[node name="CountSlot1" type="PanelContainer" parent="CanvasLayer/CodexPanel/CountsRow"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+
+[node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot1"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "2:0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CountLabel2" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521724]
-custom_minimum_size = Vector2(34, 24)
+[node name="CountSlot2" type="PanelContainer" parent="CanvasLayer/CodexPanel/CountsRow"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+
+[node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot2"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "3:0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CountLabel3" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521723]
-custom_minimum_size = Vector2(34, 24)
+[node name="CountSlot3" type="PanelContainer" parent="CanvasLayer/CodexPanel/CountsRow"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+
+[node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot3"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "4:0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CountLabel4" type="Label" parent="CanvasLayer/CodexPanel/VBoxContainer/CountsRow" unique_id=-1283521722]
-custom_minimum_size = Vector2(34, 24)
+[node name="CountSlot4" type="PanelContainer" parent="CanvasLayer/CodexPanel/CountsRow"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+
+[node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot4"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "5:0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="TurnPageButton" type="Button" parent="CanvasLayer/CodexPanel/VBoxContainer" unique_id=-1283521721]
-custom_minimum_size = Vector2(0, 34)
-layout_mode = 2
+[node name="TurnPageButton" type="Button" parent="CanvasLayer/CodexPanel"]
+layout_mode = 1
+anchors_preset = 3
+anchor_top = 1.0
+anchor_bottom = 1.0
+grow_vertical = 0
 text = "Turn Page"
+script = ExtResource("21_match_tab")
+canvas_centre_x = 795.0
 metadata/sfx_click = "codex_fold"
 
 [node name="MatchBoard" parent="." unique_id=171164572 instance=ExtResource("1_jjgbg")]
@@ -376,12 +360,18 @@ mouse_filter = 2
 layer = 11
 
 [node name="VignetteOverlay" type="ColorRect" parent="VignetteLayer" unique_id=-1283521713]
-material = SubResource("ShaderMaterial_vignette")
+material = ExtResource("90_vignette_material")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="BossDialogueDirector" type="Node" parent="."]
+script = ExtResource("1_boss_dialogue")
+
+[node name="MatchIntroController" type="Node" parent="."]
+script = ExtResource("1_match_intro")
 
 [editable path="BackgroundLayer/MatchBackground"]

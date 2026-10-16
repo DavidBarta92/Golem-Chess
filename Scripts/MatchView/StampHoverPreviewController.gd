@@ -298,7 +298,7 @@ func show_stamp_only(preview_stamp: Stamp) -> void:
 	hover_stamp_preview.visible = true
 	if !was_group_visible:
 		fade_in_stamp_group()
-	show_description(preview_stamp.description.strip_edges())
+	show_description(preview_stamp.get_display_description().strip_edges())
 
 func show_description(description: String) -> void:
 	if hover_description_label == null or hover_description_panel == null:

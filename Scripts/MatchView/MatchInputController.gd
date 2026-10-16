@@ -1,6 +1,11 @@
 extends RefCounted
 
+const INVALID_PENDING_MOVE: Vector2 = Vector2(-1, -1)
+
 var match_board
+var move_ends_turn_dialog: MoveEndsTurnDialog
+var _pending_move_from: Vector2 = INVALID_PENDING_MOVE
+var _pending_move_to: Vector2 = INVALID_PENDING_MOVE
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
 var main_menu_scene: String = "res://Scenes/MainMenu.tscn"
 
@@ -13,11 +18,8 @@ func process(delta: float) -> void:
 	update_hovered_piece()
 	match_board.get_deck_counter_controller().update_deck_count_hover()
 	match_board.get_deck_counter_controller().update_deck_counter_ui()
-	match_board.get_turn_hud_controller().update_action_status_ui()
-	match_board.get_turn_hud_controller().arrange_action_status_ui()
 	match_board.get_turn_hud_controller().update_turn_timer(delta)
 	match_board.get_turn_hud_controller().arrange_turn_timer_ui()
-	match_board.get_turn_hud_controller().arrange_rules_info_panel()
 
 func select_piece_for_action(piece_pos: Vector2) -> bool:
 	var player_id: int = match_board.get_own_player_id()
@@ -47,8 +49,45 @@ func try_move_selected_piece(target_pos: Vector2) -> bool:
 	}, true):
 		return false
 
+	# A move ends the turn. If a stamp could still have gone on a golem, say so
+	# before spending it; the move waits on the answer.
+	if match_board.get_turn_flow_controller().should_warn_before_move():
+		ask_before_move(match_board.selected_piece, target_pos)
+		return true
+
 	send_move_action(match_board.selected_piece, target_pos)
 	return true
+
+## Holds the move while the player decides. Cancelling simply drops it, which
+## leaves the turn open and the stamp still in hand - the piece has not gone
+## anywhere, so there is nothing to put back.
+func ask_before_move(from_pos: Vector2, to_pos: Vector2) -> void:
+	_pending_move_from = from_pos
+	_pending_move_to = to_pos
+	if move_ends_turn_dialog == null or !is_instance_valid(move_ends_turn_dialog):
+		if match_board.canvas_layer == null or !is_instance_valid(match_board.canvas_layer):
+			send_move_action(from_pos, to_pos)
+			return
+		move_ends_turn_dialog = MoveEndsTurnDialog.new()
+		match_board.canvas_layer.add_child(move_ends_turn_dialog)
+		move_ends_turn_dialog.move_confirmed.connect(_on_move_confirmed)
+		move_ends_turn_dialog.canceled.connect(_on_move_cancelled)
+	move_ends_turn_dialog.popup_centered()
+
+func _on_move_confirmed() -> void:
+	if _pending_move_from == INVALID_PENDING_MOVE:
+		return
+	var from_pos: Vector2 = _pending_move_from
+	var to_pos: Vector2 = _pending_move_to
+	_clear_pending_move()
+	send_move_action(from_pos, to_pos)
+
+func _on_move_cancelled() -> void:
+	_clear_pending_move()
+
+func _clear_pending_move() -> void:
+	_pending_move_from = INVALID_PENDING_MOVE
+	_pending_move_to = INVALID_PENDING_MOVE
 
 func clear_piece_selection() -> void:
 	delete_dots()

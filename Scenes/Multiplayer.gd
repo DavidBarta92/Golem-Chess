@@ -6,6 +6,13 @@ const MAX_DEDICATED_SERVER_CLIENTS: int = 64
 signal custom_lobby_list_updated(lobbies: Array)
 signal custom_lobby_failed(message: String)
 
+## Emitted after the host has applied and broadcast a change, and after a
+## singleplayer AI has finished its turn. The boss dialogue director listens to
+## both; nothing in the match itself depends on them, so a match with no story
+## boss simply has no listeners.
+signal host_state_changed()
+signal ai_turn_finished(player_id: int, report: Dictionary)
+
 var multiplayer_peer = ENetMultiplayerPeer.new()
 var is_server = false
 var is_dedicated_server = false
@@ -247,6 +254,9 @@ func setup_singleplayer_ai_controllers():
 			ai_player.configure(player_id, ai_difficulty_level)
 			if GameConfig.should_skip_ai_vs_ai_delays():
 				ai_player.action_delay = 0.0
+			# The per-turn "thinking" pause is for a human opponent; balance batches skip it.
+			if GameConfig.is_ai_vs_ai_batch:
+				ai_player.turn_delay_enabled = false
 			ai_players[player_id] = ai_player
 
 func setup_singleplayer_player_names() -> void:
@@ -258,8 +268,33 @@ func setup_singleplayer_player_names() -> void:
 			peer_player_names[player_id] = tr("Codex")
 			peer_player_portraits[player_id] = GameConfig.get_ai_portrait_data(player_id)
 		else:
-			peer_player_names[player_id] = tr("AI %s") % (tr("White") if player_id == 0 else tr("Black"))
-			peer_player_portraits[player_id] = GameConfig.get_ai_portrait_data(player_id)
+			# A story boss overrides both; without one these fall back to the
+			# generic "AI White/Black" name and generated portrait.
+			peer_player_names[player_id] = GameConfig.get_ai_opponent_name(player_id)
+			peer_player_portraits[player_id] = GameConfig.get_ai_opponent_portrait_data(player_id)
+
+## What the AI just did, in a form a listener can read without knowing
+## anything about the AI's internals. Everything is optional: a simpler AI
+## (RandomAIPlayer) has no evaluator or plan, and simply reports nothing.
+func build_ai_turn_report(player_id: int, ai_player) -> Dictionary:
+	var report: Dictionary = {
+		"player_id": player_id,
+		"strategy_mode": "",
+		"affixed_stamp_names": [],
+	}
+	if ai_player == null:
+		return report
+
+	var evaluator = ai_player.get("evaluator")
+	if evaluator != null:
+		var profile = evaluator.get("last_profile")
+		if profile is Dictionary:
+			report["strategy_mode"] = str(profile.get("strategy_mode", ""))
+
+	var affixed_stamp_names = ai_player.get("last_turn_affixed_stamp_names")
+	if affixed_stamp_names is Array:
+		report["affixed_stamp_names"] = affixed_stamp_names.duplicate()
+	return report
 
 func get_local_human_player_id() -> int:
 	for player_id in [0, 1]:
@@ -271,6 +306,7 @@ func get_side_for_player_id(player_id: int) -> bool:
 	return player_id == 0
 
 func on_host_state_changed():
+	host_state_changed.emit()
 	maybe_play_singleplayer_ai_turn()
 
 func maybe_play_singleplayer_ai_turn():
@@ -294,6 +330,7 @@ func _play_singleplayer_ai_turn(player_id: int):
 	var ai_player = ai_players.get(player_id, null)
 	if ai_player != null and game_host != null and !game_host.game_state.game_over and game_host.game_state.current_turn_player == player_id:
 		await ai_player.play_turn(game_host, get_tree())
+		ai_turn_finished.emit(player_id, build_ai_turn_report(player_id, ai_player))
 
 	ai_turn_in_progress = false
 	maybe_play_singleplayer_ai_turn()
@@ -552,7 +589,10 @@ func close_game_connection():
 	game_host = null
 	GameController.set_game_host(null)
 	multiplayer_peer.close()
-	multiplayer.multiplayer_peer = null
+	# The story flow can swap the scene before this runs (instantly, with the
+	# transition skipped); out of the tree there is no MultiplayerAPI to clear.
+	if is_inside_tree():
+		multiplayer.multiplayer_peer = null
 
 func request_lobby_list_from_server() -> void:
 	if !can_send_custom_lobby_request():
@@ -1062,6 +1102,8 @@ func get_starting_deck_for_player_id(player_id: int) -> Array[String]:
 			return GameConfig.get_selected_ai_deck_stamp_names()
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
 			return GameConfig.get_selected_deck_stamp_names()
+		if GameConfig.has_ai_opponent_deck_override():
+			return GameConfig.get_ai_opponent_deck_stamp_names()
 		return GameConfig.get_selected_ai_deck_stamp_names()
 
 	for peer_id in peer_player_ids:

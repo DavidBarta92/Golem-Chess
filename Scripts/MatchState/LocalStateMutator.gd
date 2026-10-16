@@ -281,6 +281,11 @@ func apply_stamp_effect_trigger(trigger: String, source_pos: Vector2, piece: Pie
 			add_board_zone_effect(source_pos, piece, stamp)
 		StampEffect.TYPE_INVISIBLE_TO_ENEMY, StampEffect.TYPE_UNCAPTURABLE:
 			piece.start_protection_window(StampEffectResolver.BOARD_ZONE_EFFECT_TURNS)
+		StampEffect.TYPE_INCREASE_SELF_DURATION:
+			# One more move, as StampEffectResolver.resolve_self_duration_adjustment
+			# gives on the host. A stamp without a limit has nothing to add to.
+			if piece.turns_remaining != -1:
+				piece.turns_remaining += 1
 	return pending_respawn_arrivals
 
 func add_board_zone_effect(source_pos: Vector2, piece: Piece, stamp: Stamp) -> void:

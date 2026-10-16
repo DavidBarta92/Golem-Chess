@@ -1,0 +1,116 @@
+[gd_resource type="Resource" script_class="BossDefinition" format=3 uid="uid://dsahgbgieouwe"]
+
+[ext_resource type="Script" uid="uid://fokqh5ahf3t" path="res://Scripts/Story/BossDefinition.gd" id="1_boss_definition"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="1_xr2ok"]
+[ext_resource type="Resource" uid="uid://d1mlqpbbv80ln" path="res://Stamps/numero_3.tres" id="9_stamp_01"]
+[ext_resource type="Resource" uid="uid://bkip32770n265" path="res://Stamps/Archetypes/commander.tres" id="9_stamp_02"]
+[ext_resource type="Resource" uid="uid://c8mltdl4vlpxh" path="res://Stamps/Archetypes/defender.tres" id="9_stamp_03"]
+[ext_resource type="Resource" uid="uid://dbi3twdepwa5c" path="res://Stamps/numero_1.tres" id="9_stamp_04"]
+[ext_resource type="Resource" uid="uid://dmf7hqj2gvr3l" path="res://Stamps/numero_2.tres" id="9_stamp_05"]
+[ext_resource type="Resource" uid="uid://dunwswe184wyg" path="res://Stamps/numero_4.tres" id="9_stamp_06"]
+[ext_resource type="Resource" uid="uid://816epl3h8sqj" path="res://Stamps/Archetypes/consul.tres" id="9_stamp_07"]
+[ext_resource type="Resource" uid="uid://cqtlnjwnlv7x7" path="res://Stamps/Archetypes/advocate.tres" id="9_stamp_08"]
+[ext_resource type="Resource" uid="uid://cnrq2nxx6icrb" path="res://Stamps/Archetypes/logician.tres" id="9_stamp_09"]
+[ext_resource type="Resource" uid="uid://726segua6wat" path="res://Stamps/numero_5.tres" id="9_stamp_10"]
+[ext_resource type="Resource" uid="uid://5hisp7ykp2gw" path="res://Stamps/numero_6.tres" id="9_stamp_11"]
+[ext_resource type="Resource" uid="uid://xj8vksx1tal0" path="res://Stamps/numero_7.tres" id="9_stamp_12"]
+[ext_resource type="Resource" uid="uid://c5fdbxx65hvlk" path="res://Stamps/Archetypes/mediator.tres" id="9_stamp_13"]
+[ext_resource type="Resource" uid="uid://kccujn65vxb6" path="res://Stamps/Archetypes/protagonist.tres" id="9_stamp_14"]
+[ext_resource type="Script" path="res://Scripts/Story/BossReaction.gd" id="2_boss_reaction"]
+
+[sub_resource type="Resource" id="Resource_reaction_01"]
+resource_name = "entered_route_setup"
+script = ExtResource("2_boss_reaction")
+trigger = "entered_route_setup"
+lines = Array[String](["BOSS_12_ROUTE_1", "BOSS_12_ROUTE_2", "BOSS_12_ROUTE_3", "BOSS_12_ROUTE_4", "BOSS_12_ROUTE_5"])
+chance = 0.4
+
+[sub_resource type="Resource" id="Resource_reaction_02"]
+resource_name = "entered_active_seeker_push"
+script = ExtResource("2_boss_reaction")
+trigger = "entered_active_seeker_push"
+lines = Array[String](["BOSS_12_PUSH_1", "BOSS_12_PUSH_2", "BOSS_12_PUSH_3", "BOSS_12_PUSH_4", "BOSS_12_PUSH_5"])
+chance = 0.7
+
+[sub_resource type="Resource" id="Resource_reaction_03"]
+resource_name = "entered_endgame_seeker_finish"
+script = ExtResource("2_boss_reaction")
+trigger = "entered_endgame_seeker_finish"
+lines = Array[String](["BOSS_12_ENDGAME_1", "BOSS_12_ENDGAME_2"])
+chance = 0.9
+
+[sub_resource type="Resource" id="Resource_reaction_04"]
+resource_name = "entered_soft_defense"
+script = ExtResource("2_boss_reaction")
+trigger = "entered_soft_defense"
+lines = Array[String](["BOSS_12_DEFEND_1", "BOSS_12_DEFEND_2", "BOSS_12_DEFEND_3", "BOSS_12_DEFEND_4", "BOSS_12_DEFEND_5"])
+chance = 0.5
+
+[sub_resource type="Resource" id="Resource_reaction_05"]
+resource_name = "entered_emergency_defense"
+script = ExtResource("2_boss_reaction")
+trigger = "entered_emergency_defense"
+lines = Array[String](["BOSS_12_EMERGENCY_1", "BOSS_12_EMERGENCY_2", "BOSS_12_EMERGENCY_3", "BOSS_12_EMERGENCY_4", "BOSS_12_EMERGENCY_5"])
+chance = 1.0
+bypass_cooldown = true
+
+[sub_resource type="Resource" id="Resource_reaction_06"]
+resource_name = "boss_captured_piece"
+script = ExtResource("2_boss_reaction")
+trigger = "boss_captured_piece"
+lines = Array[String](["BOSS_12_CAPTURE_1", "BOSS_12_CAPTURE_2", "BOSS_12_CAPTURE_3", "BOSS_12_CAPTURE_4", "BOSS_12_CAPTURE_5", "BOSS_12_CAPTURE_6", "BOSS_12_CAPTURE_7", "BOSS_12_CAPTURE_8"])
+chance = 0.3
+
+[sub_resource type="Resource" id="Resource_reaction_07"]
+resource_name = "boss_piece_captured"
+script = ExtResource("2_boss_reaction")
+trigger = "boss_piece_captured"
+lines = Array[String](["BOSS_12_CAPTURED_1", "BOSS_12_CAPTURED_2", "BOSS_12_CAPTURED_3", "BOSS_12_CAPTURED_4", "BOSS_12_CAPTURED_5", "BOSS_12_CAPTURED_6", "BOSS_12_CAPTURED_7", "BOSS_12_CAPTURED_8"])
+chance = 0.35
+
+[sub_resource type="Resource" id="Resource_reaction_stamp_01"]
+resource_name = "stamp_played 1"
+script = ExtResource("2_boss_reaction")
+trigger = "stamp_played"
+lines = Array[String]([""])
+chance = 0.8
+
+[sub_resource type="Resource" id="Resource_reaction_stamp_02"]
+resource_name = "stamp_played 2"
+script = ExtResource("2_boss_reaction")
+trigger = "stamp_played"
+lines = Array[String]([""])
+chance = 0.8
+
+[sub_resource type="Resource" id="Resource_reaction_stamp_03"]
+resource_name = "stamp_played 3"
+script = ExtResource("2_boss_reaction")
+trigger = "stamp_played"
+lines = Array[String]([""])
+chance = 0.8
+
+[sub_resource type="Resource" id="Resource_reaction_stamp_04"]
+resource_name = "stamp_played 4"
+script = ExtResource("2_boss_reaction")
+trigger = "stamp_played"
+lines = Array[String]([""])
+chance = 0.8
+
+[sub_resource type="Resource" id="Resource_reaction_stamp_05"]
+resource_name = "stamp_played 5"
+script = ExtResource("2_boss_reaction")
+trigger = "stamp_played"
+lines = Array[String]([""])
+chance = 0.8
+
+[resource]
+script = ExtResource("1_boss_definition")
+boss_id = "boss_12"
+display_name = "Aleksej"
+localize_display_name = false
+ai_difficulty_level = 12
+deck_stamps = Array[ExtResource("1_xr2ok")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_01"), ExtResource("9_stamp_10"), ExtResource("9_stamp_11"), ExtResource("9_stamp_12"), ExtResource("9_stamp_13"), ExtResource("9_stamp_14")])
+intro_lines = Array[String](["BOSS_12_INTRO_1", "BOSS_12_INTRO_2", "BOSS_12_INTRO_3", "BOSS_12_INTRO_4", "BOSS_12_INTRO_5"])
+victory_lines = Array[String](["BOSS_12_WIN_1", "BOSS_12_WIN_2", "BOSS_12_WIN_3", "BOSS_12_WIN_4", "BOSS_12_WIN_5"])
+defeat_lines = Array[String](["BOSS_12_LOSS_1"])
+reactions = Array[ExtResource("2_boss_reaction")]([SubResource("Resource_reaction_01"), SubResource("Resource_reaction_02"), SubResource("Resource_reaction_03"), SubResource("Resource_reaction_04"), SubResource("Resource_reaction_05"), SubResource("Resource_reaction_06"), SubResource("Resource_reaction_07"), SubResource("Resource_reaction_stamp_01"), SubResource("Resource_reaction_stamp_02"), SubResource("Resource_reaction_stamp_03"), SubResource("Resource_reaction_stamp_04"), SubResource("Resource_reaction_stamp_05")])

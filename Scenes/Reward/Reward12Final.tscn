@@ -1,0 +1,39 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/Reward/RewardScene.tscn" id="1_reward_base"]
+[ext_resource type="Script" path="res://Scripts/Story/Rewards/SequencePresenter.gd" id="9_presenter"]
+[ext_resource type="Script" path="res://Scripts/Story/Rewards/CoinDropPresenter.gd" id="10_coins"]
+[ext_resource type="Script" path="res://Scripts/Story/Rewards/StampRevealPresenter.gd" id="11_stamp"]
+
+[node name="RewardScene" instance=ExtResource("1_reward_base")]
+grant_points = 30
+reward_id = "reward_12_final"
+speaker_name = "Mentor"
+dialogue_lines = Array[String](["REWARD_12_LINE_1"])
+
+[node name="Presenter" type="Control" parent="RightColumn"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("9_presenter")
+
+[node name="Coins" type="Control" parent="RightColumn/Presenter"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("10_coins")
+
+[node name="Stamp" type="Control" parent="RightColumn/Presenter"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("11_stamp")

@@ -10,22 +10,26 @@ const RANDOM_DATABASE_EXCLUDED_STAMP_NAMES: Array[String] = [
 	"Training Seal",
 	"Test_001",
 ]
+## The deck every new player starts with. It is Grandpa's deck (Story/Bosses/
+## boss_01.tres), card for card and in the same order: the story opens with
+## the player borrowing it, and the first reward scene is where it formally
+## becomes theirs. Keep the two lists in sync.
 const STARTING_DECK: Array[String] = [
-	"Numero_1",
-	"Numero_2",
-	"Numero_3",
-	"Numero_4",
-	"Numero_5",
-	"Numero_6",
-	"Numero_7",
-	DEFAULT_SEEKER_STAMP_NAME,
-	"Rajah",
-	"Khan",
-	"Debater",
-	"Numero_1",
-	"Numero_2",
-	"Numero_3",
-	"Numero_4"
+	"Prince",
+	"Knight",
+	"Warlord",
+	"Lance",
+	"Archer",
+	"Gold General",
+	"Assassin",
+	"Duke",
+	"Silver General",
+	"Prince",
+	"Knight",
+	"Lance",
+	"Berserk",
+	"The Golem",
+	"War Drummer",
 ]
 
 static func create_starting_deck() -> Array[String]:

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PortraitConfig" format=3]
+
+[ext_resource type="Script" uid="uid://prxce8kchyxi" path="res://Scripts/PortraitConfig.gd" id="1_portrait_config"]
+
+[resource]
+script = ExtResource("1_portrait_config")
+portrait_id = "gabi"
+display_name = "Gabi"
+use_asset_colors = true
+portrait_set_id = "D"
+png_part_ids = {
+"body": "D1",
+"eyebrows": "D1",
+"eyelash": "D1",
+"facial_hair": "D1",
+"hair": "D1",
+"head": "D1",
+"mouth": "D1",
+"neck": "D1",
+"nose": "D1",
+"pupils": "D1"
+}
+blink_style = "move_eyes"

@@ -66,6 +66,18 @@ func verify_settings_data_(data_: Dictionary) -> void:
 func is_last_move_arrow_enabled() -> bool:
 	return bool(settingsData_.get("UI", {}).get("ShowLastMoveArrow", true))
 
+## Whether to stop a player about to move while a stamp is still waiting to
+## go on a golem. A move ends the turn, so that is the moment it matters. Turned off from the warning itself, by the player who has
+## learned the rule and does not want asking again.
+func is_move_ends_turn_warning_enabled() -> bool:
+	return bool(settingsData_.get("UI", {}).get("WarnBeforeMoveEndsTurn", true))
+
+func set_move_ends_turn_warning_enabled(enabled: bool) -> void:
+	if !settingsData_.has("UI"):
+		settingsData_["UI"] = {}
+	settingsData_["UI"]["WarnBeforeMoveEndsTurn"] = enabled
+	save_data()
+
 func is_enemy_attack_markers_enabled() -> bool:
 	return bool(settingsData_.get("UI", {}).get("ShowEnemyAttackMarkers", true))
 

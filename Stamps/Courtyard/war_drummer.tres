@@ -14,5 +14,7 @@ white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "No special effect."
 effect_type = "increase_own_durations"
+square_color_a = Color(0.44313726, 0.18039216, 0.1764706, 1)
+square_color_b = Color(0.44313726, 0.18039216, 0.1764706, 1)
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

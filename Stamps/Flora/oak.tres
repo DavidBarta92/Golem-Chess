@@ -12,5 +12,7 @@ Set = "Flora"
 white_piece_texture = ExtResource("3_jwf5a")
 black_piece_texture = ExtResource("1_ju8c0")
 description = "No special effect."
+square_color_a = Color(0.2784314, 0.17254902, 0.14117648, 1)
+square_color_b = Color(0.2784314, 0.17254902, 0.14117648, 1)
 movement_pattern = [[0, 0, 0, 0, 0], [0, 2, 2, 2, 0], [0, 2, 0, 2, 0], [0, 2, 2, 2, 0], [0, 0, 0, 0, 0]]
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

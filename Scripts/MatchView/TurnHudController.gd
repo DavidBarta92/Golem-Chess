@@ -7,35 +7,29 @@ var tween_owner: Node
 
 var turn_timer_limit_seconds: int = 300
 var turn_timer_counter_key: int = 0
+var turn_timer_opponent_counter_key: int = 2
+var _last_knocked_turn_color: int = 0
+var clock_frame_texture: Texture2D
+var clock_button_texture: Texture2D
+var clock_back_texture: Texture2D
+## Hands back the match background, for the pieces of interface that live
+## inside it rather than in the HUD's own layer.
+var match_background_provider: Callable
+
 var turn_timer_gap: float = 8.0
 var turn_timer_z_index: int = 961
 var deck_counter_size: Vector2 = Vector2(82, 42)
-var action_status_size: Vector2 = Vector2(132, 46)
-var action_status_margin: float = 22.0
-var action_status_cell_size: Vector2 = Vector2(36, 42)
-var action_status_cell_gap: int = 7
-var action_status_flip_duration: float = 0.16
-var action_status_active_color: Color = Color.WHITE
-var action_status_active_text_color: Color = Color(0.05, 0.05, 0.045, 1.0)
-var action_status_active_border_color: Color = Color(0.12, 0.10, 0.075, 1.0)
-var action_status_inactive_color: Color = Color(0.94, 0.93, 0.89, 1.0)
-var action_status_blocked_color: Color = Color(0.02, 0.02, 0.02, 1.0)
-var action_status_state_active: String = "active"
-var action_status_state_empty: String = "empty"
-var action_status_state_blocked: String = "blocked"
-var end_turn_indicator_padding: float = 7.0
-var end_turn_indicator_color: Color = Color(1.0, 1.0, 1.0, 0.92)
-var end_turn_indicator_z_index: int = 950
+## Where the two tabs stand on the 1920x1080 canvas the room is drawn on, so
+## they stay under the board's near corners whatever shape the window is. The
+## Turn Page tab's twin is set on the node in main.tscn.
+const END_TURN_TAB_CANVAS_X: float = 1125.0
+
 var player_name_label_size: Vector2 = Vector2(180, 28)
 var player_name_label_gap: float = 8.0
 var player_portrait_size: Vector2 = Vector2(224, 89)
 var player_portrait_margin: float = 22.0
 var player_portrait_top_position: Vector2 = Vector2(70, 4)
 var player_portrait_z_index: int = 928
-var rules_info_button_size: Vector2 = Vector2(40, 40)
-var rules_info_panel_size: Vector2 = Vector2(310, 286)
-var rules_info_panel_margin: float = 24.0
-var rules_info_text: String = ""
 
 var create_digit_counter_callback: Callable
 var set_digit_counter_value_callback: Callable
@@ -58,24 +52,28 @@ var visible_viewport_size_provider: Callable
 var board_screen_size_provider: Callable
 var game_result_context_provider: Callable
 
-var end_turn_indicator: ColorRect
 var end_turn_button: Button
-var action_status_container: HBoxContainer
-var action_status_cells: Dictionary = {}
-var action_status_labels: Dictionary = {}
-var action_status_states: Dictionary = {}
-var action_status_tweens: Dictionary = {}
 var turn_timer_counter_container: Control
 var player_clock_seconds: Dictionary = {0: 300.0, 1: 300.0}
 var result_overlay: ColorRect
 var result_label: Label
 var player_name_labels: Dictionary = {}
 var player_portrait_views: Dictionary = {}
+## Set by BossDialogueDirector while it is showing a line in the opponent panel.
+## The colour behind the opponent's face: plain white, where the mentor and
+## the comics use a warm card.
+const OPPONENT_PORTRAIT_BACKGROUND: Color = Color(1.0, 1.0, 1.0, 1.0)
+
+## Drops the opponent's panel so its words land below the drawn window rather
+## than across its lower frame. Only this panel: the comics and the tutorial
+## use the same scene and want it where it is.
+const OPPONENT_PANEL_DROP: float = 44.0
+
 var opponent_panel: DialoguePanel
 var opponent_panel_managed_by_hud: bool = false
-var rules_info_button: Button
-var rules_info_panel: PanelContainer
-var rules_info_label: Label
+## Owns when the opponent is on screen and for how long. Null for a panel the
+## HUD did not build - the tutorial brings its own and drives it itself.
+var opponent_speech: OpponentSpeechPanel
 var current_player_names: Dictionary = {
 	0: tr("Player"),
 	1: tr("Opponent"),
@@ -90,35 +88,20 @@ func configure(config: Dictionary) -> void:
 	tween_owner = config.get("tween_owner", tween_owner)
 	turn_timer_limit_seconds = int(config.get("turn_timer_limit_seconds", turn_timer_limit_seconds))
 	turn_timer_counter_key = int(config.get("turn_timer_counter_key", turn_timer_counter_key))
+	turn_timer_opponent_counter_key = int(config.get("turn_timer_opponent_counter_key", turn_timer_opponent_counter_key))
+	clock_frame_texture = config.get("clock_frame_texture", clock_frame_texture)
+	clock_button_texture = config.get("clock_button_texture", clock_button_texture)
+	clock_back_texture = config.get("clock_back_texture", clock_back_texture)
+	match_background_provider = config.get("match_background_provider", match_background_provider)
 	turn_timer_gap = float(config.get("turn_timer_gap", turn_timer_gap))
 	turn_timer_z_index = int(config.get("turn_timer_z_index", turn_timer_z_index))
 	deck_counter_size = config.get("deck_counter_size", deck_counter_size)
-	action_status_size = config.get("action_status_size", action_status_size)
-	action_status_margin = float(config.get("action_status_margin", action_status_margin))
-	action_status_cell_size = config.get("action_status_cell_size", action_status_cell_size)
-	action_status_cell_gap = int(config.get("action_status_cell_gap", action_status_cell_gap))
-	action_status_flip_duration = float(config.get("action_status_flip_duration", action_status_flip_duration))
-	action_status_active_color = config.get("action_status_active_color", action_status_active_color)
-	action_status_active_text_color = config.get("action_status_active_text_color", action_status_active_text_color)
-	action_status_active_border_color = config.get("action_status_active_border_color", action_status_active_border_color)
-	action_status_inactive_color = config.get("action_status_inactive_color", action_status_inactive_color)
-	action_status_blocked_color = config.get("action_status_blocked_color", action_status_blocked_color)
-	action_status_state_active = str(config.get("action_status_state_active", action_status_state_active))
-	action_status_state_empty = str(config.get("action_status_state_empty", action_status_state_empty))
-	action_status_state_blocked = str(config.get("action_status_state_blocked", action_status_state_blocked))
-	end_turn_indicator_padding = float(config.get("end_turn_indicator_padding", end_turn_indicator_padding))
-	end_turn_indicator_color = config.get("end_turn_indicator_color", end_turn_indicator_color)
-	end_turn_indicator_z_index = int(config.get("end_turn_indicator_z_index", end_turn_indicator_z_index))
 	player_name_label_size = config.get("player_name_label_size", player_name_label_size)
 	player_name_label_gap = float(config.get("player_name_label_gap", player_name_label_gap))
 	player_portrait_size = config.get("player_portrait_size", player_portrait_size)
 	player_portrait_margin = float(config.get("player_portrait_margin", player_portrait_margin))
 	player_portrait_top_position = config.get("player_portrait_top_position", player_portrait_top_position)
 	player_portrait_z_index = int(config.get("player_portrait_z_index", player_portrait_z_index))
-	rules_info_button_size = config.get("rules_info_button_size", rules_info_button_size)
-	rules_info_panel_size = config.get("rules_info_panel_size", rules_info_panel_size)
-	rules_info_panel_margin = float(config.get("rules_info_panel_margin", rules_info_panel_margin))
-	rules_info_text = str(config.get("rules_info_text", rules_info_text))
 	current_player_names = config.get("current_player_names", current_player_names)
 	current_player_portraits = config.get("current_player_portraits", current_player_portraits)
 
@@ -147,106 +130,98 @@ func create_end_turn_ui() -> void:
 	if canvas_layer == null or !is_instance_valid(canvas_layer):
 		return
 
-	end_turn_indicator = ColorRect.new()
-	canvas_layer.add_child(end_turn_indicator)
-	end_turn_indicator.name = "EndTurnIndicator"
-	end_turn_indicator.color = end_turn_indicator_color
-	end_turn_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	end_turn_indicator.z_index = end_turn_indicator_z_index
-	end_turn_indicator.visible = false
-
-	end_turn_button = Button.new()
+	# A tab under the right-hand end of the board: up when the turn can be
+	# ended, gone below the edge when it cannot.
+	var tab := MatchTabButton.new()
+	tab.canvas_centre_x = END_TURN_TAB_CANVAS_X
+	end_turn_button = tab
 	canvas_layer.add_child(end_turn_button)
-	end_turn_button.text = tr("END TURN")
-	# Anchored bottom-left (mirrored from its old bottom-right spot) so it no
-	# longer sits on top of the board-effect icon grid, which lives in the
-	# same bottom-right corner (see BoardEffectIconGridController.gd).
-	end_turn_button.anchor_left = 0.0
-	end_turn_button.anchor_right = 0.0
-	end_turn_button.anchor_top = 1.0
-	end_turn_button.anchor_bottom = 1.0
-	end_turn_button.offset_left = 24.0
-	end_turn_button.offset_right = 152.0
-	end_turn_button.offset_top = -64.0
-	end_turn_button.offset_bottom = -24.0
+	end_turn_button.name = "EndTurnTab"
+	end_turn_button.text = tr("END_TURN")
 	end_turn_button.z_index = 960
-	end_turn_button.focus_mode = Control.FOCUS_NONE
-	end_turn_button.set_meta("sfx_click", "end_turn_button_click")
+
+	# Parented to the tab rather than placed beside it, so it rides along as
+	# the tab slides instead of being re-measured on every move.
 	if end_turn_pressed_callback.is_valid():
 		end_turn_button.pressed.connect(func(): end_turn_pressed_callback.call())
-	arrange_end_turn_indicator()
 	update_end_turn_button()
 
-func arrange_end_turn_indicator() -> void:
-	if end_turn_indicator == null or end_turn_button == null:
-		return
-
-	end_turn_indicator.anchor_left = end_turn_button.anchor_left
-	end_turn_indicator.anchor_right = end_turn_button.anchor_right
-	end_turn_indicator.anchor_top = end_turn_button.anchor_top
-	end_turn_indicator.anchor_bottom = end_turn_button.anchor_bottom
-	end_turn_indicator.offset_left = end_turn_button.offset_left - end_turn_indicator_padding
-	end_turn_indicator.offset_right = end_turn_button.offset_right + end_turn_indicator_padding
-	end_turn_indicator.offset_top = end_turn_button.offset_top - end_turn_indicator_padding
-	end_turn_indicator.offset_bottom = end_turn_button.offset_bottom + end_turn_indicator_padding
-
-func create_action_status_ui() -> void:
-	if canvas_layer == null or !is_instance_valid(canvas_layer):
-		return
-
-	action_status_container = HBoxContainer.new()
-	canvas_layer.add_child(action_status_container)
-	action_status_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	action_status_container.anchor_left = 0.5
-	action_status_container.anchor_right = 0.5
-	action_status_container.anchor_top = 0.5
-	action_status_container.anchor_bottom = 0.5
-	action_status_container.custom_minimum_size = action_status_size
-	action_status_container.z_index = 910
-	action_status_container.add_theme_constant_override("separation", action_status_cell_gap)
-
-	var label_settings := LabelSettings.new()
-	label_settings.font_size = 25
-	label_settings.font_color = action_status_active_text_color
-	label_settings.outline_size = 0
-
-	var action_letters: Dictionary = {
-		"Page": "P",
-		"Affix": "A",
-		"Move": "M",
-	}
-	for action_name in ["Page", "Affix", "Move"]:
-		var action_cell := PanelContainer.new()
-		action_status_container.add_child(action_cell)
-		action_cell.custom_minimum_size = action_status_cell_size
-		action_cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		action_cell.pivot_offset = action_status_cell_size * 0.5
-		action_cell.scale = Vector2.ONE
-
-		var action_label := Label.new()
-		action_cell.add_child(action_label)
-		action_label.text = str(action_letters[action_name])
-		action_label.custom_minimum_size = action_status_cell_size
-		action_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		action_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		action_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		action_label.label_settings = label_settings.duplicate()
-		action_status_cells[action_name] = action_cell
-		action_status_labels[action_name] = action_label
-
-	arrange_action_status_ui()
-	update_action_status_ui()
-
+## Two clocks in one drawn frame: the opponent above, the player below. Each
+## is a four digit counter with no frame and no colon of its own, because the
+## drawing supplies both and is laid over the top.
 func create_turn_timer_ui() -> void:
-	if !create_digit_counter_callback.is_valid():
+	if !create_digit_counter_callback.is_valid() or canvas_layer == null:
 		return
-	turn_timer_counter_container = create_digit_counter_callback.call("ChessClock", turn_timer_counter_key, 4, true) as Control
-	if turn_timer_counter_container == null:
-		return
-	turn_timer_counter_container.z_index = turn_timer_z_index
+
+	var clock := MatchClock.new()
+	turn_timer_counter_container = clock
+	canvas_layer.add_child(clock)
+	clock.name = "ChessClock"
+	clock.z_index = turn_timer_z_index
+	clock.modulate = MatchBackgroundController.PAPER_TINT
+	clock.build(
+		clock_back_texture,
+		clock_frame_texture,
+		clock_button_texture,
+		Callable(self, "_make_clock_counter"),
+		deck_counter_size.y,
+		turn_timer_opponent_counter_key,
+		turn_timer_counter_key
+	)
+
 	reset_turn_timer()
 	arrange_turn_timer_ui()
 	update_turn_timer_visibility()
+
+## A four digit counter for one of the clock's faces: no frame and no colon of
+## its own, because the drawn tag carries both. It works out its own colon gap
+## from the width it is told to fill, since only it knows how wide a digit is.
+func _make_clock_counter(counter_name: String, counter_key: int, span: float) -> Control:
+	return create_digit_counter_callback.call(counter_name, counter_key, 4, true, {
+		"show_frame": false,
+		"separator_glyph": false,
+		"span_width": span,
+		"content_inset_x": 0.0,
+	}) as Control
+
+## Shows or hides one piece of the match interface by name.
+##
+## A match has all of it up from the first frame. The tutorial brings it in one
+## piece at a time, as it teaches what each is for, so it needs to address them
+## singly - and by something steadier than a node path, since several of these
+## are built at runtime and live in different parts of the tree.
+##
+## Known names: codex, opponent_codex, page_counter, turn_page, end_turn,
+## clock, opponent_panel.
+func set_hud_element_visible(element: StringName, shown: bool) -> void:
+	var node: CanvasItem = _find_hud_element(element)
+	if node != null:
+		node.visible = shown
+
+func _find_hud_element(element: StringName) -> CanvasItem:
+	match element:
+		&"end_turn":
+			return end_turn_button
+		&"clock":
+			return turn_timer_counter_container
+		&"opponent_panel":
+			return opponent_panel
+		&"codex":
+			return canvas_layer.get_node_or_null("Codex") as CanvasItem if canvas_layer != null else null
+		&"opponent_codex":
+			if match_background_provider.is_valid():
+				var background = match_background_provider.call()
+				if background != null:
+					return background.get_node_or_null("OpponentCodexSlot/Codex") as CanvasItem
+			return null
+		&"page_counter", &"turn_page":
+			var panel: Node = canvas_layer.get_node_or_null("CodexPanel") if canvas_layer != null else null
+			if panel == null:
+				return null
+			var child_name: String = "CountsRow" if element == &"page_counter" else "TurnPageButton"
+			return panel.get_node_or_null(child_name) as CanvasItem
+	push_warning("Unknown HUD element: %s" % element)
+	return null
 
 func create_result_ui() -> void:
 	if canvas_layer == null or !is_instance_valid(canvas_layer):
@@ -327,6 +302,10 @@ func ensure_opponent_panel() -> void:
 	if existing_panel != null:
 		opponent_panel = existing_panel
 		opponent_panel_managed_by_hud = false
+		# A panel the scene brought itself - the tutorial's mentor - still has
+		# to be printed on the room's paper, or its whites come out colder
+		# than everything around it.
+		opponent_panel.modulate = MatchBackgroundController.PAPER_TINT
 		return
 
 	opponent_panel = DIALOGUE_PANEL.instantiate() as DialoguePanel
@@ -334,86 +313,16 @@ func ensure_opponent_panel() -> void:
 	opponent_panel.z_index = player_portrait_z_index
 	canvas_layer.add_child(opponent_panel)
 	opponent_panel_managed_by_hud = true
+	opponent_panel.set_portrait_background_color(OPPONENT_PORTRAIT_BACKGROUND)
+	# Printed on the same paper as the room, or its whites come out colder
+	# than everything around them.
+	opponent_panel.modulate = MatchBackgroundController.PAPER_TINT
+	opponent_panel.set_vertical_nudge(OPPONENT_PANEL_DROP)
 
-func create_rules_info_ui() -> void:
-	if canvas_layer == null or !is_instance_valid(canvas_layer):
-		return
-
-	rules_info_button = Button.new()
-	canvas_layer.add_child(rules_info_button)
-	rules_info_button.text = "i"
-	rules_info_button.tooltip_text = tr("Rules")
-	rules_info_button.anchor_left = 0.0
-	rules_info_button.anchor_right = 0.0
-	rules_info_button.anchor_top = 1.0
-	rules_info_button.anchor_bottom = 1.0
-	# Anchored bottom-left alongside end_turn_button now (mirrored from its old
-	# bottom-right spot just left of the button) -- staying bottom-right here
-	# would put it right back on top of the board-effect icon grid, which is
-	# the exact corner conflict end_turn_button was moved away from (see
-	# BoardEffectIconGridController.gd). Sits just to the right of the button,
-	# mirroring the old "just to the left of the button" placement.
-	var button_left_offset: float = 152.0 + 8.0
-	rules_info_button.offset_left = button_left_offset
-	rules_info_button.offset_right = button_left_offset + rules_info_button_size.x
-	rules_info_button.offset_top = -64.0
-	rules_info_button.offset_bottom = -24.0
-	rules_info_button.z_index = 960
-	rules_info_button.focus_mode = Control.FOCUS_NONE
-	rules_info_button.pressed.connect(toggle_rules_info_panel)
-
-	rules_info_panel = PanelContainer.new()
-	canvas_layer.add_child(rules_info_panel)
-	rules_info_panel.visible = false
-	rules_info_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	rules_info_panel.anchor_left = 0.5
-	rules_info_panel.anchor_right = 0.5
-	rules_info_panel.anchor_top = 0.5
-	rules_info_panel.anchor_bottom = 0.5
-	rules_info_panel.z_index = 970
-
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.05, 0.055, 0.065, 0.92)
-	panel_style.border_color = Color(1.0, 1.0, 1.0, 0.18)
-	panel_style.border_width_left = 1
-	panel_style.border_width_top = 1
-	panel_style.border_width_right = 1
-	panel_style.border_width_bottom = 1
-	panel_style.corner_radius_top_left = 6
-	panel_style.corner_radius_top_right = 6
-	panel_style.corner_radius_bottom_left = 6
-	panel_style.corner_radius_bottom_right = 6
-	panel_style.content_margin_left = 14
-	panel_style.content_margin_top = 12
-	panel_style.content_margin_right = 14
-	panel_style.content_margin_bottom = 12
-	rules_info_panel.add_theme_stylebox_override("panel", panel_style)
-
-	var panel_layout := VBoxContainer.new()
-	rules_info_panel.add_child(panel_layout)
-	panel_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel_layout.add_theme_constant_override("separation", 8)
-
-	var title_label := Label.new()
-	panel_layout.add_child(title_label)
-	title_label.text = tr("How to Play")
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	title_label.add_theme_font_size_override("font_size", 17)
-	title_label.add_theme_color_override("font_color", Color(1.0, 0.96, 0.82))
-
-	rules_info_label = Label.new()
-	panel_layout.add_child(rules_info_label)
-	rules_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rules_info_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rules_info_label.text = tr(rules_info_text)
-	rules_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	rules_info_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	rules_info_label.add_theme_font_size_override("font_size", 13)
-	rules_info_label.add_theme_color_override("font_color", Color(0.94, 0.94, 0.9))
-
-	arrange_rules_info_panel()
-	update_rules_info_ui()
+	opponent_speech = OpponentSpeechPanel.new()
+	opponent_speech.name = "OpponentSpeech"
+	opponent_panel.add_child(opponent_speech)
+	opponent_speech.setup(opponent_panel)
 
 func update_player_name_labels() -> void:
 	update_opponent_panel()
@@ -421,6 +330,10 @@ func update_player_name_labels() -> void:
 func update_player_portrait_views() -> void:
 	update_opponent_panel()
 
+## The opponent is not a standing part of a match's interface: they appear
+## because they have something to say and leave once it has been read, which is
+## `opponent_speech`'s business. All that is left here is keeping the face lit
+## for whoever's turn it is, for a line that happens to be up.
 func update_opponent_panel() -> void:
 	ensure_opponent_panel()
 	if opponent_panel == null or !is_instance_valid(opponent_panel) or !opponent_panel_managed_by_hud:
@@ -429,47 +342,8 @@ func update_opponent_panel() -> void:
 	for owner_color in [1, -1]:
 		if !is_stamp_hand_top(owner_color):
 			continue
-
-		var player_id: int = get_player_id_for_color(owner_color)
-		opponent_panel.show_profile(
-			get_display_name_for_player(player_id),
-			get_portrait_config_for_player(player_id)
-		)
 		opponent_panel.set_turn_focus(owner_color == get_current_turn_color())
 		return
-
-func update_rules_info_ui() -> void:
-	if rules_info_button == null:
-		return
-
-	rules_info_button.visible = !is_game_over()
-	if is_game_over() and rules_info_panel != null:
-		rules_info_panel.visible = false
-
-func toggle_rules_info_panel() -> void:
-	if rules_info_panel == null:
-		return
-
-	rules_info_panel.visible = !rules_info_panel.visible
-	if rules_info_panel.visible:
-		arrange_rules_info_panel()
-
-func arrange_rules_info_panel() -> void:
-	if rules_info_panel == null:
-		return
-
-	var viewport_size: Vector2 = get_visible_viewport_size()
-	var board_screen_size: float = get_board_screen_size()
-	var left_offset: float = -board_screen_size * 0.5 - rules_info_panel_margin - rules_info_panel_size.x
-	var top_offset: float = -board_screen_size * 0.5
-	var min_top_offset: float = -viewport_size.y * 0.5 + rules_info_panel_margin
-	var max_top_offset: float = viewport_size.y * 0.5 - rules_info_panel_size.y - rules_info_panel_margin
-	left_offset = max(left_offset, -viewport_size.x * 0.5 + rules_info_panel_margin)
-	top_offset = clamp(top_offset, min_top_offset, max_top_offset)
-	rules_info_panel.offset_left = left_offset
-	rules_info_panel.offset_right = left_offset + rules_info_panel_size.x
-	rules_info_panel.offset_top = top_offset
-	rules_info_panel.offset_bottom = top_offset + rules_info_panel_size.y
 
 func get_portrait_config_for_player(player_id: int) -> PortraitConfig:
 	if current_player_portraits.has(player_id):
@@ -494,88 +368,6 @@ func update_end_turn_button() -> void:
 		return
 	end_turn_button.visible = !is_game_over() and get_bool(show_first_turn_end_provider, false)
 	end_turn_button.disabled = !can_control_current_turn() or !get_bool(can_end_first_turn_provider, false) or !is_tutorial_end_turn_allowed()
-	update_end_turn_indicator()
-
-func update_end_turn_indicator() -> void:
-	if end_turn_indicator == null:
-		return
-	end_turn_indicator.visible = end_turn_button != null and end_turn_button.visible and can_control_current_turn()
-
-func update_action_status_ui() -> void:
-	if action_status_container == null:
-		return
-
-	action_status_container.visible = !is_game_over()
-	set_action_status_label("Page", get_bool(can_switch_action_provider, false))
-	set_action_status_label("Affix", get_bool(can_affix_action_provider, false))
-	set_action_status_label("Move", get_bool(can_move_action_provider, false))
-
-func set_action_status_label(action_name: String, is_available: bool) -> void:
-	var action_state: String = action_status_state_blocked
-	if can_control_current_turn():
-		action_state = action_status_state_active if is_available else action_status_state_empty
-	set_action_status_cell_state(action_name, action_state)
-
-func set_action_status_cell_state(action_name: String, action_state: String) -> void:
-	var action_cell: PanelContainer = action_status_cells.get(action_name, null) as PanelContainer
-	if action_cell == null:
-		return
-
-	var previous_state: String = str(action_status_states.get(action_name, ""))
-	if previous_state == action_state:
-		return
-	action_status_states[action_name] = action_state
-
-	var previous_tween: Tween = action_status_tweens.get(action_name, null) as Tween
-	if previous_tween != null:
-		previous_tween.kill()
-
-	if previous_state == "" or tween_owner == null or !is_instance_valid(tween_owner):
-		apply_action_status_cell_state(action_name, action_state)
-		return
-
-	action_cell.pivot_offset = action_status_cell_size * 0.5
-	var tween: Tween = tween_owner.create_tween()
-	action_status_tweens[action_name] = tween
-	tween.finished.connect(func():
-		if action_status_tweens.get(action_name, null) == tween:
-			action_status_tweens.erase(action_name)
-	)
-	tween.set_trans(Tween.TRANS_CUBIC)
-	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(action_cell, "scale:y", 0.0, action_status_flip_duration * 0.5)
-	tween.tween_callback(Callable(self, "apply_action_status_cell_state").bind(action_name, action_state))
-	tween.tween_property(action_cell, "scale:y", 1.0, action_status_flip_duration * 0.5)
-
-func apply_action_status_cell_state(action_name: String, action_state: String) -> void:
-	var action_cell: PanelContainer = action_status_cells.get(action_name, null) as PanelContainer
-	var action_label: Label = action_status_labels.get(action_name, null) as Label
-	if action_cell == null or action_label == null:
-		return
-
-	var cell_color: Color = action_status_active_color
-	var border_color: Color = action_status_active_border_color
-	var label_color: Color = action_status_active_text_color
-	var label_text: String = get_action_status_letter(action_name)
-	if action_state == action_status_state_empty:
-		cell_color = action_status_inactive_color
-		label_text = ""
-	elif action_state == action_status_state_blocked:
-		cell_color = action_status_blocked_color
-		border_color = Color(0.0, 0.0, 0.0, 1.0)
-		label_text = ""
-
-	var style_box := StyleBoxFlat.new()
-	style_box.bg_color = cell_color
-	style_box.border_color = border_color
-	style_box.set_border_width_all(2)
-	style_box.set_corner_radius_all(3)
-	action_cell.add_theme_stylebox_override("panel", style_box)
-	action_label.text = label_text
-
-	var label_settings: LabelSettings = action_label.label_settings
-	if label_settings != null:
-		label_settings.font_color = label_color
 
 func reset_turn_timer() -> void:
 	player_clock_seconds = {0: float(turn_timer_limit_seconds), 1: float(turn_timer_limit_seconds)}
@@ -598,17 +390,44 @@ func update_turn_timer(delta: float) -> void:
 		return
 
 	update_turn_timer_visibility()
+	_handle_turn_change()
 	if !should_run_turn_timer():
 		return
-	var own_player_id: int = get_player_id_for_color(get_own_color())
-	player_clock_seconds[own_player_id] = maxf(float(player_clock_seconds.get(own_player_id, turn_timer_limit_seconds)) - maxf(delta, 0.0), 0.0)
+	# Only the player on the move loses time. The host does the same sum and
+	# its figures arrive with every state sync; this is here so the digits move
+	# smoothly between those.
+	var active_player_id: int = get_player_id_for_color(get_current_turn_color())
+	player_clock_seconds[active_player_id] = maxf(
+		float(player_clock_seconds.get(active_player_id, turn_timer_limit_seconds)) - maxf(delta, 0.0), 0.0)
 	update_turn_timer_label()
+
+## Everything that happens when the turn passes: the hanging clocks take a push
+## and the rocker is thrown - and the rocker is what makes the sound, so there
+## is nothing to play from here. Read from the turn colour rather than hooked to
+## a signal, because this already runs every frame and there is no signal that
+## fires on exactly this.
+func _handle_turn_change() -> void:
+	var turn_color: int = get_current_turn_color()
+	if turn_color == _last_knocked_turn_color:
+		return
+	var had_previous: bool = _last_knocked_turn_color != 0
+	_last_knocked_turn_color = turn_color
+
+	var clock: MatchClock = turn_timer_counter_container as MatchClock
+	if clock != null:
+		clock.set_player_to_move(turn_color == get_own_color())
+		if had_previous:
+			clock.nudge(float(turn_color))
 
 func update_turn_timer_label(animate: bool = true) -> void:
 	var own_player_id: int = get_player_id_for_color(get_own_color())
-	var total_seconds: int = maxi(ceili(float(player_clock_seconds.get(own_player_id, turn_timer_limit_seconds))), 0)
+	_set_clock_digits(turn_timer_counter_key, own_player_id, animate)
+	_set_clock_digits(turn_timer_opponent_counter_key, 1 - own_player_id, animate)
+
+func _set_clock_digits(counter_key: int, player_id: int, animate: bool) -> void:
+	var total_seconds: int = maxi(ceili(float(player_clock_seconds.get(player_id, turn_timer_limit_seconds))), 0)
 	var timer_digits: int = floori(float(total_seconds) / 60.0) * 100 + total_seconds % 60
-	set_digit_counter_value(turn_timer_counter_key, timer_digits, animate)
+	set_digit_counter_value(counter_key, timer_digits, animate)
 
 func update_turn_timer_visibility() -> void:
 	if turn_timer_counter_container == null:
@@ -618,17 +437,19 @@ func update_turn_timer_visibility() -> void:
 func clear_turn_timer_timeout_pending() -> void:
 	pass
 
+## Shown in a single player match as well as a networked one. The clock only
+## runs on a human's turn - `should_run_turn_timer()` sees to that - so against
+## an AI it simply holds while the opponent thinks. A batch of AI-against-AI
+## games has nobody to time, so that one still hides it, and so does a story
+## boss met before the clock is introduced (BossDefinition.show_clock).
 func should_show_turn_timer() -> bool:
-	if GameConfig.is_ai_vs_ai_batch:
-		return false
-	if GameConfig.is_singleplayer:
-		return false
-	return true
+	return !GameConfig.is_ai_vs_ai_batch and StoryManager.should_show_match_clock()
 
+## Both clocks are on show, so this is no longer about whose turn it is - that
+## is decided per clock in update_turn_timer. It only asks whether the match is
+## running at all.
 func should_run_turn_timer() -> bool:
-	if !should_show_turn_timer():
-		return false
-	return can_control_current_turn() and is_current_turn_human_controlled()
+	return should_show_turn_timer() and !is_game_over()
 
 func is_current_turn_human_controlled() -> bool:
 	var player_id: int = get_player_id_for_color(get_current_turn_color())
@@ -636,70 +457,33 @@ func is_current_turn_human_controlled() -> bool:
 		return GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN
 	return true
 
-func arrange_action_status_ui() -> void:
-	if action_status_container == null:
-		return
-
-	action_status_container.anchor_left = 0.0
-	action_status_container.anchor_right = 0.0
-	action_status_container.anchor_top = 1.0
-	action_status_container.anchor_bottom = 1.0
-
-	# Anchored bottom-left alongside end_turn_button now (mirrored from its
-	# old bottom-right spot directly above the button) -- staying bottom-right
-	# would put it right back on top of the board-effect icon grid, which is
-	# the exact corner conflict end_turn_button was moved away from (see
-	# BoardEffectIconGridController.gd).
-	var button_center_x: float = (24.0 + 152.0) * 0.5
-	var bottom_offset: float = -64.0 - 8.0
-	var left_offset: float = button_center_x - action_status_size.x * 0.5
-	var top_offset: float = bottom_offset - action_status_size.y
-	action_status_container.offset_left = left_offset
-	action_status_container.offset_right = left_offset + action_status_size.x
-	action_status_container.offset_top = top_offset
-	action_status_container.offset_bottom = bottom_offset
-
 func arrange_turn_timer_ui() -> void:
 	if turn_timer_counter_container == null:
 		return
 
+	# Set down on the table beside the board, which is the only clear surface
+	# left. Placed from the canvas so it keeps its place on that table at any
+	# window shape.
+	var viewport_size: Vector2 = turn_timer_counter_container.get_viewport_rect().size
+	var centre: Vector2 = BoardCanvas.to_viewport(BoardCanvas.TABLE_RIGHT, viewport_size)
+	# The clock drifts sideways on its own; its place is worked out here, so
+	# the drift is added here rather than written into the node by the clock.
+	var clock: MatchClock = turn_timer_counter_container as MatchClock
+	if clock == null:
+		return
+	centre.x += clock.sway_offset
+	var box: Vector2 = turn_timer_counter_container.size
+	if box.x <= 0.0 or box.y <= 0.0:
+		box = turn_timer_counter_container.get_combined_minimum_size()
+	var top_left: Vector2 = centre - clock.face_offset()
 	turn_timer_counter_container.anchor_left = 0.0
 	turn_timer_counter_container.anchor_right = 0.0
-	turn_timer_counter_container.anchor_top = 1.0
-	turn_timer_counter_container.anchor_bottom = 1.0
-
-	var button_center_x: float = action_status_margin + deck_counter_size.x * 0.5
-	var bottom_offset: float = -action_status_margin - action_status_size.y - turn_timer_gap
-	if action_status_container != null:
-		button_center_x = (action_status_container.offset_left + action_status_container.offset_right) * 0.5
-		bottom_offset = action_status_container.offset_top - turn_timer_gap
-	else:
-		# Fallback only (action_status_container is normally already set up
-		# by the time this runs); anchored bottom-left alongside
-		# end_turn_button now, same reasoning as arrange_action_status_ui().
-		button_center_x = (24.0 + 152.0) * 0.5
-		bottom_offset = -64.0 - turn_timer_gap
-
-	var timer_size: Vector2 = turn_timer_counter_container.size
-	var left_offset: float = button_center_x - timer_size.x * 0.5
-	var top_offset: float = bottom_offset - timer_size.y
-	turn_timer_counter_container.offset_left = left_offset
-	turn_timer_counter_container.offset_right = left_offset + timer_size.x
-	turn_timer_counter_container.offset_top = top_offset
-	turn_timer_counter_container.offset_bottom = bottom_offset
-
-func get_action_status_letter(action_name: String) -> String:
-	match action_name:
-		"Switch":
-			return "S"
-		"Page":
-			return "P"
-		"Affix":
-			return "A"
-		"Move":
-			return "M"
-	return ""
-
+	turn_timer_counter_container.anchor_top = 0.0
+	turn_timer_counter_container.anchor_bottom = 0.0
+	turn_timer_counter_container.offset_left = top_left.x
+	turn_timer_counter_container.offset_right = top_left.x + box.x
+	turn_timer_counter_container.offset_top = top_left.y
+	turn_timer_counter_container.offset_bottom = top_left.y + box.y
 func set_digit_counter_value(owner_key: int, count: int, animate: bool) -> void:
 	if set_digit_counter_value_callback.is_valid():
 		set_digit_counter_value_callback.call(owner_key, count, animate)

@@ -19,15 +19,13 @@ func ensure_loaded() -> void:
 		StampLibrary.load_all_stamps()
 	StampPrintLibrary.ensure_loaded()
 
-	if FileAccess.file_exists(DECKS_PATH):
-		var file := FileAccess.open(DECKS_PATH, FileAccess.READ)
-		if file != null:
-			var parsed = JSON.parse_string(file.get_as_text())
-			deck_data = _normalize_deck_data(parsed)
-			is_loaded = true
-			if _ensure_default_deck_exists():
-				save_decks()
-			return
+	var raw_data: Dictionary = SaveIO.read_json(DECKS_PATH)
+	if !raw_data.is_empty():
+		deck_data = _normalize_deck_data(raw_data)
+		is_loaded = true
+		if _ensure_default_deck_exists():
+			save_decks()
+		return
 
 	deck_data = _create_empty_deck_data()
 	is_loaded = true
@@ -244,14 +242,7 @@ func delete_deck(deck_id: String) -> bool:
 
 func save_decks() -> bool:
 	ensure_loaded()
-
-	var file := FileAccess.open(DECKS_PATH, FileAccess.WRITE)
-	if file == null:
-		push_error("Could not save player decks to %s" % DECKS_PATH)
-		return false
-
-	file.store_string(JSON.stringify(deck_data, "\t"))
-	return true
+	return SaveIO.write_json(DECKS_PATH, deck_data, DECK_SCHEMA_VERSION)
 
 func _get_decks() -> Array:
 	ensure_loaded()

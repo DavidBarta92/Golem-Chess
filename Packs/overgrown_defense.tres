@@ -42,7 +42,7 @@
 
 [resource]
 script = ExtResource("1")
-pack_id = "overgrown_efense"
+pack_id = "overgrown_defense"
 pack_name = "Overgrown Defense"
 pack_texture = ExtResource("3_8ifqb")
 pack_front_texture = ExtResource("3_8ifqb")

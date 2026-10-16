@@ -1,0 +1,199 @@
+[gd_scene load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://Scenes/TutorialIntro.gd" id="1_intro"]
+[ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPanel.tscn" id="2_comic_panel"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_1A_line_reveal_mask.png" id="4_hand_mask"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_1A_color.png" id="5_hand_color"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_1B_line_reveal_mask.png" id="6_figure_mask"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_1B_color.png" id="7_figure_color"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_2A_line_reveal_mask.png" id="8_circle_mask"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_2B_line_reveal_mask.png" id="9_grid_mask"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_2B_color.png" id="10_grid_color"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_2C_line_reveal_mask.png" id="11_pentagon_mask"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_2D_line_reveal_mask.png" id="12_star_mask"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_2D_color.png" id="13_star_color"]
+[ext_resource type="Script" path="res://Scenes/PolygonClip.gd" id="14_polygon_clip"]
+[ext_resource type="Texture2D" uid="uid://c6xbpi24shq5t" path="res://Assets/codex.png" id="15_codex_art"]
+[ext_resource type="Script" uid="uid://ddoy1bnauv504" path="res://Scenes/codex_visual.gd" id="16_codex_visual"]
+[ext_resource type="Shader" path="res://Shaders/flat_shadow.gdshader" id="17_flat_shadow"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_3_line_reveal_mask.png" id="18_pointer_mask"]
+[ext_resource type="Texture2D" path="res://Assets/tutorial_3_color.png" id="19_pointer_color"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_codex_shadow"]
+shader = ExtResource("17_flat_shadow")
+shader_parameter/shadow_color = Color(0.827451, 0.835294, 0.847059, 1)
+
+[node name="TutorialIntro" type="CanvasLayer"]
+layer = 9
+script = ExtResource("1_intro")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CodexHolder" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CodexArt" type="TextureRect" parent="Root/CodexHolder"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -637.0
+offset_top = -210.0
+offset_right = -216.0
+offset_bottom = 289.66052
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+texture = ExtResource("15_codex_art")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("16_codex_visual")
+
+[node name="Shadow" type="TextureRect" parent="Root/CodexHolder/CodexArt"]
+show_behind_parent = true
+material = SubResource("ShaderMaterial_codex_shadow")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 9.0
+offset_right = 8.0
+offset_bottom = 9.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("15_codex_art")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CodexHand" type="Control" parent="Root/CodexHolder"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 1
+
+[node name="ArtClip" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("14_polygon_clip")
+
+[node name="HandPanel" parent="Root/ArtClip" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("4_hand_mask")
+fill_texture = ExtResource("5_hand_color")
+fill_fade_duration = 1.5
+
+[node name="CirclePanel" parent="Root/ArtClip" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("8_circle_mask")
+delay_before = 0.4
+
+[node name="GridPanel" parent="Root/ArtClip" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("9_grid_mask")
+fill_texture = ExtResource("10_grid_color")
+delay_before = 0.4
+fill_fade_duration = 1.0
+reveal_sfx_name = ""
+
+[node name="StarPanel" parent="Root/ArtClip" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("12_star_mask")
+fill_texture = ExtResource("13_star_color")
+delay_before = 0.4
+fill_fade_duration = 1.0
+reveal_sfx_name = ""
+
+[node name="FigureColor" type="TextureRect" parent="Root/ArtClip"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("7_figure_color")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FigurePanel" parent="Root/ArtClip" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("6_figure_mask")
+reveal_sfx_name = ""
+
+[node name="PentagonPanel" parent="Root" instance=ExtResource("2_comic_panel")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+reveal_mask = ExtResource("11_pentagon_mask")
+delay_before = 0.4
+
+[node name="PointerPanel" parent="Root" instance=ExtResource("2_comic_panel")]
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+reveal_mask = ExtResource("18_pointer_mask")
+fill_texture = ExtResource("19_pointer_color")
+stretch_to_fit = true
+fill_fade_duration = 1.0
+fill_fade_start_ratio = 0.35

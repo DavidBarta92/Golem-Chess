@@ -1,24 +1,426 @@
 [gd_resource type="Resource" script_class="StoryDefinition" format=3 uid="uid://qiml2km1fed8"]
 
-[ext_resource type="Script" uid="uid://cb0rpmocliu5o" path="res://Scripts/Story/StoryChapter.gd" id="1_fursx"]
-[ext_resource type="Script" uid="uid://qwi6bsmt0mbd" path="res://Scripts/Story/StoryNode.gd" id="2_4u0sc"]
-[ext_resource type="Script" uid="uid://dajq2shuegbcw" path="res://Scripts/Story/TutorialStoryNode.gd" id="3_co32l"]
-[ext_resource type="PackedScene" path="res://Scenes/Tutorial.tscn" id="4_yqx7i"]
-[ext_resource type="Script" uid="uid://jei5phukg5dv" path="res://Scripts/Story/StoryDefinition.gd" id="5_kcb5i"]
+[ext_resource type="Script" uid="uid://cb0rpmocliu5o" path="res://Scripts/Story/StoryChapter.gd" id="1_story_chapter"]
+[ext_resource type="Script" uid="uid://qwi6bsmt0mbd" path="res://Scripts/Story/StoryNode.gd" id="2_story_node"]
+[ext_resource type="Script" uid="uid://dajq2shuegbcw" path="res://Scripts/Story/TutorialStoryNode.gd" id="3_tutorial_node"]
+[ext_resource type="PackedScene" path="res://Scenes/Tutorial.tscn" id="4_tutorial_scene"]
+[ext_resource type="Script" uid="uid://jei5phukg5dv" path="res://Scripts/Story/StoryDefinition.gd" id="5_story_definition"]
+[ext_resource type="Script" uid="uid://b2ivqbdnliwd4" path="res://Scripts/Story/ComicStoryNode.gd" id="6_comic_node"]
+[ext_resource type="Script" uid="uid://dxdfiynkc40le" path="res://Scripts/Story/BossGameStoryNode.gd" id="7_boss_node"]
+[ext_resource type="Script" uid="uid://c41dn4dlhhctg" path="res://Scripts/Story/RewardStoryNode.gd" id="8_reward_node"]
+[ext_resource type="Script" path="res://Scripts/Story/RandomMatchStoryNode.gd" id="9_random_node"]
+[ext_resource type="PackedScene" path="res://Story/Comic/ch00_intro_p01.tscn" id="10_comic_ch00_p01"]
+[ext_resource type="PackedScene" path="res://Story/Comic/ch00_memory_p01.tscn" id="14_comic_ch00_memory_p01"]
+[ext_resource type="PackedScene" path="res://Story/Comic/ch00_bridge_p01.tscn" id="30_comic_ch00_bridge_p01"]
+[ext_resource type="PackedScene" path="res://Scenes/Collection.tscn" id="11_collection_scene"]
+[ext_resource type="Script" path="res://Scripts/Story/SceneStoryNode.gd" id="12_scene_node"]
+[ext_resource type="PackedScene" path="res://Scenes/Story/LanguageSelectScene.tscn" id="13_language_scene"]
+[ext_resource type="PackedScene" path="res://Scenes/Reward/Reward01GrandpaDeck.tscn" id="20_reward_01"]
+[ext_resource type="PackedScene" path="res://Scenes/Reward/Reward04Coins.tscn" id="20_reward_04"]
+[ext_resource type="PackedScene" path="res://Scenes/Reward/Reward05Stamp.tscn" id="20_reward_05"]
+[ext_resource type="PackedScene" path="res://Scenes/Reward/Reward07Stamp.tscn" id="20_reward_07"]
+[ext_resource type="PackedScene" path="res://Scenes/Reward/Reward09Stamp.tscn" id="20_reward_09"]
+[ext_resource type="PackedScene" path="res://Scenes/Reward/Reward11Coins.tscn" id="20_reward_11"]
+[ext_resource type="PackedScene" path="res://Scenes/Reward/Reward12Final.tscn" id="20_reward_12"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_01.tres" id="30_boss_01"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_02.tres" id="30_boss_02"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_03.tres" id="30_boss_03"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_04.tres" id="30_boss_04"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_05.tres" id="30_boss_05"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_06.tres" id="30_boss_06"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_07.tres" id="30_boss_07"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_08.tres" id="30_boss_08"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_09.tres" id="30_boss_09"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_10.tres" id="30_boss_10"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_11.tres" id="30_boss_11"]
+[ext_resource type="Resource" path="res://Story/Bosses/boss_12.tres" id="30_boss_12"]
 
-[sub_resource type="Resource" id="Resource_rlqrk"]
-script = ExtResource("3_co32l")
-tutorial_scene = ExtResource("4_yqx7i")
-id = "tutorial_basics"
-display_name = "Tutorial"
+[sub_resource type="Resource" id="Resource_first_run_language"]
+script = ExtResource("12_scene_node")
+scene = ExtResource("13_language_scene")
+id = "first_run_language"
+display_name = "Nyelvválasztás"
+auto_continue_after_completion = true
 blocks_hub_until_completed = true
 
-[sub_resource type="Resource" id="Resource_qnnl7"]
-script = ExtResource("1_fursx")
+[sub_resource type="Resource" id="Resource_comic_ch00_intro"]
+script = ExtResource("6_comic_node")
+pages = Array[PackedScene]([ExtResource("10_comic_ch00_p01")])
+id = "comic_ch00_intro"
+display_name = "Bevezető comic"
+auto_continue_after_completion = true
+blocks_hub_until_completed = true
+
+[sub_resource type="Resource" id="Resource_comic_ch00_memory"]
+script = ExtResource("6_comic_node")
+pages = Array[PackedScene]([ExtResource("14_comic_ch00_memory_p01")])
+id = "comic_ch00_memory"
+display_name = "Emlék a nagyapáról"
+auto_continue_after_completion = true
+blocks_hub_until_completed = true
+
+[sub_resource type="Resource" id="Resource_tutorial_basics"]
+script = ExtResource("3_tutorial_node")
+tutorial_scene = ExtResource("4_tutorial_scene")
+id = "tutorial_basics"
+display_name = "Tutorial"
+auto_continue_after_completion = true
+blocks_hub_until_completed = true
+
+[sub_resource type="Resource" id="Resource_boss_01_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_01")
+defeat_behavior = 1
+id = "boss_01_match"
+display_name = "Boss 1"
+auto_continue_after_completion = true
+blocks_hub_until_completed = true
+
+[sub_resource type="Resource" id="Resource_reward_01_grandpa_deck"]
+script = ExtResource("8_reward_node")
+reward_scene = ExtResource("20_reward_01")
+id = "reward_01_grandpa_deck"
+display_name = "Nagypapa paklija"
+auto_continue_after_completion = true
+blocks_hub_until_completed = true
+
+[sub_resource type="Resource" id="Resource_comic_ch00_bridge"]
+script = ExtResource("6_comic_node")
+pages = Array[PackedScene]([ExtResource("30_comic_ch00_bridge_p01")])
+id = "comic_ch00_bridge"
+display_name = "Átvezető a 2. meccshez"
+auto_continue_after_completion = true
+blocks_hub_until_completed = true
+
+[sub_resource type="Resource" id="Resource_boss_02_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_02")
+defeat_behavior = 1
+id = "boss_02_match"
+display_name = "Boss 2"
+auto_continue_after_completion = true
+blocks_hub_until_completed = true
+
+[sub_resource type="Resource" id="Resource_comic_ch00_collection"]
+script = ExtResource("6_comic_node")
+id = "comic_ch00_collection"
+display_name = "A Collection bemutatása"
+blocks_hub_until_completed = true
+unlocks_feature = "collection"
+
+[sub_resource type="Resource" id="Resource_chapter_00"]
+script = ExtResource("1_story_chapter")
 id = "chapter_00"
-title = "Bevezetes"
-nodes = Array[ExtResource("2_4u0sc")]([SubResource("Resource_rlqrk")])
+title = "Bevezetés"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_first_run_language"), SubResource("Resource_comic_ch00_intro"), SubResource("Resource_comic_ch00_memory"), SubResource("Resource_tutorial_basics"), SubResource("Resource_boss_01_match"), SubResource("Resource_reward_01_grandpa_deck"), SubResource("Resource_comic_ch00_bridge"), SubResource("Resource_boss_02_match"), SubResource("Resource_comic_ch00_collection")])
+
+[sub_resource type="Resource" id="Resource_comic_ch01_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch01_intro"
+display_name = "Boss 3 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_03_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_03")
+id = "boss_03_match"
+display_name = "Boss 3"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_comic_ch01_buy_packs"]
+script = ExtResource("6_comic_node")
+id = "comic_ch01_buy_packs"
+display_name = "A Buy Pack bemutatása"
+completion_scene = ExtResource("11_collection_scene")
+unlocks_feature = "buy_packs"
+unlocks_packs = Array[String](["citadel_guard"])
+
+[sub_resource type="Resource" id="Resource_chapter_01"]
+script = ExtResource("1_story_chapter")
+id = "chapter_01"
+title = "Boss 3"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch01_intro"), SubResource("Resource_boss_03_match"), SubResource("Resource_comic_ch01_buy_packs")])
+
+[sub_resource type="Resource" id="Resource_comic_ch02_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch02_intro"
+display_name = "Boss 4 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_04_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_04")
+id = "boss_04_match"
+display_name = "Boss 4"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_reward_04_coins"]
+script = ExtResource("8_reward_node")
+reward_scene = ExtResource("20_reward_04")
+id = "reward_04_coins"
+display_name = "3 coin"
+unlocks_packs = Array[String](["hunters_pack", "beast_engines"])
+
+[sub_resource type="Resource" id="Resource_chapter_02"]
+script = ExtResource("1_story_chapter")
+id = "chapter_02"
+title = "Boss 4"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch02_intro"), SubResource("Resource_boss_04_match"), SubResource("Resource_reward_04_coins")])
+
+[sub_resource type="Resource" id="Resource_random_ch03"]
+script = ExtResource("9_random_node")
+id = "random_ch03"
+display_name = "Bemelegítő meccs"
+
+[sub_resource type="Resource" id="Resource_comic_ch03_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch03_intro"
+display_name = "Boss 5 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_05_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_05")
+id = "boss_05_match"
+display_name = "Boss 5"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_reward_05_stamp"]
+script = ExtResource("8_reward_node")
+reward_scene = ExtResource("20_reward_05")
+id = "reward_05_stamp"
+display_name = "Bélyeg"
+unlocks_packs = Array[String](["forest_fortress", "overgrown_defense", "deep_in_the_wild"])
+
+[sub_resource type="Resource" id="Resource_chapter_03"]
+script = ExtResource("1_story_chapter")
+id = "chapter_03"
+title = "Boss 5"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch03"), SubResource("Resource_comic_ch03_intro"), SubResource("Resource_boss_05_match"), SubResource("Resource_reward_05_stamp")])
+
+[sub_resource type="Resource" id="Resource_random_ch04"]
+script = ExtResource("9_random_node")
+id = "random_ch04"
+display_name = "Bemelegítő meccs"
+
+[sub_resource type="Resource" id="Resource_comic_ch04_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch04_intro"
+display_name = "Boss 6 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_06_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_06")
+id = "boss_06_match"
+display_name = "Boss 6"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_comic_ch04_phone_call"]
+script = ExtResource("6_comic_node")
+id = "comic_ch04_phone_call"
+display_name = "Telefonhívás - multiplayer"
+unlocks_feature = "multiplayer"
+
+[sub_resource type="Resource" id="Resource_chapter_04"]
+script = ExtResource("1_story_chapter")
+id = "chapter_04"
+title = "Boss 6"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch04"), SubResource("Resource_comic_ch04_intro"), SubResource("Resource_boss_06_match"), SubResource("Resource_comic_ch04_phone_call")])
+
+[sub_resource type="Resource" id="Resource_random_ch05"]
+script = ExtResource("9_random_node")
+match_count = 2
+id = "random_ch05"
+display_name = "Bemelegítő meccsek"
+
+[sub_resource type="Resource" id="Resource_comic_ch05_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch05_intro"
+display_name = "Boss 7 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_07_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_07")
+id = "boss_07_match"
+display_name = "Boss 7"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_reward_07_stamp"]
+script = ExtResource("8_reward_node")
+reward_scene = ExtResource("20_reward_07")
+id = "reward_07_stamp"
+display_name = "Bélyeg"
+unlocks_packs = Array[String](["masked_council", "runeworks", "inner_instinct", "se-tenant_harmony"])
+
+[sub_resource type="Resource" id="Resource_chapter_05"]
+script = ExtResource("1_story_chapter")
+id = "chapter_05"
+title = "Boss 7"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch05"), SubResource("Resource_comic_ch05_intro"), SubResource("Resource_boss_07_match"), SubResource("Resource_reward_07_stamp")])
+
+[sub_resource type="Resource" id="Resource_random_ch06"]
+script = ExtResource("9_random_node")
+match_count = 2
+id = "random_ch06"
+display_name = "Bemelegítő meccsek"
+
+[sub_resource type="Resource" id="Resource_comic_ch06_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch06_intro"
+display_name = "Boss 8 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_08_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_08")
+id = "boss_08_match"
+display_name = "Boss 8"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_comic_ch06_letter"]
+script = ExtResource("6_comic_node")
+id = "comic_ch06_letter"
+display_name = "A levél - quests"
+unlocks_feature = "quests"
+
+[sub_resource type="Resource" id="Resource_chapter_06"]
+script = ExtResource("1_story_chapter")
+id = "chapter_06"
+title = "Boss 8"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch06"), SubResource("Resource_comic_ch06_intro"), SubResource("Resource_boss_08_match"), SubResource("Resource_comic_ch06_letter")])
+
+[sub_resource type="Resource" id="Resource_random_ch07"]
+script = ExtResource("9_random_node")
+match_count = 3
+id = "random_ch07"
+display_name = "Bemelegítő meccsek"
+
+[sub_resource type="Resource" id="Resource_comic_ch07_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch07_intro"
+display_name = "Boss 9 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_09_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_09")
+id = "boss_09_match"
+display_name = "Boss 9"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_reward_09_stamp"]
+script = ExtResource("8_reward_node")
+reward_scene = ExtResource("20_reward_09")
+id = "reward_09_stamp"
+display_name = "Bélyeg"
+unlocks_packs = Array[String](["march_of_mars", "heavenly_bastion", "zodiac_stew"])
+
+[sub_resource type="Resource" id="Resource_chapter_07"]
+script = ExtResource("1_story_chapter")
+id = "chapter_07"
+title = "Boss 9"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch07"), SubResource("Resource_comic_ch07_intro"), SubResource("Resource_boss_09_match"), SubResource("Resource_reward_09_stamp")])
+
+[sub_resource type="Resource" id="Resource_random_ch08"]
+script = ExtResource("9_random_node")
+match_count = 3
+id = "random_ch08"
+display_name = "Bemelegítő meccsek"
+
+[sub_resource type="Resource" id="Resource_comic_ch08_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch08_intro"
+display_name = "Boss 10 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_10_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_10")
+id = "boss_10_match"
+display_name = "Boss 10"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_comic_ch08_trade"]
+script = ExtResource("6_comic_node")
+id = "comic_ch08_trade"
+display_name = "Trade bemutatása"
+unlocks_feature = "trade"
+
+[sub_resource type="Resource" id="Resource_chapter_08"]
+script = ExtResource("1_story_chapter")
+id = "chapter_08"
+title = "Boss 10"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch08"), SubResource("Resource_comic_ch08_intro"), SubResource("Resource_boss_10_match"), SubResource("Resource_comic_ch08_trade")])
+
+[sub_resource type="Resource" id="Resource_random_ch09"]
+script = ExtResource("9_random_node")
+id = "random_ch09"
+display_name = "Bemelegítő meccs"
+
+[sub_resource type="Resource" id="Resource_comic_ch09_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch09_intro"
+display_name = "Boss 11 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_11_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_11")
+id = "boss_11_match"
+display_name = "Boss 11"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_reward_11_coins"]
+script = ExtResource("8_reward_node")
+reward_scene = ExtResource("20_reward_11")
+id = "reward_11_coins"
+display_name = "Sok coin"
+unlocks_packs = Array[String](["moonlight_garden", "cosmic_oracle"])
+
+[sub_resource type="Resource" id="Resource_chapter_09"]
+script = ExtResource("1_story_chapter")
+id = "chapter_09"
+title = "Boss 11"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch09"), SubResource("Resource_comic_ch09_intro"), SubResource("Resource_boss_11_match"), SubResource("Resource_reward_11_coins")])
+
+[sub_resource type="Resource" id="Resource_random_ch10"]
+script = ExtResource("9_random_node")
+id = "random_ch10"
+display_name = "Bemelegítő meccs"
+
+[sub_resource type="Resource" id="Resource_comic_ch10_intro"]
+script = ExtResource("6_comic_node")
+id = "comic_ch10_intro"
+display_name = "Boss 12 felvezető"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_boss_12_match"]
+script = ExtResource("7_boss_node")
+boss = ExtResource("30_boss_12")
+id = "boss_12_match"
+display_name = "Boss 12"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_reward_12_final"]
+script = ExtResource("8_reward_node")
+reward_scene = ExtResource("20_reward_12")
+id = "reward_12_final"
+display_name = "Sok coin és egy bélyeg"
+auto_continue_after_completion = true
+
+[sub_resource type="Resource" id="Resource_comic_ch10_ending"]
+script = ExtResource("6_comic_node")
+id = "comic_ch10_ending"
+display_name = "Lezáró comic"
+
+[sub_resource type="Resource" id="Resource_chapter_10"]
+script = ExtResource("1_story_chapter")
+id = "chapter_10"
+title = "Boss 12"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch10"), SubResource("Resource_comic_ch10_intro"), SubResource("Resource_boss_12_match"), SubResource("Resource_reward_12_final"), SubResource("Resource_comic_ch10_ending")])
 
 [resource]
-script = ExtResource("5_kcb5i")
-chapters = Array[ExtResource("1_fursx")]([SubResource("Resource_qnnl7")])
+script = ExtResource("5_story_definition")
+chapters = Array[ExtResource("1_story_chapter")]([SubResource("Resource_chapter_00"), SubResource("Resource_chapter_01"), SubResource("Resource_chapter_02"), SubResource("Resource_chapter_03"), SubResource("Resource_chapter_04"), SubResource("Resource_chapter_05"), SubResource("Resource_chapter_06"), SubResource("Resource_chapter_07"), SubResource("Resource_chapter_08"), SubResource("Resource_chapter_09"), SubResource("Resource_chapter_10")])

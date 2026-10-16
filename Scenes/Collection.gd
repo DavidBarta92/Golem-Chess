@@ -52,7 +52,44 @@ const CODEX_STAMPS_PER_PAGE: int = 3
 const MAX_COPIES_PER_STAMP: int = PlayerDeckStore.MAX_COPIES_PER_STAMP
 const REMOVE_BUTTON_VISIBLE_SECONDS: float = 1.0
 const STAMP_DESCRIPTION_HEIGHT: int = 76
-const GRID_BACKGROUND_SHADER = preload("res://Shaders/collection_grid_background.gdshader")
+# The book art (background, tags, book, codex) is drawn on one 1919x1079 frame;
+# BookStage holds it at that size and is scaled to fit the viewport, and the
+# rects below are in the frame's pixels.
+const BOOK_DESIGN_SIZE: Vector2 = Vector2(1919, 1079)
+const BOOK_LEFT_PAGE_DESIGN_RECT: Rect2 = Rect2(410, 302, 587, 655)
+const BOOK_TOP_EDGE_DESIGN_Y: float = 298.0
+const BOOK_BOTTOM_EDGE_DESIGN_Y: float = 966.0
+const CODEX_DESIGN_RECT: Rect2 = Rect2(1202, 594, 551, 208)
+const SET_TAG_NODE_NAMES: Dictionary = {
+	"Animals": "AnimalsTag",
+	"Flora": "FloraTag",
+	"Celestials": "CelestialsTag",
+	"Archetypes": "ArchetypesTag",
+	"Courtyard": "CourtyardTag",
+	"Structures": "StructuresTag",
+}
+const SET_TAG_SHADOW_SHADER = preload("res://Shaders/collection_tag_shadow.gdshader")
+const SET_TAG_SHADOW_COLOR: Color = Color8(211, 213, 216)
+const SET_TAG_POP_SCALE: float = 1.06
+const SET_TAG_POP_IN_SECONDS: float = 0.07
+const SET_TAG_POP_OUT_SECONDS: float = 0.14
+const BROWSER_TOOLS_TOP_MARGIN: float = 14.0
+const PAGER_CENTER_BELOW_BOOK: float = 38.0
+const PACK_NOTICE_Z_INDEX: int = 25
+const DECK_PANEL_Z_INDEX: int = PACK_NOTICE_Z_INDEX + 5
+# A warm light grey: a step darker than the codex art's paper so the codexes
+# still stand out on it.
+const DECK_PANEL_BACKGROUND_COLOR: Color = Color8(230, 229, 223)
+const DECK_PANEL_SIDE_PADDING: float = 10.0
+const DECK_PANEL_BOTTOM_RADIUS: int = 10
+const PAPER_CUTOUT_FADE_SECONDS: float = 0.2
+const DECK_PANEL_CONTENT_TOP_MARGIN: float = 12.0
+const DECK_PANEL_BOTTOM_MARGIN: float = 24.0
+const DECK_PANEL_SLIDE_DELAY: float = 0.2
+const DECK_PANEL_SLIDE_SECONDS: float = 0.3
+const DECK_PANEL_SLIDE_OVERSHOOT: float = 16.0
+const DECK_PANEL_BOUNCE_OFFSETS: Array[float] = [-6.0, 2.0, 0.0]
+const DECK_PANEL_BOUNCE_SECONDS: Array[float] = [0.1, 0.08, 0.07]
 const MAGNIFIER_SHADER = preload("res://Shaders/collection_magnifier.gdshader")
 const MAGNIFIER_GLASS_TEXTURE = preload("res://Assets/glass.png")
 const MAGNIFIER_CASE_CLOSED_TEXTURE = preload("res://Assets/magnifying_glass_case_closed.png")
@@ -70,11 +107,16 @@ const DRAGGED_STAMP_Z_INDEX: int = MAGNIFIER_LENS_Z_INDEX + 40
 const MAGNIFIER_GLASS_SOURCE_SIZE: Vector2 = Vector2(337, 570)
 const MAGNIFIER_GLASS_LENS_SOURCE_RECT: Rect2 = Rect2(15, 15, 305, 305)
 const MAGNIFIER_GLASS_ROTATION_DEGREES: float = -36.0
-const HOVER_DESCRIPTION_SIZE: Vector2 = Vector2(300, 132)
+const HOVER_DESCRIPTION_WIDTH: float = 300.0
 const HOVER_DESCRIPTION_FONT_SIZE: int = 16
+const HOVER_DESCRIPTION_BACKGROUND_COLOR: Color = Color(0.93, 0.93, 0.9, 0.96)
+# Same line as beside the dialogue panels' text in the match.
+const HOVER_DESCRIPTION_LINE_WIDTH: float = 1.5
+const HOVER_DESCRIPTION_LINE_COLOR: Color = Color(0.08, 0.08, 0.08)
+const HOVER_DESCRIPTION_MARGIN_LEFT: float = 14.0
+const HOVER_DESCRIPTION_MARGIN_RIGHT: float = 28.0
+const HOVER_DESCRIPTION_MARGIN_VERTICAL: float = 12.0
 const STAMP_SLOT_SCALE_MULTIPLIER: float = 0.88
-const STACKBUILDER_BACKGROUND_COLOR: Color = Color("#f9e7ce")
-const STACKBUILDER_GRID_LINE_COLOR: Color = Color("#d9d0d5")
 const TOP_BAR_BACKGROUND_COLOR: Color = Color(0.9366637, 0.9330646, 0.89437205, 1.0)
 const BROWSER_STAMP_VERTICAL_OFFSET: float = -12.0
 const DECK_EDIT_STAMP_VERTICAL_OFFSET: float = -8.0
@@ -140,7 +182,17 @@ var pack_result_label: Label
 var pack_controller
 var stamp_browser_controller
 var saved_deck_list_controller
-var grid_background: ColorRect
+var book_stage: Control
+var book_image: TextureRect
+var set_tags: Dictionary = {}
+var set_tag_pop_tween: Tween
+var browser_tools: HBoxContainer
+var pager: HBoxContainer
+var deck_panel_rest_position: Vector2 = Vector2.ZERO
+var deck_panel_slide_offset: float = 0.0
+var deck_panel_slide_tween: Tween
+var paper_texture_overlay: ColorRect
+var paper_cutout_amount: float = 1.0
 var magnifier_backbuffer: BackBufferCopy
 var magnifier_case_button: Control
 var magnifier_case_click_area: Button
@@ -152,7 +204,6 @@ var magnifier_material: ShaderMaterial
 var magnifier_screen_lens: ColorRect
 var hover_description_panel: PanelContainer
 var hover_description_label: RichTextLabel
-var grid_background_material: ShaderMaterial
 var magnifier_enabled: bool = false
 var magnifier_previous_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 
@@ -167,12 +218,14 @@ func _ready() -> void:
 	_load_stamps()
 	_populate_saved_decks_list()
 	_show_page(0)
+	_play_deck_panel_slide_in()
 
 func _process(_delta: float) -> void:
 	_update_browser_stamp_description_hover()
 	_update_codex_scroll_inertia(_delta)
 	_update_deck_selector_scroll_inertia(_delta)
 	_update_magnifier_position()
+	_update_paper_cutout(_delta)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if magnifier_enabled && event.is_action_pressed("ui_cancel"):
@@ -267,70 +320,132 @@ func _get_saved_deck_list_controller():
 		"edit_deck_callback": Callable(self, "_on_edit_deck_pressed"),
 		"editor_back_callback": Callable(self, "_on_deck_editor_back_pressed"),
 		"print_for_deck_stamp_provider": Callable(self, "_get_print_for_deck_stamp"),
+		"codex_size": _get_codex_row_size(),
 	})
 	return saved_deck_list_controller
 
-func _on_set_filter_button_pressed(button: Button) -> void:
-	if stamp_browser_controller == null:
+func _bind_set_tags() -> void:
+	set_tags.clear()
+	if book_stage == null:
 		return
-	# Toggle behavior: if button is pressed, set that set as active filter; if unpressed, clear filter
-	var set_name: String = str(button.text)
-	if button.pressed:
-		# clear other buttons
-		var container := get_node_or_null("RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons") as HBoxContainer
-		if container != null:
-			for child in container.get_children():
-				if child is Button and child != button:
-					# Use set_pressed to change toggle state programmatically
-					if child.has_method("set_pressed"):
-						child.set_pressed(false)
-					elif "pressed" in child:
-						# fallback: try to assign if property exists (defensive)
-						child.pressed = false
-		stamp_browser_controller.set_active_set_filter(set_name)
-	else:
-		stamp_browser_controller.set_active_set_filter("")
+	for set_id in SET_TAG_NODE_NAMES:
+		var tag := book_stage.get_node_or_null(str(SET_TAG_NODE_NAMES[set_id])) as TextureButton
+		if tag == null:
+			continue
+		set_tags[set_id] = tag
+		var tag_material := ShaderMaterial.new()
+		tag_material.shader = SET_TAG_SHADOW_SHADER
+		tag_material.set_shader_parameter("shadow_color", SET_TAG_SHADOW_COLOR)
+		tag_material.set_shader_parameter("shadow_start", _get_set_tag_shadow_start(tag))
+		tag.material = tag_material
+		tag.focus_mode = Control.FOCUS_NONE
+		tag.tooltip_text = tr(set_id)
+		_build_set_tag_click_mask(tag)
+		_connect_once(tag.pressed, Callable(self, "_on_set_tag_pressed").bind(set_id))
+	_apply_set_tag_states()
+
+# The shade covers the lower third of the part of the tag that still shows
+# above the book's top edge.
+func _get_set_tag_shadow_start(tag: Control) -> float:
+	if tag.size.y <= 0.0:
+		return 1.0
+	var visible_height: float = BOOK_TOP_EDGE_DESIGN_Y - tag.position.y
+	var shadow_top: float = BOOK_TOP_EDGE_DESIGN_Y - visible_height / 3.0
+	return clampf((shadow_top - tag.position.y) / tag.size.y, 0.0, 1.0)
+
+# A tag only reacts where it shows above the book's top edge. Below that it is
+# either hidden behind the book or, when pulled in front, lies over the page
+# where the top row of stamps sits.
+func _build_set_tag_click_mask(tag: TextureButton) -> void:
+	if tag.texture_normal == null:
+		return
+	var image: Image = tag.texture_normal.get_image()
+	if image == null or tag.size.y <= 0.0:
+		return
+	if image.is_compressed():
+		image.decompress()
+
+	var click_mask := BitMap.new()
+	click_mask.create_from_image_alpha(image)
+	var visible_rows: int = clampi(int(round((BOOK_TOP_EDGE_DESIGN_Y - tag.position.y) / tag.size.y * image.get_height())), 0, image.get_height())
+	click_mask.set_bit_rect(Rect2i(0, visible_rows, image.get_width(), image.get_height() - visible_rows), false)
+	tag.texture_click_mask = click_mask
+
+func _on_set_tag_pressed(set_id: String) -> void:
+	var controller = _get_stamp_browser_controller()
+	var next_filter: String = "" if controller.active_set_filter == set_id else set_id
+	controller.set_active_set_filter(next_filter)
+	_apply_set_tag_states()
+	if set_tags.has(next_filter):
+		_play_set_tag_pop(set_tags[next_filter] as Control)
+
+func _apply_set_tag_states() -> void:
+	if book_stage == null or book_image == null:
+		return
+	var active_filter: String = _get_stamp_browser_controller().active_set_filter
+	for set_id in set_tags:
+		var tag: TextureButton = set_tags[set_id]
+		var is_active: bool = set_id == active_filter
+		var tag_material := tag.material as ShaderMaterial
+		if tag_material != null:
+			tag_material.set_shader_parameter("shadow_amount", 0.0 if is_active else 1.0)
+		if is_active:
+			book_stage.move_child(tag, book_stage.get_child_count() - 1)
+			continue
+		tag.scale = Vector2.ONE
+		if tag.get_index() > book_image.get_index():
+			book_stage.move_child(tag, book_image.get_index())
+
+func _play_set_tag_pop(tag: Control) -> void:
+	if tag == null:
+		return
+	if set_tag_pop_tween != null and set_tag_pop_tween.is_valid():
+		set_tag_pop_tween.kill()
+	tag.pivot_offset = Vector2(tag.size.x * 0.5, tag.size.y)
+	tag.scale = Vector2.ONE
+	set_tag_pop_tween = create_tween()
+	set_tag_pop_tween.set_trans(Tween.TRANS_SINE)
+	set_tag_pop_tween.set_ease(Tween.EASE_OUT)
+	set_tag_pop_tween.tween_property(tag, "scale", Vector2.ONE * SET_TAG_POP_SCALE, SET_TAG_POP_IN_SECONDS)
+	set_tag_pop_tween.tween_property(tag, "scale", Vector2.ONE, SET_TAG_POP_OUT_SECONDS)
 
 func _bind_scene_ui() -> void:
-	_setup_grid_background()
-	root_margin = $RootMargin
-	main_center = $RootMargin/MainCenter
-	main_layout = $RootMargin/MainCenter/MainLayout
-	left_column = $RootMargin/MainCenter/MainLayout/LeftColumn
-	middle_column = $RootMargin/MainCenter/MainLayout/MiddleColumn
-	deck_panel_frame = $RootMargin/MainCenter/MainLayout/DeckPanelFrame
-	deck_panel_frame.add_theme_stylebox_override("panel", _create_panel_style(Color(0.93, 0.93, 0.9), Color.TRANSPARENT, 0, 10))
-	right_column = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn
-	stamp_description_panel = get_node_or_null("RootMargin/MainCenter/MainLayout/LeftColumn/StampDescriptionPanel") as PanelContainer
-	preview_stamp_holder = get_node_or_null("RootMargin/MainCenter/MainLayout/LeftColumn/StampDescriptionPanel/InfoRoot/PreviewStampHolder") as Control
-	stamp_description_label = get_node_or_null("RootMargin/MainCenter/MainLayout/LeftColumn/StampDescriptionPanel/InfoRoot/StampDescriptionLabel") as Label
-	browser = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser
-	stamp_grid = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/StampGrid
-	owned_only_check = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTools/OwnedOnlyCheck
-	search_field = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTools/SearchField
-	# Set filter buttons container (six buttons for the stamp Sets)
-	var set_filter_container = get_node_or_null("RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/SetFilterButtons") as HBoxContainer
-	if set_filter_container != null:
-		for child in set_filter_container.get_children():
-			if child is Button:
-				# connect button press to handler; pass the button as bound parameter
-				child.pressed.connect(Callable(self, "_on_set_filter_button_pressed").bind(child))
-
-	previous_button = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager/PreviousButton
-	page_label = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager/PageLabel
-	next_button = $RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/Pager/NextButton
-	new_deck_button = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/NewDeckButton
-	deck_editor_back_button = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter/DeckEditorBackButton
-	deck_name_edit = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckNameEdit
+	_bind_book_stage()
+	deck_panel_frame = $DeckPanelFrame
+	var deck_panel_style := _create_panel_style(DECK_PANEL_BACKGROUND_COLOR, Color.TRANSPARENT, 0, DECK_PANEL_BOTTOM_RADIUS)
+	deck_panel_style.content_margin_left = DECK_PANEL_SIDE_PADDING
+	deck_panel_style.content_margin_right = DECK_PANEL_SIDE_PADDING
+	deck_panel_style.content_margin_top = TOP_BAR_HEIGHT + DECK_PANEL_CONTENT_TOP_MARGIN
+	deck_panel_frame.add_theme_stylebox_override("panel", deck_panel_style)
+	# The packs peek out from behind the codex panel, never across it.
+	deck_panel_frame.z_as_relative = false
+	deck_panel_frame.z_index = DECK_PANEL_Z_INDEX
+	paper_texture_overlay = get_node_or_null("PaperTextureLayer/PaperTextureOverlay") as ColorRect
+	_connect_once(deck_panel_frame.item_rect_changed, Callable(self, "_sync_paper_cutout"))
+	right_column = $DeckPanelFrame/RightColumn
+	browser_tools = $BrowserTools
+	stamp_grid = $StampGrid
+	stamp_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	owned_only_check = $BrowserTools/OwnedOnlyCheck
+	search_field = $BrowserTools/SearchField
+	pager = $Pager
+	previous_button = $Pager/PreviousButton
+	page_label = $Pager/PageLabel
+	next_button = $Pager/NextButton
+	new_deck_button = $DeckPanelFrame/RightColumn/NewDeckButton
+	deck_editor_back_button = $DeckPanelFrame/RightColumn/DeckFooter/DeckEditorBackButton
+	deck_name_edit = $DeckPanelFrame/RightColumn/DeckNameEdit
 	_ensure_deck_name_display()
-	deck_list_scroll = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckListScroll
-	deck_list = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckListScroll/DeckList
+	deck_list_scroll = $DeckPanelFrame/RightColumn/DeckListScroll
+	# Codex rows are drawn at the codex art's width; a scrollbar would squeeze them.
+	deck_list_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	deck_list = $DeckPanelFrame/RightColumn/DeckListScroll/DeckList
 	deck_list.mouse_filter = Control.MOUSE_FILTER_PASS
-	deck_stamp_scroll = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckStampScroll
-	deck_stamp_list = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckStampScroll/DeckStampList
+	deck_stamp_scroll = $DeckPanelFrame/RightColumn/DeckStampScroll
+	deck_stamp_list = $DeckPanelFrame/RightColumn/DeckStampScroll/DeckStampList
 	deck_stamp_list.add_theme_constant_override("separation", CODEX_EDITOR_LIST_SPACING)
-	deck_count_label = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter/DeckCountLabel
-	done_button = $RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckFooter/DoneButton
+	deck_count_label = $DeckPanelFrame/RightColumn/DeckFooter/DeckCountLabel
+	done_button = $DeckPanelFrame/RightColumn/DeckFooter/DoneButton
 	_hide_local_top_bar()
 	GlobalTopBar.show_collection(Callable(self, "_on_back_pressed"), Callable(self, "_on_buy_packs_pressed"))
 	top_bar = null
@@ -352,7 +467,7 @@ func _bind_scene_ui() -> void:
 	pack_result_label = $PackResultDialog/PackResultLabel
 	remove_stamp_button = $RemoveStampButton
 	remove_stamp_timer = $RemoveStampTimer
-	deck_title_label = get_node_or_null("RootMargin/MainCenter/MainLayout/DeckPanelFrame/RightColumn/DeckTitle") as Label
+	deck_title_label = get_node_or_null("DeckPanelFrame/RightColumn/DeckTitle") as Label
 	if deck_title_label != null:
 		deck_title_label.text = tr("My codexes")
 	new_deck_button.text = tr("New codex")
@@ -409,15 +524,6 @@ func _hide_local_top_bar() -> void:
 
 
 func _configure_inventory_block() -> void:
-	var browser_frame := get_node_or_null("RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame") as PanelContainer
-	if browser_frame != null:
-		browser_frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-		browser_frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-
-	var browser_title := get_node_or_null("RootMargin/MainCenter/MainLayout/MiddleColumn/BrowserFrame/Browser/BrowserTitle") as Label
-	if browser_title != null:
-		browser_title.visible = false
-
 	if browser != null:
 		browser.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		browser.add_theme_constant_override("separation", 4)
@@ -448,7 +554,7 @@ func _configure_pack_notice_panel() -> void:
 	pack_panel.clip_contents = false
 	pack_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	pack_panel.z_as_relative = false
-	pack_panel.z_index = 25
+	pack_panel.z_index = PACK_NOTICE_Z_INDEX
 
 	var pack_root := pack_panel.get_node_or_null("PackNoticeRoot") as Control
 	if pack_root == null:
@@ -485,58 +591,82 @@ func _setup_hover_description_panel() -> void:
 		hover_description_panel = PanelContainer.new()
 		hover_description_panel.name = "HoverDescriptionPanel"
 		hover_description_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		hover_description_panel.custom_minimum_size = HOVER_DESCRIPTION_SIZE
-		hover_description_panel.size = HOVER_DESCRIPTION_SIZE
+		hover_description_panel.custom_minimum_size = Vector2(HOVER_DESCRIPTION_WIDTH, 0.0)
 		hover_description_panel.z_as_relative = false
 		hover_description_panel.z_index = MAGNIFIER_Z_INDEX + 12
 		hover_description_panel.visible = false
 		add_child(hover_description_panel)
-
-		var style := _create_panel_style(Color(0.93, 0.93, 0.9, 0.96), Color(0.1, 0.1, 0.1, 0.58), 0, 10)
-		style.content_margin_left = 16
-		style.content_margin_top = 14
-		style.content_margin_right = 16
-		style.content_margin_bottom = 14
-		hover_description_panel.add_theme_stylebox_override("panel", style)
+		hover_description_panel.add_theme_stylebox_override("panel", _create_hover_description_style())
+		hover_description_panel.draw.connect(_draw_hover_description_line)
+		# The text decides the height; refit whenever it changes what it needs.
+		hover_description_panel.minimum_size_changed.connect(_on_hover_description_minimum_size_changed)
 
 		hover_description_label = RichTextLabel.new()
 		hover_description_panel.add_child(hover_description_label)
 		hover_description_label.bbcode_enabled = true
-		hover_description_label.fit_content = false
+		hover_description_label.fit_content = true
 		hover_description_label.scroll_active = false
+		hover_description_label.custom_minimum_size = Vector2(HOVER_DESCRIPTION_WIDTH - HOVER_DESCRIPTION_MARGIN_LEFT - HOVER_DESCRIPTION_MARGIN_RIGHT, 0.0)
 		hover_description_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		hover_description_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		hover_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		hover_description_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		hover_description_label.add_theme_font_size_override("normal_font_size", HOVER_DESCRIPTION_FONT_SIZE)
 		hover_description_label.add_theme_color_override("default_color", Color(0.08, 0.08, 0.08))
 	elif hover_description_label == null or !is_instance_valid(hover_description_label):
 		if hover_description_panel.get_child_count() > 0:
 			hover_description_label = hover_description_panel.get_child(0) as RichTextLabel
 
+# The background starts in the old panel colour and fades out to the right.
+func _create_hover_description_style() -> StyleBoxTexture:
+	var faded_color: Color = HOVER_DESCRIPTION_BACKGROUND_COLOR
+	faded_color.a = 0.0
+	var gradient := Gradient.new()
+	gradient.set_color(0, HOVER_DESCRIPTION_BACKGROUND_COLOR)
+	gradient.set_color(1, faded_color)
+	var gradient_texture := GradientTexture2D.new()
+	gradient_texture.gradient = gradient
+	gradient_texture.width = 256
+	gradient_texture.height = 1
+
+	var style := StyleBoxTexture.new()
+	style.texture = gradient_texture
+	style.content_margin_left = HOVER_DESCRIPTION_MARGIN_LEFT
+	style.content_margin_right = HOVER_DESCRIPTION_MARGIN_RIGHT
+	style.content_margin_top = HOVER_DESCRIPTION_MARGIN_VERTICAL
+	style.content_margin_bottom = HOVER_DESCRIPTION_MARGIN_VERTICAL
+	return style
+
+func _draw_hover_description_line() -> void:
+	hover_description_panel.draw_rect(Rect2(0.0, 0.0, HOVER_DESCRIPTION_LINE_WIDTH, hover_description_panel.size.y), HOVER_DESCRIPTION_LINE_COLOR)
+
+func _on_hover_description_minimum_size_changed() -> void:
+	if hover_description_panel != null and hover_description_panel.visible:
+		_layout_hover_description_panel()
+
 func _layout_hover_description_panel() -> void:
 	if hover_description_panel == null or !is_instance_valid(hover_description_panel):
 		return
 
+	# Asking for no height lets the panel settle at what its text needs.
+	hover_description_panel.size = Vector2(HOVER_DESCRIPTION_WIDTH, 0.0)
+	var panel_size: Vector2 = hover_description_panel.size
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var target_position := Vector2(74.0, TOP_BAR_HEIGHT + 22.0)
 	if magnifier_enabled and magnifier_group != null and is_instance_valid(magnifier_group):
 		target_position = magnifier_group.position + Vector2(MAGNIFIER_LENS_SIZE.x + 12.0, 8.0)
-		if target_position.x + HOVER_DESCRIPTION_SIZE.x > viewport_size.x - 12.0:
-			target_position.x = magnifier_group.position.x - HOVER_DESCRIPTION_SIZE.x - 12.0
+		if target_position.x + panel_size.x > viewport_size.x - 12.0:
+			target_position.x = magnifier_group.position.x - panel_size.x - 12.0
 	elif magnifier_case_button != null and is_instance_valid(magnifier_case_button):
 		var case_size := magnifier_case_button.size
 		if case_size == Vector2.ZERO:
 			case_size = MAGNIFIER_CASE_DEFAULT_SIZE
 		target_position = magnifier_case_button.position + Vector2(case_size.x + 12.0, -2.0)
 
-	hover_description_panel.size = HOVER_DESCRIPTION_SIZE
-	target_position.x = clampf(target_position.x, 12.0, maxf(12.0, viewport_size.x - HOVER_DESCRIPTION_SIZE.x - 12.0))
-	target_position.y = clampf(target_position.y, TOP_BAR_HEIGHT + 8.0, maxf(TOP_BAR_HEIGHT + 8.0, viewport_size.y - HOVER_DESCRIPTION_SIZE.y - 12.0))
+	target_position.x = clampf(target_position.x, 12.0, maxf(12.0, viewport_size.x - panel_size.x - 12.0))
+	target_position.y = clampf(target_position.y, TOP_BAR_HEIGHT + 8.0, maxf(TOP_BAR_HEIGHT + 8.0, viewport_size.y - panel_size.y - 12.0))
 	hover_description_panel.position = target_position
 
 func _build_ui() -> void:
-	_setup_grid_background()
+	_bind_book_stage()
 	create_top_progress_ui()
 	_hide_local_top_bar()
 	GlobalTopBar.show_collection(Callable(self, "_on_back_pressed"), Callable(self, "_on_buy_packs_pressed"))
@@ -613,24 +743,24 @@ func _build_ui() -> void:
 	browser_title.add_theme_font_size_override("font_size", 20)
 	browser_title.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
 
-	var browser_tools := HBoxContainer.new()
-	browser.add_child(browser_tools)
-	browser_tools.custom_minimum_size = Vector2(0, 42)
-	browser_tools.add_theme_constant_override("separation", 10)
+	var tools_row := HBoxContainer.new()
+	browser.add_child(tools_row)
+	tools_row.custom_minimum_size = Vector2(0, 42)
+	tools_row.add_theme_constant_override("separation", 10)
 
 	owned_only_check = CheckBox.new()
-	browser_tools.add_child(owned_only_check)
+	tools_row.add_child(owned_only_check)
 	owned_only_check.text = "My collection"
 	owned_only_check.button_pressed = false
 	owned_only_check.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
 	owned_only_check.toggled.connect(_on_owned_only_toggled)
 
 	var tool_spacer := Control.new()
-	browser_tools.add_child(tool_spacer)
+	tools_row.add_child(tool_spacer)
 	tool_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	search_field = LineEdit.new()
-	browser_tools.add_child(search_field)
+	tools_row.add_child(search_field)
 	search_field.placeholder_text = "Search"
 	search_field.custom_minimum_size = Vector2(150, 34)
 	search_field.text_changed.connect(_on_search_text_changed)
@@ -644,27 +774,27 @@ func _build_ui() -> void:
 	stamp_grid.add_theme_constant_override("v_separation", 2)
 	_update_stamp_grid_reserved_size()
 
-	var pager := HBoxContainer.new()
-	browser.add_child(pager)
-	pager.custom_minimum_size = Vector2(0, COLLECTION_PAGER_HEIGHT)
-	pager.alignment = BoxContainer.ALIGNMENT_CENTER
-	pager.add_theme_constant_override("separation", 16)
+	var pager_row := HBoxContainer.new()
+	browser.add_child(pager_row)
+	pager_row.custom_minimum_size = Vector2(0, COLLECTION_PAGER_HEIGHT)
+	pager_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	pager_row.add_theme_constant_override("separation", 16)
 
 	previous_button = Button.new()
-	pager.add_child(previous_button)
+	pager_row.add_child(previous_button)
 	previous_button.custom_minimum_size = Vector2(54, 42)
 	previous_button.size_flags_vertical = Control.SIZE_SHRINK_END
 	previous_button.pressed.connect(_on_previous_pressed)
 
 	page_label = Label.new()
-	pager.add_child(page_label)
+	pager_row.add_child(page_label)
 	page_label.custom_minimum_size = Vector2(92, 42)
 	page_label.size_flags_vertical = Control.SIZE_SHRINK_END
 	page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 	next_button = Button.new()
-	pager.add_child(next_button)
+	pager_row.add_child(next_button)
 	next_button.custom_minimum_size = Vector2(54, 42)
 	next_button.size_flags_vertical = Control.SIZE_SHRINK_END
 	next_button.pressed.connect(_on_next_pressed)
@@ -808,31 +938,139 @@ func _build_ui() -> void:
 	_setup_hover_description_panel()
 	_setup_magnifier()
 
-func _setup_grid_background() -> void:
-	if grid_background_material == null:
-		grid_background_material = ShaderMaterial.new()
-		grid_background_material.shader = GRID_BACKGROUND_SHADER
-		grid_background_material.set_shader_parameter("base_color", STACKBUILDER_BACKGROUND_COLOR)
-		grid_background_material.set_shader_parameter("line_color", STACKBUILDER_GRID_LINE_COLOR)
-		grid_background_material.set_shader_parameter("cell_size", 32.0)
-		grid_background_material.set_shader_parameter("line_width", 0.65)
+func _bind_book_stage() -> void:
+	book_stage = get_node_or_null("BookStage") as Control
+	if book_stage == null:
+		return
+	book_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	book_image = book_stage.get_node_or_null("BookImage") as TextureRect
+	_layout_book_stage()
+	_bind_set_tags()
 
-	if grid_background == null or !is_instance_valid(grid_background):
-		grid_background = get_node_or_null("GridBackground") as ColorRect
-	if grid_background == null:
-		grid_background = ColorRect.new()
-		grid_background.name = "GridBackground"
-		add_child(grid_background)
+func _get_book_fit_scale() -> float:
+	var viewport_size: Vector2 = get_viewport_rect().size
+	return minf(viewport_size.x / BOOK_DESIGN_SIZE.x, viewport_size.y / BOOK_DESIGN_SIZE.y)
 
-	grid_background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	grid_background.offset_left = 0.0
-	grid_background.offset_top = 0.0
-	grid_background.offset_right = 0.0
-	grid_background.offset_bottom = 0.0
-	grid_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	grid_background.color = STACKBUILDER_BACKGROUND_COLOR
-	grid_background.material = grid_background_material
-	move_child(grid_background, 0)
+func _get_book_origin() -> Vector2:
+	return ((get_viewport_rect().size - BOOK_DESIGN_SIZE * _get_book_fit_scale()) * 0.5).round()
+
+func _design_to_screen(design_point: Vector2) -> Vector2:
+	return _get_book_origin() + design_point * _get_book_fit_scale()
+
+func _design_rect_to_screen(design_rect: Rect2) -> Rect2:
+	return Rect2(_design_to_screen(design_rect.position), design_rect.size * _get_book_fit_scale())
+
+func _get_codex_row_size() -> Vector2:
+	return (CODEX_DESIGN_RECT.size * _get_book_fit_scale()).round()
+
+func _layout_collection_scene() -> void:
+	_layout_book_stage()
+	_layout_stamp_browser()
+	_layout_deck_panel()
+
+func _layout_book_stage() -> void:
+	if book_stage == null:
+		return
+	book_stage.size = BOOK_DESIGN_SIZE
+	book_stage.scale = Vector2.ONE * _get_book_fit_scale()
+	book_stage.position = _get_book_origin()
+
+# The stamps sit centred on the book's left page, the search row above the
+# tags and the pager just under the book, both lined up with that page.
+func _layout_stamp_browser() -> void:
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var page_rect: Rect2 = _design_rect_to_screen(BOOK_LEFT_PAGE_DESIGN_RECT)
+	var page_center: Vector2 = page_rect.get_center()
+	if stamp_grid != null:
+		var stamp_bounds: Rect2 = _get_stamp_browser_controller().get_page_stamp_bounds()
+		stamp_grid.position = (page_center - stamp_bounds.get_center()).round()
+	if browser_tools != null:
+		browser_tools.size = Vector2(page_rect.size.x, browser_tools.get_combined_minimum_size().y)
+		browser_tools.position = Vector2(page_rect.position.x, TOP_BAR_HEIGHT + BROWSER_TOOLS_TOP_MARGIN).round()
+	if pager != null:
+		var pager_size: Vector2 = pager.get_combined_minimum_size()
+		var book_bottom: float = _design_to_screen(Vector2(0.0, BOOK_BOTTOM_EDGE_DESIGN_Y)).y
+		var pager_top: float = minf(book_bottom + PAGER_CENTER_BELOW_BOOK - pager_size.y * 0.5, viewport_size.y - pager_size.y)
+		pager.size = pager_size
+		pager.position = Vector2(page_center.x - pager_size.x * 0.5, pager_top).round()
+
+# The codex panel follows the codex art's place in the book frame horizontally
+# and runs from behind the global top bar down to the bottom margin.
+func _layout_deck_panel() -> void:
+	if deck_panel_frame == null:
+		return
+	var codex_left: float = _design_to_screen(CODEX_DESIGN_RECT.position).x
+	var codex_width: float = _get_codex_row_size().x
+	var panel_size := Vector2(
+		codex_width + DECK_PANEL_SIDE_PADDING * 2.0,
+		maxf(0.0, get_viewport_rect().size.y - DECK_PANEL_BOTTOM_MARGIN)
+	)
+	if right_column != null:
+		right_column.custom_minimum_size = Vector2(codex_width, 0.0)
+	deck_panel_frame.custom_minimum_size = Vector2(panel_size.x, 0.0)
+	deck_panel_frame.size = panel_size
+	deck_panel_rest_position = Vector2(codex_left - DECK_PANEL_SIDE_PADDING, 0.0).round()
+	_apply_deck_panel_slide_offset()
+
+func _apply_deck_panel_slide_offset() -> void:
+	if deck_panel_frame != null:
+		deck_panel_frame.position = deck_panel_rest_position + Vector2(0.0, deck_panel_slide_offset)
+
+func _set_deck_panel_slide_offset(value: float) -> void:
+	deck_panel_slide_offset = value
+	_apply_deck_panel_slide_offset()
+
+# The panel drops out from under the global top bar like a drawer: one quick
+# slide past its rest position, then a couple of small settling bounces.
+func _play_deck_panel_slide_in() -> void:
+	if deck_panel_frame == null:
+		return
+	if deck_panel_slide_tween != null and deck_panel_slide_tween.is_valid():
+		deck_panel_slide_tween.kill()
+
+	var hidden_offset: float = -maxf(0.0, deck_panel_frame.size.y - TOP_BAR_HEIGHT)
+	var slide_callable := Callable(self, "_set_deck_panel_slide_offset")
+	_set_deck_panel_slide_offset(hidden_offset)
+	# The first frames after a scene change can be long (loading, shader
+	# warm-up) and would swallow most of the drop; start once they are through.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if !is_inside_tree():
+		return
+	deck_panel_slide_tween = create_tween()
+	deck_panel_slide_tween.tween_interval(DECK_PANEL_SLIDE_DELAY)
+	deck_panel_slide_tween.tween_method(slide_callable, hidden_offset, DECK_PANEL_SLIDE_OVERSHOOT, DECK_PANEL_SLIDE_SECONDS) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	var previous_offset: float = DECK_PANEL_SLIDE_OVERSHOOT
+	for index in range(DECK_PANEL_BOUNCE_OFFSETS.size()):
+		var next_offset: float = DECK_PANEL_BOUNCE_OFFSETS[index]
+		deck_panel_slide_tween.tween_method(slide_callable, previous_offset, next_offset, DECK_PANEL_BOUNCE_SECONDS[index]) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		previous_offset = next_offset
+
+# The paper overlay tints the whole room except the codex panel. While the
+# buy-packs window or the pack opening covers the screen, the cut-out fades
+# out so those overlays are tinted evenly, panel area included.
+func _update_paper_cutout(delta: float) -> void:
+	var screen_covered: bool = pack_controller != null and (pack_controller.is_buy_packs_modal_open() or pack_controller.is_pack_overlay_active())
+	var target_amount: float = 0.0 if screen_covered else 1.0
+	paper_cutout_amount = move_toward(paper_cutout_amount, target_amount, delta / PAPER_CUTOUT_FADE_SECONDS)
+	_sync_paper_cutout()
+
+func _sync_paper_cutout() -> void:
+	if paper_texture_overlay == null or deck_panel_frame == null:
+		return
+	var paper_material := paper_texture_overlay.material as ShaderMaterial
+	if paper_material == null:
+		return
+	# Measured on screen, so the cut-out follows the panel through its slide-in
+	# and the scene-change zoom.
+	var panel_transform: Transform2D = deck_panel_frame.get_global_transform_with_canvas()
+	var panel_rect: Rect2 = panel_transform * Rect2(Vector2.ZERO, deck_panel_frame.size)
+	paper_material.set_shader_parameter("cutout_rect", Vector4(panel_rect.position.x, panel_rect.position.y, panel_rect.size.x, panel_rect.size.y))
+	paper_material.set_shader_parameter("cutout_bottom_radius", DECK_PANEL_BOTTOM_RADIUS * panel_transform.get_scale().x)
+	paper_material.set_shader_parameter("cutout_canvas_size", paper_texture_overlay.size)
+	paper_material.set_shader_parameter("cutout_amount", paper_cutout_amount)
 
 func _setup_magnifier() -> void:
 	if magnifier_backbuffer == null or !is_instance_valid(magnifier_backbuffer):
@@ -1205,8 +1443,8 @@ func _create_editor_deck_row(deck_name: String) -> Control:
 	count_label.add_theme_font_size_override("font_size", 18)
 	count_label.add_theme_color_override("font_color", Color(0.86, 0.86, 0.82))
 
-	footer.add_child(_create_circle_icon_button("E", "Edit codex"))
-	footer.add_child(_create_circle_icon_button("X", "Delete codex"))
+	footer.add_child(_create_circle_icon_button(SAVED_DECK_LIST_CONTROLLER_SCRIPT.EDIT_ICON, "Edit codex"))
+	footer.add_child(_create_circle_icon_button(SAVED_DECK_LIST_CONTROLLER_SCRIPT.DELETE_ICON, "Delete codex"))
 	return row_frame
 
 func create_top_progress_ui() -> void:
@@ -1486,41 +1724,24 @@ func _on_viewport_size_changed() -> void:
 
 func _apply_responsive_layout(refresh_page: bool) -> void:
 	var viewport_width: float = get_viewport_rect().size.x
-	var viewport_height: float = get_viewport_rect().size.y
 	var next_columns: int = DESKTOP_STAMP_COLUMNS
 	var next_stamps_per_page: int = DESKTOP_STAMPS_PER_PAGE
 	var next_stamp_slot_size: Vector2 = DESKTOP_STAMP_SLOT_SIZE
-	var next_margin: int = 24
 	var next_h_gap: int = 8
 	var next_v_gap: int = 2
-	var next_layout_gap: int = 14
-	var next_layout_width: int = LAYOUT_WIDTH
-	var next_left_width: int = 0
-	var next_middle_width: int = MIDDLE_COLUMN_WIDTH
-	var next_deck_width: int = RIGHT_COLUMN_WIDTH
 
 	if viewport_width < 980.0:
 		next_columns = COMPACT_STAMP_COLUMNS
 		next_stamps_per_page = COMPACT_STAMPS_PER_PAGE
 		next_stamp_slot_size = COMPACT_STAMP_SLOT_SIZE
-		next_margin = 16
 		next_h_gap = 6
 		next_v_gap = 3
-		next_layout_gap = 12
-		next_middle_width = 360
-		next_deck_width = RIGHT_COLUMN_WIDTH
-		next_layout_width = next_middle_width + next_deck_width + next_layout_gap
 	elif viewport_width < 1180.0:
 		next_columns = MEDIUM_STAMP_COLUMNS
 		next_stamps_per_page = MEDIUM_STAMPS_PER_PAGE
 		next_stamp_slot_size = MEDIUM_STAMP_SLOT_SIZE
-		next_margin = 18
 		next_h_gap = 7
 		next_v_gap = 3
-		next_layout_gap = 12
-		next_middle_width = 460
-		next_deck_width = RIGHT_COLUMN_WIDTH
-		next_layout_width = next_middle_width + next_deck_width + next_layout_gap
 
 	var layout_changed: bool = _get_stamp_browser_controller().apply_layout(
 		next_columns,
@@ -1529,24 +1750,7 @@ func _apply_responsive_layout(refresh_page: bool) -> void:
 		next_h_gap,
 		next_v_gap
 	)
-
-	if root_margin != null:
-		root_margin.add_theme_constant_override("margin_left", next_margin)
-		root_margin.add_theme_constant_override("margin_top", TOP_BAR_HEIGHT + next_margin)
-		root_margin.add_theme_constant_override("margin_right", next_margin)
-		root_margin.add_theme_constant_override("margin_bottom", next_margin)
-	if main_layout != null:
-		main_layout.custom_minimum_size = Vector2(next_layout_width, 0)
-		main_layout.add_theme_constant_override("separation", next_layout_gap)
-	if left_column != null:
-		left_column.custom_minimum_size = Vector2(next_left_width, 0)
-		left_column.visible = false
-	if middle_column != null:
-		middle_column.custom_minimum_size = Vector2(next_middle_width, 0)
-	if deck_panel_frame != null:
-		deck_panel_frame.custom_minimum_size = Vector2(next_deck_width, 0)
-	if right_column != null:
-		right_column.custom_minimum_size = Vector2(next_deck_width, 0)
+	_layout_collection_scene()
 
 	if refresh_page:
 		if layout_changed:
@@ -1937,7 +2141,7 @@ func _show_stamp_preview(stamp: Stamp, stamp_print: StampPrint = null) -> void:
 		return
 
 	hovered_browser_stamp_name = stamp.stamp_name
-	var description: String = stamp.description.strip_edges()
+	var description: String = stamp.get_display_description().strip_edges()
 	if hover_description_label != null:
 		hover_description_label.text = DescriptionMarkup.to_bbcode(description, HOVER_DESCRIPTION_FONT_SIZE)
 	if hover_description_panel != null:
@@ -2466,8 +2670,8 @@ func _get_deck_preview_prints(deck_data: Dictionary) -> Array:
 func _create_small_deck_preview_stamp(stamp_print: StampPrint) -> StampVisual:
 	return _get_saved_deck_list_controller().create_small_deck_preview_stamp(stamp_print)
 
-func _create_circle_icon_button(text_value: String, tooltip: String) -> Button:
-	return _get_saved_deck_list_controller().create_circle_icon_button(text_value, tooltip)
+func _create_circle_icon_button(icon: Texture2D, tooltip: String) -> Button:
+	return _get_saved_deck_list_controller().create_circle_icon_button(icon, tooltip)
 
 func _on_delete_deck_pressed(deck_id: String) -> void:
 	_get_saved_deck_list_controller().on_delete_deck_pressed(deck_id)

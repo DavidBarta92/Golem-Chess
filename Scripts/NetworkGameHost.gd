@@ -1,7 +1,7 @@
 class_name NetworkGameHost
 
 const CODEX_BRIDGE_SCRIPT = preload("res://Scripts/CodexBridge.gd")
-const CHESS_CLOCK_SECONDS: float = 300.0
+const CHESS_CLOCK_SECONDS: float = 600.0
 
 var game_state: GameStateData
 var multiplayer_node
@@ -40,8 +40,16 @@ func process_codex_bridge_commands() -> bool:
 		return false
 	return codex_bridge.process_command_file(self)
 
+## Runs both clocks, single player included: only the player whose turn it is
+## loses time, and running out loses the game. The host owns this so a client
+## can never disagree about whose clock ran out.
+##
+## A story boss played without the clock (BossDefinition.show_clock) stops it
+## here too: a clock nobody can see must not be one the player can lose on.
 func process(delta: float) -> void:
-	if GameConfig.is_singleplayer or game_state == null or game_state.game_over:
+	if game_state == null or game_state.game_over:
+		return
+	if !StoryManager.should_show_match_clock():
 		return
 	var active_player: int = game_state.current_turn_player
 	var remaining: float = maxf(float(game_state.player_clock_seconds.get(active_player, CHESS_CLOCK_SECONDS)) - maxf(delta, 0.0), 0.0)
@@ -364,6 +372,16 @@ func handle_end_turn(action: Dictionary):
 		push_warning("End turn rejected for player %d: a move is required unless the first-turn or frozen-piece exception applies." % player_id)
 		return
 	end_current_turn()
+
+## Last resort for an AI that has tried turning the page, affixing and moving
+## and still cannot close its turn by the rules. Without it the AI sits on the
+## turn until its clock runs out.
+func force_end_turn_for_ai(player_id: int) -> bool:
+	if game_state.game_over or game_state.current_turn_player != player_id:
+		return false
+	push_warning("AI player %d found no legal way to finish its turn; ending it." % player_id)
+	end_current_turn()
+	return true
 
 func end_current_turn():
 	if game_state.game_over:

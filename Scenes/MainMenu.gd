@@ -48,6 +48,11 @@ func _ready():
 		call_deferred("launch_dedicated_server_scene")
 		return
 
+	# Reaching the hub always ends any story match that was in flight - a
+	# player who quit mid-fight must not have their next result reported
+	# against a boss node they walked away from.
+	StoryManager.clear_active_match()
+
 	if StoryManager.should_block_hub():
 		call_deferred("launch_blocking_story_node")
 		return

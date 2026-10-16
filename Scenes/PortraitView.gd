@@ -86,7 +86,6 @@ var hair_layer: Sprite2D
 var facial_hair_layer: Sprite2D
 var eyebrows_layer: Sprite2D
 var eyelash_layer: Sprite2D
-var eyewhite_layer: Sprite2D
 var eyes_layer: Sprite2D
 var closed_eyes_layer: Sprite2D
 var pupils_layer: Sprite2D
@@ -284,7 +283,6 @@ func rebuild_layers() -> void:
 	facial_hair_layer = null
 	eyebrows_layer = null
 	eyelash_layer = null
-	eyewhite_layer = null
 	eyes_layer = null
 	closed_eyes_layer = null
 	pupils_layer = null
@@ -317,7 +315,6 @@ func rebuild_png_layers() -> void:
 		"eyebrows",
 		"pupils",
 		"eyelash",
-		"eyewhite",
 		"nose",
 		"mouth",
 		"head",
@@ -346,7 +343,6 @@ func rebuild_png_layers() -> void:
 func setup_png_eye_occlusion() -> void:
 	if eyelash_layer == null or eyelash_layer.texture == null:
 		return
-	apply_eye_occlusion_material(eyewhite_layer)
 	apply_eye_occlusion_material(pupils_layer)
 
 func apply_eye_occlusion_material(layer: Sprite2D) -> void:
@@ -419,8 +415,6 @@ func assign_png_layer(category: String, layer: Sprite2D) -> void:
 			pupils_layer = layer
 		"eyelash":
 			eyelash_layer = layer
-		"eyewhite":
-			eyewhite_layer = layer
 		"nose":
 			nose_layer = layer
 		"mouth":
@@ -575,7 +569,7 @@ func get_layer_base_modulate(layer: Sprite2D) -> Color:
 	return Color.WHITE
 
 func reset_static_layer_positions() -> void:
-	for layer in [body_layer, neck_layer, torso_layer, head_layer, hair_layer, facial_hair_layer, eyebrows_layer, eyelash_layer, eyewhite_layer, eyes_layer, closed_eyes_layer, pupils_layer, mouth_layer, mustache_layer, nose_layer, brows_layer]:
+	for layer in [body_layer, neck_layer, torso_layer, head_layer, hair_layer, facial_hair_layer, eyebrows_layer, eyelash_layer, eyes_layer, closed_eyes_layer, pupils_layer, mouth_layer, mustache_layer, nose_layer, brows_layer]:
 		if layer != null and is_instance_valid(layer):
 			layer.position = get_layer_base_position(layer)
 			layer.scale = Vector2.ONE
@@ -739,7 +733,7 @@ func apply_head_transform() -> void:
 
 func apply_current_pose() -> void:
 	apply_head_transform()
-	for layer in [head_layer, hair_layer, facial_hair_layer, eyebrows_layer, eyelash_layer, eyewhite_layer, closed_eyes_layer, mouth_layer, mustache_layer, nose_layer]:
+	for layer in [head_layer, hair_layer, facial_hair_layer, eyebrows_layer, eyelash_layer, closed_eyes_layer, mouth_layer, mustache_layer, nose_layer]:
 		if layer != null and is_instance_valid(layer):
 			layer.position = get_layer_base_position(layer)
 	apply_expression()
@@ -846,10 +840,6 @@ func apply_png_blink_pose() -> void:
 		eyes_layer.visible = true
 		eyes_layer.position = get_layer_base_position(eyes_layer) + Vector2(0.0, eye_drop)
 		eyes_layer.scale = Vector2.ONE
-	if eyewhite_layer != null:
-		eyewhite_layer.visible = true
-		eyewhite_layer.position = get_layer_base_position(eyewhite_layer) + Vector2(0.0, eye_drop)
-		eyewhite_layer.scale = Vector2.ONE
 	if pupils_layer != null:
 		apply_pupil_position()
 		pupils_layer.visible = true

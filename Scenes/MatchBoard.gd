@@ -7,6 +7,8 @@ signal stamp_exchanged(stamp_name: String, owner_color: int, hand_index: int)
 signal codex_page_turned(owner_color: int, page_index: int)
 signal turn_ended(ending_color: int, next_color: int)
 signal tutorial_action_rejected(action_name: String, context: Dictionary)
+## The result has gone up on screen. See hold_after_result.
+signal game_finished(winner_color: int)
 
 const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const CELL_WIDTH: int = BoardConfig.CELL_WIDTH
@@ -54,12 +56,23 @@ const MOVE_OPTION_DOT_SHADER_EDGE_SOFTNESS: float = 0.85
 const MOVE_OPTION_DOT_SHADER_PULSE_MIN_SCALE: float = 0.88
 const MOVE_OPTION_DOT_SHADER_PULSE_MAX_SCALE: float = 1.18
 const MOVE_OPTION_DOT_SHADER_COLOR = Color(1.0, 0.94, 0.78, 1.0)
-const BOARD_VISUAL_SCALE: float = 1.08
+# The board carries no scale of its own: its size comes from the perspective
+# constants below, which are fitted to the ink in Assets/board_grid_line.png in
+# world units. Scaling the node here would move the board off the drawn table
+# without moving the drawing with it. See Scripts/MatchView/BoardCanvas.gd.
+const BOARD_VISUAL_SCALE: float = 1.0
 # Adjust these values to tune the board-only perspective tilt.
 const BOARD_PERSPECTIVE_ENABLED: bool = true
-const BOARD_PERSPECTIVE_TOP_SCALE: float = 0.74
-const BOARD_PERSPECTIVE_BOTTOM_SCALE: float = 1.05
-const BOARD_PERSPECTIVE_VERTICAL_SCALE: float = 0.72
+# Fitted to the grid drawn in Assets/board_grid_line.png, in the units
+# BoardCanvas sets out. That drawing is a 9x9 grid: the playable 7x7 with the
+# frame as a one-cell ring around it, and every line in it runs the full width
+# of the ring. All ten lines land within 2 px of the ink on a 1920 px wide
+# canvas, where the ink itself is 3 to 5 px thick, and the ten column lines -
+# which were not fitted - fall within 3.7 px of it.
+const BOARD_PERSPECTIVE_TOP_SCALE: float = 0.744257
+const BOARD_PERSPECTIVE_BOTTOM_SCALE: float = 1.055569
+const BOARD_PERSPECTIVE_VERTICAL_SCALE: float = 0.720724
+const BOARD_PERSPECTIVE_NEAR_OFFSET: float = 0.440762
 const BOARD_SPECIAL_TILE_NONE: String = ""
 const BOARD_SPECIAL_TILE_BASE_WHITE: String = "base_white"
 const BOARD_SPECIAL_TILE_BASE_BLACK: String = "base_black"
@@ -80,10 +93,18 @@ const BOARD_TILE_DEPTH_WALL_COLOR = Color(0.07, 0.065, 0.055, 0.86)
 const BOARD_TILE_OCCLUSION_LIP_COLOR = Color(0.0, 0.0, 0.0, 0.30)
 const BOARD_TILE_OCCLUSION_LIP_INSET_FACTOR: float = 0.18
 const BOARD_TILE_TRANSITION_COVER_Z_INDEX: int = 5
+# Fitted to the board drawn in Assets/board_grid_line.png, the same way the
+# perspective constants above are. The drawing's outer frame is a band at the
+# far and near ends only - on the left and right the board's edge and the grid's
+# edge are the same stroke - so the frame is a cell deep and barely a third of a
+# pixel wide. The side is the darker face the player looks onto, below the near
+# frame line. Worst error against the ink: 1.8 px of a 1919 px wide drawing.
+# The frame is the drawing's outer ring: one cell on all four sides, which is
+# what turns the 7x7 the game is played on into the 9x9 that is drawn.
 const BOARD_FRAME_WIDTH: float = CELL_WIDTH
 const BOARD_FRAME_VERTICAL_EXTENSION: float = CELL_WIDTH
 const BOARD_FRAME_COLOR = Color(0.40, 0.32, 0.30, 1.0)
-const BOARD_SIDE_THICKNESS: float = CELL_WIDTH * 0.58
+const BOARD_SIDE_THICKNESS: float = 10.4061
 const BOARD_SIDE_COLOR = Color(0.02, 0.12, 0.16, 1.0)
 const BOARD_SHADER_OVERLAY_Z_INDEX: int = 220
 const BOARD_SHADER_RADIUS: int = 1
@@ -154,7 +175,10 @@ const BOTTOM_STAMP_HAND_MARGIN = 34
 const HOVER_STAMP_MARGIN = 24
 const HOVER_STAMP_EXTRA_LEFT_OFFSET: float = 16.0
 const HOVER_STAMP_PREVIEW_SCALE: float = 0.82
-const HOVER_STAMP_VERTICAL_OFFSET: float = 54.0
+const HOVER_STAMP_VERTICAL_OFFSET: float = 26.0
+## Lifts the big stamp that appears at the side when one is played, so it
+## clears the clock below it.
+const STAMP_SIDE_REVEAL_VERTICAL_OFFSET: float = -28.0
 const HOVER_STAMP_ROTATION_DEGREES: float = -4.0
 const HOVER_PIECE_PREVIEW_SIZE = Vector2(188, 224)
 const HOVER_PIECE_PREVIEW_VERTICAL_OFFSET: float = -78.0
@@ -165,7 +189,6 @@ const HOVER_DESCRIPTION_PANEL_HEIGHT: float = 229.0
 const HOVER_DURATION_SHADOW_COLOR: Color = Color(0.070588, 0.070588, 0.474510, 0.9)
 const HOVER_DURATION_SHADOW_BLUR: float = 1.6
 const HOVER_DURATION_OUTLINE_SIZE: int = 3
-const BOARD_MARKER_LINE_WIDTH = 1.8
 const STAMP_AFFIX_TARGET_FILL_COLOR = Color(1.0, 0.92, 0.58, 0.24)
 const STAMP_AFFIX_TARGET_FILL_INSET: float = 1.0
 const STAMP_AFFIX_TARGET_WIGGLE_RISE: float = 2.2
@@ -262,35 +285,24 @@ const DECK_COUNTER_ROLL_DURATION: float = 0.34
 const DECK_COUNTER_MOTION_BLUR: float = 1.0
 const DECK_COUNTER_OFFSET = Vector2(0.0, 0.0)
 const DECK_COUNTER_Z_INDEX: int = 952
-const TURN_TIMER_LIMIT_SECONDS: int = 300
+const TURN_TIMER_LIMIT_SECONDS: int = 600
+# Two clocks now, one per player. The deck counters key themselves by owner
+# colour (1 and -1), so these stay clear of those.
 const TURN_TIMER_COUNTER_KEY: int = 0
+const TURN_TIMER_OPPONENT_COUNTER_KEY: int = 2
+const CLOCK_FRAME_TEXTURE = preload("res://Assets/clock_frame_double.png")
+const CLOCK_BUTTON_TEXTURE = preload("res://Assets/clock_frame_button.png")
+const CLOCK_BACK_TEXTURE = preload("res://Assets/clock_frame_back.png")
 const TURN_TIMER_GAP: float = 8.0
-const TURN_TIMER_Z_INDEX: int = 961
+# Under the stamp previews and the flash a played stamp makes, which run from
+# 899 up to 980 - those always read over the clock.
+const TURN_TIMER_Z_INDEX: int = 890
 const PLAYER_NAME_LABEL_SIZE = Vector2(180, 28)
 const PLAYER_NAME_LABEL_GAP = 8
 const PLAYER_PORTRAIT_SIZE = Vector2(116, 136)
 const PLAYER_PORTRAIT_MARGIN = 22
 const PLAYER_PORTRAIT_TOP_POSITION = Vector2(70, 4)
 const PLAYER_PORTRAIT_Z_INDEX: int = 928
-const RULES_INFO_BUTTON_SIZE = Vector2(40, 40)
-const RULES_INFO_PANEL_SIZE = Vector2(340, 390)
-const RULES_INFO_PANEL_MARGIN = 24
-const END_TURN_INDICATOR_PADDING: float = 7.0
-const END_TURN_INDICATOR_COLOR = Color(1.0, 1.0, 1.0, 0.92)
-const END_TURN_INDICATOR_Z_INDEX: int = 950
-const ACTION_STATUS_SIZE = Vector2(132, 46)
-const ACTION_STATUS_MARGIN = 22
-const ACTION_STATUS_CELL_SIZE = Vector2(36, 42)
-const ACTION_STATUS_CELL_GAP: int = 7
-const ACTION_STATUS_FLIP_DURATION: float = 0.16
-const ACTION_STATUS_ACTIVE_COLOR = Color(1.0, 1.0, 1.0, 1.0)
-const ACTION_STATUS_ACTIVE_TEXT_COLOR = Color(0.05, 0.05, 0.045, 1.0)
-const ACTION_STATUS_ACTIVE_BORDER_COLOR = Color(0.12, 0.10, 0.075, 1.0)
-const ACTION_STATUS_INACTIVE_COLOR = Color(0.94, 0.93, 0.89, 1.0)
-const ACTION_STATUS_BLOCKED_COLOR = Color(0.02, 0.02, 0.02, 1.0)
-const ACTION_STATUS_STATE_ACTIVE: String = "active"
-const ACTION_STATUS_STATE_EMPTY: String = "empty"
-const ACTION_STATUS_STATE_BLOCKED: String = "blocked"
 const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
@@ -304,7 +316,6 @@ const TUTORIAL_ACTION_EXCHANGE_STAMP = "exchange_stamp"
 const TUTORIAL_ACTION_TURN_PAGE = "turn_page"
 const TUTORIAL_ACTION_END_TURN = "end_turn"
 # Translation key, not display text - the actual paragraph lives in Localization/translations.csv.
-const RULES_INFO_TEXT: String = "RULES_INFO_TEXT"
 const PIECE_SHATTER_FRAGMENT_GROUP_NONE: String = ""
 const PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM: String = "bottom"
 const PIECE_SHATTER_FRAGMENT_GROUP_TOP: String = "top"
@@ -405,7 +416,11 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @onready var white_pieces = $"../CanvasLayer/white_pieces"
 @onready var black_pieces = $"../CanvasLayer/black_pieces"
 @onready var codex_visual = get_node_or_null("../CanvasLayer/Codex")
-@onready var opponent_codex_visual = get_node_or_null("../BackgroundLayer/MatchBackground/Codex")
+# Searched for rather than addressed by path: the codex lives among the
+# background's layers, and which layer it sits between is a matter of what
+# should cover its foot - it has been moved once already, and a stale path
+# here fails silently, leaving the codex sitting still through a whole match.
+@onready var opponent_codex_visual = _find_opponent_codex()
 
 var board : Array
 var piece_objects: Dictionary = {}
@@ -493,6 +508,10 @@ var local_pending_respawns: Dictionary = {
 }
 var local_auto_end_turn_pending: bool = false
 var tutorial_mode_active: bool = false
+## Set by a scene that takes over once the result is up (the tutorial's
+## outro): the result stays on screen and moving on is that scene's business,
+## instead of the match leaving on its own after a wait.
+var hold_after_result: bool = false
 var tutorial_constraints_enabled: bool = false
 var tutorial_constraints: Dictionary = {}
 
@@ -535,9 +554,6 @@ func begin_visual_process(process_name: String) -> void:
 
 func finish_visual_process(process_name: String) -> void:
 	get_visual_process_tracker().finish(process_name)
-
-func is_visual_process_active(process_name: String) -> bool:
-	return get_visual_process_tracker().is_active(process_name)
 
 func has_active_visual_processes(process_names: Array = []) -> bool:
 	return get_visual_process_tracker().has_any_active(process_names)
@@ -766,9 +782,6 @@ func set_tutorial_mode_active(active: bool) -> void:
 func clear_tutorial_constraints() -> void:
 	get_tutorial_match_adapter().clear_constraints()
 
-func refresh_tutorial_dependent_ui() -> void:
-	get_tutorial_match_adapter().refresh_dependent_ui()
-
 func is_tutorial_action_allowed(action_name: String, context: Dictionary = {}, emit_rejection: bool = false) -> bool:
 	return get_tutorial_match_adapter().is_action_allowed(action_name, context, emit_rejection)
 
@@ -778,23 +791,16 @@ func can_auto_end_turn_now() -> bool:
 func apply_tutorial_setup(setup: Dictionary) -> void:
 	get_tutorial_match_adapter().apply_setup(setup)
 
-func set_tutorial_board_from_array(board_data: Array) -> void:
-	get_tutorial_match_adapter().set_board_from_array(board_data)
+func _find_opponent_codex() -> Node:
+	var background: Node = get_node_or_null("../BackgroundLayer/MatchBackground")
+	if background == null:
+		return null
+	return background.find_child("Codex", true, false)
 
-func set_tutorial_affixed_stamps(affixed_stamps: Array) -> void:
-	get_tutorial_match_adapter().set_affixed_stamps(affixed_stamps)
-
-func reset_tutorial_turn_state() -> void:
-	get_tutorial_match_adapter().reset_turn_state()
-
-func set_tutorial_stamp_hand(owner_color: int, stamp_names: Array) -> void:
-	get_tutorial_match_adapter().set_stamp_hand(owner_color, stamp_names)
-
-func set_tutorial_stamp_deck(owner_color: int, stamp_names: Array) -> void:
-	get_tutorial_match_adapter().set_stamp_deck(owner_color, stamp_names)
-
-func set_tutorial_turn(owner_color: int) -> void:
-	get_tutorial_match_adapter().set_turn(owner_color)
+## The room this match is played in. Lives outside the HUD's layer, so the
+## pieces of interface drawn into it are reached through here.
+func get_match_background() -> Node:
+	return get_node_or_null("../BackgroundLayer/MatchBackground")
 
 func create_board_markers_node():
 	board_markers_node = Node2D.new()
@@ -803,7 +809,9 @@ func create_board_markers_node():
 	add_child(board_markers_node)
 	move_child(board_markers_node, 0)
 	pieces_node.z_index = 10
-	dots.z_index = 20
+	# The pieces reach from here up to one rank stride per rank, so the dots
+	# clear the whole band rather than sitting a fixed few slots above it.
+	dots.z_index = pieces_node.z_index + BOARD_SIZE * BoardConfig.DEPTH_Z_STRIDE + 8
 
 func create_piece_effects_node() -> void:
 	if piece_effects_node != null and is_instance_valid(piece_effects_node):
@@ -909,7 +917,6 @@ func finish_stamp_affix_process(piece_position: Vector2) -> void:
 	if had_pending_affix:
 		refresh_piece_freeze_overlay(piece_position)
 	update_stamp_drag_permissions()
-	get_turn_hud_controller().update_action_status_ui()
 
 func has_pending_visual_processes() -> bool:
 	return get_turn_flow_controller().has_pending_visual_processes()
@@ -1008,6 +1015,9 @@ func send_stamp_exchange_action(owner_color: int, stamp_name: String, hand_index
 
 func affix_stamp_visual_to_piece(stamp_visual: StampVisual, piece_position: Vector2) -> void:
 	await get_local_stamp_action_controller().affix_stamp_visual_to_piece(stamp_visual, piece_position)
+
+func affix_hand_stamp_locally(owner_color: int, hand_index: int, piece_position: Vector2) -> void:
+	await get_local_stamp_action_controller().affix_hand_stamp_locally(owner_color, hand_index, piece_position)
 
 func send_stamp_affix_action(owner_color: int, stamp_name: String, piece_position: Vector2, hand_index: int) -> bool:
 	return get_local_stamp_action_controller().send_stamp_affix_action(owner_color, stamp_name, piece_position, hand_index)
@@ -1131,12 +1141,6 @@ func get_board_unprojected_rect_local() -> Rect2:
 func get_projected_board_rect_polygon(horizontal_expand: float = 0.0, vertical_expand: float = -1.0, clamp_to_board: bool = true) -> PackedVector2Array:
 	return get_board_geometry().get_projected_board_rect_polygon(horizontal_expand, vertical_expand, clamp_to_board)
 
-func project_board_point_local(point: Vector2, clamp_to_board: bool = true) -> Vector2:
-	return get_board_geometry().project_point_local(point, clamp_to_board)
-
-func get_board_projected_depth_factor(linear_depth_factor: float, clamp_to_board: bool = true) -> float:
-	return get_board_geometry().get_projected_depth_factor(linear_depth_factor, clamp_to_board)
-
 func get_board_view_color() -> int:
 	if side != null && !side:
 		return -1
@@ -1199,12 +1203,6 @@ func play_bomb_warning_animation(target_pos: Vector2) -> void:
 	if piece_effects_node == null:
 		return
 	get_piece_effect_animator().play_bomb_warning(target_pos)
-
-func defer_server_state_visual_update_for_bomb_warning(bomb_warning_animations: Array[Dictionary], visual_context: Dictionary) -> void:
-	get_server_state_visual_update_controller().defer_for_bomb_warning(bomb_warning_animations, visual_context)
-
-func finish_server_state_visual_update(visual_context: Dictionary) -> void:
-	await get_server_state_visual_update_controller().finish(visual_context)
 
 func reveal_hidden_last_move_arrow_for_game_over() -> void:
 	get_server_state_visual_update_controller().reveal_hidden_last_move_arrow_for_game_over()
@@ -1354,6 +1352,3 @@ func value_to_vector2(value, fallback: Vector2) -> Vector2:
 
 func update_board_markers():
 	get_board_marker_controller().update_markers()
-
-func get_board_cell_rect_local(board_pos: Vector2) -> Rect2:
-	return get_board_geometry().get_cell_rect_local(board_pos)

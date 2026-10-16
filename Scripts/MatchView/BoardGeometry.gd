@@ -6,6 +6,12 @@ var perspective_enabled: bool = true
 var perspective_top_scale: float = 0.74
 var perspective_bottom_scale: float = 1.05
 var perspective_vertical_scale: float = 0.72
+## Pushes the whole projected board away from the camera's centre, towards the
+## viewer. Needed because the drawn board sits lower on screen than a board
+## centred on the camera would. It flips with view_color, so the black side -
+## which looks at the same board through a camera turned 180 degrees - lands in
+## the same place on screen.
+var perspective_near_offset: float = 0.0
 var tile_slide_distance_factor: float = 1.06
 var tile_sink_offset: float = 7.0
 var view_color: int = 1
@@ -17,6 +23,7 @@ func configure(config: Dictionary) -> void:
 	perspective_top_scale = float(config.get("perspective_top_scale", perspective_top_scale))
 	perspective_bottom_scale = float(config.get("perspective_bottom_scale", perspective_bottom_scale))
 	perspective_vertical_scale = float(config.get("perspective_vertical_scale", perspective_vertical_scale))
+	perspective_near_offset = float(config.get("perspective_near_offset", perspective_near_offset))
 	tile_slide_distance_factor = float(config.get("tile_slide_distance_factor", tile_slide_distance_factor))
 	tile_sink_offset = float(config.get("tile_sink_offset", tile_sink_offset))
 	view_color = int(config.get("view_color", view_color))
@@ -60,11 +67,11 @@ func project_point_local(point: Vector2, clamp_to_board: bool = true) -> Vector2
 	var near_y: float
 	var far_direction: float
 	if view_color < 0:
-		near_y = -half_size
+		near_y = -(half_size + perspective_near_offset)
 		far_direction = 1.0
 		linear_depth_factor = (point.y + half_size) / (half_size * 2.0)
 	else:
-		near_y = half_size
+		near_y = half_size + perspective_near_offset
 		far_direction = -1.0
 		linear_depth_factor = (half_size - point.y) / (half_size * 2.0)
 	if clamp_to_board:

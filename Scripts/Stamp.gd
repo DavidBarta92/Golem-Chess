@@ -103,6 +103,15 @@ func get_movement_options() -> Array[Dictionary]:
 func has_effect() -> bool:
 	return StampEffect.has_effect(effect_type)
 
+# Player-facing text lives in Localization/translations.csv under STAMP_DESC_<STAMP_CODE>;
+# `description` is only the fallback for stamps without a row there.
+func get_display_description() -> String:
+	var key: String = "STAMP_DESC_%s" % stamp_code.strip_edges().to_upper()
+	var translated: String = tr(key)
+	if translated == key:
+		return description
+	return translated
+
 func has_square_color_a() -> bool:
 	return square_color_a.a > 0.0
 

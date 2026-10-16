@@ -39,6 +39,9 @@ var ai_vs_ai_fast_mode: bool = false
 var ai_vs_ai_use_random_database_decks: bool = false
 var selected_deck_id: String = ""
 var selected_ai_deck_id: String = ""
+var ai_opponent_name_override: String = ""
+var ai_opponent_portrait_override: Dictionary = {}
+var ai_opponent_deck_stamp_names_override: Array[String] = []
 var multiplayer_menu_status_message: String = ""
 var ai_vs_ai_results: Dictionary = {
 	0: 0,
@@ -99,6 +102,59 @@ func get_local_portrait_data() -> Dictionary:
 
 func get_ai_portrait_data(player_id: int) -> Dictionary:
 	return PortraitLibrary.create_ai_portrait(player_id, get_player_ai_difficulty_level(player_id)).to_dict()
+
+## Story bosses are authored opponents, not "AI Black": they bring their own
+## name, face and stamp list. Those cannot go through selected_ai_deck_id,
+## because that path resolves against the player's saved decks and checks the
+## player's collection - an authored boss deck would silently fall back to
+## whatever the player happens to own. The override sidesteps all of it and is
+## cleared as soon as the story match is over.
+##
+## `opponent_name` arrives already resolved - whether it went through the
+## language files is the decision of the boss itself, via
+## BossDefinition.localize_display_name, so it must not be translated again.
+## How the room is dressed for this match. Set by whoever starts it; the match
+## scene reads them as it opens and they survive until the next match sets
+## them again.
+var match_room_variant: int = 0
+var match_show_opponent_codex: bool = true
+
+func set_match_room(room_variant: int, show_opponent_codex: bool) -> void:
+	match_room_variant = room_variant
+	match_show_opponent_codex = show_opponent_codex
+
+func clear_match_room() -> void:
+	match_room_variant = 0
+	match_show_opponent_codex = true
+
+func set_ai_opponent_override(opponent_name: String, portrait_data: Dictionary, deck_stamp_names: Array[String]) -> void:
+	ai_opponent_name_override = opponent_name.strip_edges()
+	ai_opponent_portrait_override = portrait_data.duplicate(true)
+	ai_opponent_deck_stamp_names_override = deck_stamp_names.duplicate()
+
+func clear_ai_opponent_override() -> void:
+	ai_opponent_name_override = ""
+	ai_opponent_portrait_override = {}
+	ai_opponent_deck_stamp_names_override = []
+
+func has_ai_opponent_override() -> bool:
+	return !ai_opponent_name_override.is_empty() or !ai_opponent_portrait_override.is_empty() or !ai_opponent_deck_stamp_names_override.is_empty()
+
+func get_ai_opponent_name(player_id: int) -> String:
+	if !ai_opponent_name_override.is_empty():
+		return ai_opponent_name_override
+	return tr("AI %s") % (tr("White") if player_id == 0 else tr("Black"))
+
+func get_ai_opponent_portrait_data(player_id: int) -> Dictionary:
+	if !ai_opponent_portrait_override.is_empty():
+		return ai_opponent_portrait_override.duplicate(true)
+	return get_ai_portrait_data(player_id)
+
+func has_ai_opponent_deck_override() -> bool:
+	return !ai_opponent_deck_stamp_names_override.is_empty()
+
+func get_ai_opponent_deck_stamp_names() -> Array[String]:
+	return ai_opponent_deck_stamp_names_override.duplicate()
 
 func sanitize_player_name(raw_player_name: String) -> String:
 	var cleaned_name: String = raw_player_name.strip_edges()

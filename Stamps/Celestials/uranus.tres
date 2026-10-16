@@ -13,5 +13,7 @@ duration = 5
 white_piece_texture = ExtResource("3_prjq2")
 black_piece_texture = ExtResource("1_d5puy")
 description = "Setup (early)"
+square_color_a = Color(0.2784314, 0.17254902, 0.14117648, 1)
+square_color_b = Color(0.2784314, 0.17254902, 0.14117648, 1)
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

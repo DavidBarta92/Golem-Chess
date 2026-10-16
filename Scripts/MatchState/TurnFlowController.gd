@@ -137,6 +137,18 @@ func auto_end_turn_locally_if_still_needed() -> void:
 func on_end_turn_pressed() -> void:
 	await request_end_turn(true)
 
+## True when a move would throw away the one thing the player can still do:
+## put a stamp from the open codex page onto a golem that has none. A move
+## always ends the turn (see NetworkGameHost.handle_move), so this is the last
+## moment to say so. `can_affix_action_now()` is exactly the question of
+## whether a stamp could still go on, so it is asked rather than restated.
+func should_warn_before_move() -> bool:
+	if !SettingsDataManager.is_move_ends_turn_warning_enabled():
+		return false
+	if !match_board.can_control_current_turn():
+		return false
+	return can_affix_action_now()
+
 func request_end_turn(emit_tutorial_rejection: bool, expected_turn_color: int = 0) -> void:
 	if !match_board.can_control_current_turn():
 		return
