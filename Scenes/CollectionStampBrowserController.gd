@@ -2,6 +2,14 @@ extends RefCounted
 class_name CollectionStampBrowserController
 
 const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
+const UNOWNED_STAMP_SHADER = preload("res://Shaders/collection_unowned_stamp.gdshader")
+const UNOWNED_STAMP_OPACITY: float = 0.5
+## The print count sits on a pill hanging off the stamp's bottom-right corner:
+## flat top and bottom, round ends.
+const COUNT_BADGE_HEIGHT: float = 18.0
+const COUNT_BADGE_PADDING: float = 7.0
+const COUNT_BADGE_FONT_SIZE: int = 11
+const COUNT_BADGE_OVERHANG: Vector2 = Vector2(6.0, 9.0)
 
 var collection
 var stamp_grid: GridContainer
@@ -32,6 +40,7 @@ var current_stamp_slot_size: Vector2 = Vector2(128, 142)
 var current_stamp_grid_horizontal_gap: int = 8
 var current_stamp_grid_vertical_gap: int = 2
 var pager_button_press_tweens: Dictionary = {}
+var unowned_stamp_material: ShaderMaterial
 
 var stamp_visual_size: Vector2 = Vector2(168.7, 229)
 var stamp_slot_scale_multiplier: float = 0.88
@@ -95,7 +104,7 @@ func show_page(page_index: int) -> void:
 		empty_label.custom_minimum_size = Vector2(0, 120)
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		empty_label.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
+		empty_label.add_theme_color_override("font_color", CollectionPalette.INK)
 
 	for index in range(start_index, end_index):
 		var stamp_print: StampPrint = filtered_stamp_prints[index] as StampPrint
@@ -189,11 +198,28 @@ func create_browser_stamp_slot(stamp_visual: StampVisual, owned_count: int) -> C
 	# peek out above the book; only the stamp itself should catch the mouse.
 	stamp_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stamp_slot.clip_contents = false
-	stamp_slot.add_child(stamp_visual)
+	if owned_count > 0:
+		stamp_slot.add_child(stamp_visual)
+	else:
+		stamp_slot.add_child(create_unowned_stamp_group(stamp_visual))
 	stamp_slot.add_child(create_print_count_badge(owned_count))
 	stamp_slot.resized.connect(on_browser_stamp_slot_resized.bind(stamp_slot, stamp_visual))
 	configure_browser_stamp_layout(stamp_slot, stamp_visual)
 	return stamp_slot
+
+## A stamp the player does not own is drawn through a CanvasGroup, so the whole
+## stamp is flattened first and only then turned black and white and half
+## see-through - its layers do not show through each other.
+func create_unowned_stamp_group(stamp_visual: StampVisual) -> CanvasGroup:
+	if unowned_stamp_material == null:
+		unowned_stamp_material = ShaderMaterial.new()
+		unowned_stamp_material.shader = UNOWNED_STAMP_SHADER
+		unowned_stamp_material.set_shader_parameter("opacity", UNOWNED_STAMP_OPACITY)
+	var group := CanvasGroup.new()
+	group.name = "UnownedStampGroup"
+	group.material = unowned_stamp_material
+	group.add_child(stamp_visual)
+	return group
 
 func configure_browser_stamp_layout(stamp_slot: Control, stamp_visual: StampVisual) -> void:
 	stamp_slot.custom_minimum_size = current_stamp_slot_size
@@ -208,11 +234,15 @@ func configure_browser_stamp_layout(stamp_slot: Control, stamp_visual: StampVisu
 	update_print_count_badge_layout(stamp_slot, stamp_visual)
 
 func create_print_count_badge(owned_count: int) -> Control:
+	var badge_text: String = tr("%d pcs") % owned_count
+	var text_width: float = codex_title_font.get_string_size(badge_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, COUNT_BADGE_FONT_SIZE).x if codex_title_font != null else 24.0
+	var badge_size := Vector2(maxf(COUNT_BADGE_HEIGHT, ceilf(text_width + COUNT_BADGE_PADDING * 2.0)), COUNT_BADGE_HEIGHT)
+
 	var badge := Control.new()
 	badge.name = "CountBadge"
 	badge.visible = owned_count > 1
-	badge.custom_minimum_size = deck_slot_remove_button_size
-	badge.size = deck_slot_remove_button_size
+	badge.custom_minimum_size = badge_size
+	badge.size = badge_size
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.z_index = 20
 
@@ -227,17 +257,15 @@ func create_print_count_badge(owned_count: int) -> Control:
 	number.set_anchors_preset(Control.PRESET_FULL_RECT)
 	number.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	number.draw.connect(func() -> void:
-		draw_print_count_badge_number(number, str(owned_count), 11 if owned_count < 10 else 9)
+		draw_print_count_badge_number(number, badge_text, COUNT_BADGE_FONT_SIZE)
 	)
 	return badge
 
 func create_count_badge_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.02, 0.02, 0.96)
-	style.corner_radius_top_left = 10
-	style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10
-	style.corner_radius_bottom_right = 10
+	style.bg_color = CollectionPalette.INK
+	style.set_corner_radius_all(int(COUNT_BADGE_HEIGHT * 0.5))
+	style.corner_detail = 12
 	return style
 
 func draw_print_count_badge_number(canvas: Control, text: String, font_size: int) -> void:
@@ -256,7 +284,7 @@ func draw_print_count_badge_number(canvas: Control, text: String, font_size: int
 		(canvas_size.x - text_size.x) * 0.5,
 		(canvas_size.y - text_height) * 0.5 + ascent
 	)
-	canvas.draw_string(codex_title_font, draw_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color.WHITE)
+	canvas.draw_string(codex_title_font, draw_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, CollectionPalette.PAPER_LIGHT)
 
 func update_print_count_badge_layout(stamp_slot: Control, stamp_visual: StampVisual) -> void:
 	var badge: Control = stamp_slot.get_node_or_null("CountBadge") as Control
@@ -265,7 +293,9 @@ func update_print_count_badge_layout(stamp_slot: Control, stamp_visual: StampVis
 	badge.size = badge.custom_minimum_size
 	var scaled_stamp_size: Vector2 = stamp_visual_size * stamp_visual.rest_scale
 	var stamp_top_left: Vector2 = get_stamp_visual_draw_top_left(stamp_visual)
-	badge.position = stamp_top_left + scaled_stamp_size - badge.size - Vector2(2.0, 2.0)
+	# Right end just past the stamp's edge, middle on its bottom edge, so the
+	# pill covers the perforation rather than the stamp's name.
+	badge.position = stamp_top_left + scaled_stamp_size - badge.size + COUNT_BADGE_OVERHANG
 
 func on_browser_stamp_slot_resized(stamp_slot: Control, stamp_visual: StampVisual) -> void:
 	if stamp_visual != null:
@@ -283,6 +313,11 @@ func get_browser_stamp_visual(node: Node) -> StampVisual:
 	for child in node.get_children():
 		if child is StampVisual:
 			return child as StampVisual
+		# An unowned stamp sits one level down, in its greying CanvasGroup.
+		if child is CanvasGroup:
+			for grandchild in child.get_children():
+				if grandchild is StampVisual:
+					return grandchild as StampVisual
 
 	return null
 

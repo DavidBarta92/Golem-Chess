@@ -4,6 +4,7 @@ const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
 const PACK_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionPackController.gd")
 const STAMP_BROWSER_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionStampBrowserController.gd")
 const SAVED_DECK_LIST_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionSavedDeckListController.gd")
+const INTRO_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionIntroController.gd")
 const WINDOW_CLOSE_ICON: Texture2D = preload("res://ui/themes/icons/window_close.svg")
 const PAGER_BACK_ICON: Texture2D = preload("res://ui/themes/icons/back.png")
 const PAGER_NEXT_ICON: Texture2D = preload("res://ui/themes/icons/next.png")
@@ -20,9 +21,18 @@ const PACK_NOTICE_OFFSET_LEFT: float = -216.0
 const PACK_NOTICE_OFFSET_TOP: float = 112.0
 const PACK_NOTICE_OFFSET_RIGHT: float = 24.0
 const PACK_NOTICE_OFFSET_BOTTOM: float = 440.0
+# The album (book and tabs) is drawn bigger than the frame around it so the
+# stamps read better. It is scaled about the book's left edge at the tabs' top,
+# and that point is moved up so the tabs start where the search row's bottom
+# used to be; the book's bottom then leaves room for the control bar under it.
+const ALBUM_SCALE: float = 1.1
+const ALBUM_PIVOT_DESIGN: Vector2 = Vector2(336, 230)
+const ALBUM_PIVOT_TARGET_DESIGN: Vector2 = Vector2(336, 174)
 const DESKTOP_STAMPS_PER_PAGE: int = 9
 const DESKTOP_STAMP_COLUMNS: int = 3
-const DESKTOP_STAMP_SLOT_SIZE: Vector2 = Vector2(128, 142)
+# The stamp slots grow with the album.
+const DESKTOP_STAMP_SLOT_SIZE: Vector2 = Vector2(128, 142) * ALBUM_SCALE
+const DESKTOP_STAMP_GAP: Vector2 = Vector2(8, 2) * ALBUM_SCALE
 const MEDIUM_STAMPS_PER_PAGE: int = 6
 const MEDIUM_STAMP_COLUMNS: int = 3
 const MEDIUM_STAMP_SLOT_SIZE: Vector2 = Vector2(118, 140)
@@ -59,6 +69,7 @@ const BOOK_DESIGN_SIZE: Vector2 = Vector2(1919, 1079)
 const BOOK_LEFT_PAGE_DESIGN_RECT: Rect2 = Rect2(410, 302, 587, 655)
 const BOOK_TOP_EDGE_DESIGN_Y: float = 298.0
 const BOOK_BOTTOM_EDGE_DESIGN_Y: float = 966.0
+const BOOK_LEFT_EDGE_DESIGN_X: float = 336.0
 const CODEX_DESIGN_RECT: Rect2 = Rect2(1202, 594, 551, 208)
 const SET_TAG_NODE_NAMES: Dictionary = {
 	"Animals": "AnimalsTag",
@@ -73,14 +84,23 @@ const SET_TAG_SHADOW_COLOR: Color = Color8(211, 213, 216)
 const SET_TAG_POP_SCALE: float = 1.06
 const SET_TAG_POP_IN_SECONDS: float = 0.07
 const SET_TAG_POP_OUT_SECONDS: float = 0.14
-const BROWSER_TOOLS_TOP_MARGIN: float = 14.0
-const PAGER_CENTER_BELOW_BOOK: float = 38.0
+# The search tools and the pager share one bar under the album.
+const CONTROL_BAR_GAP_BELOW_BOOK: float = 8.0
+const CONTROL_BAR_GAP_BEFORE_PANEL: float = 16.0
+const CONTROL_BAR_BOTTOM_MARGIN: float = 6.0
+const CONTROL_BAR_MIN_GAP: float = 12.0
+## The search field gives up width first when a longer translation of "My
+## collection" would push the tools into the pager.
+const SEARCH_FIELD_WIDTH: float = 140.0
+const SEARCH_FIELD_MIN_WIDTH: float = 90.0
 const PACK_NOTICE_Z_INDEX: int = 25
 const DECK_PANEL_Z_INDEX: int = PACK_NOTICE_Z_INDEX + 5
-# A warm light grey: a step darker than the codex art's paper so the codexes
+# A warm paper grey: a step darker than the codex art's paper so the codexes
 # still stand out on it.
-const DECK_PANEL_BACKGROUND_COLOR: Color = Color8(230, 229, 223)
+const DECK_PANEL_BACKGROUND_COLOR: Color = Color8(233, 228, 217)
 const DECK_PANEL_SIDE_PADDING: float = 10.0
+# How far the panel sits left of where the codex art is placed in the frame.
+const DECK_PANEL_LEFT_SHIFT: float = 40.0
 const DECK_PANEL_BOTTOM_RADIUS: int = 10
 const PAPER_CUTOUT_FADE_SECONDS: float = 0.2
 const DECK_PANEL_CONTENT_TOP_MARGIN: float = 12.0
@@ -109,10 +129,11 @@ const MAGNIFIER_GLASS_LENS_SOURCE_RECT: Rect2 = Rect2(15, 15, 305, 305)
 const MAGNIFIER_GLASS_ROTATION_DEGREES: float = -36.0
 const HOVER_DESCRIPTION_WIDTH: float = 300.0
 const HOVER_DESCRIPTION_FONT_SIZE: int = 16
-const HOVER_DESCRIPTION_BACKGROUND_COLOR: Color = Color(0.93, 0.93, 0.9, 0.96)
+const HOVER_DESCRIPTION_BACKGROUND_COLOR: Color = Color(0.988, 0.976, 0.949, 0.96)
 # Same line as beside the dialogue panels' text in the match.
 const HOVER_DESCRIPTION_LINE_WIDTH: float = 1.5
-const HOVER_DESCRIPTION_LINE_COLOR: Color = Color(0.08, 0.08, 0.08)
+const HOVER_DESCRIPTION_LINE_COLOR: Color = CollectionPalette.INK
+const INK_TINT_SHADER = preload("res://Shaders/ink_tint.gdshader")
 const HOVER_DESCRIPTION_MARGIN_LEFT: float = 14.0
 const HOVER_DESCRIPTION_MARGIN_RIGHT: float = 28.0
 const HOVER_DESCRIPTION_MARGIN_VERTICAL: float = 12.0
@@ -182,8 +203,12 @@ var pack_result_label: Label
 var pack_controller
 var stamp_browser_controller
 var saved_deck_list_controller
+var intro_controller
+var collection_background: TextureRect
 var book_stage: Control
 var book_image: TextureRect
+var book_shadow: TextureRect
+var deck_header: HBoxContainer
 var set_tags: Dictionary = {}
 var set_tag_pop_tween: Tween
 var browser_tools: HBoxContainer
@@ -213,6 +238,7 @@ func _ready() -> void:
 	_setup_pack_controller()
 	_setup_stamp_browser_controller()
 	_setup_saved_deck_list_controller()
+	_setup_intro_controller()
 	_connect_viewport_resize()
 	_apply_responsive_layout(false)
 	_load_stamps()
@@ -273,6 +299,19 @@ func _setup_pack_controller() -> void:
 
 func _setup_stamp_browser_controller() -> void:
 	_get_stamp_browser_controller()
+
+func _setup_intro_controller() -> void:
+	intro_controller = INTRO_CONTROLLER_SCRIPT.new()
+	var drawn_nodes: Array = [collection_background, book_image]
+	drawn_nodes.append_array(set_tags.values())
+	drawn_nodes.append(magnifier_case_closed_image)
+	intro_controller.bind({
+		"collection": self,
+		"drawn_nodes": drawn_nodes,
+		"fill_only_nodes": [book_shadow],
+		"late_nodes": [stamp_grid, browser_tools, pager, pack_panel],
+	})
+	intro_controller.prepare()
 
 func _get_stamp_browser_controller():
 	if stamp_browser_controller == null:
@@ -432,7 +471,8 @@ func _bind_scene_ui() -> void:
 	previous_button = $Pager/PreviousButton
 	page_label = $Pager/PageLabel
 	next_button = $Pager/NextButton
-	new_deck_button = $DeckPanelFrame/RightColumn/NewDeckButton
+	deck_header = $DeckPanelFrame/RightColumn/DeckHeader
+	new_deck_button = $DeckPanelFrame/RightColumn/DeckHeader/NewDeckButton
 	deck_editor_back_button = $DeckPanelFrame/RightColumn/DeckFooter/DeckEditorBackButton
 	deck_name_edit = $DeckPanelFrame/RightColumn/DeckNameEdit
 	_ensure_deck_name_display()
@@ -467,10 +507,10 @@ func _bind_scene_ui() -> void:
 	pack_result_label = $PackResultDialog/PackResultLabel
 	remove_stamp_button = $RemoveStampButton
 	remove_stamp_timer = $RemoveStampTimer
-	deck_title_label = get_node_or_null("DeckPanelFrame/RightColumn/DeckTitle") as Label
+	deck_title_label = get_node_or_null("DeckPanelFrame/RightColumn/DeckHeader/DeckTitle") as Label
 	if deck_title_label != null:
 		deck_title_label.text = tr("My codexes")
-	new_deck_button.text = tr("New codex")
+	new_deck_button.text = "+ " + tr("New codex")
 	deck_name_edit.placeholder_text = tr("Codex name")
 	_configure_pager_buttons()
 	_configure_inventory_block()
@@ -535,6 +575,18 @@ func _update_stamp_grid_reserved_size() -> void:
 
 func _configure_pager_buttons() -> void:
 	_get_stamp_browser_controller().configure_pager_buttons()
+	# The arrow art is black; re-ink it warm. The icon colours stay white so
+	# the theme's ink does not darken the arrow's light chevron first.
+	var ink_material := ShaderMaterial.new()
+	ink_material.shader = INK_TINT_SHADER
+	ink_material.set_shader_parameter("ink_color", CollectionPalette.INK)
+	for button in [previous_button, next_button]:
+		if button == null:
+			continue
+		button.material = ink_material
+		for icon_color_name in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color", "icon_focus_color"]:
+			button.add_theme_color_override(icon_color_name, Color.WHITE)
+		button.add_theme_color_override("icon_disabled_color", Color(1.0, 1.0, 1.0, 0.35))
 
 func _apply_generated_pager_button_visual(button: Button, icon: Texture2D) -> void:
 	_get_stamp_browser_controller().apply_generated_pager_button_visual(button, icon)
@@ -610,7 +662,7 @@ func _setup_hover_description_panel() -> void:
 		hover_description_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hover_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		hover_description_label.add_theme_font_size_override("normal_font_size", HOVER_DESCRIPTION_FONT_SIZE)
-		hover_description_label.add_theme_color_override("default_color", Color(0.08, 0.08, 0.08))
+		hover_description_label.add_theme_color_override("default_color", CollectionPalette.INK)
 	elif hover_description_label == null or !is_instance_valid(hover_description_label):
 		if hover_description_panel.get_child_count() > 0:
 			hover_description_label = hover_description_panel.get_child(0) as RichTextLabel
@@ -939,11 +991,13 @@ func _build_ui() -> void:
 	_setup_magnifier()
 
 func _bind_book_stage() -> void:
+	collection_background = get_node_or_null("CollectionBackground") as TextureRect
 	book_stage = get_node_or_null("BookStage") as Control
 	if book_stage == null:
 		return
 	book_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	book_image = book_stage.get_node_or_null("BookImage") as TextureRect
+	book_shadow = book_stage.get_node_or_null("BookShadow") as TextureRect
 	_layout_book_stage()
 	_bind_set_tags()
 
@@ -960,6 +1014,13 @@ func _design_to_screen(design_point: Vector2) -> Vector2:
 func _design_rect_to_screen(design_rect: Rect2) -> Rect2:
 	return Rect2(_design_to_screen(design_rect.position), design_rect.size * _get_book_fit_scale())
 
+## Where a point of the book art lands once the album is scaled up.
+func _album_to_screen(design_point: Vector2) -> Vector2:
+	return _design_to_screen(ALBUM_PIVOT_TARGET_DESIGN + (design_point - ALBUM_PIVOT_DESIGN) * ALBUM_SCALE)
+
+func _album_rect_to_screen(design_rect: Rect2) -> Rect2:
+	return Rect2(_album_to_screen(design_rect.position), design_rect.size * _get_book_fit_scale() * ALBUM_SCALE)
+
 func _get_codex_row_size() -> Vector2:
 	return (CODEX_DESIGN_RECT.size * _get_book_fit_scale()).round()
 
@@ -972,34 +1033,45 @@ func _layout_book_stage() -> void:
 	if book_stage == null:
 		return
 	book_stage.size = BOOK_DESIGN_SIZE
-	book_stage.scale = Vector2.ONE * _get_book_fit_scale()
-	book_stage.position = _get_book_origin()
+	book_stage.scale = Vector2.ONE * _get_book_fit_scale() * ALBUM_SCALE
+	book_stage.position = _album_to_screen(Vector2.ZERO)
 
-# The stamps sit centred on the book's left page, the search row above the
-# tags and the pager just under the book, both lined up with that page.
+# The stamps sit centred on the book's left page.
 func _layout_stamp_browser() -> void:
-	var viewport_size: Vector2 = get_viewport_rect().size
-	var page_rect: Rect2 = _design_rect_to_screen(BOOK_LEFT_PAGE_DESIGN_RECT)
-	var page_center: Vector2 = page_rect.get_center()
+	var page_rect: Rect2 = _album_rect_to_screen(BOOK_LEFT_PAGE_DESIGN_RECT)
 	if stamp_grid != null:
 		var stamp_bounds: Rect2 = _get_stamp_browser_controller().get_page_stamp_bounds()
-		stamp_grid.position = (page_center - stamp_bounds.get_center()).round()
-	if browser_tools != null:
-		browser_tools.size = Vector2(page_rect.size.x, browser_tools.get_combined_minimum_size().y)
-		browser_tools.position = Vector2(page_rect.position.x, TOP_BAR_HEIGHT + BROWSER_TOOLS_TOP_MARGIN).round()
-	if pager != null:
-		var pager_size: Vector2 = pager.get_combined_minimum_size()
-		var book_bottom: float = _design_to_screen(Vector2(0.0, BOOK_BOTTOM_EDGE_DESIGN_Y)).y
-		var pager_top: float = minf(book_bottom + PAGER_CENTER_BELOW_BOOK - pager_size.y * 0.5, viewport_size.y - pager_size.y)
-		pager.size = pager_size
-		pager.position = Vector2(page_center.x - pager_size.x * 0.5, pager_top).round()
+		stamp_grid.position = (page_rect.get_center() - stamp_bounds.get_center()).round()
+	_layout_control_bar()
+
+# "My collection", the search field and the pager share one bar under the
+# album: the tools from the book's left edge, the pager up against the codex
+# panel.
+func _layout_control_bar() -> void:
+	if browser_tools == null or pager == null:
+		return
+	var bar_left: float = _album_to_screen(Vector2(BOOK_LEFT_EDGE_DESIGN_X, 0.0)).x
+	var bar_right: float = _get_deck_panel_left() - CONTROL_BAR_GAP_BEFORE_PANEL
+	var pager_size: Vector2 = pager.get_combined_minimum_size()
+	if search_field != null:
+		search_field.custom_minimum_size.x = SEARCH_FIELD_WIDTH
+		var overflow: float = browser_tools.get_combined_minimum_size().x + CONTROL_BAR_MIN_GAP + pager_size.x - (bar_right - bar_left)
+		if overflow > 0.0:
+			search_field.custom_minimum_size.x = maxf(SEARCH_FIELD_MIN_WIDTH, SEARCH_FIELD_WIDTH - overflow)
+	var tools_size: Vector2 = browser_tools.get_combined_minimum_size()
+	var bar_height: float = maxf(tools_size.y, pager_size.y)
+	var book_bottom: float = _album_to_screen(Vector2(0.0, BOOK_BOTTOM_EDGE_DESIGN_Y)).y
+	var bar_top: float = minf(book_bottom + CONTROL_BAR_GAP_BELOW_BOOK, get_viewport_rect().size.y - bar_height - CONTROL_BAR_BOTTOM_MARGIN)
+	browser_tools.size = tools_size
+	browser_tools.position = Vector2(bar_left, bar_top + (bar_height - tools_size.y) * 0.5).round()
+	pager.size = pager_size
+	pager.position = Vector2(bar_right - pager_size.x, bar_top + (bar_height - pager_size.y) * 0.5).round()
 
 # The codex panel follows the codex art's place in the book frame horizontally
 # and runs from behind the global top bar down to the bottom margin.
 func _layout_deck_panel() -> void:
 	if deck_panel_frame == null:
 		return
-	var codex_left: float = _design_to_screen(CODEX_DESIGN_RECT.position).x
 	var codex_width: float = _get_codex_row_size().x
 	var panel_size := Vector2(
 		codex_width + DECK_PANEL_SIDE_PADDING * 2.0,
@@ -1009,8 +1081,13 @@ func _layout_deck_panel() -> void:
 		right_column.custom_minimum_size = Vector2(codex_width, 0.0)
 	deck_panel_frame.custom_minimum_size = Vector2(panel_size.x, 0.0)
 	deck_panel_frame.size = panel_size
-	deck_panel_rest_position = Vector2(codex_left - DECK_PANEL_SIDE_PADDING, 0.0).round()
+	deck_panel_rest_position = Vector2(_get_deck_panel_left(), 0.0)
 	_apply_deck_panel_slide_offset()
+
+## The panel's left edge: where the codex art sits in the book frame, nudged
+## a little left.
+func _get_deck_panel_left() -> float:
+	return roundf(_design_to_screen(CODEX_DESIGN_RECT.position).x - DECK_PANEL_SIDE_PADDING - DECK_PANEL_LEFT_SHIFT)
 
 func _apply_deck_panel_slide_offset() -> void:
 	if deck_panel_frame != null:
@@ -1037,6 +1114,9 @@ func _play_deck_panel_slide_in() -> void:
 	await get_tree().process_frame
 	if !is_inside_tree():
 		return
+	# The drawn parts of the room draw themselves while the panel drops.
+	if intro_controller != null:
+		intro_controller.play(DECK_PANEL_SLIDE_DELAY)
 	deck_panel_slide_tween = create_tween()
 	deck_panel_slide_tween.tween_interval(DECK_PANEL_SLIDE_DELAY)
 	deck_panel_slide_tween.tween_method(slide_callable, hidden_offset, DECK_PANEL_SLIDE_OVERSHOOT, DECK_PANEL_SLIDE_SECONDS) \
@@ -1727,8 +1807,8 @@ func _apply_responsive_layout(refresh_page: bool) -> void:
 	var next_columns: int = DESKTOP_STAMP_COLUMNS
 	var next_stamps_per_page: int = DESKTOP_STAMPS_PER_PAGE
 	var next_stamp_slot_size: Vector2 = DESKTOP_STAMP_SLOT_SIZE
-	var next_h_gap: int = 8
-	var next_v_gap: int = 2
+	var next_h_gap: int = roundi(DESKTOP_STAMP_GAP.x)
+	var next_v_gap: int = roundi(DESKTOP_STAMP_GAP.y)
 
 	if viewport_width < 980.0:
 		next_columns = COMPACT_STAMP_COLUMNS
@@ -2015,7 +2095,7 @@ func _sync_deck_name_display() -> void:
 		return
 	var name_text: String = deck_name_edit.text.strip_edges()
 	deck_name_display.text = name_text if !name_text.is_empty() else tr("New")
-	deck_name_display.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08) if !name_text.is_empty() else Color(0.26, 0.26, 0.24))
+	deck_name_display.add_theme_color_override("font_color", CollectionPalette.INK if !name_text.is_empty() else CollectionPalette.INK_SOFT)
 
 func _on_deck_name_display_gui_input(event: InputEvent) -> void:
 	if !is_creating_deck:
@@ -2234,6 +2314,8 @@ func _update_deck_editor_state() -> void:
 	if new_deck_button == null:
 		return
 
+	if deck_header != null:
+		deck_header.visible = !is_creating_deck
 	if deck_title_label != null:
 		deck_title_label.visible = !is_creating_deck
 	new_deck_button.visible = !is_creating_deck
@@ -2359,7 +2441,7 @@ func _add_selected_deck_section(title: String, page_index: int) -> void:
 	section_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	section_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	section_title.add_theme_font_size_override("font_size", CODEX_PAGE_TITLE_FONT_SIZE)
-	section_title.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
+	section_title.add_theme_color_override("font_color", CollectionPalette.INK)
 
 	var section_line := HSeparator.new()
 	deck_stamp_list.add_child(section_line)

@@ -17,6 +17,8 @@
 [ext_resource type="Texture2D" uid="uid://ftr0wuym1oj" path="res://Assets/collection_tag_courtyard.png" id="17_tag_courtyard"]
 [ext_resource type="Texture2D" uid="uid://bb5lgilng03rk" path="res://Assets/collection_tag_structures.png" id="18_tag_structures"]
 [ext_resource type="Shader" uid="uid://cq2wpk53gbihw" path="res://Shaders/paper_texture.gdshader" id="19_paper_texture_shader"]
+[ext_resource type="Theme" path="res://ui/themes/collection_theme.tres" id="20_collection_theme"]
+[ext_resource type="Shader" path="res://Shaders/flat_shadow.gdshader" id="21_flat_shadow"]
 [ext_resource type="ShaderMaterial" path="res://Shaders/vignette_material.tres" id="90_vignette_material"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamp"]
@@ -32,6 +34,10 @@ corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pager_button"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_book_shadow"]
+shader = ExtResource("21_flat_shadow")
+shader_parameter/shadow_color = Color(0.827451, 0.835294, 0.847059, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_light"]
 content_margin_left = 14.0
@@ -92,6 +98,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("20_collection_theme")
 script = ExtResource("1_collection")
 
 [node name="PaperBackground" type="ColorRect" parent="."]
@@ -103,13 +110,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="BookStage" type="Control" parent="."]
-layout_mode = 0
-offset_right = 1919.0
-offset_bottom = 1079.0
-mouse_filter = 2
-
-[node name="CollectionBackground" type="TextureRect" parent="BookStage"]
+[node name="CollectionBackground" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -118,6 +119,29 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("11_collection_bg")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BookStage" type="Control" parent="."]
+layout_mode = 0
+offset_right = 1919.0
+offset_bottom = 1079.0
+mouse_filter = 2
+
+[node name="BookShadow" type="TextureRect" parent="BookStage"]
+material = SubResource("ShaderMaterial_book_shadow")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 11.0
+offset_top = 12.0
+offset_right = 11.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("12_collection_book")
 expand_mode = 1
 
 [node name="AnimalsTag" type="TextureButton" parent="BookStage"]
@@ -346,15 +370,15 @@ theme_override_constants/separation = 10
 
 [node name="OwnedOnlyCheck" type="CheckBox" parent="BrowserTools" unique_id=808986781]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
 text = "My collection"
 
 [node name="ToolSpacer" type="Control" parent="BrowserTools" unique_id=145477775]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="SearchField" type="LineEdit" parent="BrowserTools" unique_id=1366859969]
-custom_minimum_size = Vector2(150, 34)
+custom_minimum_size = Vector2(140, 34)
 layout_mode = 2
 placeholder_text = "Search"
 
@@ -470,11 +494,11 @@ vertical_alignment = 1
 layout_mode = 0
 offset_right = 248.0
 offset_bottom = 42.0
-theme_override_constants/separation = 16
+theme_override_constants/separation = 8
 alignment = 1
 
 [node name="PreviousButton" type="Button" parent="Pager" unique_id=305002767]
-custom_minimum_size = Vector2(54, 42)
+custom_minimum_size = Vector2(44, 42)
 layout_mode = 2
 size_flags_vertical = 8
 focus_mode = 0
@@ -489,7 +513,7 @@ icon_alignment = 1
 expand_icon = true
 
 [node name="PageLabel" type="Label" parent="Pager" unique_id=1190991235]
-custom_minimum_size = Vector2(92, 42)
+custom_minimum_size = Vector2(64, 42)
 layout_mode = 2
 size_flags_vertical = 8
 text = "1 / 3"
@@ -497,7 +521,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="NextButton" type="Button" parent="Pager" unique_id=94827727]
-custom_minimum_size = Vector2(54, 42)
+custom_minimum_size = Vector2(44, 42)
 layout_mode = 2
 size_flags_vertical = 8
 focus_mode = 0
@@ -524,16 +548,23 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="DeckTitle" type="Label" parent="DeckPanelFrame/RightColumn" unique_id=1334946907]
+[node name="DeckHeader" type="HBoxContainer" parent="DeckPanelFrame/RightColumn"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.08, 0.08, 0.08, 1)
-theme_override_font_sizes/font_size = 22
-text = "My codexes"
-horizontal_alignment = 1
+theme_override_constants/separation = 10
 
-[node name="NewDeckButton" type="Button" parent="DeckPanelFrame/RightColumn" unique_id=520008270]
-custom_minimum_size = Vector2(0, 42)
+[node name="DeckTitle" type="Label" parent="DeckPanelFrame/RightColumn/DeckHeader" unique_id=1334946907]
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 21
+text = "My codexes"
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="NewDeckButton" type="Button" parent="DeckPanelFrame/RightColumn/DeckHeader" unique_id=520008270]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 14
 text = "New codex"
 
 [node name="DeckNameEdit" type="LineEdit" parent="DeckPanelFrame/RightColumn" unique_id=943958489]

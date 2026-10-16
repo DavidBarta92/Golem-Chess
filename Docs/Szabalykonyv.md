@@ -82,7 +82,8 @@ A játékban nincs döntetlen. A meccs a következő módokon érhet véget:
    - a „Kör vége” használata kimerült vagy lefagyasztott golem miatt (lásd 4.3).
 
    Az első körben elég, ha a játékos tud bélyeget felragasztani vagy lapozni.
-3. **Lejárt óra** – csak többjátékos módban: ha egy játékos sakkórája 00:00-ra ér, veszít (lásd 9.).
+3. **Lejárt óra** – ha egy játékos sakkórája 00:00-ra ér, veszít (lásd 9.).
+4. **Kilépés** – csak többjátékos módban: ha egy játékos meccs közben kilép vagy megszakad a kapcsolata, az ellenfele azonnal nyer.
 
 ---
 
@@ -309,12 +310,12 @@ A kezdőpakli („Nagyapa kódexe”) sorrendben: Prince, Knight, Warlord / Lanc
 
 ---
 
-## 9. Óra (többjátékos mód)
+## 9. Óra
 
-- Többjátékos meccsen minden játékosnak **5 perc** áll rendelkezésére a **teljes meccsre** (sakkóra).
+- Minden meccsen – egyjátékos, történet és többjátékos módban is – mindkét játékosnak **10 perc** áll rendelkezésére a **teljes meccsre** (sakkóra).
 - Az óra csak a saját köröd alatt fut.
 - Ha az órád 00:00-ra ér, azonnal veszítesz.
-- Egyjátékos és történet módban nincs óra.
+- Kivétel: a történet legelső főnökmeccsei óra nélkül zajlanak.
 
 ---
 
@@ -322,9 +323,9 @@ A kezdőpakli („Nagyapa kódexe”) sorrendben: Prince, Knight, Warlord / Lanc
 
 | Mód | Jellemzők |
 |---|---|
-| **Egyjátékos** | Meccs a gépi ellenfél ellen, 1–12 közötti nehézségi szinttel. A játékos fehérrel játszik és kezd. Nincs óra. Győzelemért 5 pont jár. |
+| **Egyjátékos** | Meccs a gépi ellenfél ellen, 1–12 közötti nehézségi szinttel. A játékos fehérrel játszik és kezd. 10 perces sakkóra játékosonként. Győzelemért 5 pont jár. |
 | **Történet** | Egymást követő főnökök saját, előre megírt kódexekkel. Győzelemmel nyílik a folytatás; vereség után ugyanaz a meccs újrajátszható. |
-| **Többjátékos** | Két emberi játékos (saját szerver vagy Steam). A színeket a rendszer véletlenszerűen osztja ki; a fehér kezd. 5 perces sakkóra játékosonként. |
+| **Többjátékos** | Két emberi játékos (saját szerver vagy Steam). A színeket a rendszer véletlenszerűen osztja ki; a fehér kezd. 10 perces sakkóra játékosonként. Aki kilép, veszít. Győzelemért nem jár pont. |
 | **Oktató** | Lépésről lépésre vezetett meccs, amely a fenti szabályokat mutatja be. |
 | **Gyűjtemény** | Csomagok vásárlása pontokért (egy csomag 4 bélyeget ad), kódexek szerkesztése a 8. pont szabályai szerint. |
 

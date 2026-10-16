@@ -57,6 +57,7 @@ Pack contents,Pack contents,Csomag tartalma
 Buy,Buy,Vásárlás
 Open pack,Open pack,Csomag kibontása
 "%d unopened","%d unopened","%d felbontatlan"
+"%d pcs","%d pcs","%d db"
 No unopened packs,No unopened packs,Nincs felbontatlan csomag
 No available packs.,No available packs.,Nincs elérhető csomag.
 This pack has no configured stamps.,This pack has no configured stamps.,Ehhez a csomaghoz nincsenek beállított bélyegek.

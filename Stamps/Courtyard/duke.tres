@@ -2,6 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="1_white"]
 [ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="2_black"]
+[ext_resource type="Texture2D" uid="uid://c1mt5qoppyaoe" path="res://Assets/Stamps/duke_1.png" id="3_cewdf"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_stamp"]
 
 [resource]
@@ -10,9 +11,10 @@ stamp_name = "Duke"
 stamp_code = "duke"
 Set = "Courtyard"
 duration = 1
+stamp_art = ExtResource("3_cewdf")
 white_piece_texture = ExtResource("1_white")
 black_piece_texture = ExtResource("2_black")
 description = "No special effect."
-square_color_a = Color(0.3372549, 0.1882353, 0.19607843, 1)
-square_color_b = Color(0.3372549, 0.1882353, 0.19607843, 1)
+square_color_a = Color(0.30588236, 0.24705882, 0.29803923, 1)
+square_color_b = Color(0.30588236, 0.24705882, 0.29803923, 1)
 movement_pattern = Array[Array]([[0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [1, 0, 0, 0, 1], [0, 0, 1, 0, 0], [0, 1, 0, 1, 0]])

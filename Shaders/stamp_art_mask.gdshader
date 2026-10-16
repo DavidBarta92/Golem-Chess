@@ -37,7 +37,8 @@ void fragment() {
 	vec4 art = vec4(source_art.rgb, source_art.a * COLOR.a);
 	float type_mask = mask_value(texture(type_mask_texture, stamp_uv));
 	float stamp_mask = has_stamp_mask ? mask_value(texture(stamp_mask_texture, stamp_uv)) : 0.0;
-	float final_mask = has_stamp_mask ? stamp_mask : type_mask;
+	// The art always shows inside the role's shape; a stamp mask adds its own shape on top.
+	float final_mask = max(type_mask, stamp_mask);
 	float alpha = smoothstep(0.0, max(edge_softness, 0.0001), final_mask);
 	art.a *= alpha;
 	COLOR = art;
