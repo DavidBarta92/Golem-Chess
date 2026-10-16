@@ -96,6 +96,12 @@ var hover_raise_enabled: bool = true
 var rest_scale: Vector2 = Vector2.ONE
 var preview_alpha_enabled: bool = false
 var preview_alpha: float = 1.0
+var default_name_color: Color
+var default_name_font: Font
+var default_name_font_size: int
+var default_duration_color: Color
+var default_duration_outline_color: Color
+var default_duration_outline_size: int
 
 func _ready() -> void:
 	set_meta("sfx_click", "")
@@ -124,6 +130,7 @@ func _ready() -> void:
 	mouse_exited.connect(_on_mouse_exited)
 	gui_input.connect(_on_gui_input)
 	set_process(true)
+	_capture_default_text_style()
 	_apply_stamp()
 
 func _apply_texture_filter() -> void:
@@ -589,6 +596,7 @@ func _apply_stamp() -> void:
 		duration_label.text = tr("INF") if stamp.duration < 0 else str(stamp.duration)
 		pattern_view.set_stamp(stamp)
 
+	_apply_text_style()
 	_apply_art_state()
 	_apply_face_state()
 	_apply_collection_state()
@@ -632,6 +640,43 @@ func _apply_art_state() -> void:
 	var trigger_art_texture: Texture2D = _get_trigger_art_texture()
 	trigger_art.texture = trigger_art_texture
 	trigger_art.visible = !face_down && trigger_art_texture != null
+
+# The labels' look set in StampVisual.tscn is the default a stamp can override.
+func _capture_default_text_style() -> void:
+	default_name_color = name_label.get_theme_color("font_color")
+	default_name_font = name_label.get_theme_font("font")
+	default_name_font_size = name_label.get_theme_font_size("font_size")
+	default_duration_color = duration_label.get_theme_color("font_color")
+	default_duration_outline_color = duration_label.get_theme_color("font_outline_color")
+	default_duration_outline_size = duration_label.get_theme_constant("outline_size")
+
+func _apply_text_style() -> void:
+	var name_color: Color = default_name_color
+	var name_font: Font = default_name_font
+	var name_font_size: int = default_name_font_size
+	var duration_color: Color = default_duration_color
+	var duration_outline_color: Color = default_duration_outline_color
+	var duration_outline_size: int = default_duration_outline_size
+	if stamp != null:
+		if stamp.name_color.a > 0.0:
+			name_color = stamp.name_color
+		if stamp.name_font != null:
+			name_font = stamp.name_font
+		if stamp.name_font_size > 0:
+			name_font_size = stamp.name_font_size
+		if stamp.duration_color.a > 0.0:
+			duration_color = stamp.duration_color
+		if stamp.duration_outline_color.a > 0.0:
+			duration_outline_color = stamp.duration_outline_color
+		if stamp.duration_outline_size > 0:
+			duration_outline_size = stamp.duration_outline_size
+
+	name_label.add_theme_color_override("font_color", name_color)
+	name_label.add_theme_font_override("font", name_font)
+	name_label.add_theme_font_size_override("font_size", name_font_size)
+	duration_label.add_theme_color_override("font_color", duration_color)
+	duration_label.add_theme_color_override("font_outline_color", duration_outline_color)
+	duration_label.add_theme_constant_override("outline_size", duration_outline_size)
 
 func _get_square_color_a() -> Color:
 	if stamp_print != null && stamp_print.has_square_color_a():

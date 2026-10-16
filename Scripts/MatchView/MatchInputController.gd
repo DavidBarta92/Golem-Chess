@@ -155,8 +155,6 @@ func send_move_action(from_pos: Vector2, to_pos: Vector2) -> void:
 		GameController.send_action(action)
 		return
 
-	if match_board.get_parent().has_method("send_move"):
-		match_board.get_parent().send_move(from_pos, to_pos)
 	match_board.set_move(from_pos, to_pos)
 
 func is_mouse_out() -> bool:

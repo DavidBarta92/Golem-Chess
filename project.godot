@@ -26,6 +26,7 @@ buses/default_bus_layout="uid://0axhvfpiw6je"
 
 [autoload]
 
+SteamManager="*res://Scripts/SteamManager.gd"
 SaveIO="*res://Scripts/SaveIO.gd"
 StampLibrary="*res://Scripts/StampLibrary.gd"
 StampPrintLibrary="*res://Scripts/StampPrintLibrary.gd"

@@ -38,11 +38,18 @@ const DEFAULT_BOMB_TEXTURE = preload("res://Assets/stamp_pattern_bomb.svg")
 @export var center_color: Color = Color(0.08, 0.08, 0.08, 0.9)
 @export var guide_color: Color = Color(0.42, 0.48, 0.46, 0.5)
 
+@export_group("Marker Sizes")
+@export var active_size_scale: float = 1.1
+@export var move_only_size_scale: float = 1.2
+@export var capture_only_size_scale: float = 1.3
+
 var movement_pattern: Array = []
 var effect_pattern: Array = []
 var effect_type: String = StampEffect.TYPE_NONE
 var has_effect_pattern: bool = false
 var pattern_shimmer_material: ShaderMaterial
+# The shown stamp's own color for every marker; transparent falls back to the colors above.
+var marker_color_override: Color = Color(0, 0, 0, 0)
 
 func _ready() -> void:
 	texture_filter = DOT_TEXTURE_FILTER
@@ -55,6 +62,7 @@ func set_pattern(pattern: Array) -> void:
 	effect_pattern = []
 	effect_type = StampEffect.TYPE_NONE
 	has_effect_pattern = false
+	marker_color_override = Color(0, 0, 0, 0)
 	queue_redraw()
 
 func set_stamp(stamp: Stamp) -> void:
@@ -66,6 +74,7 @@ func set_stamp(stamp: Stamp) -> void:
 	effect_pattern = stamp.effect_params if _should_show_effect_pattern(stamp) else []
 	effect_type = stamp.effect_type
 	has_effect_pattern = !effect_pattern.is_empty()
+	marker_color_override = stamp.marker_color
 	queue_redraw()
 
 func set_shimmer_time(value: float) -> void:
@@ -126,24 +135,27 @@ func _get_pattern_value(pattern: Array, row: int, col: int) -> int:
 func _draw_movement_marker(center: Vector2, cell_size: float, movement_type: int) -> void:
 	match movement_type:
 		StampEffect.MOVEMENT_MOVE_ONLY:
-			_draw_marker_texture(move_only_texture, center, cell_size * MARKER_SIZE_RATIO, move_only_color)
+			_draw_marker_texture(move_only_texture, center, cell_size * MARKER_SIZE_RATIO * move_only_size_scale, _get_marker_color(move_only_color))
 		StampEffect.MOVEMENT_CAPTURE_ONLY:
-			_draw_marker_texture(capture_only_texture, center, cell_size * MARKER_SIZE_RATIO, capture_only_color)
+			_draw_marker_texture(capture_only_texture, center, cell_size * MARKER_SIZE_RATIO * capture_only_size_scale, _get_marker_color(capture_only_color))
 		_:
-			_draw_marker_texture(active_texture, center, cell_size * MARKER_SIZE_RATIO, active_color)
+			_draw_marker_texture(active_texture, center, cell_size * MARKER_SIZE_RATIO * active_size_scale, _get_marker_color(active_color))
 
 func _draw_effect_marker(center: Vector2, cell_size: float) -> void:
 	match effect_type:
 		StampEffect.TYPE_INVALID_SQUARES:
-			_draw_marker_texture(invalid_texture, center, cell_size * MARKER_SIZE_RATIO, invalid_color)
+			_draw_marker_texture(invalid_texture, center, cell_size * MARKER_SIZE_RATIO, _get_marker_color(invalid_color))
 		StampEffect.TYPE_FROZEN_SQUARES:
-			_draw_marker_texture(frozen_texture, center, cell_size * MARKER_SIZE_RATIO, frozen_color)
+			_draw_marker_texture(frozen_texture, center, cell_size * MARKER_SIZE_RATIO, _get_marker_color(frozen_color))
 		StampEffect.TYPE_MOVE_BASE:
-			_draw_marker_texture(base_texture, center, cell_size * MARKER_SIZE_RATIO, base_color)
+			_draw_marker_texture(base_texture, center, cell_size * MARKER_SIZE_RATIO, _get_marker_color(base_color))
 		StampEffect.TYPE_BOMB:
-			_draw_marker_texture(bomb_texture, center, cell_size * MARKER_SIZE_RATIO, bomb_color)
+			_draw_marker_texture(bomb_texture, center, cell_size * MARKER_SIZE_RATIO, _get_marker_color(bomb_color))
 		_:
-			_draw_marker_texture(active_texture, center, cell_size * MARKER_SIZE_RATIO, active_color)
+			_draw_marker_texture(active_texture, center, cell_size * MARKER_SIZE_RATIO, _get_marker_color(active_color))
+
+func _get_marker_color(default_color: Color) -> Color:
+	return marker_color_override if marker_color_override.a > 0.0 else default_color
 
 func _draw_marker_texture(texture: Texture2D, center: Vector2, marker_size: float, marker_color: Color) -> void:
 	if texture == null or marker_size <= 0.0:

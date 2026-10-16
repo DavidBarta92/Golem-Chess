@@ -120,6 +120,9 @@ func should_award_win_points(winner_color: int) -> bool:
 		return false
 	if GameConfig.is_ai_vs_ai_batch:
 		return false
+	# Points are earned against the game, not against another player.
+	if !GameConfig.is_singleplayer:
+		return false
 
 	return did_local_player_win(winner_color)
 

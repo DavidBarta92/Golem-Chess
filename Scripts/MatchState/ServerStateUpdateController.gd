@@ -5,6 +5,50 @@ var match_board
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
 
+## Applies one state as NetworkGameHost.serialize_state_for_player() builds it.
+## The host's own board and a remote client's board both come through here, so
+## a field the host adds to the state reaches both views or neither.
+func apply_state_data(state_data: Dictionary) -> void:
+	var pieces_data: Dictionary = {}
+	for piece_value in state_data.get("pieces", []):
+		var piece_data: Dictionary = piece_value
+		var pos := Vector2(piece_data.position[0], piece_data.position[1])
+		pieces_data[pos] = {
+			"position": pos,
+			"color": piece_data.color,
+			"stamp_name": piece_data.stamp_name,
+			"turns_remaining": piece_data.turns_remaining,
+			"exhausted_this_turn": bool(piece_data.get("exhausted_this_turn", false)),
+			"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0)),
+			"hidden_from_viewer": bool(piece_data.get("hidden_from_viewer", false)),
+			"protection_turns_remaining": int(piece_data.get("protection_turns_remaining", -1)),
+		}
+
+	update_from_server_state(
+		pieces_data,
+		state_data.get("player_hands", {}),
+		int(state_data.get("current_turn", 0)),
+		bool(state_data.get("game_over", false)),
+		int(state_data.get("winner_player", -1)),
+		state_data.get("player_decks_size", {}),
+		state_data.get("player_codex_state", {}),
+		state_data.get("hidden_stamps", []),
+		state_data.get("player_base_fields", {}),
+		state_data.get("board_effects", []),
+		state_data.get("player_names", {}),
+		state_data.get("recent_stamp_transfers", []),
+		state_data.get("recent_stamp_expirations", []),
+		state_data.get("recent_bomb_effects", []),
+		state_data.get("recent_pending_respawn_queues", []),
+		state_data.get("recent_pending_respawn_arrivals", []),
+		state_data.get("last_move", {}),
+		state_data.get("player_portraits", {}),
+		int(state_data.get("viewer_player_id", -1)),
+		state_data.get("turn_action_state", {}),
+		state_data.get("player_clock_seconds", {}),
+		state_data.get("recent_effect_activations", [])
+	)
+
 func update_from_server_state(
 	pieces_data: Dictionary,
 	player_hands: Dictionary,

@@ -9,13 +9,70 @@ extends Control
 @onready var status_label: Label = $VBoxContainer/StatusLabel
 
 var deck_ids: Array[String] = []
+## Only there while Steam runs (SteamManager.is_available()).
+var steam_friend_button: Button = null
+var steam_quick_match_button: Button = null
+var steam_matchmaking: SteamMatchmakingClient = null
 
 func _ready() -> void:
 	server_ip_input.text = GameConfig.server_ip
 	port_input.text = str(GameConfig.server_port)
 	server_rooms_button.text = tr("Server Room")
 	show_status_message(GameConfig.consume_multiplayer_menu_status_message())
+	_create_steam_buttons()
 	_populate_deck_options()
+
+func _create_steam_buttons() -> void:
+	if !SteamManager.is_available():
+		return
+	steam_friend_button = _add_button_after(server_rooms_button, tr("Steam: Invite a Friend"), _on_steam_friend_button_pressed)
+	steam_quick_match_button = _add_button_after(steam_friend_button, tr("Steam: Quick Match"), _on_steam_quick_match_button_pressed)
+
+func _add_button_after(previous: Control, text: String, callback: Callable) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.pressed.connect(callback)
+	var container: Node = previous.get_parent()
+	container.add_child(button)
+	container.move_child(button, previous.get_index() + 1)
+	return button
+
+func _set_steam_buttons_disabled(disabled: bool) -> void:
+	for button in [steam_friend_button, steam_quick_match_button]:
+		if button != null:
+			button.disabled = disabled
+
+## Hosts a friends-only Steam lobby; the match scene opens the overlay's invite
+## dialog once the lobby exists.
+func _on_steam_friend_button_pressed() -> void:
+	_save_selected_deck()
+	GameConfig.prepare_steam_host(GameConfig.MATCHMAKING_MODE_FRIEND_INVITE)
+	SceneTransition.change_scene("res://Scenes/main.tscn")
+
+## Joins an open quick-match lobby if there is one, and opens one otherwise.
+func _on_steam_quick_match_button_pressed() -> void:
+	_save_selected_deck()
+	show_status_message(tr("Searching for a Steam match..."))
+	_set_steam_buttons_disabled(true)
+	if steam_matchmaking == null:
+		steam_matchmaking = SteamMatchmakingClient.new()
+		add_child(steam_matchmaking)
+		steam_matchmaking.lobby_join_requested.connect(_on_steam_quick_match_found)
+		steam_matchmaking.quick_match_requested.connect(_on_steam_quick_match_empty)
+		steam_matchmaking.matchmaking_failed.connect(_on_steam_matchmaking_failed)
+	steam_matchmaking.start_quick_match()
+
+func _on_steam_quick_match_found(lobby: MultiplayerLobby) -> void:
+	GameConfig.prepare_steam_join(lobby.lobby_id, GameConfig.MATCHMAKING_MODE_QUICK_MATCH)
+	SceneTransition.change_scene("res://Scenes/main.tscn")
+
+func _on_steam_quick_match_empty() -> void:
+	GameConfig.prepare_steam_host(GameConfig.MATCHMAKING_MODE_QUICK_MATCH)
+	SceneTransition.change_scene("res://Scenes/main.tscn")
+
+func _on_steam_matchmaking_failed(message: String) -> void:
+	show_status_message(message)
+	_set_steam_buttons_disabled(false)
 
 func _on_host_button_pressed():
 	_save_selected_deck()
@@ -78,12 +135,14 @@ func _populate_deck_options() -> void:
 		host_button.disabled = true
 		join_button.disabled = true
 		server_rooms_button.disabled = true
+		_set_steam_buttons_disabled(true)
 		return
 
 	deck_option_button.disabled = false
 	host_button.disabled = false
 	join_button.disabled = false
 	server_rooms_button.disabled = false
+	_set_steam_buttons_disabled(false)
 
 	var selected_index: int = 0
 	var current_deck_id: String = GameConfig.get_selected_deck_id()

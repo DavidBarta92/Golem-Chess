@@ -437,11 +437,11 @@ func update_turn_timer_visibility() -> void:
 func clear_turn_timer_timeout_pending() -> void:
 	pass
 
-## Shown in a single player match as well as a networked one. The clock only
-## runs on a human's turn - `should_run_turn_timer()` sees to that - so against
-## an AI it simply holds while the opponent thinks. A batch of AI-against-AI
-## games has nobody to time, so that one still hides it, and so does a story
-## boss met before the clock is introduced (BossDefinition.show_clock).
+## Shown in a single player match as well as a networked one. Whoever is on
+## the move loses time, an AI included: its clock runs while it thinks, the same
+## as the host's own clock does (NetworkGameHost.process). A batch of
+## AI-against-AI games has nobody to time, so that one still hides it, and so
+## does a story boss met before the clock is introduced (BossDefinition.show_clock).
 func should_show_turn_timer() -> bool:
 	return !GameConfig.is_ai_vs_ai_batch and StoryManager.should_show_match_clock()
 

@@ -1338,6 +1338,9 @@ func update_from_server_state(pieces_data: Dictionary, player_hands: Dictionary,
 		recent_effect_activations
 	)
 
+func apply_server_state_data(state_data: Dictionary) -> void:
+	get_server_state_update_controller().apply_state_data(state_data)
+
 func should_skip_visual_animations() -> bool:
 	return GameConfig.should_skip_ai_vs_ai_delays()
 

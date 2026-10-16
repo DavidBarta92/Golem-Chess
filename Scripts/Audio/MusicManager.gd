@@ -55,11 +55,9 @@ func set_stem_volume(stem_index: int, volume_db: float) -> void:
 
 func _find_stem_paths() -> Array[String]:
 	var paths: Array[String] = []
-	var dir := DirAccess.open(MUSIC_DIR)
-	if dir == null:
-		return paths
-
-	var file_names: PackedStringArray = dir.get_files()
+	# ResourceLoader.list_directory instead of DirAccess: exported builds only
+	# ship the *.wav.import stubs, not the original *.wav files.
+	var file_names: PackedStringArray = ResourceLoader.list_directory(MUSIC_DIR)
 	file_names.sort()
 	for file_name in file_names:
 		if VALID_EXTENSIONS.has(file_name.get_extension().to_lower()):

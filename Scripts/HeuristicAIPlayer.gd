@@ -8,18 +8,18 @@ const BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 ## turn from [x, y] by difficulty level and spread over the turn's actions
 ## (see AITurnPlanner.begin_turn_pacing). Level 1 is deliberately quick.
 const TURN_DELAY_RANGES: Dictionary = {
-	1: Vector2(0.0, 4.0),
-	2: Vector2(9.0, 14.0),
-	3: Vector2(8.0, 13.0),
-	4: Vector2(7.0, 12.0),
-	5: Vector2(6.0, 11.0),
-	6: Vector2(5.0, 10.0),
-	7: Vector2(4.0, 9.0),
-	8: Vector2(3.0, 8.0),
-	9: Vector2(2.0, 7.0),
-	10: Vector2(2.0, 6.0),
-	11: Vector2(1.0, 5.0),
-	12: Vector2(0.0, 4.0),
+	1: Vector2(0.0, 8.0),
+	2: Vector2(18.0, 28.0),
+	3: Vector2(16.0, 26.0),
+	4: Vector2(14.0, 24.0),
+	5: Vector2(12.0, 22.0),
+	6: Vector2(10.0, 20.0),
+	7: Vector2(8.0, 18.0),
+	8: Vector2(6.0, 16.0),
+	9: Vector2(4.0, 14.0),
+	10: Vector2(4.0, 12.0),
+	11: Vector2(2.0, 10.0),
+	12: Vector2(0.0, 8.0),
 }
 
 var player_id: int = 1

@@ -199,6 +199,29 @@ func consume_multiplayer_menu_status_message() -> String:
 	multiplayer_menu_status_message = ""
 	return message
 
+## A Steam match this player hosts. The lobby owner runs the game, so there is
+## no address to fill in. mode is MATCHMAKING_MODE_FRIEND_INVITE or
+## MATCHMAKING_MODE_QUICK_MATCH.
+func prepare_steam_host(mode: String) -> void:
+	_prepare_steam_match(mode)
+	is_hosting = true
+	selected_lobby_id = ""
+
+## A Steam match in someone else's lobby, which its owner hosts.
+func prepare_steam_join(lobby_id: String, mode: String) -> void:
+	_prepare_steam_match(mode)
+	is_hosting = false
+	selected_lobby_id = lobby_id
+
+func _prepare_steam_match(mode: String) -> void:
+	stop_ai_vs_ai_batch()
+	is_singleplayer = false
+	is_dedicated_server = false
+	server_ip = ""
+	set_multiplayer_provider(MULTIPLAYER_PROVIDER_STEAM)
+	set_matchmaking_mode(mode)
+	reset_multiplayer_controllers()
+
 func parse_server_port(raw_port) -> int:
 	var parsed_port: int = DEFAULT_SERVER_PORT
 	if raw_port is int:

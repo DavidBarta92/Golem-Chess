@@ -50,11 +50,9 @@ func _process(_delta: float) -> void:
 
 func _scan_ambience_directory() -> void:
 	_tracks.clear()
-	var dir := DirAccess.open(AMBIENCE_DIR)
-	if dir == null:
-		return
-
-	for file_name in dir.get_files():
+	# ResourceLoader.list_directory instead of DirAccess: exported builds only
+	# ship the *.wav.import stubs, not the original *.wav files.
+	for file_name in ResourceLoader.list_directory(AMBIENCE_DIR):
 		if !VALID_EXTENSIONS.has(file_name.get_extension().to_lower()):
 			continue
 		var stream: AudioStream = load(AMBIENCE_DIR + file_name)

@@ -6,6 +6,9 @@ const CHESS_CLOCK_SECONDS: float = 600.0
 var game_state: GameStateData
 var multiplayer_node
 var codex_bridge = null
+## Goes up with every broadcast. An action that leaves it unchanged was
+## rejected, which is how the multiplayer node knows to resync the sender.
+var state_revision: int = 0
 
 func _init(mp_node = null):
 	configure(mp_node)
@@ -13,7 +16,13 @@ func _init(mp_node = null):
 func configure(mp_node = null) -> void:
 	multiplayer_node = mp_node
 	game_state = GameStateData.new()
-	codex_bridge = CODEX_BRIDGE_SCRIPT.new()
+	codex_bridge = CODEX_BRIDGE_SCRIPT.new() if should_use_codex_bridge() else null
+
+## The Codex bridge is a development tool: it mirrors every state change, both
+## hands included, to user://codex_bridge and plays actions from a command file
+## for either player. That has no place in a networked match or a release build.
+func should_use_codex_bridge() -> bool:
+	return OS.is_debug_build() and GameConfig.is_singleplayer
 
 func initialize_game(board_data: Array):
 	for i in range(board_data.size()):
@@ -29,6 +38,9 @@ func initialize_game(board_data: Array):
 	var black_codex_stamps: Array[String] = create_starting_deck_for_player_id(1)
 	game_state.initialize_player_codex(0, white_codex_stamps)
 	game_state.initialize_player_codex(1, black_codex_stamps)
+	# Both clocks start full when the match does, however long the host waited
+	# for its opponent before this.
+	game_state.player_clock_seconds = {0: CHESS_CLOCK_SECONDS, 1: CHESS_CLOCK_SECONDS}
 	setup_match_logging()
 
 	DebugLog.info("NetworkGameHost: game state initialized")
@@ -599,58 +611,22 @@ func is_valid_move(_piece: Piece, from_pos: Vector2, to_pos: Vector2, player_id:
 
 func broadcast_full_state():
 	DebugLog.info("Broadcasting full state")
+	state_revision += 1
 	if multiplayer_node == null or !is_instance_valid(multiplayer_node):
 		DebugLog.info("State broadcast skipped: multiplayer node is no longer available")
 		return
 
-	var local_viewer_player_id: int = get_viewer_player_id_for_peer(1)
-	var local_state_data: Dictionary = serialize_state_for_player(local_viewer_player_id)
 	var match_board = multiplayer_node.get_node_or_null("MatchBoard")
-
-	if match_board != null:
-		var pieces_data = {}
-		for piece_data in local_state_data.pieces:
-			var pos = Vector2(piece_data.position[0], piece_data.position[1])
-			pieces_data[pos] = {
-				"position": pos,
-				"color": piece_data.color,
-				"stamp_name": piece_data.stamp_name,
-				"turns_remaining": piece_data.turns_remaining,
-				"exhausted_this_turn": piece_data.exhausted_this_turn,
-				"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0)),
-				"hidden_from_viewer": bool(piece_data.get("hidden_from_viewer", false)),
-				"protection_turns_remaining": int(piece_data.get("protection_turns_remaining", -1))
-			}
-		match_board.update_from_server_state(
-			pieces_data,
-			local_state_data.player_hands,
-			local_state_data.current_turn,
-			local_state_data.game_over,
-			local_state_data.winner_player,
-			local_state_data.player_decks_size,
-			local_state_data.player_codex_state,
-			local_state_data.hidden_stamps,
-			local_state_data.player_base_fields,
-			local_state_data.board_effects,
-			local_state_data.player_names,
-			local_state_data.recent_stamp_transfers,
-			local_state_data.recent_stamp_expirations,
-			local_state_data.recent_bomb_effects,
-			local_state_data.recent_pending_respawn_queues,
-			local_state_data.recent_pending_respawn_arrivals,
-			local_state_data.last_move,
-			local_state_data.player_portraits,
-			int(local_state_data.get("viewer_player_id", -1)),
-			local_state_data.turn_action_state,
-			local_state_data.player_clock_seconds,
-			local_state_data.recent_effect_activations
-		)
+	# A dedicated server has nobody at its own board. Playing the match out on
+	# it would also run the match-end flow there, which closes the connection
+	# and leaves the server sitting on the result screen.
+	if match_board != null and !GameConfig.is_dedicated_server:
+		var local_viewer_player_id: int = get_viewer_player_id_for_peer(1)
+		match_board.apply_server_state_data(serialize_state_for_player(local_viewer_player_id))
 
 	for peer_id in multiplayer_node.connected_peer_ids:
 		if peer_id != 1:
-			var viewer_player_id: int = get_viewer_player_id_for_peer(peer_id)
-			var peer_state_data: Dictionary = serialize_state_for_player(viewer_player_id)
-			multiplayer_node.receive_game_state.rpc_id(peer_id, peer_state_data)
+			send_state_to_peer(peer_id)
 
 	if multiplayer_node.has_method("on_host_state_changed"):
 		multiplayer_node.on_host_state_changed()
@@ -665,6 +641,15 @@ func broadcast_full_state():
 	game_state.recent_pending_respawn_queues.clear()
 	game_state.recent_pending_respawn_arrivals.clear()
 	DebugLog.info("State broadcast complete")
+
+## Sends one remote peer the state as that peer's player sees it. Outside a
+## broadcast the recent-event lists are already empty, so a resync this way
+## replays no animation, it only puts the peer's board back in line.
+func send_state_to_peer(peer_id: int) -> void:
+	if multiplayer_node == null or !is_instance_valid(multiplayer_node):
+		return
+	var viewer_player_id: int = get_viewer_player_id_for_peer(peer_id)
+	multiplayer_node.receive_game_state.rpc_id(peer_id, serialize_state_for_player(viewer_player_id))
 
 func serialize_state() -> Dictionary:
 	return serialize_state_for_player(-1)

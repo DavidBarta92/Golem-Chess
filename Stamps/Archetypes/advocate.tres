@@ -2,14 +2,12 @@
 
 [ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_c80hc"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_6ensw"]
-[ext_resource type="Texture2D" uid="uid://cjy3tfi2ipgav" path="res://Assets/stamp_base-1.png" id="2_apyhl"]
 [ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_6ensw"]
 
 [resource]
 script = ExtResource("2_6ensw")
 stamp_name = "Advocate"
 stamp_code = "advocate"
-stamp_art = ExtResource("2_apyhl")
 white_piece_texture = ExtResource("3_6ensw")
 black_piece_texture = ExtResource("1_c80hc")
 description = "When this stamp expires, take a Seeker stamp from your deck and add it to your hand."

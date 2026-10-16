@@ -21,4 +21,5 @@ description = "A Seeker stamp. Keep at least one Seeker available to stay in the
 effect_type = "invisible_to_enemy"
 square_color_a = Color(0.9137255, 0.5921569, 0.3019608, 1)
 square_color_b = Color(0.9137255, 0.5921569, 0.3019608, 1)
+marker_color = Color(0.57254905, 0.24313726, 0.23529412, 1)
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 2, 2, 2, 0], [0, 2, 0, 2, 0], [0, 0, 2, 0, 0], [0, 0, 0, 0, 0]])

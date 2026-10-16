@@ -46,11 +46,9 @@ func _build_player_pool() -> void:
 
 func _scan_sfx_directory() -> void:
 	_groups.clear()
-	var dir := DirAccess.open(SFX_DIR)
-	if dir == null:
-		return
-
-	for file_name in dir.get_files():
+	# ResourceLoader.list_directory instead of DirAccess: exported builds only
+	# ship the *.wav.import stubs, not the original *.wav files.
+	for file_name in ResourceLoader.list_directory(SFX_DIR):
 		if !VALID_EXTENSIONS.has(file_name.get_extension().to_lower()):
 			continue
 

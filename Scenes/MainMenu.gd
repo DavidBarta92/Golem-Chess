@@ -57,6 +57,12 @@ func _ready():
 		call_deferred("launch_blocking_story_node")
 		return
 
+	# A Steam invite that started the game, or was accepted mid-match, is
+	# followed as soon as the hub is reachable.
+	if SteamManager.has_pending_lobby_join():
+		SteamManager.call_deferred("start_pending_lobby_join")
+		return
+
 	PlayerProgressStore.ensure_loaded()
 	dev_tools_window.visible = false
 	_connect_once(dev_tools_window.close_requested, Callable(self, "_on_dev_tools_window_close_requested"))
