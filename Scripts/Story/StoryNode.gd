@@ -22,7 +22,13 @@ class_name StoryNode
 ## Empty means the hub. Set it when a beat should land the player somewhere
 ## specific - the Buy Pack explainer, for instance, drops them into the
 ## Collection right next to the button it just introduced.
-@export var completion_scene: PackedScene
+##
+## Story nodes name their scenes by path, never as a PackedScene: the
+## StoryManager autoload loads the whole story definition at startup, and a
+## PackedScene reference would load that scene and all of its art right then
+## and keep it in memory for the whole session. The inspector may store the
+## path as a uid://; resolve it with ResourceUID.ensure_path().
+@export_file("*.tscn") var completion_scene_path: String = ""
 
 @export_group("Unlocks")
 ## A StoryFeatures id (a menu button) that becomes usable once this node is

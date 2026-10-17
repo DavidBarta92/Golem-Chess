@@ -450,9 +450,13 @@ func golem_setup() -> Dictionary:
 
 ## The Warlord on (2, 3) can jump to (4, 2), (4, 4), (3, 1) or (3, 5).
 ## The Archer on (5, 1) captures on (4, 2) and (3, 1), the Knight on (6, 5)
-## and the Lance on (5, 4) both on (4, 4). Only (3, 5) is safe: the War
+## and the Lance on (6, 4) both on (4, 4). Only (3, 5) is safe: the War
 ## Drummer beside it on (4, 6) can only move diagonally, never capture. The
 ## Gold General on (6, 1) adds to how crowded it all looks.
+##
+## Worked out from the stamps' patterns, so it has to be looked at again when
+## one of them changes - the Lance's reach two rows ahead once took (3, 5)
+## from (5, 4). warn_if_no_safe_move() says so when that happens.
 func danger_setup() -> Dictionary:
 	return {
 		"board": [
@@ -461,13 +465,13 @@ func danger_setup() -> Dictionary:
 			[0, 0, 0, 1, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, -1],
-			[0, -1, 0, 0, -1, 0, 0],
-			[0, -1, 0, 0, 0, -1, 0],
+			[0, -1, 0, 0, 0, 0, 0],
+			[0, -1, 0, 0, -1, -1, 0],
 		],
 		"affixed_stamps": [
 			{"pos": Vector2(2, 3), "stamp_name": "Warlord", "turns_remaining": 1, "exhausted": false},
 			{"pos": Vector2(5, 1), "stamp_name": "Archer", "turns_remaining": 1, "exhausted": false},
-			{"pos": Vector2(5, 4), "stamp_name": "Lance", "turns_remaining": 2, "exhausted": false},
+			{"pos": Vector2(6, 4), "stamp_name": "Lance", "turns_remaining": 2, "exhausted": false},
 			{"pos": Vector2(6, 5), "stamp_name": "Knight", "turns_remaining": 3, "exhausted": false},
 			{"pos": Vector2(4, 6), "stamp_name": "War Drummer", "turns_remaining": 3, "exhausted": false},
 			{"pos": Vector2(6, 1), "stamp_name": "Gold General", "turns_remaining": 1, "exhausted": false},
@@ -540,6 +544,9 @@ func start_step(step_index: int) -> void:
 		match_intro.reveal_hud_nodes(reveal_names)
 	if step.has("glow"):
 		glow_behind(str(step.get("glow", "")))
+
+	if bool(step.get("punish_unsafe_moves", false)):
+		warn_if_no_safe_move()
 
 	var has_opponent_turns: bool = !(step.get("opponent_turns", []) as Array).is_empty()
 	continue_held_for_opponent = has_opponent_turns and is_current_completion("dialogue")
@@ -720,6 +727,36 @@ func punish_unsafe_move() -> bool:
 	retry_after_opponent = true
 	play_opponent_turn({"move": capture}, step_token)
 	return true
+
+## A step that punishes careless moves must leave the player at least one
+## careful one. Those boards are worked out by hand from the stamps' patterns,
+## and a pattern changed later can quietly take the last safe square away -
+## which leaves the step impossible. This says so in the output instead.
+func warn_if_no_safe_move() -> void:
+	var player_id: int = board.get_player_id_for_color(PLAYER_COLOR)
+	for position_value in board.piece_objects:
+		var piece: Piece = board.piece_objects[position_value] as Piece
+		if piece == null or piece.color != PLAYER_COLOR:
+			continue
+		for target: Vector2 in MoveRules.get_piece_moves_for_player(board.piece_objects, position_value, player_id, BoardConfig.BOARD_SIZE, board.current_board_effects):
+			if !is_square_capturable_after_move(position_value, target):
+				return
+	push_warning("Tutorial step %d: every move the player has can be captured - the board no longer fits the stamps' patterns." % current_step_index)
+
+## Whether Grandpa could capture on `target` once the player's piece on
+## `from_pos` has moved there.
+func is_square_capturable_after_move(from_pos: Vector2, target: Vector2) -> bool:
+	var after: Dictionary = board.piece_objects.duplicate()
+	after[target] = after[from_pos]
+	after.erase(from_pos)
+	var opponent_id: int = board.get_player_id_for_color(OPPONENT_COLOR)
+	for position_value in after:
+		var piece: Piece = after[position_value] as Piece
+		if piece == null or piece.color != OPPONENT_COLOR:
+			continue
+		if MoveRules.get_piece_moves_for_player(after, position_value, opponent_id, BoardConfig.BOARD_SIZE, board.current_board_effects).has(target):
+			return true
+	return false
 
 func find_opponent_capture(target: Vector2) -> Dictionary:
 	if !board.piece_objects.has(target):

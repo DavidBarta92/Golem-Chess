@@ -176,6 +176,8 @@ var _stamp_hud
 var _hover
 var _codex_stamps: Array[StampVisual] = []
 var _codex_centre_offset: Vector2 = Vector2.ZERO
+## True while the page sits in the middle of the screen, before it flies home.
+var _codex_centred: bool = false
 var _figure_rest_y: float = 0.0
 var _board
 var _match_intro: MatchIntroController
@@ -200,9 +202,10 @@ func play(speaker_name: String, board, match_intro: MatchIntroController, dialog
 	_match_intro = match_intro
 	_dialogue = dialogue
 	# Hidden with the rest of the interface; the words come first.
-	_dialogue.modulate.a = 1.0
+	_match_intro.show_hud_node_now(_dialogue)
 	_dialogue.continue_requested.connect(_on_continue_requested)
 	_build_codex()
+	get_viewport().size_changed.connect(_on_viewport_resized)
 
 	_beat = Beat.STAMPS
 	var gate: int = _open_gate(2, _crossfade_figure)
@@ -288,6 +291,7 @@ func _play_board() -> void:
 	_set_codex_interactive(false)
 	var gate: int = _open_gate(2, _allow_continue)
 	_report_to_gate(_dialogue.line_finished, gate)
+	_codex_centred = false
 	var tween := create_tween()
 	tween.tween_property(_codex_holder, "position", Vector2.ZERO, maxf(0.05, codex_fly_seconds)) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
@@ -599,6 +603,30 @@ func _centre_codex() -> void:
 		bounds = bounds.merge(stamp_visual.get_global_rect())
 	_codex_centre_offset = _root.get_global_rect().get_center() - bounds.get_center()
 	_codex_holder.position = _codex_centre_offset
+	_codex_centred = true
+
+func _on_viewport_resized() -> void:
+	# Once the containers have taken the new size.
+	call_deferred("_relayout_codex")
+
+## The page is laid out against the screen once, in _build_codex(). When the
+## window changes size afterwards - the editor's embedded game view does, as
+## it opens - the notebook finds its new resting place by itself but the page
+## would stay where it was, and the two come apart. So both are laid out
+## again from scratch, and centred again if the page is still waiting in the
+## middle.
+func _relayout_codex() -> void:
+	if _stamp_hud == null or _codex_stamps.is_empty() or !_codex_holder.visible:
+		return
+	_codex_holder.position = Vector2.ZERO
+	_codex_art.capture_rest_position()
+	_stamp_hud.configure_hand_container(_codex_hand, false)
+	_stamp_hud.align_hand_container_to_codex(_codex_hand, _codex_art)
+	# The codex reads where the page rests only when it is handed a new one.
+	_codex_art.set_hand_follower(null)
+	_codex_art.set_hand_follower(_codex_hand)
+	if _codex_centred:
+		_centre_codex()
 
 func _connect_codex_stamp(stamp_visual: StampVisual) -> void:
 	stamp_visual.mouse_entered.connect(_on_codex_stamp_entered.bind(stamp_visual))

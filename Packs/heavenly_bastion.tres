@@ -1,11 +1,5 @@
 [gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://cl3amw4hg2se8"]
 
-[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_thdy8"]
-[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_gj0b1"]
-[ext_resource type="Texture2D" uid="uid://cb1u46mu2ict0" path="res://Assets/heavenly_bastion.png" id="3_thdy8"]
-[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_hl4ao"]
-[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_6oiod"]
-[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_kye65"]
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_8h8e5"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_o34uy"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_8aycv"]
@@ -44,13 +38,13 @@
 script = ExtResource("9_8aycv")
 pack_id = "heavenly_bastion"
 pack_name = "Heavenly Bastion"
-pack_texture = ExtResource("3_thdy8")
-pack_front_texture = ExtResource("3_thdy8")
-pack_back_texture = ExtResource("1_thdy8")
-pack_height_texture = ExtResource("4_hl4ao")
-pack_normal_texture = ExtResource("5_6oiod")
-pack_roughness_texture = ExtResource("6_kye65")
-pack_foil_mask_texture = ExtResource("2_gj0b1")
+pack_texture_path = "res://Assets/heavenly_bastion.png"
+pack_front_texture_path = "res://Assets/heavenly_bastion.png"
+pack_back_texture_path = "res://Assets/booster_back.png"
+pack_height_texture_path = "res://Assets/booster_height.png"
+pack_normal_texture_path = "res://Assets/booster_normal.png"
+pack_roughness_texture_path = "res://Assets/booster_roughness.png"
+pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 possible_stamps = Array[ExtResource("8_o34uy")]([ExtResource("10_ballista"), ExtResource("11_bastion"), ExtResource("12_bicycle"), ExtResource("13_bombard"), ExtResource("14_castle"), ExtResource("15_citadel"), ExtResource("16_fortress"), ExtResource("17_gate"), ExtResource("18_mantlet"), ExtResource("19_shrine"), ExtResource("20_temple"), ExtResource("21_tortoise"), ExtResource("22_tower"), ExtResource("23_trebuchet"), ExtResource("24_war_chariot"), ExtResource("25_black_hole"), ExtResource("26_comet"), ExtResource("27_earth"), ExtResource("28_jupiter"), ExtResource("29_mars"), ExtResource("30_mercury"), ExtResource("31_moon"), ExtResource("32_nebula"), ExtResource("33_neptune"), ExtResource("34_north_star"), ExtResource("35_nova"), ExtResource("36_saturn"), ExtResource("37_sun"), ExtResource("38_uranus"), ExtResource("39_venus")])
 include_all_standard_prints = false
 price = 1

@@ -1,11 +1,5 @@
 [gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://c2vg5bdypdwsf"]
 
-[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_2yfpl"]
-[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_pd5ja"]
-[ext_resource type="Texture2D" uid="uid://cioqjorebtkto" path="res://Assets/deep_in_the_wild.png" id="3_2yfpl"]
-[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_tknyd"]
-[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_hoygr"]
-[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_bbcci"]
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_a2jhx"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_ymdla"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_toyd4"]
@@ -44,13 +38,13 @@
 script = ExtResource("9_toyd4")
 pack_id = "deep_in_the_wild"
 pack_name = "Deep in the Wild"
-pack_texture = ExtResource("3_2yfpl")
-pack_front_texture = ExtResource("3_2yfpl")
-pack_back_texture = ExtResource("1_2yfpl")
-pack_height_texture = ExtResource("4_tknyd")
-pack_normal_texture = ExtResource("5_hoygr")
-pack_roughness_texture = ExtResource("6_bbcci")
-pack_foil_mask_texture = ExtResource("2_pd5ja")
+pack_texture_path = "res://Assets/deep_in_the_wild.png"
+pack_front_texture_path = "res://Assets/deep_in_the_wild.png"
+pack_back_texture_path = "res://Assets/booster_back.png"
+pack_height_texture_path = "res://Assets/booster_height.png"
+pack_normal_texture_path = "res://Assets/booster_normal.png"
+pack_roughness_texture_path = "res://Assets/booster_roughness.png"
+pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 possible_stamps = Array[ExtResource("8_ymdla")]([ExtResource("10_bear"), ExtResource("11_blackbird"), ExtResource("12_cat"), ExtResource("13_crocodile"), ExtResource("14_dog"), ExtResource("15_dragon"), ExtResource("16_dragonhorse"), ExtResource("17_duck"), ExtResource("18_elephant"), ExtResource("19_fox"), ExtResource("20_goat"), ExtResource("21_heron"), ExtResource("22_horse"), ExtResource("23_rhinoceros"), ExtResource("24_turtle"), ExtResource("25_baobab"), ExtResource("26_cactus"), ExtResource("27_chanterelle"), ExtResource("28_cherry_tree"), ExtResource("29_fly_agaric"), ExtResource("30_larch"), ExtResource("31_lotus"), ExtResource("32_magnolia"), ExtResource("33_oak"), ExtResource("34_olive_tree"), ExtResource("35_orchid"), ExtResource("36_puffball"), ExtResource("37_rose"), ExtResource("38_shaggy_mane"), ExtResource("39_yellow_coral")])
 include_all_standard_prints = false
 price = 1

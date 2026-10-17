@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_ntwde"]
 [ext_resource type="Texture2D" uid="uid://bkij1p4yshiy" path="res://Assets/1w.png" id="3_ntwde"]
 [ext_resource type="Texture2D" uid="uid://cog2sht0l7hgi" path="res://Assets/Stamps/prince_1.png" id="4_5glt7"]
+[ext_resource type="Texture2D" uid="uid://ck3x0x80d5lxy" path="res://Assets/Stamps/prince_1_mask.svg" id="5_5glt7"]
 
 [resource]
 script = ExtResource("2_ntwde")
@@ -14,6 +15,7 @@ role = 1
 Set = "Courtyard"
 duration = 2
 stamp_art = ExtResource("4_5glt7")
+stamp_art_mask = ExtResource("5_5glt7")
 piece_visuals = ExtResource("2_8wts2")
 white_piece_texture = ExtResource("3_ntwde")
 black_piece_texture = ExtResource("1_lhqjs")

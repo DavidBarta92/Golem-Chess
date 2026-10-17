@@ -4,12 +4,13 @@ class_name CollectionStampBrowserController
 const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
 const UNOWNED_STAMP_SHADER = preload("res://Shaders/collection_unowned_stamp.gdshader")
 const UNOWNED_STAMP_OPACITY: float = 0.5
-## The print count sits on a pill hanging off the stamp's bottom-right corner:
-## flat top and bottom, round ends.
+## The print count sits on a pill centred under the stamp, hanging off its
+## bottom edge: flat top and bottom, round ends.
 const COUNT_BADGE_HEIGHT: float = 18.0
 const COUNT_BADGE_PADDING: float = 7.0
 const COUNT_BADGE_FONT_SIZE: int = 11
-const COUNT_BADGE_OVERHANG: Vector2 = Vector2(6.0, 9.0)
+## How far the pill reaches below the stamp's bottom edge.
+const COUNT_BADGE_OVERHANG: float = 9.0
 
 var collection
 var stamp_grid: GridContainer
@@ -161,7 +162,7 @@ func refresh_stamp_filter(reset_page: bool = true) -> void:
 		if not stamp.enabled:
 			continue
 
-		# Filter by "My collection" owned-only
+		# Filter by "My stamps" owned-only
 		var owned_count: int = PlayerCollectionStore.get_owned_count_for_print_id(stamp_print.print_id)
 		if owned_only && owned_count <= 0:
 			continue
@@ -293,9 +294,12 @@ func update_print_count_badge_layout(stamp_slot: Control, stamp_visual: StampVis
 	badge.size = badge.custom_minimum_size
 	var scaled_stamp_size: Vector2 = stamp_visual_size * stamp_visual.rest_scale
 	var stamp_top_left: Vector2 = get_stamp_visual_draw_top_left(stamp_visual)
-	# Right end just past the stamp's edge, middle on its bottom edge, so the
-	# pill covers the perforation rather than the stamp's name.
-	badge.position = stamp_top_left + scaled_stamp_size - badge.size + COUNT_BADGE_OVERHANG
+	# Centred under the stamp with its middle on the bottom edge, so the pill
+	# covers the perforation rather than the stamp's name.
+	badge.position = stamp_top_left + Vector2(
+		(scaled_stamp_size.x - badge.size.x) * 0.5,
+		scaled_stamp_size.y - badge.size.y + COUNT_BADGE_OVERHANG
+	)
 
 func on_browser_stamp_slot_resized(stamp_slot: Control, stamp_visual: StampVisual) -> void:
 	if stamp_visual != null:

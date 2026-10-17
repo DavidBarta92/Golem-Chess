@@ -1,24 +1,18 @@
 [gd_resource type="Resource" script_class="PackDefinition" format=3]
 
 [ext_resource type="Script" path="res://Scripts/PackDefinition.gd" id="1"]
-[ext_resource type="Texture2D" path="res://Assets/booster.png" id="2"]
-[ext_resource type="Texture2D" path="res://Assets/booster_back.png" id="3"]
-[ext_resource type="Texture2D" path="res://Assets/booster_height.png" id="4"]
-[ext_resource type="Texture2D" path="res://Assets/booster_normal.png" id="5"]
-[ext_resource type="Texture2D" path="res://Assets/booster_roughness.png" id="6"]
-[ext_resource type="Texture2D" path="res://Assets/booster_foil_mask.png" id="7"]
 
 [resource]
 script = ExtResource("1")
 pack_id = "basic_pack"
 pack_name = "Basic Pack"
-pack_texture = ExtResource("2")
-pack_front_texture = ExtResource("2")
-pack_back_texture = ExtResource("3")
-pack_height_texture = ExtResource("4")
-pack_normal_texture = ExtResource("5")
-pack_roughness_texture = ExtResource("6")
-pack_foil_mask_texture = ExtResource("7")
+pack_texture_path = "res://Assets/booster.png"
+pack_front_texture_path = "res://Assets/booster.png"
+pack_back_texture_path = "res://Assets/booster_back.png"
+pack_height_texture_path = "res://Assets/booster_height.png"
+pack_normal_texture_path = "res://Assets/booster_normal.png"
+pack_roughness_texture_path = "res://Assets/booster_roughness.png"
+pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 include_all_standard_prints = true
 available = true
 price = 15

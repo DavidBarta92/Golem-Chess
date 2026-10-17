@@ -160,7 +160,17 @@ func show_codex_now() -> void:
 	for node in _get_hud_nodes():
 		var node_name: String = String(node.name)
 		if node_name == "Codex" or node_name.ends_with("_pieces") or !node.visible:
-			node.modulate.a = 1.0
+			_show_hud_node(node)
+
+## One part of the interface, there at once - for a scene that uses it before
+## the rest arrives (the tutorial's intro talks through the dialogue panel).
+func show_hud_node_now(node: CanvasItem) -> void:
+	if node != null and is_instance_valid(node):
+		_show_hud_node(node)
+
+func _show_hud_node(node: CanvasItem) -> void:
+	node.modulate.a = 1.0
+	_set_hud_mouse_enabled(node, true)
 
 ## Fades in whatever of the interface is still hidden, except the named nodes.
 func reveal_hud(except_names: Array[String] = []) -> void:
@@ -246,6 +256,7 @@ func _fade_in(nodes: Array[CanvasItem], seconds: float, delay: float) -> void:
 		if !is_instance_valid(node):
 			continue
 		node.modulate.a = 0.0
+		_set_hud_mouse_enabled(node, true)
 		var tween := node.create_tween()
 		if delay > 0.0:
 			tween.tween_interval(delay)
@@ -298,7 +309,20 @@ func _set_pieces_alpha(alpha: float) -> void:
 	_set_alpha(_get_piece_nodes(), alpha)
 
 func _set_hud_alpha(alpha: float) -> void:
-	_set_alpha(_get_hud_nodes(), alpha)
+	var nodes: Array[CanvasItem] = _get_hud_nodes()
+	_set_alpha(nodes, alpha)
+	for node in nodes:
+		_set_hud_mouse_enabled(node, alpha > 0.0)
+
+## Hidden is only see-through: a faded-out stamp in the hand still answers the
+## pointer - it lifts, it plays its sound, the side panel shows it. So the
+## interface also stops taking the mouse while it is hidden, the whole branch
+## at once, and takes it again as each part comes in.
+func _set_hud_mouse_enabled(node: CanvasItem, enabled: bool) -> void:
+	var control := node as Control
+	if control == null or !is_instance_valid(control):
+		return
+	control.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED if enabled else Control.MOUSE_BEHAVIOR_DISABLED
 
 func _set_alpha(nodes: Array[CanvasItem], alpha: float) -> void:
 	for node in nodes:

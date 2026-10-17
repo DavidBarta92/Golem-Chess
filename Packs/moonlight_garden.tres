@@ -1,11 +1,5 @@
 [gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://8341wf76um5j"]
 
-[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_pvboj"]
-[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_qwcb6"]
-[ext_resource type="Texture2D" uid="uid://dspxsiid41buh" path="res://Assets/booster.png" id="3_3mb2t"]
-[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_axegh"]
-[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_b1w2a"]
-[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_hlyum"]
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_k5mbf"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_ailq5"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_0grn8"]
@@ -44,13 +38,13 @@
 script = ExtResource("9_0grn8")
 pack_id = "moonlight_garden"
 pack_name = "Moonlight Garden"
-pack_texture = ExtResource("3_3mb2t")
-pack_front_texture = ExtResource("3_3mb2t")
-pack_back_texture = ExtResource("1_pvboj")
-pack_height_texture = ExtResource("4_axegh")
-pack_normal_texture = ExtResource("5_b1w2a")
-pack_roughness_texture = ExtResource("6_hlyum")
-pack_foil_mask_texture = ExtResource("2_qwcb6")
+pack_texture_path = "res://Assets/booster.png"
+pack_front_texture_path = "res://Assets/booster.png"
+pack_back_texture_path = "res://Assets/booster_back.png"
+pack_height_texture_path = "res://Assets/booster_height.png"
+pack_normal_texture_path = "res://Assets/booster_normal.png"
+pack_roughness_texture_path = "res://Assets/booster_roughness.png"
+pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 possible_stamps = Array[ExtResource("8_ailq5")]([ExtResource("10_baobab"), ExtResource("11_cactus"), ExtResource("12_chanterelle"), ExtResource("13_cherry_tree"), ExtResource("14_fly_agaric"), ExtResource("15_larch"), ExtResource("16_lotus"), ExtResource("17_magnolia"), ExtResource("18_oak"), ExtResource("19_olive_tree"), ExtResource("20_orchid"), ExtResource("21_puffball"), ExtResource("22_rose"), ExtResource("23_shaggy_mane"), ExtResource("24_yellow_coral"), ExtResource("25_black_hole"), ExtResource("26_comet"), ExtResource("27_earth"), ExtResource("28_jupiter"), ExtResource("29_mars"), ExtResource("30_mercury"), ExtResource("31_moon"), ExtResource("32_nebula"), ExtResource("33_neptune"), ExtResource("34_north_star"), ExtResource("35_nova"), ExtResource("36_saturn"), ExtResource("37_sun"), ExtResource("38_uranus"), ExtResource("39_venus")])
 include_all_standard_prints = false
 price = 1

@@ -1,11 +1,5 @@
 [gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://cu0dcwr36y35n"]
 
-[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_cn1ba"]
-[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_x0htc"]
-[ext_resource type="Texture2D" uid="uid://ccgvhsxvkcxgj" path="res://Assets/runeworks.png" id="3_cn1ba"]
-[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_otog2"]
-[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_mdjgk"]
-[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_202vy"]
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_nyfmo"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_84rpv"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_u5325"]
@@ -44,13 +38,13 @@
 script = ExtResource("9_u5325")
 pack_id = "runeworks"
 pack_name = "Runeworks"
-pack_texture = ExtResource("3_cn1ba")
-pack_front_texture = ExtResource("3_cn1ba")
-pack_back_texture = ExtResource("1_cn1ba")
-pack_height_texture = ExtResource("4_otog2")
-pack_normal_texture = ExtResource("5_mdjgk")
-pack_roughness_texture = ExtResource("6_202vy")
-pack_foil_mask_texture = ExtResource("2_x0htc")
+pack_texture_path = "res://Assets/runeworks.png"
+pack_front_texture_path = "res://Assets/runeworks.png"
+pack_back_texture_path = "res://Assets/booster_back.png"
+pack_height_texture_path = "res://Assets/booster_height.png"
+pack_normal_texture_path = "res://Assets/booster_normal.png"
+pack_roughness_texture_path = "res://Assets/booster_roughness.png"
+pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 possible_stamps = Array[ExtResource("8_84rpv")]([ExtResource("10_ballista"), ExtResource("11_bastion"), ExtResource("12_bicycle"), ExtResource("13_bombard"), ExtResource("14_castle"), ExtResource("15_citadel"), ExtResource("16_fortress"), ExtResource("17_gate"), ExtResource("18_mantlet"), ExtResource("19_shrine"), ExtResource("20_temple"), ExtResource("21_tortoise"), ExtResource("22_tower"), ExtResource("23_trebuchet"), ExtResource("24_war_chariot"), ExtResource("25_adventurer"), ExtResource("26_advocate"), ExtResource("27_architect"), ExtResource("28_campaigner"), ExtResource("29_commander"), ExtResource("30_consul"), ExtResource("31_defender"), ExtResource("32_entertainer"), ExtResource("33_entrepreneur"), ExtResource("34_executive"), ExtResource("35_logician"), ExtResource("36_logistician"), ExtResource("37_mediator"), ExtResource("38_protagonist"), ExtResource("39_virtuoso")])
 include_all_standard_prints = false
 price = 1

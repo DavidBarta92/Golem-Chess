@@ -23,7 +23,8 @@ enum DefeatBehavior { PROMPT_RETRY, COMIC_THEN_RETRY }
 @export_group("On defeat")
 @export var defeat_behavior: DefeatBehavior = DefeatBehavior.PROMPT_RETRY
 ## Comic pages shown after a loss with COMIC_THEN_RETRY (ignored otherwise).
-@export var defeat_pages: Array[PackedScene] = []
+## Paths, like ComicStoryNode.page_paths.
+@export_file("*.tscn") var defeat_page_paths: Array[String] = []
 
 func get_boss_display_name() -> String:
 	return boss.get_display_name() if boss != null else display_name

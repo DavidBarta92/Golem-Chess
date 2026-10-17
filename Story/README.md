@@ -15,12 +15,18 @@ Five node types:
 
 | Node | Plays | Key fields |
 | --- | --- | --- |
-| `ComicStoryNode` | a run of comic pages | `pages: Array[PackedScene]` |
-| `TutorialStoryNode` | the scripted tutorial match | `tutorial_scene` |
-| `BossGameStoryNode` | a match against an authored opponent | `boss`, `defeat_behavior`, `defeat_pages` |
+| `ComicStoryNode` | a run of comic pages | `page_paths: Array[String]` |
+| `TutorialStoryNode` | the scripted tutorial match | `tutorial_scene_path` |
+| `BossGameStoryNode` | a match against an authored opponent | `boss`, `defeat_behavior`, `defeat_page_paths` |
 | `RandomMatchStoryNode` | warm-up matches against generated opponents | `match_count` |
-| `SceneStoryNode` | any other beat that is just its own scene | `scene` |
-| `RewardStoryNode` | the "you unlocked something" screen | `reward_scene` |
+| `SceneStoryNode` | any other beat that is just its own scene | `scene_path` |
+| `RewardStoryNode` | the "you unlocked something" screen | `reward_scene_path` |
+
+Nodes name their scenes by **path** (`@export_file`), never as a
+`PackedScene`. `StoryManager` loads the whole definition at startup, and a
+`PackedScene` reference would load every comic page, the tutorial and the
+reward screens with all their art right then - over a gigabyte of textures
+held for the whole session. A path is loaded only when its node plays.
 
 Flags on every node:
 
@@ -30,7 +36,7 @@ Flags on every node:
 - `blocks_hub_until_completed` — launching the game jumps straight here instead
   of showing the main menu. The whole intro chapter is flagged, so the main menu
   first appears after Boss 2.
-- `completion_scene` — where a non-chaining node lands instead of the hub. The
+- `completion_scene_path` — where a non-chaining node lands instead of the hub. The
   Buy Pack explainer drops the player into the Collection next to the new
   button.
 - `unlocks_feature` / `unlocks_packs` — applied when the node completes: a
@@ -54,7 +60,7 @@ The node never completes on a loss. What happens next is the boss node's
 - `PROMPT_RETRY` (the default) — a "play again right away?" prompt
   (`Scenes/Story/RetryPromptScene.tscn`). Yes restarts the fight, no returns to
   the hub, where Play brings it back.
-- `COMIC_THEN_RETRY` — the node's `defeat_pages` play, then the fight restarts
+- `COMIC_THEN_RETRY` — the node's `defeat_page_paths` play, then the fight restarts
   with no way out. Only for Boss 1 and 2, which happen before the hub exists.
 
 ### Warm-up matches

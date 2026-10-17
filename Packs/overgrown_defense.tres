@@ -1,12 +1,6 @@
 [gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://bbtmnthdlv75o"]
 
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="3"]
-[ext_resource type="Texture2D" uid="uid://b1tmbgt8ejiy8" path="res://Assets/overgrown_defense.png" id="3_8ifqb"]
-[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4"]
-[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5"]
-[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6"]
-[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="7"]
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_8ifqb"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_tjx8l"]
 [ext_resource type="Resource" path="res://Stamps/Structures/ballista.tres" id="9_ballista"]
@@ -44,13 +38,13 @@
 script = ExtResource("1")
 pack_id = "overgrown_defense"
 pack_name = "Overgrown Defense"
-pack_texture = ExtResource("3_8ifqb")
-pack_front_texture = ExtResource("3_8ifqb")
-pack_back_texture = ExtResource("3")
-pack_height_texture = ExtResource("4")
-pack_normal_texture = ExtResource("5")
-pack_roughness_texture = ExtResource("6")
-pack_foil_mask_texture = ExtResource("7")
+pack_texture_path = "res://Assets/overgrown_defense.png"
+pack_front_texture_path = "res://Assets/overgrown_defense.png"
+pack_back_texture_path = "res://Assets/booster_back.png"
+pack_height_texture_path = "res://Assets/booster_height.png"
+pack_normal_texture_path = "res://Assets/booster_normal.png"
+pack_roughness_texture_path = "res://Assets/booster_roughness.png"
+pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 possible_stamps = Array[ExtResource("8_tjx8l")]([ExtResource("9_ballista"), ExtResource("10_bastion"), ExtResource("11_bicycle"), ExtResource("12_bombard"), ExtResource("13_castle"), ExtResource("14_citadel"), ExtResource("15_fortress"), ExtResource("16_gate"), ExtResource("17_mantlet"), ExtResource("18_shrine"), ExtResource("19_temple"), ExtResource("20_tortoise"), ExtResource("21_tower"), ExtResource("22_trebuchet"), ExtResource("23_war_chariot"), ExtResource("24_baobab"), ExtResource("25_cactus"), ExtResource("26_chanterelle"), ExtResource("27_cherry_tree"), ExtResource("28_fly_agaric"), ExtResource("29_larch"), ExtResource("30_lotus"), ExtResource("31_magnolia"), ExtResource("32_oak"), ExtResource("33_olive_tree"), ExtResource("34_orchid"), ExtResource("35_puffball"), ExtResource("36_rose"), ExtResource("37_shaggy_mane"), ExtResource("38_yellow_coral")])
 include_all_standard_prints = false
 price = 1

@@ -1,11 +1,5 @@
 [gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://d4n1ewshmae7j"]
 
-[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_bdl38"]
-[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_p2324"]
-[ext_resource type="Texture2D" uid="uid://m6yjcoq7uwlw" path="res://Assets/cosmic_oracle.png" id="3_bdl38"]
-[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_1lw7j"]
-[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_57046"]
-[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_jbhly"]
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_kn4r1"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_y10hg"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_uwl32"]
@@ -44,13 +38,13 @@
 script = ExtResource("9_uwl32")
 pack_id = "cosmic_oracle"
 pack_name = "Cosmic Oracle"
-pack_texture = ExtResource("3_bdl38")
-pack_front_texture = ExtResource("3_bdl38")
-pack_back_texture = ExtResource("1_bdl38")
-pack_height_texture = ExtResource("4_1lw7j")
-pack_normal_texture = ExtResource("5_57046")
-pack_roughness_texture = ExtResource("6_jbhly")
-pack_foil_mask_texture = ExtResource("2_p2324")
+pack_texture_path = "res://Assets/cosmic_oracle.png"
+pack_front_texture_path = "res://Assets/cosmic_oracle.png"
+pack_back_texture_path = "res://Assets/booster_back.png"
+pack_height_texture_path = "res://Assets/booster_height.png"
+pack_normal_texture_path = "res://Assets/booster_normal.png"
+pack_roughness_texture_path = "res://Assets/booster_roughness.png"
+pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 possible_stamps = Array[ExtResource("8_y10hg")]([ExtResource("10_adventurer"), ExtResource("11_advocate"), ExtResource("12_architect"), ExtResource("13_campaigner"), ExtResource("14_commander"), ExtResource("15_consul"), ExtResource("16_defender"), ExtResource("17_entertainer"), ExtResource("18_entrepreneur"), ExtResource("19_executive"), ExtResource("20_logician"), ExtResource("21_logistician"), ExtResource("22_mediator"), ExtResource("23_protagonist"), ExtResource("24_virtuoso"), ExtResource("25_black_hole"), ExtResource("26_comet"), ExtResource("27_earth"), ExtResource("28_jupiter"), ExtResource("29_mars"), ExtResource("30_mercury"), ExtResource("31_moon"), ExtResource("32_nebula"), ExtResource("33_neptune"), ExtResource("34_north_star"), ExtResource("35_nova"), ExtResource("36_saturn"), ExtResource("37_sun"), ExtResource("38_uranus"), ExtResource("39_venus")])
 include_all_standard_prints = false
 price = 1

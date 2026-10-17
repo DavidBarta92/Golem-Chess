@@ -1,11 +1,5 @@
 [gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://dnsgjafd8d3kw"]
 
-[ext_resource type="Texture2D" uid="uid://dbceuvfyn6d7o" path="res://Assets/booster_back.png" id="1_2y8qs"]
-[ext_resource type="Texture2D" uid="uid://dy45caoqlj4po" path="res://Assets/booster_foil_mask.png" id="2_nf33p"]
-[ext_resource type="Texture2D" uid="uid://dspxsiid41buh" path="res://Assets/booster.png" id="3_hrxa5"]
-[ext_resource type="Texture2D" uid="uid://c31pcx635lefh" path="res://Assets/booster_height.png" id="4_eol6q"]
-[ext_resource type="Texture2D" uid="uid://c8m8iwytqsuox" path="res://Assets/booster_normal.png" id="5_x4agf"]
-[ext_resource type="Texture2D" uid="uid://cmapn0tohln1e" path="res://Assets/booster_roughness.png" id="6_k5h6r"]
 [ext_resource type="Script" path="res://Scripts/StampPrint.gd" id="7_x4tbm"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="8_2f2s7"]
 [ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="9_qacxd"]
@@ -42,13 +36,13 @@
 script = ExtResource("9_qacxd")
 pack_id = "forest_fortress"
 pack_name = "Forest Fortress"
-pack_texture = ExtResource("3_hrxa5")
-pack_front_texture = ExtResource("3_hrxa5")
-pack_back_texture = ExtResource("1_2y8qs")
-pack_height_texture = ExtResource("4_eol6q")
-pack_normal_texture = ExtResource("5_x4agf")
-pack_roughness_texture = ExtResource("6_k5h6r")
-pack_foil_mask_texture = ExtResource("2_nf33p")
+pack_texture_path = "res://Assets/booster.png"
+pack_front_texture_path = "res://Assets/booster.png"
+pack_back_texture_path = "res://Assets/booster_back.png"
+pack_height_texture_path = "res://Assets/booster_height.png"
+pack_normal_texture_path = "res://Assets/booster_normal.png"
+pack_roughness_texture_path = "res://Assets/booster_roughness.png"
+pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 possible_stamps = Array[ExtResource("8_2f2s7")]([ExtResource("10_archer"), ExtResource("11_assassin"), ExtResource("12_berserk"), ExtResource("13_bishop"), ExtResource("14_duke"), ExtResource("15_gold_general"), ExtResource("16_knight"), ExtResource("17_lance"), ExtResource("18_prince"), ExtResource("19_silver_general"), ExtResource("20_the_golem"), ExtResource("21_war_drummer"), ExtResource("22_warlord"), ExtResource("23_baobab"), ExtResource("24_cactus"), ExtResource("25_chanterelle"), ExtResource("26_cherry_tree"), ExtResource("27_fly_agaric"), ExtResource("28_larch"), ExtResource("29_lotus"), ExtResource("30_magnolia"), ExtResource("31_oak"), ExtResource("32_olive_tree"), ExtResource("33_orchid"), ExtResource("34_puffball"), ExtResource("35_rose"), ExtResource("36_shaggy_mane"), ExtResource("37_yellow_coral")])
 include_all_standard_prints = false
 price = 1

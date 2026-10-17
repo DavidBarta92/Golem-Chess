@@ -14,7 +14,9 @@ const INPUT_LOCKOUT_SECONDS: float = 0.25
 @onready var page_host: Control = $PageHost
 @onready var fade_overlay: ColorRect = $FadeLayer/FadeOverlay
 
-var _pages: Array[PackedScene] = []
+## Page scene paths. Each page is loaded only when it comes up, behind the
+## black fade, so a run of pages never holds more than one page's art.
+var _page_paths: Array[String] = []
 var _on_end: int = StoryManager.ComicEnd.COMPLETE_NODE
 var _page_index: int = -1
 var _current_page: ComicPageView
@@ -23,13 +25,13 @@ var _is_leaving: bool = false
 
 func _ready() -> void:
 	var request: Dictionary = StoryManager.consume_comic_request()
-	_pages.assign(request.get("pages", []))
+	_page_paths.assign(request.get("pages", []))
 	_on_end = int(request.get("on_end", StoryManager.ComicEnd.COMPLETE_NODE))
 
 	fade_overlay.color.a = 1.0
 	fade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	if _pages.is_empty():
+	if _page_paths.is_empty():
 		push_warning("StoryComicPlayer opened with no pages; returning to the story flow.")
 		call_deferred("_leave")
 		return
@@ -58,20 +60,21 @@ func _is_advance_event(event: InputEvent) -> bool:
 
 func _show_next_page() -> void:
 	_page_index += 1
-	if _page_index >= _pages.size():
+	if _page_index >= _page_paths.size():
 		_leave()
 		return
 
-	var page_scene: PackedScene = _pages[_page_index]
+	var page_path: String = _page_paths[_page_index]
+	var page_scene: PackedScene = load(page_path) as PackedScene
 	if page_scene == null:
-		push_error("Comic page %d is not assigned; skipping it." % _page_index)
+		push_error("Comic page '%s' could not be loaded; skipping it." % page_path)
 		_show_next_page()
 		return
 
 	var page_instance: Node = page_scene.instantiate()
 	_current_page = page_instance as ComicPageView
 	if _current_page == null:
-		push_error("Comic page '%s' does not use a ComicPageView root; skipping it." % page_scene.resource_path)
+		push_error("Comic page '%s' does not use a ComicPageView root; skipping it." % page_path)
 		page_instance.queue_free()
 		_show_next_page()
 		return

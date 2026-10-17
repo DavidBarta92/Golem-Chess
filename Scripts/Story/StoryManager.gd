@@ -86,8 +86,8 @@ func finish_current_node() -> void:
 
 	if finished_node.auto_continue_after_completion:
 		start_current_node()
-	elif finished_node.completion_scene != null:
-		SceneTransition.change_scene(finished_node.completion_scene.resource_path)
+	elif !finished_node.completion_scene_path.is_empty():
+		SceneTransition.change_scene(_resolve_scene_path(finished_node.completion_scene_path))
 	else:
 		return_to_hub()
 
@@ -204,10 +204,10 @@ func report_story_match_result(player_won: bool) -> bool:
 		return true
 
 	if boss_node != null and boss_node.defeat_behavior == BossGameStoryNode.DefeatBehavior.COMIC_THEN_RETRY:
-		if boss_node.defeat_pages.is_empty():
+		if boss_node.defeat_page_paths.is_empty():
 			restart_current_node()
 		else:
-			play_comic_pages(boss_node.defeat_pages, ComicEnd.RESTART_NODE)
+			play_comic_pages(boss_node.defeat_page_paths, ComicEnd.RESTART_NODE)
 		return true
 
 	SceneTransition.change_scene(RETRY_PROMPT_SCENE_PATH)
@@ -315,32 +315,37 @@ func consume_pending_boss_line() -> Dictionary:
 # --- Other node types -------------------------------------------------------
 
 func _start_tutorial_node(node: TutorialStoryNode) -> void:
-	if node.tutorial_scene == null:
-		push_error("TutorialStoryNode '%s' has no tutorial_scene assigned." % node.id)
+	if node.tutorial_scene_path.is_empty():
+		push_error("TutorialStoryNode '%s' has no tutorial_scene_path assigned." % node.id)
 		return_to_hub()
 		return
-	SceneTransition.change_scene(node.tutorial_scene.resource_path)
+	SceneTransition.change_scene(_resolve_scene_path(node.tutorial_scene_path))
 
 func _start_comic_node(node: ComicStoryNode) -> void:
-	if node.pages.is_empty():
+	if node.page_paths.is_empty():
 		# Not authored yet: treat it as done so the story stays playable.
 		finish_current_node()
 		return
-	play_comic_pages(node.pages, ComicEnd.COMPLETE_NODE)
+	play_comic_pages(node.page_paths, ComicEnd.COMPLETE_NODE)
 
 func _start_scene_node(node: SceneStoryNode) -> void:
-	if node.scene == null:
-		push_error("SceneStoryNode '%s' has no scene assigned." % node.id)
+	if node.scene_path.is_empty():
+		push_error("SceneStoryNode '%s' has no scene_path assigned." % node.id)
 		finish_current_node()
 		return
-	SceneTransition.change_scene(node.scene.resource_path)
+	SceneTransition.change_scene(_resolve_scene_path(node.scene_path))
 
 func _start_reward_node(node: RewardStoryNode) -> void:
-	if node.reward_scene == null:
-		push_error("RewardStoryNode '%s' has no reward_scene assigned." % node.id)
+	if node.reward_scene_path.is_empty():
+		push_error("RewardStoryNode '%s' has no reward_scene_path assigned." % node.id)
 		finish_current_node()
 		return
-	SceneTransition.change_scene(node.reward_scene.resource_path)
+	SceneTransition.change_scene(_resolve_scene_path(node.reward_scene_path))
+
+## A story node's scene path as res://. The inspector stores @export_file
+## picks as uid://, while the scene-change code compares res:// paths.
+func _resolve_scene_path(path: String) -> String:
+	return ResourceUID.ensure_path(path)
 
 # --- Comic playback ---------------------------------------------------------
 
@@ -348,18 +353,18 @@ func _start_reward_node(node: RewardStoryNode) -> void:
 ## happens after the last panel: pages that *are* the current node complete
 ## it; a defeat comic restarts the fight; anything else just returns to the
 ## hub with progress untouched.
-func play_comic_pages(pages: Array, on_end: ComicEnd) -> void:
-	var page_scenes: Array[PackedScene] = []
-	for page in pages:
-		if page is PackedScene:
-			page_scenes.append(page)
+func play_comic_pages(page_paths: Array[String], on_end: ComicEnd) -> void:
+	var resolved_paths: Array[String] = []
+	for page_path in page_paths:
+		if !page_path.is_empty():
+			resolved_paths.append(_resolve_scene_path(page_path))
 
-	if page_scenes.is_empty():
+	if resolved_paths.is_empty():
 		_apply_comic_end(on_end)
 		return
 
 	_pending_comic_request = {
-		"pages": page_scenes,
+		"pages": resolved_paths,
 		"on_end": on_end,
 	}
 	SceneTransition.change_scene(COMIC_SCENE_PATH)

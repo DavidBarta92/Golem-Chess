@@ -78,11 +78,11 @@ func set_pack_definition(pack_definition: PackDefinition, fallback_front_texture
 		resolved_front = fallback_front_texture
 	set_pack_assets(
 		resolved_front,
-		pack_definition.pack_back_texture,
-		pack_definition.pack_height_texture,
-		pack_definition.pack_normal_texture,
-		pack_definition.pack_roughness_texture,
-		pack_definition.pack_foil_mask_texture
+		pack_definition.get_back_texture(),
+		pack_definition.get_height_texture(),
+		pack_definition.get_normal_texture(),
+		pack_definition.get_roughness_texture(),
+		pack_definition.get_foil_mask_texture()
 	)
 
 func set_pack_assets(

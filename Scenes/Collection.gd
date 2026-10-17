@@ -90,7 +90,7 @@ const CONTROL_BAR_GAP_BEFORE_PANEL: float = 16.0
 const CONTROL_BAR_BOTTOM_MARGIN: float = 6.0
 const CONTROL_BAR_MIN_GAP: float = 12.0
 ## The search field gives up width first when a longer translation of "My
-## collection" would push the tools into the pager.
+## stamps" would push the tools into the pager.
 const SEARCH_FIELD_WIDTH: float = 140.0
 const SEARCH_FIELD_MIN_WIDTH: float = 90.0
 const PACK_NOTICE_Z_INDEX: int = 25
@@ -120,6 +120,14 @@ const MAGNIFIER_CASE_PRESSED_SCALE: float = 0.92
 const MAGNIFIER_CASE_PRESS_IN_SECONDS: float = 0.055
 const MAGNIFIER_CASE_PRESS_OUT_SECONDS: float = 0.075
 const MAGNIFIER_LENS_SIZE: Vector2 = Vector2(220, 220)
+const MAGNIFIER_ZOOM: float = 1.85
+const MAGNIFIER_DISTORTION: float = 0.12
+## The lens view renders a little more than the lens itself, so the rim's
+## barrel distortion still has picture to sample.
+const MAGNIFIER_VIEW_COVERAGE: float = 1.0 + MAGNIFIER_DISTORTION
+## Render layer (layer 20) of the lens and the description beside it. The lens
+## view leaves this layer out, so the lens never draws itself into itself.
+const MAGNIFIER_SELF_VISIBILITY_LAYER: int = 1 << 19
 const MAGNIFIER_Z_INDEX: int = 1800
 const MAGNIFIER_CASE_Z_INDEX: int = MAGNIFIER_Z_INDEX + 10
 const MAGNIFIER_LENS_Z_INDEX: int = MAGNIFIER_Z_INDEX + 30
@@ -218,7 +226,7 @@ var deck_panel_slide_offset: float = 0.0
 var deck_panel_slide_tween: Tween
 var paper_texture_overlay: ColorRect
 var paper_cutout_amount: float = 1.0
-var magnifier_backbuffer: BackBufferCopy
+var magnifier_viewport: SubViewport
 var magnifier_case_button: Control
 var magnifier_case_click_area: Button
 var magnifier_case_closed_image: TextureRect
@@ -802,7 +810,7 @@ func _build_ui() -> void:
 
 	owned_only_check = CheckBox.new()
 	tools_row.add_child(owned_only_check)
-	owned_only_check.text = "My collection"
+	owned_only_check.text = "My stamps"
 	owned_only_check.button_pressed = false
 	owned_only_check.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
 	owned_only_check.toggled.connect(_on_owned_only_toggled)
@@ -1044,7 +1052,7 @@ func _layout_stamp_browser() -> void:
 		stamp_grid.position = (page_rect.get_center() - stamp_bounds.get_center()).round()
 	_layout_control_bar()
 
-# "My collection", the search field and the pager share one bar under the
+# "My stamps", the search field and the pager share one bar under the
 # album: the tools from the book's left edge, the pager up against the codex
 # panel.
 func _layout_control_bar() -> void:
@@ -1153,20 +1161,26 @@ func _sync_paper_cutout() -> void:
 	paper_material.set_shader_parameter("cutout_amount", paper_cutout_amount)
 
 func _setup_magnifier() -> void:
-	if magnifier_backbuffer == null or !is_instance_valid(magnifier_backbuffer):
-		magnifier_backbuffer = BackBufferCopy.new()
-		magnifier_backbuffer.name = "MagnifierBackBuffer"
-		magnifier_backbuffer.copy_mode = BackBufferCopy.COPY_MODE_VIEWPORT
-		magnifier_backbuffer.z_as_relative = false
-		magnifier_backbuffer.z_index = MAGNIFIER_LENS_Z_INDEX - 1
-		magnifier_backbuffer.visible = false
-		add_child(magnifier_backbuffer)
+	# The lens shows a second render of the room's own canvas, zoomed in around
+	# the lens, rather than the finished screen stretched: the stamps are drawn
+	# again from their full-size art, so their detail is really there.
+	if magnifier_viewport == null or !is_instance_valid(magnifier_viewport):
+		magnifier_viewport = SubViewport.new()
+		magnifier_viewport.name = "MagnifierView"
+		magnifier_viewport.world_2d = get_viewport().find_world_2d()
+		magnifier_viewport.canvas_cull_mask = 0xFFFFFFFF ^ MAGNIFIER_SELF_VISIBILITY_LAYER
+		magnifier_viewport.transparent_bg = true
+		magnifier_viewport.disable_3d = true
+		magnifier_viewport.gui_disable_input = true
+		magnifier_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		add_child(magnifier_viewport)
 
 	if magnifier_material == null:
 		magnifier_material = ShaderMaterial.new()
 		magnifier_material.shader = MAGNIFIER_SHADER
-		magnifier_material.set_shader_parameter("zoom", 1.85)
-		magnifier_material.set_shader_parameter("distortion", 0.12)
+		magnifier_material.set_shader_parameter("lens_texture", magnifier_viewport.get_texture())
+		magnifier_material.set_shader_parameter("coverage", MAGNIFIER_VIEW_COVERAGE)
+		magnifier_material.set_shader_parameter("distortion", MAGNIFIER_DISTORTION)
 		magnifier_material.set_shader_parameter("edge_feather", 0.025)
 		magnifier_material.set_shader_parameter("glass_tint", Color(0.9, 0.97, 1.0, 0.12))
 
@@ -1179,8 +1193,11 @@ func _setup_magnifier() -> void:
 		magnifier_group.z_as_relative = false
 		magnifier_group.z_index = MAGNIFIER_LENS_Z_INDEX
 		magnifier_group.visible = false
+		magnifier_group.visibility_layer = MAGNIFIER_SELF_VISIBILITY_LAYER
 		add_child(magnifier_group)
 		_build_magnifier_lens_visuals()
+	if hover_description_panel != null and is_instance_valid(hover_description_panel):
+		hover_description_panel.visibility_layer = MAGNIFIER_SELF_VISIBILITY_LAYER
 
 	_bind_magnifier_case_button()
 	_sync_magnifier_z_order()
@@ -1189,9 +1206,6 @@ func _setup_magnifier() -> void:
 	_set_magnifier_enabled(magnifier_enabled)
 
 func _sync_magnifier_z_order() -> void:
-	if magnifier_backbuffer != null and is_instance_valid(magnifier_backbuffer):
-		magnifier_backbuffer.z_as_relative = false
-		magnifier_backbuffer.z_index = MAGNIFIER_LENS_Z_INDEX - 1
 	if magnifier_case_button != null and is_instance_valid(magnifier_case_button):
 		magnifier_case_button.z_as_relative = false
 		magnifier_case_button.z_index = MAGNIFIER_CASE_Z_INDEX
@@ -1345,8 +1359,8 @@ func _set_magnifier_enabled(is_enabled: bool) -> void:
 	_set_magnifier_case_opened(is_enabled)
 	if magnifier_group != null:
 		magnifier_group.visible = is_enabled
-	if magnifier_backbuffer != null:
-		magnifier_backbuffer.visible = is_enabled
+	if magnifier_viewport != null:
+		magnifier_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if is_enabled else SubViewport.UPDATE_DISABLED
 
 	if is_enabled:
 		if !was_enabled:
@@ -1374,10 +1388,23 @@ func _update_magnifier_position(force_update: bool = false) -> void:
 	lens_position.y = clampf(lens_position.y, TOP_BAR_HEIGHT, maxf(TOP_BAR_HEIGHT, viewport_size.y - MAGNIFIER_LENS_SIZE.y))
 	magnifier_group.position = lens_position
 
-	var lens_center: Vector2 = lens_position + half_lens_size
-	magnifier_material.set_shader_parameter("center_screen_uv", Vector2(lens_center.x / viewport_size.x, lens_center.y / viewport_size.y))
+	_sync_magnifier_view(lens_position + half_lens_size)
 	if hover_description_panel != null and hover_description_panel.visible:
 		_layout_hover_description_panel()
+
+## Points the lens view at the screen point under the lens centre. The view is
+## rendered at the window's real pixel density, and its transform starts from
+## the screen's own canvas transform, so what the lens shows stays exactly
+## over what is beneath it - also during the scene-change zoom.
+func _sync_magnifier_view(lens_center: Vector2) -> void:
+	if magnifier_viewport == null:
+		return
+	var pixel_scale: float = maxf(1.0, float(get_window().size.x) / maxf(1.0, get_viewport_rect().size.x))
+	var view_size := Vector2i((MAGNIFIER_LENS_SIZE * MAGNIFIER_VIEW_COVERAGE * pixel_scale).ceil())
+	if magnifier_viewport.size != view_size:
+		magnifier_viewport.size = view_size
+	var zoom_into_view := Transform2D(0.0, Vector2.ONE * MAGNIFIER_ZOOM * pixel_scale, 0.0, Vector2(view_size) * 0.5)
+	magnifier_viewport.canvas_transform = zoom_into_view * Transform2D(0.0, -lens_center) * get_viewport().canvas_transform
 
 func _create_panel_style(bg_color: Color, border_color: Color, radius_top: int, radius_bottom: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -2338,6 +2365,12 @@ func _update_deck_editor_state() -> void:
 		if visual != null:
 			visual.draggable = is_creating_deck && !editing_deck_has_missing_stamps && visual.collection_owned && _can_add_stamp_to_deck(visual.stamp) && _get_selected_deck_stamp_count() < MAX_DECK_SIZE
 			visual.disabled = false
+			# A stamp that cannot be picked up stays quiet under the mouse; an
+			# empty name plays nothing, no meta falls back to the usual hover.
+			if visual.draggable:
+				visual.remove_meta("sfx_hover")
+			else:
+				visual.set_meta("sfx_hover", "")
 
 func _can_complete_deck() -> bool:
 	return is_creating_deck && !editing_deck_has_missing_stamps && !deck_name_edit.text.strip_edges().is_empty() && _get_selected_deck_stamp_count() == MAX_DECK_SIZE && _has_selected_seeker_stamp() && !_has_too_many_stamp_copies()
