@@ -18,6 +18,10 @@
 [ext_resource type="Script" uid="uid://dta7wq16l8wau" path="res://Scripts/Story/FeatureHint.gd" id="17_feature_hint"]
 [ext_resource type="Script" uid="uid://e2vu03ic5b55" path="res://Scripts/Story/SceneLinkButton.gd" id="18_scene_link_button"]
 [ext_resource type="Material" path="res://Shaders/vignette_material.tres" id="90_vignette_material"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicCue.gd" id="91_music_cue"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicStemFade.gd" id="92_music_stem_fade"]
+[ext_resource type="Script" path="res://Scripts/Audio/SceneMusicCue.gd" id="93_scene_music_cue"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicStemCycle.gd" id="94_music_stem_cycle"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_lines"]
 shader = ExtResource("4_bg_line_shader")
@@ -55,6 +59,16 @@ shader_parameter/cutout_rect = Vector4(0, 0, 0, 0)
 shader_parameter/cutout_bottom_radius = 0.0
 shader_parameter/cutout_amount = 0.0
 shader_parameter/cutout_canvas_size = Vector2(1, 1)
+
+[sub_resource type="Resource" id="Fade_menu_all_out"]
+script = ExtResource("92_music_stem_fade")
+stem = "*"
+direction = 1
+seconds = 3.0
+
+[sub_resource type="Resource" id="Cue_main_menu"]
+script = ExtResource("91_music_cue")
+fades = Array[ExtResource("92_music_stem_fade")]([SubResource("Fade_menu_all_out")])
 
 [node name="MainMenu" type="Control" unique_id=683751200]
 layout_mode = 3
@@ -341,6 +355,15 @@ target_path = NodePath("../StoryButtons/QuestsButton")
 script = ExtResource("17_feature_hint")
 feature_id = "trade"
 target_path = NodePath("../StoryButtons/TradeButton")
+
+[node name="MenuMusic" type="Node" parent="."]
+script = ExtResource("93_scene_music_cue")
+cue = SubResource("Cue_main_menu")
+play_on_ready = false
+
+[node name="ChordsCycle" type="Node" parent="."]
+script = ExtResource("94_music_stem_cycle")
+autostart = false
 
 [connection signal="pressed" from="CollectionButton" to="." method="_on_collection_button_pressed"]
 [connection signal="canceled" from="SettingsDialog" to="." method="_on_settings_canceled"]

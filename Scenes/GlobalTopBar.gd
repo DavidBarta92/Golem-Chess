@@ -56,7 +56,7 @@ func _ready() -> void:
 	points_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	point_icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	points_label.add_theme_color_override("font_color", TOP_BAR_TEXT_COLOR)
-	version_label.text = "v%s alpha" % str(ProjectSettings.get_setting("application/config/version", "0.0.8"))
+	version_label.text = "v%s" % str(ProjectSettings.get_setting("application/config/version", "0.0.8"))
 	version_label.add_theme_color_override("font_color", VERSION_TEXT_COLOR)
 	button_by_id = {
 		"settings": settings_button,

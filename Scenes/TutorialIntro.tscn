@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=29 format=3]
 
 [ext_resource type="Script" path="res://Scenes/TutorialIntro.gd" id="1_intro"]
 [ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPanel.tscn" id="2_comic_panel"]
@@ -18,14 +18,36 @@
 [ext_resource type="Shader" path="res://Shaders/flat_shadow.gdshader" id="17_flat_shadow"]
 [ext_resource type="Texture2D" path="res://Assets/tutorial_3_line_reveal_mask.png" id="18_pointer_mask"]
 [ext_resource type="Texture2D" path="res://Assets/tutorial_3_color.png" id="19_pointer_color"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicCue.gd" id="90_music_cue"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicStemFade.gd" id="91_music_stem_fade"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_codex_shadow"]
 shader = ExtResource("17_flat_shadow")
 shader_parameter/shadow_color = Color(0.827451, 0.835294, 0.847059, 1)
 
+[sub_resource type="Resource" id="Fade_color_dreamy_in"]
+script = ExtResource("91_music_stem_fade")
+stem = "color_dreamy"
+seconds = 2.0
+
+[sub_resource type="Resource" id="Cue_intro_start"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_color_dreamy_in")])
+
+[sub_resource type="Resource" id="Fade_pad_in"]
+script = ExtResource("91_music_stem_fade")
+stem = "pad"
+seconds = 3.0
+
+[sub_resource type="Resource" id="Cue_board_line"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_pad_in")])
+
 [node name="TutorialIntro" type="CanvasLayer"]
 layer = 9
 script = ExtResource("1_intro")
+music_cue_on_start = SubResource("Cue_intro_start")
+line_music_cues = Array[ExtResource("90_music_cue")]([null, null, null, null, null, SubResource("Cue_board_line")])
 
 [node name="Root" type="Control" parent="."]
 layout_mode = 3

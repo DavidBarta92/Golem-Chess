@@ -296,7 +296,7 @@ func _get_boss_ordinal(node: BossGameStoryNode) -> int:
 ## The boss's parting line, handed from the match to whatever scene comes
 ## next. Set when the player wins, since the reward scene is where the boss
 ## gets the last word; on a loss the line is spoken over the board instead.
-func set_pending_boss_line(speaker_name: String, text: String, portrait_data: Dictionary) -> void:
+func set_pending_boss_line(speaker_name: String, text: String, portrait_data: Dictionary, music_cue: MusicCue = null) -> void:
 	if text.strip_edges().is_empty():
 		_pending_boss_line = {}
 		return
@@ -304,6 +304,7 @@ func set_pending_boss_line(speaker_name: String, text: String, portrait_data: Di
 		"speaker_name": speaker_name,
 		"text": text,
 		"portrait_data": portrait_data.duplicate(true),
+		"music_cue": music_cue,
 	}
 
 ## Read once by the reward scene; empty when the boss had nothing to say.

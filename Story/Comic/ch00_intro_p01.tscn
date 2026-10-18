@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPage.tscn" id="1_comic_page"]
 [ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPanel.tscn" id="2_comic_panel"]
@@ -17,14 +17,24 @@
 [ext_resource type="Texture2D" uid="uid://c3hm4ua83gd06" path="res://Assets/Comic/1_6_color.png" id="16_color"]
 [ext_resource type="Texture2D" uid="uid://cdeggeu5exwm4" path="res://Assets/Comic/1_7_line_reveal_mask.png" id="17_mask"]
 [ext_resource type="Texture2D" uid="uid://d1r1u4d18jcqe" path="res://Assets/Comic/1_7_color.png" id="17_color"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicCue.gd" id="90_music_cue"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicStemFade.gd" id="91_music_stem_fade"]
 
 [sub_resource type="Resource" id="Resource_line_7_1"]
 script = ExtResource("3_dialogue_line")
 speaker = "GABI"
 text = "COMIC_1_7_GABI_1"
 
+[sub_resource type="Resource" id="Fade_chords_in"]
+script = ExtResource("91_music_stem_fade")
+stem = "chords"
+seconds = 3.0
+
+[sub_resource type="Resource" id="Cue_panel2_chords"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_chords_in")])
+
 [node name="ComicPage" instance=ExtResource("1_comic_page")]
-music_mode = 2
 
 [node name="Panel1" parent="Panels" index="0" instance=ExtResource("2_comic_panel")]
 layout_mode = 1
@@ -49,6 +59,7 @@ grow_horizontal = 2
 grow_vertical = 2
 reveal_mask = ExtResource("12_mask")
 fill_texture = ExtResource("12_color")
+music_cue = SubResource("Cue_panel2_chords")
 
 [node name="Panel3" parent="Panels" index="2" instance=ExtResource("2_comic_panel")]
 layout_mode = 1

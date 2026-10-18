@@ -20,6 +20,9 @@ class_name ComicDialogueLine
 ## the tighter one. Negative leaves the panel's own spacing alone.
 @export_range(-1.0, 40.0, 1.0) var speaker_gap: float = -1.0
 
+## Played as this line appears on the page. Optional.
+@export var music_cue: MusicCue
+
 func get_speaker() -> String:
 	var value: String = speaker.strip_edges()
 	if value.is_empty():

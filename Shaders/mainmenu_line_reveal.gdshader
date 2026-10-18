@@ -11,6 +11,11 @@ uniform float min_duration_frac : hint_range(0.0, 1.0) = 0.45;
 uniform float max_delay : hint_range(0.0, 6.0) = 1.8;
 uniform float feather : hint_range(0.0, 0.2) = 0.03;
 uniform vec4 line_color : source_color = vec4(0.06, 0.06, 0.08, 1.0);
+// The mask's alpha is how dark the source art is, which is right for black
+// ink but leaves lighter-coloured line art see-through. Scaling it back up
+// (by 1 / (1 - the art's grey)) makes such strokes as solid as in the drawing.
+// 1.0 leaves the mask as it is.
+uniform float ink_alpha_scale = 1.0;
 
 void fragment() {
 	vec4 mask = texture(TEXTURE, UV);
@@ -19,5 +24,5 @@ void fragment() {
 	float duration = base_duration * mix(min_duration_frac, 1.0, mask.b);
 	float t = min((time - delay) / max(duration, 0.001), 1.0);
 	float reveal = 1.0 - smoothstep(t, t + feather, progress);
-	COLOR = vec4(line_color.rgb, line_color.a * mask.a * reveal);
+	COLOR = vec4(line_color.rgb, line_color.a * clamp(mask.a * ink_alpha_scale, 0.0, 1.0) * reveal);
 }

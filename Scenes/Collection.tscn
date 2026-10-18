@@ -20,6 +20,9 @@
 [ext_resource type="Theme" path="res://ui/themes/collection_theme.tres" id="20_collection_theme"]
 [ext_resource type="Shader" path="res://Shaders/flat_shadow.gdshader" id="21_flat_shadow"]
 [ext_resource type="ShaderMaterial" path="res://Shaders/vignette_material.tres" id="90_vignette_material"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicCue.gd" id="91_music_cue"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicStemFade.gd" id="92_music_stem_fade"]
+[ext_resource type="Script" path="res://Scripts/Audio/SceneMusicCue.gd" id="93_scene_music_cue"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamp"]
 bg_color = Color(0.98, 0.98, 0.96, 1)
@@ -90,6 +93,26 @@ shader_parameter/light_strength = 0.55
 shader_parameter/contrast = 1.25
 shader_parameter/effect_opacity = 0.5
 shader_parameter/paper_color = Color(0.956863, 0.941176, 0.901961, 1)
+
+[sub_resource type="Resource" id="Fade_collection_chords_out"]
+script = ExtResource("92_music_stem_fade")
+stem = "chords"
+direction = 1
+seconds = 3.0
+
+[sub_resource type="Resource" id="Fade_collection_drums_in"]
+script = ExtResource("92_music_stem_fade")
+stem = "drums"
+seconds = 3.0
+
+[sub_resource type="Resource" id="Fade_collection_tune_in"]
+script = ExtResource("92_music_stem_fade")
+stem = "tune"
+seconds = 3.0
+
+[sub_resource type="Resource" id="Cue_collection"]
+script = ExtResource("91_music_cue")
+fades = Array[ExtResource("92_music_stem_fade")]([SubResource("Fade_collection_chords_out"), SubResource("Fade_collection_drums_in"), SubResource("Fade_collection_tune_in")])
 
 [node name="Collection" type="Control" unique_id=1188233061]
 layout_mode = 3
@@ -785,3 +808,7 @@ feature_id = "buy_packs"
 top_bar_button_id = "buy_packs"
 arrow_side = 3
 arrow_offset = Vector2(0, 0)
+
+[node name="CollectionMusic" type="Node" parent="."]
+script = ExtResource("93_scene_music_cue")
+cue = SubResource("Cue_collection")

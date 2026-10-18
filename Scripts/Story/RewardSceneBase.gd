@@ -157,6 +157,7 @@ func _show_next_line() -> void:
 		str(line.get("text", "")),
 		line.get("portrait", null)
 	)
+	MusicManager.apply_cue(line.get("music_cue") as MusicCue)
 
 ## The boss line comes in already localized (the boss decides whether its text
 ## goes through the language files), so it is not translated a second time.
@@ -169,6 +170,7 @@ func _build_line_queue() -> void:
 			"speaker": str(boss_line.get("speaker_name", "")),
 			"text": str(boss_line.get("text", "")),
 			"portrait": PortraitLibrary.config_from_data_or_default(boss_line.get("portrait_data", {}), 1),
+			"music_cue": boss_line.get("music_cue"),
 		})
 
 	var speaker: String = tr(speaker_name)

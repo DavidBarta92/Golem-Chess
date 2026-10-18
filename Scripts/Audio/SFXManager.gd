@@ -37,6 +37,23 @@ func play(sound_name: String) -> AudioStreamPlayer:
 	player.play()
 	return player
 
+## The same sound, played slower and lower. Pitch below 1 stretches it as well
+## as deepening it, which is how a short effect is made into a heavier one
+## without a second recording.
+##
+## The pool hands the same players round, so the pitch is put back when the
+## sound ends - otherwise the next thing to borrow that player would inherit it.
+func play_pitched(sound_name: String, pitch: float) -> AudioStreamPlayer:
+	var player: AudioStreamPlayer = play(sound_name)
+	if player == null:
+		return null
+	player.pitch_scale = maxf(0.01, pitch)
+	player.finished.connect(func() -> void:
+		if is_instance_valid(player):
+			player.pitch_scale = 1.0
+	, CONNECT_ONE_SHOT)
+	return player
+
 func _build_player_pool() -> void:
 	for i in range(POOL_SIZE):
 		var player := AudioStreamPlayer.new()

@@ -66,6 +66,17 @@ const PLACEHOLDER_UNREVEALED_ALPHA: float = 0.18
 	get:
 		return _line_color
 
+## The mask's opacity is worked out from how dark the line art is, so art
+## drawn in a colour lighter than black comes out see-through, and the colour
+## layer underneath shows through its strokes. On makes the ink as solid as in
+## the drawing; line_color should then be the art's own colour.
+@export var solid_ink: bool = false:
+	set(value):
+		_solid_ink = value
+		_apply_shader_parameters()
+	get:
+		return _solid_ink
+
 ## Off keeps the aspect ratio of the art inside the panel rect; on stretches it
 ## to fill the rect exactly.
 @export var stretch_to_fit: bool = false:
@@ -106,14 +117,28 @@ const PLACEHOLDER_UNREVEALED_ALPHA: float = 0.18
 	get:
 		return _feather
 @export_range(0.0, 4.0, 0.05) var fill_fade_duration: float = 1.5
-## When the colour starts fading in, as a fraction of the ink animation.
-## 1.0 waits for the line to finish, which is the house style.
+## What the colour layer is tinted to. White leaves the artwork its own
+## colours, which is right for an ordinary panel. A title drawn twice - once
+## brushed, once solid - wants both layers the same colour: the solid one is
+## there to fill the gaps the dry brush leaves, and the moment the two differ
+## you can see where the one behind ends.
+@export var fill_color: Color = Color.WHITE:
+	set(value):
+		_fill_color = value
+		_apply_fill_color()
+	get:
+		return _fill_color
 @export_range(0.0, 1.0, 0.01) var fill_fade_start_ratio: float = 1.0
 
 @export_group("Flow")
 ## When on, this panel is revealed together with the one before it instead of
 ## waiting for its own click - for a beat that needs two boxes at once.
 @export var reveal_with_previous: bool = false
+## Reports the panel finished the moment the ink lands, rather than waiting for
+## the colour to catch up underneath it. For a beat where the next thing is
+## meant to happen *while* the colour is still arriving - a title whose flash
+## and whose fill belong to the same moment.
+@export var finish_on_ink: bool = false
 ## The pen scratching away while the line draws itself (an SFXManager group
 ## name - a file name under Audio/SFX/ without the extension). It is stopped
 ## when the ink lands, so it tracks the drawing rather than ringing on over the
@@ -124,6 +149,9 @@ const PLACEHOLDER_UNREVEALED_ALPHA: float = 0.18
 ## An extra one-shot for the beat itself - a door, a bell - played as the panel
 ## starts drawing and left to ring out on its own. Optional.
 @export var extra_sfx_name: String = ""
+
+## A change to the music as this panel starts drawing. Optional.
+@export var music_cue: MusicCue
 
 ## A beat that is only a line of dialogue: nothing is drawn, not even the
 ## blocking-out outline, and the page moves straight on to the words. For an
@@ -136,15 +164,27 @@ const PLACEHOLDER_UNREVEALED_ALPHA: float = 0.18
 @export_range(-1.0, 20.0, 0.1) var auto_advance_after_seconds: float = -1.0
 
 @export_group("Flourish")
-## A glint when the panel lands and then a slow pulse underneath it. Meant for
-## a small bright thing, a star on a title, rather than for a whole drawing.
-## See ComicPanelFlourish for what the glint is and why it is not the match's
-## capture sparkle.
-@export var appear_sparkle: bool = false
-@export_range(0.1, 4.0, 0.05) var sparkle_seconds: float = 0.85
+## How the panel arrives once it has drawn: the flourish a stamp makes when it
+## is affixed to a golem - rays gathering onto it and the glow flashing - and
+## then a steady glow. Meant for a small bright thing, a star on a title,
+## rather than for a whole drawing. See ComicPanelFlourish.
+@export var appear_affix: bool = false
+@export_range(0.1, 4.0, 0.05) var affix_seconds: float = 1.1
+## Where the flourish is centred, as a fraction of the artwork - 0 to 1 across
+## and down the drawing itself, not the panel. A panel is a full-screen rect
+## with the picture fitted inside it, so a position in panel pixels would be
+## right at one window size and wrong at every other.
+@export var affix_centre_uv: Vector2 = Vector2(0.5, 0.5)
+## How wide the thing it lands on is, as a fraction of the drawing's width.
+@export_range(0.0, 1.0, 0.005) var affix_width_ratio: float = 0.05
+
 @export var pulsing_glow: bool = false
 @export var glow_color: Color = Color(1.0, 0.86, 0.45, 1.0)
-@export_range(0.0, 4.0, 0.05) var glow_strength: float = 1.4
+@export_range(0.0, 5.0, 0.05) var glow_strength: float = 1.4
+## What the glow falls back to between breaths. Above zero keeps the thing lit
+## the whole time, so it reads as something that is shining rather than as
+## something being switched on and off.
+@export_range(0.0, 5.0, 0.05) var glow_floor_strength: float = 0.0
 @export_range(0.2, 8.0, 0.1) var glow_period_seconds: float = 2.2
 
 @export_group("Disappearing")
@@ -186,6 +226,9 @@ var _is_hidden: bool = false
 var _reveal_sfx_player: AudioStreamPlayer
 var _placeholder_alpha: float = 1.0
 var _glow_overlay: CanvasItem
+var _fill_color: Color = Color.WHITE
+var _solid_ink: bool = false
+var _affix_played: bool = false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -193,6 +236,7 @@ func _ready() -> void:
 	_apply_textures()
 	_apply_shader_parameters()
 	_apply_stretch_mode()
+	_apply_fill_color()
 
 	if Engine.is_editor_hint():
 		_show_fully_drawn()
@@ -286,9 +330,11 @@ func reset_panel() -> void:
 	_is_revealed = false
 	_is_fading_out = false
 	_is_hidden = false
+	_affix_played = false
 	visible = true
 	modulate.a = 1.0
 	_apply_shader_parameters()
+	_apply_fill_color()
 	if _line_material != null:
 		_line_material.set_shader_parameter("time", HIDDEN_TIME)
 	if _lines_rect != null:
@@ -307,6 +353,8 @@ func reveal() -> void:
 
 	_is_revealing = true
 	reveal_started.emit()
+	if !Engine.is_editor_hint():
+		MusicManager.apply_cue(music_cue)
 
 	if dialogue_only:
 		_on_reveal_complete()
@@ -331,7 +379,7 @@ func reveal() -> void:
 	_reveal_tween.tween_method(Callable(self, "_set_reveal_time"), 0.0, ink_duration, ink_duration)
 	# The colour is still fading in when the last stroke lands, so the panel is
 	# not finished until that has caught up.
-	var fade_tail: float = _get_appearance_duration() - ink_duration
+	var fade_tail: float = 0.0 if finish_on_ink else _get_appearance_duration() - ink_duration
 	if fade_tail > 0.0:
 		_reveal_tween.tween_interval(fade_tail)
 	_reveal_tween.tween_callback(Callable(self, "_on_reveal_complete"))
@@ -352,6 +400,9 @@ func finish_all_now() -> void:
 		finish_fade_out_now()
 
 func _reveal_without_mask() -> void:
+	if appear_affix:
+		_reveal_with_affix()
+		return
 	# No line art yet (or a painted panel that should not be inked in): fade
 	# the fill in on its own so the page still reads correctly.
 	_kill_tweens()
@@ -362,6 +413,24 @@ func _reveal_without_mask() -> void:
 		_reveal_tween.tween_interval(delay_before)
 	_reveal_tween.tween_callback(Callable(self, "_play_reveal_sfx"))
 	_reveal_tween.tween_method(Callable(self, "_set_fade_in_progress"), _placeholder_alpha, 1.0, fade_duration)
+	_reveal_tween.tween_callback(Callable(self, "_on_reveal_complete"))
+
+## A small bright thing arriving with the affix: the rays gather and the glow
+## flashes first, and the thing itself only appears as the flash ends - light
+## gathering into a star rather than a star being lit.
+func _reveal_with_affix() -> void:
+	_kill_tweens()
+	# The layer stays visible so its glow child can flash ahead of the star;
+	# the star itself is held back through its own opacity.
+	_fill_rect.modulate.a = 1.0
+	_set_fill_reveal_alpha(0.0)
+	_reveal_tween = create_tween()
+	if delay_before > 0.0:
+		_reveal_tween.tween_interval(delay_before)
+	_reveal_tween.tween_callback(Callable(self, "_play_reveal_sfx"))
+	_reveal_tween.tween_callback(Callable(self, "_start_affix"))
+	_reveal_tween.tween_interval(affix_seconds)
+	_reveal_tween.tween_method(Callable(self, "_set_fill_reveal_alpha"), 0.0, 1.0, maxf(0.05, fill_fade_duration))
 	_reveal_tween.tween_callback(Callable(self, "_on_reveal_complete"))
 
 func _start_fill_fade(start_delay: float) -> void:
@@ -398,20 +467,40 @@ func _on_reveal_complete() -> void:
 	_play_flourish()
 	reveal_finished.emit()
 
-## The glint and the pulse, once the panel is all the way there.
+## The affix and the pulse, once the panel is all the way there. An affix
+## panel normally played its flash on the way in; one that was snapped to the
+## end before it got there plays it now.
 func _play_flourish() -> void:
 	if Engine.is_editor_hint():
 		return
 	if _fill_rect == null:
 		return
-	if pulsing_glow:
-		_kill_pulse()
+	if appear_affix and !_affix_played:
+		_start_affix()
+	elif pulsing_glow and _glow_overlay == null:
 		_glow_overlay = ComicPanelFlourish.start_pulse(
 			_fill_rect, glow_color, glow_strength, glow_period_seconds,
-			sparkle_seconds if appear_sparkle else 0.0)
-	if appear_sparkle:
-		ComicPanelFlourish.play_glint(
-			_fill_rect, _glow_overlay, glow_strength, sparkle_seconds)
+			0.0, glow_floor_strength)
+
+## Rays gathering onto the thing and the glow flashing, then the glow settling
+## into its slow breath.
+func _start_affix() -> void:
+	if Engine.is_editor_hint() or _fill_rect == null:
+		return
+	_affix_played = true
+	if pulsing_glow and _glow_overlay == null:
+		_glow_overlay = ComicPanelFlourish.start_pulse(
+			_fill_rect, glow_color, glow_strength, glow_period_seconds,
+			affix_seconds, glow_floor_strength)
+	var art: Rect2 = get_art_rect()
+	ComicPanelFlourish.play_affix(
+		self,
+		art.position + art.size * affix_centre_uv,
+		art.size.x * affix_width_ratio,
+		_glow_overlay,
+		glow_strength,
+		affix_seconds,
+		glow_floor_strength)
 
 func _kill_pulse() -> void:
 	if _glow_overlay != null and is_instance_valid(_glow_overlay):
@@ -456,6 +545,7 @@ func _show_fully_drawn() -> void:
 		_lines_rect.modulate.a = 1.0
 	if _fill_rect != null:
 		_fill_rect.modulate.a = 1.0
+	_set_fill_reveal_alpha(1.0)
 	_placeholder_alpha = 1.0
 	queue_redraw()
 
@@ -501,6 +591,16 @@ func _apply_shader_parameters() -> void:
 	_line_material.set_shader_parameter("min_duration_frac", _min_duration_frac)
 	_line_material.set_shader_parameter("feather", _feather)
 	_line_material.set_shader_parameter("line_color", _line_color)
+	_line_material.set_shader_parameter("ink_alpha_scale", _get_ink_alpha_scale())
+
+## The mask generator takes a pixel's ink as 1 - its grey, so a stroke in
+## line_color comes out at that opacity; dividing by it puts the stroke back to
+## solid. Black ink is left alone.
+func _get_ink_alpha_scale() -> float:
+	if !_solid_ink:
+		return 1.0
+	var grey: float = (_line_color.r + _line_color.g + _line_color.b) / 3.0
+	return 1.0 / maxf(0.05, 1.0 - grey)
 
 ## The rect the drawing occupies inside this panel. The layers fit the texture
 ## in and centre it (KEEP_ASPECT_CENTERED), so this is that same fit worked out
@@ -517,6 +617,22 @@ func get_art_rect() -> Rect2:
 	var fit: float = minf(size.x / art_size.x, size.y / art_size.y)
 	var fitted: Vector2 = art_size * fit
 	return Rect2((size - fitted) * 0.5, fitted)
+
+func _apply_fill_color() -> void:
+	if _fill_rect == null or !is_instance_valid(_fill_rect):
+		return
+	# self_modulate, not modulate: modulate carries the fade-in and would take
+	# any child - the glow overlay - with it.
+	_fill_rect.self_modulate = _fill_color
+
+## The fill's own opacity on top of its tint, leaving modulate - and with it
+## the glow overlay child - alone.
+func _set_fill_reveal_alpha(alpha: float) -> void:
+	if _fill_rect == null or !is_instance_valid(_fill_rect):
+		return
+	var tinted: Color = _fill_color
+	tinted.a = _fill_color.a * alpha
+	_fill_rect.self_modulate = tinted
 
 func _apply_stretch_mode() -> void:
 	var mode: int = TextureRect.STRETCH_SCALE if _stretch_to_fit else TextureRect.STRETCH_KEEP_ASPECT_CENTERED

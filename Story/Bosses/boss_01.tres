@@ -16,6 +16,8 @@
 [ext_resource type="Resource" uid="uid://ufbrx8m22qtk" path="res://Stamps/Courtyard/berserk.tres" id="9_stamp_10"]
 [ext_resource type="Resource" uid="uid://bf0hhbc0427gd" path="res://Stamps/Courtyard/the_golem.tres" id="9_stamp_11"]
 [ext_resource type="Resource" uid="uid://8rvwi7jj14be" path="res://Stamps/Courtyard/war_drummer.tres" id="9_stamp_12"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicCue.gd" id="90_music_cue"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicStemFade.gd" id="91_music_stem_fade"]
 
 [sub_resource type="Resource" id="Resource_reaction_01"]
 resource_name = "entered_route_setup"
@@ -100,6 +102,31 @@ trigger = "stamp_played"
 lines = Array[String]([""])
 chance = 0.8
 
+[sub_resource type="Resource" id="Fade_ostinato_in"]
+script = ExtResource("91_music_stem_fade")
+stem = "ostinato"
+seconds = 5.0
+
+[sub_resource type="Resource" id="Fade_chords_dreamy_out"]
+script = ExtResource("91_music_stem_fade")
+stem = "chords_dreamy"
+direction = 1
+seconds = 30.0
+
+[sub_resource type="Resource" id="Cue_match_start"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_ostinato_in"), SubResource("Fade_chords_dreamy_out")])
+
+[sub_resource type="Resource" id="Fade_ostinato_out"]
+script = ExtResource("91_music_stem_fade")
+stem = "ostinato"
+direction = 1
+seconds = 2.0
+
+[sub_resource type="Resource" id="Cue_defeat_line"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_ostinato_out")])
+
 [resource]
 script = ExtResource("1_boss_definition")
 boss_id = "boss_01"
@@ -114,3 +141,5 @@ intro_lines = Array[String](["BOSS_01_INTRO_1", "BOSS_01_INTRO_2", "BOSS_01_INTR
 victory_lines = Array[String](["BOSS_01_WIN_1", "BOSS_01_WIN_2", "BOSS_01_WIN_3", "BOSS_01_WIN_4", "BOSS_01_WIN_5"])
 defeat_lines = Array[String](["BOSS_01_LOSS_1"])
 reactions = Array[ExtResource("2_boss_reaction")]([SubResource("Resource_reaction_01"), SubResource("Resource_reaction_02"), SubResource("Resource_reaction_03"), SubResource("Resource_reaction_04"), SubResource("Resource_reaction_05"), SubResource("Resource_reaction_06"), SubResource("Resource_reaction_07"), SubResource("Resource_reaction_stamp_01"), SubResource("Resource_reaction_stamp_02"), SubResource("Resource_reaction_stamp_03"), SubResource("Resource_reaction_stamp_04"), SubResource("Resource_reaction_stamp_05")])
+music_cue_on_match_start = SubResource("Cue_match_start")
+music_cue_on_defeat_line = SubResource("Cue_defeat_line")

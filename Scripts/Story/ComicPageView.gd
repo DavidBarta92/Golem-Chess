@@ -48,6 +48,12 @@ enum MusicMode { UNCHANGED, PLAYING, SILENT }
 @export var music_mode: MusicMode = MusicMode.UNCHANGED
 @export_range(0.0, 10.0, 0.1) var ambience_fade_seconds: float = 1.2
 @export_range(0.0, 10.0, 0.1) var music_fade_seconds: float = 1.0
+## Played as the page opens, after ambience_mode has been applied, so a cue
+## that changes the ambience has the last word. Optional.
+@export var music_cue_on_start: MusicCue
+## Played as the page hands control back - on the click after the last panel,
+## or on the end button of a page that has one. Optional.
+@export var music_cue_on_finish: MusicCue
 ## How long a line takes to fade away once its panel's turn is over.
 @export_range(0.0, 5.0, 0.05) var dialogue_fade_out_seconds: float = 1.0
 
@@ -79,10 +85,8 @@ enum MusicMode { UNCHANGED, PLAYING, SILENT }
 @export var end_byline_text: String = ""
 ## Where it sits in the page's design space. Full width, with the text centred
 ## in it, so the line stays put whatever it says and however long it gets in
-## another language. The default is nudged nine pixels right of the page's own
-## middle because the title it sits under is drawn slightly off-centre, and the
-## eye reads the credit against the word, not against the page.
-@export var end_byline_rect: Rect2 = Rect2(9.0, 402.0, 1280.0, 36.0)
+## another language.
+@export var end_byline_rect: Rect2 = Rect2(0.0, 402.0, 1280.0, 36.0)
 ## Kept close to the button's own size: large enough to read, small enough that
 ## it does not argue with the title above it.
 @export_range(8, 64, 1) var end_byline_font_size: int = 19
@@ -285,6 +289,7 @@ func begin() -> void:
 			MusicManager.set_muted(false, music_fade_seconds)
 		_:
 			pass
+	MusicManager.apply_cue(music_cue_on_start)
 
 	_reveal_next_group()
 
@@ -446,6 +451,10 @@ func _finish_page() -> void:
 		return
 	if end_hold_seconds > 0.0:
 		await get_tree().create_timer(end_hold_seconds).timeout
+	_emit_page_finished()
+
+func _emit_page_finished() -> void:
+	MusicManager.apply_cue(music_cue_on_finish)
 	page_finished.emit()
 
 ## The way off a page that does not end on a click: a button at the foot of the
@@ -508,7 +517,7 @@ func _show_end_byline() -> void:
 func _on_end_button_pressed() -> void:
 	if _end_button != null and is_instance_valid(_end_button):
 		_end_button.disabled = true
-	page_finished.emit()
+	_emit_page_finished()
 
 ## Sends away every panel that was waiting on one of the panels about to draw.
 func _start_fades_for(group_panels: Array) -> void:
@@ -611,6 +620,7 @@ func _show_next_dialogue_line() -> void:
 	_dialogue_panel.set_speaker_gap(line.speaker_gap)
 	_apply_dialogue_rect()
 	_dialogue_panel.show_line(line.get_speaker(), line.get_text(), null)
+	MusicManager.apply_cue(line.music_cue)
 	_settle_dialogue_box()
 
 ## Re-fits the box to the line that is now in it, then reports if that needs

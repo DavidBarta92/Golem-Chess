@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=34 format=3]
 
 [ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPage.tscn" id="1_comic_page"]
 [ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPanel.tscn" id="2_comic_panel"]
@@ -14,6 +14,59 @@
 [ext_resource type="Texture2D" uid="uid://bco7q306oepav" path="res://Assets/Comic/3_5A_reveal_mask.png" id="15_mask"]
 [ext_resource type="Texture2D" uid="uid://h6o6n4v2dtce" path="res://Assets/Comic/3_5B.png" id="15_color"]
 [ext_resource type="Texture2D" uid="uid://yswmhb4d2amm" path="res://Assets/Comic/3_5C.png" id="16_star"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicCue.gd" id="90_music_cue"]
+[ext_resource type="Script" path="res://Scripts/Audio/MusicStemFade.gd" id="91_music_stem_fade"]
+
+[sub_resource type="Resource" id="Fade_color_dreamy_out"]
+script = ExtResource("91_music_stem_fade")
+stem = "color_dreamy"
+direction = 1
+seconds = 2.0
+
+[sub_resource type="Resource" id="Cue_page_start"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_color_dreamy_out")])
+ambience_filter = 1
+set_ambience_volume = true
+ambience_fade_seconds = 2.0
+
+[sub_resource type="Resource" id="Fade_drums_in"]
+script = ExtResource("91_music_stem_fade")
+stem = "drums"
+seconds = 5.0
+
+[sub_resource type="Resource" id="Cue_drums_in"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_drums_in")])
+
+[sub_resource type="Resource" id="Fade_tune_in"]
+script = ExtResource("91_music_stem_fade")
+stem = "tune"
+seconds = 3.0
+
+[sub_resource type="Resource" id="Fade_ostinato_in"]
+script = ExtResource("91_music_stem_fade")
+stem = "ostinato"
+seconds = 3.0
+
+[sub_resource type="Resource" id="Cue_tune_ostinato_in"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_tune_in"), SubResource("Fade_ostinato_in")])
+set_ambience_volume = true
+ambience_volume_db = -12.0
+ambience_fade_seconds = 3.0
+
+[sub_resource type="Resource" id="Fade_all_out"]
+script = ExtResource("91_music_stem_fade")
+stem = "*"
+direction = 1
+seconds = 15.0
+
+[sub_resource type="Resource" id="Cue_title_continue"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_all_out")])
+set_ambience_volume = true
+ambience_fade_seconds = 4.0
 
 [sub_resource type="Resource" id="Resource_line_0"]
 script = ExtResource("3_dialogue_line")
@@ -31,6 +84,7 @@ localize = true
 script = ExtResource("3_dialogue_line")
 speaker = "GABI"
 text = "COMIC_3_2_GABI_1"
+music_cue = SubResource("Cue_drums_in")
 localize = true
 
 [sub_resource type="Resource" id="Resource_line_3"]
@@ -43,9 +97,12 @@ localize = true
 script = ExtResource("3_dialogue_line")
 speaker = "GABI"
 text = "COMIC_3_4_GABI_1"
+music_cue = SubResource("Cue_tune_ostinato_in")
 localize = true
 
 [node name="ComicPage" instance=ExtResource("1_comic_page")]
+music_cue_on_start = SubResource("Cue_page_start")
+music_cue_on_finish = SubResource("Cue_title_continue")
 dialogue_fade_out_seconds = 2.0
 end_button_delay_seconds = 3.0
 end_byline_text = "COMIC_3_BYLINE"
@@ -123,7 +180,7 @@ grow_horizontal = 2
 grow_vertical = 2
 reveal_mask = ExtResource("14_mask")
 fill_texture = ExtResource("14_color")
-auto_advance_after_seconds = 0.0
+auto_advance_after_seconds = 3.0
 hide_when_revealed = NodePath("../Panel5")
 fade_out_seconds = 5.0
 dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_4")])
@@ -134,15 +191,21 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 0.0
+offset_left = -9.7
+offset_top = 0.0
+offset_right = -9.7
 offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 reveal_mask = ExtResource("15_mask")
 fill_texture = ExtResource("15_color")
+line_color = Color(0.25098, 0.227451, 0.337255, 1)
+solid_ink = true
 base_duration = 2.6
 max_delay = 2.2
-fill_fade_duration = 1.2
+fill_fade_duration = 1.1
+fill_fade_start_ratio = 1.0
+finish_on_ink = true
 auto_advance_after_seconds = 0.0
 
 [node name="Panel6" parent="Panels" index="6" instance=ExtResource("2_comic_panel")]
@@ -150,15 +213,25 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 0.0
+offset_left = -9.7
+offset_top = 0.0
+offset_right = -9.7
 offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 fill_texture = ExtResource("16_star")
+delay_before = 3.85
 fill_fade_duration = 0.35
+reveal_with_previous = true
 reveal_sfx_name = ""
 auto_advance_after_seconds = 0.0
-appear_sparkle = true
+appear_affix = true
+affix_seconds = 1.5
+affix_centre_uv = Vector2(0.4351, 0.442)
+affix_width_ratio = 0.0469
 pulsing_glow = true
+glow_strength = 3.0
+glow_floor_strength = 0.9
+glow_period_seconds = 3.0
 
 [editable path="Panels"]

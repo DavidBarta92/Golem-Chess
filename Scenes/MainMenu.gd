@@ -20,6 +20,9 @@ const SETTINGS_DIALOG_BELOW_TOP_BAR_LAYER: int = -10
 @onready var reset_balance_sessions_button: Button = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceButtons/ResetSessionsButton
 @onready var balance_status_label: Label = $DevToolsWindow/DevToolsRoot/BalanceSection/BalanceStatusLabel
 @onready var settings_dialog: AcceptDialog = $SettingsDialog
+## Started by hand once the menu is really going to be seen; see _ready.
+@onready var menu_music: SceneMusicCue = $MenuMusic
+@onready var chords_cycle: MusicStemCycle = $ChordsCycle
 @onready var general_section: SettingsSection = $SettingsDialog/Root/Tabs/General
 @onready var video_section: SettingsSection = $SettingsDialog/Root/Tabs/Video
 @onready var controls_section: ControlsSection = $SettingsDialog/Root/Tabs/Controls
@@ -62,6 +65,11 @@ func _ready():
 	if SteamManager.has_pending_lobby_join():
 		SteamManager.call_deferred("start_pending_lobby_join")
 		return
+
+	# Only past the hand-offs above: the menu is the game's first scene, and
+	# its music must not start under a story that is about to take over.
+	menu_music.play()
+	chords_cycle.start()
 
 	PlayerProgressStore.ensure_loaded()
 	dev_tools_window.visible = false

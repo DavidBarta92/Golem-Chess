@@ -97,6 +97,11 @@ const INVALID_BOARD_POS: Vector2 = Vector2(-1, -1)
 	"TUTORIAL_INTRO_5",
 	"TUTORIAL_INTRO_6",
 ]
+## Played as the intro starts. Optional.
+@export var music_cue_on_start: MusicCue
+## One per entry of line_keys, in the same order, played as that line appears.
+## Leave a slot empty for a line that changes nothing.
+@export var line_music_cues: Array[MusicCue] = []
 ## The codex page the pentagon turns into. The seeker the pentagon lands on
 ## is the one at seeker_stamp_index; the others join it afterwards.
 @export var codex_stamp_names: Array[String] = ["Knight", "Silver General", "Warlord"]
@@ -204,6 +209,7 @@ func play(speaker_name: String, board, match_intro: MatchIntroController, dialog
 	# Hidden with the rest of the interface; the words come first.
 	_match_intro.show_hud_node_now(_dialogue)
 	_dialogue.continue_requested.connect(_on_continue_requested)
+	MusicManager.apply_cue(music_cue_on_start)
 	_build_codex()
 	get_viewport().size_changed.connect(_on_viewport_resized)
 
@@ -578,15 +584,29 @@ func _build_codex() -> void:
 
 	_centre_codex()
 
-## Copies where the match's codex sits, so the page lands on it exactly. The
+## Copies where the match's codex rests, so the page lands on it exactly. The
 ## scene carries the same values; this only matters if they drift apart.
+##
+## Its resting layout (base_offset), not its live offsets: those move while the
+## codex sinks or rises for a turn, and the tutorial hands the player the turn
+## just before the intro starts, so the live ones caught it mid-rise - about
+## 170 pixels low. The page is laid out against the visible part of the codex,
+## so that also left the stamps sitting on the notebook's spiral.
 func _match_codex_layout() -> void:
 	var reference := get_node_or_null(match_codex_path) as Control
 	if reference != null:
 		for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 			_codex_art.set_anchor(side, reference.get_anchor(side))
-		for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
-			_codex_art.set_offset(side, reference.get_offset(side))
+		var rest_offset := Vector2(reference.offset_left, reference.offset_top)
+		if "base_offset" in reference:
+			rest_offset = reference.base_offset
+		var reference_size := Vector2(
+			reference.offset_right - reference.offset_left,
+			reference.offset_bottom - reference.offset_top)
+		_codex_art.offset_left = rest_offset.x
+		_codex_art.offset_top = rest_offset.y
+		_codex_art.offset_right = rest_offset.x + reference_size.x
+		_codex_art.offset_bottom = rest_offset.y + reference_size.y
 		if reference is TextureRect:
 			_codex_art.texture = (reference as TextureRect).texture
 	_codex_art.base_offset = Vector2(_codex_art.offset_left, _codex_art.offset_top)
@@ -659,6 +679,8 @@ func _get_seeker_stamp() -> StampVisual:
 func _say(line_index: int) -> void:
 	var key: String = line_keys[line_index] if line_index < line_keys.size() else ""
 	_dialogue.show_line(_speaker_name, tr(key), null, false)
+	if line_index < line_music_cues.size():
+		MusicManager.apply_cue(line_music_cues[line_index])
 
 func _allow_continue() -> void:
 	_dialogue.set_continue_allowed(true)

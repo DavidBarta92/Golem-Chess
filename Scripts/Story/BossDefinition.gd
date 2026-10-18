@@ -79,6 +79,13 @@ class_name BossDefinition
 ## set one off and how often it is allowed to.
 @export var reactions: Array[BossReaction] = []
 
+@export_group("Music")
+## Played as the match scene opens. Optional.
+@export var music_cue_on_match_start: MusicCue
+## Played when one of the defeat_lines appears - the boss's parting word after
+## the player has won, spoken in the reward scene that follows. Optional.
+@export var music_cue_on_defeat_line: MusicCue
+
 ## Index of the last line handed out per category, so the next pick can avoid
 ## repeating it. Not exported: per-session state, not authored data. It carries
 ## over between matches because Godot caches the loaded resource, so a boss

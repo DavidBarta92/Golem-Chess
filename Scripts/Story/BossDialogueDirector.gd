@@ -76,6 +76,7 @@ func _ready() -> void:
 	_boss_player_id = _resolve_boss_player_id()
 	_multiplayer_node.host_state_changed.connect(_on_host_state_changed)
 	_multiplayer_node.ai_turn_finished.connect(_on_ai_turn_finished)
+	MusicManager.apply_cue(_boss.music_cue_on_match_start)
 	call_deferred("_speak_intro_line")
 
 # --- Match events -----------------------------------------------------------
@@ -181,7 +182,8 @@ func on_match_finished(player_won: bool) -> void:
 		StoryManager.set_pending_boss_line(
 			_boss.get_localized_display_name(),
 			_boss.pick_defeat_line(),
-			_boss.get_portrait_data()
+			_boss.get_portrait_data(),
+			_boss.music_cue_on_defeat_line
 		)
 		return
 

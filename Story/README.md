@@ -257,7 +257,8 @@ stage snaps straight to the finished state.
 5. Per page: `sfx_on_page_start`; `ambience_mode` (the match leaves the bed
    muffled, so a street-noise page has to ask for `OPEN`); `music_mode`
    (`SILENT` runs the page on ambience alone and puts the music back on the way
-   out, which is how the opening scene is set up); `end_hold_seconds`.
+   out); `music_cue_on_start` / `music_cue_on_finish` (see *Music*);
+   `end_hold_seconds`.
 
 Nothing of a panel shows before it starts drawing. That needs saying because
 the reveal is per stroke, each with its own random start delay: left at time
@@ -379,6 +380,48 @@ kinds, in `Scripts/Story/Rewards/`:
 coins, then the stamp). Timings, sounds and sizes are exports on each node.
 The coin presenter puts the top bar into `GlobalTopBar.show_points_only()` so
 the coins have a real counter to fly to.
+
+## Music
+
+The music is eight stems in `Audio/Music/` (`chords`, `chords_dreamy`, `color`,
+`color_dreamy`, `drums`, `ostinato`, `pad`, `tune`), all the same length.
+`MusicManager` starts every one of them silent when the game launches and
+never stops them: they loop together in one `AudioStreamSynchronized`, so the
+story only ever fades stems up and down, and anything that comes in lands in
+time with what is already playing. A new stem is just a file dropped into the
+folder; its loop is set up in code (the files have no loop points of their
+own, and the importer brings them in with a loop end of 0).
+
+A change is a `MusicCue` resource: a list of `MusicStemFade`s (stem, in/out,
+seconds, delay) plus an optional ambience change (filter `OPEN` / `MUFFLED`,
+and a volume in dB, applied through an amplify effect `AmbienceManager` adds
+to the Ambience bus at runtime). The stem name `*` means every stem. Two fades
+on the same stem in one cue run one after the other in delay order, so
+"everything out over 4 s, then one stem back over 30 s" is two fades on that
+stem with the second delayed by 4 s. A fade replaces whatever that stem was doing; stems a cue
+does not name carry on.
+
+Where cues are authored:
+
+| Field | Fires |
+| --- | --- |
+| `ComicPanelView.music_cue` | as the panel starts drawing |
+| `ComicDialogueLine.music_cue` | as the line appears |
+| `ComicPageView.music_cue_on_start` / `_on_finish` | as the page opens / hands control back (the end button on a title card) |
+| `TutorialIntro.music_cue_on_start` / `line_music_cues` | as the intro starts / as each `line_keys` entry appears (same order) |
+| `BossDefinition.music_cue_on_match_start` | as the match scene opens |
+| `BossDefinition.music_cue_on_defeat_line` | as the boss's parting line appears in the reward scene |
+| `SceneMusicCue` node | as the scene it sits in opens (Collection); the Main Menu's has `play_on_ready` off and is started by `MainMenu.gd` only once the hub is really shown, because the menu is the game's first scene and forwards to the story while the hub is locked |
+
+`MusicStemCycle` (in the Main Menu) brings one stem in and out on its own
+timer - the chords come in, stay a minute, go, and come back after a quiet
+minute or two - and takes it away when the scene closes; in the Main Menu it waits for `start()` the same way.
+
+The intro chapter's cues are in `ch00_intro_p01` (panel 2), `ch00_memory_p01`
+(two of Gabi's and Grandpa's lines), `TutorialIntro.tscn`, `boss_01.tres` and
+`ch00_bridge_p01` (page start, two lines, the title card's button). Starting
+the game part-way through the story starts the music from silence, not from
+where that point of the story would have left it.
 
 ## Unlocking and introducing a menu button
 
