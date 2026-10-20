@@ -798,6 +798,31 @@ BOSS_12_WIN_2,"It was a fine game. Victory suits me better than defeat, of cours
 BOSS_12_WIN_3,"Thank you for the game. I do not often say that and mean it, but now I do.","Köszönöm a partit. Nem gyakran mondom ezt komolyan, de most igen."
 BOSS_12_WIN_4,"Well, this fills me with satisfaction. It rarely happens; I shall enjoy it while it lasts.","Nos, ez elégedettséggel tölt el. Ritkán fordul elő, élvezem, amíg tart."
 BOSS_12_WIN_5,"This was a good match. Perhaps there is something in you, but the victory is mine once again.","Jó volt ez a meccs. Talán van magában valami, de a győzelem most is az enyém."
+AI_THINKING_01,Wait a moment...,Várjunk csak...
+AI_THINKING_02,Hm...,Hm...
+AI_THINKING_03,What should I do now?,Mit kéne most csinálnom?
+AI_THINKING_04,"One moment, I'll figure it out...","Egy pillanat, mindjárt kitalálom..."
+AI_THINKING_05,...,...
+AI_THINKING_06,I need to think this through.,Ezt át kell gondolnom.
+AI_THINKING_07,Let's see...,Lássuk csak...
+AI_THINKING_08,Let me think.,Hadd gondolkodjak.
+AI_THINKING_09,"Hmm, interesting.","Hmm, érdekes."
+AI_THINKING_10,This isn't as simple as it looks.,Ez nem is olyan egyszerű.
+AI_THINKING_11,"If I go here, then you go there...","Ha ide lépek, akkor te oda..."
+AI_THINKING_12,Now that's a good question.,"Na, ez jó kérdés."
+AI_THINKING_13,I wonder what you're planning.,Vajon mit tervezel?
+AI_THINKING_14,Which stamp should I choose?,Melyik bélyeget is válasszam?
+AI_THINKING_15,Careful now...,Csak óvatosan...
+AI_THINKING_16,Don't rush me!,Ne siettess!
+AI_THINKING_17,Something doesn't add up here.,Valami nem stimmel itt.
+AI_THINKING_18,"Just a second, just a second...","Mindjárt, mindjárt..."
+AI_THINKING_19,I've almost got it...,Majdnem megvan...
+AI_THINKING_20,"Hmm, I have an idea...","Hmm, van egy ötletem..."
+AI_THINKING_21,"No, not like that...","Nem, nem így..."
+AI_THINKING_22,Should I risk it?,Kockáztassak?
+AI_THINKING_23,Could this be a trap?,Csak nem csapda ez?
+AI_THINKING_24,I have to think one move ahead.,Egy lépéssel előrébb kell gondolkodnom.
+AI_THINKING_25,"Well, that's a tricky one.","Ejha, ez fogas kérdés."
 RETRY_PROMPT_TITLE,Play again right away?,Új játék azonnal?
 RETRY_PROMPT_YES,"Yes, again","Igen, újra"
 RETRY_PROMPT_NO,Not now,Most nem
@@ -808,7 +833,7 @@ STORY_MULTIPLAYER_SCREEN_TITLE,Multiplayer,Többjátékos
 QUESTS_SCREEN_TITLE,Quests,Küldetések
 TRADE_SCREEN_TITLE,Trade,Csere
 PLACEHOLDER_SCREEN_NOTE,This screen is still being built.,Ez a képernyő még készül.
-REWARD_GRANDPA_DECK_NAME,Grandpa's deck,Nagypapa paklija
+REWARD_GRANDPA_DECK_NAME,Grandpa's codex,Nagypapa codexe
 REWARD_01_LINE_1,"These are Grandpa's stamps. From now on, they are yours.",Ezek Nagypapa bélyegei. Mostantól a tieid.
 REWARD_04_LINE_1,"Here, a few coins for the win.","Tessék, pár érme a győzelemért."
 REWARD_05_LINE_1,A new stamp for your collection.,Egy új bélyeg a gyűjteményedbe.
@@ -853,7 +878,7 @@ A lépéssel lezárod a köröd, és ezzel ez a lehetőség is elvész."
 "STAMP_DESC_SILVER_GENERAL","A [b]Seeker[/b] general who leads the final march: reach the enemy base with it to [b]win[/b]. If it falls or expires, it [b]returns to your codex[/b].","[b]Kereső[/b] hadvezér, aki a döntő rohamot vezeti: ha eléri az ellenfél bázisát, [b]győzöl[/b]. Ha elesik vagy lejár, [b]visszatér a kódexedbe[/b]."
 "STAMP_DESC_THE_GOLEM","The first of its kind, carved from living stone. [b]Each time it captures[/b], it <increase_self_duration> [b]gains +1 turn[/b].","Az első a fajtájából, élő kőből faragva. [b]Minden ütése után[/b] <increase_self_duration> [b]még +1 körig használható[/b]."
 "STAMP_DESC_WAR_DRUMMER","The beat that keeps the army marching. [b]When affixed[/b], <increase_own_durations> [b]all your stamped golems gain +1 turn[/b].","Az ütem, ami menetben tartja a sereget. [b]Felragasztáskor[/b] <increase_own_durations> [b]minden bélyeges gólemed még +1 körig használható[/b]."
-"STAMP_DESC_WARLORD","Wherever the warlord rides, the troops rally. [b]Each time it moves[/b], <increase_own_durations> [b]all your stamped golems gain +1 turn[/b].","Ahol a hadúr megjelenik, a csapatok összezárnak. [b]Minden lépésekor[/b] <increase_own_durations> [b]minden bélyeges gólemed még +1 körig használható[/b]."
+"STAMP_DESC_WARLORD","Wherever the warlord rides, the troops rally. [b]Each time it moves[/b], <increase_own_durations> [b]all your stamped golems gain +1 turn[/b].","Ahol a hadúr megjelenik, a csapatok összezárnak. [b]Minden alkalommal amikor üt[/b] <increase_own_durations> [b]minden bélyeges gólemed még +1 körig használható[/b]."
 "STAMP_DESC_BEAR","Every feast is followed by a long sleep. [b]When it captures[/b], <decrease_own_durations> [b]all your stamped golems lose 1 turn[/b], itself included.","Minden lakomát hosszú álom követ. [b]Ha üt[/b], <decrease_own_durations> [b]minden bélyeges gólemed eggyel kevesebb körig használható[/b], önmagát is beleértve."
 "STAMP_DESC_BLACKBIRD","A restless songbird that never picks a fight. It hops two squares in any direction, singing from a new branch each time.","Nyughatatlan énekesmadár, amely sosem keres bajt. Bármely irányba két mezőt szökken, és mindig új ágról fütyül."
 "STAMP_DESC_CAT","A [b]Seeker[/b] slinking toward the enemy base: get it there to [b]win[/b]. Cats land on their feet: if it falls or expires, it [b]returns to your codex[/b].","Az ellenfél bázisa felé osonó [b]Kereső[/b]: ha odaér, [b]győzöl[/b]. A macska mindig talpra esik: ha elesik vagy lejár, [b]visszatér a kódexedbe[/b]."

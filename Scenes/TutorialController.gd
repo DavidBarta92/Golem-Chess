@@ -154,20 +154,22 @@ func _on_intro_finished() -> void:
 ## page the intro shows first, and the rest of his fifteen stamps behind it.
 ## Grandpa plays from his deck as it is in his own match.
 func grandpa_codex_setup(first_page: Array[String]) -> Dictionary:
-	var rest: Array[String] = grandpa_deck_without(first_page)
-	var grandpa_deck: Array[String] = GRANDPA_BOSS.get_deck_stamp_names()
-	var opponent_page: Array[String] = []
-	opponent_page.assign(grandpa_deck.slice(0, DeckManager.CODEX_STAMPS_PER_PAGE))
-	var opponent_rest: Array[String] = []
-	opponent_rest.assign(grandpa_deck.slice(DeckManager.CODEX_STAMPS_PER_PAGE))
+	var opponent_page: Array[String] = grandpa_first_page()
 	return {
 		"board": starting_board(),
 		"white_hand": first_page,
-		"white_deck": rest,
+		"white_deck": grandpa_deck_without(first_page),
 		"black_hand": opponent_page,
-		"black_deck": opponent_rest,
+		"black_deck": grandpa_deck_without(opponent_page),
 		"turn_color": PLAYER_COLOR,
 	}
+
+## The page Grandpa's own codex opens on: the first three of his stamps. Every
+## stamp he plays in the tutorial comes from it.
+func grandpa_first_page() -> Array[String]:
+	var page: Array[String] = []
+	page.assign(GRANDPA_BOSS.get_deck_stamp_names().slice(0, DeckManager.CODEX_STAMPS_PER_PAGE))
+	return page
 
 ## Grandpa's fifteen stamps, one of each of `page` taken out - the rest of a
 ## codex whose open page is `page`.
@@ -272,16 +274,17 @@ func build_steps() -> void:
 				"allow_auto_end_turn": false,
 			},
 		},
-		# Grandpa's first turn: two stamps next to his court, then over to the
-		# player. His line from the step before stays up meanwhile.
+		# Grandpa's first turn: two stamps from his first page next to his
+		# court, then over to the player. His line from the step before stays
+		# up meanwhile.
 		{
 			"speaker": GRANDPA_SPEAKER,
 			"completion": "turn_ended",
 			"turn_color": OPPONENT_COLOR,
 			"opponent_turns": [
 				{"affixes": [
-					{"stamp_name": "Knight", "pos": Vector2(6, 2)},
-					{"stamp_name": "Warlord", "pos": Vector2(6, 4)},
+					{"stamp_name": "Lance", "pos": Vector2(6, 2)},
+					{"stamp_name": "Monk", "pos": Vector2(6, 4)},
 				]},
 			],
 			"constraints": no_actions(),
@@ -296,20 +299,20 @@ func build_steps() -> void:
 				"allow_auto_end_turn": false,
 			},
 		},
-		# Grandpa moves his Warlord, which has a single move in it: the stamp
-		# runs out under the player's eyes, and the line explains it.
+		# Grandpa moves his Monk, which has a single move in it: the stamp runs
+		# out under the player's eyes, and the line explains it.
 		{
 			"speaker": GRANDPA_SPEAKER,
 			"text": "TUTORIAL_STEP_EXPIRED",
 			"text_on_opponent_move": true,
 			"completion": "dialogue",
 			"opponent_turns": [
-				{"move": {"from": Vector2(6, 4), "to": Vector2(4, 5)}},
+				{"move": {"from": Vector2(6, 4), "to": Vector2(4, 4)}},
 			],
 			"constraints": no_actions(),
 		},
 		# A fresh board with captures to choose from: a Knight that can take
-		# any of three, a Lance that can take one.
+		# any of three, a Lance that can take two.
 		{
 			"speaker": GRANDPA_SPEAKER,
 			"text": "TUTORIAL_STEP_CAPTURE",
@@ -345,7 +348,8 @@ func build_steps() -> void:
 		# Every one of Grandpa's pieces wears a stamp, and between them they
 		# cover all but one of the squares the player's Warlord can jump to.
 		# The one left is next to his War Drummer, which can only move onto
-		# it, not capture there.
+		# it, not capture there. The Warlord's step back is blocked by one of
+		# the player's own golems.
 		{
 			"speaker": GRANDPA_SPEAKER,
 			"text": "TUTORIAL_STEP_DANGER",
@@ -358,9 +362,9 @@ func build_steps() -> void:
 			},
 		},
 		# The last one: the Knight has a single jump left. Land it next to
-		# Grandpa's court on the square he cannot reach, put the Prince (a
-		# pentagon) on the bare golem, and step into the court. Winning ends
-		# the tutorial.
+		# Grandpa's court on the square he cannot reach, put the Silver
+		# General (a pentagon) on the bare golem, and step into the court.
+		# Winning ends the tutorial.
 		{
 			"speaker": GRANDPA_SPEAKER,
 			"text": "TUTORIAL_STEP_COURT",
@@ -399,7 +403,8 @@ func starting_board() -> Array:
 	]
 
 ## Row 0 is the player's base line, row 6 Grandpa's. The Knight on (2, 3) can
-## take (4, 2), (4, 4) or (3, 5); the Lance on (2, 5) can take (3, 5) too.
+## take (4, 2), (4, 4) or (3, 5); the Lance on (2, 5) can take (3, 5) or
+## (4, 4).
 func capture_setup() -> Dictionary:
 	return {
 		"board": [
@@ -421,11 +426,11 @@ func capture_setup() -> Dictionary:
 
 ## The golems on (2, 2) and (2, 4) are each one step from a capture, and the
 ## captured piece's square is one step from another: (3, 2) then (4, 2), or
-## (3, 4) then (4, 4). The Golem's page is the open one. Grandpa's Lance on
-## (6, 6) is the piece he moves, well away from it all.
+## (3, 4) then (4, 4). The Golem's page of Grandpa's codex is the open one.
+## Grandpa's Lance on (6, 6) is the piece he moves, well away from it all.
 func golem_setup() -> Dictionary:
-	var golem_page: Array[String] = ["Berserk", "The Golem", "War Drummer"]
-	var opponent_page: Array[String] = ["Prince", "Knight", "Warlord"]
+	var golem_page: Array[String] = ["The Golem", "Lance", "Berserk"]
+	var opponent_page: Array[String] = grandpa_first_page()
 	return {
 		"board": [
 			[1, 1, 0, 0, 0, 1, 1],
@@ -448,25 +453,27 @@ func golem_setup() -> Dictionary:
 		"turn_color": PLAYER_COLOR,
 	}
 
-## The Warlord on (2, 3) can jump to (4, 2), (4, 4), (3, 1) or (3, 5).
-## The Archer on (5, 1) captures on (4, 2) and (3, 1), the Knight on (6, 5)
-## and the Lance on (6, 4) both on (4, 4). Only (3, 5) is safe: the War
-## Drummer beside it on (4, 6) can only move diagonally, never capture. The
-## Gold General on (6, 1) adds to how crowded it all looks.
+## The Warlord on (2, 3) can jump to (4, 2), (4, 4), (3, 1) or (3, 5); its
+## step back onto (1, 3) is blocked by the player's own bare golem there.
+## The Gold General on (6, 0) captures on (4, 2), the Archer on (5, 1) on
+## (3, 1), the Knight on (6, 5) and the Lance on (6, 4) both on (4, 4). Only
+## (3, 5) is safe: the War Drummer beside it on (4, 6) can only move
+## diagonally, never capture.
 ##
 ## Worked out from the stamps' patterns, so it has to be looked at again when
 ## one of them changes - the Lance's reach two rows ahead once took (3, 5)
-## from (5, 4). warn_if_no_safe_move() says so when that happens.
+## from (5, 4), and a change to the Archer's once left (4, 2) open as well.
+## warn_if_no_safe_move() says so when no safe square is left.
 func danger_setup() -> Dictionary:
 	return {
 		"board": [
 			[1, 1, 0, 0, 0, 1, 1],
-			[0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, 1, 0, 0, 0],
 			[0, 0, 0, 1, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 0, 0, 0, 0, -1],
 			[0, -1, 0, 0, 0, 0, 0],
-			[0, -1, 0, 0, -1, -1, 0],
+			[-1, 0, 0, 0, -1, -1, 0],
 		],
 		"affixed_stamps": [
 			{"pos": Vector2(2, 3), "stamp_name": "Warlord", "turns_remaining": 1, "exhausted": false},
@@ -474,20 +481,21 @@ func danger_setup() -> Dictionary:
 			{"pos": Vector2(6, 4), "stamp_name": "Lance", "turns_remaining": 2, "exhausted": false},
 			{"pos": Vector2(6, 5), "stamp_name": "Knight", "turns_remaining": 3, "exhausted": false},
 			{"pos": Vector2(4, 6), "stamp_name": "War Drummer", "turns_remaining": 3, "exhausted": false},
-			{"pos": Vector2(6, 1), "stamp_name": "Gold General", "turns_remaining": 1, "exhausted": false},
+			{"pos": Vector2(6, 0), "stamp_name": "Gold General", "turns_remaining": 1, "exhausted": false},
 		],
 		"turn_color": PLAYER_COLOR,
 	}
 
 ## The Knight on (3, 3) has one jump left; its stamp runs out wherever it
-## lands. From (5, 2) or (5, 4) a Prince steps diagonally into the court on
-## (6, 3) - but Grandpa's Knight on (6, 6) covers (5, 4), so (5, 2) is the
-## square. The Prince is on the open page. Grandpa's Lance on (6, 0) goes back
-## and forth meanwhile; his bare golems on (6, 2) and (6, 4) only look the
-## part.
+## lands. From (5, 2) or (5, 4) a Silver General steps diagonally into the
+## court on (6, 3) - but Grandpa's Knight on (6, 6) covers (5, 4), so (5, 2) is
+## the square. The open page is the last one of Grandpa's codex, with the
+## Silver General on it and no other pentagon. Grandpa's Lance on (6, 0) goes
+## back and forth meanwhile, and covers (4, 1); his bare golems on (6, 2) and
+## (6, 4) only look the part.
 func court_setup() -> Dictionary:
-	var court_page: Array[String] = ["Archer", "Prince", "Gold General"]
-	var opponent_page: Array[String] = ["Prince", "Knight", "Warlord"]
+	var court_page: Array[String] = ["Silver General", "Archer", "Monk"]
+	var opponent_page: Array[String] = grandpa_first_page()
 	return {
 		"board": [
 			[1, 0, 0, 0, 0, 0, 1],

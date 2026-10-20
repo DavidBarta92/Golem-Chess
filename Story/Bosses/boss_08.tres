@@ -1,6 +1,8 @@
 [gd_resource type="Resource" script_class="BossDefinition" format=3 uid="uid://db41se3csg8i4"]
 
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="1_66dkj"]
+[ext_resource type="Script" uid="uid://fokqh5ahf3t" path="res://Scripts/Story/BossDefinition.gd" id="1_boss_definition"]
+[ext_resource type="Script" uid="uid://lhyymc4ah5c6" path="res://Scripts/Story/BossReaction.gd" id="2_boss_reaction"]
 [ext_resource type="Resource" uid="uid://gx71tu87d5ip" path="res://Stamps/Courtyard/prince.tres" id="9_stamp_01"]
 [ext_resource type="Resource" uid="uid://bme63lbc76klu" path="res://Stamps/Structures/castle.tres" id="9_stamp_02"]
 [ext_resource type="Resource" uid="uid://g0lmmmwhako5" path="res://Stamps/Structures/tower.tres" id="9_stamp_03"]
@@ -15,8 +17,6 @@
 [ext_resource type="Resource" uid="uid://bvuijxogx51au" path="res://Stamps/Structures/shrine.tres" id="9_stamp_12"]
 [ext_resource type="Resource" uid="uid://cgosohjad17bj" path="res://Stamps/Structures/temple.tres" id="9_stamp_13"]
 [ext_resource type="Resource" uid="uid://bva2p7308sa63" path="res://Stamps/Structures/war_chariot.tres" id="9_stamp_14"]
-[ext_resource type="Script" uid="uid://fokqh5ahf3t" path="res://Scripts/Story/BossDefinition.gd" id="1_boss_definition"]
-[ext_resource type="Script" path="res://Scripts/Story/BossReaction.gd" id="2_boss_reaction"]
 
 [sub_resource type="Resource" id="Resource_reaction_01"]
 resource_name = "entered_route_setup"
@@ -44,7 +44,6 @@ resource_name = "entered_soft_defense"
 script = ExtResource("2_boss_reaction")
 trigger = "entered_soft_defense"
 lines = Array[String](["BOSS_08_DEFEND_1", "BOSS_08_DEFEND_2", "BOSS_08_DEFEND_3", "BOSS_08_DEFEND_4", "BOSS_08_DEFEND_5"])
-chance = 0.5
 
 [sub_resource type="Resource" id="Resource_reaction_05"]
 resource_name = "entered_emergency_defense"
@@ -57,7 +56,6 @@ bypass_cooldown = true
 [sub_resource type="Resource" id="Resource_reaction_06"]
 resource_name = "boss_captured_piece"
 script = ExtResource("2_boss_reaction")
-trigger = "boss_captured_piece"
 lines = Array[String](["BOSS_08_CAPTURE_1", "BOSS_08_CAPTURE_2", "BOSS_08_CAPTURE_3", "BOSS_08_CAPTURE_4", "BOSS_08_CAPTURE_5", "BOSS_08_CAPTURE_6", "BOSS_08_CAPTURE_7", "BOSS_08_CAPTURE_8"])
 chance = 0.3
 
@@ -107,8 +105,8 @@ chance = 0.8
 script = ExtResource("1_boss_definition")
 boss_id = "boss_08"
 display_name = "Edmund"
-ai_difficulty_level = 8
 deck_stamps = Array[ExtResource("1_66dkj")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_01"), ExtResource("9_stamp_10"), ExtResource("9_stamp_11"), ExtResource("9_stamp_12"), ExtResource("9_stamp_13"), ExtResource("9_stamp_14")])
+ai_difficulty_level = 8
 intro_lines = Array[String](["BOSS_08_INTRO_1", "BOSS_08_INTRO_2", "BOSS_08_INTRO_3", "BOSS_08_INTRO_4", "BOSS_08_INTRO_5"])
 victory_lines = Array[String](["BOSS_08_WIN_1", "BOSS_08_WIN_2", "BOSS_08_WIN_3", "BOSS_08_WIN_4", "BOSS_08_WIN_5"])
 defeat_lines = Array[String](["BOSS_08_LOSS_1"])

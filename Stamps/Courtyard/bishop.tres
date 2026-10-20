@@ -2,17 +2,29 @@
 
 [ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_wf0io"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_3isp8"]
+[ext_resource type="Resource" uid="uid://br4oybocnaq4y" path="res://PieceVisualSets/bishop.tres" id="2_d1beu"]
+[ext_resource type="Texture2D" uid="uid://cp7wobpfjvbjc" path="res://Assets/Stamps/bishop_1.png" id="3_3isp8"]
 [ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_d1beu"]
+[ext_resource type="Texture2D" uid="uid://den5aa2x5u3yv" path="res://Assets/Stamps/bishop_1_mask.png" id="5_f58e0"]
 
 [resource]
 script = ExtResource("2_3isp8")
 stamp_name = "Bishop"
 stamp_code = "bishop"
 Set = "Courtyard"
+duration = 1
+stamp_art = ExtResource("3_3isp8")
+stamp_art_mask = ExtResource("5_f58e0")
+piece_visuals = ExtResource("2_d1beu")
 white_piece_texture = ExtResource("3_d1beu")
 black_piece_texture = ExtResource("1_wf0io")
 description = "No special effect."
-square_color_a = Color(0.4, 0.24705882, 0.32941177, 1)
-square_color_b = Color(0.4, 0.24705882, 0.32941177, 1)
+square_color_a = Color(0.9490196, 0.4117647, 0.35686275, 1)
+square_color_b = Color(0.9490196, 0.4117647, 0.35686275, 1)
+name_color = Color(1, 1, 1, 1)
+duration_color = Color(1, 1, 1, 1)
+duration_outline_color = Color(0.8, 0.6509804, 0.94509804, 1)
+duration_outline_size = 5
+marker_color = Color(0.19607843, 0.05490196, 0.18431373, 1)
 movement_pattern = Array[Array]([[1, 0, 0, 0, 1], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [1, 0, 0, 0, 1]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

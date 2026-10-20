@@ -9,7 +9,7 @@ const DELETE_ICON: Texture2D = preload("res://Assets/delete.png")
 const COLLECTION_THEME: Theme = preload("res://ui/themes/collection_theme.tres")
 const INK_TINT_SHADER = preload("res://Shaders/ink_tint.gdshader")
 ## A warm dark grey, a little lighter than the ink of the buttons.
-const CODEX_NAME_COLOR: Color = Color(0.27, 0.23, 0.19)
+const CODEX_NAME_COLOR: Color = CollectionPalette.INK
 ## Small enough for most names to fit; a long one wraps onto a second line
 ## before it is cut.
 const CODEX_NAME_FONT_SIZE: int = 16

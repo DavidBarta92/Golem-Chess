@@ -2,7 +2,9 @@
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_dmw0c"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_dvfe8"]
+[ext_resource type="Texture2D" uid="uid://d1nudyefuo4c4" path="res://Assets/Stamps/goldgeneral_1.png" id="3_dvfe8"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_ubhqc"]
+[ext_resource type="Texture2D" uid="uid://ck1hbbdd1apxd" path="res://Assets/Stamps/goldgeneral_1_mask.png" id="4_ubhqc"]
 
 [resource]
 script = ExtResource("2_dvfe8")
@@ -10,11 +12,16 @@ stamp_name = "Gold General"
 stamp_code = "gold_general"
 role = 1
 Set = "Courtyard"
-duration = 1
+duration = 2
+stamp_art = ExtResource("3_dvfe8")
+stamp_art_mask = ExtResource("4_ubhqc")
 white_piece_texture = ExtResource("3_ubhqc")
 black_piece_texture = ExtResource("1_dmw0c")
 description = "No special effect."
-square_color_a = Color(0.91764706, 0.59607846, 0.29803923, 1)
-square_color_b = Color(0.91764706, 0.59607846, 0.29803923, 1)
-movement_pattern = [[1, 0, 0, 0, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]]
+square_color_a = Color(0.9137255, 0.5921569, 0.3019608, 1)
+square_color_b = Color(0.9137255, 0.5921569, 0.3019608, 1)
+name_color = Color(0, 0, 0, 1)
+duration_color = Color(1, 1, 1, 1)
+marker_color = Color(0, 0, 0, 1)
+movement_pattern = Array[Array]([[1, 0, 0, 0, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

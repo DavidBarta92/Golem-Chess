@@ -88,8 +88,14 @@ same rules as the boss decks. Add more by dropping a `.tres` in the folder.
 card for card, and the default collection is empty: a new player borrows
 Grandpa's stamps from the tutorial on. `Scenes/Reward/Reward01GrandpaDeck.tscn`
 is where they formally become the player's — it tops the collection up to the
-deck's counts and saves the deck under Grandpa's name. Keep the two lists in
-sync if the boss deck changes.
+deck's counts and renames the default "New" deck, made from the same list on
+the first run, to Grandpa's codex in the current language ("Nagypapa codexe"
+in Hungarian). Keep the two lists in sync if the boss deck changes.
+
+Before that the deck is only lent. The tutorial builds the player's codex from
+`boss_01.tres` itself, and the first boss node has `lent_player_deck` set to
+Grandpa: the player fights with his deck whatever their save has selected
+(an older save's default deck may still hold an earlier starting list).
 
 ### Packs
 
@@ -550,9 +556,9 @@ transparent Control) and driven by `MatchCodexController`:
   last playable row and the board's edge — placed from `BoardCanvas.RIM_CENTRE`
   so it follows the board at any window shape.
 
-The **turn clocks** are set down on the table to the right of the board
-(`BoardCanvas.TABLE_RIGHT`): two of them in one drawn frame, the opponent
-above and the player below, ten minutes each.
+The **turn clocks** hang in the top right-hand corner, placed across from
+`BoardCanvas.RIGHT_SIDE_X` and held against the top of the screen: two of them
+in one drawn frame, the opponent above and the player below, ten minutes each.
 
 The rule is the host's, not the interface's. `NetworkGameHost.process` takes
 time off whoever is on the move and calls `finish_game` on the other player

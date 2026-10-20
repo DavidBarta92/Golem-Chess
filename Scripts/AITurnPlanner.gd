@@ -14,6 +14,10 @@ const MAX_GENERATED_TURN_PLANS: int = 120
 const AFFIX_ACTION_DELAY: float = 1.00
 const TACTICAL_SEARCH_SCRIPT = preload("res://Scripts/AITacticalSearch.gd")
 
+## A pacing pause is starting before one of the AI's actions. Lets the match
+## show the opponent thinking (see OpponentThinkingChatter).
+signal thinking_pause_started(player_id: int, seconds: float)
+
 var planning_evaluator: AIMoveEvaluator = null
 var tactical_search = TACTICAL_SEARCH_SCRIPT.new()
 
@@ -184,6 +188,7 @@ func wait_turn_pacing_before_action(host: NetworkGameHost, tree: SceneTree, acti
 	var elapsed_seconds: float = float(Time.get_ticks_msec() - turn_pacing_start_msec) / 1000.0
 	var wait_seconds: float = turn_pacing_scheduled_seconds - elapsed_seconds
 	if wait_seconds > 0.0:
+		thinking_pause_started.emit(int(action.get("player_id", -1)), wait_seconds)
 		await tree.create_timer(wait_seconds).timeout
 
 func action_closes_turn(host: NetworkGameHost, action: Dictionary) -> bool:

@@ -8,7 +8,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.28, 0.24, 0.2, 1)
+border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
@@ -59,14 +59,14 @@ alignment = 1
 
 [node name="TitleLabel" type="Label" parent="ContentPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.08, 0.07, 0.055, 1)
+theme_override_colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
 theme_override_font_sizes/font_size = 30
 text = "Thank you for playing!"
 horizontal_alignment = 1
 
 [node name="MessageLabel" type="Label" parent="ContentPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.11, 0.095, 0.075, 1)
+theme_override_colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
 theme_override_font_sizes/font_size = 18
 text = "If you have not filled out the questionnaire yet, please take two minutes to do it. It would help a lot as I continue improving the game and the overall experience."
 horizontal_alignment = 1

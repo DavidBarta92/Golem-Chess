@@ -31,7 +31,7 @@ const HIDDEN_TIME: float = -1.0
 const DRAWN_TIME: float = 1000.0
 
 var reveal_seconds: float = 1.0
-var line_color: Color = Color(0.12, 0.12, 0.14, 1.0)
+var line_color: Color = UiPalette.INK
 
 var _panel: DialoguePanel
 var _rect: TextureRect

@@ -19,6 +19,7 @@ signal custom_lobby_failed(message: String)
 ## boss simply has no listeners.
 signal host_state_changed()
 signal ai_turn_finished(player_id: int, report: Dictionary)
+signal ai_thinking_pause_started(player_id: int, seconds: float)
 
 var multiplayer_peer = ENetMultiplayerPeer.new()
 var is_server = false
@@ -283,6 +284,7 @@ func setup_singleplayer_ai_controllers():
 			# The per-turn "thinking" pause is for a human opponent; balance batches skip it.
 			if GameConfig.is_ai_vs_ai_batch:
 				ai_player.turn_delay_enabled = false
+			ai_player.planner.thinking_pause_started.connect(ai_thinking_pause_started.emit)
 			ai_players[player_id] = ai_player
 
 func setup_singleplayer_player_names() -> void:
@@ -1304,6 +1306,8 @@ func get_starting_deck_for_player_id(player_id: int) -> Array[String]:
 		if GameConfig.is_ai_vs_ai_batch:
 			return GameConfig.get_selected_ai_deck_stamp_names()
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
+			if GameConfig.has_player_deck_override():
+				return GameConfig.get_player_deck_override_stamp_names()
 			return GameConfig.get_selected_deck_stamp_names()
 		if GameConfig.has_ai_opponent_deck_override():
 			return GameConfig.get_ai_opponent_deck_stamp_names()

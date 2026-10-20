@@ -16,8 +16,8 @@ const DIAMETER: float = 22.0
 const RING_WIDTH: float = 2.0
 const SEGMENTS: int = 48
 
-@export var ring_color: Color = Color(0.22, 0.22, 0.22, 0.35)
-@export var pie_color: Color = Color(0.22, 0.22, 0.22, 0.55)
+@export var ring_color: Color = Color(UiPalette.INK, 0.35)
+@export var pie_color: Color = Color(UiPalette.INK, 0.55)
 
 var _remaining: float = 1.0
 

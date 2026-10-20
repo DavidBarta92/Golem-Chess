@@ -18,10 +18,10 @@
 [ext_resource type="Script" uid="uid://dta7wq16l8wau" path="res://Scripts/Story/FeatureHint.gd" id="17_feature_hint"]
 [ext_resource type="Script" uid="uid://e2vu03ic5b55" path="res://Scripts/Story/SceneLinkButton.gd" id="18_scene_link_button"]
 [ext_resource type="Material" path="res://Shaders/vignette_material.tres" id="90_vignette_material"]
-[ext_resource type="Script" path="res://Scripts/Audio/MusicCue.gd" id="91_music_cue"]
-[ext_resource type="Script" path="res://Scripts/Audio/MusicStemFade.gd" id="92_music_stem_fade"]
-[ext_resource type="Script" path="res://Scripts/Audio/SceneMusicCue.gd" id="93_scene_music_cue"]
-[ext_resource type="Script" path="res://Scripts/Audio/MusicStemCycle.gd" id="94_music_stem_cycle"]
+[ext_resource type="Script" uid="uid://boksbytph4vh4" path="res://Scripts/Audio/MusicCue.gd" id="91_music_cue"]
+[ext_resource type="Script" uid="uid://ejdsaop7goq5" path="res://Scripts/Audio/MusicStemFade.gd" id="92_music_stem_fade"]
+[ext_resource type="Script" uid="uid://grtkbcln0pvh" path="res://Scripts/Audio/SceneMusicCue.gd" id="93_scene_music_cue"]
+[ext_resource type="Script" uid="uid://blivqay078t0e" path="res://Scripts/Audio/MusicStemCycle.gd" id="94_music_stem_cycle"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_lines"]
 shader = ExtResource("4_bg_line_shader")
@@ -31,6 +31,7 @@ shader_parameter/min_duration_frac = 0.45
 shader_parameter/max_delay = 1.8
 shader_parameter/feather = 0.03
 shader_parameter/line_color = Color(0.06, 0.06, 0.08, 1)
+shader_parameter/ink_alpha_scale = 1.0
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_loo7a"]
 
@@ -64,7 +65,6 @@ shader_parameter/cutout_canvas_size = Vector2(1, 1)
 script = ExtResource("92_music_stem_fade")
 stem = "*"
 direction = 1
-seconds = 3.0
 
 [sub_resource type="Resource" id="Cue_main_menu"]
 script = ExtResource("91_music_cue")
@@ -356,12 +356,12 @@ script = ExtResource("17_feature_hint")
 feature_id = "trade"
 target_path = NodePath("../StoryButtons/TradeButton")
 
-[node name="MenuMusic" type="Node" parent="."]
+[node name="MenuMusic" type="Node" parent="." unique_id=196379361]
 script = ExtResource("93_scene_music_cue")
 cue = SubResource("Cue_main_menu")
 play_on_ready = false
 
-[node name="ChordsCycle" type="Node" parent="."]
+[node name="ChordsCycle" type="Node" parent="." unique_id=755884663]
 script = ExtResource("94_music_stem_cycle")
 autostart = false
 

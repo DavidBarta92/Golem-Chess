@@ -39,9 +39,9 @@ const PIXELS_PER_UNIT: float = 4.86
 ## the board rather than beside it.
 const RIM_CENTRE: Vector2 = Vector2(959.5, 893.75)
 
-## Bare table to the right of the board, clear of everything else, where a
-## small object can be set down.
-const TABLE_RIGHT: Vector2 = Vector2(1700.0, 740.0)
+## A line down the room to the right of the board, clear of everything else,
+## along which a small object can be hung.
+const RIGHT_SIDE_X: float = 1700.0
 
 ## How much a canvas pixel is stretched to fill this viewport. The same number
 ## the background's TextureRects arrive at on their own.

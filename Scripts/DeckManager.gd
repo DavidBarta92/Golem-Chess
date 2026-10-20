@@ -15,21 +15,21 @@ const RANDOM_DATABASE_EXCLUDED_STAMP_NAMES: Array[String] = [
 ## the player borrowing it, and the first reward scene is where it formally
 ## becomes theirs. Keep the two lists in sync.
 const STARTING_DECK: Array[String] = [
-	"Prince",
-	"Knight",
-	"Warlord",
 	"Lance",
 	"Archer",
-	"Gold General",
-	"Assassin",
-	"Duke",
+	"Monk",
 	"Silver General",
-	"Prince",
+	"War Drummer",
+	"Berserk",
+	"Gold General",
+	"Warlord",
 	"Knight",
+	"The Golem",
 	"Lance",
 	"Berserk",
-	"The Golem",
-	"War Drummer",
+	"Silver General",
+	"Archer",
+	"Monk",
 ]
 
 static func create_starting_deck() -> Array[String]:

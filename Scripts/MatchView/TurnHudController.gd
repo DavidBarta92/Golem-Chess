@@ -256,7 +256,7 @@ func create_result_ui() -> void:
 	label_settings.font_size = 72
 	label_settings.font_color = Color(1.0, 1.0, 1.0)
 	label_settings.outline_size = 8
-	label_settings.outline_color = Color(0.0, 0.0, 0.0)
+	label_settings.outline_color = UiPalette.INK
 	result_label.label_settings = label_settings
 
 func show_result_message(winner_color: int) -> void:
@@ -461,21 +461,22 @@ func arrange_turn_timer_ui() -> void:
 	if turn_timer_counter_container == null:
 		return
 
-	# Set down on the table beside the board, which is the only clear surface
-	# left. Placed from the canvas so it keeps its place on that table at any
-	# window shape.
+	# Hung in the top right-hand corner. Across, it is placed from the canvas,
+	# so it stays clear of the board at any window shape. Down, it is held
+	# against the top of the screen instead: the canvas can run past that edge,
+	# and the clock does not grow with it.
 	var viewport_size: Vector2 = turn_timer_counter_container.get_viewport_rect().size
-	var centre: Vector2 = BoardCanvas.to_viewport(BoardCanvas.TABLE_RIGHT, viewport_size)
+	var centre_x: float = BoardCanvas.to_viewport(Vector2(BoardCanvas.RIGHT_SIDE_X, 0.0), viewport_size).x
 	# The clock drifts sideways on its own; its place is worked out here, so
 	# the drift is added here rather than written into the node by the clock.
 	var clock: MatchClock = turn_timer_counter_container as MatchClock
 	if clock == null:
 		return
-	centre.x += clock.sway_offset
+	centre_x += clock.sway_offset
 	var box: Vector2 = turn_timer_counter_container.size
 	if box.x <= 0.0 or box.y <= 0.0:
 		box = turn_timer_counter_container.get_combined_minimum_size()
-	var top_left: Vector2 = centre - clock.face_offset()
+	var top_left := Vector2(centre_x - clock.face_offset().x, turn_timer_gap)
 	turn_timer_counter_container.anchor_left = 0.0
 	turn_timer_counter_container.anchor_right = 0.0
 	turn_timer_counter_container.anchor_top = 0.0

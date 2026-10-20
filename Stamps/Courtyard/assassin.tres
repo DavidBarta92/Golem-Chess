@@ -1,8 +1,11 @@
 [gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://duedv18n0vjk8"]
 
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="1_white"]
+[ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_3xs4k"]
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="2_black"]
+[ext_resource type="Texture2D" uid="uid://bje75e7qawt4m" path="res://Assets/Stamps/assassin_1.png" id="3_5vmtu"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_stamp"]
+[ext_resource type="Texture2D" uid="uid://c6wlq6epky5oc" path="res://Assets/Stamps/assassin_1_mask.png" id="5_3xs4k"]
 
 [resource]
 script = ExtResource("3_stamp")
@@ -10,10 +13,17 @@ stamp_name = "Assassin"
 stamp_code = "assassin"
 Set = "Courtyard"
 duration = 2
+stamp_art = ExtResource("3_5vmtu")
+stamp_art_mask = ExtResource("5_3xs4k")
+piece_visuals = ExtResource("2_3xs4k")
 white_piece_texture = ExtResource("1_white")
 black_piece_texture = ExtResource("2_black")
 description = "No special effect."
 effect_type = "invisible_to_enemy"
-square_color_a = Color(0.23921569, 0.1764706, 0.18039216, 1)
-square_color_b = Color(0.23921569, 0.1764706, 0.18039216, 1)
-movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [3, 3, 3, 3, 3], [0, 0, 0, 0, 0], [3, 3, 3, 3, 3], [0, 0, 0, 0, 0]])
+effect_trigger = "on_capture"
+square_color_a = Color(0.5568628, 0.7137255, 0.7882353, 1)
+square_color_b = Color(0.5568628, 0.7137255, 0.7882353, 1)
+name_color = Color(0.08627451, 0.17254902, 0.13333334, 1)
+duration_color = Color(0.08627451, 0.17254902, 0.13333334, 1)
+marker_color = Color(0.08627451, 0.17254902, 0.13333334, 1)
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [3, 3, 2, 3, 3], [0, 0, 0, 0, 0], [3, 3, 2, 3, 3], [0, 0, 0, 0, 0]])

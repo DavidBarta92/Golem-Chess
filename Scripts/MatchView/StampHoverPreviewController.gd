@@ -161,7 +161,7 @@ func create_description_panel() -> void:
 	hover_description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hover_description_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hover_description_label.add_theme_font_size_override("normal_font_size", description_icon_font_size)
-	hover_description_label.add_theme_color_override("default_color", Color(0.12, 0.085, 0.055))
+	hover_description_label.add_theme_color_override("default_color", UiPalette.INK)
 	hover_description_label.add_theme_color_override("font_shadow_color", Color(1.0, 0.96, 0.82, 0.48))
 	hover_description_label.add_theme_constant_override("shadow_offset_x", 1)
 	hover_description_label.add_theme_constant_override("shadow_offset_y", 1)

@@ -179,6 +179,7 @@ func should_show_match_clock() -> bool:
 func clear_active_match() -> void:
 	_active_match_node_id = ""
 	GameConfig.clear_ai_opponent_override()
+	GameConfig.clear_player_deck_override()
 
 ## Called by the match when a story fight ends. Returns false when this was
 ## not a story match at all.
@@ -222,6 +223,10 @@ func _start_boss_node(node: BossGameStoryNode) -> void:
 	_configure_singleplayer_match(node.boss.ai_difficulty_level)
 	if !node.force_player_deck_id.strip_edges().is_empty():
 		GameConfig.set_selected_deck_id(node.force_player_deck_id)
+	if node.lent_player_deck != null:
+		GameConfig.set_player_deck_override(node.lent_player_deck.get_deck_stamp_names())
+	else:
+		GameConfig.clear_player_deck_override()
 
 	# The boss brings their own name, face and stamps. Going through the
 	# override rather than set_selected_ai_deck_id() matters: that path resolves

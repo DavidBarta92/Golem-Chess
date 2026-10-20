@@ -15,8 +15,19 @@ const DIALOGUE_LINE_DRAW_PIXELS_PER_SECOND: float = 420.0
 const SPEECH_BACKGROUND_COLOR: Color = Color(0.93, 0.93, 0.9, 0.96)
 # How far the fade runs past the text panel's right edge, as a share of the
 # band's width there.
-const SPEECH_BACKGROUND_FADE_OVERRUN: float = 0.15
+const SPEECH_BACKGROUND_FADE_OVERRUN: float = 0.25
+# How much of the band, from the line, is solid before the fade begins. The
+# words reach most of the way across, so most of it holds.
+const SPEECH_BACKGROUND_SOLID_SHARE: float = 0.7
+# Stops along the fade, which eases in and out rather than falling in a
+# straight line, so the edge it leaves on whatever is behind is soft.
+const SPEECH_BACKGROUND_FADE_STOPS: int = 8
 const SPEECH_BACKGROUND_FADE_SECONDS: float = 0.35
+## Measured on Fonts/ElmsSans-Italic.ttf, the theme's font for the words, as
+## shares of its em - re-measure if that changes. How far the tall letters (d,
+## l, k) reach above the baseline, and how far a g hangs below it.
+const TEXT_ASCENDER_EM: float = 0.72
+const TEXT_G_DESCENDER_EM: float = 0.25
 
 @onready var dialogue_root: PanelContainer = $DialogueRoot
 @onready var portrait_frame: PanelContainer = $DialogueRoot/DialogueLayout/PortraitFrame
@@ -369,10 +380,7 @@ func prepare_dialogue_line_before_typing(prepare_version: int) -> void:
 
 	dialogue_text.visible_characters = -1
 	dialogue_text.modulate.a = 0.0
-	var content_rect: Rect2i = dialogue_text.get_visible_content_rect()
-	var measured_height: float = maxf(float(content_rect.size.y), float(dialogue_text.get_content_height()))
-
-	dialogue_line_target_height = maxf(DIALOGUE_LINE_MIN_HEIGHT, measured_height)
+	dialogue_line_target_height = maxf(DIALOGUE_LINE_MIN_HEIGHT, _measure_speech_band_height())
 	_fade_in_speech_background()
 	if skip_line_intro_requested:
 		dialogue_line_visible_height = dialogue_line_target_height
@@ -406,19 +414,48 @@ func apply_dialogue_line_size() -> void:
 	dialogue_line.size = Vector2(DIALOGUE_LINE_WIDTH, dialogue_line_visible_height)
 	text_panel.queue_redraw()
 
+## How tall the line and the band are: from where the line starts down past
+## the words by as much room as there is above them - measured from the top of
+## the tall letters on the first line, and from the bottom of a g on the last.
+## The label alone would not give that: its margin sets the words lower than
+## the line starts, and it reports its lines from the font's ascent to its
+## descent, which leaves more room over the letters than under them.
+func _measure_speech_band_height() -> float:
+	var content_rect: Rect2i = dialogue_text.get_visible_content_rect()
+	var text_height: float = maxf(float(content_rect.size.y), float(dialogue_text.get_content_height()))
+	var font: Font = dialogue_text.get_theme_font("normal_font")
+	var font_size: int = dialogue_text.get_theme_font_size("normal_font_size")
+	if font == null or font_size <= 0 or text_height <= 0.0:
+		return text_height
+	var words_top: float = dialogue_text.position.y - dialogue_line_box.position.y
+	if content_rect.size.y > 0:
+		words_top += float(content_rect.position.y)
+	else:
+		words_top += dialogue_text.get_theme_stylebox("normal").get_offset().y
+	var room_above: float = words_top + font.get_ascent(font_size) - TEXT_ASCENDER_EM * font_size
+	var g_bottom: float = words_top + text_height - font.get_descent(font_size) + TEXT_G_DESCENDER_EM * font_size
+	return g_bottom + room_above
+
 # --- Band behind the words ---------------------------------------------------
 #
-# The words sit on a band that starts at the line in the panel colour and fades
-# out to the right, like the Collection's stamp descriptions. It is exactly as
-# tall as the line (not the whole text panel, which can be stretched taller)
-# and fades in as each line starts drawing.
+# The words sit on a band that starts at the line in the panel colour, holds it
+# under most of the words and then fades out to the right, like the
+# Collection's stamp descriptions. It is exactly as tall as the line (not the
+# whole text panel, which can be stretched taller) and fades in as each line
+# starts drawing.
 
 func _create_speech_background_texture() -> GradientTexture2D:
-	var faded_color: Color = SPEECH_BACKGROUND_COLOR
-	faded_color.a = 0.0
+	var offsets := PackedFloat32Array([0.0])
+	var colors := PackedColorArray([SPEECH_BACKGROUND_COLOR])
+	for stop in SPEECH_BACKGROUND_FADE_STOPS + 1:
+		var t: float = float(stop) / float(SPEECH_BACKGROUND_FADE_STOPS)
+		var color: Color = SPEECH_BACKGROUND_COLOR
+		color.a *= 1.0 - smoothstep(0.0, 1.0, t)
+		offsets.append(lerpf(SPEECH_BACKGROUND_SOLID_SHARE, 1.0, t))
+		colors.append(color)
 	var gradient := Gradient.new()
-	gradient.set_color(0, SPEECH_BACKGROUND_COLOR)
-	gradient.set_color(1, faded_color)
+	gradient.offsets = offsets
+	gradient.colors = colors
 	var gradient_texture := GradientTexture2D.new()
 	gradient_texture.gradient = gradient
 	gradient_texture.width = 256

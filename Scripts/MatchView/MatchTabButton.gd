@@ -28,7 +28,7 @@ const SLIDE_SECONDS: float = 0.26
 @export var face_color: Color = Color(0.956863, 0.941176, 0.901961, 1.0)
 @export var hover_color: Color = Color(1.0, 0.99, 0.96, 1.0)
 @export var pressed_color: Color = Color(0.88, 0.86, 0.81, 1.0)
-@export var edge_color: Color = Color(0.12, 0.12, 0.14, 1.0)
+@export var edge_color: Color = UiPalette.INK
 
 var _shown: float = 0.0
 var _slide: Tween

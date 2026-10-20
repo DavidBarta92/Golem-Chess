@@ -20,6 +20,13 @@ enum DefeatBehavior { PROMPT_RETRY, COMIC_THEN_RETRY }
 ## Leave empty to let the player bring whatever they have selected.
 @export var force_player_deck_id: String = ""
 
+## Optional: the player fights with this boss's deck instead of their own -
+## lent for the fight, so it need not be in their collection or among their
+## saved decks. For the fights before the player has a deck of their own:
+## the first one is played with Grandpa's. Takes precedence over
+## force_player_deck_id.
+@export var lent_player_deck: BossDefinition
+
 @export_group("On defeat")
 @export var defeat_behavior: DefeatBehavior = DefeatBehavior.PROMPT_RETRY
 ## Comic pages shown after a loss with COMIC_THEN_RETRY (ignored otherwise).

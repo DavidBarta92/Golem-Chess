@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://ck6j41l7qvaw6"]
+
+[ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_3g73j"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_ob23g"]
+[ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_ca4w8"]
+[ext_resource type="Texture2D" uid="uid://bgnuixyivassi" path="res://Assets/Stamps/skirmisher_1.png" id="3_ob23g"]
+
+[resource]
+script = ExtResource("2_ob23g")
+stamp_name = "Skirmisher"
+stamp_code = "skirmisher"
+Set = "Courtyard"
+duration = 1
+stamp_art = ExtResource("3_ob23g")
+white_piece_texture = ExtResource("3_ca4w8")
+black_piece_texture = ExtResource("1_3g73j")
+description = "No special effect."
+effect_type = "increase_own_durations"
+effect_trigger = "on_captured"
+square_color_a = Color(0.1764706, 0.5176471, 0.89411765, 1)
+square_color_b = Color(0.1764706, 0.5176471, 0.89411765, 1)
+name_color = Color(1, 1, 1, 1)
+duration_color = Color(0.9411765, 0.34901962, 0.043137256, 1)
+duration_outline_color = Color(1, 1, 1, 1)
+duration_outline_size = 6
+marker_color = Color(0.9411765, 0.34901962, 0.043137256, 1)
+movement_pattern = Array[Array]([[0, 0, 3, 0, 0], [3, 0, 0, 0, 3], [0, 0, 0, 0, 0], [0, 0, 2, 0, 0], [2, 0, 0, 0, 2]])
+metadata/_custom_type_script = "uid://ceu346mj3mqc5"

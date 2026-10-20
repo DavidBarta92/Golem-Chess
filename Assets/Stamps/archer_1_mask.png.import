@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bmtbkxwgl5bwp"
-path="res://.godot/imported/prince_1_mask.svg-9d253894f04084b449ef18464fc2c103.ctex"
+uid="uid://cn7qcds185qgs"
+path="res://.godot/imported/archer_1_mask.png-9eff876592ba4dc4ad77223ca1f8f54f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Stamps/SVG/prince_1_mask.svg"
-dest_files=["res://.godot/imported/prince_1_mask.svg-9d253894f04084b449ef18464fc2c103.ctex"]
+source_file="res://Assets/Stamps/archer_1_mask.png"
+dest_files=["res://.godot/imported/archer_1_mask.png-9eff876592ba4dc4ad77223ca1f8f54f.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

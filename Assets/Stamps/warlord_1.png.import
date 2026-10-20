@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b577n3ejurk6b"
-path="res://.godot/imported/Rajztábla 1_mask.svg-eab643cf932fd415ce495f97ad63fc1c.ctex"
+uid="uid://catvigre3bdjs"
+path="res://.godot/imported/warlord_1.png-3f3e3aa145f8ce79c76399c631bb2945.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Stamps/SVG/Rajztábla 1_mask.svg"
-dest_files=["res://.godot/imported/Rajztábla 1_mask.svg-eab643cf932fd415ce495f97ad63fc1c.ctex"]
+source_file="res://Assets/Stamps/warlord_1.png"
+dest_files=["res://.godot/imported/warlord_1.png-3f3e3aa145f8ce79c76399c631bb2945.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

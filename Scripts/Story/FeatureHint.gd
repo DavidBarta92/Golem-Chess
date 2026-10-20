@@ -20,7 +20,7 @@ class_name FeatureHint
 ## scene like GlobalTopBar.
 
 const ARROW_CANVAS_LAYER: int = 1250
-const ARROW_INK_COLOR: Color = Color(0.09, 0.08, 0.12, 1.0)
+const ARROW_INK_COLOR: Color = UiPalette.INK
 const ARROW_THICKNESS: float = 3.0
 const ARROW_HEAD_LENGTH: float = 18.0
 const ARROW_HEAD_HALF_WIDTH: float = 9.0

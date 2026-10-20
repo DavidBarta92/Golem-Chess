@@ -4,20 +4,43 @@
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="1_xr5ox"]
 [ext_resource type="Script" uid="uid://lhyymc4ah5c6" path="res://Scripts/Story/BossReaction.gd" id="2_boss_reaction"]
 [ext_resource type="Resource" path="res://Portraits/grandpa.tres" id="3_grandpa_portrait"]
-[ext_resource type="Resource" uid="uid://gx71tu87d5ip" path="res://Stamps/Courtyard/prince.tres" id="9_stamp_01"]
-[ext_resource type="Resource" uid="uid://bnqev01kdt5eo" path="res://Stamps/Courtyard/knight.tres" id="9_stamp_02"]
-[ext_resource type="Resource" uid="uid://mwgyk7o2sixs" path="res://Stamps/Courtyard/warlord.tres" id="9_stamp_03"]
-[ext_resource type="Resource" uid="uid://bgin1crswq00n" path="res://Stamps/Courtyard/lance.tres" id="9_stamp_04"]
-[ext_resource type="Resource" uid="uid://dw2t1mpptv7if" path="res://Stamps/Courtyard/archer.tres" id="9_stamp_05"]
-[ext_resource type="Resource" uid="uid://c6aydjmwt1orf" path="res://Stamps/Courtyard/gold_general.tres" id="9_stamp_06"]
-[ext_resource type="Resource" uid="uid://duedv18n0vjk8" path="res://Stamps/Courtyard/assassin.tres" id="9_stamp_07"]
-[ext_resource type="Resource" uid="uid://cspl7fa7jb5pf" path="res://Stamps/Courtyard/duke.tres" id="9_stamp_08"]
-[ext_resource type="Resource" uid="uid://ob1q6xbteyeb" path="res://Stamps/Courtyard/silver_general.tres" id="9_stamp_09"]
-[ext_resource type="Resource" uid="uid://ufbrx8m22qtk" path="res://Stamps/Courtyard/berserk.tres" id="9_stamp_10"]
-[ext_resource type="Resource" uid="uid://bf0hhbc0427gd" path="res://Stamps/Courtyard/the_golem.tres" id="9_stamp_11"]
-[ext_resource type="Resource" uid="uid://8rvwi7jj14be" path="res://Stamps/Courtyard/war_drummer.tres" id="9_stamp_12"]
-[ext_resource type="Script" path="res://Scripts/Audio/MusicCue.gd" id="90_music_cue"]
-[ext_resource type="Script" path="res://Scripts/Audio/MusicStemFade.gd" id="91_music_stem_fade"]
+[ext_resource type="Resource" uid="uid://bgin1crswq00n" path="res://Stamps/Courtyard/lance.tres" id="9_stamp_01"]
+[ext_resource type="Resource" uid="uid://dw2t1mpptv7if" path="res://Stamps/Courtyard/archer.tres" id="9_stamp_02"]
+[ext_resource type="Resource" uid="uid://cnexwhxkwrg5n" path="res://Stamps/Courtyard/monk.tres" id="9_stamp_03"]
+[ext_resource type="Resource" uid="uid://ob1q6xbteyeb" path="res://Stamps/Courtyard/silver_general.tres" id="9_stamp_04"]
+[ext_resource type="Resource" uid="uid://8rvwi7jj14be" path="res://Stamps/Courtyard/war_drummer.tres" id="9_stamp_05"]
+[ext_resource type="Resource" uid="uid://ufbrx8m22qtk" path="res://Stamps/Courtyard/berserk.tres" id="9_stamp_06"]
+[ext_resource type="Resource" uid="uid://c6aydjmwt1orf" path="res://Stamps/Courtyard/gold_general.tres" id="9_stamp_07"]
+[ext_resource type="Resource" uid="uid://mwgyk7o2sixs" path="res://Stamps/Courtyard/warlord.tres" id="9_stamp_08"]
+[ext_resource type="Resource" uid="uid://bnqev01kdt5eo" path="res://Stamps/Courtyard/knight.tres" id="9_stamp_09"]
+[ext_resource type="Resource" uid="uid://bf0hhbc0427gd" path="res://Stamps/Courtyard/the_golem.tres" id="9_stamp_10"]
+[ext_resource type="Script" uid="uid://boksbytph4vh4" path="res://Scripts/Audio/MusicCue.gd" id="90_music_cue"]
+[ext_resource type="Script" uid="uid://ejdsaop7goq5" path="res://Scripts/Audio/MusicStemFade.gd" id="91_music_stem_fade"]
+
+[sub_resource type="Resource" id="Fade_ostinato_out"]
+script = ExtResource("91_music_stem_fade")
+stem = "ostinato"
+direction = 1
+seconds = 2.0
+
+[sub_resource type="Resource" id="Cue_defeat_line"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_ostinato_out")])
+
+[sub_resource type="Resource" id="Fade_ostinato_in"]
+script = ExtResource("91_music_stem_fade")
+stem = "ostinato"
+seconds = 5.0
+
+[sub_resource type="Resource" id="Fade_chords_dreamy_out"]
+script = ExtResource("91_music_stem_fade")
+stem = "chords_dreamy"
+direction = 1
+seconds = 30.0
+
+[sub_resource type="Resource" id="Cue_match_start"]
+script = ExtResource("90_music_cue")
+fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_ostinato_in"), SubResource("Fade_chords_dreamy_out")])
 
 [sub_resource type="Resource" id="Resource_reaction_01"]
 resource_name = "entered_route_setup"
@@ -102,38 +125,13 @@ trigger = "stamp_played"
 lines = Array[String]([""])
 chance = 0.8
 
-[sub_resource type="Resource" id="Fade_ostinato_in"]
-script = ExtResource("91_music_stem_fade")
-stem = "ostinato"
-seconds = 5.0
-
-[sub_resource type="Resource" id="Fade_chords_dreamy_out"]
-script = ExtResource("91_music_stem_fade")
-stem = "chords_dreamy"
-direction = 1
-seconds = 30.0
-
-[sub_resource type="Resource" id="Cue_match_start"]
-script = ExtResource("90_music_cue")
-fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_ostinato_in"), SubResource("Fade_chords_dreamy_out")])
-
-[sub_resource type="Resource" id="Fade_ostinato_out"]
-script = ExtResource("91_music_stem_fade")
-stem = "ostinato"
-direction = 1
-seconds = 2.0
-
-[sub_resource type="Resource" id="Cue_defeat_line"]
-script = ExtResource("90_music_cue")
-fades = Array[ExtResource("91_music_stem_fade")]([SubResource("Fade_ostinato_out")])
-
 [resource]
 script = ExtResource("1_boss_definition")
 boss_id = "boss_01"
 display_name = "BOSS_NAME_GRANDPA"
 localize_display_name = true
 portrait = ExtResource("3_grandpa_portrait")
-deck_stamps = Array[ExtResource("1_xr5ox")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_04"), ExtResource("9_stamp_10"), ExtResource("9_stamp_11"), ExtResource("9_stamp_12")])
+deck_stamps = Array[ExtResource("1_xr5ox")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_10"), ExtResource("9_stamp_01"), ExtResource("9_stamp_06"), ExtResource("9_stamp_04"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03")])
 room_variant = 1
 show_opponent_codex = false
 show_clock = false

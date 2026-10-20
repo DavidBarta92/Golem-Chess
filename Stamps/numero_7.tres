@@ -10,11 +10,12 @@
 script = ExtResource("2_p5p1d")
 stamp_name = "Numero_7"
 stamp_code = "numero_7"
+enabled = false
 duration = 2
 stamp_art = ExtResource("2_58heb")
 piece_visuals = ExtResource("3_58heb")
 white_piece_texture = ExtResource("3_p5p1d")
 black_piece_texture = ExtResource("1_gyegn")
 description = "No special effect."
-movement_pattern = [[0, 0, 2, 0, 0], [0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0], [0, 0, 2, 0, 0]]
+movement_pattern = Array[Array]([[0, 0, 2, 0, 0], [0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0], [0, 0, 2, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

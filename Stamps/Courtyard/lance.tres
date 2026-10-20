@@ -1,18 +1,29 @@
 [gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://bgin1crswq00n"]
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_black"]
+[ext_resource type="Resource" uid="uid://dh6jlvb7g725j" path="res://PieceVisualSets/guard.tres" id="2_hs83i"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_stamp"]
+[ext_resource type="Texture2D" uid="uid://dm80d7w5ekidb" path="res://Assets/Stamps/lance_1.png" id="3_ru14i"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_white"]
+[ext_resource type="Texture2D" uid="uid://dqnxeevka5s3u" path="res://Assets/Stamps/lance_1_mask.png" id="5_f1jol"]
 
 [resource]
 script = ExtResource("2_stamp")
 stamp_name = "Lance"
 stamp_code = "lance"
 Set = "Courtyard"
-duration = 2
+duration = 1
+stamp_art = ExtResource("3_ru14i")
+stamp_art_mask = ExtResource("5_f1jol")
+piece_visuals = ExtResource("2_hs83i")
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "No special effect."
-square_color_a = Color(0.4509804, 0.21176471, 0.16470589, 1)
-square_color_b = Color(0.4509804, 0.21176471, 0.16470589, 1)
-movement_pattern = [[0, 1, 1, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]]
+square_color_a = Color(0.29411766, 0.19215687, 0.1882353, 1)
+square_color_b = Color(0.29411766, 0.19215687, 0.1882353, 1)
+name_color = Color(0.09019608, 0.62352943, 0.7647059, 1)
+duration_color = Color(0.9882353, 1, 0.078431375, 1)
+duration_outline_color = Color(0.09019608, 0.62352943, 0.7647059, 1)
+duration_outline_size = 6
+marker_color = Color(0.9882353, 1, 0.078431375, 1)
+movement_pattern = Array[Array]([[0, 1, 1, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]])

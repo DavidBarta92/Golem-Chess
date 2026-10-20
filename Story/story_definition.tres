@@ -57,6 +57,7 @@ blocks_hub_until_completed = true
 [sub_resource type="Resource" id="Resource_boss_01_match"]
 script = ExtResource("7_boss_node")
 boss = ExtResource("30_boss_01")
+lent_player_deck = ExtResource("30_boss_01")
 defeat_behavior = 1
 id = "boss_01_match"
 display_name = "Boss 1"

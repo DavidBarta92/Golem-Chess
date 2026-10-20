@@ -801,7 +801,7 @@ func _build_ui() -> void:
 	browser_title.text = "Inventory"
 	browser_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	browser_title.add_theme_font_size_override("font_size", 20)
-	browser_title.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
+	browser_title.add_theme_color_override("font_color", CollectionPalette.INK)
 
 	var tools_row := HBoxContainer.new()
 	browser.add_child(tools_row)
@@ -812,7 +812,7 @@ func _build_ui() -> void:
 	tools_row.add_child(owned_only_check)
 	owned_only_check.text = "My stamps"
 	owned_only_check.button_pressed = false
-	owned_only_check.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
+	owned_only_check.add_theme_color_override("font_color", CollectionPalette.INK)
 	owned_only_check.toggled.connect(_on_owned_only_toggled)
 
 	var tool_spacer := Control.new()
@@ -877,7 +877,7 @@ func _build_ui() -> void:
 	right_column.add_child(deck_title_label)
 	deck_title_label.text = "My codexes"
 	deck_title_label.add_theme_font_size_override("font_size", 22)
-	deck_title_label.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
+	deck_title_label.add_theme_color_override("font_color", CollectionPalette.INK)
 	deck_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	new_deck_button = Button.new()
@@ -1435,7 +1435,7 @@ func _create_editor_stamp_placeholder(label_text: String) -> Control:
 	stamp_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.98, 0.98, 0.96, 1.0)
-	style.border_color = Color(0.08, 0.08, 0.08, 0.85)
+	style.border_color = Color(CollectionPalette.INK, 0.85)
 	style.border_width_left = 2
 	style.border_width_top = 2
 	style.border_width_right = 2
@@ -1453,7 +1453,7 @@ func _create_editor_stamp_placeholder(label_text: String) -> Control:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", 14)
-	label.add_theme_color_override("font_color", Color(0.08, 0.08, 0.08))
+	label.add_theme_color_override("font_color", CollectionPalette.INK)
 	return stamp_panel
 
 func _populate_editor_preview_content() -> void:
@@ -1620,7 +1620,7 @@ func create_top_progress_ui() -> void:
 	points_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	points_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	points_label.add_theme_font_size_override("font_size", 20)
-	points_label.add_theme_color_override("font_color", Color(0.07, 0.055, 0.095))
+	points_label.add_theme_color_override("font_color", CollectionPalette.INK)
 
 func create_pack_inventory_ui() -> void:
 	pack_panel = Control.new()
@@ -2615,7 +2615,7 @@ func _create_deck_slot_remove_button(deck_stamp_index: int) -> Control:
 	root.add_child(background)
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	background.add_theme_stylebox_override("panel", _create_deck_slot_remove_button_style(Color(0.02, 0.02, 0.02, 0.96)))
+	background.add_theme_stylebox_override("panel", _create_deck_slot_remove_button_style(Color(CollectionPalette.INK, 0.96)))
 
 	var icon := TextureRect.new()
 	root.add_child(icon)

@@ -10,6 +10,7 @@
 script = ExtResource("2_oqh5j")
 stamp_name = "Numero_2"
 stamp_code = "numero_2"
+enabled = false
 duration = 2
 stamp_art = ExtResource("2_uba6f")
 piece_visuals = ExtResource("3_uba6f")

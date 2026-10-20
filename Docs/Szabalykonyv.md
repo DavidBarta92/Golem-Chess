@@ -306,7 +306,7 @@ Haladó játékosoknak – egy lépés eseményei ebben a sorrendben történnek
 - Csak a gyűjteményben meglévő bélyegek használhatók.
 - A bélyegek sorrendje számít: ez határozza meg, mi kerül az egyes oldalakra (1–3 → 1. oldal, 4–6 → 2. oldal, …, 13–15 → 5. oldal).
 
-A kezdőpakli („Nagyapa kódexe”) sorrendben: Prince, Knight, Warlord / Lance, Archer, Gold General / Assassin, Duke, Silver General / Prince, Knight, Lance / Berserk, The Golem, War Drummer.
+A kezdőpakli („Nagyapa kódexe”) sorrendben: Lance, Archer, Monk / Silver General, War Drummer, Berserk / Gold General, Warlord, Knight / The Golem, Lance, Berserk / Silver General, Archer, Monk.
 
 ---
 

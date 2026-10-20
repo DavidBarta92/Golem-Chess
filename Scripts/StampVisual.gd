@@ -21,6 +21,7 @@ const OVERSEAL_TYPE_MASK_TEXTURE = preload("res://Assets/overseal_mask.svg")
 const STAMP_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR
 const STAMP_ART_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 const STAMP_SHIMMER_ENABLED: bool = false
+const STAMP_MASK_ASPECT_TOLERANCE: float = 0.01
 const DRAG_TILT_FACTOR: float = 0.115
 const DRAG_TILT_ROTATION_FACTOR: float = 0.0072
 const DRAG_TILT_MAX: float = 46.0
@@ -58,6 +59,8 @@ signal burn_finished(stamp_visual: StampVisual)
 @onready var name_label: Label = $NameLabel
 @onready var description_label: RichTextLabel = get_node_or_null("DescriptionLabel") as RichTextLabel
 @onready var pattern_view: StampPatternView = $PatternView
+
+static var mask_uses_alpha_cache: Dictionary = {}
 
 var stamp: Stamp
 var stamp_print: StampPrint
@@ -576,7 +579,7 @@ func reset_snapshot_source_alpha(node: Node) -> void:
 func set_stamp_content_visible(value: bool) -> void:
 	stamp_face.visible = value
 	stamp_square.visible = value && !face_down
-	type_frame.visible = value && !face_down && stamp != null && type_frame.texture != null
+	type_frame.visible = value && !face_down && stamp != null && type_frame.texture != null && !_art_draws_type_frame()
 	stamp_art.visible = value && !face_down && stamp_art.texture != null
 	duration_label.visible = value && !face_down
 	effect_art.visible = value && !face_down && _get_effect_art_texture() != null
@@ -617,8 +620,8 @@ func _apply_art_state() -> void:
 	var has_stamp_mask: bool = stamp_mask_texture != null
 	var uses_masked_art: bool = _uses_masked_stamp_art()
 
+	var has_type_frame: bool = stamp != null && type_frame_texture != null
 	type_frame.texture = type_frame_texture
-	type_frame.visible = !face_down && stamp != null && type_frame_texture != null
 
 	stamp_art.texture = art_texture if has_stamp_art else null
 	stamp_art.visible = !face_down && has_stamp_art
@@ -627,11 +630,16 @@ func _apply_art_state() -> void:
 		stamp_art.stretch_mode = TextureRect.STRETCH_SCALE
 		stamp_art.material = stamp_art_material
 		stamp_art_material.set_shader_parameter("type_mask_texture", type_mask_texture)
+		stamp_art_material.set_shader_parameter("type_frame_texture", type_frame_texture)
+		stamp_art_material.set_shader_parameter("has_type_frame", has_type_frame)
 		stamp_art_material.set_shader_parameter("stamp_mask_texture", stamp_mask_texture if has_stamp_mask else type_mask_texture)
 		stamp_art_material.set_shader_parameter("has_stamp_mask", has_stamp_mask)
+		stamp_art_material.set_shader_parameter("stamp_mask_follows_art", has_stamp_mask && _stamp_mask_follows_art(stamp_mask_texture, art_texture))
+		stamp_art_material.set_shader_parameter("stamp_mask_uses_alpha", !has_stamp_mask || _mask_uses_alpha(stamp_mask_texture))
 	else:
 		stamp_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		stamp_art.material = null
+	type_frame.visible = !face_down && has_type_frame && !_art_draws_type_frame()
 
 	var effect_art_texture: Texture2D = _get_effect_art_texture()
 	effect_art.texture = effect_art_texture
@@ -717,6 +725,39 @@ func _get_stamp_art_mask_texture() -> Texture2D:
 	if stamp != null:
 		return stamp.stamp_art_mask
 	return null
+
+# The masked art draws the role's frame itself, so the art's edge and the frame line are antialiased together.
+func _art_draws_type_frame() -> bool:
+	return stamp_art.texture != null && stamp_art_material != null && stamp_art.material == stamp_art_material
+
+# A mask drawn at the art's proportions is cropped together with the art; any other mask
+# (e.g. the stamp face on full art prints) is laid over the whole stamp.
+func _stamp_mask_follows_art(mask_texture: Texture2D, art_texture: Texture2D) -> bool:
+	if mask_texture == null || art_texture == null:
+		return false
+	var mask_size: Vector2 = mask_texture.get_size()
+	var art_size: Vector2 = art_texture.get_size()
+	if mask_size.y <= 0.0 || art_size.y <= 0.0:
+		return false
+	return absf(mask_size.aspect() - art_size.aspect()) <= STAMP_MASK_ASPECT_TOLERANCE
+
+# A mask with transparency marks its shape with opaque pixels; a fully opaque one
+# (e.g. a PNG exported without transparency) draws it in black on white.
+static func _mask_uses_alpha(mask_texture: Texture2D) -> bool:
+	var cache_key: String = mask_texture.resource_path
+	if cache_key.is_empty():
+		cache_key = str(mask_texture.get_instance_id())
+	if mask_uses_alpha_cache.has(cache_key):
+		return mask_uses_alpha_cache[cache_key]
+
+	var uses_alpha: bool = true
+	var image: Image = mask_texture.get_image()
+	if image != null && !image.is_empty():
+		if image.is_compressed():
+			image.decompress()
+		uses_alpha = image.detect_alpha() != Image.ALPHA_NONE
+	mask_uses_alpha_cache[cache_key] = uses_alpha
+	return uses_alpha
 
 func _uses_masked_stamp_art() -> bool:
 	if stamp_print != null:

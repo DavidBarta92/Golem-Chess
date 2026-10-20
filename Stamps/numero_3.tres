@@ -11,6 +11,7 @@ script = ExtResource("2_042o3")
 stamp_name = "Numero_3"
 stamp_code = "numero_3"
 role = 1
+enabled = false
 stamp_art = ExtResource("2_mjihx")
 piece_visuals = ExtResource("3_mjihx")
 white_piece_texture = ExtResource("3_042o3")

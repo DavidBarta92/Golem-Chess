@@ -11,7 +11,7 @@ var black_pages: Array = []
 
 ## Pale type on the dark rim, and the page in hand picked out in reverse.
 const PAGE_TEXT_COLOR: Color = Color(0.82, 0.80, 0.74)
-const CURRENT_PAGE_TEXT_COLOR: Color = Color(0.08, 0.08, 0.08)
+const CURRENT_PAGE_TEXT_COLOR: Color = UiPalette.INK
 const CURRENT_PAGE_DISC_COLOR: Color = Color(1.0, 1.0, 1.0)
 
 var codex_panel: Control

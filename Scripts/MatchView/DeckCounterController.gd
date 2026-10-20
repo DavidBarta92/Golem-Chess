@@ -78,7 +78,7 @@ func create_deck_count_ui() -> void:
 	label_settings.font_size = 18
 	label_settings.font_color = Color(1.0, 1.0, 1.0)
 	label_settings.outline_size = 4
-	label_settings.outline_color = Color(0.0, 0.0, 0.0)
+	label_settings.outline_color = UiPalette.INK
 	deck_count_label.label_settings = label_settings
 
 func create_deck_counter_ui() -> void:

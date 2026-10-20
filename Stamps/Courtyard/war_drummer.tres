@@ -2,6 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_black"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_stamp"]
+[ext_resource type="Texture2D" uid="uid://bkmfcu7ay8wvw" path="res://Assets/Stamps/wardrummer_1.png" id="3_al1pk"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_white"]
 
 [resource]
@@ -9,13 +10,18 @@ script = ExtResource("2_stamp")
 stamp_name = "War Drummer"
 stamp_code = "war_drummer"
 Set = "Courtyard"
-duration = 4
+stamp_art = ExtResource("3_al1pk")
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "No special effect."
 effect_type = "increase_own_durations"
-square_color_a = Color(0.5803922, 0.5764706, 0.48235294, 1)
-square_color_b = Color(0.5764706, 0.57254905, 0.48235294, 1)
+square_color_a = Color(0.77254903, 0.34509805, 0.25490198, 1)
+square_color_b = Color(0.77254903, 0.34509805, 0.25490198, 1)
+name_color = Color(0.99215686, 0.9764706, 0.83137256, 1)
 name_font_size = 15
+duration_color = Color(0.28627452, 0.34901962, 0.25490198, 1)
+duration_outline_color = Color(0.99215686, 0.9764706, 0.83137256, 1)
+duration_outline_size = 6
+marker_color = Color(0.28627452, 0.34901962, 0.25490198, 1)
 movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0], [0, 2, 0, 2, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

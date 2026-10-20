@@ -4,11 +4,11 @@ extends RewardSceneBase
 ##
 ## The player has been playing with these exact stamps since the tutorial (they
 ## are the game's starting deck), so this is where they are *recorded* - the
-## collection ends up holding every copy the deck uses, and a saved deck with
-## the same 15 stamps in the same order is created and selected. Nothing the
-## player can see changes until the Collection opens two fights later; the
-## reward moment is the reveal animation and the fact that the cards are now
-## theirs on paper.
+## collection ends up holding every copy the deck uses, and the deck with the
+## same 15 stamps in the same order gets Grandpa's name and is selected.
+## Nothing the player can see changes until the Collection opens two fights
+## later; the reward moment is the reveal animation and the fact that the
+## cards are now theirs on paper.
 ##
 ## Idempotent on top of the base payout guard: quantities are topped up to the
 ## deck's counts, never added blindly, so a re-entered scene or the copies the
@@ -57,18 +57,26 @@ func _top_up_collection(stamp_names: Array[String]) -> void:
 		for _i in range(maxi(0, int(wanted_counts[stamp_name]) - owned)):
 			PlayerCollectionStore.add_local_stamp_copy(stamp_name)
 
-## Saves the deck under Grandpa's name and makes it the selected deck, unless a
-## deck with these exact stamps already exists (a re-entry, or the default
-## "New" deck the store creates from the same list).
+## Makes the deck the player's own under Grandpa's name - in the language the
+## game is in now - and selects it. The store made its default "New" deck from
+## this same list on the first run, unseen until now; that deck is the one
+## renamed, so the player ends up with a single copy of it. Any other deck with
+## these exact stamps (one the player saved themselves) keeps its name and is
+## only selected. With neither, the deck is saved afresh.
 func _ensure_saved_deck(stamp_names: Array[String]) -> void:
+	var deck_name: String = tr(DECK_NAME_KEY)
 	for deck in PlayerDeckStore.list_decks():
 		if !(deck is Dictionary):
 			continue
-		if PlayerDeckStore.get_stamp_names_from_deck(deck) == stamp_names:
-			GameConfig.set_selected_deck_id(str(deck.get("deck_id", "")))
-			return
+		if PlayerDeckStore.get_stamp_names_from_deck(deck) != stamp_names:
+			continue
+		var deck_id: String = str(deck.get("deck_id", ""))
+		if deck_id == PlayerDeckStore.DEFAULT_DECK_ID:
+			PlayerDeckStore.save_existing_deck(deck_id, deck_name, deck.get("stamps", []))
+		GameConfig.set_selected_deck_id(deck_id)
+		return
 
-	var saved: Dictionary = PlayerDeckStore.save_new_deck(tr(DECK_NAME_KEY), stamp_names)
+	var saved: Dictionary = PlayerDeckStore.save_new_deck(deck_name, stamp_names)
 	var deck_id: String = str(saved.get("deck_id", ""))
 	if !deck_id.is_empty():
 		GameConfig.set_selected_deck_id(deck_id)

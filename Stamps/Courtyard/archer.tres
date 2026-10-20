@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="2_black"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_stamp"]
 [ext_resource type="Texture2D" uid="uid://csmy4rqbl4lxi" path="res://Assets/Stamps/archer_1.png" id="3_u33tx"]
+[ext_resource type="Texture2D" uid="uid://cn7qcds185qgs" path="res://Assets/Stamps/archer_1_mask.png" id="4_ypgqs"]
 
 [resource]
 script = ExtResource("3_stamp")
@@ -12,6 +13,7 @@ stamp_code = "archer"
 Set = "Courtyard"
 duration = 1
 stamp_art = ExtResource("3_u33tx")
+stamp_art_mask = ExtResource("4_ypgqs")
 white_piece_texture = ExtResource("1_white")
 black_piece_texture = ExtResource("2_black")
 description = "No special effect."
@@ -20,4 +22,4 @@ square_color_b = Color(0.34117648, 0.1882353, 0.2, 1)
 duration_outline_color = Color(0.34117648, 0.1882353, 0.2, 1)
 duration_outline_size = 6
 marker_color = Color(0, 0, 0, 1)
-movement_pattern = Array[Array]([[0, 0, 3, 0, 0], [0, 3, 0, 3, 0], [3, 0, 0, 0, 3], [0, 3, 0, 3, 0], [0, 0, 3, 0, 0]])
+movement_pattern = Array[Array]([[0, 0, 3, 0, 0], [0, 0, 2, 0, 0], [3, 2, 0, 2, 3], [0, 0, 2, 0, 0], [0, 0, 3, 0, 0]])

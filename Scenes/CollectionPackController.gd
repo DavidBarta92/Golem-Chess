@@ -149,7 +149,7 @@ func _ensure_buy_packs_window() -> void:
 	buy_packs_panel.z_index = BUY_PACKS_WINDOW_Z_INDEX
 	buy_packs_panel.add_theme_stylebox_override(
 		"panel",
-		_create_panel_style(Color(0.984, 0.98, 0.969, 1.0), Color(0.071, 0.071, 0.071, 1.0), 6, 1, 0)
+		_create_panel_style(Color(0.984, 0.98, 0.969, 1.0), CollectionPalette.INK, 6, 1, 0)
 	)
 	_ensure_buy_packs_modal_blocker()
 	_ensure_buy_packs_stamp_tooltip()
@@ -167,7 +167,7 @@ func _ensure_buy_packs_window() -> void:
 	header_panel.custom_minimum_size = Vector2(0.0, 38.0)
 	header_panel.add_theme_stylebox_override(
 		"panel",
-		_create_panel_style(Color(0.071, 0.071, 0.071, 1.0), Color(0.071, 0.071, 0.071, 1.0), 6, 0, 0)
+		_create_panel_style(CollectionPalette.INK, CollectionPalette.INK, 6, 0, 0)
 	)
 
 	var title_row := HBoxContainer.new()
@@ -233,7 +233,7 @@ func _ensure_buy_packs_window() -> void:
 	pack_area.add_child(pack_area_title)
 	pack_area_title.text = tr("Packs")
 	pack_area_title.add_theme_font_size_override("font_size", 18)
-	pack_area_title.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+	pack_area_title.add_theme_color_override("font_color", CollectionPalette.INK)
 
 	var pack_scroll := ScrollContainer.new()
 	pack_scroll.name = "PackScroll"
@@ -256,7 +256,7 @@ func _ensure_buy_packs_window() -> void:
 	right_panel.custom_minimum_size = Vector2(BUY_PACKS_RIGHT_COLUMN_WIDTH, 0.0)
 	right_panel.add_theme_stylebox_override(
 		"panel",
-		_create_panel_style(Color(0.955, 0.948, 0.925, 1.0), Color(0.12, 0.11, 0.12, 0.85), 4, 1, 12)
+		_create_panel_style(Color(0.955, 0.948, 0.925, 1.0), Color(CollectionPalette.INK, 0.85), 4, 1, 12)
 	)
 
 	var right_root := VBoxContainer.new()
@@ -270,7 +270,7 @@ func _ensure_buy_packs_window() -> void:
 	right_root.add_child(buy_packs_contents_title)
 	buy_packs_contents_title.text = tr("Pack contents")
 	buy_packs_contents_title.add_theme_font_size_override("font_size", 16)
-	buy_packs_contents_title.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+	buy_packs_contents_title.add_theme_color_override("font_color", CollectionPalette.INK)
 
 	var contents_scroll := ScrollContainer.new()
 	contents_scroll.name = "ContentsScroll"
@@ -317,7 +317,7 @@ func _ensure_buy_packs_window() -> void:
 	buy_packs_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	buy_packs_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	buy_packs_info_label.add_theme_font_size_override("font_size", 18)
-	buy_packs_info_label.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+	buy_packs_info_label.add_theme_color_override("font_color", CollectionPalette.INK)
 
 	pack_count_spin_box = SpinBox.new()
 	pack_count_spin_box.name = "PackCountSpinBox"
@@ -393,7 +393,7 @@ func _ensure_buy_packs_stamp_tooltip() -> void:
 	buy_packs_stamp_tooltip_panel.z_index = BUY_PACKS_TOOLTIP_Z_INDEX
 	buy_packs_stamp_tooltip_panel.add_theme_stylebox_override(
 		"panel",
-		_create_panel_style(Color(0.04, 0.038, 0.04, 0.94), Color(0.04, 0.038, 0.04, 0.94), 4, 0, 7)
+		_create_panel_style(Color(CollectionPalette.INK, 0.94), Color(CollectionPalette.INK, 0.94), 4, 0, 7)
 	)
 
 	buy_packs_stamp_tooltip_label = Label.new()
@@ -781,7 +781,7 @@ func _create_buy_pack_card(pack_definition: PackDefinition) -> Button:
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_label.add_theme_font_size_override("font_size", 13)
-	name_label.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+	name_label.add_theme_color_override("font_color", CollectionPalette.INK)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var price_row := HBoxContainer.new()
@@ -803,7 +803,7 @@ func _create_buy_pack_card(pack_definition: PackDefinition) -> Button:
 	price_label.text = "%d" % pack_definition.price
 	price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	price_label.add_theme_font_size_override("font_size", 12)
-	price_label.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+	price_label.add_theme_color_override("font_color", CollectionPalette.INK)
 	price_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	card.pressed.connect(Callable(self, "_on_purchase_pack_card_pressed").bind(pack_id))
@@ -814,10 +814,10 @@ func _create_pack_card_style(selected: bool, hovered: bool) -> StyleBoxFlat:
 	var border_color := Color(0.46, 0.44, 0.4, 0.72)
 	if hovered:
 		bg_color = Color(1.0, 1.0, 0.988, 1.0)
-		border_color = Color(0.24, 0.22, 0.2, 0.86)
+		border_color = Color(CollectionPalette.INK, 0.86)
 	if selected:
 		bg_color = Color(0.96, 0.942, 0.89, 1.0)
-		border_color = Color(0.07, 0.07, 0.07, 1.0)
+		border_color = CollectionPalette.INK
 	return _create_panel_style(bg_color, border_color, 5, 1 if !selected else 2, 8)
 
 func _update_buy_pack_card_selection() -> void:
@@ -872,7 +872,7 @@ func _add_pack_contents_label(text: String) -> void:
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", Color(0.08, 0.075, 0.085))
+	label.add_theme_color_override("font_color", CollectionPalette.INK)
 	_queue_buy_pack_contents_grid_layout()
 
 func _add_pack_contents_stamp(stamp_print: StampPrint) -> void:

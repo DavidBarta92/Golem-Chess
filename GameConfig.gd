@@ -42,6 +42,7 @@ var selected_ai_deck_id: String = ""
 var ai_opponent_name_override: String = ""
 var ai_opponent_portrait_override: Dictionary = {}
 var ai_opponent_deck_stamp_names_override: Array[String] = []
+var player_deck_stamp_names_override: Array[String] = []
 var multiplayer_menu_status_message: String = ""
 var ai_vs_ai_results: Dictionary = {
 	0: 0,
@@ -155,6 +156,22 @@ func has_ai_opponent_deck_override() -> bool:
 
 func get_ai_opponent_deck_stamp_names() -> Array[String]:
 	return ai_opponent_deck_stamp_names_override.duplicate()
+
+## A story fight can lend the player a deck in place of the one they have
+## selected - Grandpa's, before they own any. Like the opponent's override it
+## is not checked against the collection, and it is cleared when the story
+## match is over.
+func set_player_deck_override(deck_stamp_names: Array[String]) -> void:
+	player_deck_stamp_names_override = deck_stamp_names.duplicate()
+
+func clear_player_deck_override() -> void:
+	player_deck_stamp_names_override = []
+
+func has_player_deck_override() -> bool:
+	return !player_deck_stamp_names_override.is_empty()
+
+func get_player_deck_override_stamp_names() -> Array[String]:
+	return player_deck_stamp_names_override.duplicate()
 
 func sanitize_player_name(raw_player_name: String) -> String:
 	var cleaned_name: String = raw_player_name.strip_edges()
