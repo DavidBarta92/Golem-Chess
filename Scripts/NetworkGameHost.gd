@@ -840,9 +840,6 @@ func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 
 	var mover_player_id: int = int(game_state.last_move.get("player_id", -1))
 	var is_mover_viewer: bool = viewer_player_id != -1 && mover_player_id == viewer_player_id
-	if viewer_player_id != -1 && !is_mover_viewer && !bool(game_state.last_move.get("visible_to_enemy", true)):
-		return {}
-
 	var from_pos: Vector2 = StampEffectResolver.as_vector2(game_state.last_move.get("from", Vector2(-1, -1)), Vector2(-1, -1))
 	var to_pos: Vector2 = StampEffectResolver.as_vector2(game_state.last_move.get("to", Vector2(-1, -1)), Vector2(-1, -1))
 	if from_pos == Vector2(-1, -1) or to_pos == Vector2(-1, -1) or from_pos == to_pos:
@@ -851,8 +848,19 @@ func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 	var moving_piece: Piece = game_state.get_piece(to_pos)
 	if moving_piece == null:
 		return {}
-	if viewer_player_id != -1 && !is_mover_viewer && !StampEffectResolver.is_piece_visible_to_player(moving_piece, viewer_player_id):
-		return {}
+
+	# A piece the viewer cannot see keeps its moves to itself - except the one
+	# that takes a piece of theirs. That capture happens in plain view, so the
+	# viewer is shown it: the attacker coming in and striking, then going out
+	# of sight again where it stands. Never with an arrow, which would go on
+	# pointing at it long after it had vanished.
+	var hidden_after_capture: bool = false
+	if viewer_player_id != -1 && !is_mover_viewer:
+		var visible_now: bool = StampEffectResolver.is_piece_visible_to_player(moving_piece, viewer_player_id)
+		if !visible_now or !bool(game_state.last_move.get("visible_to_enemy", true)):
+			if visible_now or int(game_state.last_move.get("captured_piece_color", 0)) == 0:
+				return {}
+			hidden_after_capture = true
 
 	var serialized_last_move := {
 		"from": vector2_to_array(from_pos),
@@ -860,8 +868,11 @@ func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
 		"player_id": mover_player_id,
 		"piece_color": int(game_state.last_move.get("piece_color", StampEffectResolver.get_color_for_player_id(mover_player_id))),
 		"visible_to_enemy": bool(game_state.last_move.get("visible_to_enemy", true)),
-		"show_arrow": !is_mover_viewer,
+		"show_arrow": !is_mover_viewer and !hidden_after_capture,
 	}
+	if hidden_after_capture:
+		serialized_last_move["hidden_after_capture"] = true
+		serialized_last_move["piece_stamp_name"] = moving_piece.affixed_stamp.stamp_name if moving_piece.affixed_stamp != null else ""
 	if int(game_state.last_move.get("captured_piece_color", 0)) != 0:
 		serialized_last_move["captured_piece_color"] = int(game_state.last_move.get("captured_piece_color", 0))
 		serialized_last_move["captured_stamp_name"] = str(game_state.last_move.get("captured_stamp_name", ""))

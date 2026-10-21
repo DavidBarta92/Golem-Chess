@@ -116,13 +116,15 @@ const INVALID_BOARD_POS: Vector2 = Vector2(-1, -1)
 
 @export_group("Figure hop")
 ## In pixels of the 1920x1080 artwork. The figure first lifts, then comes
-## down until its foot touches the top quarter of the star, then drops onto it.
+## down until its foot touches the top quarter of the star, then drops until
+## its foot rests at the star's lower third (the star's ink runs from y 612 to
+## 742, the figure's foot is at 589).
 @export var hop_rise_pixels: float = 18.0
 @export var hop_touch_pixels: float = 54.0
-@export var hop_land_pixels: float = 87.0
+@export var hop_land_pixels: float = 110.0
 @export_range(0.0, 2.0, 0.01) var hop_rise_seconds: float = 0.22
 @export_range(0.0, 2.0, 0.01) var hop_fall_seconds: float = 0.32
-@export_range(0.0, 1.0, 0.01) var hop_land_seconds: float = 0.07
+@export_range(0.0, 1.0, 0.01) var hop_land_seconds: float = 0.1
 
 @export_group("Pentagon")
 @export_range(0.5, 10.0, 0.05) var shrink_seconds: float = 3.5

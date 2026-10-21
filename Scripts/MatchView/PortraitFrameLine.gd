@@ -4,8 +4,9 @@ class_name PortraitFrameLine
 ## The hand-drawn frame around a speaker's face in a DialoguePanel, and the
 ## way it draws itself in.
 ##
-## Shared by the opponent's panel in a match (OpponentSpeechPanel) and the
-## tutorial's panels, so a face is framed the same way wherever it talks. Put
+## Shared by the opponent's panel in a match (OpponentSpeechPanel), the
+## tutorial's panels and the reward scenes, so a face is framed the same way
+## wherever it talks. Put
 ## one on a panel with attach(); it keeps itself lined up with the picture.
 ##
 ## The reveal shader writes COLOR from `line_color` and never reads modulate,
@@ -31,7 +32,7 @@ const HIDDEN_TIME: float = -1.0
 const DRAWN_TIME: float = 1000.0
 
 var reveal_seconds: float = 1.0
-var line_color: Color = UiPalette.INK
+var line_color: Color = Color.BLACK
 
 var _panel: DialoguePanel
 var _rect: TextureRect

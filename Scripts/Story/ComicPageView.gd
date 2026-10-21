@@ -89,8 +89,12 @@ enum MusicMode { UNCHANGED, PLAYING, SILENT }
 @export var end_byline_rect: Rect2 = Rect2(0.0, 402.0, 1280.0, 36.0)
 ## Kept close to the button's own size: large enough to read, small enough that
 ## it does not argue with the title above it.
-@export_range(8, 64, 1) var end_byline_font_size: int = 19
-@export var end_byline_font: Font = preload("res://Fonts/Rosemartin.otf")
+## The buttons are set at 15; this sits a shade above them, which is as large
+## as it can be without arguing with the title.
+@export_range(8, 64, 1) var end_byline_font_size: int = 17
+## The buttons' own face, so the credit reads as part of the interface rather
+## than as part of the drawing.
+@export var end_byline_font: Font = preload("res://Fonts/ElmsSans-ExtraBold.ttf")
 @export var end_byline_color: Color = Color(0.33, 0.32, 0.36, 1.0)
 @export_range(0.0, 5.0, 0.05) var end_byline_fade_seconds: float = 1.0
 
@@ -128,6 +132,7 @@ var _music_silenced_by_page: bool = false
 var _fading_panels: Array[ComicPanelView] = []
 var _end_button: Button
 var _end_byline: Label
+var _input_locked: bool = false
 var _panel_advance_timer: SceneTreeTimer
 
 func _ready() -> void:
@@ -267,6 +272,7 @@ func begin() -> void:
 	_collect_panel_groups()
 	_current_group_index = -1
 	_is_finished = false
+	_input_locked = false
 	_fading_panels.clear()
 	for panel in get_panels():
 		panel.reset_panel()
@@ -298,7 +304,7 @@ func begin() -> void:
 ## an impatient player expects; otherwise it moves on to the next group.
 ## Returns false once the page has nothing left to show.
 func advance() -> bool:
-	if _is_finished:
+	if _is_finished or _input_locked:
 		return false
 	_reset_idle_hint()
 
@@ -343,6 +349,9 @@ func _reveal_next_group() -> bool:
 	if group_panels.is_empty():
 		return _reveal_next_group()
 
+	for panel in group_panels:
+		if (panel as ComicPanelView).locks_input:
+			_input_locked = true
 	_start_fades_for(group_panels)
 	# The text belongs to the drawing, so it starts with it rather than after.
 	var speaking_panel: ComicPanelView = _find_speaking_panel(_current_group_index)

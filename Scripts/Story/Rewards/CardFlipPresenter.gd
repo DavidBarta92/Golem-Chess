@@ -15,6 +15,12 @@ class_name CardFlipPresenter
 @export_range(0.0, 2.0, 0.05) var deal_seconds: float = 0.5
 @export_range(0.0, 0.5, 0.01) var deal_stagger_seconds: float = 0.09
 @export_range(0.05, 1.0, 0.01) var flip_seconds: float = 0.18
+## Once a card is face up it jumps: up off the table all at once, a touch
+## bigger for being nearer, then settles back down into its place.
+@export_range(0.0, 0.5, 0.01) var hop_height_ratio: float = 0.14
+@export_range(0.0, 0.3, 0.01) var hop_grow: float = 0.06
+@export_range(0.02, 1.0, 0.01) var hop_rise_seconds: float = 0.09
+@export_range(0.05, 1.0, 0.01) var hop_settle_seconds: float = 0.26
 @export var sfx_deal: String = "field_slips"
 @export var sfx_flip: String = "codex_fold"
 @export var sfx_all_flipped: String = "stamp_up"
@@ -126,7 +132,22 @@ func _flip(index: int) -> void:
 	_play_sfx(sfx_flip)
 	_flip_card(card, flip_seconds, _on_flip_done.bind(index))
 
-func _on_flip_done(_index: int) -> void:
+## The jump after the flip. Runs on its own, so the next card can be turned
+## while this one is still in the air.
+func _hop_card(card: StampVisual) -> void:
+	if card == null or !is_instance_valid(card):
+		return
+	var rest: Vector2 = card.home_position
+	var rest_scale: Vector2 = card.rest_scale
+	var height: float = CARD_SIZE.y * rest_scale.y * hop_height_ratio
+	var tween := card.create_tween()
+	tween.tween_property(card, "position:y", rest.y - height, hop_rise_seconds).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(card, "scale", rest_scale * (1.0 + hop_grow), hop_rise_seconds).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(card, "position:y", rest.y, hop_settle_seconds).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	tween.parallel().tween_property(card, "scale", rest_scale, hop_settle_seconds).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+
+func _on_flip_done(index: int) -> void:
+	_hop_card(_cards[index])
 	_flip_in_progress = false
 	if _flipped.all(func(done: bool) -> bool: return done):
 		_accepting_clicks = false

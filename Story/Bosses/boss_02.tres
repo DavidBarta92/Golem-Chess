@@ -108,6 +108,7 @@ portrait = ExtResource("3_gabi_portrait")
 deck_stamps = Array[ExtResource("1_e15w3")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_10"), ExtResource("9_stamp_02"), ExtResource("9_stamp_04"), ExtResource("9_stamp_11"), ExtResource("9_stamp_12"), ExtResource("9_stamp_10")])
 ai_difficulty_level = 2
 show_clock = false
+can_leave_match = false
 intro_lines = Array[String](["BOSS_02_INTRO_1", "BOSS_02_INTRO_2", "BOSS_02_INTRO_3", "BOSS_02_INTRO_4", "BOSS_02_INTRO_5"])
 victory_lines = Array[String](["BOSS_02_WIN_1", "BOSS_02_WIN_2", "BOSS_02_WIN_3", "BOSS_02_WIN_4", "BOSS_02_WIN_5"])
 defeat_lines = Array[String](["BOSS_02_LOSS_1"])

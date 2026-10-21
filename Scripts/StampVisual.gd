@@ -408,7 +408,9 @@ func play_burn_away_and_free() -> void:
 	tween_burn.parallel().tween_property(self, "rotation", rotation + deg_to_rad(randf_range(-7.0, 7.0)), 1.15)
 	tween_burn.tween_callback(Callable(self, "_finish_burn_away"))
 
-func play_return_to_deck_and_free(target_global_position: Vector2, target_scale: Vector2, duration: float = 0.62) -> void:
+## `fade_out` lets it thin away as it goes, so it is gone by the time it gets
+## there instead of landing on top of whatever it was sent to.
+func play_return_to_deck_and_free(target_global_position: Vector2, target_scale: Vector2, duration: float = 0.62, fade_out: bool = false) -> void:
 	_restore_default_cursor()
 	is_assigned = true
 	is_dragging = false
@@ -435,6 +437,8 @@ func play_return_to_deck_and_free(target_global_position: Vector2, target_scale:
 	tween_burn.tween_property(self, "global_position", target_global_position, duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
 	tween_burn.parallel().tween_property(self, "scale", target_scale, duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
 	tween_burn.parallel().tween_property(self, "rotation", 0.0, duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+	if fade_out:
+		tween_burn.parallel().tween_property(self, "modulate:a", 0.0, duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 	tween_burn.tween_callback(Callable(self, "_finish_burn_away"))
 
 func _finish_burn_away() -> void:

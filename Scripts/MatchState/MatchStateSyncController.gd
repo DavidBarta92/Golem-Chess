@@ -134,6 +134,8 @@ func parse_last_move(last_move: Dictionary) -> Dictionary:
 		"show_arrow": bool(last_move.get("show_arrow", true)),
 		"captured_piece_color": int(last_move.get("captured_piece_color", 0)),
 		"captured_stamp_name": str(last_move.get("captured_stamp_name", "")),
+		"hidden_after_capture": bool(last_move.get("hidden_after_capture", false)),
+		"piece_stamp_name": str(last_move.get("piece_stamp_name", "")),
 	}
 
 func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
@@ -328,21 +330,35 @@ func collect_state_piece_move_animation(previous_snapshot: Dictionary, piece_obj
 	var from_pos: Vector2 = value_to_vector2(current_last_move.get("from", invalid_board_pos), invalid_board_pos)
 	var to_pos: Vector2 = value_to_vector2(current_last_move.get("to", invalid_board_pos), invalid_board_pos)
 	var visible_to_enemy: bool = bool(current_last_move.get("visible_to_enemy", true))
+	# The opponent's piece took one of ours and is out of sight now - either
+	# it was all along, so it was never in the snapshot to move from, or it
+	# went the moment it struck. The capture is shown all the same, once: the
+	# square it took is in the snapshot only on the sync that took it.
+	var hidden_after_capture: bool = bool(current_last_move.get("hidden_after_capture", false))
 	if !is_valid_position(from_pos) or !is_valid_position(to_pos) or from_pos == to_pos:
 		return {}
-	if !previous_snapshot.has(from_pos) or !piece_objects.has(to_pos):
+	if !piece_objects.has(to_pos):
+		return {}
+	if hidden_after_capture:
+		if !previous_snapshot.has(to_pos) or int(previous_snapshot[to_pos].get("color", 0)) != int(current_last_move.get("captured_piece_color", 0)):
+			return {}
+	elif !previous_snapshot.has(from_pos):
 		return {}
 
-	var previous_state: Dictionary = previous_snapshot[from_pos]
-	var previous_color: int = int(previous_state.get("color", 0))
+	var previous_state: Dictionary = previous_snapshot.get(from_pos, {})
+	var previous_color: int = int(previous_state.get("color", current_last_move.get("piece_color", 0)))
 	var current_piece: Piece = piece_objects[to_pos] as Piece
 	if current_piece == null or previous_color == 0 or current_piece.color != previous_color:
 		return {}
 
+	var start_texture: Texture2D = get_previous_state_texture(previous_state, current_piece.color)
+	if previous_state.is_empty():
+		start_texture = get_piece_texture_for_stamp_name(str(current_last_move.get("piece_stamp_name", "")), current_piece.color)
 	var move_animation := {
 		"from": from_pos,
 		"to": to_pos,
-		"start_texture": get_previous_state_texture(previous_state, current_piece.color),
+		"start_texture": start_texture,
+		"hide_after_move": hidden_after_capture and current_piece.hidden_from_viewer,
 		"visible_to_enemy": visible_to_enemy,
 		"piece_color": current_piece.color,
 		"old_duration": int(previous_state.get("turns_remaining", current_piece.turns_remaining)),
@@ -364,17 +380,21 @@ func get_hidden_captured_piece_texture(current_last_move: Dictionary) -> Texture
 	var captured_color: int = int(current_last_move.get("captured_piece_color", 0))
 	if captured_color == 0:
 		return null
+	return get_piece_texture_for_stamp_name(str(current_last_move.get("captured_stamp_name", "")), captured_color)
 
-	var captured_stamp_name: String = str(current_last_move.get("captured_stamp_name", ""))
-	if !captured_stamp_name.is_empty() and stamp_piece_texture_provider.is_valid():
-		var captured_stamp: Stamp = StampLibrary.get_stamp(captured_stamp_name)
-		if captured_stamp != null:
-			var stamp_texture: Texture2D = stamp_piece_texture_provider.call(captured_stamp, captured_color) as Texture2D
+## A piece the viewer was never shown, drawn from what the move says about it:
+## the figure its stamp gives it when the stamp is named, the plain piece when
+## it is not.
+func get_piece_texture_for_stamp_name(stamp_name: String, piece_color: int) -> Texture2D:
+	if !stamp_name.is_empty() and stamp_piece_texture_provider.is_valid():
+		var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
+		if stamp != null:
+			var stamp_texture: Texture2D = stamp_piece_texture_provider.call(stamp, piece_color) as Texture2D
 			if stamp_texture != null:
 				return stamp_texture
 
 	if default_piece_texture_provider.is_valid():
-		return default_piece_texture_provider.call(captured_color) as Texture2D
+		return default_piece_texture_provider.call(piece_color) as Texture2D
 	return null
 
 func get_hidden_stamp_counts_from_state(hidden_stamps: Array) -> Dictionary:
@@ -615,6 +635,11 @@ func append_hidden_capture_shatter_animation(
 		return
 	var current_piece: Piece = piece_objects.get(source_pos, null) as Piece
 	if current_piece == null or current_piece.color == captured_color:
+		return
+	# This is for one of ours taking a piece it could not see. A piece we
+	# cannot see standing on the square means the capture was the other way
+	# round, and it was shattered on the sync it happened.
+	if current_piece.hidden_from_viewer:
 		return
 
 	var respawn_pos: Vector2 = get_unused_respawn_target_for_color(respawn_targets_by_color, used_respawn_targets, captured_color)

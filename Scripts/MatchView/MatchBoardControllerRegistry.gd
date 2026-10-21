@@ -1124,6 +1124,7 @@ func sync_stamp_animation_controller() -> void:
 		"board_screen_position_provider": Callable(match_board, "get_board_position_screen_position"),
 		"stamp_draw_start_position_provider": Callable(match_board, "get_stamp_draw_start_position"),
 		"stamp_return_to_deck_target_position_provider": Callable(match_board, "get_stamp_return_to_deck_target_position"),
+		"stamp_codex_return_target_position_provider": Callable(match_board, "get_stamp_codex_return_target_position"),
 		"stamp_hand_source_position_provider": Callable(match_board, "get_stamp_hand_source_position"),
 		"deck_visual_provider": Callable(match_board, "get_deck_visual"),
 		"viewport_size_provider": Callable(match_board, "get_visible_viewport_size"),

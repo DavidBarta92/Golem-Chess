@@ -78,6 +78,7 @@ var _continue_text: String = ""
 var speech_background_texture: GradientTexture2D
 var speech_background_alpha: float = 0.0
 var speech_background_tween: Tween
+var _identity_alpha: float = 1.0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -89,7 +90,16 @@ func _ready() -> void:
 	text_panel.draw.connect(_draw_speech_background)
 	create_portrait_view()
 	reset_dialogue_line()
+	_reserve_button_row_height()
 	set_process(false)
+
+## Keeps the row under the words as tall as its button whether the button is
+## showing or not. It comes and goes within a line - Skip while the words type
+## out, gone once they are written if the line waits on the player - and a row
+## that folded away with it would shift everything above it, so the box would
+## jump the moment its line finished.
+func _reserve_button_row_height() -> void:
+	button_row.custom_minimum_size.y = continue_button.get_combined_minimum_size().y
 
 func create_portrait_view() -> void:
 	portrait_view = PORTRAIT_VIEW.instantiate() as PortraitView
@@ -130,10 +140,19 @@ func show_profile(speaker: String, portrait = null) -> void:
 # face arrives first and stays between lines, the words come and go. These let
 # that caller address the two halves without reaching into the scene tree.
 
-## The speaker's name and face.
+## The speaker's name and face. The face is faded as a finished picture, not
+## through the frame it sits in, which would fade each of its layers apart and
+## let the ones underneath show through (PortraitView.set_picture_alpha).
 func set_identity_alpha(alpha: float) -> void:
+	_identity_alpha = alpha
 	speaker_label.modulate.a = alpha
-	portrait_frame.modulate.a = alpha
+	portrait_initial_label.modulate.a = alpha
+	portrait_texture.modulate.a = alpha
+	if portrait_view != null:
+		portrait_view.set_picture_alpha(alpha)
+
+func get_identity_alpha() -> float:
+	return _identity_alpha
 
 ## The words and whatever sits under them.
 func set_speech_alpha(alpha: float) -> void:
@@ -259,10 +278,23 @@ func set_speaker_gap(gap: float) -> void:
 		dialogue_layout.remove_theme_constant_override("separation")
 		speaker_label.custom_minimum_size.y = _default_speaker_min_height
 		return
-	dialogue_layout.add_theme_constant_override("separation", int(gap))
-	# The label reserves a line box taller than its text, which is most of the
-	# gap; let it hug the name instead.
+	# The name's label reserves more height than the name fills - the theme's
+	# line box on top of the font's own ascent and descent - and that padding
+	# sits between the name and the words, where it reads as a gap nobody
+	# asked for. Measured and taken off, so a gap of zero really is zero and a
+	# gap of eight is eight.
+	dialogue_layout.add_theme_constant_override("separation", int(roundf(gap - _speaker_label_padding())))
 	speaker_label.custom_minimum_size.y = 0.0
+
+## How much taller the name's label is than the glyphs inside it.
+func _speaker_label_padding() -> float:
+	var font: Font = speaker_label.get_theme_font("font")
+	var font_size: int = speaker_label.get_theme_font_size("font_size")
+	if font == null or font_size <= 0:
+		return 0.0
+	speaker_label.custom_minimum_size.y = 0.0
+	var box_height: float = speaker_label.get_combined_minimum_size().y
+	return maxf(0.0, box_height - font.get_height(font_size))
 
 ## Hides the panel's own Continue/Skip row.
 func set_button_row_enabled(enabled: bool) -> void:
@@ -278,6 +310,14 @@ func set_dialogue_content_visible(show_content: bool) -> void:
 ## Toggles whether the panel takes clicks and offers a Continue button.
 func set_interactive(enabled: bool) -> void:
 	is_interactive = enabled
+	# A panel that gives up its button with a line on screen keeps the room
+	# for it until that line is gone, or the line would drop into the space.
+	# One that never offers it - the opponent talking during a match - lets the
+	# row shrink to whatever else is in it.
+	if enabled:
+		_reserve_button_row_height()
+	elif full_text.is_empty() or !text_panel.visible:
+		button_row.custom_minimum_size.y = 0.0
 	set_dialogue_content_visible(text_panel.visible)
 	if !enabled:
 		continue_button.visible = false

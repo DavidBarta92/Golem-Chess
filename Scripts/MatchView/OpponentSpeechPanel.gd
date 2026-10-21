@@ -234,8 +234,7 @@ func _wait(seconds: float, token: int) -> void:
 		return
 
 func _panel_identity_alpha() -> float:
-	var frame: Control = _panel.get_portrait_frame()
-	return frame.modulate.a if frame != null else 1.0
+	return _panel.get_identity_alpha()
 
 func _panel_speech_alpha() -> float:
 	var text_panel: Control = _panel.get_text_panel()

@@ -90,6 +90,12 @@ Continue,Continue,Folytatás
 Mentor,Mentor,Mentor
 Leave Game,Leave Game,Kilépés a játékból
 Do you really want to leave the game?,Do you really want to leave the game?,Biztosan ki szeretnél lépni a játékból?
+MATCH_MENU_LEAVE,Leave,Kilépés
+MATCH_MENU_RETRY,Try again,Megpróbálom újra
+MATCH_MENU_RETRY_TITLE,Start Over,Újrakezdés
+MATCH_MENU_RETRY_TEXT,Do you want to start this match over?,Szeretnéd elölről kezdeni ezt a meccset?
+MATCH_MENU_LEAVE_OR_RETRY_TITLE,Leave or Start Over,Kilépés vagy újrakezdés
+MATCH_MENU_LEAVE_OR_RETRY_TEXT,"Do you want to leave the game, or start this match over?","Ki szeretnél lépni a játékból, vagy elölről kezdenéd ezt a meccset?"
 Yes,Yes,Igen
 No,No,Nem
 RULES_INFO_TEXT,"Goal: affix a Seeker stamp to one of your pieces, then move that Seeker onto the opponent's base square.
@@ -203,9 +209,9 @@ The piece does not vanish completely - it only loses its stamp, and a fragment o
 Try it - capture a golem!","No, most egy érdekesebb rész! Amikor egy olyan mezőre lépsz, ahol az ellenfél bábuja van, akkor azt a bábut leütöd.
 Ilyenkor nem tűnik el a bábu teljesen – csak a bélyegét veszíti el, és visszakerül egy töredéke az alapvonalra. Két ilyen töredék tesz ki egy új gólemet. Tehát minden második leütött gólemnél létrejön egy új, az ellenfél alapvonalán.
 Próbáld ki, üss le egy gólemet!"
-TUTORIAL_STEP_ABILITY,"Some stamps also have an ability of their own, which wakes at a particular moment - when you stick it on, when you move with it, when it captures, when it is captured, or when it runs out. The stamp called The Golem, for instance, gains one more move whenever it captures. Other stamps do other things - you will get to know them as they come.
-Now your task is to move twice with The Golem stamp.","Egyes bélyegeknek külön képességük is van, ami egy adott pillanatban ébred fel – amikor felragasztod, amikor lépsz vele, amikor üt, amikor leütik, vagy amikor lejár. A The Golem nevű bélyeg például eggyel növelni tudja a lépéseinek számát, amennyiben üt. Más bélyegek mást tudnak – majd megismered őket, ahogy jönnek.
-Most az a feladat, hogy lépj kétszer is a The Golem bélyeggel."
+TUTORIAL_STEP_ABILITY,"Some stamps also have an ability of their own, which wakes at a particular moment - when you stick it on, when you move with it, when it captures, when it is captured, or when it runs out. The stamp called Berserk, for instance, gains one more move whenever it captures. Other stamps do other things - you will get to know them as they come.
+Now your task is to move twice with the Berserk stamp.","Egyes bélyegeknek külön képességük is van, ami egy adott pillanatban ébred fel – amikor felragasztod, amikor lépsz vele, amikor üt, amikor leütik, vagy amikor lejár. A Berserk nevű bélyeg például eggyel növelni tudja a lépéseinek számát, amennyiben üt. Más bélyegek mást tudnak – majd megismered őket, ahogy jönnek.
+Most az a feladat, hogy lépj kétszer is a Berserk bélyeggel."
 TUTORIAL_STEP_DANGER,"You have surely noticed by now that some stamps can only move in certain directions and only capture in others, while some can both move and capture the same way. The circles and stars inside the sigillum show which is which. It will become obvious after a while.
 But you always have to watch the board: where your opponent can move, and where they can capture. Keep off the dangerous squares if you do not want to lose your piece. Now think, and make your move!","Biztos észrevetted már, hogy egyes bélyegek bizonyos irányba csak lépni, bizonyos irányba pedig csak ütni tudnak, de vannak olyanok is, amik egy irányba tudnak ütni és lépni is. Ezt a körök és a csillagok jelzik a szigillumon belül. Ez egy idő után egyértelmű lesz.
 Viszont mindig figyelned kell a táblára, hogy az ellenfél hova tud lépni és hova tud ütni. Kerüld a veszélyes mezőket, ha nem akarod elveszíteni a bábudat. Most gondolkodj, és lépj!"
@@ -256,7 +262,7 @@ BOSS_01_CAPTURED_5,"Ah! True, that one wasn't in a good spot.","Áh! Valóban, a
 BOSS_01_CAPTURED_6,That hurt. I still had plans for that one. But you spotted it well - nicely done!,"Ez fájt. Azzal még tervem volt. De jól észrevetted, ügyes!"
 BOSS_01_CAPTURED_7,"I see your eye is getting used to it. You play quite well, I must say.","Látom, már ráállt a szemed. Egész jól játszol, azt kell, hogy mondjam."
 BOSS_01_CAPTURED_8,"You spot these situations well. I'm behind now, but I'm glad you understand the game.","Jól észreveszed ezeket a helyzeteket. Bár most hátrányban vagyok, de örülök, hogy érted a játékot."
-BOSS_01_LOSS_1,"That was a fine game! Congratulations, you were very good!","Szép parti volt! Gratulálok, nagyon jó voltál!"
+BOSS_01_LOSS_1,"That was a fine game! Congratulations, you were very good! Since you played so well, and since I can see how much you like looking through Grandpa's stamps, they're yours now, a present from me.","Szép parti volt! Gratulálok, nagyon jó voltál! Mivel ilyen ügyes voltál, és mert látom, hogy szereted nézegetni nagyapa bélyegeit, megkapod ezeket ajándékba tőlem."
 BOSS_01_WIN_1,"That was a good game, wasn't it? Don't worry, we can try again.","Jó parti volt, nem igaz? Ne aggódj, újrapróbálhatjuk."
 BOSS_01_WIN_2,"Don't be down, that was a good match. I hope you enjoyed it too.","Ne bánkódj, ez egy jó meccs volt. Remélem, te is jól érezted magad."
 BOSS_01_WIN_3,Don't look at whether you won or lost. What matters is whether you learned from the game.,"Ne azt nézd, hogy nyertél vagy vesztettél. A lényeg, hogy tanultál-e a játékból."
@@ -834,7 +840,6 @@ QUESTS_SCREEN_TITLE,Quests,Küldetések
 TRADE_SCREEN_TITLE,Trade,Csere
 PLACEHOLDER_SCREEN_NOTE,This screen is still being built.,Ez a képernyő még készül.
 REWARD_GRANDPA_DECK_NAME,Grandpa's codex,Nagypapa codexe
-REWARD_01_LINE_1,"These are Grandpa's stamps. From now on, they are yours.",Ezek Nagypapa bélyegei. Mostantól a tieid.
 REWARD_04_LINE_1,"Here, a few coins for the win.","Tessék, pár érme a győzelemért."
 REWARD_05_LINE_1,A new stamp for your collection.,Egy új bélyeg a gyűjteményedbe.
 REWARD_07_LINE_1,A new stamp for your collection.,Egy új bélyeg a gyűjteményedbe.
@@ -859,7 +864,7 @@ COMIC_3_1_ANNA_1,"Sorry, what? Oh, right... We played a few times. He even gave 
 COMIC_3_2_GABI_1,"Nice! If you've still got them, we could play a game ourselves. I more or less remember the rules.","De jó! Ha megvannak még, akkor játszhatnánk most mi is egy meccset. Nagyjából emlékszem én is a szabályokra."
 COMIC_3_3_ANNA_1,Now?,Most?
 COMIC_3_4_GABI_1,"Sure, we've still got the whole day to clean.","Persze, még itt az egész nap takarítani."
-COMIC_3_BYLINE,a game by David Barta,barta dávid játéka
+COMIC_3_BYLINE,A game by David Barta,Barta Dávid játéka
 Ok,Ok,Ok
 DONT_SHOW_AGAIN,Don't show again,Ne mutasd többet
 MOVE_ENDS_TURN_TITLE,A stamp is still waiting,Még van felragasztható bélyeged

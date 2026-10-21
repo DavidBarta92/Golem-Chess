@@ -135,6 +135,7 @@ deck_stamps = Array[ExtResource("1_xr5ox")]([ExtResource("9_stamp_01"), ExtResou
 room_variant = 1
 show_opponent_codex = false
 show_clock = false
+can_leave_match = false
 intro_lines = Array[String](["BOSS_01_INTRO_1", "BOSS_01_INTRO_2", "BOSS_01_INTRO_3", "BOSS_01_INTRO_4", "BOSS_01_INTRO_5"])
 victory_lines = Array[String](["BOSS_01_WIN_1", "BOSS_01_WIN_2", "BOSS_01_WIN_3", "BOSS_01_WIN_4", "BOSS_01_WIN_5"])
 defeat_lines = Array[String](["BOSS_01_LOSS_1"])

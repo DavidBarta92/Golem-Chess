@@ -11,6 +11,10 @@ var stamp_burn_sequence_gap: float = 0.08
 var return_to_deck_start_scale: float = 0.555
 var return_to_deck_end_scale: float = 0.324
 var return_to_deck_duration: float = 0.62
+## A stamp leaving a piece - a seeker that ran out or was taken - is quicker
+## about it than one handed back from the hand, and fades on the way, so it
+## reads as going home rather than as something to follow.
+var piece_stamp_return_duration: float = 0.4
 var stamp_side_reveal_scale: float = 0.82
 var stamp_side_reveal_z_index: int = 905
 var stamp_side_reveal_vertical_offset: float = -14.0
@@ -32,6 +36,7 @@ var is_valid_position_callback: Callable
 var board_screen_position_provider: Callable
 var stamp_draw_start_position_provider: Callable
 var stamp_return_to_deck_target_position_provider: Callable
+var stamp_codex_return_target_position_provider: Callable
 var stamp_hand_source_position_provider: Callable
 var deck_visual_provider: Callable
 var viewport_size_provider: Callable
@@ -69,6 +74,7 @@ func configure(config: Dictionary) -> void:
 	board_screen_position_provider = config.get("board_screen_position_provider", board_screen_position_provider)
 	stamp_draw_start_position_provider = config.get("stamp_draw_start_position_provider", stamp_draw_start_position_provider)
 	stamp_return_to_deck_target_position_provider = config.get("stamp_return_to_deck_target_position_provider", stamp_return_to_deck_target_position_provider)
+	stamp_codex_return_target_position_provider = config.get("stamp_codex_return_target_position_provider", stamp_codex_return_target_position_provider)
 	stamp_hand_source_position_provider = config.get("stamp_hand_source_position_provider", stamp_hand_source_position_provider)
 	deck_visual_provider = config.get("deck_visual_provider", deck_visual_provider)
 	viewport_size_provider = config.get("viewport_size_provider", viewport_size_provider)
@@ -116,7 +122,10 @@ func animate_recent_stamp_transfers(recent_stamp_transfers: Array, previous_whit
 			play_transfer_source_pulse(transfer)
 			queue_stamp_transfer_burn_animation(transfer)
 			continue
-		if target_zone == "deck" and str(transfer.get("source_zone", "")) == "piece":
+		# Off a piece and back to its owner: only a seeker does this, when it
+		# runs out or its piece is taken. With a codex the stamp goes back to
+		# its page rather than into a deck, but it is the same trip home.
+		if (target_zone == "deck" or target_zone == "codex") and str(transfer.get("source_zone", "")) == "piece":
 			queue_stamp_return_to_deck_animation(transfer)
 			continue
 		if target_zone != "hand":
@@ -357,14 +366,18 @@ func play_stamp_return_to_deck_animation(transfer: Dictionary) -> StampVisual:
 	stamp_visual.z_index = 980
 
 	var target_scale: Vector2 = Vector2.ONE * return_to_deck_end_scale
-	var target_position: Vector2 = get_stamp_return_to_deck_target_position(owner_color, return_to_deck_end_scale)
+	var from_piece: bool = str(transfer.get("source_zone", "")) == "piece"
+	var target_position: Vector2 = get_stamp_codex_return_target_position(owner_color, return_to_deck_end_scale) if from_piece else get_stamp_return_to_deck_target_position(owner_color, return_to_deck_end_scale)
 	var deck_visual: StampVisual = get_deck_visual(owner_color)
 	if deck_visual != null and is_instance_valid(deck_visual):
 		stamp_visual.burn_finished.connect(func(_finished_stamp):
 			if deck_visual != null and is_instance_valid(deck_visual):
 				deck_visual.play_draw_pulse()
 		)
-	stamp_visual.play_return_to_deck_and_free(target_position, target_scale, return_to_deck_duration)
+	if from_piece:
+		stamp_visual.play_return_to_deck_and_free(target_position, target_scale, piece_stamp_return_duration, true)
+	else:
+		stamp_visual.play_return_to_deck_and_free(target_position, target_scale, return_to_deck_duration)
 	return stamp_visual
 
 func _create_reveal_stamp_visual(stamp: Stamp) -> StampVisual:
@@ -614,6 +627,13 @@ func get_stamp_return_to_deck_target_position(owner_color: int, target_scale: fl
 		if value is Vector2:
 			return value
 	return get_stamp_draw_start_position(owner_color)
+
+func get_stamp_codex_return_target_position(owner_color: int, target_scale: float) -> Vector2:
+	if stamp_codex_return_target_position_provider.is_valid():
+		var value = stamp_codex_return_target_position_provider.call(owner_color, target_scale)
+		if value is Vector2:
+			return value
+	return get_stamp_return_to_deck_target_position(owner_color, target_scale)
 
 func get_stamp_hand_source_position(owner_color: int) -> Vector2:
 	if stamp_hand_source_position_provider.is_valid():

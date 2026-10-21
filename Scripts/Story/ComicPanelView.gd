@@ -134,6 +134,11 @@ const PLACEHOLDER_UNREVEALED_ALPHA: float = 0.18
 ## When on, this panel is revealed together with the one before it instead of
 ## waiting for its own click - for a beat that needs two boxes at once.
 @export var reveal_with_previous: bool = false
+## From this panel's beat onwards the page stops taking clicks, right through
+## to the end. For a closing run that is meant to be watched: a click would
+## otherwise snap the ink to its finished state and skip the very flourish the
+## run exists for.
+@export var locks_input: bool = false
 ## Reports the panel finished the moment the ink lands, rather than waiting for
 ## the colour to catch up underneath it. For a beat where the next thing is
 ## meant to happen *while* the colour is still arriving - a title whose flash

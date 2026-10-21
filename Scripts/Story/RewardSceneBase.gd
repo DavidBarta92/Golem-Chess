@@ -63,6 +63,9 @@ var _granted_now: bool = false
 var _presenter: RewardPresenter
 var _dialogue_done: bool = false
 var _presentation_done: bool = true
+## The hand-drawn frame around the speaker's face, the same one a match puts
+## round the opponent's. Null when the frame drawing is missing.
+var _portrait_frame_line: PortraitFrameLine
 
 func _ready() -> void:
 	if reward_image_rect != null:
@@ -77,6 +80,8 @@ func _ready() -> void:
 	_build_line_queue()
 	if dialogue_panel != null and !dialogue_panel.continue_requested.is_connected(_on_continue_requested):
 		dialogue_panel.continue_requested.connect(_on_continue_requested)
+	if dialogue_panel != null:
+		_portrait_frame_line = PortraitFrameLine.attach(dialogue_panel)
 	_show_next_line()
 
 ## Hook for concrete reward scenes: build the right-hand visuals here.
@@ -142,6 +147,11 @@ func _on_continue_requested() -> void:
 
 func _show_next_line() -> void:
 	_line_index += 1
+	# A reward with nobody to speak for it - one whose only words are the
+	# beaten boss's, seen again without the fight before it - shows no box
+	# at all rather than an empty one.
+	if dialogue_panel != null and _queued_lines.is_empty():
+		dialogue_panel.visible = false
 	if dialogue_panel == null or _line_index >= _queued_lines.size():
 		_dialogue_done = true
 		if !_presentation_done and dialogue_panel != null:
@@ -157,6 +167,9 @@ func _show_next_line() -> void:
 		str(line.get("text", "")),
 		line.get("portrait", null)
 	)
+	# The frame draws itself in round the first face and stays for the rest.
+	if _line_index == 0 and _portrait_frame_line != null:
+		_portrait_frame_line.draw()
 	MusicManager.apply_cue(line.get("music_cue") as MusicCue)
 
 ## The boss line comes in already localized (the boss decides whether its text

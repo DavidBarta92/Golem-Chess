@@ -176,6 +176,28 @@ func should_show_match_clock() -> bool:
 	var boss: BossDefinition = get_active_boss()
 	return boss == null or boss.show_clock
 
+## Whether the match's own menu may take the player out of the match being
+## played. Only a story boss can forbid it; anything else - a warm-up, a match
+## with no story behind it, multiplayer - can always be left.
+func can_leave_active_match() -> bool:
+	var boss: BossDefinition = get_active_boss()
+	return boss == null or boss.can_leave_match
+
+## Whether the match being played can be started over from its menu: only a
+## boss fight, which is set up from its story node and so can be set up again.
+func can_restart_active_match() -> bool:
+	return get_active_boss() != null
+
+## Starts the boss fight being played over from the beginning, set up from its
+## node exactly as it was the first time.
+func restart_active_match() -> void:
+	var boss_node: BossGameStoryNode = get_active_boss_node()
+	if boss_node == null:
+		return
+	clear_active_match()
+	story_node_started.emit(boss_node.id)
+	_start_boss_node(boss_node)
+
 func clear_active_match() -> void:
 	_active_match_node_id = ""
 	GameConfig.clear_ai_opponent_override()

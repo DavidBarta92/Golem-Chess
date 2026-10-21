@@ -16,13 +16,33 @@ const MUSIC_GAIN_DB: float = 6.0
 ## AudioStreamSynchronized holds at most this many streams.
 const MAX_STEMS: int = 32
 ## Stems whose loop point can be heard - the end of the file does not run
-## cleanly into its start. Rather than loop straight through, they fade out
-## over the last this-many seconds of the loop and back in over as many once
-## it has started again. A plain dip, not a crossfade: there is only one copy
-## of the stem playing.
-const LOOP_EDGE_FADE_SECONDS: Dictionary = {
+## cleanly into its start - and how many seconds either side of that point to
+## do something about it.
+##
+## These used to be faded down and back up across the seam. That was worse
+## than the seam: a dip is a hole, and the ear finds a hole exactly as easily
+## as it finds a join, so the loop was still obvious - only now it breathed.
+## The fade is gone; what is left is the reverb below, which fills the moment
+## instead of emptying it.
+const LOOP_SEAM_SECONDS: Dictionary = {
 	"chords_dreamy": 3.0,
 }
+## A reverb that opens only around the loop point. The bars before the seam
+## leave a tail that is still ringing when the stem starts again, so the
+## restart has something to arrive under rather than arriving in the clear.
+##
+## `dry` stays at 1, so away from the seam the effect is literally inaudible:
+## the wet send is at zero and nothing else changes. For the few seconds it is
+## open it washes every stem, not only the one looping - the stems share one
+## player and so one bus, and there is no way to send a single stem.
+##
+## This is a mask, not a cure. A stem whose last bar ran into its first would
+## need none of it.
+const LOOP_REVERB_WET: float = 0.5
+const LOOP_REVERB_ROOM_SIZE: float = 0.85
+const LOOP_REVERB_DAMPING: float = 0.4
+## Below this the send is switched off outright rather than left at a trickle.
+const LOOP_REVERB_EPSILON: float = 0.01
 
 ## One stem's level, as an object so a tween can drive it. A property tween
 ## reads its starting value when it starts rather than when it is built, which
@@ -31,31 +51,30 @@ class Stem extends RefCounted:
 	var stream: AudioStreamSynchronized
 	var index: int
 	var tween: Tween
-	## Seconds; only used by a stem listed in LOOP_EDGE_FADE_SECONDS.
+	## Seconds; only used by a stem listed in LOOP_SEAM_SECONDS.
 	var length: float = 0.0
-	var edge_fade_seconds: float = 0.0
-	## 0 is silent, 1 is the stem as rendered. What the cues drive.
+	var seam_seconds: float = 0.0
+	## 0 is silent, 1 is the stem as rendered. What the cues drive, and the
+	## only thing that touches a stem's level - nothing dips it behind their
+	## backs any more.
 	var level: float = 0.0:
 		set(value):
 			level = clampf(value, 0.0, 1.0)
-			_apply()
-	## The dip around the loop point, on top of level. 1 everywhere else.
-	var edge_gain: float = 1.0:
-		set(value):
-			edge_gain = clampf(value, 0.0, 1.0)
 			_apply()
 
 	func _apply() -> void:
 		# Squared, so a fade sounds even all the way through instead of
 		# rushing up at the start and dropping off a cliff at the end.
-		var gain: float = level * edge_gain
-		var volume_db: float = linear_to_db(gain * gain) if gain > 0.0 else SILENT_VOLUME_DB
+		var volume_db: float = linear_to_db(level * level) if level > 0.0 else SILENT_VOLUME_DB
 		stream.set_sync_stream_volume(index, maxf(volume_db, SILENT_VOLUME_DB))
 
 var _player: AudioStreamPlayer
 var _synchronized_stream: AudioStreamSynchronized
 var _stems: Dictionary = {}
-var _edge_faded_stems: Array[Stem] = []
+var _seam_stems: Array[Stem] = []
+var _loop_reverb: AudioEffectReverb
+var _loop_reverb_index: int = -1
+var _loop_reverb_wet: float = -1.0
 var _warned_stem_names: Dictionary = {}
 var _mute_tween: Tween
 var _is_muted: bool = false
@@ -79,11 +98,11 @@ func _ready() -> void:
 		stem.level = 0.0
 		var stem_name: String = MusicCue.stem_name_of(stem_paths[i])
 		_stems[stem_name] = stem
-		if LOOP_EDGE_FADE_SECONDS.has(stem_name) and stream.get_length() > 0.0:
+		if LOOP_SEAM_SECONDS.has(stem_name) and stream.get_length() > 0.0:
 			stem.length = stream.get_length()
-			stem.edge_fade_seconds = float(LOOP_EDGE_FADE_SECONDS[stem_name])
-			_edge_faded_stems.append(stem)
-	set_process(!_edge_faded_stems.is_empty())
+			stem.seam_seconds = float(LOOP_SEAM_SECONDS[stem_name])
+			_seam_stems.append(stem)
+	set_process(!_seam_stems.is_empty())
 
 	_player = AudioStreamPlayer.new()
 	_player.bus = BUS_NAME
@@ -96,18 +115,53 @@ func _ready() -> void:
 		_player.finished.connect(Callable(_player, "play"))
 		_player.play()
 
-## Follows the loop point for the stems that dip around it. The position comes
-## from the player rather than from a clock of our own, so it stays on the
-## audio however long the game runs; wrapped by the stem's length in case the
-## player reports the time since play() rather than within the loop.
+## Follows the loop points, so the reverb knows when one is coming. The
+## position comes from the player rather than from a clock of our own, so it
+## stays on the audio however long the game runs; wrapped by the stem's length
+## in case the player reports the time since play() rather than within the
+## loop. Nothing here changes any stem's level.
+
 func _process(_delta: float) -> void:
 	if _player == null or !_player.playing:
 		return
 	var position: float = _player.get_playback_position()
-	for stem in _edge_faded_stems:
+	# 1 well clear of any loop point, 0 right on one.
+	var clearance: float = 1.0
+	for stem in _seam_stems:
 		var within_loop: float = fposmod(position, stem.length)
 		var to_edge: float = minf(within_loop, stem.length - within_loop)
-		stem.edge_gain = to_edge / stem.edge_fade_seconds
+		clearance = minf(clearance, clampf(to_edge / stem.seam_seconds, 0.0, 1.0))
+	_set_loop_reverb(1.0 - clearance)
+
+## Opens the reverb send as a loop point comes up and closes it again after.
+## The effect is built on first use, so a game with no edge-faded stem never
+## pays for it.
+func _set_loop_reverb(amount: float) -> void:
+	var wet: float = clampf(amount, 0.0, 1.0) * LOOP_REVERB_WET
+	if is_equal_approx(wet, _loop_reverb_wet):
+		return
+	_loop_reverb_wet = wet
+
+	var bus_index: int = AudioServer.get_bus_index(BUS_NAME)
+	if bus_index < 0:
+		return
+	if _loop_reverb == null:
+		if wet < LOOP_REVERB_EPSILON:
+			return
+		_loop_reverb = AudioEffectReverb.new()
+		_loop_reverb.room_size = LOOP_REVERB_ROOM_SIZE
+		_loop_reverb.damping = LOOP_REVERB_DAMPING
+		# The dry path is untouched, so the send adds to the bed rather than
+		# replacing any of it.
+		_loop_reverb.dry = 1.0
+		_loop_reverb.wet = 0.0
+		AudioServer.add_bus_effect(bus_index, _loop_reverb)
+		# Remembered rather than looked up again: the slot is only the last one
+		# until something else is added to the bus.
+		_loop_reverb_index = AudioServer.get_bus_effect_count(bus_index) - 1
+	_loop_reverb.wet = wet
+	if _loop_reverb_index >= 0:
+		AudioServer.set_bus_effect_enabled(bus_index, _loop_reverb_index, wet >= LOOP_REVERB_EPSILON)
 
 ## Plays a cue: its stem fades and its ambience change. A fade replaces
 ## whatever that stem was already doing; stems the cue does not name carry on.

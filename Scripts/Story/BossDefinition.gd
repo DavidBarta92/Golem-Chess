@@ -60,6 +60,9 @@ class_name BossDefinition
 ## game: it is not shown, and it does not run either, so there is no time to
 ## lose on.
 @export var show_clock: bool = true
+## Off for an early opponent the player cannot walk away from mid-match: the
+## match's menu (Esc) offers to start the fight over, but not to leave it.
+@export var can_leave_match: bool = true
 
 @export_group("Dialogue")
 ## On: every line below is a translation key looked up in the language files

@@ -102,6 +102,26 @@ func get_stamp_return_to_deck_target_position(owner_color: int, target_scale: fl
 
 	return get_stamp_draw_start_position(owner_color)
 
+## Where a stamp coming off a piece is headed: the codex of whoever owns it -
+## this player's at the foot of the screen, the opponent's across the table.
+## Each at its resting place rather than wherever a page turn or the turn's
+## sink has it right now, so the stamp makes for where the book belongs. An
+## opponent with no codex on the table sends it off the far edge instead.
+func get_stamp_codex_return_target_position(owner_color: int, target_scale: float) -> Vector2:
+	var target_size: Vector2 = stamp_ui_size * target_scale
+	if owner_color == match_board.get_local_view_color():
+		var codex = match_board.codex_visual
+		if codex != null and is_instance_valid(codex) and codex.is_visible_in_tree():
+			return Vector2(codex.rest_center_x, codex.rest_visible_center_y) - target_size * 0.5
+		return get_stamp_return_to_deck_target_position(owner_color, target_scale)
+
+	var opponent_codex := match_board.opponent_codex_visual as Node2D
+	if opponent_codex != null and is_instance_valid(opponent_codex) and opponent_codex.is_visible_in_tree():
+		var slot := opponent_codex.get_parent() as CanvasItem
+		var rest: Vector2 = slot.get_global_transform_with_canvas() * opponent_codex.rest_position if slot != null else opponent_codex.rest_position
+		return rest - target_size * 0.5
+	return Vector2(match_board.get_visible_viewport_size().x * 0.5, -target_size.y)
+
 func update_stamp_presentation() -> void:
 	var local_color: int = match_board.get_local_view_color()
 	match_board.get_stamp_hud_controller().configure_hand_container(match_board.white_pieces, local_color != 1)

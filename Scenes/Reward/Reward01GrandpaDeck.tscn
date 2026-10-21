@@ -9,8 +9,10 @@
 script = ExtResource("2_grandpa_deck")
 boss = ExtResource("3_boss_01")
 reward_id = "reward_01_grandpa_deck"
-speaker_name = "Mentor"
-dialogue_lines = Array[String](["REWARD_01_LINE_1"])
+
+[node name="DialogueRoot" parent="DialoguePanel" index="0"]
+offset_top = 92.0
+offset_bottom = 388.0
 
 [node name="Presenter" type="Control" parent="RightColumn"]
 layout_mode = 1

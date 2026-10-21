@@ -173,17 +173,24 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 				SFXManager.play(capturing_cast)
 			SFXManager.play("piece_captured")
 
+	var move_start_texture: Texture2D = state_piece_move_animation.get("start_texture", null) as Texture2D
+	var hide_after_move: bool = bool(state_piece_move_animation.get("hide_after_move", false))
 	await play_piece_move_animation(
 		move_from_pos,
 		move_to_pos,
-		state_piece_move_animation.get("start_texture", null) as Texture2D,
+		move_start_texture,
 		bool(state_piece_move_animation.get("visible_to_enemy", true)),
-		capture_impact_callback
+		capture_impact_callback,
+		hide_after_move
 	)
 	if is_instance_valid(capture_placeholder):
 		capture_placeholder.queue_free()
 	if move_piece_color != 0:
 		match_board.piece_moved.emit(move_from_pos, move_to_pos, move_piece_color)
+	# Taken first, gone from sight after: the piece that struck stays in view
+	# where it landed just long enough to go out of it.
+	if hide_after_move:
+		await play_hidden_piece_vanish(move_to_pos, move_start_texture)
 
 	# A stamp that expired as part of this move (turns_remaining hit 0) gets
 	# its own expire animation elsewhere instead -- only a genuine decrement
@@ -206,25 +213,31 @@ func should_play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, visibl
 		return false
 	return from_pos != to_pos
 
+## `hidden_at_end` is for a piece the viewer cannot see once it lands: its
+## square's holder has nothing to draw, so the move is drawn with
+## `start_texture` and the holder is left empty again when it is over.
 func play_piece_move_animation(
 	from_pos: Vector2,
 	to_pos: Vector2,
 	start_texture: Texture2D = null,
 	visible_to_enemy: bool = true,
-	capture_impact_callback: Callable = Callable()
+	capture_impact_callback: Callable = Callable(),
+	hidden_at_end: bool = false
 ) -> void:
 	if !should_play_piece_move_animation(from_pos, to_pos, visible_to_enemy):
 		return
 
 	var holder: Sprite2D = match_board.get_piece_holder_at(to_pos)
-	if holder == null or !is_instance_valid(holder) or holder.texture == null:
+	if holder == null or !is_instance_valid(holder):
+		return
+	if holder.texture == null and !(hidden_at_end and start_texture != null):
 		return
 
 	match_board.begin_visual_process(match_board.VISUAL_PROCESS_PIECE_MOVE)
 	var end_texture: Texture2D = holder.texture
 	var display_texture: Texture2D = start_texture if start_texture != null else end_texture
 	var start_transform: Dictionary = match_board.get_piece_visuals().get_visual_transform_for_texture(display_texture, from_pos)
-	var end_transform: Dictionary = match_board.get_piece_visuals().get_visual_transform_for_texture(end_texture, to_pos)
+	var end_transform: Dictionary = match_board.get_piece_visuals().get_visual_transform_for_texture(end_texture if end_texture != null else display_texture, to_pos)
 	var start_scale: Vector2 = start_transform.get("scale", holder.scale)
 	var end_scale: Vector2 = end_transform.get("scale", holder.scale)
 	var start_offset: Vector2 = start_transform.get("offset", holder.offset)
@@ -265,6 +278,18 @@ func create_piece_move_capture_placeholder(board_pos: Vector2, texture_value: Te
 		return null
 	placeholder.z_index = match_board.pieces_node.z_index + match_board.get_piece_visuals().get_depth_z_index(board_pos)
 	return placeholder
+
+## A piece the viewer cannot see, going out of sight where it stands: the
+## same shimmer and fade as one hidden by a fresh stamp, played on a stand-in
+## because the square's own holder has nothing to draw.
+func play_hidden_piece_vanish(piece_position: Vector2, texture_value: Texture2D) -> void:
+	if match_board == null or match_board.should_skip_visual_animations() or !match_board.is_inside_tree():
+		return
+	var stand_in: Sprite2D = create_hidden_invisibility_animation_holder(piece_position, texture_value)
+	if stand_in == null:
+		return
+	SFXManager.play("invisibility_effect")
+	await match_board.get_piece_effect_animator().play_invisibility_exit(stand_in)
 
 func play_capture_invisibility_reveal(capture_placeholder: Sprite2D) -> void:
 	if match_board != null:

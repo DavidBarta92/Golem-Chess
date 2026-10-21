@@ -324,24 +324,26 @@ func build_steps() -> void:
 				"allow_auto_end_turn": false,
 			},
 		},
-		# The Golem: its capture gives it a move back. Every golem of the
-		# player's is bare and only The Golem may go on; either golem out in
+		# Berserk: a single move in it, and a capture gives it one more - so
+		# moving with it twice takes a capture first; a first move that takes
+		# nothing uses the stamp up and the step starts over. Every golem of
+		# the player's is bare and only Berserk may go on; either golem out in
 		# front has two captures in a row ahead of it, and Grandpa keeps out
 		# of the way with his Lance on the far side.
 		{
 			"speaker": GRANDPA_SPEAKER,
 			"text": "TUTORIAL_STEP_ABILITY",
 			"completion": "stamp_moves",
-			"track_stamp": "The Golem",
+			"track_stamp": "Berserk",
 			"required_count": 2,
-			"setup": golem_setup(),
+			"setup": berserk_setup(),
 			"opponent_turns": [
 				{"move": {"from": Vector2(6, 6), "to": Vector2(5, 6)}},
 				{"move": {"from": Vector2(5, 6), "to": Vector2(4, 6)}},
 			],
 			"constraints": {
 				"allowed_actions": ["affix_stamp", "end_turn", "select_piece", "move_piece"],
-				"allowed_affix_stamp_names": ["The Golem"],
+				"allowed_affix_stamp_names": ["Berserk"],
 				"allow_auto_end_turn": false,
 			},
 		},
@@ -424,30 +426,31 @@ func capture_setup() -> Dictionary:
 		"turn_color": PLAYER_COLOR,
 	}
 
-## The golems on (2, 2) and (2, 4) are each one step from a capture, and the
-## captured piece's square is one step from another: (3, 2) then (4, 2), or
-## (3, 4) then (4, 4). The Golem's page of Grandpa's codex is the open one.
+## Berserk captures two ahead and one diagonally forward, the way it moves.
+## From (2, 2) it can take (4, 2) or (3, 3), from (2, 4) (4, 4) or (3, 3),
+## and every one of those squares has another capture from it: (5, 3), (3, 3),
+## (4, 2) or (4, 4). Berserk's page of Grandpa's codex is the open one.
 ## Grandpa's Lance on (6, 6) is the piece he moves, well away from it all.
-func golem_setup() -> Dictionary:
-	var golem_page: Array[String] = ["The Golem", "Lance", "Berserk"]
+func berserk_setup() -> Dictionary:
+	var berserk_page: Array[String] = ["Silver General", "War Drummer", "Berserk"]
 	var opponent_page: Array[String] = grandpa_first_page()
 	return {
 		"board": [
 			[1, 1, 0, 0, 0, 1, 1],
 			[0, 0, 0, 0, 0, 0, 0],
 			[0, 0, 1, 0, 1, 0, 0],
+			[0, 0, 0, -1, 0, 0, 0],
 			[0, 0, -1, 0, -1, 0, 0],
-			[0, 0, -1, 0, -1, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0],
+			[0, 0, 0, -1, 0, 0, 0],
 			[-1, 0, 0, 0, 0, 0, -1],
 		],
 		"affixed_stamps": [
-			{"pos": Vector2(3, 2), "stamp_name": "Knight", "turns_remaining": 3, "exhausted": false},
+			{"pos": Vector2(3, 3), "stamp_name": "Knight", "turns_remaining": 2, "exhausted": false},
 			{"pos": Vector2(4, 4), "stamp_name": "Archer", "turns_remaining": 1, "exhausted": false},
 			{"pos": Vector2(6, 6), "stamp_name": "Lance", "turns_remaining": 2, "exhausted": false},
 		],
-		"white_hand": golem_page,
-		"white_deck": grandpa_deck_without(golem_page),
+		"white_hand": berserk_page,
+		"white_deck": grandpa_deck_without(berserk_page),
 		"black_hand": opponent_page,
 		"black_deck": grandpa_deck_without(opponent_page),
 		"turn_color": PLAYER_COLOR,

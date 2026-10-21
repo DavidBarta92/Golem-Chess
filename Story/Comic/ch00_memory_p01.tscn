@@ -209,7 +209,7 @@ reveal_mask = ExtResource("17_mask")
 fill_texture = ExtResource("17_color")
 hide_when_revealed = NodePath("../Panel10")
 dialogue_lines = Array[ExtResource("3_dialogue_line")]([SubResource("Resource_line_7_1")])
-dialogue_rect = Rect2(448, 232, 416, 175)
+dialogue_rect = Rect2(422, 244, 470, 130)
 
 [node name="Panel8" parent="Panels" index="7" instance=ExtResource("2_comic_panel")]
 layout_mode = 1
@@ -276,5 +276,6 @@ grow_horizontal = 2
 grow_vertical = 2
 reveal_mask = ExtResource("22_mask")
 fill_texture = ExtResource("22_color")
+extra_sfx_name = "attach_stamp"
 
 [editable path="Panels"]

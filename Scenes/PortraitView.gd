@@ -259,6 +259,15 @@ func set_expression(expression: String) -> void:
 	applied_config.expression = PortraitConfig.sanitize_expression(expression)
 	apply_expression()
 
+## How much of the face shows, as the one picture its layers make. Set on the
+## group they are drawn into rather than on anything above it: a fade from
+## above reaches every layer on its own, and each one going see-through lets
+## the layers it covers show through it - the chin through a beard.
+func set_picture_alpha(alpha: float) -> void:
+	self_modulate.a = alpha
+	if mask_group != null:
+		mask_group.self_modulate.a = alpha
+
 func set_turn_focus(enabled: bool) -> void:
 	if turn_focus_enabled == enabled:
 		return

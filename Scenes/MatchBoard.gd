@@ -307,6 +307,9 @@ const INVALID_BOARD_POS = Vector2(-1, -1)
 const WHITE_BASE_FIELD: Vector2 = BoardConfig.WHITE_BASE_FIELD
 const BLACK_BASE_FIELD: Vector2 = BoardConfig.BLACK_BASE_FIELD
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
+# The Esc menu's own buttons, beside the dialog's OK (which leaves the match).
+const QUIT_DIALOG_RETRY_ACTION: StringName = &"retry"
+const QUIT_DIALOG_CANCEL_ACTION: StringName = &"cancel"
 const MATCH_END_FEEDBACK_SCENE = "res://Scenes/MatchEndFeedback.tscn"
 const STAMP_BURN_SEQUENCE_GAP = 0.08
 const TUTORIAL_ACTION_SELECT_PIECE = "select_piece"
@@ -473,7 +476,8 @@ var hover_duration_label: Label
 var hover_description_panel: Control
 var hover_description_label: RichTextLabel
 var has_received_server_state: bool = false
-var quit_confirmation_dialog: ConfirmationDialog
+var quit_confirmation_dialog: AcceptDialog
+var quit_retry_button: Button
 var white_deck_count_override: int = -1
 var black_deck_count_override: int = -1
 var hidden_stamp_counts: Dictionary = {}
@@ -858,15 +862,19 @@ func create_hover_piece_ui():
 	hover_description_panel = hover_controller.hover_description_panel
 	hover_description_label = hover_controller.hover_description_label
 
+## The menu Esc brings up over a match: leave it, start it over, or go back to
+## it, in that order. The dialog's own OK is the leave button and the other two
+## are lined up after it. Which of the first two a match offers is settled each
+## time the menu opens (show_quit_confirmation).
 func create_quit_confirmation_ui():
-	quit_confirmation_dialog = ConfirmationDialog.new()
+	quit_confirmation_dialog = AcceptDialog.new()
 	canvas_layer.add_child(quit_confirmation_dialog)
-	quit_confirmation_dialog.title = tr("Leave Game")
-	quit_confirmation_dialog.dialog_text = tr("Do you really want to leave the game?")
-	quit_confirmation_dialog.ok_button_text = tr("Yes")
-	quit_confirmation_dialog.cancel_button_text = tr("No")
+	quit_confirmation_dialog.ok_button_text = tr("MATCH_MENU_LEAVE")
+	quit_retry_button = quit_confirmation_dialog.add_button(tr("MATCH_MENU_RETRY"), true, QUIT_DIALOG_RETRY_ACTION)
+	quit_confirmation_dialog.add_button(tr("Cancel"), true, QUIT_DIALOG_CANCEL_ACTION)
 	quit_confirmation_dialog.exclusive = true
 	quit_confirmation_dialog.confirmed.connect(_on_quit_confirmed)
+	quit_confirmation_dialog.custom_action.connect(_on_quit_dialog_action)
 
 func get_stamp_home_position(index: int) -> Vector2:
 	return get_stamp_hand_state_controller().get_stamp_home_position(index)
@@ -894,6 +902,9 @@ func get_stamp_draw_start_position(owner_color: int) -> Vector2:
 
 func get_stamp_return_to_deck_target_position(owner_color: int, target_scale: float) -> Vector2:
 	return get_stamp_hand_state_controller().get_stamp_return_to_deck_target_position(owner_color, target_scale)
+
+func get_stamp_codex_return_target_position(owner_color: int, target_scale: float) -> Vector2:
+	return get_stamp_hand_state_controller().get_stamp_codex_return_target_position(owner_color, target_scale)
 
 func update_stamp_presentation():
 	get_stamp_hand_state_controller().update_stamp_presentation()
@@ -1114,9 +1125,25 @@ func clear_piece_selection() -> void:
 func _input(event):
 	get_match_input_controller().handle_input(event)
 
+## A boss fight can be started over and, from the third boss on, left; any
+## other match - a warm-up, one with no story behind it, multiplayer - can only
+## be left.
 func show_quit_confirmation():
 	if quit_confirmation_dialog == null:
 		return
+	var can_leave: bool = StoryManager.can_leave_active_match()
+	var can_restart: bool = StoryManager.can_restart_active_match()
+	quit_confirmation_dialog.get_ok_button().visible = can_leave
+	quit_retry_button.visible = can_restart
+	if can_leave and can_restart:
+		quit_confirmation_dialog.title = tr("MATCH_MENU_LEAVE_OR_RETRY_TITLE")
+		quit_confirmation_dialog.dialog_text = tr("MATCH_MENU_LEAVE_OR_RETRY_TEXT")
+	elif can_restart:
+		quit_confirmation_dialog.title = tr("MATCH_MENU_RETRY_TITLE")
+		quit_confirmation_dialog.dialog_text = tr("MATCH_MENU_RETRY_TEXT")
+	else:
+		quit_confirmation_dialog.title = tr("Leave Game")
+		quit_confirmation_dialog.dialog_text = tr("Do you really want to leave the game?")
 	quit_confirmation_dialog.popup_centered(Vector2i(360, 140))
 
 func _on_quit_confirmed():
@@ -1125,6 +1152,18 @@ func _on_quit_confirmed():
 		get_parent().close_game_connection()
 	if get_tree():
 		SceneTransition.change_scene(MAIN_MENU_SCENE)
+
+func _on_quit_dialog_action(action: StringName) -> void:
+	quit_confirmation_dialog.hide()
+	if action == QUIT_DIALOG_RETRY_ACTION:
+		_on_retry_confirmed()
+
+## The fight starts over: the story sets it up again from its node, so it
+## comes in exactly as it did the first time.
+func _on_retry_confirmed() -> void:
+	if get_parent().has_method("close_game_connection"):
+		get_parent().close_game_connection()
+	StoryManager.restart_active_match()
 
 func send_move_action(from_pos: Vector2, to_pos: Vector2):
 	get_match_input_controller().send_move_action(from_pos, to_pos)

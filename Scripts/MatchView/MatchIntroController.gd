@@ -49,6 +49,7 @@ func _ready() -> void:
 	if _match_board != null:
 		_grid_overlay = _match_board.get_node_or_null("BoardGridOverlay") as BoardGridOverlay
 	_dress_the_room()
+	_hold_pieces_back()
 	if !auto_begin:
 		return
 	# The board builds its tiles and pieces over the first few frames.
@@ -124,6 +125,7 @@ func get_piece_nodes() -> Array[CanvasItem]:
 func reveal_piece(piece: CanvasItem, seconds: float, delay: float = 0.0) -> void:
 	_fade_in([piece], seconds, delay)
 	_raise_piece_shadow(piece, seconds, delay)
+	_let_pieces_through()
 
 func reveal_pieces(pieces: Array[CanvasItem]) -> void:
 	_fade_in_staggered(pieces, piece_fade_seconds, piece_stagger_seconds)
@@ -223,9 +225,7 @@ func _get_board_nodes() -> Array[CanvasItem]:
 ## half faded.
 func _get_piece_nodes() -> Array[CanvasItem]:
 	var nodes: Array[CanvasItem] = []
-	if _match_board == null:
-		return nodes
-	var pieces := _match_board.get_node_or_null("Pieces")
+	var pieces: CanvasItem = _get_pieces_layer()
 	if pieces == null:
 		return nodes
 	for child in pieces.get_children():
@@ -233,6 +233,30 @@ func _get_piece_nodes() -> Array[CanvasItem]:
 		if holder != null and holder.texture != null:
 			nodes.append(holder)
 	return nodes
+
+## The node every piece holder sits under.
+func _get_pieces_layer() -> CanvasItem:
+	if _match_board == null:
+		return null
+	return _match_board.get_node_or_null("Pieces") as CanvasItem
+
+## The pieces kept out of sight as a whole until the first of them is brought
+## in, from the very first frame rather than from begin(). Fading each piece is
+## not enough on its own: the board lays its pieces out again more than once
+## while the match is being set up, and each time it throws the old holders
+## away and makes new ones at full strength - which would stand on the table
+## through the whole drawing of the room, then blink out as the wave reset them.
+func _hold_pieces_back() -> void:
+	var pieces: CanvasItem = _get_pieces_layer()
+	if pieces != null:
+		pieces.visible = false
+
+## Every piece being brought in has been faded down by now, and an empty
+## holder has nothing to show, so the layer can be drawn again.
+func _let_pieces_through() -> void:
+	var pieces: CanvasItem = _get_pieces_layer()
+	if pieces != null:
+		pieces.visible = true
 
 ## The interface the match builds at runtime - codex, stamp hand, portraits,
 ## deck counters - all of which land in the match's own CanvasLayer.
@@ -267,6 +291,7 @@ func _fade_in_staggered(nodes: Array[CanvasItem], seconds: float, stagger: float
 		var delay: float = index * stagger
 		_fade_in([nodes[index]], seconds, delay)
 		_raise_piece_shadow(nodes[index], seconds, delay)
+	_let_pieces_through()
 
 # --- Piece shadows ------------------------------------------------------------
 #
