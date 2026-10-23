@@ -202,6 +202,10 @@ func clear_active_match() -> void:
 	_active_match_node_id = ""
 	GameConfig.clear_ai_opponent_override()
 	GameConfig.clear_player_deck_override()
+	# A boss fight that ends with a result has already been rated by then
+	# (GameResultController); one still pending here was started over, left,
+	# or cut short by the game closing, and is rated as a loss.
+	PlayerProgressStore.resolve_abandoned_rated_match()
 
 ## Called by the match when a story fight ends. Returns false when this was
 ## not a story match at all.
@@ -264,6 +268,7 @@ func _start_boss_node(node: BossGameStoryNode) -> void:
 	_active_match_node_id = node.id
 	_pending_boss_line = {}
 	StoryProgressStore.register_node_attempt(node.id)
+	PlayerProgressStore.begin_rated_match(node.boss.boss_id, float(node.boss.rating))
 	SceneTransition.change_scene(GAME_SCENE_PATH)
 
 func _start_random_match_node(node: RandomMatchStoryNode) -> void:
@@ -291,6 +296,7 @@ func _finish_random_match(node: RandomMatchStoryNode) -> void:
 
 func _configure_singleplayer_match(ai_difficulty_level: int) -> void:
 	GameConfig.stop_ai_vs_ai_batch()
+	GameConfig.ai_mirrors_player_deck = false
 	GameConfig.is_singleplayer = true
 	GameConfig.is_hosting = true
 	GameConfig.server_ip = ""

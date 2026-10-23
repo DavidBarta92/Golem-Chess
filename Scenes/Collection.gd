@@ -5,22 +5,13 @@ const PACK_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionPackController.gd
 const STAMP_BROWSER_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionStampBrowserController.gd")
 const SAVED_DECK_LIST_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionSavedDeckListController.gd")
 const INTRO_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionIntroController.gd")
+const ELASTIC_SCROLL_SCRIPT = preload("res://Scenes/CollectionElasticScroll.gd")
 const WINDOW_CLOSE_ICON: Texture2D = preload("res://ui/themes/icons/window_close.svg")
-const PAGER_BACK_ICON: Texture2D = preload("res://ui/themes/icons/back.png")
-const PAGER_NEXT_ICON: Texture2D = preload("res://ui/themes/icons/next.png")
 const CODEX_TITLE_FONT: FontFile = preload("res://Fonts/ElmsSans-ExtraBold.ttf")
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const STAMP_VISUAL_SIZE: Vector2 = Vector2(168.7, 229)
 const TOP_BAR_HEIGHT: int = 60
-const LAYOUT_WIDTH: int = 894
-const LEFT_COLUMN_WIDTH: int = 260
-const MIDDLE_COLUMN_WIDTH: int = 520
 const RIGHT_COLUMN_WIDTH: int = 360
-const LEFT_INFO_HEIGHT: int = 420
-const PACK_NOTICE_OFFSET_LEFT: float = -216.0
-const PACK_NOTICE_OFFSET_TOP: float = 112.0
-const PACK_NOTICE_OFFSET_RIGHT: float = 24.0
-const PACK_NOTICE_OFFSET_BOTTOM: float = 440.0
 # The album (book and tabs) is drawn bigger than the frame around it so the
 # stamps read better. It is scaled about the book's left edge at the tabs' top,
 # and that point is moved up so the tabs start where the search row's bottom
@@ -28,40 +19,24 @@ const PACK_NOTICE_OFFSET_BOTTOM: float = 440.0
 const ALBUM_SCALE: float = 1.1
 const ALBUM_PIVOT_DESIGN: Vector2 = Vector2(336, 230)
 const ALBUM_PIVOT_TARGET_DESIGN: Vector2 = Vector2(336, 174)
-const DESKTOP_STAMPS_PER_PAGE: int = 9
-const DESKTOP_STAMP_COLUMNS: int = 3
+const BROWSER_STAMPS_PER_PAGE: int = 9
+const BROWSER_STAMP_COLUMNS: int = 3
 # The stamp slots grow with the album.
-const DESKTOP_STAMP_SLOT_SIZE: Vector2 = Vector2(128, 142) * ALBUM_SCALE
-const DESKTOP_STAMP_GAP: Vector2 = Vector2(8, 2) * ALBUM_SCALE
-const MEDIUM_STAMPS_PER_PAGE: int = 6
-const MEDIUM_STAMP_COLUMNS: int = 3
-const MEDIUM_STAMP_SLOT_SIZE: Vector2 = Vector2(118, 140)
-const COMPACT_STAMPS_PER_PAGE: int = 4
-const COMPACT_STAMP_COLUMNS: int = 2
-const COMPACT_STAMP_SLOT_SIZE: Vector2 = Vector2(120, 168)
+const BROWSER_STAMP_SLOT_SIZE: Vector2 = Vector2(128, 142) * ALBUM_SCALE
+const BROWSER_STAMP_GAP: Vector2 = Vector2(8, 2) * ALBUM_SCALE
 const DECK_EDIT_STAMP_SLOT_SIZE: Vector2 = Vector2(100, 140)
 const DECK_SLOT_REMOVE_BUTTON_SIZE: Vector2 = Vector2(20, 20)
 const CODEX_PAGE_TITLE_FONT_SIZE: int = 19
 const CODEX_PAGE_GRID_HORIZONTAL_GAP: int = 8
 const CODEX_PAGE_BOTTOM_SPACING: int = 2
-const COLLECTION_PAGER_HEIGHT: float = 72.0
 const PAGER_BUTTON_PRESSED_SCALE: float = 0.92
 const PAGER_BUTTON_PRESS_IN_SECONDS: float = 0.055
 const PAGER_BUTTON_PRESS_OUT_SECONDS: float = 0.075
 const CODEX_EDITOR_LIST_SPACING: int = 4
-const CODEX_SCROLL_WHEEL_IMPULSE: float = 620.0
-const CODEX_SCROLL_MAX_VELOCITY: float = 2600.0
-const CODEX_SCROLL_FRICTION: float = 7.0
-const CODEX_SCROLL_EDGE_IMPULSE: float = 260.0
-const CODEX_SCROLL_EDGE_SPRING: float = 46.0
-const CODEX_SCROLL_EDGE_DAMPING: float = 10.0
-const CODEX_SCROLL_MAX_OVERSHOOT: float = 30.0
 const MAX_DECK_SIZE: int = 15
 const CODEX_PAGE_COUNT: int = 5
 const CODEX_STAMPS_PER_PAGE: int = 3
 const MAX_COPIES_PER_STAMP: int = PlayerDeckStore.MAX_COPIES_PER_STAMP
-const REMOVE_BUTTON_VISIBLE_SECONDS: float = 1.0
-const STAMP_DESCRIPTION_HEIGHT: int = 76
 # The book art (background, tags, book, codex) is drawn on one 1919x1079 frame;
 # BookStage holds it at that size and is scaled to fit the viewport, and the
 # rects below are in the frame's pixels.
@@ -114,7 +89,6 @@ const MAGNIFIER_SHADER = preload("res://Shaders/collection_magnifier.gdshader")
 const MAGNIFIER_GLASS_TEXTURE = preload("res://Assets/glass.png")
 const MAGNIFIER_CASE_CLOSED_TEXTURE = preload("res://Assets/magnifying_glass_case_closed.png")
 const MAGNIFIER_CASE_OPENED_TEXTURE = preload("res://Assets/magnifying_glass_case_opened.png")
-const COIN_TEXTURE: Texture2D = preload("res://Assets/coin.svg")
 const MAGNIFIER_CASE_DEFAULT_SIZE: Vector2 = Vector2(54, 121)
 const MAGNIFIER_CASE_PRESSED_SCALE: float = 0.92
 const MAGNIFIER_CASE_PRESS_IN_SECONDS: float = 0.055
@@ -146,7 +120,6 @@ const HOVER_DESCRIPTION_MARGIN_LEFT: float = 14.0
 const HOVER_DESCRIPTION_MARGIN_RIGHT: float = 28.0
 const HOVER_DESCRIPTION_MARGIN_VERTICAL: float = 12.0
 const STAMP_SLOT_SCALE_MULTIPLIER: float = 0.88
-const TOP_BAR_BACKGROUND_COLOR: Color = Color(0.9366637, 0.9330646, 0.89437205, 1.0)
 const BROWSER_STAMP_VERTICAL_OFFSET: float = -12.0
 const DECK_EDIT_STAMP_VERTICAL_OFFSET: float = -8.0
 
@@ -154,24 +127,13 @@ var is_creating_deck: bool = false
 var editing_deck_id: String = ""
 var selected_deck_stamps: Array = []
 var dragged_print_id: String = ""
-var hovered_deck_stamp_index: int = -1
 var hovered_browser_stamp_name: String = ""
 var editing_deck_has_missing_stamps: bool = false
 var is_editing_deck_name: bool = false
-var codex_scroll_velocity: float = 0.0
-var codex_scroll_overshoot: float = 0.0
-var codex_scroll_overshoot_velocity: float = 0.0
-var deck_selector_scroll_velocity: float = 0.0
-var deck_selector_scroll_overshoot: float = 0.0
-var deck_selector_scroll_overshoot_velocity: float = 0.0
+var codex_scroll_motion
+var deck_selector_scroll_motion
 
-var root_margin: MarginContainer
-var main_center: HBoxContainer
-var main_layout: HBoxContainer
-var left_column: VBoxContainer
-var middle_column: VBoxContainer
 var right_column: VBoxContainer
-var browser: VBoxContainer
 var deck_panel_frame: PanelContainer
 var stamp_grid: GridContainer
 var search_field: LineEdit
@@ -190,24 +152,11 @@ var deck_stamp_scroll: ScrollContainer
 var deck_stamp_list: VBoxContainer
 var deck_count_label: Label
 var done_button: Button
-var remove_stamp_button: Button
-var remove_stamp_timer: Timer
-var stamp_description_panel: PanelContainer
-var stamp_description_label: Label
-var preview_stamp_holder: Control
-var preview_stamp_visual: StampVisual
-var top_bar: HBoxContainer
 var buy_packs_button: Button
 var points_label: Label
 var buy_packs_panel: PanelContainer
-var pack_count_spin_box: SpinBox
-var buy_packs_info_label: Label
-var buy_packs_confirm_button: Button
 var pack_panel: Control
 var pack_inventory: Control
-var pack_inventory_label: Label
-var pack_result_dialog: AcceptDialog
-var pack_result_label: Label
 var pack_controller
 var stamp_browser_controller
 var saved_deck_list_controller
@@ -242,24 +191,27 @@ var magnifier_previous_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 
 func _ready() -> void:
 	randomize()
+	# Binding the tags already asks the browser for its active filter.
+	stamp_browser_controller = STAMP_BROWSER_CONTROLLER_SCRIPT.new()
 	_bind_scene_ui()
+	_setup_elastic_scrolls()
 	_setup_pack_controller()
 	_setup_stamp_browser_controller()
 	_setup_saved_deck_list_controller()
 	_setup_intro_controller()
 	_connect_viewport_resize()
-	_apply_responsive_layout(false)
+	_layout_collection_scene()
 	_load_stamps()
 	_populate_saved_decks_list()
 	_show_page(0)
 	_play_deck_panel_slide_in()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_update_browser_stamp_description_hover()
-	_update_codex_scroll_inertia(_delta)
-	_update_deck_selector_scroll_inertia(_delta)
+	codex_scroll_motion.update(delta)
+	deck_selector_scroll_motion.update(delta)
 	_update_magnifier_position()
-	_update_paper_cutout(_delta)
+	_update_paper_cutout(delta)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if magnifier_enabled && event.is_action_pressed("ui_cancel"):
@@ -270,7 +222,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton or event is InputEventMouseMotion:
 			get_viewport().set_input_as_handled()
 			return
-	if _handle_elastic_scroll_unhandled_input(event):
+	if codex_scroll_motion.handle_unhandled_wheel(event) or deck_selector_scroll_motion.handle_unhandled_wheel(event):
 		get_viewport().set_input_as_handled()
 
 func _exit_tree() -> void:
@@ -288,42 +240,22 @@ func _connect_once(signal_value: Signal, callable: Callable) -> void:
 
 func _setup_pack_controller() -> void:
 	pack_controller = PACK_CONTROLLER_SCRIPT.new()
-	var buy_packs_cancel_button := get_node_or_null("BuyPacksPanel/BuyPacksRoot/ButtonRow/CancelButton") as Button
 	pack_controller.bind({
 		"collection": self,
-		"buy_packs_button": null,
 		"points_label": points_label,
 		"buy_packs_panel": buy_packs_panel,
-		"pack_count_spin_box": pack_count_spin_box,
-		"buy_packs_info_label": buy_packs_info_label,
-		"buy_packs_confirm_button": buy_packs_confirm_button,
-		"buy_packs_cancel_button": buy_packs_cancel_button,
 		"pack_notice_panel": pack_panel,
 		"pack_inventory": pack_inventory,
-		"pack_inventory_label": pack_inventory_label,
-		"pack_result_dialog": pack_result_dialog,
-		"pack_result_label": pack_result_label,
 	}, Callable(self, "_on_pack_opened"))
 
+func _setup_elastic_scrolls() -> void:
+	# The page editor scrolls while a codex is being made, the codex list otherwise.
+	codex_scroll_motion = ELASTIC_SCROLL_SCRIPT.new(deck_stamp_scroll, deck_stamp_list,
+		func() -> bool: return is_creating_deck and deck_stamp_scroll.visible)
+	deck_selector_scroll_motion = ELASTIC_SCROLL_SCRIPT.new(deck_list_scroll, deck_list,
+		func() -> bool: return !is_creating_deck and deck_list_scroll.visible)
+
 func _setup_stamp_browser_controller() -> void:
-	_get_stamp_browser_controller()
-
-func _setup_intro_controller() -> void:
-	intro_controller = INTRO_CONTROLLER_SCRIPT.new()
-	var drawn_nodes: Array = [collection_background, book_image]
-	drawn_nodes.append_array(set_tags.values())
-	drawn_nodes.append(magnifier_case_closed_image)
-	intro_controller.bind({
-		"collection": self,
-		"drawn_nodes": drawn_nodes,
-		"fill_only_nodes": [book_shadow],
-		"late_nodes": [stamp_grid, browser_tools, pager, pack_panel],
-	})
-	intro_controller.prepare()
-
-func _get_stamp_browser_controller():
-	if stamp_browser_controller == null:
-		stamp_browser_controller = STAMP_BROWSER_CONTROLLER_SCRIPT.new()
 	stamp_browser_controller.bind({
 		"collection": self,
 		"stamp_grid": stamp_grid,
@@ -332,8 +264,6 @@ func _get_stamp_browser_controller():
 		"previous_button": previous_button,
 		"next_button": next_button,
 		"page_label": page_label,
-		"pager_back_icon": PAGER_BACK_ICON,
-		"pager_next_icon": PAGER_NEXT_ICON,
 		"codex_title_font": CODEX_TITLE_FONT,
 		"stamp_visual_size": STAMP_VISUAL_SIZE,
 		"stamp_slot_scale_multiplier": STAMP_SLOT_SCALE_MULTIPLIER,
@@ -350,26 +280,41 @@ func _get_stamp_browser_controller():
 		"stamp_drag_released_callback": Callable(self, "_on_stamp_drag_released"),
 		"deck_stamp_display_name_provider": Callable(self, "_get_deck_stamp_display_name"),
 	})
-	return stamp_browser_controller
+	stamp_browser_controller.apply_layout(
+		BROWSER_STAMP_COLUMNS,
+		BROWSER_STAMPS_PER_PAGE,
+		BROWSER_STAMP_SLOT_SIZE,
+		roundi(BROWSER_STAMP_GAP.x),
+		roundi(BROWSER_STAMP_GAP.y)
+	)
+	_configure_pager_buttons()
 
 func _setup_saved_deck_list_controller() -> void:
-	_get_saved_deck_list_controller()
-
-func _get_saved_deck_list_controller():
-	if saved_deck_list_controller == null:
-		saved_deck_list_controller = SAVED_DECK_LIST_CONTROLLER_SCRIPT.new()
+	saved_deck_list_controller = SAVED_DECK_LIST_CONTROLLER_SCRIPT.new()
 	saved_deck_list_controller.bind({
 		"collection": self,
 		"deck_list": deck_list,
 		"stamp_visual_size": STAMP_VISUAL_SIZE,
 		"max_deck_size": MAX_DECK_SIZE,
-		"reset_scroll_callback": Callable(self, "_reset_deck_selector_scroll_motion"),
+		"reset_scroll_callback": Callable(deck_selector_scroll_motion, "reset"),
 		"edit_deck_callback": Callable(self, "_on_edit_deck_pressed"),
 		"editor_back_callback": Callable(self, "_on_deck_editor_back_pressed"),
 		"print_for_deck_stamp_provider": Callable(self, "_get_print_for_deck_stamp"),
 		"codex_size": _get_codex_row_size(),
 	})
-	return saved_deck_list_controller
+
+func _setup_intro_controller() -> void:
+	intro_controller = INTRO_CONTROLLER_SCRIPT.new()
+	var drawn_nodes: Array = [collection_background, book_image]
+	drawn_nodes.append_array(set_tags.values())
+	drawn_nodes.append(magnifier_case_closed_image)
+	intro_controller.bind({
+		"collection": self,
+		"drawn_nodes": drawn_nodes,
+		"fill_only_nodes": [book_shadow],
+		"late_nodes": [stamp_grid, browser_tools, pager, pack_panel],
+	})
+	intro_controller.prepare()
 
 func _bind_set_tags() -> void:
 	set_tags.clear()
@@ -419,9 +364,8 @@ func _build_set_tag_click_mask(tag: TextureButton) -> void:
 	tag.texture_click_mask = click_mask
 
 func _on_set_tag_pressed(set_id: String) -> void:
-	var controller = _get_stamp_browser_controller()
-	var next_filter: String = "" if controller.active_set_filter == set_id else set_id
-	controller.set_active_set_filter(next_filter)
+	var next_filter: String = "" if stamp_browser_controller.active_set_filter == set_id else set_id
+	stamp_browser_controller.set_active_set_filter(next_filter)
 	_apply_set_tag_states()
 	if set_tags.has(next_filter):
 		_play_set_tag_pop(set_tags[next_filter] as Control)
@@ -429,7 +373,7 @@ func _on_set_tag_pressed(set_id: String) -> void:
 func _apply_set_tag_states() -> void:
 	if book_stage == null or book_image == null:
 		return
-	var active_filter: String = _get_stamp_browser_controller().active_set_filter
+	var active_filter: String = stamp_browser_controller.active_set_filter
 	for set_id in set_tags:
 		var tag: TextureButton = set_tags[set_id]
 		var is_active: bool = set_id == active_filter
@@ -494,36 +438,21 @@ func _bind_scene_ui() -> void:
 	deck_stamp_list.add_theme_constant_override("separation", CODEX_EDITOR_LIST_SPACING)
 	deck_count_label = $DeckPanelFrame/RightColumn/DeckFooter/DeckCountLabel
 	done_button = $DeckPanelFrame/RightColumn/DeckFooter/DoneButton
-	_hide_local_top_bar()
 	GlobalTopBar.show_collection(Callable(self, "_on_back_pressed"), Callable(self, "_on_buy_packs_pressed"))
-	top_bar = null
 	buy_packs_button = GlobalTopBar.get_button("buy_packs")
 	if buy_packs_button != null:
 		buy_packs_button.set_meta("sfx_click", "buy_packs_window_opening")
 	points_label = GlobalTopBar.points_label
-	pack_panel = get_node_or_null("PackNoticePanel") as Control
-	if pack_panel == null:
-		create_pack_inventory_ui()
-	if pack_panel != null:
-		pack_inventory = pack_panel.get_node_or_null("PackNoticeRoot/PackInventory") as Control
-		pack_inventory_label = null
+	pack_panel = $PackNoticePanel
+	pack_inventory = $PackNoticePanel/PackNoticeRoot/PackInventory
+	# The pack controller builds the shop window inside this panel.
 	buy_packs_panel = $BuyPacksPanel
-	pack_count_spin_box = $BuyPacksPanel/BuyPacksRoot/PackCountSpinBox
-	buy_packs_info_label = $BuyPacksPanel/BuyPacksRoot/BuyPacksInfoLabel
-	buy_packs_confirm_button = $BuyPacksPanel/BuyPacksRoot/ButtonRow/BuyButton
-	pack_result_dialog = $PackResultDialog
-	pack_result_label = $PackResultDialog/PackResultLabel
-	remove_stamp_button = $RemoveStampButton
-	remove_stamp_timer = $RemoveStampTimer
 	deck_title_label = get_node_or_null("DeckPanelFrame/RightColumn/DeckHeader/DeckTitle") as Label
 	if deck_title_label != null:
 		deck_title_label.text = tr("My codexes")
 	new_deck_button.text = "+ " + tr("New codex")
 	deck_name_edit.placeholder_text = tr("Codex name")
-	_configure_pager_buttons()
-	_configure_inventory_block()
 	_configure_pack_notice_panel()
-	_remove_stamp_info_panel()
 	_setup_hover_description_panel()
 
 	_connect_once(owned_only_check.toggled, Callable(self, "_on_owned_only_toggled"))
@@ -537,11 +466,7 @@ func _bind_scene_ui() -> void:
 	_connect_once(deck_name_edit.text_submitted, Callable(self, "_on_deck_name_edit_submitted"))
 	_connect_once(deck_name_edit.focus_exited, Callable(self, "_finish_deck_name_edit"))
 	_connect_once(done_button.pressed, Callable(self, "_on_done_pressed"))
-	_connect_once(remove_stamp_button.pressed, Callable(self, "_on_remove_stamp_pressed"))
-	_connect_once(remove_stamp_timer.timeout, Callable(self, "_hide_remove_stamp_button"))
 	_connect_once(deck_stamp_scroll.resized, Callable(self, "_on_deck_stamp_scroll_resized"))
-	_connect_once(deck_list_scroll.gui_input, Callable(self, "_on_deck_selector_scroll_gui_input"))
-	_connect_once(deck_stamp_scroll.gui_input, Callable(self, "_on_codex_scroll_gui_input"))
 
 	buy_packs_panel.visible = false
 	deck_list_scroll.clip_contents = true
@@ -553,36 +478,11 @@ func _bind_scene_ui() -> void:
 	deck_editor_back_button.visible = false
 	deck_count_label.visible = false
 	done_button.visible = false
-	remove_stamp_button.visible = false
 	_setup_magnifier()
 
 
-func _hide_local_top_bar() -> void:
-	var local_top_background := get_node_or_null("TopBackground") as CanvasItem
-	if local_top_background != null:
-		local_top_background.visible = false
-		if local_top_background is Control:
-			(local_top_background as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var local_top_bar := get_node_or_null("TopBar") as CanvasItem
-	if local_top_bar != null:
-		local_top_bar.visible = false
-		if local_top_bar is Control:
-			(local_top_bar as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-
-func _configure_inventory_block() -> void:
-	if browser != null:
-		browser.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		browser.add_theme_constant_override("separation", 4)
-	if stamp_grid != null:
-		_update_stamp_grid_reserved_size()
-
-func _update_stamp_grid_reserved_size() -> void:
-	_get_stamp_browser_controller().update_stamp_grid_reserved_size()
-
 func _configure_pager_buttons() -> void:
-	_get_stamp_browser_controller().configure_pager_buttons()
+	stamp_browser_controller.configure_pager_buttons()
 	# The arrow art is black; re-ink it warm. The icon colours stay white so
 	# the theme's ink does not darken the arrow's light chevron first.
 	var ink_material := ShaderMaterial.new()
@@ -595,18 +495,6 @@ func _configure_pager_buttons() -> void:
 		for icon_color_name in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color", "icon_focus_color"]:
 			button.add_theme_color_override(icon_color_name, Color.WHITE)
 		button.add_theme_color_override("icon_disabled_color", Color(1.0, 1.0, 1.0, 0.35))
-
-func _apply_generated_pager_button_visual(button: Button, icon: Texture2D) -> void:
-	_get_stamp_browser_controller().apply_generated_pager_button_visual(button, icon)
-
-func _connect_pager_button_animation(button: Button) -> void:
-	_get_stamp_browser_controller().connect_pager_button_animation(button)
-
-func _on_pager_button_down(button: Button) -> void:
-	_get_stamp_browser_controller().on_pager_button_down(button)
-
-func _animate_pager_button_press(button: Button) -> void:
-	_get_stamp_browser_controller().animate_pager_button_press(button)
 
 func _configure_pack_notice_panel() -> void:
 	if pack_panel == null:
@@ -628,23 +516,6 @@ func _configure_pack_notice_panel() -> void:
 		pack_inventory.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		pack_inventory.mouse_filter = Control.MOUSE_FILTER_PASS
 		pack_inventory.clip_contents = false
-
-func _remove_stamp_info_panel() -> void:
-	if stamp_description_panel != null:
-		var panel_parent: Node = stamp_description_panel.get_parent()
-		if panel_parent != null:
-			panel_parent.remove_child(stamp_description_panel)
-		stamp_description_panel.queue_free()
-	stamp_description_panel = null
-	stamp_description_label = null
-	preview_stamp_holder = null
-	preview_stamp_visual = null
-
-	if left_column != null:
-		left_column.visible = false
-		left_column.custom_minimum_size = Vector2.ZERO
-		left_column.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		left_column.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
 func _setup_hover_description_panel() -> void:
 	if hover_description_panel == null or !is_instance_valid(hover_description_panel):
@@ -725,279 +596,6 @@ func _layout_hover_description_panel() -> void:
 	target_position.y = clampf(target_position.y, TOP_BAR_HEIGHT + 8.0, maxf(TOP_BAR_HEIGHT + 8.0, viewport_size.y - panel_size.y - 12.0))
 	hover_description_panel.position = target_position
 
-func _build_ui() -> void:
-	_bind_book_stage()
-	create_top_progress_ui()
-	_hide_local_top_bar()
-	GlobalTopBar.show_collection(Callable(self, "_on_back_pressed"), Callable(self, "_on_buy_packs_pressed"))
-	top_bar = null
-	buy_packs_button = GlobalTopBar.get_button("buy_packs")
-	if buy_packs_button != null:
-		buy_packs_button.set_meta("sfx_click", "buy_packs_window_opening")
-	points_label = GlobalTopBar.points_label
-
-	root_margin = MarginContainer.new()
-	add_child(root_margin)
-	root_margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root_margin.add_theme_constant_override("margin_left", 0)
-	root_margin.add_theme_constant_override("margin_top", TOP_BAR_HEIGHT + 28)
-	root_margin.add_theme_constant_override("margin_right", 0)
-	root_margin.add_theme_constant_override("margin_bottom", 24)
-
-	main_center = HBoxContainer.new()
-	root_margin.add_child(main_center)
-	main_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	main_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	main_center.add_theme_constant_override("separation", 0)
-
-	var left_layout_spacer := Control.new()
-	main_center.add_child(left_layout_spacer)
-	left_layout_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	main_layout = HBoxContainer.new()
-	main_center.add_child(main_layout)
-	main_layout.custom_minimum_size = Vector2(LAYOUT_WIDTH, 0)
-	main_layout.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	main_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	main_layout.add_theme_constant_override("separation", 14)
-
-	var right_layout_spacer := Control.new()
-	main_center.add_child(right_layout_spacer)
-	right_layout_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	left_column = VBoxContainer.new()
-	main_layout.add_child(left_column)
-	left_column.custom_minimum_size = Vector2(LEFT_COLUMN_WIDTH, 0)
-	left_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left_column.add_theme_constant_override("separation", 18)
-
-	stamp_description_panel = null
-	stamp_description_label = null
-	preview_stamp_holder = null
-	preview_stamp_visual = null
-
-	create_pack_inventory_ui()
-
-	middle_column = VBoxContainer.new()
-	main_layout.add_child(middle_column)
-	middle_column.custom_minimum_size = Vector2(MIDDLE_COLUMN_WIDTH, 0)
-	middle_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	var browser_frame := PanelContainer.new()
-	middle_column.add_child(browser_frame)
-	browser_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	browser_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	browser_frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-
-	browser = VBoxContainer.new()
-	browser_frame.add_child(browser)
-	browser.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	browser.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	browser.add_theme_constant_override("separation", 4)
-
-	var browser_title := Label.new()
-	browser.add_child(browser_title)
-	browser_title.visible = false
-	browser_title.text = "Inventory"
-	browser_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	browser_title.add_theme_font_size_override("font_size", 20)
-	browser_title.add_theme_color_override("font_color", CollectionPalette.INK)
-
-	var tools_row := HBoxContainer.new()
-	browser.add_child(tools_row)
-	tools_row.custom_minimum_size = Vector2(0, 42)
-	tools_row.add_theme_constant_override("separation", 10)
-
-	owned_only_check = CheckBox.new()
-	tools_row.add_child(owned_only_check)
-	owned_only_check.text = "My stamps"
-	owned_only_check.button_pressed = false
-	owned_only_check.add_theme_color_override("font_color", CollectionPalette.INK)
-	owned_only_check.toggled.connect(_on_owned_only_toggled)
-
-	var tool_spacer := Control.new()
-	tools_row.add_child(tool_spacer)
-	tool_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	search_field = LineEdit.new()
-	tools_row.add_child(search_field)
-	search_field.placeholder_text = "Search"
-	search_field.custom_minimum_size = Vector2(150, 34)
-	search_field.text_changed.connect(_on_search_text_changed)
-
-	stamp_grid = GridContainer.new()
-	browser.add_child(stamp_grid)
-	stamp_grid.columns = _get_stamp_browser_controller().current_stamp_columns
-	stamp_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stamp_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	stamp_grid.add_theme_constant_override("h_separation", 8)
-	stamp_grid.add_theme_constant_override("v_separation", 2)
-	_update_stamp_grid_reserved_size()
-
-	var pager_row := HBoxContainer.new()
-	browser.add_child(pager_row)
-	pager_row.custom_minimum_size = Vector2(0, COLLECTION_PAGER_HEIGHT)
-	pager_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	pager_row.add_theme_constant_override("separation", 16)
-
-	previous_button = Button.new()
-	pager_row.add_child(previous_button)
-	previous_button.custom_minimum_size = Vector2(54, 42)
-	previous_button.size_flags_vertical = Control.SIZE_SHRINK_END
-	previous_button.pressed.connect(_on_previous_pressed)
-
-	page_label = Label.new()
-	pager_row.add_child(page_label)
-	page_label.custom_minimum_size = Vector2(92, 42)
-	page_label.size_flags_vertical = Control.SIZE_SHRINK_END
-	page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-
-	next_button = Button.new()
-	pager_row.add_child(next_button)
-	next_button.custom_minimum_size = Vector2(54, 42)
-	next_button.size_flags_vertical = Control.SIZE_SHRINK_END
-	next_button.pressed.connect(_on_next_pressed)
-	_apply_generated_pager_button_visual(previous_button, PAGER_BACK_ICON)
-	_apply_generated_pager_button_visual(next_button, PAGER_NEXT_ICON)
-
-	deck_panel_frame = PanelContainer.new()
-	main_layout.add_child(deck_panel_frame)
-	deck_panel_frame.custom_minimum_size = Vector2(RIGHT_COLUMN_WIDTH, 0)
-	deck_panel_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	deck_panel_frame.add_theme_stylebox_override("panel", _create_panel_style(Color(0.93, 0.93, 0.9), Color.TRANSPARENT, 0, 10))
-
-	right_column = VBoxContainer.new()
-	deck_panel_frame.add_child(right_column)
-	right_column.custom_minimum_size = Vector2(RIGHT_COLUMN_WIDTH, 0)
-	right_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_column.add_theme_constant_override("separation", 12)
-
-	deck_title_label = Label.new()
-	right_column.add_child(deck_title_label)
-	deck_title_label.text = "My codexes"
-	deck_title_label.add_theme_font_size_override("font_size", 22)
-	deck_title_label.add_theme_color_override("font_color", CollectionPalette.INK)
-	deck_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	new_deck_button = Button.new()
-	right_column.add_child(new_deck_button)
-	new_deck_button.text = "New codex"
-	new_deck_button.custom_minimum_size = Vector2(0, 42)
-	new_deck_button.pressed.connect(_on_new_deck_pressed)
-
-	deck_editor_back_button = Button.new()
-	right_column.add_child(deck_editor_back_button)
-	deck_editor_back_button.text = "Cancel"
-	deck_editor_back_button.custom_minimum_size = Vector2(0, 42)
-	deck_editor_back_button.visible = false
-	deck_editor_back_button.pressed.connect(_on_deck_editor_back_pressed)
-
-	deck_name_display = Label.new()
-	right_column.add_child(deck_name_display)
-	_configure_deck_name_display()
-	deck_name_display.gui_input.connect(_on_deck_name_display_gui_input)
-
-	deck_name_edit = LineEdit.new()
-	right_column.add_child(deck_name_edit)
-	deck_name_edit.placeholder_text = "Codex name"
-	deck_name_edit.custom_minimum_size = Vector2(0, 40)
-	deck_name_edit.visible = false
-	deck_name_edit.text_changed.connect(_on_deck_name_changed)
-	deck_name_edit.text_submitted.connect(_on_deck_name_edit_submitted)
-	deck_name_edit.focus_exited.connect(_finish_deck_name_edit)
-	_sync_deck_name_display()
-
-	deck_list_scroll = ScrollContainer.new()
-	right_column.add_child(deck_list_scroll)
-	deck_list_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	deck_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	deck_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	deck_list_scroll.clip_contents = true
-	deck_list_scroll.gui_input.connect(_on_deck_selector_scroll_gui_input)
-
-	deck_list = VBoxContainer.new()
-	deck_list_scroll.add_child(deck_list)
-	deck_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	deck_list.clip_contents = false
-	deck_list.mouse_filter = Control.MOUSE_FILTER_PASS
-	deck_list.add_theme_constant_override("separation", 8)
-
-	deck_stamp_scroll = ScrollContainer.new()
-	right_column.add_child(deck_stamp_scroll)
-	deck_stamp_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	deck_stamp_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	deck_stamp_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	deck_stamp_scroll.clip_contents = true
-	deck_stamp_scroll.visible = false
-	deck_stamp_scroll.resized.connect(_on_deck_stamp_scroll_resized)
-	deck_stamp_scroll.gui_input.connect(_on_codex_scroll_gui_input)
-
-	deck_stamp_list = VBoxContainer.new()
-	deck_stamp_scroll.add_child(deck_stamp_list)
-	deck_stamp_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	deck_stamp_list.clip_contents = false
-	deck_stamp_list.add_theme_constant_override("separation", CODEX_EDITOR_LIST_SPACING)
-
-	var deck_panel_spacer := Control.new()
-	right_column.add_child(deck_panel_spacer)
-	deck_panel_spacer.custom_minimum_size = Vector2(0, 4)
-
-	var deck_footer := HBoxContainer.new()
-	right_column.add_child(deck_footer)
-	deck_footer.alignment = BoxContainer.ALIGNMENT_END
-	deck_footer.add_theme_constant_override("separation", 10)
-
-	deck_count_label = Label.new()
-	deck_footer.add_child(deck_count_label)
-	deck_count_label.custom_minimum_size = Vector2(64, 42)
-	deck_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	deck_count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	deck_count_label.text = "0/%d" % MAX_DECK_SIZE
-	deck_count_label.visible = false
-
-	done_button = Button.new()
-	deck_footer.add_child(done_button)
-	done_button.text = "Done"
-	done_button.custom_minimum_size = Vector2(78, 42)
-	done_button.visible = false
-	done_button.pressed.connect(_on_done_pressed)
-
-	if deck_editor_back_button.get_parent() != null:
-		deck_editor_back_button.get_parent().remove_child(deck_editor_back_button)
-	deck_footer.add_child(deck_editor_back_button)
-
-	create_buy_packs_dialog()
-	create_pack_result_dialog()
-
-	remove_stamp_button = Button.new()
-	add_child(remove_stamp_button)
-	remove_stamp_button.text = "X"
-	remove_stamp_button.tooltip_text = "Remove stamp"
-	remove_stamp_button.custom_minimum_size = Vector2(30, 30)
-	remove_stamp_button.size = Vector2(30, 30)
-	remove_stamp_button.visible = false
-	remove_stamp_button.z_index = 20
-	remove_stamp_button.pressed.connect(_on_remove_stamp_pressed)
-
-	remove_stamp_timer = Timer.new()
-	add_child(remove_stamp_timer)
-	remove_stamp_timer.one_shot = true
-	remove_stamp_timer.wait_time = REMOVE_BUTTON_VISIBLE_SECONDS
-	remove_stamp_timer.timeout.connect(_hide_remove_stamp_button)
-
-	if Engine.is_editor_hint():
-		_populate_editor_preview_content()
-	else:
-		_populate_saved_decks_list()
-		_refresh_progress_ui()
-		_refresh_pack_inventory_ui()
-	_configure_inventory_block()
-	_configure_pack_notice_panel()
-	_remove_stamp_info_panel()
-	_setup_hover_description_panel()
-	_setup_magnifier()
-
 func _bind_book_stage() -> void:
 	collection_background = get_node_or_null("CollectionBackground") as TextureRect
 	book_stage = get_node_or_null("BookStage") as Control
@@ -1018,9 +616,6 @@ func _get_book_origin() -> Vector2:
 
 func _design_to_screen(design_point: Vector2) -> Vector2:
 	return _get_book_origin() + design_point * _get_book_fit_scale()
-
-func _design_rect_to_screen(design_rect: Rect2) -> Rect2:
-	return Rect2(_design_to_screen(design_rect.position), design_rect.size * _get_book_fit_scale())
 
 ## Where a point of the book art lands once the album is scaled up.
 func _album_to_screen(design_point: Vector2) -> Vector2:
@@ -1048,7 +643,7 @@ func _layout_book_stage() -> void:
 func _layout_stamp_browser() -> void:
 	var page_rect: Rect2 = _album_rect_to_screen(BOOK_LEFT_PAGE_DESIGN_RECT)
 	if stamp_grid != null:
-		var stamp_bounds: Rect2 = _get_stamp_browser_controller().get_page_stamp_bounds()
+		var stamp_bounds: Rect2 = stamp_browser_controller.get_page_stamp_bounds()
 		stamp_grid.position = (page_rect.get_center() - stamp_bounds.get_center()).round()
 	_layout_control_bar()
 
@@ -1087,6 +682,9 @@ func _layout_deck_panel() -> void:
 	)
 	if right_column != null:
 		right_column.custom_minimum_size = Vector2(codex_width, 0.0)
+	# Codex rows built from now on take the new size.
+	if saved_deck_list_controller != null:
+		saved_deck_list_controller.codex_size = _get_codex_row_size()
 	deck_panel_frame.custom_minimum_size = Vector2(panel_size.x, 0.0)
 	deck_panel_frame.size = panel_size
 	deck_panel_rest_position = Vector2(_get_deck_panel_left(), 0.0)
@@ -1214,14 +812,7 @@ func _sync_magnifier_z_order() -> void:
 		magnifier_group.z_index = MAGNIFIER_LENS_Z_INDEX
 
 func _bind_magnifier_case_button() -> void:
-	var legacy_button := get_node_or_null("MagnifierButton") as Button
-	if legacy_button != null:
-		legacy_button.queue_free()
-
-	magnifier_case_button = get_node_or_null("MagnifierCaseButton") as Control
-	if magnifier_case_button == null or !is_instance_valid(magnifier_case_button):
-		magnifier_case_button = _create_magnifier_case_button()
-
+	magnifier_case_button = $MagnifierCaseButton
 	magnifier_case_closed_image = magnifier_case_button.get_node_or_null("ClosedImage") as TextureRect
 	magnifier_case_opened_image = magnifier_case_button.get_node_or_null("OpenedImage") as TextureRect
 	magnifier_case_click_area = magnifier_case_button.get_node_or_null("ClickArea") as Button
@@ -1242,44 +833,6 @@ func _bind_magnifier_case_button() -> void:
 	magnifier_case_button.z_index = MAGNIFIER_CASE_Z_INDEX
 	magnifier_case_button.pivot_offset = magnifier_case_button.size * 0.5
 	_set_magnifier_case_opened(magnifier_enabled)
-
-func _create_magnifier_case_button() -> Control:
-	var case_button := Control.new()
-	case_button.name = "MagnifierCaseButton"
-	case_button.size = MAGNIFIER_CASE_DEFAULT_SIZE
-	case_button.position = Vector2(16.0, TOP_BAR_HEIGHT + 22.0)
-	case_button.pivot_offset = MAGNIFIER_CASE_DEFAULT_SIZE * 0.5
-	case_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(case_button)
-
-	var closed_image := TextureRect.new()
-	closed_image.name = "ClosedImage"
-	_configure_magnifier_case_image(closed_image, MAGNIFIER_CASE_CLOSED_TEXTURE)
-	case_button.add_child(closed_image)
-
-	var opened_image := TextureRect.new()
-	opened_image.name = "OpenedImage"
-	_configure_magnifier_case_image(opened_image, MAGNIFIER_CASE_OPENED_TEXTURE)
-	opened_image.visible = false
-	case_button.add_child(opened_image)
-
-	var click_area := Button.new()
-	click_area.name = "ClickArea"
-	click_area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	click_area.tooltip_text = "Magnifier"
-	click_area.focus_mode = Control.FOCUS_NONE
-	click_area.flat = true
-	case_button.add_child(click_area)
-
-	return case_button
-
-func _configure_magnifier_case_image(image: TextureRect, texture: Texture2D) -> void:
-	image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	image.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	image.texture = texture
-	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 
 func _build_magnifier_lens_visuals() -> void:
 	if magnifier_group == null:
@@ -1425,358 +978,12 @@ func _create_panel_style(bg_color: Color, border_color: Color, radius_top: int, 
 	style.content_margin_bottom = 12
 	return style
 
-func _create_dark_panel_style(radius_top: int, radius_bottom: int) -> StyleBoxFlat:
-	return _create_panel_style(Color(0.035, 0.035, 0.04, 0.95), Color(1.0, 1.0, 1.0, 0.18), radius_top, radius_bottom)
-
-func _create_editor_stamp_placeholder(label_text: String) -> Control:
-	var stamp_panel := PanelContainer.new()
-	stamp_panel.custom_minimum_size = Vector2(112, 156)
-	stamp_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	stamp_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.98, 0.98, 0.96, 1.0)
-	style.border_color = Color(CollectionPalette.INK, 0.85)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 7
-	style.corner_radius_top_right = 7
-	style.corner_radius_bottom_left = 7
-	style.corner_radius_bottom_right = 7
-	stamp_panel.add_theme_stylebox_override("panel", style)
-
-	var label := Label.new()
-	stamp_panel.add_child(label)
-	label.text = label_text
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", 14)
-	label.add_theme_color_override("font_color", CollectionPalette.INK)
-	return stamp_panel
-
-func _populate_editor_preview_content() -> void:
-	_refresh_progress_ui()
-	if stamp_description_label != null:
-		stamp_description_label.text = "Stamp descriptions appear here when the mouse is over a stamp."
-	if pack_controller != null:
-		pack_controller.populate_editor_pack_preview()
-	_populate_editor_stamp_grid_preview()
-	_populate_editor_deck_preview()
-	if page_label != null:
-		page_label.text = "1 / 3"
-	if previous_button != null:
-		previous_button.disabled = true
-	if next_button != null:
-		next_button.disabled = false
-	_update_deck_editor_state()
-
-func _populate_editor_stamp_grid_preview() -> void:
-	if stamp_grid == null:
-		return
-	for child in stamp_grid.get_children():
-		stamp_grid.remove_child(child)
-		child.queue_free()
-	for i in range(DESKTOP_STAMPS_PER_PAGE):
-		var slot := Control.new()
-		stamp_grid.add_child(slot)
-		var stamp_slot_size: Vector2 = _get_stamp_browser_controller().get_current_stamp_slot_size()
-		slot.custom_minimum_size = stamp_slot_size
-		var placeholder := _create_editor_stamp_placeholder("Stamp")
-		slot.add_child(placeholder)
-		placeholder.position = (stamp_slot_size - placeholder.custom_minimum_size) * 0.5
-
-func _populate_editor_deck_preview() -> void:
-	if deck_list == null:
-		return
-	for child in deck_list.get_children():
-		deck_list.remove_child(child)
-		child.queue_free()
-	for i in range(2):
-		deck_list.add_child(_create_editor_deck_row("Codex %d" % (i + 1)))
-
-func _create_editor_deck_row(deck_name: String) -> Control:
-	var row_frame := Control.new()
-	row_frame.custom_minimum_size = Vector2(0, 148)
-	row_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row_frame.mouse_filter = Control.MOUSE_FILTER_PASS
-	row_frame.clip_contents = false
-
-	var preview_offsets: Array = [Vector2(76, -2), Vector2(126, -6), Vector2(176, -2)]
-	var preview_rotations: Array = [-8.0, 8.0, -4.0]
-	for i in range(3):
-		var preview_stamp := _create_editor_stamp_placeholder("Stamp")
-		row_frame.add_child(preview_stamp)
-		preview_stamp.custom_minimum_size = Vector2(60, 78)
-		preview_stamp.size = Vector2(60, 78)
-		preview_stamp.position = preview_offsets[i]
-		preview_stamp.rotation = deg_to_rad(preview_rotations[i])
-
-	var front_panel := PanelContainer.new()
-	row_frame.add_child(front_panel)
-	front_panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	front_panel.anchor_left = 0.0
-	front_panel.anchor_top = 0.0
-	front_panel.anchor_right = 1.0
-	front_panel.anchor_bottom = 1.0
-	front_panel.offset_top = 64.0
-	front_panel.add_theme_stylebox_override("panel", _create_dark_panel_style(0, 20))
-
-	var content := VBoxContainer.new()
-	front_panel.add_child(content)
-	content.mouse_filter = Control.MOUSE_FILTER_PASS
-	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	var name_label := Label.new()
-	content.add_child(name_label)
-	name_label.text = deck_name
-	name_label.add_theme_font_size_override("font_size", 20)
-	name_label.add_theme_color_override("font_color", Color(0.94, 0.94, 0.9))
-
-	var footer := HBoxContainer.new()
-	content.add_child(footer)
-	footer.mouse_filter = Control.MOUSE_FILTER_PASS
-	footer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	footer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	footer.alignment = BoxContainer.ALIGNMENT_END
-	footer.add_theme_constant_override("separation", 8)
-
-	var count_label := Label.new()
-	footer.add_child(count_label)
-	count_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	count_label.text = "15/15"
-	count_label.add_theme_font_size_override("font_size", 18)
-	count_label.add_theme_color_override("font_color", Color(0.86, 0.86, 0.82))
-
-	footer.add_child(_create_circle_icon_button(SAVED_DECK_LIST_CONTROLLER_SCRIPT.EDIT_ICON, "Edit codex"))
-	footer.add_child(_create_circle_icon_button(SAVED_DECK_LIST_CONTROLLER_SCRIPT.DELETE_ICON, "Delete codex"))
-	return row_frame
-
-func create_top_progress_ui() -> void:
-	var top_background := ColorRect.new()
-	top_background.name = "TopBackground"
-	add_child(top_background)
-	top_background.anchor_left = 0.0
-	top_background.anchor_right = 1.0
-	top_background.anchor_top = 0.0
-	top_background.anchor_bottom = 0.0
-	top_background.offset_left = 0.0
-	top_background.offset_top = 0.0
-	top_background.offset_right = 0.0
-	top_background.offset_bottom = TOP_BAR_HEIGHT
-	top_background.color = TOP_BAR_BACKGROUND_COLOR
-
-	top_bar = HBoxContainer.new()
-	add_child(top_bar)
-	top_bar.anchor_left = 0.0
-	top_bar.anchor_right = 1.0
-	top_bar.anchor_top = 0.0
-	top_bar.anchor_bottom = 0.0
-	top_bar.offset_left = 24.0
-	top_bar.offset_right = -24.0
-	top_bar.offset_top = 10.0
-	top_bar.offset_bottom = TOP_BAR_HEIGHT - 8.0
-	top_bar.alignment = BoxContainer.ALIGNMENT_BEGIN
-	top_bar.add_theme_constant_override("separation", 12)
-
-	var back_button := Button.new()
-	top_bar.add_child(back_button)
-	back_button.text = "Back"
-	back_button.custom_minimum_size = Vector2(112, 40)
-	back_button.focus_mode = Control.FOCUS_NONE
-	back_button.pressed.connect(_on_back_pressed)
-
-	var top_spacer := Control.new()
-	top_bar.add_child(top_spacer)
-	top_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	buy_packs_button = Button.new()
-	top_bar.add_child(buy_packs_button)
-	buy_packs_button.text = "Buy Packs"
-	buy_packs_button.custom_minimum_size = Vector2(124, 38)
-	buy_packs_button.focus_mode = Control.FOCUS_NONE
-	buy_packs_button.pressed.connect(_on_buy_packs_pressed)
-
-	var points_container := HBoxContainer.new()
-	top_bar.add_child(points_container)
-	points_container.custom_minimum_size = Vector2(116, 38)
-	points_container.alignment = BoxContainer.ALIGNMENT_END
-	points_container.add_theme_constant_override("separation", 8)
-
-	var point_icon := TextureRect.new()
-	points_container.add_child(point_icon)
-	point_icon.custom_minimum_size = Vector2(24, 24)
-	point_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	point_icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	point_icon.texture = COIN_TEXTURE
-	point_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	point_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-
-	points_label = Label.new()
-	points_container.add_child(points_label)
-	points_label.custom_minimum_size = Vector2(70, 32)
-	points_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	points_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	points_label.add_theme_font_size_override("font_size", 20)
-	points_label.add_theme_color_override("font_color", CollectionPalette.INK)
-
-func create_pack_inventory_ui() -> void:
-	pack_panel = Control.new()
-	pack_panel.name = "PackNoticePanel"
-	add_child(pack_panel)
-	pack_panel.anchor_left = 1.0
-	pack_panel.anchor_right = 1.0
-	pack_panel.offset_left = PACK_NOTICE_OFFSET_LEFT
-	pack_panel.offset_top = PACK_NOTICE_OFFSET_TOP
-	pack_panel.offset_right = PACK_NOTICE_OFFSET_RIGHT
-	pack_panel.offset_bottom = PACK_NOTICE_OFFSET_BOTTOM
-	pack_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	pack_panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	pack_panel.clip_contents = false
-
-	var pack_root := Control.new()
-	pack_root.name = "PackNoticeRoot"
-	pack_panel.add_child(pack_root)
-	pack_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pack_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	pack_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	pack_root.mouse_filter = Control.MOUSE_FILTER_PASS
-	pack_inventory_label = null
-
-	pack_inventory = Control.new()
-	pack_inventory.name = "PackInventory"
-	pack_root.add_child(pack_inventory)
-	pack_inventory.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pack_inventory.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	pack_inventory.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	pack_inventory.mouse_filter = Control.MOUSE_FILTER_PASS
-	pack_inventory.clip_contents = false
-	pack_inventory.resized.connect(_refresh_pack_inventory_ui)
-
-func create_buy_packs_dialog() -> void:
-	buy_packs_panel = PanelContainer.new()
-	add_child(buy_packs_panel)
-	buy_packs_panel.visible = false
-	buy_packs_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	buy_packs_panel.z_index = 100
-	buy_packs_panel.anchor_left = 1.0
-	buy_packs_panel.anchor_right = 1.0
-	buy_packs_panel.anchor_top = 0.0
-	buy_packs_panel.anchor_bottom = 0.0
-	buy_packs_panel.offset_left = -344.0
-	buy_packs_panel.offset_right = -24.0
-	buy_packs_panel.offset_top = 64.0
-	buy_packs_panel.offset_bottom = 206.0
-
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.05, 0.055, 0.065, 0.96)
-	panel_style.border_color = Color(1.0, 1.0, 1.0, 0.18)
-	panel_style.border_width_left = 1
-	panel_style.border_width_top = 1
-	panel_style.border_width_right = 1
-	panel_style.border_width_bottom = 1
-	panel_style.corner_radius_top_left = 6
-	panel_style.corner_radius_top_right = 6
-	panel_style.corner_radius_bottom_left = 6
-	panel_style.corner_radius_bottom_right = 6
-	panel_style.content_margin_left = 12
-	panel_style.content_margin_top = 10
-	panel_style.content_margin_right = 12
-	panel_style.content_margin_bottom = 10
-	buy_packs_panel.add_theme_stylebox_override("panel", panel_style)
-
-	var root := VBoxContainer.new()
-	buy_packs_panel.add_child(root)
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_theme_constant_override("separation", 6)
-
-	var title_label := Label.new()
-	root.add_child(title_label)
-	title_label.text = "Buy Packs"
-	title_label.add_theme_font_size_override("font_size", 16)
-	title_label.add_theme_color_override("font_color", Color(1.0, 0.96, 0.82))
-
-	buy_packs_info_label = Label.new()
-	root.add_child(buy_packs_info_label)
-	buy_packs_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	buy_packs_info_label.add_theme_font_size_override("font_size", 13)
-
-	pack_count_spin_box = SpinBox.new()
-	root.add_child(pack_count_spin_box)
-	pack_count_spin_box.min_value = 0
-	pack_count_spin_box.max_value = 0
-	pack_count_spin_box.step = 1
-	pack_count_spin_box.value = 0
-	pack_count_spin_box.custom_minimum_size = Vector2(0, 32)
-	pack_count_spin_box.value_changed.connect(_on_pack_count_spin_value_changed)
-
-	var button_row := HBoxContainer.new()
-	root.add_child(button_row)
-	button_row.alignment = BoxContainer.ALIGNMENT_END
-	button_row.add_theme_constant_override("separation", 8)
-
-	var cancel_button := Button.new()
-	button_row.add_child(cancel_button)
-	cancel_button.text = "Cancel"
-	cancel_button.custom_minimum_size = Vector2(76, 30)
-	cancel_button.pressed.connect(_on_buy_packs_canceled)
-
-	buy_packs_confirm_button = Button.new()
-	button_row.add_child(buy_packs_confirm_button)
-	buy_packs_confirm_button.text = "Buy"
-	buy_packs_confirm_button.custom_minimum_size = Vector2(76, 30)
-	buy_packs_confirm_button.pressed.connect(_on_buy_packs_confirmed)
-
-func create_pack_result_dialog() -> void:
-	pack_result_dialog = AcceptDialog.new()
-	add_child(pack_result_dialog)
-	pack_result_dialog.title = "Pack Opened"
-	pack_result_dialog.exclusive = true
-	pack_result_dialog.min_size = Vector2i(360, 220)
-
-	pack_result_label = Label.new()
-	pack_result_dialog.add_child(pack_result_label)
-	pack_result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	pack_result_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pack_result_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-func _refresh_progress_ui() -> void:
-	if pack_controller != null:
-		pack_controller.refresh_progress_ui()
-
-func _refresh_pack_inventory_ui() -> void:
-	if pack_controller != null:
-		pack_controller.refresh_pack_inventory_ui()
-
 func _load_stamps() -> void:
-	_get_stamp_browser_controller().load_stamps()
+	stamp_browser_controller.load_stamps()
 
 func _on_buy_packs_pressed() -> void:
 	if pack_controller != null:
 		pack_controller.show_buy_packs()
-
-func _on_pack_count_spin_value_changed(_value: float) -> void:
-	if pack_controller != null:
-		pack_controller.on_pack_count_spin_value_changed(_value)
-
-func _update_buy_packs_info() -> void:
-	if pack_controller != null:
-		pack_controller.update_buy_packs_info()
-
-func _on_buy_packs_confirmed() -> void:
-	if pack_controller != null:
-		pack_controller.confirm_buy_packs()
-
-func _on_buy_packs_canceled() -> void:
-	if pack_controller != null:
-		pack_controller.cancel_buy_packs()
-
-func _on_pack_pressed() -> void:
-	if pack_controller != null:
-		pack_controller.open_pack()
 
 func _on_pack_opened(_rewards: Array[StampPrint]) -> void:
 	_populate_saved_decks_list()
@@ -1784,89 +991,27 @@ func _on_pack_opened(_rewards: Array[StampPrint]) -> void:
 	_refresh_stamp_filter(false)
 
 func _show_page(page_index: int) -> void:
-	_get_stamp_browser_controller().show_page(page_index)
-
-func _get_page_count() -> int:
-	return _get_stamp_browser_controller().get_page_count()
+	stamp_browser_controller.show_page(page_index)
 
 func _refresh_stamp_filter(reset_page: bool = true) -> void:
-	_get_stamp_browser_controller().refresh_stamp_filter(reset_page)
-
-func _create_browser_stamp_slot(stamp_visual: StampVisual, owned_count: int) -> Control:
-	return _get_stamp_browser_controller().create_browser_stamp_slot(stamp_visual, owned_count)
-
-func _configure_browser_stamp_layout(stamp_slot: Control, stamp_visual: StampVisual) -> void:
-	_get_stamp_browser_controller().configure_browser_stamp_layout(stamp_slot, stamp_visual)
-
-func _create_print_count_badge(owned_count: int) -> Control:
-	return _get_stamp_browser_controller().create_print_count_badge(owned_count)
-
-func _draw_print_count_badge_number(canvas: Control, text: String, font_size: int) -> void:
-	_get_stamp_browser_controller().draw_print_count_badge_number(canvas, text, font_size)
-
-func _update_print_count_badge_layout(stamp_slot: Control, stamp_visual: StampVisual) -> void:
-	_get_stamp_browser_controller().update_print_count_badge_layout(stamp_slot, stamp_visual)
-
-func _on_browser_stamp_slot_resized(stamp_slot: Control, stamp_visual: StampVisual) -> void:
-	_get_stamp_browser_controller().on_browser_stamp_slot_resized(stamp_slot, stamp_visual)
+	stamp_browser_controller.refresh_stamp_filter(reset_page)
 
 func _get_stamp_scale_for_slot_size(slot_size: Vector2) -> float:
-	return _get_stamp_browser_controller().get_stamp_scale_for_slot_size(slot_size)
+	return stamp_browser_controller.get_stamp_scale_for_slot_size(slot_size)
 
 func _get_browser_stamp_visual(node: Node) -> StampVisual:
-	return _get_stamp_browser_controller().get_browser_stamp_visual(node)
+	return stamp_browser_controller.get_browser_stamp_visual(node)
 
 func _get_hovered_stamp_visual(node: Node, mouse_position: Vector2) -> StampVisual:
-	return _get_stamp_browser_controller().get_hovered_stamp_visual(node, mouse_position)
-
-func _get_stamp_visual_screen_rect(stamp_visual: StampVisual) -> Rect2:
-	return _get_stamp_browser_controller().get_stamp_visual_screen_rect(stamp_visual)
+	return stamp_browser_controller.get_hovered_stamp_visual(node, mouse_position)
 
 func _on_viewport_size_changed() -> void:
-	_apply_responsive_layout(true)
+	_layout_collection_scene()
+	stamp_browser_controller.update_existing_stamp_sizes()
 	_sync_deck_stamp_list_width()
 	_layout_magnifier_case_button()
 	_update_magnifier_position(true)
 	_layout_hover_description_panel()
-
-func _apply_responsive_layout(refresh_page: bool) -> void:
-	var viewport_width: float = get_viewport_rect().size.x
-	var next_columns: int = DESKTOP_STAMP_COLUMNS
-	var next_stamps_per_page: int = DESKTOP_STAMPS_PER_PAGE
-	var next_stamp_slot_size: Vector2 = DESKTOP_STAMP_SLOT_SIZE
-	var next_h_gap: int = roundi(DESKTOP_STAMP_GAP.x)
-	var next_v_gap: int = roundi(DESKTOP_STAMP_GAP.y)
-
-	if viewport_width < 980.0:
-		next_columns = COMPACT_STAMP_COLUMNS
-		next_stamps_per_page = COMPACT_STAMPS_PER_PAGE
-		next_stamp_slot_size = COMPACT_STAMP_SLOT_SIZE
-		next_h_gap = 6
-		next_v_gap = 3
-	elif viewport_width < 1180.0:
-		next_columns = MEDIUM_STAMP_COLUMNS
-		next_stamps_per_page = MEDIUM_STAMPS_PER_PAGE
-		next_stamp_slot_size = MEDIUM_STAMP_SLOT_SIZE
-		next_h_gap = 7
-		next_v_gap = 3
-
-	var layout_changed: bool = _get_stamp_browser_controller().apply_layout(
-		next_columns,
-		next_stamps_per_page,
-		next_stamp_slot_size,
-		next_h_gap,
-		next_v_gap
-	)
-	_layout_collection_scene()
-
-	if refresh_page:
-		if layout_changed:
-			_show_page(_get_stamp_browser_controller().get_current_page())
-		else:
-			_update_existing_stamp_sizes()
-
-func _update_existing_stamp_sizes() -> void:
-	_get_stamp_browser_controller().update_existing_stamp_sizes()
 
 func _on_deck_stamp_scroll_resized() -> void:
 	_sync_deck_stamp_list_width()
@@ -1884,203 +1029,11 @@ func _sync_deck_stamp_list_width() -> void:
 			var wrapper := child as Control
 			wrapper.custom_minimum_size = Vector2(content_width, DECK_EDIT_STAMP_SLOT_SIZE.y)
 
-func _on_codex_scroll_gui_input(event: InputEvent) -> void:
-	if deck_stamp_scroll == null or !is_creating_deck or !deck_stamp_scroll.visible:
-		return
-	if _handle_codex_scroll_wheel(event):
-		deck_stamp_scroll.accept_event()
-
-func _on_deck_selector_scroll_gui_input(event: InputEvent) -> void:
-	if deck_list_scroll == null or is_creating_deck or !deck_list_scroll.visible:
-		return
-	if _handle_deck_selector_scroll_wheel(event):
-		deck_list_scroll.accept_event()
-
-func _handle_elastic_scroll_unhandled_input(event: InputEvent) -> bool:
-	if !(event is InputEventMouseButton):
-		return false
-	var mouse_position := get_viewport().get_mouse_position()
-	if is_creating_deck and deck_stamp_scroll != null and deck_stamp_scroll.visible and deck_stamp_scroll.get_global_rect().has_point(mouse_position):
-		return _handle_codex_scroll_wheel(event)
-	if !is_creating_deck and deck_list_scroll != null and deck_list_scroll.visible and deck_list_scroll.get_global_rect().has_point(mouse_position):
-		return _handle_deck_selector_scroll_wheel(event)
-	return false
-
-func _handle_codex_scroll_wheel(event: InputEvent) -> bool:
-	var direction: float = _get_scroll_wheel_direction(event)
-	if direction == 0.0:
-		return false
-
-	var max_scroll: float = _get_codex_scroll_max()
-	var current_scroll: float = float(deck_stamp_scroll.scroll_vertical)
-	if max_scroll <= 0.0 or (current_scroll <= 0.0 and direction < 0.0) or (current_scroll >= max_scroll and direction > 0.0):
-		codex_scroll_overshoot_velocity += -direction * CODEX_SCROLL_EDGE_IMPULSE
-	else:
-		codex_scroll_velocity = clampf(
-			codex_scroll_velocity + direction * CODEX_SCROLL_WHEEL_IMPULSE,
-			-CODEX_SCROLL_MAX_VELOCITY,
-			CODEX_SCROLL_MAX_VELOCITY
-		)
-	return true
-
-func _handle_deck_selector_scroll_wheel(event: InputEvent) -> bool:
-	var direction: float = _get_scroll_wheel_direction(event)
-	if direction == 0.0:
-		return false
-
-	var max_scroll: float = _get_deck_selector_scroll_max()
-	var current_scroll: float = float(deck_list_scroll.scroll_vertical)
-	if max_scroll <= 0.0 or (current_scroll <= 0.0 and direction < 0.0) or (current_scroll >= max_scroll and direction > 0.0):
-		deck_selector_scroll_overshoot_velocity += -direction * CODEX_SCROLL_EDGE_IMPULSE
-	else:
-		deck_selector_scroll_velocity = clampf(
-			deck_selector_scroll_velocity + direction * CODEX_SCROLL_WHEEL_IMPULSE,
-			-CODEX_SCROLL_MAX_VELOCITY,
-			CODEX_SCROLL_MAX_VELOCITY
-		)
-	return true
-
-func _get_scroll_wheel_direction(event: InputEvent) -> float:
-	if !(event is InputEventMouseButton):
-		return 0.0
-	var mouse_button := event as InputEventMouseButton
-	if !mouse_button.pressed:
-		return 0.0
-	if mouse_button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		return 1.0
-	if mouse_button.button_index == MOUSE_BUTTON_WHEEL_UP:
-		return -1.0
-	return 0.0
-
-func _update_codex_scroll_inertia(delta: float) -> void:
-	if deck_stamp_scroll == null or deck_stamp_list == null:
-		return
-	if !is_creating_deck or !deck_stamp_scroll.visible:
-		_reset_codex_scroll_motion()
-		return
-
-	var max_scroll: float = _get_codex_scroll_max()
-	if max_scroll <= 0.0:
-		codex_scroll_velocity = 0.0
-	else:
-		var current_scroll: float = clampf(float(deck_stamp_scroll.scroll_vertical), 0.0, max_scroll)
-		if absf(codex_scroll_velocity) > 0.5:
-			var next_scroll: float = current_scroll + codex_scroll_velocity * delta
-			if next_scroll < 0.0:
-				codex_scroll_overshoot_velocity += -next_scroll * CODEX_SCROLL_EDGE_SPRING
-				next_scroll = 0.0
-				codex_scroll_velocity *= 0.16
-			elif next_scroll > max_scroll:
-				codex_scroll_overshoot_velocity -= (next_scroll - max_scroll) * CODEX_SCROLL_EDGE_SPRING
-				next_scroll = max_scroll
-				codex_scroll_velocity *= 0.16
-			deck_stamp_scroll.scroll_vertical = int(round(next_scroll))
-			var friction_weight: float = 1.0 - exp(-CODEX_SCROLL_FRICTION * delta)
-			codex_scroll_velocity = lerpf(codex_scroll_velocity, 0.0, friction_weight)
-		else:
-			codex_scroll_velocity = 0.0
-
-	var spring_acceleration: float = -codex_scroll_overshoot * CODEX_SCROLL_EDGE_SPRING - codex_scroll_overshoot_velocity * CODEX_SCROLL_EDGE_DAMPING
-	codex_scroll_overshoot_velocity += spring_acceleration * delta
-	codex_scroll_overshoot += codex_scroll_overshoot_velocity * delta
-	codex_scroll_overshoot = clampf(codex_scroll_overshoot, -CODEX_SCROLL_MAX_OVERSHOOT, CODEX_SCROLL_MAX_OVERSHOOT)
-	if absf(codex_scroll_overshoot) < 0.1 and absf(codex_scroll_overshoot_velocity) < 0.1:
-		codex_scroll_overshoot = 0.0
-		codex_scroll_overshoot_velocity = 0.0
-	_apply_codex_scroll_elastic_visual()
-
-func _update_deck_selector_scroll_inertia(delta: float) -> void:
-	if deck_list_scroll == null or deck_list == null:
-		return
-	if is_creating_deck or !deck_list_scroll.visible:
-		_reset_deck_selector_scroll_motion()
-		return
-
-	var max_scroll: float = _get_deck_selector_scroll_max()
-	if max_scroll <= 0.0:
-		deck_selector_scroll_velocity = 0.0
-	else:
-		var current_scroll: float = clampf(float(deck_list_scroll.scroll_vertical), 0.0, max_scroll)
-		if absf(deck_selector_scroll_velocity) > 0.5:
-			var next_scroll: float = current_scroll + deck_selector_scroll_velocity * delta
-			if next_scroll < 0.0:
-				deck_selector_scroll_overshoot_velocity += -next_scroll * CODEX_SCROLL_EDGE_SPRING
-				next_scroll = 0.0
-				deck_selector_scroll_velocity *= 0.16
-			elif next_scroll > max_scroll:
-				deck_selector_scroll_overshoot_velocity -= (next_scroll - max_scroll) * CODEX_SCROLL_EDGE_SPRING
-				next_scroll = max_scroll
-				deck_selector_scroll_velocity *= 0.16
-			deck_list_scroll.scroll_vertical = int(round(next_scroll))
-			var friction_weight: float = 1.0 - exp(-CODEX_SCROLL_FRICTION * delta)
-			deck_selector_scroll_velocity = lerpf(deck_selector_scroll_velocity, 0.0, friction_weight)
-		else:
-			deck_selector_scroll_velocity = 0.0
-
-	var spring_acceleration: float = -deck_selector_scroll_overshoot * CODEX_SCROLL_EDGE_SPRING - deck_selector_scroll_overshoot_velocity * CODEX_SCROLL_EDGE_DAMPING
-	deck_selector_scroll_overshoot_velocity += spring_acceleration * delta
-	deck_selector_scroll_overshoot += deck_selector_scroll_overshoot_velocity * delta
-	deck_selector_scroll_overshoot = clampf(deck_selector_scroll_overshoot, -CODEX_SCROLL_MAX_OVERSHOOT, CODEX_SCROLL_MAX_OVERSHOOT)
-	if absf(deck_selector_scroll_overshoot) < 0.1 and absf(deck_selector_scroll_overshoot_velocity) < 0.1:
-		deck_selector_scroll_overshoot = 0.0
-		deck_selector_scroll_overshoot_velocity = 0.0
-	_apply_deck_selector_scroll_elastic_visual()
-
-func _get_codex_scroll_max() -> float:
-	if deck_stamp_scroll == null or deck_stamp_list == null:
-		return 0.0
-	var scroll_bar := deck_stamp_scroll.get_v_scroll_bar()
-	if scroll_bar != null:
-		return maxf(0.0, scroll_bar.max_value - scroll_bar.page)
-	var content_height: float = maxf(deck_stamp_list.size.y, deck_stamp_list.get_combined_minimum_size().y)
-	return maxf(0.0, content_height - deck_stamp_scroll.size.y)
-
-func _get_deck_selector_scroll_max() -> float:
-	if deck_list_scroll == null or deck_list == null:
-		return 0.0
-	var scroll_bar := deck_list_scroll.get_v_scroll_bar()
-	if scroll_bar != null:
-		return maxf(0.0, scroll_bar.max_value - scroll_bar.page)
-	var content_height: float = maxf(deck_list.size.y, deck_list.get_combined_minimum_size().y)
-	return maxf(0.0, content_height - deck_list_scroll.size.y)
-
-func _apply_codex_scroll_elastic_visual() -> void:
-	if deck_stamp_scroll == null or deck_stamp_list == null:
-		return
-	var scroll_y: float = float(deck_stamp_scroll.scroll_vertical)
-	deck_stamp_list.scale = Vector2.ONE
-	deck_stamp_list.position.y = round(-scroll_y + codex_scroll_overshoot)
-
-func _apply_deck_selector_scroll_elastic_visual() -> void:
-	if deck_list_scroll == null or deck_list == null:
-		return
-	var scroll_y: float = float(deck_list_scroll.scroll_vertical)
-	deck_list.scale = Vector2.ONE
-	deck_list.position.y = round(-scroll_y + deck_selector_scroll_overshoot)
-
-func _reset_codex_scroll_motion() -> void:
-	codex_scroll_velocity = 0.0
-	codex_scroll_overshoot = 0.0
-	codex_scroll_overshoot_velocity = 0.0
-	if deck_stamp_list != null:
-		deck_stamp_list.scale = Vector2.ONE
-		if deck_stamp_scroll != null:
-			deck_stamp_list.position.y = -float(deck_stamp_scroll.scroll_vertical)
-
-func _reset_deck_selector_scroll_motion() -> void:
-	deck_selector_scroll_velocity = 0.0
-	deck_selector_scroll_overshoot = 0.0
-	deck_selector_scroll_overshoot_velocity = 0.0
-	if deck_list != null:
-		deck_list.scale = Vector2.ONE
-		if deck_list_scroll != null:
-			deck_list.position.y = -float(deck_list_scroll.scroll_vertical)
-
 func _on_previous_pressed() -> void:
-	_get_stamp_browser_controller().show_previous_page()
+	stamp_browser_controller.show_previous_page()
 
 func _on_next_pressed() -> void:
-	_get_stamp_browser_controller().show_next_page()
+	stamp_browser_controller.show_next_page()
 
 func _on_search_text_changed(_new_text: String) -> void:
 	_refresh_stamp_filter(true)
@@ -2166,13 +1119,11 @@ func _on_new_deck_pressed() -> void:
 	selected_deck_stamps.clear()
 	_ensure_selected_deck_slots()
 	dragged_print_id = ""
-	hovered_deck_stamp_index = -1
 	deck_name_edit.text = ""
 	_sync_deck_name_display()
-	_hide_remove_stamp_button()
 	_refresh_selected_deck_stamps()
 	_update_deck_editor_state()
-	_show_page(_get_stamp_browser_controller().get_current_page())
+	_show_page(stamp_browser_controller.get_current_page())
 
 func _on_deck_editor_back_pressed() -> void:
 	is_creating_deck = false
@@ -2181,11 +1132,9 @@ func _on_deck_editor_back_pressed() -> void:
 	is_editing_deck_name = false
 	selected_deck_stamps.clear()
 	dragged_print_id = ""
-	hovered_deck_stamp_index = -1
-	_hide_remove_stamp_button()
 	_refresh_selected_deck_stamps()
 	_update_deck_editor_state()
-	_show_page(_get_stamp_browser_controller().get_current_page())
+	_show_page(stamp_browser_controller.get_current_page())
 
 func _on_deck_name_changed(_new_text: String) -> void:
 	_sync_deck_name_display()
@@ -2256,18 +1205,6 @@ func _show_stamp_preview(stamp: Stamp, stamp_print: StampPrint = null) -> void:
 		if hover_description_panel.visible:
 			_layout_hover_description_panel()
 
-func _layout_preview_stamp() -> void:
-	if preview_stamp_holder == null or preview_stamp_visual == null:
-		return
-
-	var holder_size: Vector2 = preview_stamp_holder.size
-	if holder_size.x <= 0.0 or holder_size.y <= 0.0:
-		holder_size = preview_stamp_holder.custom_minimum_size
-	var scale_factor: float = minf(holder_size.x / STAMP_VISUAL_SIZE.x, holder_size.y / STAMP_VISUAL_SIZE.y) * 0.92
-	preview_stamp_visual.set_rest_scale(Vector2.ONE * scale_factor)
-	preview_stamp_visual.size = STAMP_VISUAL_SIZE
-	preview_stamp_visual.position = (holder_size - STAMP_VISUAL_SIZE * scale_factor) * 0.5
-
 func _on_stamp_drag_started(stamp_visual: StampVisual, print_id: String) -> void:
 	dragged_print_id = print_id
 	_set_stamp_drag_floating(stamp_visual, true)
@@ -2291,7 +1228,7 @@ func _on_stamp_drag_released(stamp_visual: StampVisual, print_id: String) -> voi
 		_update_deck_editor_state()
 
 	dragged_print_id = ""
-	call_deferred("_show_page", _get_stamp_browser_controller().get_current_page())
+	call_deferred("_show_page", stamp_browser_controller.get_current_page())
 
 func _get_deck_drop_index(mouse_position: Vector2) -> int:
 	if deck_stamp_list == null:
@@ -2325,12 +1262,10 @@ func _on_done_pressed() -> void:
 	selected_deck_stamps.clear()
 	deck_name_edit.text = ""
 	_sync_deck_name_display()
-	hovered_deck_stamp_index = -1
-	_hide_remove_stamp_button()
 	_refresh_selected_deck_stamps()
 	_populate_saved_decks_list()
 	_update_deck_editor_state()
-	_show_page(_get_stamp_browser_controller().get_current_page())
+	_show_page(stamp_browser_controller.get_current_page())
 
 func _on_back_pressed() -> void:
 	if pack_controller != null and pack_controller.handle_back_pressed():
@@ -2683,8 +1618,6 @@ func _update_slot_remove_button_hover(stamp_slot: Control, remove_button: Contro
 	_set_slot_remove_button_visible(remove_button, is_hovered)
 
 func _on_selected_deck_stamp_drag_started(_stamp_visual: StampVisual, deck_stamp_index: int) -> void:
-	hovered_deck_stamp_index = deck_stamp_index
-	_hide_remove_stamp_button()
 	_set_stamp_drag_floating(_stamp_visual, true)
 
 func _on_selected_deck_stamp_drag_released(stamp_visual: StampVisual, deck_stamp_index: int) -> void:
@@ -2707,8 +1640,6 @@ func _on_selected_deck_stamp_drag_released(stamp_visual: StampVisual, deck_stamp
 		return
 
 	_swap_or_move_deck_slots(deck_stamp_index, target_index)
-	hovered_deck_stamp_index = -1
-	_hide_remove_stamp_button()
 	_refresh_selected_deck_stamps()
 	_update_deck_editor_state()
 
@@ -2726,70 +1657,19 @@ func _set_stamp_drag_floating(stamp_visual: StampVisual, floating: bool) -> void
 		stamp_visual.z_index = 0
 
 func _on_remove_selected_deck_stamp_pressed(deck_stamp_index: int) -> void:
-	hovered_deck_stamp_index = deck_stamp_index
-	_on_remove_stamp_pressed()
+	if editing_deck_has_missing_stamps:
+		return
+	if deck_stamp_index < 0 or deck_stamp_index >= selected_deck_stamps.size():
+		return
 
-func _create_deck_stamp_row(stamp: Stamp, stamp_print: StampPrint, deck_stamp_index: int) -> Control:
-	var row_frame := PanelContainer.new()
-	row_frame.custom_minimum_size = Vector2(0, 34)
-	row_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row_frame.mouse_filter = Control.MOUSE_FILTER_STOP
-	row_frame.set_meta("stamp_name", stamp.stamp_name)
-	row_frame.mouse_entered.connect(_on_deck_stamp_row_mouse_entered.bind(deck_stamp_index, row_frame))
-
-	var row := HBoxContainer.new()
-	row_frame.add_child(row)
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_theme_constant_override("separation", 8)
-
-	var duration_label := Label.new()
-	row.add_child(duration_label)
-	duration_label.custom_minimum_size = Vector2(34, 0)
-	duration_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	duration_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	duration_label.text = tr("INF") if stamp.duration < 0 else str(stamp.duration)
-
-	var name_label := Label.new()
-	row.add_child(name_label)
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.text = _get_deck_stamp_display_name(stamp, stamp_print)
-	name_label.clip_text = true
-
-	if stamp.has_effect():
-		if stamp.effect_icon != null:
-			var effect_texture := TextureRect.new()
-			row.add_child(effect_texture)
-			effect_texture.custom_minimum_size = Vector2(24, 24)
-			effect_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			effect_texture.texture = stamp.effect_icon
-		else:
-			var effect_label := Label.new()
-			row.add_child(effect_label)
-			effect_label.custom_minimum_size = Vector2(32, 0)
-			effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			effect_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			effect_label.text = StampEffect.get_effect_label(stamp.effect_type)
-
-	return row_frame
+	selected_deck_stamps[deck_stamp_index] = null
+	_reindex_selected_deck_stamps()
+	_refresh_selected_deck_stamps()
+	_update_deck_editor_state()
+	_show_page(stamp_browser_controller.get_current_page())
 
 func _populate_saved_decks_list() -> void:
-	_get_saved_deck_list_controller().populate_saved_decks_list()
-
-func _create_saved_deck_row(deck_data: Dictionary) -> Control:
-	return _get_saved_deck_list_controller().create_saved_deck_row(deck_data)
-
-func _get_deck_preview_prints(deck_data: Dictionary) -> Array:
-	return _get_saved_deck_list_controller().get_deck_preview_prints(deck_data)
-
-func _create_small_deck_preview_stamp(stamp_print: StampPrint) -> StampVisual:
-	return _get_saved_deck_list_controller().create_small_deck_preview_stamp(stamp_print)
-
-func _create_circle_icon_button(icon: Texture2D, tooltip: String) -> Button:
-	return _get_saved_deck_list_controller().create_circle_icon_button(icon, tooltip)
-
-func _on_delete_deck_pressed(deck_id: String) -> void:
-	_get_saved_deck_list_controller().on_delete_deck_pressed(deck_id)
+	saved_deck_list_controller.populate_saved_decks_list()
 
 func _get_print_for_deck_stamp(deck_stamp: Dictionary) -> StampPrint:
 	var print_id: String = str(deck_stamp.get("print_id", ""))
@@ -2921,45 +1801,6 @@ func _on_edit_deck_pressed(deck_data: Dictionary) -> void:
 			_set_deck_slot(slot_index, normalized_stamp)
 
 	dragged_print_id = ""
-	hovered_deck_stamp_index = -1
-	_hide_remove_stamp_button()
 	_refresh_selected_deck_stamps()
 	_update_deck_editor_state()
-	_show_page(_get_stamp_browser_controller().get_current_page())
-
-func _on_deck_stamp_row_mouse_entered(deck_stamp_index: int, row_frame: Control) -> void:
-	if !is_creating_deck or editing_deck_has_missing_stamps:
-		return
-
-	hovered_deck_stamp_index = deck_stamp_index
-	var row_rect := row_frame.get_global_rect()
-	remove_stamp_button.global_position = Vector2(row_rect.end.x + 6.0, row_rect.position.y + row_rect.size.y * 0.5 - remove_stamp_button.size.y * 0.5)
-	remove_stamp_button.visible = true
-	remove_stamp_button.move_to_front()
-	remove_stamp_timer.start()
-
-func _on_remove_stamp_pressed() -> void:
-	if editing_deck_has_missing_stamps:
-		_hide_remove_stamp_button()
-		return
-
-	if hovered_deck_stamp_index < 0 or hovered_deck_stamp_index >= selected_deck_stamps.size():
-		_hide_remove_stamp_button()
-		return
-
-	selected_deck_stamps[hovered_deck_stamp_index] = null
-	_reindex_selected_deck_stamps()
-
-	hovered_deck_stamp_index = -1
-	_hide_remove_stamp_button()
-	_refresh_selected_deck_stamps()
-	_update_deck_editor_state()
-	_show_page(_get_stamp_browser_controller().get_current_page())
-
-func _hide_remove_stamp_button() -> void:
-	if remove_stamp_button == null:
-		return
-
-	remove_stamp_button.visible = false
-	if remove_stamp_timer != null && !remove_stamp_timer.is_stopped():
-		remove_stamp_timer.stop()
+	_show_page(stamp_browser_controller.get_current_page())

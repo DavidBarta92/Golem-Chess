@@ -354,6 +354,31 @@ static func end_simulated_turn(game_state: GameStateData, player_id: int, board_
 	game_state.switch_turn()
 	StampEffectResolver.tick_board_effects(game_state)
 	StampEffectResolver.tick_piece_protection_windows(game_state)
+	finish_if_player_has_no_valid_turn(game_state, game_state.current_turn_player, board_size)
+
+## Mirrors NetworkGameHost.finish_if_player_has_no_valid_turn: a player who
+## starts a turn without a single legal action loses on the spot. Without it the
+## search can neither aim for starving the opponent nor see its own stall coming.
+static func finish_if_player_has_no_valid_turn(game_state: GameStateData, player_id: int, board_size: int) -> void:
+	if game_state.game_over or player_has_valid_turn_action(game_state, player_id, board_size):
+		return
+	game_state.game_over = true
+	game_state.winner_player = 1 - player_id
+	game_state.win_condition = "no_valid_move"
+
+## Mirrors NetworkGameHost.player_has_valid_turn_action at the start of a turn.
+static func player_has_valid_turn_action(game_state: GameStateData, player_id: int, board_size: int) -> bool:
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var is_first_turn: bool = int(game_state.completed_turn_counts.get(player_id, 0)) == 0
+	if !is_first_turn and MoveRules.has_valid_piece_move(game_state.pieces, player_color, board_size, game_state.board_effects):
+		return true
+	if MoveRules.can_affix_any_stamp(game_state.pieces, player_color, get_hand_stamps_from_state(game_state, player_id)):
+		return true
+	if game_state.can_turn_page(player_id):
+		return true
+	if is_first_turn:
+		return false
+	return MoveRules.has_frozen_movable_piece(game_state.pieces, player_color, board_size, game_state.board_effects)
 
 static func clear_piece_exhaustion_for_player(game_state: GameStateData, player_id: int) -> void:
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)

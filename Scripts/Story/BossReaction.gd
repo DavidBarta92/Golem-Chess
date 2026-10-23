@@ -24,6 +24,7 @@ const TRIGGER_BOSS_PIECE_CAPTURED: String = "boss_piece_captured"
 const TRIGGER_ENTERED_ROUTE_SETUP: String = "entered_route_setup"
 const TRIGGER_ENTERED_ACTIVE_SEEKER_PUSH: String = "entered_active_seeker_push"
 const TRIGGER_ENTERED_ENDGAME_SEEKER_FINISH: String = "entered_endgame_seeker_finish"
+const TRIGGER_ENTERED_SEEKER_ATTACK: String = "entered_seeker_attack"
 const TRIGGER_ENTERED_SOFT_DEFENSE: String = "entered_soft_defense"
 const TRIGGER_ENTERED_EMERGENCY_DEFENSE: String = "entered_emergency_defense"
 ## Fired when the boss affixes the specific stamp set in `stamp` below.
@@ -35,6 +36,7 @@ const MODE_TRIGGERS: Dictionary = {
 	AIStrategyDirector.MODE_ROUTE_SETUP: TRIGGER_ENTERED_ROUTE_SETUP,
 	AIStrategyDirector.MODE_ACTIVE_SEEKER_PUSH: TRIGGER_ENTERED_ACTIVE_SEEKER_PUSH,
 	AIStrategyDirector.MODE_ENDGAME_SEEKER_FINISH: TRIGGER_ENTERED_ENDGAME_SEEKER_FINISH,
+	AIStrategyDirector.MODE_SEEKER_ATTACK: TRIGGER_ENTERED_SEEKER_ATTACK,
 	AIStrategyDirector.MODE_SOFT_DEFENSE: TRIGGER_ENTERED_SOFT_DEFENSE,
 	AIStrategyDirector.MODE_EMERGENCY_DEFENSE: TRIGGER_ENTERED_EMERGENCY_DEFENSE,
 }
@@ -47,6 +49,7 @@ const MODE_TRIGGERS: Dictionary = {
 	"entered_route_setup",
 	"entered_active_seeker_push",
 	"entered_endgame_seeker_finish",
+	"entered_seeker_attack",
 	"entered_soft_defense",
 	"entered_emergency_defense",
 	"stamp_played"

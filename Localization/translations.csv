@@ -95,6 +95,8 @@ MATCH_MENU_RETRY,Try again,Megpróbálom újra
 MATCH_MENU_RETRY_TITLE,Start Over,Újrakezdés
 MATCH_MENU_RETRY_TEXT,Do you want to start this match over?,Szeretnéd elölről kezdeni ezt a meccset?
 MATCH_MENU_LEAVE_OR_RETRY_TITLE,Leave or Start Over,Kilépés vagy újrakezdés
+MATCH_DECK_CHOICE_TITLE,Which codex will you play with?,Melyik kódexszel játszol?
+MATCH_DECK_CHOICE_START,Start,Kezdés
 MATCH_MENU_LEAVE_OR_RETRY_TEXT,"Do you want to leave the game, or start this match over?","Ki szeretnél lépni a játékból, vagy elölről kezdenéd ezt a meccset?"
 Yes,Yes,Igen
 No,No,Nem
@@ -977,3 +979,8 @@ A lépéssel lezárod a köröd, és ezzel ez a lehetőség is elvész."
 "Steam: Quick Match","Steam: Quick Match","Steam: Gyors meccs"
 "Searching for a Steam match...","Searching for a Steam match...","Steam-meccs keresése..."
 "You need a complete codex to accept a Steam invite.","You need a complete codex to accept a Steam invite.","Steam-meghívó elfogadásához teljes kódex kell."
+RATING_NAME,Rating,Értékszám
+RATING_CHANGE,Rating {change},Értékszám {change}
+RATING_NEXT_OPPONENT,Next: {name},Következik: {name}
+RATING_STAKES,Win: {win}    Loss: {loss},Győzelem: {win}    Vereség: {loss}
+CODEX_WIN_RATE_TOOLTIP,Won {won} of {played} matches since the codex last changed,{played} meccsből {won} győzelem a kódex legutóbbi módosítása óta

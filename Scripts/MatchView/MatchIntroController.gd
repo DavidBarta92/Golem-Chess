@@ -17,8 +17,22 @@ class_name MatchIntroController
 ##   3. the pieces arrive one at a time
 ##   4. the rest of the interface follows
 ##
+## A single-player match the player can bring any of several codexes to opens
+## on that choice instead (DeckChoicePanel). Only the table's lines draw at
+## first, with the far colour behind them; then the choice fades in on the
+## empty table and the match waits on it. Once it is settled the choice goes,
+## the grid draws, the near colour and the board fade in, and the pieces and
+## the interface follow as above. The game itself is only set up at that
+## point (deck_chosen), so it deals from the codex that was picked.
+##
 ## Everything is null-safe: a scene missing any of these parts still plays,
 ## just without that step.
+
+## The codex choice is settled; the game can be set up.
+signal deck_chosen
+## The interface has started to come in - the first moment anything said in
+## the opponent's panel can be seen.
+signal interface_revealed
 
 @export var background_path: NodePath = NodePath("../BackgroundLayer/MatchBackground")
 @export var match_board_path: NodePath = NodePath("../MatchBoard")
@@ -30,18 +44,26 @@ class_name MatchIntroController
 ## `PIECE_SHADOW_NAME`, which cannot be referenced from here because that
 ## script has no class_name.
 const PIECE_SHADOW_NAME: String = "PieceShadow"
+const DECK_CHOICE_PANEL_SCRIPT = preload("res://Scripts/MatchView/DeckChoicePanel.gd")
 
 @export_group("Timing")
 @export_range(0.0, 5.0, 0.05) var board_fade_seconds: float = 1.5
 @export_range(0.0, 1.0, 0.01) var piece_stagger_seconds: float = 0.1
 @export_range(0.0, 5.0, 0.05) var piece_fade_seconds: float = 0.5
 @export_range(0.0, 5.0, 0.05) var hud_fade_seconds: float = 0.8
+## The codex choice comes in at the same pace as the room's colours and goes
+## a little quicker, so the grid is not kept waiting.
+@export_range(0.0, 5.0, 0.05) var deck_choice_fade_in_seconds: float = 1.5
+@export_range(0.0, 5.0, 0.05) var deck_choice_fade_out_seconds: float = 0.8
 
 var _background: MatchBackgroundController
 var _match_board: Node2D
 var _grid_overlay: BoardGridOverlay
 var _has_begun: bool = false
 var _lines_pending: int = 0
+var _offers_deck_choice: bool = false
+var _deck_choice: VBoxContainer
+var _interface_revealed: bool = false
 
 func _ready() -> void:
 	_background = get_node_or_null(background_path) as MatchBackgroundController
@@ -52,6 +74,7 @@ func _ready() -> void:
 	_hold_pieces_back()
 	if !auto_begin:
 		return
+	_offers_deck_choice = _should_offer_deck_choice()
 	# The board builds its tiles and pieces over the first few frames.
 	call_deferred("begin")
 
@@ -80,9 +103,11 @@ func begin() -> void:
 	_lines_pending = 0
 	if _background != null:
 		_lines_pending += 1
+		_background.hold_near_colour = _offers_deck_choice
 		_background.line_art_finished.connect(_on_line_art_finished, CONNECT_ONE_SHOT)
 		_background.begin()
-	if _grid_overlay != null:
+	# With a codex to choose, the grid waits until it is chosen.
+	if _grid_overlay != null and !_offers_deck_choice:
 		_lines_pending += 1
 		_grid_overlay.set_view_color(_get_view_color())
 		_grid_overlay.reveal_finished.connect(_on_line_art_finished, CONNECT_ONE_SHOT)
@@ -95,13 +120,101 @@ func _on_line_art_finished() -> void:
 	_lines_pending = maxi(0, _lines_pending - 1)
 	if _lines_pending > 0:
 		return
+	if _offers_deck_choice:
+		_show_deck_choice()
+		return
+	_bring_in_board()
 
-	# The board arrives with the table's colour, so the two read as one surface.
+## The board with the table's colour, so the two read as one surface; the
+## pieces from half way through that, and the interface once it is done.
+func _bring_in_board() -> void:
 	_fade_in(_get_board_nodes(), board_fade_seconds, 0.0)
 	await get_tree().create_timer(board_fade_seconds * 0.5).timeout
 	_fade_in_staggered(_get_piece_nodes(), piece_fade_seconds, piece_stagger_seconds)
 	await get_tree().create_timer(maxf(0.0, board_fade_seconds * 0.5)).timeout
 	_fade_in(_get_hud_nodes(), hud_fade_seconds, 0.0)
+	_interface_revealed = true
+	interface_revealed.emit()
+
+## True while the match waits on the player's codex - the scene's own start
+## (Multiplayer) holds the game back until deck_chosen.
+func is_offering_deck_choice() -> bool:
+	return _offers_deck_choice
+
+func is_interface_revealed() -> bool:
+	return _interface_revealed
+
+# --- The codex choice ---------------------------------------------------------
+
+## Offered in a single-player match against the computer when the player can
+## bring a codex of their own and has more than one to bring. Not when the
+## story lends or forces one, not in multiplayer (the codex went to the server
+## with the player), and not in the tutorial, which never calls begin().
+func _should_offer_deck_choice() -> bool:
+	if !GameConfig.is_singleplayer or GameConfig.is_ai_vs_ai_batch or GameConfig.is_dedicated_server:
+		return false
+	if !GameConfig.player_controllers.values().has(GameConfig.CONTROLLER_HUMAN):
+		return false
+	if GameConfig.has_player_deck_override():
+		return false
+	var boss_node: BossGameStoryNode = StoryManager.get_active_boss_node()
+	if boss_node != null and !boss_node.force_player_deck_id.strip_edges().is_empty():
+		return false
+	return DECK_CHOICE_PANEL_SCRIPT.has_choice()
+
+## The choice on the empty table, in a layer of its own so the interface's
+## fades leave it alone.
+func _show_deck_choice() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "DeckChoiceLayer"
+	add_child(layer)
+	_deck_choice = DECK_CHOICE_PANEL_SCRIPT.new()
+	_deck_choice.name = "DeckChoice"
+	_deck_choice.modulate = MatchBackgroundController.PAPER_TINT
+	_deck_choice.modulate.a = 0.0
+	layer.add_child(_deck_choice)
+	_deck_choice.chosen.connect(_on_deck_chosen, CONNECT_ONE_SHOT)
+	get_viewport().size_changed.connect(_place_deck_choice)
+	_place_deck_choice()
+	# Laid out by the next frame; placed again then, when its size is known.
+	_place_deck_choice.call_deferred()
+
+	var fade := _deck_choice.create_tween()
+	fade.tween_property(_deck_choice, "modulate:a", 1.0, deck_choice_fade_in_seconds)
+	_deck_choice.begin()
+
+## Centred on the middle of the board that is about to be drawn under it.
+func _place_deck_choice() -> void:
+	if _deck_choice == null or !is_instance_valid(_deck_choice):
+		return
+	var centre: Vector2 = get_viewport().get_visible_rect().size * 0.5
+	if _match_board != null and _match_board.has_method("get_board_position_screen_position"):
+		var middle: float = float(BoardConfig.BOARD_SIZE - 1) * 0.5
+		centre = _match_board.get_board_position_screen_position(Vector2(middle, middle))
+	_deck_choice.reset_size()
+	_deck_choice.position = centre - _deck_choice.size * 0.5
+
+## The codex is settled: the game is set up with it while the choice fades,
+## then the grid draws and the rest of the board follows.
+func _on_deck_chosen(deck_id: String) -> void:
+	GameConfig.set_selected_deck_id(deck_id)
+	if GameConfig.ai_mirrors_player_deck and !GameConfig.has_ai_opponent_deck_override():
+		GameConfig.select_deck_for_both_players(deck_id)
+	deck_chosen.emit()
+
+	if get_viewport().size_changed.is_connected(_place_deck_choice):
+		get_viewport().size_changed.disconnect(_place_deck_choice)
+	var fade := _deck_choice.create_tween()
+	fade.tween_property(_deck_choice, "modulate:a", 0.0, deck_choice_fade_out_seconds)
+	await fade.finished
+	_deck_choice.get_parent().queue_free()
+	_deck_choice = null
+	draw_grid(_on_grid_drawn_after_choice)
+
+func _on_grid_drawn_after_choice() -> void:
+	if _background != null:
+		_background.fade_in_near_colour()
+	_bring_in_board()
 
 # --- Staged by hand -----------------------------------------------------------
 #

@@ -36,6 +36,10 @@ const SETTINGS_DIALOG_BELOW_TOP_BAR_LAYER: int = -10
 
 const BACKGROUND_LINES_FALLBACK_BASE_DURATION: float = 1.6
 const BACKGROUND_LINES_FALLBACK_MAX_DELAY: float = 1.8
+const NEXT_BOSS_STAKES_FONT_SIZE: int = 22
+const NEXT_BOSS_STAKES_GAP: float = 6.0
+const NEXT_BOSS_STAKES_OUTLINE_SIZE: int = 8
+const NEXT_BOSS_STAKES_OUTLINE_COLOR: Color = Color(0.9366637, 0.9330646, 0.89437205, 1.0)
 
 var ai_vs_ai_unlock_presses: int = 0
 var background_lines_animating: bool = false
@@ -44,6 +48,7 @@ var background_lines_total_duration: float = 0.0
 var settings_dialog_saved_top_bar_layer: int = 0
 var ai_deck_ids: Array[String] = []
 var points_label: Label
+var next_boss_stakes_label: Label
 
 func _ready():
 	if should_start_dedicated_server_from_launch():
@@ -77,6 +82,7 @@ func _ready():
 	input_rebind_dialog.controls_section = controls_section
 	_connect_once(rebind_keys_button.pressed, Callable(self, "_on_rebind_keys_button_pressed"))
 	_bind_top_bar()
+	_build_next_boss_stakes_label()
 	sync_dev_tools_from_config()
 	_populate_ai_vs_ai_deck_options()
 	_connect_once(ai_random_deck_check.toggled, Callable(self, "_on_ai_random_deck_toggled"))
@@ -117,6 +123,37 @@ func _start_background_line_reveal() -> void:
 
 func _on_opponent_arrived() -> void:
 	play_button.disabled = false
+	if next_boss_stakes_label != null:
+		next_boss_stakes_label.visible = true
+
+## When Play would start a boss fight, the lines under it name the boss and
+## say what the fight can do to the player's rating - nothing more: the number
+## goes up by this much with a win and down by that much with a loss.
+func _build_next_boss_stakes_label() -> void:
+	var boss_node := StoryManager.get_current_node() as BossGameStoryNode
+	if boss_node == null or boss_node.boss == null:
+		return
+	var stakes: Dictionary = PlayerProgressStore.get_rating_stakes(float(boss_node.boss.rating))
+	next_boss_stakes_label = Label.new()
+	next_boss_stakes_label.name = "NextBossStakesLabel"
+	next_boss_stakes_label.text = "%s\n%s" % [
+		tr("RATING_NEXT_OPPONENT").format({"name": boss_node.boss.get_localized_display_name()}),
+		tr("RATING_STAKES").format({"win": "%+d" % int(stakes.get("win", 0)), "loss": "%+d" % int(stakes.get("loss", 0))}),
+	]
+	next_boss_stakes_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	next_boss_stakes_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	next_boss_stakes_label.add_theme_font_size_override("font_size", NEXT_BOSS_STAKES_FONT_SIZE)
+	next_boss_stakes_label.add_theme_color_override("font_color", UiPalette.INK)
+	next_boss_stakes_label.add_theme_color_override("font_outline_color", NEXT_BOSS_STAKES_OUTLINE_COLOR)
+	next_boss_stakes_label.add_theme_constant_override("outline_size", NEXT_BOSS_STAKES_OUTLINE_SIZE)
+	play_button.add_child(next_boss_stakes_label)
+	next_boss_stakes_label.anchor_left = 0.0
+	next_boss_stakes_label.anchor_right = 1.0
+	next_boss_stakes_label.anchor_top = 1.0
+	next_boss_stakes_label.anchor_bottom = 1.0
+	next_boss_stakes_label.offset_top = NEXT_BOSS_STAKES_GAP
+	next_boss_stakes_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	next_boss_stakes_label.visible = !play_button.disabled
 
 func launch_dedicated_server_scene() -> void:
 	if get_tree():

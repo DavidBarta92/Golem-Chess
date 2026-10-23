@@ -13,6 +13,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 45.0,
 		"opponent_response_weight": 0.0,
 		"tactical_defense_awareness": 0.35,
+		"aggression": 0.85,
 	},
 	2: {
 		"search_depth": 1,
@@ -21,6 +22,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 35.0,
 		"opponent_response_weight": 0.0,
 		"tactical_defense_awareness": 0.45,
+		"aggression": 0.85,
 	},
 	3: {
 		"search_depth": 1,
@@ -29,6 +31,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 28.0,
 		"opponent_response_weight": 0.0,
 		"tactical_defense_awareness": 0.55,
+		"aggression": 0.8,
 	},
 	4: {
 		"search_depth": 1,
@@ -37,6 +40,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 20.0,
 		"opponent_response_weight": 0.0,
 		"tactical_defense_awareness": 0.65,
+		"aggression": 0.8,
 	},
 	5: {
 		"search_depth": 2,
@@ -45,6 +49,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 15.0,
 		"opponent_response_weight": 0.35,
 		"tactical_defense_awareness": 0.75,
+		"aggression": 0.75,
 	},
 	6: {
 		"search_depth": 2,
@@ -53,6 +58,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 10.0,
 		"opponent_response_weight": 0.50,
 		"tactical_defense_awareness": 0.85,
+		"aggression": 0.7,
 	},
 	7: {
 		"search_depth": 2,
@@ -61,6 +67,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 6.0,
 		"opponent_response_weight": 0.58,
 		"tactical_defense_awareness": 0.90,
+		"aggression": 0.65,
 	},
 	8: {
 		"search_depth": 2,
@@ -69,6 +76,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 4.0,
 		"opponent_response_weight": 0.64,
 		"tactical_defense_awareness": 0.95,
+		"aggression": 0.6,
 	},
 	9: {
 		"search_depth": 2,
@@ -77,6 +85,7 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 2.0,
 		"opponent_response_weight": 0.70,
 		"tactical_defense_awareness": 1.0,
+		"aggression": 0.55,
 	},
 	10: {
 		"search_depth": 2,
@@ -85,22 +94,27 @@ const DIFFICULTY_CONFIGS: Dictionary = {
 		"randomness": 1.0,
 		"opponent_response_weight": 0.76,
 		"tactical_defense_awareness": 1.0,
+		"aggression": 0.55,
 	},
 	11: {
-		"search_depth": 2,
+		"search_depth": 4,
 		"own_top_n": 8,
 		"opponent_top_n": 6,
 		"randomness": 0.0,
 		"opponent_response_weight": 0.80,
 		"tactical_defense_awareness": 1.0,
+		"aggression": 0.55,
+		"deep_search_ms": 4000,
 	},
 	12: {
-		"search_depth": 2,
+		"search_depth": 4,
 		"own_top_n": 9,
 		"opponent_top_n": 7,
 		"randomness": 0.0,
 		"opponent_response_weight": 0.82,
 		"tactical_defense_awareness": 1.0,
+		"aggression": 0.55,
+		"deep_search_ms": 7000,
 	},
 }
 
@@ -135,6 +149,9 @@ const DEEP_OWN_SECOND_BEAM_WIDTH: int = 2
 const DEEP_OPPONENT_SECOND_BEAM_WIDTH: int = 2
 const DEEP_SECOND_OWN_WEIGHT: float = 0.72
 const DEEP_SECOND_OPPONENT_WEIGHT: float = 0.62
+## The deep pass may use at most this share of the AI's remaining match clock,
+## so a long think can never be what loses the game on time.
+const DEEP_SEARCH_CLOCK_SHARE: float = 1.0 / 30.0
 const STAMP_VALUE_AFFIX_PLAY_WEIGHT: float = 0.35
 const STAMP_VALUE_AFFIX_EXCHANGE_WEIGHT: float = 0.6
 const STAMP_VALUE_CAPTURE_WEIGHT: float = 1.2
@@ -189,6 +206,18 @@ const SCORE_EMERGENCY_PREVENT_BASE_WIN: float = 50000.0
 const PENALTY_ALLOW_IMMEDIATE_BASE_WIN: float = 65000.0
 const PENALTY_EXCHANGE_LAST_SEEKER: float = 900.0
 const PENALTY_MOVE_OFF_ENEMY_BASE_WITHOUT_SEEKER: float = 450.0
+## A Seeker this many steps beyond its own reach (or with no route at all)
+## earns the full early-commitment penalty; fewer steps earn a share of it.
+const SEEKER_OVERREACH_FULL_PENALTY_STEPS: int = 3
+## At aggression 1.0 the early-commitment penalties are halved.
+const SEEKER_AGGRESSION_PENALTY_DISCOUNT: float = 0.5
+const SEEKER_ATTACK_STRATEGY_WEIGHT: float = 0.8
+const RESOURCE_ADVANTAGE_FOR_FINISH: float = 4.0
+const ENEMY_USABLE_GOLEMS_FOR_FINISH: int = 3
+const SCORE_CAPTURE_LOCKS_GOLEM: float = 30.0
+const SCORE_CAPTURE_REMOVES_GOLEM: float = 18.0
+const SCORE_CAPTURE_GOLEM_SCARCITY: float = 14.0
+const LOW_USABLE_GOLEM_COUNT: int = 4
 
 var difficulty_level: int = DEFAULT_DIFFICULTY_LEVEL
 var search_depth: int = 1
@@ -197,6 +226,20 @@ var opponent_top_n: int = 4
 var randomness: float = 8.0
 var opponent_response_weight: float = DEFAULT_OPPONENT_RESPONSE_WEIGHT
 var tactical_defense_awareness: float = 1.0
+## How readily the AI goes for the base: an earlier switch to the Seeker attack
+## (AIStrategyDirector) and a smaller penalty for putting a Seeker down before
+## it is within reach. A style knob, not a strength one - low levels get the
+## most, so they are weak by leaving holes rather than by never attacking.
+var aggression: float = 0.5
+## Not part of the difficulty level: a story boss can be set to guard its base
+## worse than its level does (BossDefinition.ai_defense). See begin_decision.
+var defense_scale: float = 1.0
+## Whether the AI looks at the opponent's threats against its base this turn.
+var sees_threats_this_turn: bool = true
+var deep_search_ms: int = 0
+## Set only on the worker evaluators of the deep pass (see
+## choose_deep_beam_plan); 0 means no limit.
+var search_deadline_usec: int = 0
 var last_profile: Dictionary = {}
 var fast_score_cache: Dictionary = {}
 var full_score_cache: Dictionary = {}
@@ -241,10 +284,20 @@ func apply_difficulty_config(level: int) -> void:
 	randomness = float(config.get("randomness", 8.0))
 	opponent_response_weight = float(config.get("opponent_response_weight", DEFAULT_OPPONENT_RESPONSE_WEIGHT))
 	tactical_defense_awareness = float(config.get("tactical_defense_awareness", 1.0))
+	aggression = float(config.get("aggression", 0.5))
+	deep_search_ms = int(config.get("deep_search_ms", 0))
+
+## Rolled once per turn, before the AI looks at its options: on a turn it does
+## not see the opponent's threats, it neither takes the defensive shortcuts nor
+## scores blocking, pushing back or capturing the enemy Seeker, nor reads the
+## opponent's replies - it plays as if its base were not under attack. Always
+## sees them at the default defense_scale of 1.0.
+func begin_decision() -> void:
+	sees_threats_this_turn = defense_scale >= 1.0 or randf() < defense_scale
 
 func should_notice_defensive_tactics() -> bool:
-	# Guards the non-"immediate win" forced-tactical shortcuts (AITacticalSearch) - defense,
-	# two-turn-threat, and staging-capture - which have no equivalent recognition in the normal
+	# Guards the defensive forced-tactical shortcuts (AITacticalSearch) - immediate base defense
+	# and staging-capture - which have no equivalent recognition in the normal
 	# fast-prefilter scoring pass (score_turn_plan_fast never sees the huge hard-rule bonuses
 	# from score_hard_tactical_rules_for_plan, only the full scorer does). Skipping this check is
 	# what lets low difficulty realistically miss "if I don't respond now, I lose next turn" -
@@ -252,6 +305,7 @@ func should_notice_defensive_tactics() -> bool:
 	# The "immediate win" shortcut is intentionally NOT gated by this: an unblocked winning move
 	# is something the normal scorer already reliably finds on its own (score_move_fast awards
 	# it SCORE_WIN directly), so hiding it here would only slow the AI down, not make it weaker.
+	# Nor is the AI's own two-turn threat: a weak AI should defend badly, not attack timidly.
 	if tactical_defense_awareness >= 1.0:
 		return true
 	return randf() < tactical_defense_awareness
@@ -340,24 +394,22 @@ func choose_best_turn_plan(game_state: GameStateData, player_id: int, turn_plans
 		best_plan = {}
 		best_score = -INF
 		var best_clean_score: float = -INF
+		var response_scored_plans: Array[Dictionary] = []
 		for scored_plan: Dictionary in response_candidates:
 			var plan: Dictionary = scored_plan.get("plan", {})
 			var own_score: float = float(scored_plan.get("score", 0.0))
-			var clean_plan_score: float = 0.0
-			if should_score_deep_beam(turn_planner):
-				clean_plan_score = score_deep_beam_turn_plan(game_state, player_id, plan, own_score, board_size, turn_planner, profile)
-			else:
-				var response_score_ceiling: float = get_opponent_response_score_ceiling(own_score, best_clean_score)
-				var opponent_response_score: float = score_best_opponent_response(
-					game_state,
-					player_id,
-					plan,
-					board_size,
-					turn_planner,
-					profile,
-					response_score_ceiling
-				)
-				clean_plan_score = own_score - opponent_response_score * opponent_response_weight
+			var response_score_ceiling: float = get_opponent_response_score_ceiling(own_score, best_clean_score)
+			var opponent_response_score: float = score_best_opponent_response(
+				game_state,
+				player_id,
+				plan,
+				board_size,
+				turn_planner,
+				profile,
+				response_score_ceiling
+			)
+			var clean_plan_score: float = own_score - opponent_response_score * opponent_response_weight
+			response_scored_plans.append({"plan": plan, "score": clean_plan_score})
 			var plan_score: float = clean_plan_score
 			if randomness > 0.0:
 				plan_score += randf_range(-randomness, randomness)
@@ -367,6 +419,12 @@ func choose_best_turn_plan(game_state: GameStateData, player_id: int, turn_plans
 				best_score = plan_score
 			if clean_plan_score > best_clean_score:
 				best_clean_score = clean_plan_score
+
+		if should_score_deep_beam(turn_planner):
+			var deep_choice: Dictionary = choose_deep_beam_plan(game_state, player_id, response_scored_plans, board_size, turn_planner, profile)
+			if !deep_choice.is_empty():
+				best_plan = deep_choice.get("plan", best_plan)
+				best_score = float(deep_choice.get("score", best_score))
 
 	profile["choose_best_turn_plan_ms"] = usec_to_ms(Time.get_ticks_usec() - start_usec)
 	profile["best_plan_score"] = best_score
@@ -460,6 +518,7 @@ func get_root_full_score_limit(plan_count: int) -> int:
 
 func should_score_opponent_responses(turn_planner) -> bool:
 	return search_depth >= 2 \
+		&& sees_threats_this_turn \
 		&& turn_planner != null \
 		&& opponent_response_weight > 0.0 \
 		&& own_top_n > 0 \
@@ -478,7 +537,7 @@ func is_safe_opening_phase() -> bool:
 	return str(strategy_context.get("mode", "")) == AIStrategyDirector.MODE_OPENING
 
 func should_score_deep_beam(turn_planner) -> bool:
-	return search_depth >= 4 && should_score_opponent_responses(turn_planner)
+	return search_depth >= 4 && deep_search_ms > 0 && should_score_opponent_responses(turn_planner)
 
 func get_response_candidate_plans(scored_plans: Array[Dictionary]) -> Array[Dictionary]:
 	if scored_plans.is_empty():
@@ -487,8 +546,92 @@ func get_response_candidate_plans(scored_plans: Array[Dictionary]) -> Array[Dict
 	if search_depth < 2 or own_top_n <= 0:
 		var empty_candidate_plans: Array[Dictionary] = []
 		return empty_candidate_plans
-	var candidate_limit: int = DEEP_ROOT_BEAM_WIDTH if search_depth >= 4 else own_top_n
-	return get_top_scored_plans(scored_plans, candidate_limit)
+	return get_top_scored_plans(scored_plans, own_top_n)
+
+## Second pass on top of the two-turn lookahead: the best few plans by that
+## score are searched two full turns deeper (score_deep_beam_turn_plan) and the
+## best of them wins. The pass runs against a time budget, and one that runs out
+## is thrown away whole, because a plan searched deeper and one that was not are
+## not comparable; the two-turn choice then stands.
+##
+## The roots are independent, so each is searched on its own worker thread with
+## its own evaluator and planner (the same reasoning as in
+## score_turn_plans_fast_parallel: their caches are never shared between threads,
+## and game_state is only read).
+func choose_deep_beam_plan(
+	game_state: GameStateData,
+	player_id: int,
+	response_scored_plans: Array[Dictionary],
+	board_size: int,
+	turn_planner,
+	profile: Dictionary
+) -> Dictionary:
+	var budget_usec: int = get_deep_search_budget_usec(game_state, player_id)
+	if budget_usec <= 0 or response_scored_plans.is_empty():
+		return {}
+
+	var start_usec: int = Time.get_ticks_usec()
+	var deadline_usec: int = start_usec + budget_usec
+	var roots: Array[Dictionary] = []
+	for scored_plan: Dictionary in get_top_scored_plans(response_scored_plans, DEEP_ROOT_BEAM_WIDTH):
+		var plan: Dictionary = scored_plan.get("plan", {})
+		roots.append({
+			"plan": plan,
+			"own_score": score_turn_plan_cached(game_state, player_id, plan, board_size),
+		})
+
+	var results: Array = []
+	results.resize(roots.size())
+	var planner_script = turn_planner.get_script()
+	var root_search_task: Callable = func(index: int) -> void:
+		var worker_evaluator = create_search_worker(deadline_usec)
+		var worker_planner = planner_script.new()
+		worker_planner.planning_evaluator = worker_evaluator
+		var root: Dictionary = roots[index]
+		var plan: Dictionary = root.get("plan", {})
+		var deep_score: float = worker_evaluator.score_deep_beam_turn_plan(game_state, player_id, plan, float(root.get("own_score", 0.0)), board_size, worker_planner, {})
+		results[index] = {
+			"plan": plan,
+			"score": deep_score,
+			"timed_out": worker_evaluator.is_search_out_of_time(),
+		}
+
+	var task_id: int = WorkerThreadPool.add_group_task(root_search_task, roots.size())
+	if task_id < 0:
+		for index in range(roots.size()):
+			root_search_task.call(index)
+	else:
+		WorkerThreadPool.wait_for_group_task_completion(task_id)
+
+	var best_choice: Dictionary = {}
+	for result in results:
+		if !(result is Dictionary) or bool(result.get("timed_out", true)):
+			best_choice = {}
+			break
+		if best_choice.is_empty() or float(result.get("score", -INF)) > float(best_choice.get("score", -INF)):
+			best_choice = result
+
+	profile["deep_search_ms"] = usec_to_ms(Time.get_ticks_usec() - start_usec)
+	profile["deep_search_completed"] = !best_choice.is_empty()
+	return best_choice
+
+func create_search_worker(deadline_usec: int):
+	var worker = get_script().new(difficulty_level)
+	worker.set_strategy_context(strategy_context)
+	worker.defense_scale = defense_scale
+	worker.sees_threats_this_turn = sees_threats_this_turn
+	worker.search_deadline_usec = deadline_usec
+	return worker
+
+func get_deep_search_budget_usec(game_state: GameStateData, player_id: int) -> int:
+	var budget_ms: float = float(deep_search_ms)
+	if game_state != null and game_state.player_clock_seconds.has(player_id):
+		var clock_ms: float = float(game_state.player_clock_seconds[player_id]) * 1000.0
+		budget_ms = minf(budget_ms, clock_ms * DEEP_SEARCH_CLOCK_SHARE)
+	return int(maxf(budget_ms, 0.0) * 1000.0)
+
+func is_search_out_of_time() -> bool:
+	return search_deadline_usec > 0 and Time.get_ticks_usec() >= search_deadline_usec
 
 func choose_best_scored_plan(scored_plans: Array[Dictionary], profile: Dictionary) -> Dictionary:
 	var best_plan: Dictionary = {}
@@ -514,9 +657,6 @@ func score_turn_plan_with_response(game_state: GameStateData, player_id: int, pl
 	increment_profile_count(profile, "evaluated_own_plans")
 	if !should_score_opponent_responses(turn_planner):
 		return own_score
-
-	if should_score_deep_beam(turn_planner):
-		return score_deep_beam_turn_plan(game_state, player_id, plan, own_score, board_size, turn_planner, profile)
 
 	var response_score_ceiling: float = get_opponent_response_score_ceiling(own_score, known_best_clean_score)
 	var opponent_response_score: float = score_best_opponent_response(game_state, player_id, plan, board_size, turn_planner, profile, response_score_ceiling)
@@ -639,6 +779,8 @@ func score_deep_beam_turn_plan(
 
 	var worst_branch_value: float = INF
 	for opponent_plan: Dictionary in opponent_beam:
+		if is_search_out_of_time():
+			break
 		var branch_value: float = score_deep_beam_opponent_branch(
 			state_after_first_plan,
 			player_id,
@@ -696,6 +838,8 @@ func score_deep_beam_opponent_branch(
 
 	var best_continuation_value: float = -INF
 	for own_second_plan: Dictionary in own_second_beam:
+		if is_search_out_of_time():
+			break
 		var continuation_value: float = score_deep_beam_own_second_branch(
 			state_after_opponent,
 			player_id,
@@ -1142,7 +1286,7 @@ func score_affix_setup_fast(game_state: GameStateData, player_id: int, affix_act
 		if seeker_ready:
 			score += SCORE_AFFIX_SEEKER * 0.85
 		else:
-			score -= PENALTY_EARLY_SEEKER_COMMITMENT
+			score -= PENALTY_EARLY_SEEKER_COMMITMENT * get_seeker_overreach_penalty_factor(game_state, player_id, stamp, piece_pos, board_size)
 	score += float(stamp.get_directions().size()) * 2.5
 	score += get_stamp_balance_value(stamp) * STAMP_VALUE_AFFIX_PLAY_WEIGHT
 	if is_seeker_stamp:
@@ -1174,13 +1318,14 @@ func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary
 				if is_seeker_affix_in_timing_window(game_state, player_id, stamp, from_pos, board_size):
 					score += SCORE_AFFIX_SEEKER * 0.85
 				else:
-					score -= PENALTY_EARLY_SEEKER_COMMITMENT
+					score -= PENALTY_EARLY_SEEKER_COMMITMENT * get_seeker_overreach_penalty_factor(game_state, player_id, stamp, from_pos, board_size)
 			score += get_stamp_balance_value(stamp) * STAMP_VALUE_AFFIX_PLAY_WEIGHT
 	else:
 		score += SCORE_USE_EXISTING_STAMP
 
 	if captured_piece != null:
 		score += score_capture(captured_piece) * 0.9
+		score += score_capture_respawn_effect(game_state, captured_piece) * 0.9
 		score += score_base_staging_capture(game_state, player_id, captured_piece, to_pos, board_size) * 0.9
 		score += score_seeker_capture_discipline(game_state, player_id, move, captured_piece, board_size) * 0.9
 		if has_active_seeker_near_finish(game_state, player_id, board_size) and !AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
@@ -1409,14 +1554,38 @@ func score_stamp_synergy_for_affix(game_state: GameStateData, player_id: int, ac
 func get_early_seeker_affix_penalty(game_state: GameStateData, player_id: int, stamp: Stamp, piece_pos: Vector2) -> float:
 	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
 	var distance_to_base: float = get_manhattan_distance(piece_pos, opponent_base)
-	var penalty: float = PENALTY_SEEKER_AFFIX_OUT_OF_ROUTE + PENALTY_EARLY_SEEKER_COMMITMENT
+	var penalty: float = (PENALTY_SEEKER_AFFIX_OUT_OF_ROUTE + PENALTY_EARLY_SEEKER_COMMITMENT) \
+		* get_seeker_overreach_penalty_factor(game_state, player_id, stamp, piece_pos)
 	if distance_to_base <= float(max(2, stamp.duration + 1)):
 		penalty *= 0.78
-	if is_endgame_seeker_finish_mode():
+	if is_seeker_closing_mode():
 		penalty *= 0.5
 	if stamp.effect_type == StampEffect.TYPE_INVISIBLE_TO_ENEMY or stamp.effect_type == StampEffect.TYPE_UNCAPTURABLE:
 		penalty *= 0.9
 	return penalty
+
+## How much of the full early-Seeker penalty putting this Seeker down here
+## earns. Within its reach (a route to the base no longer than its duration) it
+## earns none; each step beyond costs another share, up to the full penalty at
+## SEEKER_OVERREACH_FULL_PENALTY_STEPS or with no route at all. It used to be
+## the full penalty for any step beyond, which kept the AI from ever starting
+## an attack - out of all proportion, since a Seeker returns to the codex when
+## it expires or is captured: putting one down early costs tempo, not the stamp.
+func get_seeker_overreach_penalty_factor(
+	game_state: GameStateData,
+	player_id: int,
+	stamp: Stamp,
+	piece_pos: Vector2,
+	board_size: int = BoardConfig.BOARD_SIZE
+) -> float:
+	var route_distance: int = get_seeker_route_distance(game_state, player_id, stamp, piece_pos, board_size)
+	if route_distance < 0:
+		return 1.0
+	var overreach_steps: int = route_distance - maxi(1, stamp.duration)
+	if overreach_steps <= 0:
+		return 0.0
+	var share: float = minf(1.0, float(overreach_steps) / float(SEEKER_OVERREACH_FULL_PENALTY_STEPS))
+	return share * (1.0 - SEEKER_AGGRESSION_PENALTY_DISCOUNT * aggression)
 
 func score_seeker_route_strategy_for_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
 	if game_state == null or plan.is_empty():
@@ -1776,6 +1945,11 @@ func get_seeker_route_map(game_state: GameStateData, player_id: int, seeker_stam
 					var candidate_key: String = vector_hash(candidate_pos)
 					if route_map.has(candidate_key):
 						continue
+					if depth == 0:
+						if can_seeker_enter_base_from(game_state, player_color, seeker_stamp, candidate_pos, target_pos):
+							route_map[candidate_key] = 1
+							next_frontier.append(candidate_pos)
+						continue
 					if seeker_route_candidate_reaches_target(game_state, player_color, seeker_stamp, candidate_pos, target_pos, board_size):
 						route_map[candidate_key] = depth + 1
 						next_frontier.append(candidate_pos)
@@ -1811,6 +1985,29 @@ func seeker_route_candidate_reaches_target(
 		if candidate_pos + direction == target_pos:
 			return true
 		if candidate_pos - direction == target_pos:
+			return true
+	return false
+
+## The route's steps toward the base are approximate (pieces in the way come and
+## go), but the last step onto it follows the movement rules exactly, ignoring
+## only a frozen start square, which wears off: a move-only seeker cannot enter
+## an occupied base, a capture-only one can enter only by capturing a piece that
+## stands there. That is what makes a golem parked on its own base a wall
+## against a Prince or a Turtle, and an empty base a wall against a Cactus.
+func can_seeker_enter_base_from(
+	game_state: GameStateData,
+	player_color: int,
+	seeker_stamp: Stamp,
+	candidate_pos: Vector2,
+	base_pos: Vector2
+) -> bool:
+	var base_piece: Piece = game_state.get_piece(base_pos)
+	for movement_option: Dictionary in seeker_stamp.get_movement_options():
+		var direction: Vector2 = movement_option.get("offset", Vector2.ZERO)
+		if candidate_pos + direction * player_color != base_pos:
+			continue
+		var movement_type: int = int(movement_option.get("movement_type", StampEffect.MOVEMENT_MOVE_AND_CAPTURE))
+		if MoveRules.is_target_allowed_by_movement_type(base_piece, player_color, movement_type):
 			return true
 	return false
 
@@ -1934,7 +2131,8 @@ func score_threat_map_for_plan(game_state: GameStateData, player_id: int, plan: 
 	var opponent_player_id: int = 1 - player_id
 	var score: float = 0.0
 	score += score_two_turn_base_pressure(simulated_state, player_id, board_size)
-	score -= score_two_turn_base_pressure(simulated_state, opponent_player_id, board_size) * 1.25
+	if sees_threats_this_turn:
+		score -= score_two_turn_base_pressure(simulated_state, opponent_player_id, board_size) * 1.25
 	score += score_attack_map_pressure(simulated_state, player_id, board_size) * SCORE_THREAT_MAP_OWN_ATTACK
 	score -= score_attack_map_pressure(simulated_state, opponent_player_id, board_size) * PENALTY_THREAT_MAP_EXPOSURE
 	return score
@@ -1950,6 +2148,10 @@ func score_two_turn_base_pressure(game_state: GameStateData, player_id: int, boa
 		game_state.board_effects
 	)
 
+	# A move cannot put a Seeker on the board, so without one already there no
+	# move can set up a base entry for next turn, and the per-move simulation
+	# (the expensive part of full plan scoring) has nothing to find.
+	var has_board_seeker: bool = should_push_active_board_seeker(game_state, player_id)
 	var best_pressure: float = 0.0
 	for move: Dictionary in valid_moves:
 		var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
@@ -1961,20 +2163,21 @@ func score_two_turn_base_pressure(game_state: GameStateData, player_id: int, boa
 		var pressure: float = maxf(0.0, float(board_size) - distance_after) * 8.0
 		if AIStateSimulator.is_own_seeker_candidate(game_state.pieces, move, player_id):
 			pressure += SCORE_TWO_TURN_BASE_THREAT
-		var simulated_plan: Dictionary = {
-			"actions": [{
-				"type": "move_piece",
-				"player_id": player_id,
-				"from": AIStateSimulator.get_move_from(move),
-				"to": to_pos,
-			}],
-			"move": move,
-			"setup_affix_actions": [],
-			"plan_type": "threat_probe",
-		}
-		var next_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, simulated_plan, board_size)
-		if !next_state.game_over and has_immediate_base_win(next_state, player_id, board_size):
-			pressure += SCORE_FORCE_DEFENSE
+		if has_board_seeker:
+			var simulated_plan: Dictionary = {
+				"actions": [{
+					"type": "move_piece",
+					"player_id": player_id,
+					"from": AIStateSimulator.get_move_from(move),
+					"to": to_pos,
+				}],
+				"move": move,
+				"setup_affix_actions": [],
+				"plan_type": "threat_probe",
+			}
+			var next_state: GameStateData = AIStateSimulator.apply_turn_plan(game_state, player_id, simulated_plan, board_size)
+			if !next_state.game_over and has_immediate_base_win(next_state, player_id, board_size):
+				pressure += SCORE_FORCE_DEFENSE
 		best_pressure = maxf(best_pressure, pressure)
 	return best_pressure
 
@@ -2061,20 +2264,27 @@ func score_hard_tactical_rules_for_plan(game_state: GameStateData, player_id: in
 	if game_state == null or plan.is_empty():
 		return 0.0
 
-	var opponent_player_id: int = 1 - player_id
-	var opponent_had_immediate_base_win: bool = has_immediate_base_win(game_state, opponent_player_id, board_size)
 	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
-	var opponent_has_immediate_base_win_after: bool = has_immediate_base_win(simulated_state, opponent_player_id, board_size)
-	var score: float = 0.0
+	# A finished game has no next turn to defend: without this, a winning plan
+	# would still be charged for the base threat the opponent never gets to use,
+	# and a win by leaving the opponent without a legal action would go unseen.
+	if simulated_state.game_over:
+		return get_terminal_score_for_player(simulated_state, player_id)
 
-	if opponent_had_immediate_base_win:
-		score += SCORE_EMERGENCY_PREVENT_BASE_WIN if !opponent_has_immediate_base_win_after else -PENALTY_ALLOW_IMMEDIATE_BASE_WIN
-	elif opponent_has_immediate_base_win_after:
-		score -= PENALTY_ALLOW_IMMEDIATE_BASE_WIN
+	var score: float = 0.0
+	if sees_threats_this_turn:
+		var opponent_player_id: int = 1 - player_id
+		var opponent_had_immediate_base_win: bool = has_immediate_base_win(game_state, opponent_player_id, board_size)
+		var opponent_has_immediate_base_win_after: bool = has_immediate_base_win(simulated_state, opponent_player_id, board_size)
+		if opponent_had_immediate_base_win:
+			score += SCORE_EMERGENCY_PREVENT_BASE_WIN if !opponent_has_immediate_base_win_after else -PENALTY_ALLOW_IMMEDIATE_BASE_WIN
+		elif opponent_has_immediate_base_win_after:
+			score -= PENALTY_ALLOW_IMMEDIATE_BASE_WIN
 
 	score += score_active_seeker_finish_rule(game_state, simulated_state, player_id, plan, board_size)
-	score += score_opponent_active_seeker_defense_rule(game_state, simulated_state, player_id, plan, board_size)
-	score += score_move_base_piece_escape_rule(game_state, simulated_state, player_id, plan, board_size)
+	if sees_threats_this_turn:
+		score += score_opponent_active_seeker_defense_rule(game_state, simulated_state, player_id, plan, board_size)
+		score += score_move_base_piece_escape_rule(game_state, simulated_state, player_id, plan, board_size)
 	score += score_material_advantage_finish_rule(game_state, simulated_state, player_id, plan, board_size)
 	score += score_move_off_enemy_base_rule(game_state, player_id, plan)
 	return score
@@ -2118,11 +2328,13 @@ func score_material_advantage_finish_rule(
 	plan: Dictionary,
 	board_size: int
 ) -> float:
-	var own_pieces: int = count_player_pieces_on_board(before_state, player_id)
-	var enemy_pieces: int = count_player_pieces_on_board(before_state, 1 - player_id)
-	var material_advantage: int = own_pieces - enemy_pieces
-	if material_advantage < 2 and enemy_pieces > 4:
+	# Golem counts hardly ever differ (captured golems respawn), so the lead is
+	# measured in what each side can still do - see get_resource_advantage.
+	var resource_advantage: float = AIStrategyDirector.get_resource_advantage(before_state, player_id)
+	if resource_advantage < RESOURCE_ADVANTAGE_FOR_FINISH and count_usable_golems(before_state, 1 - player_id) > ENEMY_USABLE_GOLEMS_FOR_FINISH:
 		return 0.0
+	# In golem-sized units, the scale the bonus below was tuned for.
+	var material_advantage: int = int(floor(resource_advantage / AIStrategyDirector.RESOURCE_WEIGHT_USABLE_GOLEM))
 
 	var score: float = 0.0
 	if should_push_active_board_seeker(before_state, player_id):
@@ -2300,6 +2512,9 @@ func score_repeat_last_move_penalty(game_state: GameStateData, player_id: int, m
 func score_strategy_mode_for_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
 	if strategy_context.is_empty() or int(strategy_context.get("player_id", -1)) != player_id:
 		return 0.0
+	# On a turn the threats go unseen, the defensive modes have nothing to defend.
+	if !sees_threats_this_turn and str(strategy_context.get("mode", "")) in ["soft_defense", "emergency_defense"]:
+		return 0.0
 
 	match str(strategy_context.get("mode", "")):
 		"opening":
@@ -2308,6 +2523,8 @@ func score_strategy_mode_for_plan(game_state: GameStateData, player_id: int, pla
 			return score_active_seeker_strategy_plan(game_state, player_id, plan, board_size)
 		"endgame_seeker_finish":
 			return score_endgame_seeker_finish_strategy_plan(game_state, player_id, plan, board_size)
+		"seeker_attack":
+			return score_seeker_attack_strategy_plan(game_state, player_id, plan, board_size)
 		"soft_defense":
 			return score_defense_strategy_plan(game_state, player_id, plan, board_size, 1.0)
 		"emergency_defense":
@@ -2347,7 +2564,12 @@ func score_opening_strategy_plan(game_state: GameStateData, player_id: int, plan
 			continue
 		var action: Dictionary = action_value
 		var stamp: Stamp = get_cached_stamp(str(action.get("stamp_name", "")))
-		if stamp != null and MoveRules.is_seeker_stamp(stamp):
+		if stamp == null or !MoveRules.is_seeker_stamp(stamp):
+			continue
+		# A Seeker that can already reach the base is an attack, not a
+		# premature commitment, opening or not.
+		var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+		if !is_seeker_affix_in_timing_window(game_state, player_id, stamp, piece_pos, board_size):
 			score -= 95.0
 	return score
 
@@ -2392,6 +2614,33 @@ func score_endgame_seeker_finish_strategy_plan(game_state: GameStateData, player
 				if exchanged_stamp != null and MoveRules.is_seeker_stamp(exchanged_stamp):
 					score -= PENALTY_ENDGAME_EXCHANGE_SEEKER_PLAN
 	return score
+
+## The early attack borrows the endgame finish's staging logic - walk a golem
+## into Seeker range and let its stamp run out there, so the Seeker has an empty
+## golem to go on, then put the Seeker down - but not its single-mindedness: no
+## penalty on other stamps or on captures that do not serve the Seeker, since
+## with most of the codex still to play the fight elsewhere still matters.
+func score_seeker_attack_strategy_plan(game_state: GameStateData, player_id: int, plan: Dictionary, board_size: int) -> float:
+	if game_state == null or plan.is_empty():
+		return 0.0
+
+	var simulated_state: GameStateData = get_simulated_turn_plan_state(game_state, player_id, plan, board_size)
+	if simulated_state.game_over:
+		return 0.0
+
+	var score: float = 0.0
+	var move: Dictionary = plan.get("move", {})
+	if !move.is_empty():
+		score += score_endgame_move_toward_seeker_finish(game_state, simulated_state, player_id, move, board_size)
+
+	for action_value in plan.get("setup_affix_actions", []):
+		if !(action_value is Dictionary):
+			continue
+		var action: Dictionary = action_value
+		var stamp: Stamp = get_cached_stamp(str(action.get("stamp_name", "")))
+		if stamp != null and MoveRules.is_seeker_stamp(stamp):
+			score += score_endgame_affix_action(game_state, player_id, action, board_size)
+	return score * SEEKER_ATTACK_STRATEGY_WEIGHT
 
 func score_endgame_move_toward_seeker_finish(
 	before_state: GameStateData,
@@ -2564,7 +2813,7 @@ func score_affix_setup_with_stamp_value_weight(
 		if seeker_ready:
 			score += SCORE_AFFIX_SEEKER
 		else:
-			score -= PENALTY_EARLY_SEEKER_COMMITMENT
+			score -= PENALTY_EARLY_SEEKER_COMMITMENT * get_seeker_overreach_penalty_factor(game_state, player_id, stamp, piece_pos, board_size)
 
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
 	var setup_moves: Array[Vector2] = MoveRules.get_stamp_moves_for_piece(
@@ -2618,6 +2867,7 @@ func score_move(game_state: GameStateData, player_id: int, move: Dictionary, boa
 
 	if captured_piece != null:
 		score += score_capture(captured_piece)
+		score += score_capture_respawn_effect(game_state, captured_piece)
 		score += score_base_staging_capture(game_state, player_id, captured_piece, to_pos, board_size)
 		score += score_seeker_capture_discipline(game_state, player_id, move, captured_piece, board_size)
 		if has_active_seeker_near_finish(game_state, player_id, board_size) and !is_own_seeker_move:
@@ -2658,7 +2908,7 @@ func score_affixed_stamp(
 		if seeker_ready:
 			score += SCORE_AFFIX_SEEKER
 		else:
-			score -= PENALTY_EARLY_SEEKER_COMMITMENT
+			score -= PENALTY_EARLY_SEEKER_COMMITMENT * get_seeker_overreach_penalty_factor(game_state, player_id, stamp, to_pos, board_size)
 
 	score += max(0, stamp.duration) * 3.0
 	score += get_stamp_balance_value(stamp) * STAMP_VALUE_AFFIX_PLAY_WEIGHT
@@ -2673,16 +2923,20 @@ func score_affixed_stamp(
 func is_seeker_affix_in_timing_window(game_state: GameStateData, player_id: int, stamp: Stamp, pos: Vector2, board_size: int) -> bool:
 	if game_state == null or !MoveRules.is_seeker_stamp(stamp):
 		return false
+	# A freshly stamped golem waits out the turn, then has one move per point of
+	# duration, so a Seeker can still finish from as many steps out as its
+	# duration. (This used to leave one step of slack outside the endgame,
+	# which with duration 2 Seekers meant only right next to the base.)
 	var route_distance: int = get_seeker_route_distance(game_state, player_id, stamp, pos, board_size)
 	if route_distance < 0:
 		return false
-	var allowed_steps: int = max(1, stamp.duration)
-	if route_distance <= max(1, allowed_steps - 1):
-		return true
-	return is_endgame_seeker_finish_mode() and route_distance <= allowed_steps
+	return route_distance <= maxi(1, stamp.duration)
 
-func is_endgame_seeker_finish_mode() -> bool:
-	return str(strategy_context.get("mode", "")) == "endgame_seeker_finish"
+## The modes in which the AI is going for the base with a Seeker it has yet to
+## put down: the early attack and the endgame finish.
+func is_seeker_closing_mode() -> bool:
+	var mode: String = str(strategy_context.get("mode", ""))
+	return mode == AIStrategyDirector.MODE_ENDGAME_SEEKER_FINISH or mode == AIStrategyDirector.MODE_SEEKER_ATTACK
 
 func score_seeker_affix_timing(
 	game_state: GameStateData,
@@ -2737,7 +2991,7 @@ func score_seeker_capture_discipline(
 	var penalty: float = PENALTY_SEEKER_CAPTURE_DISTRACTION
 	if after_route_distance >= 0 and (before_route_distance < 0 or after_route_distance < before_route_distance):
 		penalty *= 0.35
-	if is_endgame_seeker_finish_mode():
+	if is_seeker_closing_mode():
 		penalty *= 0.5
 	return -penalty
 
@@ -2753,6 +3007,47 @@ func score_capture(captured_piece: Piece) -> float:
 		score += max(0, captured_piece.turns_remaining) * 8.0
 		score += get_stamp_balance_value(captured_piece.affixed_stamp) * STAMP_VALUE_CAPTURE_WEIGHT
 	return score
+
+## What the capture does to the victim's golems beyond the lost stamp. A
+## captured golem respawns locked, unless its owner already has a locked one:
+## then that one is freed and the captured golem leaves the board for good. So
+## every first capture costs the victim a usable golem, every second one only
+## thins the board out. The fewer usable golems the victim has left, the more a
+## lock hurts: fewer pieces to stamp, and closer to having no legal action.
+func score_capture_respawn_effect(game_state: GameStateData, captured_piece: Piece) -> float:
+	if game_state == null or captured_piece == null:
+		return 0.0
+	# A locked golem just respawns locked again somewhere on its home row.
+	if captured_piece.is_respawn_locked():
+		return 0.0
+
+	var victim_player_id: int = StampEffectResolver.get_player_id_for_color(captured_piece.color)
+	if player_has_respawn_locked_golem(game_state, victim_player_id):
+		return SCORE_CAPTURE_REMOVES_GOLEM
+
+	var usable_after: int = count_usable_golems(game_state, victim_player_id) - 1
+	return SCORE_CAPTURE_LOCKS_GOLEM + float(maxi(0, LOW_USABLE_GOLEM_COUNT - usable_after)) * SCORE_CAPTURE_GOLEM_SCARCITY
+
+func player_has_respawn_locked_golem(game_state: GameStateData, player_id: int) -> bool:
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null and piece.color == player_color and piece.is_respawn_locked():
+			return true
+	for pending_piece_value in game_state.pending_respawns.get(player_id, []):
+		var pending_piece: Piece = pending_piece_value as Piece
+		if pending_piece != null and pending_piece.is_respawn_locked():
+			return true
+	return false
+
+func count_usable_golems(game_state: GameStateData, player_id: int) -> int:
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	var count: int = 0
+	for position_value in game_state.pieces:
+		var piece: Piece = game_state.pieces[position_value] as Piece
+		if piece != null and piece.color == player_color and !piece.is_respawn_locked():
+			count += 1
+	return count
 
 func score_seeker_base_progress(game_state: GameStateData, player_id: int, from_pos: Vector2, to_pos: Vector2) -> float:
 	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
@@ -2848,7 +3143,7 @@ func score_danger_after_move(game_state: GameStateData, player_id: int, move: Di
 		return 0.0
 
 	var threatened_piece: Piece = simulated_pieces.get(to_pos, null) as Piece
-	return score_threatened_piece_loss(threatened_piece)
+	return score_threatened_piece_loss(threatened_piece, game_state)
 
 func score_affix_danger(
 	game_state: GameStateData,
@@ -2908,14 +3203,14 @@ func score_affix_danger(
 	):
 		return 0.0
 
-	return score_threatened_piece_loss(affixed_piece)
+	return score_threatened_piece_loss(affixed_piece, threat_state)
 
-func score_threatened_piece_loss(piece: Piece) -> float:
+func score_threatened_piece_loss(piece: Piece, game_state: GameStateData = null) -> float:
 	if piece == null:
 		return 0.0
 	if StampEffectResolver.is_seeker_piece(piece):
 		return PENALTY_SEEKER_THREATENED
-	return maxf(PENALTY_PIECE_THREATENED, score_capture(piece))
+	return maxf(PENALTY_PIECE_THREATENED, score_capture(piece) + score_capture_respawn_effect(game_state, piece))
 
 func score_stamp_effect(
 	game_state: GameStateData,

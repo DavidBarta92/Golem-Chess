@@ -1,15 +1,17 @@
 extends Node
 class_name FeatureHint
 
-## Gates a button behind a story unlock and points a hand-drawn arrow at it
-## until the player has used it once.
+## Gates a button behind a story unlock and draws the eye to it - a
+## hand-drawn arrow, or the tutorial's glow behind it - until the player has
+## used it once.
 ##
 ## Drop one of these into whichever scene owns the button, set feature_id and
 ## target_path, and it takes care of the rest:
 ##
 ##   locked   -> the button is disabled (the story has not unlocked it yet)
-##   unlocked -> the button works; an arrow bobs next to it
-##   used     -> the arrow is gone for good, on this and every later session
+##   unlocked -> the button works; an arrow bobs next to it, or a glow pulses
+##               behind it
+##   used     -> the hint is gone for good, on this and every later session
 ##
 ## Adding a hint to a button somewhere else later is one more node and one
 ## more constant in StoryFeatures - nothing here changes.
@@ -17,7 +19,9 @@ class_name FeatureHint
 ## The arrow lives in its own CanvasLayer above everything (the top bar sits at
 ## layer 1200), and follows the target's screen rect every frame, so it works
 ## for buttons that animate in, re-layout on resize, or live in an autoload
-## scene like GlobalTopBar.
+## scene like GlobalTopBar. The glow is a HintGlow behind the target - its
+## child, so it moves, scales and hides with it - unless glow_behind_path puts
+## it further back, where it is kept on the target every frame instead.
 
 const ARROW_CANVAS_LAYER: int = 1250
 const ARROW_INK_COLOR: Color = UiPalette.INK
@@ -27,6 +31,7 @@ const ARROW_HEAD_HALF_WIDTH: float = 9.0
 const RESOLVE_RETRY_FRAMES: int = 30
 
 enum ArrowSide { LEFT, RIGHT, ABOVE, BELOW }
+enum HintStyle { ARROW, GLOW }
 
 ## Which unlock this hint is about. See StoryFeatures for the known ids.
 @export var feature_id: String = ""
@@ -44,6 +49,10 @@ enum ArrowSide { LEFT, RIGHT, ABOVE, BELOW }
 ## for its own reasons.
 @export var lock_target_until_unlocked: bool = true
 
+## ARROW points at the target from beside it; GLOW pulses behind it, and only
+## while the target can be pressed.
+@export var hint_style: HintStyle = HintStyle.ARROW
+
 @export_group("Arrow")
 @export var arrow_side: ArrowSide = ArrowSide.LEFT
 ## Nudges the arrow relative to the side it sits on.
@@ -57,9 +66,20 @@ enum ArrowSide { LEFT, RIGHT, ABOVE, BELOW }
 @export_range(0.0, 60.0, 1.0) var bob_distance: float = 10.0
 @export_range(0.1, 4.0, 0.05) var bob_seconds: float = 0.9
 
+@export_group("Glow")
+## How far the glow spreads, as a multiple of the target's size. The default
+## is the tutorial's End Turn tab glow.
+@export var glow_spread: Vector2 = Vector2(2.2, 3.0)
+## Puts the glow behind this node instead of right behind the target, still
+## centred on the target. For a button you can see through: behind the street
+## view, the Play window's glow lights only the street, and the opponent
+## standing in it stays on top.
+@export var glow_behind_path: NodePath
+
 var _target: Control
 var _arrow_layer: CanvasLayer
 var _arrow: Control
+var _glow: HintGlow
 var _locked_by_hint: bool = false
 var _hint_active: bool = false
 var _bob_phase: float = 0.0
@@ -83,6 +103,10 @@ func _on_progress_changed(changed_feature_id: String) -> void:
 func _exit_tree() -> void:
 	_release_target_lock()
 	_destroy_arrow()
+	# At once, not faded: a top bar button outlives this scene.
+	if _glow != null and is_instance_valid(_glow):
+		_glow.queue_free()
+	_glow = null
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
@@ -95,6 +119,9 @@ func _process(delta: float) -> void:
 			_resolve_frames_left -= 1
 			_refresh()
 		return
+
+	if _hint_active and hint_style == HintStyle.GLOW:
+		_sync_glow()
 
 	if _arrow == null:
 		return
@@ -155,10 +182,14 @@ func _apply_hint_state() -> void:
 
 	_hint_active = should_show
 	if should_show:
-		_create_arrow()
+		if hint_style == HintStyle.GLOW:
+			_sync_glow()
+		else:
+			_create_arrow()
 		_connect_target()
 	else:
 		_destroy_arrow()
+		_dismiss_glow()
 
 func _connect_target() -> void:
 	var button := _target as BaseButton
@@ -179,6 +210,45 @@ func _on_target_used() -> void:
 	StoryProgressStore.mark_feature_hint_seen(feature_id)
 	_hint_active = false
 	_destroy_arrow()
+	_dismiss_glow()
+
+## The glow says "press this now", so it stays away while the target is
+## disabled - the Play button is, until the opponent has walked up to the
+## window.
+func _sync_glow() -> void:
+	if _glow != null and !is_instance_valid(_glow):
+		_glow = null
+	var button := _target as BaseButton
+	var pressable: bool = button == null or !button.disabled
+	if pressable and _glow == null:
+		var host: Control = _resolve_glow_host()
+		_glow = HintGlow.attach(host, _glow_centre_on(host), _target.size * glow_spread)
+	elif !pressable and _glow != null:
+		_dismiss_glow()
+	elif _glow != null:
+		# Buttons in a container, or laid over the artwork, get their size a
+		# frame late and again on every window resize.
+		var host := _glow.get_parent() as Control
+		_glow.place(_glow_centre_on(host), _target.size * glow_spread)
+		_glow.visible = _target.is_visible_in_tree()
+
+func _resolve_glow_host() -> Control:
+	if glow_behind_path.is_empty():
+		return _target
+	var host := get_node_or_null(glow_behind_path) as Control
+	return host if host != null else _target
+
+## The target's middle, in the host's own pixels.
+func _glow_centre_on(host: Control) -> Vector2:
+	var centre: Vector2 = _target.size * 0.5
+	if host == _target:
+		return centre
+	return host.get_global_transform().affine_inverse() * (_target.get_global_transform() * centre)
+
+func _dismiss_glow() -> void:
+	if _glow != null and is_instance_valid(_glow):
+		_glow.dismiss()
+	_glow = null
 
 func _create_arrow() -> void:
 	if _arrow != null:

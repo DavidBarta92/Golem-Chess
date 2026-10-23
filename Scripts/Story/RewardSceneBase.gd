@@ -16,6 +16,10 @@ class_name RewardSceneBase
 ##   * completing the story node when the player clicks past the last line
 
 const DEFAULT_SPEAKER_NAME: String = "Mentor"
+## How long after the frame is drawn the first face starts to fade in, and how
+## long that takes - the opponent's panel in a match uses the same.
+const PORTRAIT_DELAY_SECONDS: float = 0.2
+const PORTRAIT_FADE_SECONDS: float = 0.5
 
 @export_group("Identity")
 ## Guards the payout. Must be unique and must never change once a build has
@@ -162,15 +166,34 @@ func _show_next_line() -> void:
 		return
 
 	var line: Dictionary = _queued_lines[_line_index]
+	MusicManager.apply_cue(line.get("music_cue") as MusicCue)
+	if _line_index == 0 and _portrait_frame_line != null:
+		_introduce_speaker(line)
+		return
+	_say(line, false)
+
+func _say(line: Dictionary, keep_portrait: bool) -> void:
 	dialogue_panel.show_line(
 		str(line.get("speaker", "")),
 		str(line.get("text", "")),
-		line.get("portrait", null)
+		line.get("portrait", null),
+		true,
+		keep_portrait
 	)
-	# The frame draws itself in round the first face and stays for the rest.
-	if _line_index == 0 and _portrait_frame_line != null:
-		_portrait_frame_line.draw()
-	MusicManager.apply_cue(line.get("music_cue") as MusicCue)
+
+## The first speaker arrives ahead of their words, in the order a match brings
+## the opponent in (OpponentSpeechPanel): the frame draws itself, the face and
+## name fade in inside it, and only then does the line start. The frame stays
+## for the rest of the lines.
+func _introduce_speaker(line: Dictionary) -> void:
+	dialogue_panel.show_profile(str(line.get("speaker", "")), line.get("portrait", null))
+	dialogue_panel.set_identity_alpha(0.0)
+	_portrait_frame_line.draw()
+	await get_tree().create_timer(_portrait_frame_line.get_draw_duration() + PORTRAIT_DELAY_SECONDS).timeout
+	var fade := create_tween()
+	fade.tween_method(dialogue_panel.set_identity_alpha, 0.0, 1.0, PORTRAIT_FADE_SECONDS)
+	await fade.finished
+	_say(line, true)
 
 ## The boss line comes in already localized (the boss decides whether its text
 ## goes through the language files), so it is not translated a second time.

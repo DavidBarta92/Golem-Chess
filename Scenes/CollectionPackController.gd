@@ -51,7 +51,6 @@ const OVERLAY_STATE_OPENING: String = "opening"
 const OVERLAY_STATE_REWARDS: String = "rewards"
 
 var collection: Control
-var buy_packs_button: Button
 var points_label: Label
 var buy_packs_panel: PanelContainer
 var buy_packs_modal_blocker: Control
@@ -70,11 +69,8 @@ var buy_packs_pack_cards: Dictionary = {}
 var buy_packs_open_tween: Tween
 var pack_notice_panel: Control
 var pack_inventory: Control
-var pack_inventory_label: Label
 var pack_preview_nodes: Array[Control] = []
 var pack_inventory_arrival_tweens: Dictionary = {}
-var pack_result_dialog: AcceptDialog
-var pack_result_label: Label
 var pack_opened_callback: Callable
 var pack_click_area: Control
 var pack_overlay: Control
@@ -94,29 +90,18 @@ var selected_purchase_pack_id: String = ""
 
 func bind(nodes: Dictionary, opened_callback: Callable = Callable()) -> void:
 	collection = nodes.get("collection", null) as Control
-	buy_packs_button = nodes.get("buy_packs_button", null) as Button
 	points_label = nodes.get("points_label", null) as Label
 	buy_packs_panel = nodes.get("buy_packs_panel", null) as PanelContainer
-	pack_count_spin_box = nodes.get("pack_count_spin_box", null) as SpinBox
-	buy_packs_info_label = nodes.get("buy_packs_info_label", null) as Label
-	buy_packs_confirm_button = nodes.get("buy_packs_confirm_button", null) as Button
-	buy_packs_cancel_button = nodes.get("buy_packs_cancel_button", null) as Button
 	pack_notice_panel = nodes.get("pack_notice_panel", null) as Control
 	pack_inventory = nodes.get("pack_inventory", null) as Control
-	pack_inventory_label = nodes.get("pack_inventory_label", null) as Label
-	pack_result_dialog = nodes.get("pack_result_dialog", null) as AcceptDialog
-	pack_result_label = nodes.get("pack_result_label", null) as Label
 	pack_opened_callback = opened_callback
-	if collection == null and pack_notice_panel != null:
-		collection = pack_notice_panel.get_tree().current_scene as Control
 
-	if !Engine.is_editor_hint():
-		PackDefinitionLibrary.ensure_loaded()
-		PlayerProgressStore.ensure_loaded()
-		PlayerCollectionStore.ensure_loaded()
+	PackDefinitionLibrary.ensure_loaded()
+	PlayerProgressStore.ensure_loaded()
+	PlayerCollectionStore.ensure_loaded()
 
+	# Creates the shop window, including the spin box and buttons connected below.
 	_ensure_buy_packs_window()
-	_connect_once(buy_packs_button, "pressed", Callable(self, "show_buy_packs"))
 	_connect_once(pack_inventory, "resized", Callable(self, "refresh_pack_inventory_ui"))
 	_connect_once(pack_count_spin_box, "value_changed", Callable(self, "on_pack_count_spin_value_changed"))
 	_connect_once(buy_packs_cancel_button, "pressed", Callable(self, "cancel_buy_packs"))
@@ -566,13 +551,10 @@ func _on_pack_preview_gui_input(event: InputEvent, preview: Control) -> void:
 func refresh_progress_ui() -> void:
 	if points_label == null:
 		return
-	if Engine.is_editor_hint():
-		points_label.text = "0"
-		return
 	points_label.text = str(PlayerProgressStore.get_points())
 
 func refresh_pack_inventory_ui(animate_new: bool = false, previous_preview_ids: Array[String] = []) -> void:
-	if Engine.is_editor_hint() or pack_inventory == null:
+	if pack_inventory == null:
 		return
 
 	if pack_preview_nodes.is_empty():
@@ -580,8 +562,6 @@ func refresh_pack_inventory_ui(animate_new: bool = false, previous_preview_ids: 
 
 	var pack_count: int = PlayerProgressStore.get_unopened_pack_count()
 	var preview_pack_ids: Array[String] = _get_unopened_pack_ids_for_display(MAX_VISIBLE_PACK_ICONS)
-	if pack_inventory_label != null:
-		pack_inventory_label.text = tr("%d unopened") % pack_count if pack_count > 0 else tr("No unopened packs")
 	if pack_notice_panel != null:
 		pack_notice_panel.visible = pack_count > 0
 	pack_inventory.visible = pack_count > 0
@@ -599,17 +579,6 @@ func refresh_pack_inventory_ui(animate_new: bool = false, previous_preview_ids: 
 			else:
 				_reset_pack_inventory_preview_transform(preview)
 	_sync_pack_click_area()
-
-func populate_editor_pack_preview() -> void:
-	if pack_inventory == null:
-		return
-	if pack_inventory_label != null:
-		pack_inventory_label.text = "4 unopened"
-	if pack_notice_panel != null:
-		pack_notice_panel.visible = true
-	_collect_pack_preview_nodes()
-	for preview in pack_preview_nodes:
-		preview.visible = true
 
 func _reset_pack_inventory_preview_transform(preview: Control) -> void:
 	if preview == null or !is_instance_valid(preview):
@@ -1078,10 +1047,6 @@ func show_pack_opening_view() -> void:
 	if is_pack_overlay_active():
 		return
 	_hide_pack_click_area()
-	if collection == null or !is_instance_valid(collection):
-		_claim_pack_rewards(true)
-		return
-
 	_show_pack_selection_overlay(true)
 
 func is_pack_overlay_active() -> bool:
@@ -1107,7 +1072,7 @@ func handle_back_pressed() -> bool:
 	_close_pack_overlay(true)
 	return true
 
-func _claim_pack_rewards(show_result: bool, pack_id: String = "") -> Array[StampPrint]:
+func _claim_pack_rewards(pack_id: String = "") -> Array[StampPrint]:
 	var empty_rewards: Array[StampPrint] = []
 	var normalized_pack_id: String = pack_id.strip_edges()
 	if normalized_pack_id.is_empty():
@@ -1124,8 +1089,6 @@ func _claim_pack_rewards(show_result: bool, pack_id: String = "") -> Array[Stamp
 	for stamp_print: StampPrint in rewards:
 		PlayerCollectionStore.add_local_print_copy(stamp_print.print_id)
 
-	if show_result:
-		_show_pack_result(rewards)
 	refresh_progress_ui()
 	refresh_pack_inventory_ui()
 	if pack_opened_callback.is_valid():
@@ -1308,12 +1271,6 @@ func _start_selection_pack_ambient_motion() -> void:
 			if !should_render_single_pack:
 				pack_view.request_static_render()
 
-func _start_pack_ambient_motion(pack_node: Control, _index: int) -> void:
-	if pack_node == null or !is_instance_valid(pack_node):
-		return
-	if pack_node is Pack3DView:
-		(pack_node as Pack3DView).set_selected(opening_pack_nodes.size() <= 1)
-
 func _stop_pack_ambient_motion(pack_node: Control, reset_shader_tilt: bool = true) -> void:
 	if pack_node == null or !is_instance_valid(pack_node):
 		return
@@ -1377,7 +1334,7 @@ func _open_focused_overlay_pack() -> void:
 		return
 
 	var pack_id: String = str(focused_pack_node.get_meta("pack_id", ""))
-	var rewards: Array[StampPrint] = _claim_pack_rewards(false, pack_id)
+	var rewards: Array[StampPrint] = _claim_pack_rewards(pack_id)
 	if rewards.is_empty():
 		return
 
@@ -2006,7 +1963,7 @@ func _ensure_pack_click_area() -> void:
 	_connect_once(pack_click_area, "gui_input", Callable(self, "_on_pack_click_area_gui_input"))
 
 func _sync_pack_click_area() -> void:
-	if Engine.is_editor_hint() or is_pack_overlay_active():
+	if is_pack_overlay_active():
 		_hide_pack_click_area()
 		return
 	if PlayerProgressStore.get_unopened_pack_count() <= 0:
@@ -2103,18 +2060,3 @@ func _roll_pack_rewards(pack_id: String) -> Array[StampPrint]:
 	for i in range(PACK_REWARD_STAMP_COUNT):
 		rewards.append(available_prints[randi() % available_prints.size()])
 	return rewards
-
-func _show_pack_result(rewards: Array[StampPrint]) -> void:
-	if pack_result_dialog == null or pack_result_label == null:
-		return
-
-	var lines: Array[String] = [tr("You opened:")]
-	for stamp_print: StampPrint in rewards:
-		var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
-		var stamp_name: String = stamp.stamp_name if stamp != null else stamp_print.stamp_code
-		if stamp_print.variant_id != PlayerCollectionStore.DEFAULT_VARIANT_ID:
-			stamp_name = "%s - %s" % [stamp_name, stamp_print.get_display_name()]
-		lines.append("- %s" % stamp_name)
-
-	pack_result_label.text = "\n".join(lines)
-	pack_result_dialog.popup_centered(Vector2i(360, 220))

@@ -16,6 +16,7 @@ const CODEX_NAME_FONT_SIZE: int = 16
 const CODEX_NAME_MAX_LINES: int = 2
 const CODEX_COUNT_COLOR: Color = Color(0.95, 0.92, 0.86)
 const CODEX_COUNT_INCOMPLETE_COLOR: Color = Color(0.93, 0.33, 0.27)
+const MIN_MATCHES_FOR_WIN_RATE: int = 3
 const CODEX_PREVIEW_STAMP_SCALE: float = 0.38
 const CODEX_ICON_BUTTON_SIZE: Vector2 = Vector2(40, 40)
 const CODEX_ICON_BUTTON_ICON_MARGIN: float = 10.0
@@ -131,6 +132,11 @@ func create_saved_deck_row(deck_data: Dictionary) -> Control:
 	count_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	count_label.text = "%d/%d" % [owned_count if !is_playable else max_deck_size, max_deck_size]
+	if is_playable:
+		count_label.text += "  " + get_win_rate_text(deck_data)
+		var stats: Dictionary = PlayerDeckStore.get_deck_stats(deck_data)
+		count_label.tooltip_text = tr("CODEX_WIN_RATE_TOOLTIP").format({"won": int(stats["won"]), "played": int(stats["played"])})
+		count_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	count_label.add_theme_font_size_override("font_size", 18)
 	count_label.add_theme_color_override("font_color", CODEX_COUNT_INCOMPLETE_COLOR if !is_playable else CODEX_COUNT_COLOR)
 
@@ -144,6 +150,15 @@ func create_saved_deck_row(deck_data: Dictionary) -> Control:
 	delete_button.pressed.connect(on_delete_deck_pressed.bind(str(deck_data.get("deck_id", ""))))
 
 	return row_frame
+
+## Share of the matches won with the codex since it last changed. Too few to
+## mean anything shows a dash rather than a 100% after a single win.
+func get_win_rate_text(deck_data: Dictionary) -> String:
+	var stats: Dictionary = PlayerDeckStore.get_deck_stats(deck_data)
+	var played: int = int(stats["played"])
+	if played < MIN_MATCHES_FOR_WIN_RATE:
+		return "-%"
+	return "%d%%" % int(round(100.0 * float(stats["won"]) / float(played)))
 
 # The codex and its fold are cut from the same frame, so drawing both over the
 # full codex rect keeps the fold lined up with the codex's sides and bottom.

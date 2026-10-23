@@ -3,6 +3,16 @@
 [ext_resource type="Script" uid="uid://bb2vr4ui84kxa" path="res://Scenes/GlobalTopBar.gd" id="1_global_top_bar"]
 [ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="2_coin"]
 [ext_resource type="Texture2D" uid="uid://cn5e1f7amlgkn" path="res://Assets/golem_painted_vector_transparent_2.svg" id="3_logo"]
+[ext_resource type="Shader" path="res://Shaders/top_bar_gradient.gdshader" id="4_top_bar_gradient"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_top_bar_gradient"]
+shader = ExtResource("4_top_bar_gradient")
+shader_parameter/left_color = Color(0.914, 0.882, 0.804, 1)
+shader_parameter/light_color = Color(0.945, 0.922, 0.851, 1)
+shader_parameter/dark_color = Color(0.827, 0.796, 0.718, 1)
+shader_parameter/light_stop = 0.28
+shader_parameter/dark_stop = 0.7
+shader_parameter/grain_strength = 0.025
 
 [node name="GlobalTopBar" type="CanvasLayer" unique_id=354339640]
 layer = 1200
@@ -18,13 +28,13 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="TopBackground" type="ColorRect" parent="Root" unique_id=1958939646]
+material = SubResource("ShaderMaterial_top_bar_gradient")
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 60.0
 grow_horizontal = 2
 mouse_filter = 2
-color = Color(0.9366637, 0.9330646, 0.89437205, 1)
 
 [node name="SceneItemsClip" type="Control" parent="Root" unique_id=2003226033]
 clip_contents = true

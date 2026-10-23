@@ -292,6 +292,41 @@ func collect_piece_revert_animations(previous_snapshot: Dictionary, stamp_expira
 
 	return animations
 
+## Pieces that stayed on their square with the same stamp and came out of this
+## state with a different duration. Nothing but an effect changes a standing
+## piece's count - one that raises or lowers durations, on one piece or on
+## several at once - so each of these gets the same count-change animation a
+## move gives the piece that made it. `moved_to` is that piece, left out here
+## because its own move animation already shows its change.
+func collect_state_duration_change_animations(previous_snapshot: Dictionary, piece_objects: Dictionary, moved_to: Vector2, has_received_state: bool, skip_visual_animations: bool) -> Array[Dictionary]:
+	var animations: Array[Dictionary] = []
+	if !has_received_state or skip_visual_animations:
+		return animations
+
+	for position_value in previous_snapshot:
+		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
+		if !is_valid_position(board_pos) or board_pos == moved_to:
+			continue
+		var piece: Piece = piece_objects.get(board_pos, null) as Piece
+		if piece == null or piece.hidden_from_viewer or piece.affixed_stamp == null:
+			continue
+
+		var previous_state: Dictionary = previous_snapshot[position_value]
+		if int(previous_state.get("color", 0)) != piece.color:
+			continue
+		if str(previous_state.get("stamp_name", "")) != piece.affixed_stamp.stamp_name:
+			continue
+		var old_duration: int = int(previous_state.get("turns_remaining", piece.turns_remaining))
+		if old_duration == piece.turns_remaining:
+			continue
+
+		animations.append({
+			"position": board_pos,
+			"old_duration": old_duration,
+			"new_duration": piece.turns_remaining,
+		})
+	return animations
+
 func find_previous_expiring_piece_state(previous_snapshot: Dictionary, used_previous_positions: Dictionary, piece_color: int, expired_stamp_name: String, preferred_pos: Vector2) -> Dictionary:
 	if previous_snapshot.has(preferred_pos) and !used_previous_positions.has(preferred_pos):
 		var preferred_state: Dictionary = previous_snapshot[preferred_pos]

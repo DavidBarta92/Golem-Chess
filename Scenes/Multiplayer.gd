@@ -85,6 +85,7 @@ func _ready():
 		start_dedicated_custom_server(GameConfig.server_port)
 	elif GameConfig.is_singleplayer:
 		DebugLog.info("Starting in singleplayer mode")
+		await wait_for_deck_choice()
 		start_singleplayer_game()
 	elif GameConfig.is_using_steam_multiplayer():
 		if GameConfig.is_hosting:
@@ -243,6 +244,14 @@ func set_custom_lobby_controls_enabled(enabled: bool) -> void:
 	if custom_lobby_join_button != null:
 		custom_lobby_join_button.disabled = !enabled
 
+## A single-player match can open on the player's codex choice
+## (MatchIntroController); the game is only set up once that is settled, so it
+## deals from the codex that was picked.
+func wait_for_deck_choice() -> void:
+	var intro := get_node_or_null("MatchIntroController") as MatchIntroController
+	if intro != null and intro.is_offering_deck_choice():
+		await intro.deck_chosen
+
 func start_singleplayer_game():
 	is_server = true
 	server_turn = true
@@ -279,6 +288,11 @@ func setup_singleplayer_ai_controllers():
 			var ai_script = load("res://Scripts/HeuristicAIPlayer.gd")
 			var ai_player = ai_script.new()
 			ai_player.configure(player_id, ai_difficulty_level)
+			# An early story boss can be set to guard its base worse than its
+			# level does, so a new player's first wins come without many retries.
+			var boss: BossDefinition = StoryManager.get_active_boss()
+			if boss != null:
+				ai_player.set_defense_scale(boss.ai_defense)
 			if GameConfig.should_skip_ai_vs_ai_delays():
 				ai_player.action_delay = 0.0
 			# The per-turn "thinking" pause is for a human opponent; balance batches skip it.

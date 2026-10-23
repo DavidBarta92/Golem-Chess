@@ -38,12 +38,14 @@ func finish_game(winner_color: int) -> void:
 	match_board.update_stamp_drag_permissions()
 	match_board.update_end_turn_button()
 	award_win_points_if_applicable(winner_color)
+	var rating_change_text: String = record_rated_result(winner_color)
+	record_codex_result(winner_color)
 
 	var result_message_delay: float = 0.0 if match_board.should_skip_visual_animations() else RESULT_MESSAGE_DELAY_SECONDS
 	await match_board.get_tree().create_timer(result_message_delay).timeout
 	if match_board == null or !is_instance_valid(match_board):
 		return
-	show_result_message(winner_color)
+	show_result_message(winner_color, rating_change_text)
 	notify_boss_dialogue_of_result(did_local_player_win(winner_color))
 	match_board.game_finished.emit(winner_color)
 	if match_board.hold_after_result:
@@ -115,6 +117,28 @@ func award_win_points_if_applicable(winner_color: int) -> void:
 
 	PlayerProgressStore.add_points(PlayerProgressStore.WIN_POINTS_PER_WIN)
 
+## Settles the rated match this was, if any - so far only a story boss fight
+## begins one (StoryManager). Returns the line telling the player what it did
+## to their rating, or "" for an unrated match.
+func record_rated_result(winner_color: int) -> String:
+	if !PlayerProgressStore.has_pending_rated_match():
+		return ""
+	var change: int = PlayerProgressStore.finish_rated_match(did_local_player_win(winner_color))
+	GlobalTopBar.refresh_rating()
+	return tr("RATING_CHANGE").format({"change": "%+d" % change})
+
+## Counts the match for the codex the player brought - not for a deck the story
+## lent them, and not for matches without a player of this machine's own.
+func record_codex_result(winner_color: int) -> void:
+	if match_board.tutorial_mode_active or GameConfig.is_ai_vs_ai_batch or GameConfig.is_dedicated_server:
+		return
+	if GameConfig.has_player_deck_override():
+		return
+	if GameConfig.is_singleplayer and GameConfig.get_player_controller(0) != GameConfig.CONTROLLER_HUMAN \
+			and GameConfig.get_player_controller(1) != GameConfig.CONTROLLER_HUMAN:
+		return
+	PlayerDeckStore.record_deck_result(GameConfig.get_selected_deck_id(), did_local_player_win(winner_color))
+
 func should_award_win_points(winner_color: int) -> bool:
 	if match_board.tutorial_mode_active:
 		return false
@@ -138,5 +162,5 @@ func did_local_player_win(winner_color: int) -> bool:
 
 	return winner_color == match_board.get_own_color()
 
-func show_result_message(winner_color: int) -> void:
-	match_board.get_turn_hud_controller().show_result_message(winner_color)
+func show_result_message(winner_color: int, rating_change_text: String = "") -> void:
+	match_board.get_turn_hud_controller().show_result_message(winner_color, rating_change_text)

@@ -19,6 +19,8 @@ const MATCHMAKING_MODE_QUICK_MATCH: String = "quick_match"
 const RESPAWN_COOLDOWN_OWN_TURNS: int = 1
 const DEFAULT_PLAYER_NAME: String = "Player"
 const MAX_PLAYER_NAME_LENGTH: int = 24
+const QUICK_PLAY_AI_DIFFICULTY_MIN: int = 1
+const QUICK_PLAY_AI_DIFFICULTY_MAX: int = 6
 
 var is_singleplayer: bool = false
 var is_hosting: bool = false
@@ -39,6 +41,9 @@ var ai_vs_ai_fast_mode: bool = false
 var ai_vs_ai_use_random_database_decks: bool = false
 var selected_deck_id: String = ""
 var selected_ai_deck_id: String = ""
+## On for quick play, where the computer plays whatever codex the player
+## picks; anything that sets a match up its own way turns it off.
+var ai_mirrors_player_deck: bool = false
 var ai_opponent_name_override: String = ""
 var ai_opponent_portrait_override: Dictionary = {}
 var ai_opponent_deck_stamp_names_override: Array[String] = []
@@ -341,6 +346,19 @@ func select_deck_for_both_players(deck_id: String) -> void:
 	var cleaned_deck_id: String = deck_id.strip_edges()
 	selected_deck_id = cleaned_deck_id
 	selected_ai_deck_id = cleaned_deck_id
+
+## Quick play from the main menu: the computer at a random level, playing the
+## same codex as the player - which the player picks on the board itself as
+## the match opens (MatchIntroController), so the computer is given it then.
+func configure_quick_play_match() -> void:
+	select_deck_for_both_players(get_selected_deck_id())
+	ai_mirrors_player_deck = true
+	set_player_ai_difficulty_level(1, randi_range(QUICK_PLAY_AI_DIFFICULTY_MIN, QUICK_PLAY_AI_DIFFICULTY_MAX))
+	stop_ai_vs_ai_batch()
+	is_singleplayer = true
+	is_hosting = true
+	server_ip = ""
+	set_singleplayer_controllers(CONTROLLER_HUMAN, CONTROLLER_AI)
 
 func ensure_selected_decks() -> void:
 	if selected_deck_id.strip_edges().is_empty() or !PlayerDeckStore.is_deck_playable_id(selected_deck_id):

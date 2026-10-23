@@ -19,8 +19,6 @@ var owned_only_check: CheckBox
 var previous_button: Button
 var next_button: Button
 var page_label: Label
-var pager_back_icon: Texture2D
-var pager_next_icon: Texture2D
 var codex_title_font: FontFile
 
 var clear_hover_callback: Callable = Callable()
@@ -59,8 +57,6 @@ func bind(config: Dictionary) -> void:
 	previous_button = config.get("previous_button", previous_button) as Button
 	next_button = config.get("next_button", next_button) as Button
 	page_label = config.get("page_label", page_label) as Label
-	pager_back_icon = config.get("pager_back_icon", pager_back_icon) as Texture2D
-	pager_next_icon = config.get("pager_next_icon", pager_next_icon) as Texture2D
 	codex_title_font = config.get("codex_title_font", codex_title_font) as FontFile
 	stamp_visual_size = config.get("stamp_visual_size", stamp_visual_size)
 	stamp_slot_scale_multiplier = float(config.get("stamp_slot_scale_multiplier", stamp_slot_scale_multiplier))
@@ -414,25 +410,6 @@ func configure_pager_buttons() -> void:
 	connect_pager_button_animation(previous_button)
 	connect_pager_button_animation(next_button)
 
-func apply_generated_pager_button_visual(button: Button, icon: Texture2D) -> void:
-	if button == null:
-		return
-	button.text = ""
-	button.icon = icon
-	button.expand_icon = true
-	button.flat = true
-	button.focus_mode = Control.FOCUS_NONE
-	button.pivot_offset = button.custom_minimum_size * 0.5
-
-	var empty_style := StyleBoxEmpty.new()
-	button.add_theme_stylebox_override("normal", empty_style)
-	button.add_theme_stylebox_override("hover", empty_style)
-	button.add_theme_stylebox_override("pressed", empty_style)
-	button.add_theme_stylebox_override("focus", empty_style)
-	button.add_theme_stylebox_override("disabled", empty_style)
-
-	connect_pager_button_animation(button)
-
 func connect_pager_button_animation(button: Button) -> void:
 	if button == null:
 		return
@@ -472,6 +449,3 @@ func show_next_page() -> void:
 
 func get_current_page() -> int:
 	return current_page
-
-func get_current_stamp_slot_size() -> Vector2:
-	return current_stamp_slot_size

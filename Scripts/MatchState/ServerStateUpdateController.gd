@@ -171,6 +171,13 @@ func update_from_server_state(
 		match_board.should_skip_visual_animations(),
 		match_board.piece_move_animation_enabled and match_board.is_inside_tree()
 	)
+	var state_duration_change_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().collect_state_duration_change_animations(
+		previous_piece_visual_state,
+		match_board.piece_objects,
+		match_board.value_to_vector2(state_piece_move_animation.get("to", match_board.INVALID_BOARD_POS), match_board.INVALID_BOARD_POS),
+		match_board.has_received_server_state,
+		match_board.should_skip_visual_animations()
+	)
 	var bomb_warning_animations: Array[Dictionary] = match_board.collect_bomb_warning_animations(recent_bomb_effects, previous_piece_visual_state)
 	var pending_respawn_arrival_animations: Array[Dictionary] = match_board.parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals)
 	match_board.hidden_stamp_counts = current_hidden_stamp_counts
@@ -187,6 +194,7 @@ func update_from_server_state(
 		"animated_affix_positions": animated_affix_positions,
 		"state_piece_move_animation": state_piece_move_animation,
 		"state_affix_animations": state_affix_animations,
+		"state_duration_change_animations": state_duration_change_animations,
 		"state_piece_revert_animations": state_piece_revert_animations,
 		"state_piece_shatter_animations": state_piece_shatter_animations,
 		"pending_respawn_arrival_animations": pending_respawn_arrival_animations,

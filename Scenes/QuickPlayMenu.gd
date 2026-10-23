@@ -2,12 +2,12 @@ extends Control
 
 ## Streamlined singleplayer entry point: pick only your own codex, then
 ## either press Start or wait out the countdown. The AI mirrors whichever
-## codex is selected and gets a random difficulty level (see
-## AI_DIFFICULTY_MIN/MAX) since there's no AI codex/difficulty picker here.
+## codex is selected and gets a random difficulty level
+## (GameConfig.configure_quick_play_match) since there's no AI codex/difficulty
+## picker here. The main menu no longer comes through here: the match itself
+## now opens on the codex choice.
 
 const COUNTDOWN_SECONDS: float = 10.0
-const AI_DIFFICULTY_MIN: int = 1
-const AI_DIFFICULTY_MAX: int = 6
 
 @onready var start_button: Button = $VBoxContainer/StartButton
 @onready var deck_option_button: OptionButton = $VBoxContainer/DeckOptionButton
@@ -83,11 +83,5 @@ func _start_match() -> void:
 	_match_started = true
 	set_process(false)
 	_save_selected_deck()
-	GameConfig.select_deck_for_both_players(GameConfig.get_selected_deck_id())
-	GameConfig.set_player_ai_difficulty_level(1, randi_range(AI_DIFFICULTY_MIN, AI_DIFFICULTY_MAX))
-	GameConfig.stop_ai_vs_ai_batch()
-	GameConfig.is_singleplayer = true
-	GameConfig.is_hosting = true
-	GameConfig.server_ip = ""
-	GameConfig.set_singleplayer_controllers(GameConfig.CONTROLLER_HUMAN, GameConfig.CONTROLLER_AI)
+	GameConfig.configure_quick_play_match()
 	SceneTransition.change_scene("res://Scenes/main.tscn")

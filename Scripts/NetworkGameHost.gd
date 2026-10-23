@@ -482,7 +482,7 @@ func can_affix_any_stamp_for_player(player_id: int) -> bool:
 
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.affixed_stamp != null:
+		if piece == null or piece.color != player_color or !piece.can_receive_stamp():
 			continue
 
 		for stamp: Stamp in hand_stamps:

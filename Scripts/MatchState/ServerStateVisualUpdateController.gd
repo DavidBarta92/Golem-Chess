@@ -34,6 +34,14 @@ func finish(visual_context: Dictionary) -> void:
 	var pending_respawn_arrival_animations: Array = visual_context.get("pending_respawn_arrival_animations", [])
 	if !state_affix_animations.is_empty():
 		await match_board.get_piece_effect_flow_controller().play_state_affix_animations(state_affix_animations)
+	# After the move and the stamp that set an effect off, every piece whose
+	# duration it raised or lowered shows its count change at once.
+	for animation: Dictionary in visual_context.get("state_duration_change_animations", []):
+		match_board.play_duration_change_animation(
+			match_board.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos),
+			int(animation.get("old_duration", 0)),
+			int(animation.get("new_duration", 0))
+		)
 	if !state_piece_revert_animations.is_empty():
 		match_board.call_deferred("play_piece_revert_animations", state_piece_revert_animations)
 	if !state_piece_shatter_animations.is_empty():

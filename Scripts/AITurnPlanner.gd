@@ -55,6 +55,7 @@ func choose_planned_turn(
 	if game_state == null or game_state.game_over or evaluator == null:
 		return {}
 
+	evaluator.begin_decision()
 	planning_evaluator = evaluator
 	var tactical_plan: Dictionary = tactical_search.find_forced_tactical_plan(game_state, player_id, evaluator, board_size)
 	if !tactical_plan.is_empty():
@@ -100,6 +101,7 @@ func execute_sequential_turn(
 	if host == null or host.game_state == null or host.game_state.game_over or evaluator == null:
 		return create_sequential_plan(selected_actions, selected_move, setup_affix_actions, best_score_seen, profile)
 
+	evaluator.begin_decision()
 	while can_continue_sequential_turn(host, player_id):
 		if affix_actions_played < MAX_SEQUENTIAL_AFFIX_ACTIONS:
 			var best_affix: Dictionary = find_best_affix_setup(host.game_state, player_id, evaluator, board_size, profile)

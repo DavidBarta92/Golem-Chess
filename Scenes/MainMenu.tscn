@@ -296,6 +296,7 @@ mouse_filter = 2
 script = ExtResource("17_feature_hint")
 feature_id = "collection"
 target_path = NodePath("../CollectionButton")
+hint_style = 1
 arrow_side = 1
 
 [node name="PlayFeatureHint" type="Node" parent="." unique_id=1569612386]
@@ -303,7 +304,10 @@ script = ExtResource("17_feature_hint")
 feature_id = "play"
 target_path = NodePath("../PlayButton")
 lock_target_until_unlocked = false
+hint_style = 1
 arrow_side = 1
+glow_spread = Vector2(1.6, 1.6)
+glow_behind_path = NodePath("../MainMenuStreetView")
 
 [node name="StoryButtons" type="VBoxContainer" parent="." unique_id=405665921]
 layout_mode = 1
@@ -345,16 +349,19 @@ target_scene_path = "res://Scenes/Trade.tscn"
 script = ExtResource("17_feature_hint")
 feature_id = "multiplayer"
 target_path = NodePath("../StoryButtons/MultiplayerButton")
+hint_style = 1
 
 [node name="QuestsFeatureHint" type="Node" parent="." unique_id=140696544]
 script = ExtResource("17_feature_hint")
 feature_id = "quests"
 target_path = NodePath("../StoryButtons/QuestsButton")
+hint_style = 1
 
 [node name="TradeFeatureHint" type="Node" parent="." unique_id=1180891715]
 script = ExtResource("17_feature_hint")
 feature_id = "trade"
 target_path = NodePath("../StoryButtons/TradeButton")
+hint_style = 1
 
 [node name="MenuMusic" type="Node" parent="." unique_id=196379361]
 script = ExtResource("93_scene_music_cue")

@@ -29,6 +29,9 @@ var evaluator
 var planner
 var strategy_director
 var strategy_memory: Dictionary = {}
+## Below 1.0 the AI guards its base worse than its level does; only a story
+## boss sets it (BossDefinition.ai_defense, see AIMoveEvaluator.begin_decision).
+var defense_scale: float = 1.0
 ## Stamp names affixed during the last completed turn, in play order. Read by
 ## the boss dialogue director so a boss can react to putting down a specific
 ## stamp; nothing in the AI itself depends on it.
@@ -52,9 +55,15 @@ func configure(new_player_id: int = 1, ai_difficulty_level: int = 12) -> void:
 	var evaluator_script = load("res://Scripts/AIMoveEvaluator.gd")
 	evaluator = evaluator_script.new()
 	evaluator.set_difficulty_level(ai_difficulty_level)
+	evaluator.defense_scale = defense_scale
 	planner = AI_TURN_PLANNER_SCRIPT.new()
 	strategy_director = AI_STRATEGY_DIRECTOR_SCRIPT.new()
 	strategy_memory = {}
+
+func set_defense_scale(value: float) -> void:
+	defense_scale = clampf(value, 0.0, 1.0)
+	if evaluator != null:
+		evaluator.defense_scale = defense_scale
 
 func can_play_turn(host: NetworkGameHost) -> bool:
 	return host != null \
@@ -168,7 +177,7 @@ func choose_plan_on_main_thread(
 	var effective_strategy_memory: Dictionary = strategy_memory.duplicate() if planning_strategy_memory.is_empty() else planning_strategy_memory.duplicate()
 	var thread_evaluator = get_persistent_thread_evaluator(effective_difficulty)
 	var thread_strategy_director = AI_STRATEGY_DIRECTOR_SCRIPT.new()
-	thread_evaluator.set_strategy_context(thread_strategy_director.evaluate_strategy(game_state, effective_player_id, effective_strategy_memory, board_size))
+	thread_evaluator.set_strategy_context(thread_strategy_director.evaluate_strategy(game_state, effective_player_id, effective_strategy_memory, board_size, thread_evaluator.aggression))
 	var thread_planner = get_persistent_thread_planner()
 	var selected_plan: Dictionary = thread_planner.choose_planned_turn(game_state, effective_player_id, thread_evaluator, board_size)
 	return strip_thread_plan_values(selected_plan)
@@ -178,6 +187,7 @@ func get_persistent_thread_evaluator(difficulty_level: int):
 		var evaluator_script = load("res://Scripts/AIMoveEvaluator.gd")
 		_persistent_thread_evaluator = evaluator_script.new()
 	_persistent_thread_evaluator.set_difficulty_level(difficulty_level)
+	_persistent_thread_evaluator.defense_scale = defense_scale
 	return _persistent_thread_evaluator
 
 func get_persistent_thread_planner():
@@ -253,7 +263,7 @@ func prepare_strategy_context(game_state: GameStateData, target_evaluator) -> Di
 		return {}
 	if strategy_director == null:
 		strategy_director = AI_STRATEGY_DIRECTOR_SCRIPT.new()
-	var context: Dictionary = strategy_director.evaluate_strategy(game_state, player_id, strategy_memory, BOARD_SIZE)
+	var context: Dictionary = strategy_director.evaluate_strategy(game_state, player_id, strategy_memory, BOARD_SIZE, target_evaluator.aggression)
 	target_evaluator.set_strategy_context(context)
 	return context
 

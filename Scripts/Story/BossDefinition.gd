@@ -47,6 +47,19 @@ class_name BossDefinition
 
 @export_range(1, 12, 1) var ai_difficulty_level: int = 1
 
+## How well this boss guards its base, on top of what its difficulty level
+## allows. 1.0 is the level as it is; lower, and on that share of its turns
+## only does the boss look at what the player threatens against its base - at
+## 0.4, six turns in ten it does not see the Seeker coming. For the first
+## opponents, whom a new player should beat without many retries.
+@export_range(0.0, 1.0, 0.05) var ai_defense: float = 1.0
+
+## This boss's strength on the player rating scale (see PlayerRating). The
+## player's rating moves against it after every attempt, won or lost. Measured
+## from AI-vs-AI matches with this boss's own deck, level and defence - change
+## any of those and it needs measuring again.
+@export var rating: int = 1000
+
 @export_group("The room")
 ## Which room this boss is played in. KIOSK is the stall the game is normally
 ## played at; MEMORY is the remembered room, for an opponent the player is not

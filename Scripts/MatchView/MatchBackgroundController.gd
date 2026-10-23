@@ -13,7 +13,9 @@ class_name MatchBackgroundController
 ##
 ##   1. the line layers draw themselves, the way the main menu background does,
 ##      while the far colour fades in behind them
-##   2. once every line has landed, the near colour fades in
+##   2. once every line has landed, the near colour fades in - unless
+##      `hold_near_colour` keeps it back for fade_in_near_colour() to bring in
+##      later (a match that opens on the codex choice does)
 ##
 ## The board itself is not here - it lives in the match scene, under the
 ## camera - but it joins the same sequence through `line_art_finished` and
@@ -53,6 +55,10 @@ const PAPER_TINT: Color = Color(0.956863, 0.941176, 0.901961, 1.0)
 @export_group("Sound")
 ## The pen, played while the lines draw and stopped when they land.
 @export var reveal_sfx_name: String = "mainmenu_drawing"
+
+## Set before begin() to leave the near colour out when the lines land, for
+## fade_in_near_colour() to bring in at a moment of the caller's choosing.
+var hold_near_colour: bool = false
 
 var _variant: Variant = Variant.KIOSK
 var _line_materials: Array[ShaderMaterial] = []
@@ -140,6 +146,11 @@ func begin() -> void:
 func _on_lines_finished() -> void:
 	_stop_reveal_sfx()
 	line_art_finished.emit()
+	if !hold_near_colour:
+		fade_in_near_colour()
+
+## The near colour - the table's - fading in, and colour_finished once it has.
+func fade_in_near_colour() -> void:
 	for layer_name in get_layers()["near_colour"]:
 		_fade_in(layer_name, 0.0)
 	var tween := create_tween()

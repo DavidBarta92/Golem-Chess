@@ -259,7 +259,9 @@ func create_result_ui() -> void:
 	label_settings.outline_color = UiPalette.INK
 	result_label.label_settings = label_settings
 
-func show_result_message(winner_color: int) -> void:
+## rating_change_text: an extra line under the result - the player's rating
+## change after a rated match - or empty for none.
+func show_result_message(winner_color: int, rating_change_text: String = "") -> void:
 	if result_label == null or result_overlay == null:
 		return
 
@@ -276,6 +278,8 @@ func show_result_message(winner_color: int) -> void:
 		var won: bool = winner_color == get_own_color()
 		result_label.text = tr("YOU WON!") if won else tr("YOU LOST!")
 		SFXManager.play("win" if won else "lose")
+	if !rating_change_text.is_empty():
+		result_label.text += "\n" + rating_change_text
 	result_overlay.visible = true
 
 func initialize_player_portraits() -> void:

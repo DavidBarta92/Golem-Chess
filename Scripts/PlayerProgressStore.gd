@@ -1,5 +1,6 @@
 extends Node
 
+const PlayerRating = preload("res://Scripts/Rating/PlayerRating.gd")
 const PROGRESS_SCHEMA_VERSION: int = 3
 const PROGRESS_PATH: String = "user://player_progress.json"
 const PACK_COST: int = 15
@@ -45,6 +46,60 @@ func spend_points(amount: int) -> bool:
 	progress_data["points"] = get_points() - normalized_amount
 	save_progress()
 	return true
+
+## The player's rating as shown in the top bar (see PlayerRating).
+func get_rating() -> int:
+	return PlayerRating.get_display_rating(_get_rating_state())
+
+## What a win and a loss against this opponent would do to the shown rating,
+## as {"win": +n, "loss": -n}.
+func get_rating_stakes(opponent_rating: float) -> Dictionary:
+	var state: Dictionary = _get_rating_state()
+	return {
+		"win": PlayerRating.preview_change(state, opponent_rating, PlayerRating.ANCHOR_DEVIATION, true),
+		"loss": PlayerRating.preview_change(state, opponent_rating, PlayerRating.ANCHOR_DEVIATION, false),
+	}
+
+## Marks a rated match as begun, saved at once: a match that is never finished
+## - started over, left, or cut short by the game closing - is settled as a
+## loss by resolve_abandoned_rated_match(), so walking away cannot dodge one.
+func begin_rated_match(opponent_id: String, opponent_rating: float) -> void:
+	ensure_loaded()
+	progress_data["pending_rated_match"] = {
+		"opponent_id": opponent_id,
+		"opponent_rating": opponent_rating,
+	}
+	save_progress()
+
+func has_pending_rated_match() -> bool:
+	ensure_loaded()
+	return progress_data.get("pending_rated_match", null) is Dictionary
+
+## Settles the rated match in progress; returns the change in the shown
+## rating, or 0 when no rated match was in progress.
+func finish_rated_match(player_won: bool) -> int:
+	if !has_pending_rated_match():
+		return 0
+	var pending: Dictionary = progress_data["pending_rated_match"]
+	var state_before: Dictionary = _get_rating_state()
+	var state_after: Dictionary = PlayerRating.apply_result(
+		state_before,
+		float(pending.get("opponent_rating", PlayerRating.START_RATING)),
+		PlayerRating.ANCHOR_DEVIATION,
+		player_won
+	)
+	progress_data["rating"] = state_after
+	progress_data.erase("pending_rated_match")
+	save_progress()
+	return PlayerRating.get_display_rating(state_after) - PlayerRating.get_display_rating(state_before)
+
+## A rated match still marked as begun was never finished: it counts as lost.
+func resolve_abandoned_rated_match() -> int:
+	return finish_rated_match(false)
+
+func _get_rating_state() -> Dictionary:
+	ensure_loaded()
+	return PlayerRating.normalize_state(progress_data.get("rating", {}))
 
 func get_unopened_pack_count(pack_id: String = "") -> int:
 	ensure_loaded()
@@ -176,6 +231,7 @@ func _create_default_progress() -> Dictionary:
 		"points": 0,
 		"unopened_pack_counts": {},
 		"unopened_pack_queue": [],
+		"rating": PlayerRating.create_state(),
 	}
 
 func _normalize_progress(raw_data: Dictionary) -> Dictionary:
@@ -199,12 +255,16 @@ func _normalize_progress(raw_data: Dictionary) -> Dictionary:
 		pack_counts
 	)
 
-	return {
+	var normalized: Dictionary = {
 		"schema_version": PROGRESS_SCHEMA_VERSION,
 		"points": maxi(0, int(raw_data.get("points", 0))),
 		"unopened_pack_counts": _counts_from_pack_queue(pack_queue),
 		"unopened_pack_queue": pack_queue,
+		"rating": PlayerRating.normalize_state(raw_data.get("rating", {})),
 	}
+	if raw_data.get("pending_rated_match", null) is Dictionary:
+		normalized["pending_rated_match"] = raw_data["pending_rated_match"]
+	return normalized
 
 func _normalize_pack_id(pack_id: String) -> String:
 	var normalized_pack_id: String = pack_id.strip_edges()

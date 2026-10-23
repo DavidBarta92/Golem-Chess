@@ -33,15 +33,17 @@ const TRIGGER_PRIORITY: Dictionary = {
 	BossReaction.TRIGGER_ENTERED_EMERGENCY_DEFENSE: 0,
 	BossReaction.TRIGGER_ENTERED_ENDGAME_SEEKER_FINISH: 1,
 	BossReaction.TRIGGER_ENTERED_ACTIVE_SEEKER_PUSH: 2,
-	BossReaction.TRIGGER_ENTERED_SOFT_DEFENSE: 3,
-	BossReaction.TRIGGER_ENTERED_ROUTE_SETUP: 4,
-	BossReaction.TRIGGER_STAMP_PLAYED: 5,
-	BossReaction.TRIGGER_BOSS_CAPTURED_PIECE: 6,
-	BossReaction.TRIGGER_BOSS_PIECE_CAPTURED: 7,
+	BossReaction.TRIGGER_ENTERED_SEEKER_ATTACK: 3,
+	BossReaction.TRIGGER_ENTERED_SOFT_DEFENSE: 4,
+	BossReaction.TRIGGER_ENTERED_ROUTE_SETUP: 5,
+	BossReaction.TRIGGER_STAMP_PLAYED: 6,
+	BossReaction.TRIGGER_BOSS_CAPTURED_PIECE: 7,
+	BossReaction.TRIGGER_BOSS_PIECE_CAPTURED: 8,
 }
 
 @export var multiplayer_node_path: NodePath = NodePath("..")
 @export var match_board_path: NodePath = NodePath("../MatchBoard")
+@export var match_intro_path: NodePath = NodePath("../MatchIntroController")
 
 var _boss: BossDefinition
 var _boss_player_id: int = 1
@@ -241,9 +243,17 @@ func _try_speak_reaction(reaction: BossReaction) -> bool:
 	_speak(text, LINE_VISIBLE_SECONDS)
 	return true
 
+## Said once the interface - the panel it is said in - has started to come in.
+## Before that it would play out unseen: the room may still be drawing, or the
+## match waiting on the player's codex.
 func _speak_intro_line() -> void:
 	if _boss == null or _match_finished:
 		return
+	var intro := get_node_or_null(match_intro_path) as MatchIntroController
+	if intro != null and !intro.is_interface_revealed():
+		await intro.interface_revealed
+		if _boss == null or _match_finished or !is_inside_tree():
+			return
 	await get_tree().create_timer(INTRO_DELAY_SECONDS).timeout
 	if _boss == null or _match_finished or !is_inside_tree():
 		return

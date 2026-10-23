@@ -422,12 +422,50 @@ func get_route_points(from_pos: Vector2, to_pos: Vector2, moving_holder: Sprite2
 	var direct_points: Array[Vector2] = [start_point, end_point]
 	if !avoid_occupied_footprints:
 		return direct_points
+	if is_straight_move_clear(from_pos, to_pos, moving_holder):
+		return direct_points
 
 	var blocking_holders: Array[Sprite2D] = get_direct_blocking_holders(from_pos, to_pos, moving_holder)
 	if blocking_holders.is_empty():
 		return direct_points
 
 	return get_detour_route_points(from_pos, to_pos, moving_holder, blocking_holders)
+
+## True for a move that should simply go straight: a step to any neighbouring
+## square, or a run along a rank or a file with no piece standing on the squares
+## in between. The shape a route steers clear of is as wide as the drawing
+## (get_avoidance_board_geometry), so a piece standing *beside* such a line -
+## next to the start, the end or a square on the way - counts as in the way
+## even though the move never passes over it, and the route would swing out
+## round it into the next file and back.
+##
+## Only pieces the viewer can see count: a piece out of sight on the way must
+## not bend the route and give itself away.
+func is_straight_move_clear(from_pos: Vector2, to_pos: Vector2, moving_holder: Sprite2D) -> bool:
+	var delta: Vector2 = to_pos - from_pos
+	if absf(delta.x) <= 1.0 and absf(delta.y) <= 1.0:
+		return true
+	if delta.x != 0.0 and delta.y != 0.0:
+		return false
+
+	var step := Vector2(signf(delta.x), signf(delta.y))
+	var square: Vector2 = from_pos + step
+	while square != to_pos:
+		if has_visible_piece_at(square, moving_holder):
+			return false
+		square += step
+	return true
+
+func has_visible_piece_at(board_pos: Vector2, moving_holder: Sprite2D) -> bool:
+	if pieces_node == null:
+		return piece_exists_at(board_pos)
+	for child in pieces_node.get_children():
+		var holder: Sprite2D = child as Sprite2D
+		if !should_consider_visible_holder(holder, moving_holder):
+			continue
+		if value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos) == board_pos:
+			return piece_exists_at(board_pos)
+	return false
 
 func get_animation_duration(route_points: Array[Vector2], from_pos: Vector2, to_pos: Vector2) -> float:
 	var route_length: float = get_route_length(route_points)

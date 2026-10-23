@@ -73,6 +73,8 @@ var _use_scene_mask: bool = false
 var _show_background: bool = false
 var _background_color: Color = Color(0.909804, 0.694118, 0.486275, 1.0)
 var mask_group: CanvasGroup
+var _owns_mask_material: bool = false
+var _picture_alpha: float = 1.0
 var background_rect: ColorRect
 var canvas_root: Node2D
 var torso_root: Node2D
@@ -207,13 +209,19 @@ func update_mask_group_material() -> void:
 		return
 	if !_use_scene_mask:
 		mask_group.material = null
+		mask_group.self_modulate.a = _picture_alpha
 		return
+	# A material of this view's own: the one the scene file brings is shared by
+	# every portrait made from it, and the picture's alpha is set on it.
 	var material := mask_group.material as ShaderMaterial
-	if material == null or material.shader != SCENE_MASK_SHADER:
+	if material == null or material.shader != SCENE_MASK_SHADER or !_owns_mask_material:
 		material = ShaderMaterial.new()
 		material.shader = SCENE_MASK_SHADER
 		mask_group.material = material
+		_owns_mask_material = true
 	material.set_shader_parameter("mask_texture", SCENE_MASK_TEXTURE)
+	material.set_shader_parameter("picture_alpha", _picture_alpha)
+	mask_group.self_modulate.a = 1.0
 
 func update_background_style() -> void:
 	if background_rect == null:
@@ -259,14 +267,23 @@ func set_expression(expression: String) -> void:
 	applied_config.expression = PortraitConfig.sanitize_expression(expression)
 	apply_expression()
 
-## How much of the face shows, as the one picture its layers make. Set on the
-## group they are drawn into rather than on anything above it: a fade from
-## above reaches every layer on its own, and each one going see-through lets
-## the layers it covers show through it - the chin through a beard.
+## How much of the face shows, as the one picture its layers make. A fade from
+## above reaches every layer on its own, and each one going see-through lets the
+## layers it covers show through it - the chin through a beard. So it is set
+## where the layers are already one picture: in the shader that masks the
+## group they are drawn into. Fading the group's own self_modulate instead left
+## the picture as it was - the face came up before its frame and went all at
+## once - so with the mask on, the group's self_modulate stays at one.
 func set_picture_alpha(alpha: float) -> void:
-	self_modulate.a = alpha
-	if mask_group != null:
-		mask_group.self_modulate.a = alpha
+	_picture_alpha = clampf(alpha, 0.0, 1.0)
+	self_modulate.a = _picture_alpha
+	if mask_group == null:
+		return
+	var material := mask_group.material as ShaderMaterial
+	if material != null and _owns_mask_material:
+		material.set_shader_parameter("picture_alpha", _picture_alpha)
+	else:
+		mask_group.self_modulate.a = _picture_alpha
 
 func set_turn_focus(enabled: bool) -> void:
 	if turn_focus_enabled == enabled:

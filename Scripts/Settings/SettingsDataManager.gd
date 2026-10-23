@@ -64,7 +64,7 @@ func verify_settings_data_(data_: Dictionary) -> void:
 			invalidSaveFile = true
 
 func is_last_move_arrow_enabled() -> bool:
-	return bool(settingsData_.get("UI", {}).get("ShowLastMoveArrow", true))
+	return bool(settingsData_.get("UI", {}).get("ShowLastMoveArrow", false))
 
 ## Whether to stop a player about to move while a stamp is still waiting to
 ## go on a golem. A move ends the turn, so that is the moment it matters. Turned off from the warning itself, by the player who has

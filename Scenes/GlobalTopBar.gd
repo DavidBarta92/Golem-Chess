@@ -10,9 +10,12 @@ const SLIDE_DISTANCE: float = 64.0
 const SLIDE_OUT_SECONDS: float = 0.16
 const SLIDE_IN_SECONDS: float = 0.18
 const ITEM_STAGGER_SECONDS: float = 0.045
-const TOP_BAR_BACKGROUND_COLOR: Color = Color(0.9366637, 0.9330646, 0.89437205, 1.0)
 const TOP_BAR_TEXT_COLOR: Color = UiPalette.INK
 const VERSION_TEXT_COLOR: Color = Color(0.61960787, 0.6039216, 0.6862745, 1.0)
+const RATING_BADGE_ICON_SCRIPT = preload("res://Scripts/Rating/RatingBadgeIcon.gd")
+## Where the rating sits: in the bar's top-right corner, just left of the coins.
+const RATING_HUD_OFFSET_LEFT: float = -252.0
+const RATING_HUD_OFFSET_RIGHT: float = -148.0
 const SINGLEPLAYER_UNLOCK_KEY: Key = KEY_A
 const SINGLEPLAYER_UNLOCK_PRESS_COUNT: int = 3
 
@@ -42,6 +45,8 @@ var pressed_connections: Dictionary = {}
 var rest_positions: Dictionary = {}
 var scene_transition_active: bool = false
 var singleplayer_unlock_presses: int = 0
+var rating_hud: Control
+var rating_label: Label
 
 
 func _ready() -> void:
@@ -49,7 +54,6 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	root.visible = false
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top_background.color = TOP_BAR_BACKGROUND_COLOR
 	top_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scene_items_clip.clip_contents = true
 	scene_items_clip.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -69,6 +73,7 @@ func _ready() -> void:
 	_reset_container_items(main_menu_items)
 	_reset_container_items(collection_items)
 	collection_items.visible = false
+	_build_rating_hud()
 	refresh_points()
 
 
@@ -178,7 +183,53 @@ func refresh_points() -> void:
 		return
 	PlayerProgressStore.ensure_loaded()
 	points_label.text = str(PlayerProgressStore.get_points())
+	refresh_rating()
 
+
+func refresh_rating() -> void:
+	if rating_label == null:
+		return
+	if Engine.is_editor_hint():
+		rating_label.text = "-"
+		return
+	rating_label.text = str(PlayerProgressStore.get_rating())
+
+## The rating, next to the coins and shown whenever they are. Built here rather
+## than in the scene, as a sibling of the coins so their pulse leaves it alone.
+func _build_rating_hud() -> void:
+	rating_hud = Control.new()
+	rating_hud.name = "RatingHud"
+	rating_hud.custom_minimum_size = Vector2(RATING_HUD_OFFSET_RIGHT - RATING_HUD_OFFSET_LEFT, points_hud.custom_minimum_size.y)
+	rating_hud.anchor_left = 1.0
+	rating_hud.anchor_right = 1.0
+	rating_hud.offset_left = RATING_HUD_OFFSET_LEFT
+	rating_hud.offset_right = RATING_HUD_OFFSET_RIGHT
+	rating_hud.offset_top = points_hud.offset_top
+	rating_hud.offset_bottom = points_hud.offset_bottom
+	rating_hud.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	rating_hud.mouse_filter = Control.MOUSE_FILTER_PASS
+	rating_hud.tooltip_text = tr("RATING_NAME")
+	root.add_child(rating_hud)
+
+	var badge = RATING_BADGE_ICON_SCRIPT.new()
+	badge.position = point_icon.position
+	badge.size = point_icon.custom_minimum_size
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.color = TOP_BAR_TEXT_COLOR
+	rating_hud.add_child(badge)
+
+	rating_label = Label.new()
+	rating_label.position = points_label.position
+	rating_label.size = Vector2(rating_hud.custom_minimum_size.x - points_label.position.x, points_label.size.y)
+	rating_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	rating_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rating_label.add_theme_font_size_override("font_size", points_label.get_theme_font_size("font_size"))
+	rating_label.add_theme_color_override("font_color", TOP_BAR_TEXT_COLOR)
+	rating_hud.add_child(rating_label)
+
+	rating_hud.visible = points_hud.visible
+	points_hud.visibility_changed.connect(func() -> void: rating_hud.visible = points_hud.visible)
+	refresh_rating()
 
 func get_button(button_id: String) -> Button:
 	return button_by_id.get(button_id, null) as Button

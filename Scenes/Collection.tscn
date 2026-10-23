@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://cngqle2h6g57n" path="res://Scenes/Collection.gd" id="1_collection"]
 [ext_resource type="Texture2D" uid="uid://dspxsiid41buh" path="res://Assets/booster.png" id="2_kbw0k"]
-[ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="4_u2t3u"]
 [ext_resource type="Texture2D" uid="uid://bdyr3etvetn3o" path="res://Assets/magnifying_glass_case_closed.png" id="5_case_closed"]
 [ext_resource type="Texture2D" uid="uid://bthcwpocferx0" path="res://Assets/magnifying_glass_case_opened.png" id="6_case_opened"]
 [ext_resource type="Texture2D" uid="uid://b2rdnleh8sbn" path="res://ui/themes/icons/back.png" id="7_page_back"]
@@ -244,71 +243,6 @@ mouse_filter = 2
 texture = ExtResource("12_collection_book")
 expand_mode = 1
 
-[node name="TopBackground" type="ColorRect" parent="." unique_id=2090701836]
-visible = false
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 60.0
-grow_horizontal = 2
-mouse_filter = 2
-color = Color(0.9366637, 0.9330646, 0.89437205, 1)
-
-[node name="TopBar" type="HBoxContainer" parent="." unique_id=792694485]
-visible = false
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 24.0
-offset_top = 10.0
-offset_right = -24.0
-offset_bottom = 52.0
-grow_horizontal = 2
-theme_override_constants/separation = 12
-
-[node name="BackButton" type="Button" parent="TopBar" unique_id=1515339403]
-custom_minimum_size = Vector2(112, 40)
-layout_mode = 2
-focus_mode = 0
-text = "Back"
-
-[node name="TopSpacer" type="Control" parent="TopBar" unique_id=382353858]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="BuyPacksButton" type="Button" parent="TopBar" unique_id=810418786]
-custom_minimum_size = Vector2(124, 38)
-layout_mode = 2
-focus_mode = 0
-text = "Buy Packs"
-
-[node name="PointsContainer" type="Control" parent="TopBar" unique_id=986436859]
-custom_minimum_size = Vector2(116, 38)
-layout_mode = 2
-
-[node name="PointIcon" type="TextureRect" parent="TopBar/PointsContainer" unique_id=1229436934]
-texture_filter = 2
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 0
-offset_top = 7.0
-offset_right = 24.0
-offset_bottom = 31.0
-texture = ExtResource("4_u2t3u")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="PointsLabel" type="Label" parent="TopBar/PointsContainer" unique_id=1540626825]
-custom_minimum_size = Vector2(70, 32)
-layout_mode = 0
-offset_left = 32.0
-offset_top = 3.0
-offset_right = 116.0
-offset_bottom = 35.0
-theme_override_colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-theme_override_font_sizes/font_size = 20
-text = "0"
-vertical_alignment = 1
-
 [node name="PackNoticePanel" type="Control" parent="." unique_id=1286602706]
 z_index = 25
 z_as_relative = false
@@ -394,11 +328,6 @@ theme_override_constants/separation = 10
 [node name="OwnedOnlyCheck" type="CheckBox" parent="BrowserTools" unique_id=808986781]
 layout_mode = 2
 text = "My stamps"
-
-[node name="ToolSpacer" type="Control" parent="BrowserTools" unique_id=145477775]
-visible = false
-layout_mode = 2
-size_flags_horizontal = 3
 
 [node name="SearchField" type="LineEdit" parent="BrowserTools" unique_id=1366859969]
 custom_minimum_size = Vector2(140, 34)
@@ -670,44 +599,6 @@ offset_top = 64.0
 offset_right = -24.0
 offset_bottom = 206.0
 grow_horizontal = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_dark")
-
-[node name="BuyPacksRoot" type="VBoxContainer" parent="BuyPacksPanel" unique_id=1227396639]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 6
-
-[node name="TitleLabel" type="Label" parent="BuyPacksPanel/BuyPacksRoot" unique_id=939283317]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.96, 0.82, 1)
-theme_override_font_sizes/font_size = 16
-text = "Buy Packs"
-
-[node name="BuyPacksInfoLabel" type="Label" parent="BuyPacksPanel/BuyPacksRoot" unique_id=96813435]
-layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "15 points each"
-autowrap_mode = 2
-
-[node name="PackCountSpinBox" type="SpinBox" parent="BuyPacksPanel/BuyPacksRoot" unique_id=2078437700]
-custom_minimum_size = Vector2(0, 32)
-layout_mode = 2
-
-[node name="ButtonRow" type="HBoxContainer" parent="BuyPacksPanel/BuyPacksRoot" unique_id=809989013]
-layout_mode = 2
-theme_override_constants/separation = 8
-alignment = 2
-
-[node name="CancelButton" type="Button" parent="BuyPacksPanel/BuyPacksRoot/ButtonRow" unique_id=280670214]
-custom_minimum_size = Vector2(76, 30)
-layout_mode = 2
-text = "Cancel"
-
-[node name="BuyButton" type="Button" parent="BuyPacksPanel/BuyPacksRoot/ButtonRow" unique_id=842538024]
-custom_minimum_size = Vector2(76, 30)
-layout_mode = 2
-text = "Buy"
 
 [node name="MagnifierCaseButton" type="Control" parent="." unique_id=1656206030]
 anchors_preset = 0
@@ -756,27 +647,6 @@ grow_vertical = 2
 tooltip_text = "Magnifier"
 focus_mode = 0
 flat = true
-
-[node name="PackResultDialog" type="AcceptDialog" parent="." unique_id=1024448397]
-title = "Pack Opened"
-
-[node name="PackResultLabel" type="Label" parent="PackResultDialog" unique_id=1359759332]
-size_flags_horizontal = 3
-size_flags_vertical = 3
-text = "You opened:"
-autowrap_mode = 2
-
-[node name="RemoveStampButton" type="Button" parent="." unique_id=1601937654]
-visible = false
-custom_minimum_size = Vector2(30, 30)
-layout_mode = 0
-offset_right = 30.0
-offset_bottom = 30.0
-tooltip_text = "Remove stamp"
-text = "X"
-
-[node name="RemoveStampTimer" type="Timer" parent="." unique_id=951392258]
-one_shot = true
 
 [node name="PaperTextureLayer" type="CanvasLayer" parent="."]
 layer = 10

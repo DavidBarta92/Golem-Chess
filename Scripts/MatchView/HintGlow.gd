@@ -13,6 +13,7 @@ const FADE_SECONDS: float = 0.4
 const PULSE_SECONDS: float = 0.9
 const PULSE_LOW_ALPHA: float = 0.55
 
+var _arrive: Tween
 var _pulse: Tween
 
 ## `centre` and `glow_size` are in the target's own pixels: where the middle
@@ -27,10 +28,15 @@ static func attach(target: Control, centre: Vector2, glow_size: Vector2) -> Hint
 	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	glow.stretch_mode = TextureRect.STRETCH_SCALE
 	glow.texture = _make_texture()
-	glow.size = glow_size
-	glow.position = centre - glow_size * 0.5
+	glow.place(centre, glow_size)
 	target.add_child(glow)
 	return glow
+
+## Moves the glow on its target, in the same terms as attach - for a target
+## that changes size after the glow went up.
+func place(centre: Vector2, glow_size: Vector2) -> void:
+	size = glow_size
+	position = centre - glow_size * 0.5
 
 static func _make_texture() -> GradientTexture2D:
 	# A bright core that holds for a while before it thins out, so it still
@@ -53,9 +59,9 @@ static func _make_texture() -> GradientTexture2D:
 
 func _ready() -> void:
 	modulate.a = 0.0
-	var arrive := create_tween()
-	arrive.tween_property(self, "modulate:a", 1.0, FADE_SECONDS)
-	arrive.tween_callback(_start_pulse)
+	_arrive = create_tween()
+	_arrive.tween_property(self, "modulate:a", 1.0, FADE_SECONDS)
+	_arrive.tween_callback(_start_pulse)
 
 func _start_pulse() -> void:
 	_pulse = create_tween().set_loops()
@@ -66,6 +72,10 @@ func _start_pulse() -> void:
 
 ## Fades out and removes itself.
 func dismiss() -> void:
+	# Dismissed while still fading in, the arrival must not go on to start
+	# the pulse underneath the fade-out.
+	if _arrive != null and _arrive.is_valid():
+		_arrive.kill()
 	if _pulse != null and _pulse.is_valid():
 		_pulse.kill()
 	var leave := create_tween()

@@ -12,7 +12,8 @@ extends ArtworkCroppedButton
 @export var slide_duration: float = 0.5
 @export var scene_change_lead_distance: float = 25.0
 
-const TARGET_SCENE_PATH: String = "res://Scenes/QuickPlayMenu.tscn"
+## Quick play goes straight to the match, which opens on the codex choice.
+const TARGET_SCENE_PATH: String = "res://Scenes/main.tscn"
 
 var _slide_tween: Tween
 var _slide_start_pos: Vector2
@@ -39,4 +40,5 @@ func _on_slide_step(t: float) -> void:
 func _trigger_play_scene_change() -> void:
 	if StoryManager.continue_story_if_ready():
 		return
+	GameConfig.configure_quick_play_match()
 	SceneTransition.change_scene(TARGET_SCENE_PATH)

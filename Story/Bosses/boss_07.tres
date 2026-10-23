@@ -105,6 +105,7 @@ boss_id = "boss_07"
 display_name = "Wei"
 deck_stamps = Array[ExtResource("1_xkomh")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_01"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_10"), ExtResource("9_stamp_11"), ExtResource("9_stamp_12")])
 ai_difficulty_level = 7
+rating = 910
 intro_lines = Array[String](["BOSS_07_INTRO_1", "BOSS_07_INTRO_2", "BOSS_07_INTRO_3", "BOSS_07_INTRO_4", "BOSS_07_INTRO_5"])
 victory_lines = Array[String](["BOSS_07_WIN_1", "BOSS_07_WIN_2", "BOSS_07_WIN_3", "BOSS_07_WIN_4", "BOSS_07_WIN_5"])
 defeat_lines = Array[String](["BOSS_07_LOSS_1"])

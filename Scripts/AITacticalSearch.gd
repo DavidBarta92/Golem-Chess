@@ -17,20 +17,23 @@ func find_forced_tactical_plan(
 	if !winning_move.is_empty():
 		return create_move_plan(player_id, winning_move, "immediate_base_win")
 
-	if evaluator != null and !evaluator.should_notice_defensive_tactics():
-		return {}
-
-	var defense_move: Dictionary = find_immediate_base_defense_move(game_state, player_id, evaluator, board_size)
-	if !defense_move.is_empty():
-		return create_move_plan(player_id, defense_move, "immediate_base_defense")
+	# Low difficulty misses the defensive shortcuts some of the time; its own
+	# two-turn threat it always sees. Gating that too made weak levels look as
+	# if they did not want to win, rather than as if they defended poorly.
+	var notices_defense: bool = evaluator == null or (evaluator.sees_threats_this_turn and evaluator.should_notice_defensive_tactics())
+	if notices_defense:
+		var defense_move: Dictionary = find_immediate_base_defense_move(game_state, player_id, evaluator, board_size)
+		if !defense_move.is_empty():
+			return create_move_plan(player_id, defense_move, "immediate_base_defense")
 
 	var two_turn_threat_move: Dictionary = find_two_turn_base_threat_move(game_state, player_id, evaluator, board_size)
 	if !two_turn_threat_move.is_empty():
 		return create_move_plan(player_id, two_turn_threat_move, "two_turn_base_threat")
 
-	var staging_capture_move: Dictionary = find_base_staging_capture_move(game_state, player_id, evaluator, board_size)
-	if !staging_capture_move.is_empty():
-		return create_move_plan(player_id, staging_capture_move, "base_staging_capture")
+	if notices_defense:
+		var staging_capture_move: Dictionary = find_base_staging_capture_move(game_state, player_id, evaluator, board_size)
+		if !staging_capture_move.is_empty():
+			return create_move_plan(player_id, staging_capture_move, "base_staging_capture")
 
 	return {}
 

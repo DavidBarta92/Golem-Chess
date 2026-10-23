@@ -16,6 +16,7 @@ func _on_start_button_pressed() -> void:
 	_save_selected_deck()
 	_save_selected_ai_deck()
 	_save_ai_difficulty()
+	GameConfig.ai_mirrors_player_deck = false
 	GameConfig.stop_ai_vs_ai_batch()
 	GameConfig.is_singleplayer = true
 	GameConfig.is_hosting = true

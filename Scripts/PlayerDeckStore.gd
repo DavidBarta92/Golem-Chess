@@ -220,13 +220,55 @@ func save_existing_deck(deck_id: String, deck_name: String, stamps: Array) -> bo
 	for index in range(decks.size()):
 		var deck = decks[index]
 		if deck is Dictionary && str(deck.get("deck_id", "")) == deck_id:
+			var new_stamps: Array = _normalize_deck_stamps(stamps)
+			# Order matters as much as the stamps themselves (it decides the
+			# pages), so any change makes it another codex and its record starts over.
+			if _get_deck_stamp_signature(new_stamps) != _get_deck_stamp_signature(deck.get("stamps", [])):
+				deck.erase("stats")
 			deck["name"] = deck_name.strip_edges()
-			deck["stamps"] = _normalize_deck_stamps(stamps)
+			deck["stamps"] = new_stamps
 			deck["updated_at"] = Time.get_datetime_string_from_system(true)
 			decks[index] = deck
 			deck_data["decks"] = decks
 			return save_decks()
 	return false
+
+## Counts a finished match for the codex the player used.
+func record_deck_result(deck_id: String, player_won: bool) -> void:
+	ensure_loaded()
+	var decks: Array = _get_decks()
+	for index in range(decks.size()):
+		var deck = decks[index]
+		if !(deck is Dictionary) or str(deck.get("deck_id", "")) != deck_id:
+			continue
+		var stats: Dictionary = get_deck_stats(deck)
+		stats["played"] = int(stats["played"]) + 1
+		if player_won:
+			stats["won"] = int(stats["won"]) + 1
+		deck["stats"] = stats
+		decks[index] = deck
+		deck_data["decks"] = decks
+		save_decks()
+		return
+
+## {"played": n, "won": n} since the codex last changed.
+func get_deck_stats(deck: Dictionary) -> Dictionary:
+	var raw_stats = deck.get("stats", {})
+	if !(raw_stats is Dictionary):
+		raw_stats = {}
+	var played: int = maxi(0, int(raw_stats.get("played", 0)))
+	return {
+		"played": played,
+		"won": clampi(int(raw_stats.get("won", 0)), 0, played),
+	}
+
+## The stamps in order, by stamp - which print of a stamp is used does not
+## change how the codex plays.
+func _get_deck_stamp_signature(stamps: Array) -> String:
+	var codes: Array[String] = []
+	for deck_stamp in stamps:
+		codes.append(_get_deck_stamp_code(deck_stamp))
+	return ",".join(codes)
 
 func delete_deck(deck_id: String) -> bool:
 	ensure_loaded()
@@ -324,7 +366,7 @@ func _migrate_legacy_deck_array(raw_decks: Array) -> Dictionary:
 
 func _normalize_deck(raw_deck: Dictionary) -> Dictionary:
 	var now := Time.get_datetime_string_from_system(true)
-	return {
+	var deck: Dictionary = {
 		"deck_id": str(raw_deck.get("deck_id", raw_deck.get("id", _generate_deck_id()))),
 		"provider": str(raw_deck.get("provider", LOCAL_PROVIDER)),
 		"name": str(raw_deck.get("name", "Unnamed codex")),
@@ -332,6 +374,9 @@ func _normalize_deck(raw_deck: Dictionary) -> Dictionary:
 		"created_at": str(raw_deck.get("created_at", now)),
 		"updated_at": str(raw_deck.get("updated_at", now)),
 	}
+	if raw_deck.get("stats", null) is Dictionary:
+		deck["stats"] = get_deck_stats(raw_deck)
+	return deck
 
 func _normalize_deck_stamps(raw_stamps) -> Array:
 	var normalized_stamps: Array = []
