@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://d1pinsrh1u37p"]
 
 [ext_resource type="Script" uid="uid://bb2vr4ui84kxa" path="res://Scenes/GlobalTopBar.gd" id="1_global_top_bar"]
-[ext_resource type="Texture2D" uid="uid://dv031v6f0m0h2" path="res://Assets/coin.svg" id="2_coin"]
 [ext_resource type="Texture2D" uid="uid://cn5e1f7amlgkn" path="res://Assets/golem_painted_vector_transparent_2.svg" id="3_logo"]
 [ext_resource type="Shader" path="res://Shaders/top_bar_gradient.gdshader" id="4_top_bar_gradient"]
 
@@ -108,95 +107,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="SingleplayerSlot" type="Control" parent="Root/SceneItemsClip/MainMenuItems" unique_id=330794313]
-visible = false
-custom_minimum_size = Vector2(140, 60)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="SingleplayerButton" type="Button" parent="Root/SceneItemsClip/MainMenuItems/SingleplayerSlot" unique_id=179297013]
-custom_minimum_size = Vector2(140, 40)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -70.0
-offset_top = -20.0
-offset_right = 70.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 0
-text = "Singleplayer"
-
-[node name="MultiplayerSlot" type="Control" parent="Root/SceneItemsClip/MainMenuItems" unique_id=1427085628]
-custom_minimum_size = Vector2(140, 60)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="MultiplayerButton" type="Button" parent="Root/SceneItemsClip/MainMenuItems/MultiplayerSlot" unique_id=1822677032]
-custom_minimum_size = Vector2(140, 40)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -103.0
-offset_top = -20.0
-offset_right = 69.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 0
-text = "Alpha Multiplayer"
-
-[node name="SettingsSlot" type="Control" parent="Root/SceneItemsClip/MainMenuItems" unique_id=482982749]
-custom_minimum_size = Vector2(110, 60)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="SettingsButton" type="Button" parent="Root/SceneItemsClip/MainMenuItems/SettingsSlot" unique_id=903056888]
-custom_minimum_size = Vector2(110, 40)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -55.0
-offset_top = -20.0
-offset_right = 55.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 0
-text = "Settings"
-
-[node name="ExitSlot" type="Control" parent="Root/SceneItemsClip/MainMenuItems" unique_id=1122793143]
-custom_minimum_size = Vector2(92, 60)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="ExitButton" type="Button" parent="Root/SceneItemsClip/MainMenuItems/ExitSlot" unique_id=290609046]
-custom_minimum_size = Vector2(92, 40)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -46.0
-offset_top = -20.0
-offset_right = 46.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-focus_mode = 0
-text = "Exit"
-
 [node name="CollectionItems" type="HBoxContainer" parent="Root/SceneItemsClip" unique_id=2092903077]
 visible = false
 layout_mode = 1
@@ -229,70 +139,37 @@ grow_vertical = 2
 focus_mode = 0
 text = "Back"
 
-[node name="CollectionSpacer" type="Control" parent="Root/SceneItemsClip/CollectionItems" unique_id=1687898174]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
 [node name="BuyPacksSlot" type="Control" parent="Root/SceneItemsClip/CollectionItems" unique_id=1774048251]
 custom_minimum_size = Vector2(124, 60)
 layout_mode = 2
 mouse_filter = 2
 
 [node name="BuyPacksButton" type="Button" parent="Root/SceneItemsClip/CollectionItems/BuyPacksSlot" unique_id=271344634]
-custom_minimum_size = Vector2(124, 38)
+custom_minimum_size = Vector2(124, 40)
 layout_mode = 1
-anchors_preset = 6
-anchor_left = 1.0
+anchors_preset = 8
+anchor_left = 0.5
 anchor_top = 0.5
-anchor_right = 1.0
+anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -124.0
-offset_top = -19.0
-offset_bottom = 19.0
-grow_horizontal = 0
+offset_left = -62.0
+offset_top = -20.0
+offset_right = 62.0
+offset_bottom = 20.0
+grow_horizontal = 2
 grow_vertical = 2
 focus_mode = 0
 text = "Buy Packs"
 
-[node name="BuyPacksRightSpacer" type="Control" parent="Root/SceneItemsClip/CollectionItems"]
-custom_minimum_size = Vector2(4, 0)
+[node name="CollectionSpacer" type="Control" parent="Root/SceneItemsClip/CollectionItems" unique_id=1687898174]
 layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="PointsHud" type="Control" parent="Root" unique_id=1808540344]
-custom_minimum_size = Vector2(116, 38)
+[node name="RightGroup" type="Control" parent="Root"]
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
+anchors_preset = 10
 anchor_right = 1.0
-offset_left = -140.0
-offset_top = 11.0
-offset_right = -24.0
-offset_bottom = 49.0
-grow_horizontal = 0
+offset_bottom = 60.0
+grow_horizontal = 2
 mouse_filter = 2
-
-[node name="Coin" type="TextureRect" parent="Root/PointsHud" unique_id=661862506]
-texture_filter = 2
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 0
-offset_top = 7.0
-offset_right = 24.0
-offset_bottom = 31.0
-mouse_filter = 2
-texture = ExtResource("2_coin")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="PointsLabel" type="Label" parent="Root/PointsHud" unique_id=979319409]
-custom_minimum_size = Vector2(70, 32)
-layout_mode = 0
-offset_left = 32.0
-offset_top = 3.0
-offset_right = 116.0
-offset_bottom = 35.0
-theme_override_colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-theme_override_font_sizes/font_size = 20
-text = "0"
-vertical_alignment = 1

@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://cr4mwul1ppsqc" path="res://ui/themes/icons/slider_grabber.svg" id="3_slider_grabber"]
 [ext_resource type="FontFile" uid="uid://bjtukmh5u0umu" path="res://Fonts/ElmsSans-Italic.ttf" id="4_dialogue_italic"]
 [ext_resource type="FontFile" uid="uid://c6ek3bb3qj55l" path="res://Fonts/ElmsSans-BoldItalic.ttf" id="5_dialogue_bold_italic"]
+[ext_resource type="FontFile" uid="uid://dpuo7bqsu4l68" path="res://Fonts/AlegreyaSans-Medium.ttf" id="8_yll6c"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_dialog_body"]
 content_margin_left = 16.0
@@ -362,7 +363,7 @@ shadow_size = 12
 shadow_offset = Vector2(0, 5)
 
 [resource]
-default_font = ExtResource("2_820ue")
+default_font = ExtResource("8_yll6c")
 default_font_size = 16
 AcceptDialog/constants/buttons_min_height = 38
 AcceptDialog/constants/buttons_min_width = 96

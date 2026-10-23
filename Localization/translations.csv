@@ -984,3 +984,25 @@ RATING_CHANGE,Rating {change},Értékszám {change}
 RATING_NEXT_OPPONENT,Next: {name},Következik: {name}
 RATING_STAKES,Win: {win}    Loss: {loss},Győzelem: {win}    Vereség: {loss}
 CODEX_WIN_RATE_TOOLTIP,Won {won} of {played} matches since the codex last changed,{played} meccsből {won} győzelem a kódex legutóbbi módosítása óta
+TOPBAR_MENU,Menu,Menü
+TOPBAR_TEMPORARY_TAG,temporary,ideiglenes
+TOPBAR_COINS,Coins,Érme
+TOPBAR_DRAW_POINTS,Draw points,Rajzpont
+QUEST_KIND_STORY,Story,Történet
+QUEST_KIND_REWARD,Reward,Jutalom
+QUEST_KIND_DAILY,Daily,Napi
+QUEST_REWARD_LABEL,Reward,Jutalom
+QUEST_STORY_CONTINUES,the story continues,a történet folytatódik
+QUEST_CLAIM,Claim,Begyűjtés
+QUEST_TIME_LEFT_HOURS,%d h %02d m left,még %d ó %02d p
+QUEST_TIME_LEFT_MINUTES,%d min left,még %d perc
+QUEST_SAMPLE_STORY_TITLE,Grandpa's codex,A nagypapa kódexe
+QUEST_SAMPLE_STORY_TEXT,There is a map between the pages. <b>Win a battle</b> with Grandpa's codex.,A lapok között egy térkép lapul. <b>Nyerj egy csatát</b> a Nagypapa kódexével.
+QUEST_SAMPLE_DUELS_TITLE,Three duels,Három párbaj
+QUEST_SAMPLE_DUELS_TEXT,Whoever gets up three times will get up a fourth. <b>Defeat 3 opponents</b> in multiplayer.,"Aki háromszor áll fel, negyedszer is fel fog. <b>Győzz le 3 ellenfelet</b> többjátékos módban."
+QUEST_SAMPLE_ARCHERS_TITLE,The archers' way,Íjászok útja
+QUEST_SAMPLE_ARCHERS_TEXT,It hits from afar too. <b>Win a battle</b> with at least 3 Archers in your codex.,"Távolról is betalál. <b>Nyerj egy csatát</b> úgy, hogy a kódexedben legalább 3 Archer van."
+QUEST_SAMPLE_COLLECTOR_TITLE,Stamp collector,Bélyeggyűjtő
+QUEST_SAMPLE_COLLECTOR_TEXT,Every stamp has a story. <b>Stick on 40 stamps</b> in battle.,Minden bélyegnek története van. <b>Ragassz fel 40 bélyeget</b> csatában.
+QUEST_SAMPLE_QUICK_TITLE,Quick hand,Gyors kéz
+QUEST_SAMPLE_QUICK_TEXT,Fast and sure. <b>Win 2 matches</b> today.,Gyorsan és biztosan. <b>Nyerj 2 meccset</b> ma.

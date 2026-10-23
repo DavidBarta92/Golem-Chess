@@ -49,6 +49,7 @@ var settings_dialog_saved_top_bar_layer: int = 0
 var ai_deck_ids: Array[String] = []
 var points_label: Label
 var next_boss_stakes_label: Label
+var quest_dev_status_label: Label
 
 func _ready():
 	if should_start_dedicated_server_from_launch():
@@ -92,6 +93,7 @@ func _ready():
 	_connect_once(open_ai_logs_button.pressed, Callable(self, "_on_open_ai_logs_button_pressed"))
 	_connect_once(reset_balance_sessions_button.pressed, Callable(self, "_on_reset_balance_sessions_button_pressed"))
 	_update_ai_vs_ai_deck_controls()
+	_build_quest_dev_tools()
 	SFXManager.play("mainmenu_drawing")
 	_start_background_line_reveal()
 	_connect_once(street_view.opponent_arrived, Callable(self, "_on_opponent_arrived"))
@@ -214,18 +216,12 @@ func _connect_once(signal_value: Signal, callable: Callable) -> void:
 		signal_value.connect(callable)
 
 func _bind_top_bar() -> void:
-	GlobalTopBar.show_main_menu(Callable(self, "_on_settings_button_pressed"), Callable(self, "_on_exit_button_pressed"), Callable(self, "_on_singleplayer_button_pressed"), Callable(self, "_on_multiplayer_button_pressed"))
+	GlobalTopBar.show_main_menu(Callable(self, "_on_settings_button_pressed"), Callable(self, "_on_exit_button_pressed"), Callable(self, "_on_singleplayer_button_pressed"), Callable(self, "_on_multiplayer_button_pressed"), Callable(self, "_on_tutorial_button_pressed"))
 	points_label = GlobalTopBar.points_label
 	update_points_hud()
 
 func update_points_hud() -> void:
 	GlobalTopBar.refresh_points()
-	if points_label == null:
-		return
-	if Engine.is_editor_hint():
-		points_label.text = "0"
-		return
-	points_label.text = str(PlayerProgressStore.get_points())
 
 func _input(event):
 	if !is_dev_tools_available():
@@ -256,7 +252,7 @@ func show_dev_tools_window() -> void:
 	_populate_ai_vs_ai_deck_options()
 	_update_ai_vs_ai_deck_controls()
 	ai_vs_ai_unlock_presses = 0
-	var target_size := Vector2i(760, 430)
+	var target_size := Vector2i(760, 560)
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	dev_tools_window.size = target_size
 	dev_tools_window.position = Vector2i(
@@ -273,6 +269,82 @@ func sync_dev_tools_from_config() -> void:
 	ai_random_deck_check.button_pressed = GameConfig.ai_vs_ai_use_random_database_decks
 	if balance_status_label != null:
 		balance_status_label.text = "Balance sessions are saved during AI vs AI runs."
+
+## Buttons for trying the top bar's quest ribbons by hand: sample quests of
+## every kind and reward, and the steps a quest goes through.
+func _build_quest_dev_tools() -> void:
+	if !is_dev_tools_available() or quest_dev_status_label != null:
+		return
+	var dev_root: Control = $DevToolsWindow/DevToolsRoot
+	dev_root.add_child(HSeparator.new())
+	var section := VBoxContainer.new()
+	section.name = "QuestSection"
+	dev_root.add_child(section)
+	var title := Label.new()
+	title.text = "Quests (top bar ribbons)"
+	section.add_child(title)
+	var buttons := HFlowContainer.new()
+	section.add_child(buttons)
+	var actions: Array = [
+		["+ Story", _add_dev_quest.bind({"kind": QuestStore.KIND_STORY, "title": "QUEST_SAMPLE_STORY_TITLE", "text": "QUEST_SAMPLE_STORY_TEXT"})],
+		["+ Reward coin", _add_dev_quest.bind({"kind": QuestStore.KIND_REWARD, "reward": QuestStore.REWARD_COIN, "amount": 50, "target": 3, "title": "QUEST_SAMPLE_DUELS_TITLE", "text": "QUEST_SAMPLE_DUELS_TEXT"})],
+		["+ Reward draw", _add_dev_quest.bind({"kind": QuestStore.KIND_REWARD, "reward": QuestStore.REWARD_DRAW, "amount": 3, "title": "QUEST_SAMPLE_ARCHERS_TITLE", "text": "QUEST_SAMPLE_ARCHERS_TEXT"})],
+		["+ Daily coin", _add_dev_quest.bind({"kind": QuestStore.KIND_DAILY, "reward": QuestStore.REWARD_COIN, "amount": 30, "progress": 26, "target": 40, "title": "QUEST_SAMPLE_COLLECTOR_TITLE", "text": "QUEST_SAMPLE_COLLECTOR_TEXT"})],
+		["+ Daily draw (48 min)", _add_dev_quest.bind({"kind": QuestStore.KIND_DAILY, "reward": QuestStore.REWARD_DRAW, "amount": 2, "target": 2, "seconds_left": 48 * 60, "title": "QUEST_SAMPLE_QUICK_TITLE", "text": "QUEST_SAMPLE_QUICK_TEXT"})],
+		["Progress oldest", _on_dev_quest_progress_pressed],
+		["Complete oldest", _on_dev_quest_complete_pressed],
+		["Expire newest daily", _on_dev_quest_expire_pressed],
+		["Clear quests", _on_dev_quest_clear_pressed],
+		["Reveal draw counter", _on_dev_reveal_draw_counter_pressed],
+	]
+	for action in actions:
+		var button := Button.new()
+		button.text = action[0]
+		button.pressed.connect(action[1])
+		buttons.add_child(button)
+	quest_dev_status_label = Label.new()
+	section.add_child(quest_dev_status_label)
+	_update_quest_dev_status()
+
+func _add_dev_quest(spec: Dictionary) -> void:
+	if QuestStore.add_quest(spec).is_empty():
+		quest_dev_status_label.text = "No room: %d quests is the most at once." % QuestStore.MAX_ACTIVE
+		return
+	_update_quest_dev_status()
+
+func _on_dev_quest_progress_pressed() -> void:
+	var quests: Array[Dictionary] = QuestStore.get_active_quests()
+	if !quests.is_empty():
+		QuestStore.add_progress(str(quests[0]["id"]))
+	_update_quest_dev_status()
+
+func _on_dev_quest_complete_pressed() -> void:
+	for quest in QuestStore.get_active_quests():
+		if !bool(quest["done"]):
+			QuestStore.complete_quest(str(quest["id"]))
+			break
+	_update_quest_dev_status()
+
+func _on_dev_quest_expire_pressed() -> void:
+	var quests: Array[Dictionary] = QuestStore.get_active_quests()
+	for index in range(quests.size() - 1, -1, -1):
+		if str(quests[index]["kind"]) == QuestStore.KIND_DAILY:
+			QuestStore.expire_quest(str(quests[index]["id"]))
+			break
+	_update_quest_dev_status()
+
+func _on_dev_quest_clear_pressed() -> void:
+	QuestStore.clear_all_quests()
+	_update_quest_dev_status()
+
+func _on_dev_reveal_draw_counter_pressed() -> void:
+	StoryProgressStore.unlock_feature(StoryFeatures.DRAW_COUNTER)
+	_update_quest_dev_status()
+
+func _update_quest_dev_status() -> void:
+	if quest_dev_status_label == null:
+		return
+	quest_dev_status_label.text = "Active quests: %d / %d. Close this window to try the ribbons." % [QuestStore.get_active_count(), QuestStore.MAX_ACTIVE]
 
 func _on_dev_tools_window_close_requested() -> void:
 	dev_tools_window.hide()

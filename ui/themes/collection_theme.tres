@@ -1,5 +1,7 @@
 [gd_resource type="Theme" format=3 uid="uid://b50cqssro8lwq"]
 
+[ext_resource type="FontFile" uid="uid://biol362n3c8uh" path="res://Fonts/Alegreya-VariableFont_wght.ttf" id="1_f4ivv"]
+
 [sub_resource type="StyleBoxFlat" id="StyleBox_button_disabled"]
 content_margin_left = 18.0
 content_margin_top = 9.0
@@ -119,6 +121,7 @@ corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
 [resource]
+default_font = ExtResource("1_f4ivv")
 Button/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
 Button/colors/font_disabled_color = Color(0.47, 0.43, 0.38, 0.72)
 Button/colors/font_focus_color = Color(0.09019608, 0.17254902, 0.2627451, 1)

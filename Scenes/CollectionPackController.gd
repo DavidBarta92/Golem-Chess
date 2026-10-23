@@ -551,7 +551,8 @@ func _on_pack_preview_gui_input(event: InputEvent, preview: Control) -> void:
 func refresh_progress_ui() -> void:
 	if points_label == null:
 		return
-	points_label.text = str(PlayerProgressStore.get_points())
+	# Through the bar, so the number gets its grouping (12 400) like everywhere else.
+	GlobalTopBar.refresh_points()
 
 func refresh_pack_inventory_ui(animate_new: bool = false, previous_preview_ids: Array[String] = []) -> void:
 	if pack_inventory == null:

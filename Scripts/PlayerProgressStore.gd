@@ -47,6 +47,30 @@ func spend_points(amount: int) -> bool:
 	save_progress()
 	return true
 
+## Draw points: the second currency, paid out by blue quests (see QuestStore)
+## and shown by the top bar's pencil counter once the story reveals it.
+func get_draw_points() -> int:
+	ensure_loaded()
+	return maxi(0, int(progress_data.get("draw_points", 0)))
+
+func add_draw_points(amount: int) -> int:
+	ensure_loaded()
+	progress_data["draw_points"] = get_draw_points() + maxi(0, amount)
+	save_progress()
+	return get_draw_points()
+
+func spend_draw_points(amount: int) -> bool:
+	ensure_loaded()
+	var normalized_amount: int = maxi(0, amount)
+	if normalized_amount <= 0:
+		return true
+	if get_draw_points() < normalized_amount:
+		return false
+
+	progress_data["draw_points"] = get_draw_points() - normalized_amount
+	save_progress()
+	return true
+
 ## The player's rating as shown in the top bar (see PlayerRating).
 func get_rating() -> int:
 	return PlayerRating.get_display_rating(_get_rating_state())
@@ -229,6 +253,7 @@ func _create_default_progress() -> Dictionary:
 	return {
 		"schema_version": PROGRESS_SCHEMA_VERSION,
 		"points": 0,
+		"draw_points": 0,
 		"unopened_pack_counts": {},
 		"unopened_pack_queue": [],
 		"rating": PlayerRating.create_state(),
@@ -258,6 +283,7 @@ func _normalize_progress(raw_data: Dictionary) -> Dictionary:
 	var normalized: Dictionary = {
 		"schema_version": PROGRESS_SCHEMA_VERSION,
 		"points": maxi(0, int(raw_data.get("points", 0))),
+		"draw_points": maxi(0, int(raw_data.get("draw_points", 0))),
 		"unopened_pack_counts": _counts_from_pack_queue(pack_queue),
 		"unopened_pack_queue": pack_queue,
 		"rating": PlayerRating.normalize_state(raw_data.get("rating", {})),
