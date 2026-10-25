@@ -28,6 +28,7 @@ theme_override_constants/separation = 8
 
 [node name="TitleLabel" type="Label" parent="VBoxContainer" unique_id=1602346350]
 layout_mode = 2
+theme_type_variation = &"DisplayLabel"
 text = "Singleplayer"
 horizontal_alignment = 1
 
@@ -37,6 +38,7 @@ text = "Start"
 
 [node name="DeckLabel" type="Label" parent="VBoxContainer" unique_id=849525524]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Deck"
 
 [node name="DeckOptionButton" type="OptionButton" parent="VBoxContainer" unique_id=1437587769]
@@ -44,6 +46,7 @@ layout_mode = 2
 
 [node name="AIDifficultyLabel" type="Label" parent="VBoxContainer" unique_id=143863563]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "AI difficulty"
 
 [node name="AIDifficultyOptionButton" type="OptionButton" parent="VBoxContainer" unique_id=1048016443]
@@ -51,6 +54,7 @@ layout_mode = 2
 
 [node name="AIDeckLabel" type="Label" parent="VBoxContainer" unique_id=1737386828]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "AI deck"
 
 [node name="AIDeckOptionButton" type="OptionButton" parent="VBoxContainer" unique_id=844772838]

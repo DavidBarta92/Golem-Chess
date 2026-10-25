@@ -251,6 +251,8 @@ func create_result_ui() -> void:
 	result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	result_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	result_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Display's face; the size is this line's own (see Docs/Style/OVERRIDES.md).
+	result_label.theme_type_variation = &"DisplayLabel"
 
 	var label_settings := LabelSettings.new()
 	label_settings.font_size = 72

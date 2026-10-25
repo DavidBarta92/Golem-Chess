@@ -1,0 +1,612 @@
+<!-- @dsCard group="Felső sáv" height=640 width=1200 subtitle="Bal zóna + fix jobb csoport: szalagok → számlálók → menü" -->
+<!doctype html>
+<html lang="hu" data-theme="papir">
+<head>
+<meta charset="utf-8">
+<title>TopBar — preview</title><style>:root, [data-theme="papir"] {
+  --paper: #f2f1ea;
+  --paper-deep: #e5e2d6;
+  --paper-hover: #e8e6dc;
+  --paper-shade: #d6d3c7;
+  --ink: #1f2733;
+  --ink-soft: #575e6b;
+  --ink-faint: #8f9196;
+  --line-soft: #bdb9ad;
+  --story: #7a2230;
+  --on-story: var(--paper);
+  --coin: #e3b02a;
+  --coin-deep: #8a5d00;
+  --on-coin: var(--ink);
+  --draw: #2c6e9e;
+  --on-draw: var(--paper);
+  --urgent: #b44a12;
+  --panel-from: #f2f1eaf5;
+  --panel-to: #f2f1ea00;
+  --shadow-menu: 0 2px 0 #1f27331a, 0 12px 28px -8px #1f273347;
+  --focus-ring: 0 0 0 2px #f2f1ea, 0 0 0 4px #1f2733;
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 9999px;
+  --bar-height: 80px;
+  --button-size: 52px;
+  --ribbon-width: 28px;
+  --ribbon-rest: 96px;
+  --ribbon-lift: 6px;
+  --ribbon-done-drop: 12px;
+  --tail-story: 10px;
+  --tail-reward: 9px;
+  --tail-daily: 6px;
+  --panel-width: 360px;
+  --panel-text: 272px;
+  --menu-width: 240px;
+  --menu-row: 44px;
+  --icon-stat: 24px;
+  --icon-menu: 20px;
+  --icon-ribbon: 16px;
+  --font-ui: "Lexend", "Segoe UI", system-ui, sans-serif;
+}
+/* Golem felső sáv — a previewk közös stílusa. Az értékek a tokens.json-ból jönnek. */
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; }
+
+/* ── Ikonok ─────────────────────────────────────────── */
+.gi { --gi-stroke: var(--ink); display: inline-block; vertical-align: middle; flex: 0 0 auto; fill: none; stroke: var(--gi-stroke); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.gi .f-coin { fill: var(--coin); }
+.gi .f-draw { fill: var(--draw); }
+.gi .f-paper { fill: var(--paper); }
+.gi .f-ink { fill: var(--gi-stroke); stroke: none; }
+.gi-mono { --gi-stroke: currentColor; }
+.gi-mono .f-coin, .gi-mono .f-draw, .gi-mono .f-paper { fill: none; }
+
+/* ── Gombok (a meglévő lekerekített stílus) ─────────── */
+.gb-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--button-size, 52px); padding: 0 var(--space-8); box-sizing: border-box; border: 1.5px solid var(--ink); border-radius: var(--radius-md); background: var(--paper); color: var(--ink); font: 600 18px/24px var(--font-ui); white-space: nowrap; cursor: pointer; transition: background-color 120ms, color 120ms; }
+.gb-btn .gi { --gi-stroke: currentColor; }
+.gb-btn:hover, .gb-btn.is-hover { background: var(--paper-hover); }
+.gb-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.gb-btn[aria-expanded="true"], .gb-btn.is-pressed { background: var(--ink); color: var(--paper); }
+.gb-btn-icon { width: var(--button-size, 52px); padding: 0; }
+.gb-btn-primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.gb-btn-primary:hover { background: var(--ink-soft); }
+.gb-btn-sm { height: 40px; padding: 0 var(--space-5); font-size: 16px; }
+.gb-btn:disabled { background: var(--paper-shade); border-color: var(--line-soft); color: var(--ink-faint); cursor: default; }
+
+/* ── Sáv ────────────────────────────────────────────── */
+.gb-stage { position: relative; background: var(--paper-deep); overflow: hidden; }
+.gb-bar { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--space-4); height: var(--bar-height, 80px); padding: 0 var(--space-8); box-sizing: border-box; background: var(--paper); }
+.gb-left { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: var(--space-4); }
+.gb-right { flex: 0 0 auto; align-self: stretch; display: flex; align-items: center; gap: var(--space-6); }
+.gb-logo { font: 600 30px/1 var(--font-ui); letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
+.gb-logo small { margin-left: var(--space-2); font: 400 13px/1 var(--font-ui); letter-spacing: 0; color: var(--ink-soft); }
+
+/* ── Számlálók: DOM = megjelenési sorrend, a legelső a menü mellett ── */
+.gb-stats { display: flex; flex-direction: row-reverse; align-items: center; gap: var(--space-6); }
+.gb-stats:empty { display: none; }
+.gb-stat { position: relative; display: flex; align-items: center; gap: var(--space-2); }
+.gb-stat-n { display: inline-block; min-width: 2ch; font: 400 22px/28px var(--font-ui); font-variant-numeric: tabular-nums; color: var(--ink); }
+.gb-stat.is-new { animation: gb-pop 380ms cubic-bezier(.2,.9,.3,1.3) both; }
+.gb-float { position: absolute; left: 30px; top: -6px; font: 600 15px/20px var(--font-ui); color: var(--ink); white-space: nowrap; pointer-events: none; animation: gb-float 1100ms ease-out forwards; }
+.gb-float[data-stat="coin"] { color: var(--coin-deep); }
+.gb-float[data-stat="draw"] { color: var(--draw); }
+
+/* ── Szalagok: DOM = korsorrend, row-reverse → a legrégebbi jobbra ── */
+.gb-ribbons { align-self: flex-start; display: flex; flex-direction: row-reverse; align-items: flex-start; gap: var(--space-2); height: var(--bar-height, 80px); }
+.gb-ribbons:empty { display: none; }
+.gb-rb { --c: var(--story); position: relative; z-index: 3; display: block; flex: 0 0 auto; width: var(--ribbon-width, 28px); height: var(--ribbon-rest, 96px); margin: 0; padding: 0; border: 0; background: none; color: var(--on-story); cursor: pointer; transform-origin: 50% 0; transition: height 240ms cubic-bezier(.2,.8,.2,1); }
+.gb-rb[data-reward="coin"] { --c: var(--coin); color: var(--on-coin); }
+.gb-rb[data-reward="draw"] { --c: var(--draw); color: var(--on-draw); }
+.gb-rb-body { position: absolute; left: 0; right: 0; top: -2px; bottom: var(--tail); box-sizing: border-box; background: var(--c); border-left: 1.5px solid var(--ink); border-right: 1.5px solid var(--ink); }
+.gb-rb-tail { position: absolute; left: 0; bottom: 0; display: block; overflow: visible; }
+.gb-rb-tail-fill { fill: var(--c); }
+.gb-rb-tail-line { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.gb-rb-glyph { position: absolute; left: 50%; bottom: calc(var(--tail) + 7px); width: 16px; height: 16px; margin-left: -8px; }
+.gb-rb-glyph .gi, .gb-rb-seal .gi, .gb-rb-urgent .gi { display: block; }
+/* varrás = haladás: folytonos a kész rész, szaggatott a hátralévő */
+.gb-rb-seam { position: absolute; left: 50%; top: 8px; bottom: calc(var(--tail) + 30px); width: 2px; margin-left: -1px; }
+.gb-rb-seam::before, .gb-rb-seam::after { content: ""; position: absolute; left: 0; right: 0; }
+.gb-rb-seam::before { top: 0; height: calc(var(--p, 0) * 100%); border-radius: 1px; background: currentColor; }
+.gb-rb-seam::after { top: calc(var(--p, 0) * 100%); bottom: 0; background: repeating-linear-gradient(to bottom, currentColor 0 3px, transparent 3px 7px); opacity: .55; }
+.gb-rb-seal { position: absolute; left: 50%; bottom: calc(var(--tail) + 5px); width: 20px; height: 20px; margin-left: -10px; box-sizing: border-box; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 50%; background: var(--paper); }
+.gb-rb-urgent { position: absolute; z-index: 1; right: -8px; bottom: calc(var(--tail) + 24px); width: 18px; height: 18px; box-sizing: border-box; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 50%; background: var(--urgent); color: var(--paper); }
+.gb-rb:hover, .gb-rb.is-hover { height: calc(var(--ribbon-rest, 96px) + var(--ribbon-lift, 6px)); }
+.gb-rb.is-done { height: calc(var(--ribbon-rest, 96px) + var(--ribbon-done-drop, 12px)); animation: gb-sway 3s ease-in-out infinite; }
+.gb-rb.is-open { animation: none; }
+.gb-rb.is-new { animation: gb-drop 520ms cubic-bezier(.2,.9,.3,1.2) both; }
+.gb-ribbons.has-open .gb-rb:not(.is-open), .gb-rb.is-retracted { height: calc(var(--bar-height, 80px) - 8px); animation: none; }
+.gb-rb:focus-visible { outline: none; }
+.gb-rb:focus-visible .gb-rb-body { box-shadow: var(--focus-ring); }
+
+/* ── Küldetéspanel ─────────────────────────────────── */
+.gb-panel { --qc: var(--story); --qt: var(--story); position: absolute; z-index: 2; top: var(--bar-height, 80px); left: 0; width: var(--panel-width, 360px); box-sizing: border-box; padding: var(--space-4) var(--space-5) var(--space-5); background: linear-gradient(90deg, var(--panel-from) 0%, var(--panel-from) 80%, var(--panel-to) 100%); opacity: 0; visibility: hidden; transform: translateX(-8px); pointer-events: none; transition: opacity 160ms ease-in, transform 160ms ease-in, visibility 0s linear 160ms; }
+.gb-panel.is-open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: opacity 200ms ease-out 90ms, transform 200ms ease-out 90ms, visibility 0s linear 0s; }
+.gb-panel.is-left { background: linear-gradient(270deg, var(--panel-from) 0%, var(--panel-from) 80%, var(--panel-to) 100%); transform: translateX(8px); }
+.gb-panel.is-left.is-open { transform: none; }
+.gb-panel.is-left .gb-panel-in { margin-left: auto; }
+.gb-panel[data-reward="coin"] { --qc: var(--coin); --qt: var(--coin-deep); }
+.gb-panel[data-reward="draw"] { --qc: var(--draw); --qt: var(--draw); }
+.gb-panel-in { max-width: var(--panel-text, 272px); }
+.gb-q-kicker { display: flex; align-items: center; gap: 6px; margin-bottom: var(--space-2); font: 600 12px/16px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; color: var(--qt); }
+.gb-mini { flex: 0 0 auto; }
+.gb-mini path { fill: var(--qc); stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+.gb-q-time { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; font: 500 13px/18px var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ink-soft); }
+.gb-q-time.is-urgent { color: var(--urgent); }
+.gb-q-title { margin: 0 0 6px; font: 600 20px/26px var(--font-ui); color: var(--ink); }
+.gb-q-text { margin: 0; font: italic 400 16px/24px var(--font-ui); color: var(--ink); }
+.gb-q-text b { font-style: normal; font-weight: 600; }
+.gb-q-prog { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); }
+.gb-pip { width: 12px; height: 12px; box-sizing: border-box; border: 1.25px solid var(--ink); border-radius: var(--radius-full); background: var(--paper); }
+.gb-pip.is-on { background: var(--qc); }
+.gb-track { flex: 1 1 auto; height: 8px; box-sizing: border-box; overflow: hidden; border: 1.25px solid var(--ink); border-radius: var(--radius-full); background: var(--paper); }
+.gb-track > i { display: block; height: 100%; background: var(--qc); }
+.gb-q-count { font: 500 13px/18px var(--font-ui); font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+.gb-q-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-3); }
+.gb-q-reward { display: flex; align-items: center; gap: 6px; font: 500 13px/18px var(--font-ui); color: var(--ink-soft); }
+.gb-q-reward b { font-size: 15px; font-weight: 600; color: var(--ink); }
+
+/* ── Menü ──────────────────────────────────────────── */
+.gb-menu { position: relative; flex: 0 0 auto; }
+.gb-dd { position: absolute; z-index: 10; right: 0; top: calc(100% + 10px); width: var(--menu-width, 240px); box-sizing: border-box; padding: 6px 0; border: 1.5px solid var(--ink); border-radius: var(--radius-lg); background: var(--paper); box-shadow: var(--shadow-menu); opacity: 0; visibility: hidden; transform: translateY(-4px); transition: opacity 140ms, transform 140ms, visibility 0s linear 140ms; }
+.gb-menu.is-open .gb-dd { opacity: 1; visibility: visible; transform: none; transition: opacity 160ms ease-out, transform 160ms ease-out, visibility 0s; }
+.gb-dd-group + .gb-dd-group { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-soft); }
+.gb-dd-item { display: flex; align-items: center; gap: var(--space-3); width: 100%; height: var(--menu-row, 44px); box-sizing: border-box; padding: 0 var(--space-4); border: 0; background: none; font: 500 17px/24px var(--font-ui); color: var(--ink); text-align: left; cursor: pointer; }
+.gb-dd-item:hover { background: var(--paper-hover); }
+.gb-dd-item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ink); }
+.gb-tag { margin-left: auto; padding: 0 6px; border: 1px dashed var(--ink-soft); border-radius: var(--radius-full); font: 600 10px/16px var(--font-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+
+/* ── Mozgás ────────────────────────────────────────── */
+@keyframes gb-sway { 0%, 100% { transform: rotate(-1.6deg); } 50% { transform: rotate(1.6deg); } }
+@keyframes gb-drop { 0% { transform: translateY(-110%); } 70% { transform: translateY(6px); } 100% { transform: translateY(0); } }
+@keyframes gb-pop { 0% { opacity: 0; transform: scale(.6); } 70% { opacity: 1; transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes gb-float { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-18px); } }
+@media (prefers-reduced-motion: reduce) {
+  .gb-rb, .gb-panel, .gb-dd { transition: none !important; }
+  .gb-rb.is-done, .gb-rb.is-new, .gb-stat.is-new { animation: none !important; }
+}
+</style><script>/* Golem felső sáv — a previewk közös segédei. Sima JS, nincs React: window.Golem. */
+(function () {
+  'use strict';
+
+  var TAIL = { story: 10, reward: 9, daily: 6 };
+  var TAIL_VAR = { story: '--tail-story', reward: '--tail-reward', daily: '--tail-daily' };
+  var KIND_LABEL = { story: 'Történet', reward: 'Jutalom', daily: 'Napi' };
+  var STAT_LABEL = { coin: 'Érme', draw: 'Rajzpont', rank: 'Rang' };
+  var REWARD_ICON = { story: 'book', coin: 'coin', draw: 'draw' };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  // 1000 marad, ötjegyűtől szóközzel tagolva: 12 400
+  function fmt(n) {
+    var s = String(Math.round(n));
+    return Math.abs(n) >= 10000 ? s.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : s;
+  }
+
+  function gear() {
+    var n = 8, ro = 9.4, ri = 7.2, step = Math.PI * 2 / n, d = '';
+    function pt(r, a) { return (12 + r * Math.cos(a)).toFixed(2) + ' ' + (12 + r * Math.sin(a)).toFixed(2); }
+    for (var i = 0; i < n; i++) {
+      var a = i * step - Math.PI / 2;
+      d += (i ? 'L' : 'M') + pt(ri, a - step * 0.22) + 'L' + pt(ro, a - step * 0.13) + 'L' + pt(ro, a + step * 0.13) + 'L' + pt(ri, a + step * 0.22);
+    }
+    return '<path d="' + d + 'Z"/><circle cx="12" cy="12" r="3"/>';
+  }
+
+  // 24-es rács, tintavonal; .f-* = jelentést hordozó kitöltés
+  var ICONS = {
+    coin: '<circle class="f-coin" cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.4" stroke-width="1.25"/><circle class="f-ink" cx="12" cy="12" r="1.3"/>',
+    draw: '<circle class="f-draw" cx="12" cy="12" r="9"/><path class="f-paper" d="M7.7 16.3l.9-2.9 6.2-6.2 2 2-6.2 6.2z" stroke-width="1.3"/><path d="M13.6 8.4l2 2" stroke-width="1.3"/>',
+    rank: '<path d="M6 13.4 12 7.8l6 5.6" stroke-width="2.1"/><path d="M6 18.6 12 13l6 5.6" stroke-width="2.1"/>',
+    menu: '<path d="M4.5 7.2c5-.5 10-.4 15 0"/><path d="M4.5 12c5 .4 10 .3 15 0"/><path d="M4.5 16.8c5-.4 10-.4 15 .1"/>',
+    gear: gear(),
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.4 9.6c0-1.6 1.2-2.6 2.6-2.6s2.6 1 2.6 2.4c0 2-2.6 2.2-2.6 4.4"/><circle class="f-ink" cx="12" cy="16.9" r="1"/>',
+    door: '<path d="M13.5 4.5h-7v15h7"/><path d="M10 12h10"/><path d="M16.8 8.8 20 12l-3.2 3.2"/>',
+    people: '<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.6-3.4 2.7-5.2 5.5-5.2s4.9 1.8 5.5 5.2"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M15.6 14c2.4-.2 4.2 1.4 4.9 4.6"/>',
+    book: '<path d="M3.5 6.5c3-1 5.8-.9 8.5.8v11.2c-2.7-1.6-5.5-1.8-8.5-.8z"/><path d="M20.5 6.5c-3-1-5.8-.9-8.5.8v11.2c2.7-1.6 5.5-1.8 8.5-.8z"/>',
+    hourglass: '<path d="M7 4h10M7 20h10"/><path d="M8.2 4c0 4.6 3.8 5.6 3.8 8s-3.8 3.4-3.8 8M15.8 4c0 4.6-3.8 5.6-3.8 8s3.8 3.4 3.8 8"/>',
+    check: '<path d="M6 12.6l3.8 3.6L18 8" stroke-width="2.4"/>',
+    plus: '<path d="M12 6v12M6 12h12" stroke-width="2"/>'
+  };
+
+  function icon(name, size, mono) {
+    size = size || 24;
+    return '<svg class="gi' + (mono ? ' gi-mono' : '') + '" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (ICONS[name] || '') + '</svg>';
+  }
+
+  // A szalag vége. A felső 2 px a test alá csúszik, így nincs varrat.
+  function tail(kind) {
+    var d = TAIL[kind], h = d + 2, lo = h - 0.75, a = 0.75, b = 27.25, fill, line;
+    if (kind === 'story') {
+      fill = 'M0 0H28V3L0 ' + h + 'Z';
+      line = 'M' + a + ' 0V' + lo + 'L' + b + ' 3V0';
+    } else if (kind === 'reward') {
+      fill = 'M0 0H28V' + h + 'L14 2L0 ' + h + 'Z';
+      line = 'M' + a + ' 0V' + lo + 'L14 2.6L' + b + ' ' + lo + 'V0';
+    } else {
+      fill = 'M0 0H28V' + h + 'H22V2H17V' + h + 'H11V2H6V' + h + 'H0Z';
+      line = 'M' + a + ' 0V' + lo + 'H6V2.6H11V' + lo + 'H17V2.6H22V' + lo + 'H' + b + 'V0';
+    }
+    return '<svg class="gb-rb-tail" width="28" height="' + h + '" viewBox="0 0 28 ' + h + '" aria-hidden="true">' +
+      '<path class="gb-rb-tail-fill" d="' + fill + '"/><path class="gb-rb-tail-line" d="' + line + '"/></svg>';
+  }
+
+  // kis szalagsziluett a panel kickeréhez
+  function mini(kind) {
+    var d = kind === 'story' ? 'M0 0H28V30L0 40Z' : kind === 'reward' ? 'M0 0H28V40L14 30L0 40Z' : 'M0 0H28V40H22V32H17V40H11V32H6V40H0Z';
+    return '<svg class="gb-mini" width="10" height="14" viewBox="-2 -2 32 44" aria-hidden="true"><path d="' + d + '"/></svg>';
+  }
+
+  function norm(q) {
+    var kind = TAIL[q.kind] ? q.kind : 'reward';
+    return { kind: kind, reward: kind === 'story' ? 'story' : (q.reward === 'draw' ? 'draw' : 'coin') };
+  }
+
+  function ribbon(q) {
+    q = q || {};
+    var n = norm(q), kind = n.kind, reward = n.reward;
+    var cls = 'gb-rb' + (q.done ? ' is-done' : '') + (q.state ? ' is-' + q.state : '');
+    var inner = '<span class="gb-rb-body"></span>' + tail(kind);
+    if (!q.plain) {
+      if (q.progress && !q.done && q.progress.target > 1) {
+        inner += '<span class="gb-rb-seam" style="--p:' + Math.min(1, q.progress.now / q.progress.target).toFixed(3) + '"></span>';
+      }
+      inner += q.done
+        ? '<span class="gb-rb-seal">' + icon('check', 12) + '</span>'
+        : '<span class="gb-rb-glyph">' + icon(REWARD_ICON[reward], 16, true) + '</span>';
+      if (q.urgent && !q.done) inner += '<span class="gb-rb-urgent">' + icon('hourglass', 10, true) + '</span>';
+    }
+    var label = KIND_LABEL[kind] + (q.title ? ': ' + q.title : '') + (q.done ? ' — teljesítve' : '');
+    return '<button type="button" class="' + cls + '" data-kind="' + kind + '" data-reward="' + reward + '"' +
+      (q.id ? ' data-id="' + esc(q.id) + '"' : '') +
+      ' style="--tail:var(' + TAIL_VAR[kind] + ',' + TAIL[kind] + 'px)' + (q.style ? ';' + q.style : '') + '"' +
+      ' aria-label="' + esc(label) + '" aria-expanded="false">' + inner + '</button>';
+  }
+
+  function stat(kind, value) {
+    return '<div class="gb-stat" data-stat="' + kind + '" data-value="' + value + '" title="' + STAT_LABEL[kind] + '">' +
+      icon(kind, 24) + '<span class="gb-stat-n">' + fmt(value) + '</span></div>';
+  }
+
+  function button(label, o) {
+    o = o || {};
+    var cls = 'gb-btn' + (o.variant ? ' gb-btn-' + o.variant : '') + (o.size === 'sm' ? ' gb-btn-sm' : '') + (o.cls ? ' ' + o.cls : '');
+    return '<button type="button" class="' + cls + '"' + (o.disabled ? ' disabled' : '') + (o.attrs ? ' ' + o.attrs : '') + '>' +
+      (o.icon ? icon(o.icon, 20) : '') + esc(label) + '</button>';
+  }
+
+  function iconButton(name, label, o) {
+    o = o || {};
+    return '<button type="button" class="gb-btn gb-btn-icon' + (o.cls ? ' ' + o.cls : '') + '" aria-label="' + esc(label) + '"' + (o.attrs ? ' ' + o.attrs : '') + '>' + icon(name, 24) + '</button>';
+  }
+
+  function menuItem(ic, label, extra) {
+    return '<button type="button" class="gb-dd-item" role="menuitem">' + icon(ic, 20) + '<span>' + esc(label) + '</span>' + (extra || '') + '</button>';
+  }
+
+  function menu(open) {
+    return '<div class="gb-menu' + (open ? ' is-open' : '') + '">' +
+      iconButton('menu', 'Menü', { attrs: 'aria-haspopup="menu" aria-expanded="' + (open ? 'true' : 'false') + '"' }) +
+      '<div class="gb-dd" role="menu">' +
+        '<div class="gb-dd-group">' + menuItem('people', 'Alpha Multiplayer', '<span class="gb-tag">ideiglenes</span>') + '</div>' +
+        '<div class="gb-dd-group">' + menuItem('gear', 'Beállítások') + menuItem('help', 'Tutorial') + '</div>' +
+        '<div class="gb-dd-group">' + menuItem('door', 'Kilépés') + '</div>' +
+      '</div></div>';
+  }
+
+  function progress(p) {
+    var now = Math.max(0, Math.min(p.now, p.target)), h = '<div class="gb-q-prog">';
+    if (p.target <= 10) {
+      for (var i = 0; i < p.target; i++) h += '<i class="gb-pip' + (i < now ? ' is-on' : '') + '"></i>';
+    } else {
+      h += '<span class="gb-track"><i style="width:' + (now / p.target * 100).toFixed(1) + '%"></i></span>';
+    }
+    return h + '<span class="gb-q-count">' + now + ' / ' + p.target + '</span></div>';
+  }
+
+  function rewardText(q, reward) {
+    if (reward === 'story') return '<b>a történet folytatódik</b>' + icon('book', 18);
+    return '<b>+' + fmt(q.amount || 0) + '</b>' + icon(reward, 18);
+  }
+
+  function panel(q) {
+    var n = norm(q), h = '<div class="gb-panel-in">';
+    h += '<div class="gb-q-kicker">' + mini(n.kind) + '<span>' + KIND_LABEL[n.kind] + '</span>';
+    if (n.kind === 'daily' && q.timeLeft) {
+      h += '<span class="gb-q-time' + (q.urgent ? ' is-urgent' : '') + '">' + (q.urgent ? icon('hourglass', 14, true) : '') + esc(q.timeLeft) + '</span>';
+    }
+    h += '</div>';
+    if (q.title) h += '<h3 class="gb-q-title">' + esc(q.title) + '</h3>';
+    if (q.text) h += '<p class="gb-q-text">' + q.text + '</p>';
+    if (q.progress && q.progress.target > 1) h += progress(q.progress);
+    h += '<div class="gb-q-foot"><div class="gb-q-reward"><span>Jutalom</span>' + rewardText(q, n.reward) + '</div>' +
+      (q.done ? button('Begyűjtés', { variant: 'primary', size: 'sm', cls: 'gb-claim' }) : '') + '</div>';
+    return h + '</div>';
+  }
+
+  function logo() {
+    return '<span class="gb-logo">Golem<small>v0.1.4</small></span>';
+  }
+
+  function bar(o) {
+    o = o || {};
+    return '<div class="gb-bar">' +
+      '<div class="gb-left">' + (o.left || '') + '</div>' +
+      '<div class="gb-right">' +
+        '<div class="gb-ribbons">' + (o.quests || []).map(ribbon).join('') + '</div>' +
+        '<div class="gb-stats">' + (o.stats || []).map(function (s) { return stat(s[0], s[1]); }).join('') + '</div>' +
+        menu(o.menuOpen) +
+      '</div></div>';
+  }
+
+  // Élő sáv: szalag nyitása, menü, hozzáadás / eltűnés FLIP-csúszással.
+  function mount(root, o) {
+    o = o || {};
+    var seq = 0;
+    var quests = (o.quests || []).map(function (q) { q = Object.assign({}, q); q.id = q.id || 'q' + (++seq); return q; });
+    root.innerHTML = '<div class="gb-stage"' + (o.height ? ' style="height:' + o.height + 'px"' : '') + '>' +
+      bar(Object.assign({}, o, { quests: quests })) + '</div>';
+    var stage = root.firstChild, barEl = stage.querySelector('.gb-bar'),
+      rbs = barEl.querySelector('.gb-ribbons'), statsEl = barEl.querySelector('.gb-stats'),
+      menuEl = barEl.querySelector('.gb-menu'), menuBtn = menuEl.querySelector('.gb-btn');
+    var panelEl = document.createElement('div');
+    panelEl.className = 'gb-panel';
+    panelEl.setAttribute('role', 'region');
+    barEl.appendChild(panelEl);
+    var openId = null;
+
+    function find(id) { for (var i = 0; i < quests.length; i++) if (quests[i].id === id) return quests[i]; return null; }
+    function rbEl(id) { return rbs.querySelector('[data-id="' + id + '"]'); }
+
+    function fit() {
+      var el = openId && rbEl(openId);
+      if (el) el.style.height = (barEl.offsetHeight + panelEl.offsetHeight) + 'px';
+    }
+
+    function open(id) {
+      var q = find(id), el = rbEl(id);
+      if (!q || !el) return;
+      if (openId) close();
+      setMenu(false);
+      openId = id;
+      panelEl.innerHTML = panel(q);
+      panelEl.setAttribute('data-reward', el.getAttribute('data-reward'));
+      panelEl.setAttribute('aria-label', el.getAttribute('aria-label'));
+      var w = panelEl.offsetWidth, right = el.offsetLeft + el.offsetWidth;
+      var toLeft = right + w > barEl.clientWidth;
+      panelEl.classList.toggle('is-left', toLeft);
+      panelEl.style.left = (toLeft ? el.offsetLeft - w : right) + 'px';
+      rbs.classList.add('has-open');
+      el.classList.add('is-open');
+      el.setAttribute('aria-expanded', 'true');
+      fit();
+      panelEl.classList.add('is-open');
+      var claim = panelEl.querySelector('.gb-claim');
+      if (claim) claim.addEventListener('click', function (e) { e.stopPropagation(); remove(id, 'claim'); });
+    }
+
+    function close() {
+      if (!openId) return;
+      var el = rbEl(openId);
+      if (el) { el.classList.remove('is-open'); el.setAttribute('aria-expanded', 'false'); el.style.height = ''; }
+      rbs.classList.remove('has-open');
+      panelEl.classList.remove('is-open');
+      openId = null;
+    }
+
+    function setMenu(v) {
+      menuEl.classList.toggle('is-open', v);
+      menuBtn.setAttribute('aria-expanded', v ? 'true' : 'false');
+    }
+
+    function flip(mutate) {
+      var els = [].slice.call(rbs.children).concat([].slice.call(statsEl.children));
+      var before = els.map(function (el) { return el.offsetLeft; });
+      mutate();
+      els.forEach(function (el, i) {
+        if (!el.isConnected) return;
+        var dx = before[i] - el.offsetLeft;
+        if (dx) el.animate([{ transform: 'translateX(' + dx + 'px)' }, { transform: 'translateX(0)' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      });
+    }
+
+    function add(q) {
+      q = Object.assign({}, q);
+      q.id = 'q' + (++seq);
+      close();
+      quests.push(q);
+      flip(function () { rbs.insertAdjacentHTML('beforeend', ribbon(q)); });
+      var el = rbEl(q.id);
+      el.classList.add('is-new');
+      el.addEventListener('animationend', function done(ev) {
+        if (ev.animationName === 'gb-drop') { el.classList.remove('is-new'); el.removeEventListener('animationend', done); }
+      });
+      return q.id;
+    }
+
+    function remove(id, how) {
+      var el = rbEl(id);
+      if (!el || el.classList.contains('is-leaving')) return;
+      if (openId === id) close();
+      quests = quests.filter(function (q) { return q.id !== id; });
+      el.classList.add('is-leaving');
+      var frames = how === 'expire'
+        ? [{ opacity: 1, filter: 'grayscale(0)', transform: 'translateY(0)' },
+           { opacity: 0.7, filter: 'grayscale(1)', transform: 'translateY(0)', offset: 0.45 },
+           { opacity: 0, filter: 'grayscale(1)', transform: 'translateY(-40%)' }]
+        : [{ transform: 'translateY(0)' }, { transform: 'translateY(8px)', offset: 0.25 }, { transform: 'translateY(-115%)' }];
+      var ms = how === 'expire' ? 620 : 420;
+      el.animate(frames, { duration: ms, easing: 'ease-in', fill: 'forwards' });
+      after(ms, function () { flip(function () { el.remove(); }); });
+    }
+
+    // időzítő az onfinish helyett: rejtett lapon az animáció nem fut le
+    function after(ms, fn) { setTimeout(fn, ms + 20); }
+
+    function addStat(kind, value) {
+      if (statsEl.querySelector('[data-stat="' + kind + '"]')) return;
+      close();
+      flip(function () { statsEl.insertAdjacentHTML('beforeend', stat(kind, value)); });
+      statsEl.lastElementChild.classList.add('is-new');
+    }
+
+    function removeStat(kind) {
+      var el = kind ? statsEl.querySelector('[data-stat="' + kind + '"]') : statsEl.lastElementChild;
+      if (!el) return;
+      close();
+      el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' });
+      after(160, function () { flip(function () { el.remove(); }); });
+    }
+
+    function bump(kind, delta) {
+      var el = statsEl.querySelector('[data-stat="' + kind + '"]');
+      if (!el) return;
+      var n = el.querySelector('.gb-stat-n'), v = (+el.getAttribute('data-value') || 0) + delta;
+      el.setAttribute('data-value', v);
+      n.textContent = fmt(v);
+      n.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-3px)' }, { transform: 'translateY(0)' }], { duration: 260, easing: 'ease-out' });
+      var f = document.createElement('span');
+      f.className = 'gb-float';
+      f.setAttribute('data-stat', kind);
+      f.textContent = (delta > 0 ? '+' : '−') + fmt(Math.abs(delta));
+      el.appendChild(f);
+      setTimeout(function () { f.remove(); }, 1200);
+    }
+
+    rbs.addEventListener('click', function (e) {
+      var el = e.target.closest('.gb-rb');
+      if (!el || el.classList.contains('is-leaving')) return;
+      e.stopPropagation();
+      var id = el.getAttribute('data-id');
+      if (o.onRibbon) o.onRibbon(id, api); else if (openId === id) close(); else open(id);
+    });
+    panelEl.addEventListener('click', function (e) { e.stopPropagation(); });
+    menuBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var v = !menuEl.classList.contains('is-open');
+      if (v) close();
+      setMenu(v);
+    });
+    menuEl.querySelector('.gb-dd').addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (e.target.closest('.gb-dd-item')) setMenu(false);
+    });
+    document.addEventListener('click', function () { close(); setMenu(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { close(); setMenu(false); } });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+
+    var api = {
+      open: open, close: close, add: add, remove: remove, addStat: addStat, removeStat: removeStat,
+      bump: bump, setMenu: setMenu, list: function () { return quests.slice(); }, stage: stage, bar: barEl
+    };
+    return api;
+  }
+
+  window.Golem = {
+    TAIL: TAIL, icon: icon, tail: tail, ribbon: ribbon, stat: stat, button: button, iconButton: iconButton,
+    menu: menu, panel: panel, bar: bar, logo: logo, mount: mount, fmt: fmt
+  };
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { background: var(--paper-deep); }
+  .wrap { padding: 20px 0 24px; }
+  .row + .row { margin-top: 20px; }
+  .lbl { padding: 0 32px 8px; font: 600 12px/16px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+  .lbl span { margin-left: 8px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .rl { position: absolute; z-index: 5; color: var(--ink-soft); font: 500 11px/14px var(--font-ui); pointer-events: none; }
+  .rl span { position: absolute; white-space: nowrap; }
+  .rl-h { height: 0; border-top: 1px solid currentColor; }
+  .rl-h::before, .rl-h::after { content: ""; position: absolute; top: -4px; height: 8px; border-left: 1px solid currentColor; }
+  .rl-h::before { left: 0; } .rl-h::after { right: 0; }
+  .rl-h span { top: 4px; left: 50%; transform: translateX(-50%); }
+  .rl-v { width: 0; border-left: 1px solid currentColor; }
+  .rl-v::before, .rl-v::after { content: ""; position: absolute; left: -4px; width: 8px; border-top: 1px solid currentColor; }
+  .rl-v::before { top: 0; } .rl-v::after { bottom: 0; }
+  .rl-v span { top: 50%; right: 6px; transform: translateY(-50%); }
+  .rl-zone { height: 0; border-top: 1px dashed currentColor; }
+  .rl-zone span { top: 5px; left: 0; font-weight: 600; }
+  .rl-zone.end span { left: auto; right: 0; }
+  .rl-note span { position: static; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap" id="root"></div>
+<script>
+  var G = window.Golem, root = document.getElementById('root');
+  var Q = {
+    story: { kind: 'story', title: 'A nagypapa kódexe' },
+    coin3: { kind: 'reward', reward: 'coin', title: 'Három párbaj', progress: { now: 2, target: 3 } },
+    draw: { kind: 'reward', reward: 'draw', title: 'Íjászok útja', done: true },
+    daily: { kind: 'daily', reward: 'coin', title: 'Bélyeggyűjtő', progress: { now: 26, target: 40 }, urgent: true }
+  };
+  function row(label, note, o, h) {
+    var r = document.createElement('div');
+    r.className = 'row';
+    r.innerHTML = '<div class="lbl">' + label + '<span>' + note + '</span></div><div class="gb-stage" style="height:' + h + 'px">' + G.bar(o) + '</div>';
+    root.appendChild(r);
+    return r.querySelector('.gb-stage');
+  }
+  row('Főképernyő', 'a játék elején — egy számláló, egy szalag',
+    { left: G.logo(), quests: [Q.story], stats: [['rank', 1000]] }, 128);
+  row('Gyűjtemény', 'később — bal oldalon Vissza + a képernyő saját gombja; jobbra 4 szalag, 3 számláló',
+    { left: G.button('Vissza') + G.button('Csomagvásárlás'), quests: [Q.story, Q.coin3, Q.draw, Q.daily], stats: [['rank', 1000], ['coin', 20], ['draw', 12]] }, 128);
+  var s = row('Méretek', 'px, 1× nagyításon',
+    { left: G.button('Vissza'), quests: [Q.story, Q.coin3], stats: [['rank', 1000], ['coin', 20]] }, 200);
+
+  function box(el) {
+    var x = 0, y = 0, w = el.offsetWidth, h = el.offsetHeight;
+    while (el && el !== s) { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; }
+    return { x: x, y: y, w: w, h: h };
+  }
+  function mk(cls, css, text) {
+    var d = document.createElement('div');
+    d.className = 'rl ' + cls;
+    d.style.cssText = css;
+    if (text) d.innerHTML = '<span>' + text + '</span>';
+    s.appendChild(d);
+  }
+  function dh(x1, x2, y, t) { mk('rl-h', 'left:' + x1 + 'px;top:' + y + 'px;width:' + (x2 - x1) + 'px', t); }
+  function dv(x, y1, y2, t) { mk('rl-v', 'left:' + x + 'px;top:' + y1 + 'px;height:' + (y2 - y1) + 'px', t); }
+
+  function draw() {
+    [].slice.call(s.querySelectorAll('.rl')).forEach(function (n) { n.remove(); });
+    var bar = s.querySelector('.gb-bar'), W = bar.offsetWidth;
+    var rb = s.querySelectorAll('.gb-rb'), st = s.querySelectorAll('.gb-stat');
+    var r1 = box(rb[0]), r2 = box(rb[1]);
+    var sR = box(st[0]), sL = box(st[st.length - 1]);
+    var m = box(s.querySelector('.gb-menu .gb-btn')), L = box(s.querySelector('.gb-left')), R = box(s.querySelector('.gb-right'));
+    var y = 116;
+    dh(r2.x, r2.x + r2.w, y, '28');
+    dh(r2.x + r2.w, r1.x, y, '8');
+    dh(r1.x + r1.w, sL.x, y, '24');
+    dh(sL.x + sL.w, sR.x, y, '24');
+    dh(sR.x + sR.w, m.x, y, '24');
+    dh(m.x, m.x + m.w, y, '52');
+    dh(m.x + m.w, W, y, '32');
+    dh(0, L.x, y, '32');
+    dv(W - 10, 0, 80, '80');
+    dv(r2.x - 8, 80, 96, '16');
+    mk('rl-note', 'left:' + (r2.x - 20) + 'px;top:142px', '← újabb · régebbi →');
+    mk('rl-note', 'left:' + (sL.x - 6) + 'px;top:142px', '← később · első →');
+    mk('rl-zone', 'left:' + L.x + 'px;top:174px;width:' + (R.x - L.x - 24) + 'px', 'bal zóna — képernyőfüggő gombok, zsugorodhat');
+    mk('rl-zone end', 'left:' + R.x + 'px;top:174px;width:' + R.w + 'px', 'jobb csoport — fix, a jobb szélhez rögzítve');
+  }
+  draw();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+</script>
+</body>
+</html>

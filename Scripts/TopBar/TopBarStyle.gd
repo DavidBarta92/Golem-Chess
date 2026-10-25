@@ -1,24 +1,27 @@
 extends RefCounted
 
-## Sizes, colours, fonts and timings of the global top bar, taken from the
-## design in Docs/TopBar (design px x 0.75 = Godot units at the 1280x720 base).
-## Ink is the game's own UiPalette.INK; the other colours have no game
-## equivalent yet - see Docs/TopBar/design/tokens.json for what each is for.
+## Sizes, colours and timings of the global top bar, taken from the design in
+## Docs/TopBar (design px x 0.75 = Godot units at the 1280x720 base), on the
+## shared palette and type of Docs/Style/STYLE_PLAN.md. Its text styles are
+## theme type variations in ui/themes/global_theme.tres, each a type role
+## without the label padding (TopBarStatLabel is NumberLabel, QuestTitleLabel
+## TitleLabel, ...), plus QuestText, QuestClaimButton, TopBarMenuRow and
+## TopBarDropdown; the colours here are for what the bar draws itself.
 
-const PAPER: Color = Color("#f2f1ea")
-const PAPER_HOVER: Color = Color("#e8e6dc")
 const INK: Color = UiPalette.INK
-const INK_SOFT: Color = Color("#575e6b")
-const LINE_SOFT: Color = Color("#bdb9ad")
-## Story ribbons and nothing else.
-const STORY: Color = Color("#7a2230")
-## A fill only; coin-related text on paper uses COIN_DEEP.
-const COIN: Color = Color("#e3b02a")
-const COIN_DEEP: Color = Color("#8a5d00")
-const DRAW: Color = Color("#2c6e9e")
-## Only a daily quest with less than an hour left.
-const URGENT: Color = Color("#b44a12")
-const PANEL_FILL: Color = Color(0.94902, 0.945098, 0.917647, 0.96)
+const INK_SOFT: Color = UiPalette.INK_SOFT
+const PAPER: Color = UiPalette.PAPER
+const PAPER_SHADE: Color = UiPalette.PAPER_SHADE
+const LINE_SOFT: Color = UiPalette.LINE_SOFT
+const STORY: Color = UiPalette.STORY
+const COIN: Color = UiPalette.COIN
+const COIN_DEEP: Color = UiPalette.COIN_DEEP
+const DRAW: Color = UiPalette.DRAW
+const URGENT: Color = UiPalette.URGENT
+const PANEL_FILL: Color = Color(PAPER, 0.96)
+
+## The plan's stroke: every outline the bar draws - ribbons, seals, badges, pips.
+const STROKE: float = 2.0
 
 const BAR_HEIGHT: float = 60.0
 const BAR_MARGIN: float = 24.0
@@ -33,30 +36,24 @@ const RIBBON_REST: float = 72.0
 const RIBBON_LIFT: float = 4.5
 const RIBBON_DONE_DROP: float = 9.0
 const RIBBON_RETRACTED: float = 54.0
-const RIBBON_OUTLINE: float = 1.5
 const TAIL_DEPTH: Dictionary = {
 	"story": 7.5,
 	"reward": 6.75,
 	"daily": 4.5,
 }
 
-const PANEL_WIDTH: float = 270.0
-const PANEL_TEXT_WIDTH: float = 204.0
+## Wider than the design's 270 / 204, for the shared type sizes.
+const PANEL_WIDTH: float = 340.0
+const PANEL_TEXT_WIDTH: float = 256.0
 const MENU_WIDTH: float = 180.0
 const MENU_ROW: float = 33.0
 const MENU_DROP_GAP: float = 7.5
 
-const ICON_STAT: float = 18.0
-const ICON_MENU: float = 15.0
+## Bigger than the design's 18 / 15, so the plan's 2-unit icon stroke
+## (TopBarIcons) leaves them open.
+const ICON_STAT: float = 20.0
+const ICON_MENU: float = 20.0
 const ICON_RIBBON: float = 12.0
-
-const FONT_SIZE_STAT: int = 17
-const FONT_SIZE_MENU: int = 13
-const FONT_SIZE_CAPTION: int = 10
-const FONT_SIZE_KICKER: int = 9
-const FONT_SIZE_TITLE: int = 15
-const FONT_SIZE_TEXT: int = 12
-const FONT_SIZE_FLOAT: int = 11
 
 ## Ribbon down / up: hover, open, retract.
 const RIBBON_MOVE_SECONDS: float = 0.24
@@ -73,14 +70,6 @@ const SWAY_DEGREES: float = 1.6
 const SWAY_CYCLE_SECONDS: float = 3.0
 const MENU_IN_SECONDS: float = 0.16
 const MENU_OUT_SECONDS: float = 0.14
-
-const FONT_REGULAR: FontFile = preload("res://Fonts/ElmsSans-Regular.ttf")
-const FONT_MEDIUM: FontFile = preload("res://Fonts/ElmsSans-Medium.ttf")
-const FONT_SEMIBOLD: FontFile = preload("res://Fonts/ElmsSans-SemiBold.ttf")
-const FONT_ITALIC: FontFile = preload("res://Fonts/ElmsSans-Italic.ttf")
-
-static var _tabular_font: FontVariation
-static var _kicker_font: FontVariation
 
 ## The ribbon's fill for a reward: story is always burgundy.
 static func reward_color(reward: String) -> Color:
@@ -116,30 +105,11 @@ static func format_number(value: int) -> String:
 		digits += grouped
 	return ("-" if value < 0 else "") + digits
 
-## Regular weight with tabular figures, so a counter keeps its width as it changes.
-static func tabular_font() -> Font:
-	if _tabular_font == null:
-		_tabular_font = FontVariation.new()
-		_tabular_font.base_font = FONT_REGULAR
-		_tabular_font.opentype_features = {TextServerManager.get_primary_interface().name_to_tag("tnum"): 1}
-	return _tabular_font
-
-## SemiBold, spaced out, for the upper-case quest kind above a quest's title.
-static func kicker_font() -> Font:
-	if _kicker_font == null:
-		_kicker_font = FontVariation.new()
-		_kicker_font.base_font = FONT_SEMIBOLD
-		_kicker_font.spacing_glyph = 1
-	return _kicker_font
-
-## A label with no theme padding, in the given font, size and colour.
-static func make_label(text: String, font: Font, font_size: int, color: Color) -> Label:
+## A label in one of the bar's text styles - a theme type variation: a type
+## role without the theme's label padding.
+static func make_label(text: String, variation: StringName) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	label.add_theme_font_override("font", font)
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_constant_override("line_spacing", 0)
+	label.theme_type_variation = variation
 	return label

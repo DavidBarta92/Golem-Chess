@@ -20,6 +20,13 @@ a TextureRect placed over a static (line-free) background.
 Usage:
     python tools/generate_line_reveal_mask.py Assets/mainmenu_bg_1.png
 
+For painted, coloured art (the logo) rather than black line art, add
+--ink-from-alpha: every opaque pixel counts as ink, whatever its colour. Add
+--left-to-right to write the art from left to right - each stroke starts at
+its left end, and the further right a stroke starts, the later - instead of in
+a random order. The logo's mask:
+    python tools/generate_line_reveal_mask.py Assets/golem_logo_reveal_source.png --ink-from-alpha --left-to-right --out Assets/golem_logo_reveal_mask.png --no-debug
+
 Re-run this exact command any time the source PNG changes; there is nothing
 to hand-tune for a typical edit. The one place that can occasionally need a
 second look is a newly introduced or reshaped line crossing, where the
@@ -44,14 +51,14 @@ from scipy import ndimage
 from skimage.morphology import skeletonize
 
 
-def load_ink(path: Path, threshold: float) -> tuple[np.ndarray, np.ndarray]:
+def load_ink(path: Path, threshold: float, from_alpha: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """Returns (ink_bool, ink_alpha) for skeletonization / final alpha."""
     img = Image.open(path).convert("RGBA")
     arr = np.asarray(img).astype(np.float32)
     rgb = arr[..., :3]
     a = arr[..., 3] / 255.0
     gray = rgb.mean(axis=-1) / 255.0
-    ink_alpha = np.clip(1.0 - gray, 0.0, 1.0) * a
+    ink_alpha = a if from_alpha else np.clip(1.0 - gray, 0.0, 1.0) * a
     ink_bool = ink_alpha > threshold
     return ink_bool, ink_alpha
 
@@ -223,13 +230,15 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--sample-window", type=int, default=10, help="pixels sampled to estimate a stroke's direction at a junction")
     parser.add_argument("--pair-dot-threshold", type=float, default=-0.5, help="how opposite two directions must be (dot product) to be joined through a crossing")
+    parser.add_argument("--ink-from-alpha", action="store_true", help="painted art: every opaque pixel is ink, whatever its colour")
+    parser.add_argument("--left-to-right", action="store_true", help="write from left to right instead of in a random order")
     args = parser.parse_args()
 
     out_path = args.out or args.input.with_name(args.input.stem + "_reveal_mask.png")
     debug_path = None if args.no_debug else (args.debug or args.input.with_name(args.input.stem + "_reveal_debug.png"))
 
     t0 = time.time()
-    ink_bool, ink_alpha = load_ink(args.input, args.threshold)
+    ink_bool, ink_alpha = load_ink(args.input, args.threshold, args.ink_from_alpha)
     print(f"ink pixels: {int(ink_bool.sum())}")
 
     skel = skeletonize(ink_bool)
@@ -242,6 +251,9 @@ def main() -> int:
     sg = pair_segments_at_junctions(g, segments, args.sample_window, args.pair_dot_threshold)
     strokes = build_strokes(sg, segments)
     strokes = [s for s in strokes if len(s) > 0]
+    if args.left_to_right:
+        # Each stroke is drawn from its left end.
+        strokes = [list(reversed(s)) if s[0][1] > s[-1][1] else s for s in strokes]
     print(f"final strokes: {len(strokes)}")
 
     h, w = ink_bool.shape
@@ -266,6 +278,10 @@ def main() -> int:
 
     rng = np.random.default_rng(args.seed)
     stroke_delay = rng.random(len(strokes))
+    if args.left_to_right and strokes:
+        # The further right a stroke starts, the later it starts.
+        starts = np.array([s[0][1] for s in strokes], dtype=np.float64)
+        stroke_delay = (starts - starts.min()) / max(starts.max() - starts.min(), 1.0)
     max_len = stroke_lengths.max() if len(stroke_lengths) else 1.0
     stroke_len_norm = stroke_lengths / max_len if max_len > 1e-6 else stroke_lengths
 

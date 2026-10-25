@@ -47,7 +47,7 @@ func _init(counter_kind: String = "coin") -> void:
 	icon_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(icon_control)
 
-	value_label = TopBarStyle.make_label("0", TopBarStyle.tabular_font(), TopBarStyle.FONT_SIZE_STAT, TopBarStyle.INK)
+	value_label = TopBarStyle.make_label("0", &"TopBarStatLabel")
 	value_label.custom_minimum_size = Vector2(20.0, 0.0)
 	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(value_label)
@@ -94,7 +94,8 @@ func play_bump(delta: int) -> void:
 	elif kind == "draw":
 		float_color = TopBarStyle.DRAW
 	var text: String = ("+" if delta > 0 else "−") + TopBarStyle.format_number(absi(delta))
-	var floater := TopBarStyle.make_label(text, TopBarStyle.FONT_SEMIBOLD, TopBarStyle.FONT_SIZE_FLOAT, float_color)
+	var floater := TopBarStyle.make_label(text, &"TopBarFloatLabel")
+	floater.add_theme_color_override("font_color", float_color)
 	# Top level, so the row does not lay it out and a pop or pulse leaves it alone.
 	floater.top_level = true
 	add_child(floater)

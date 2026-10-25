@@ -1,6 +1,8 @@
-[gd_resource type="Resource" script_class="PackDefinition" format=3]
+[gd_resource type="Resource" script_class="PackDefinition" format=3 uid="uid://drtlmsk4yjysk"]
 
-[ext_resource type="Script" path="res://Scripts/PackDefinition.gd" id="1"]
+[ext_resource type="Script" uid="uid://bijp2plb28u63" path="res://Scripts/PackDefinition.gd" id="1"]
+[ext_resource type="Script" uid="uid://jywk3em8fjkn" path="res://Scripts/StampPrint.gd" id="1_8gwex"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_o761m"]
 
 [resource]
 script = ExtResource("1")
@@ -9,10 +11,8 @@ pack_name = "Basic Pack"
 pack_texture_path = "res://Assets/booster.png"
 pack_front_texture_path = "res://Assets/booster.png"
 pack_back_texture_path = "res://Assets/booster_back.png"
-pack_height_texture_path = "res://Assets/booster_height.png"
+pack_height_texture_path = "uid://c31pcx635lefh"
 pack_normal_texture_path = "res://Assets/booster_normal.png"
 pack_roughness_texture_path = "res://Assets/booster_roughness.png"
 pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 include_all_standard_prints = true
-available = true
-price = 15

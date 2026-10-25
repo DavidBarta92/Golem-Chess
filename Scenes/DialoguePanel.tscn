@@ -62,6 +62,7 @@ theme_override_styles/panel = SubResource("StyleBoxEmpty_portrait")
 [node name="PortraitInitial" type="Label" parent="DialogueRoot/DialogueLayout/PortraitFrame" unique_id=203310120]
 layout_mode = 2
 text = "M"
+theme_type_variation = &"DisplayLabel"
 label_settings = SubResource("LabelSettings_portrait_initial")
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -100,8 +101,6 @@ color = Color(0.09019608, 0.17254902, 0.2627451, 1)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/default_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/normal_font_size = 17
-theme_override_font_sizes/bold_font_size = 17
 bbcode_enabled = true
 text = "Dialogue text appears here."
 fit_content = true

@@ -4,12 +4,17 @@ extends RefCounted
 ## no imported textures. Each is laid out on a 24-unit grid (the design's SVG
 ## paths in Docs/TopBar/design/reference/bundle.js) and scaled into the rect.
 ## A mono icon drops its meaning-carrying fills and is drawn in one colour,
-## as on a ribbon.
+## as on a ribbon. Whatever its size, an icon's ordinary line (LINE on the
+## grid) shows as TopBarStyle.STROKE, as the style plan asks; heavier and
+## lighter lines keep their ratio to it.
 
 const TopBarStyle = preload("res://Scripts/TopBar/TopBarStyle.gd")
 
 const GRID: float = 24.0
 const LINE: float = 1.75
+## The most of a small icon its line may take, so a 9-unit check or a 7.5-unit
+## hourglass keeps its openings: their lines stay under the stroke.
+const MAX_STROKE_SHARE: float = 1.0 / 7.0
 const CURVE_SEGMENTS: int = 10
 
 static func draw_icon(canvas: CanvasItem, icon_name: String, rect: Rect2, color: Color, mono: bool = false) -> void:
@@ -36,12 +41,14 @@ static func draw_icon(canvas: CanvasItem, icon_name: String, rect: Rect2, color:
 			pen.line([Vector2(6, 13.4), Vector2(12, 7.8), Vector2(18, 13.4)], 2.1)
 			pen.line([Vector2(6, 18.6), Vector2(12, 13), Vector2(18, 18.6)], 2.1)
 		"menu":
-			pen.line(_cubic(Vector2(4.5, 7.2), Vector2(9.5, 6.7), Vector2(14.5, 6.8), Vector2(19.5, 7.2)))
+			# 6 apart rather than the design's 4.8, so the heavier stroke leaves gaps.
+			pen.line(_cubic(Vector2(4.5, 6.2), Vector2(9.5, 5.7), Vector2(14.5, 5.8), Vector2(19.5, 6.2)))
 			pen.line(_cubic(Vector2(4.5, 12), Vector2(9.5, 12.4), Vector2(14.5, 12.3), Vector2(19.5, 12)))
-			pen.line(_cubic(Vector2(4.5, 16.8), Vector2(9.5, 16.4), Vector2(14.5, 16.4), Vector2(19.5, 16.9)))
+			pen.line(_cubic(Vector2(4.5, 17.8), Vector2(9.5, 17.4), Vector2(14.5, 17.4), Vector2(19.5, 17.9)))
 		"gear":
 			pen.closed_line(_gear_outline())
-			pen.circle(Vector2(12, 12), 3.0)
+			# Smaller than the design's 3, so the heavier stroke leaves its gap.
+			pen.circle(Vector2(12, 12), 2.4)
 		"help":
 			pen.circle(Vector2(12, 12), 9.0)
 			var hook: Array[Vector2] = _cubic(Vector2(9.4, 9.6), Vector2(9.4, 8.0), Vector2(10.6, 7.0), Vector2(12, 7))
@@ -97,7 +104,11 @@ static func draw_mini_ribbon(canvas: CanvasItem, kind: String, rect: Rect2, fill
 		points.append(origin + point * scale)
 	canvas.draw_colored_polygon(points, fill_color)
 	points.append(points[0])
-	canvas.draw_polyline(points, ink, maxf(1.0, 3.0 * scale), true)
+	canvas.draw_polyline(points, ink, stroke_for(minf(rect.size.x, rect.size.y)), true)
+
+## The width an icon's ordinary line shows at, for an icon that size.
+static func stroke_for(icon_size: float) -> float:
+	return minf(TopBarStyle.STROKE, icon_size * MAX_STROKE_SHARE)
 
 static func _cubic(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2) -> Array[Vector2]:
 	var points: Array[Vector2] = []
@@ -152,7 +163,8 @@ class _Pen:
 		return mapped
 
 	func _width(grid_width: float) -> float:
-		return maxf(1.0, grid_width * scale)
+		# stroke_for(), for the icon's size.
+		return minf(TopBarStyle.STROKE, GRID * scale * MAX_STROKE_SHARE) * grid_width / LINE
 
 	## An open stroke with round ends.
 	func line(points: Array[Vector2], grid_width: float = LINE) -> void:

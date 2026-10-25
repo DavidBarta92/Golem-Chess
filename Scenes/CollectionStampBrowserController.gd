@@ -4,11 +4,11 @@ class_name CollectionStampBrowserController
 const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
 const UNOWNED_STAMP_SHADER = preload("res://Shaders/collection_unowned_stamp.gdshader")
 const UNOWNED_STAMP_OPACITY: float = 0.5
+const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 ## The print count sits on a pill centred under the stamp, hanging off its
 ## bottom edge: flat top and bottom, round ends.
 const COUNT_BADGE_HEIGHT: float = 18.0
 const COUNT_BADGE_PADDING: float = 7.0
-const COUNT_BADGE_FONT_SIZE: int = 11
 ## How far the pill reaches below the stamp's bottom edge.
 const COUNT_BADGE_OVERHANG: float = 9.0
 
@@ -19,7 +19,9 @@ var owned_only_check: CheckBox
 var previous_button: Button
 var next_button: Button
 var page_label: Label
-var codex_title_font: FontFile
+## The count badges' "2 db": the FieldLabel type role, from the theme.
+var count_badge_font: Font
+var count_badge_font_size: int = 14
 
 var clear_hover_callback: Callable = Callable()
 var update_deck_editor_callback: Callable = Callable()
@@ -57,7 +59,8 @@ func bind(config: Dictionary) -> void:
 	previous_button = config.get("previous_button", previous_button) as Button
 	next_button = config.get("next_button", next_button) as Button
 	page_label = config.get("page_label", page_label) as Label
-	codex_title_font = config.get("codex_title_font", codex_title_font) as FontFile
+	count_badge_font = config.get("count_badge_font", count_badge_font) as Font
+	count_badge_font_size = int(config.get("count_badge_font_size", count_badge_font_size))
 	stamp_visual_size = config.get("stamp_visual_size", stamp_visual_size)
 	stamp_slot_scale_multiplier = float(config.get("stamp_slot_scale_multiplier", stamp_slot_scale_multiplier))
 	browser_stamp_vertical_offset = float(config.get("browser_stamp_vertical_offset", browser_stamp_vertical_offset))
@@ -101,7 +104,6 @@ func show_page(page_index: int) -> void:
 		empty_label.custom_minimum_size = Vector2(0, 120)
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		empty_label.add_theme_color_override("font_color", CollectionPalette.INK)
 
 	for index in range(start_index, end_index):
 		var stamp_print: StampPrint = filtered_stamp_prints[index] as StampPrint
@@ -232,7 +234,7 @@ func configure_browser_stamp_layout(stamp_slot: Control, stamp_visual: StampVisu
 
 func create_print_count_badge(owned_count: int) -> Control:
 	var badge_text: String = tr("%d pcs") % owned_count
-	var text_width: float = codex_title_font.get_string_size(badge_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, COUNT_BADGE_FONT_SIZE).x if codex_title_font != null else 24.0
+	var text_width: float = count_badge_font.get_string_size(badge_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, count_badge_font_size).x if count_badge_font != null else 24.0
 	var badge_size := Vector2(maxf(COUNT_BADGE_HEIGHT, ceilf(text_width + COUNT_BADGE_PADDING * 2.0)), COUNT_BADGE_HEIGHT)
 
 	var badge := Control.new()
@@ -248,13 +250,15 @@ func create_print_count_badge(owned_count: int) -> Control:
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	background.add_theme_stylebox_override("panel", create_count_badge_style())
+	# A pill of ink, printed like the UI's other ink fills.
+	InkStampMaterial.apply(background, true)
 
 	var number := Control.new()
 	badge.add_child(number)
 	number.set_anchors_preset(Control.PRESET_FULL_RECT)
 	number.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	number.draw.connect(func() -> void:
-		draw_print_count_badge_number(number, badge_text, COUNT_BADGE_FONT_SIZE)
+		draw_print_count_badge_number(number, badge_text, count_badge_font_size)
 	)
 	return badge
 
@@ -266,22 +270,22 @@ func create_count_badge_style() -> StyleBoxFlat:
 	return style
 
 func draw_print_count_badge_number(canvas: Control, text: String, font_size: int) -> void:
-	if canvas == null or codex_title_font == null:
+	if canvas == null or count_badge_font == null:
 		return
 
 	var canvas_size: Vector2 = canvas.size
 	if canvas_size.x <= 0.0 or canvas_size.y <= 0.0:
 		canvas_size = deck_slot_remove_button_size
 
-	var text_size: Vector2 = codex_title_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size)
-	var ascent: float = codex_title_font.get_ascent(font_size)
-	var descent: float = codex_title_font.get_descent(font_size)
+	var text_size: Vector2 = count_badge_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size)
+	var ascent: float = count_badge_font.get_ascent(font_size)
+	var descent: float = count_badge_font.get_descent(font_size)
 	var text_height: float = ascent + descent
 	var draw_position := Vector2(
 		(canvas_size.x - text_size.x) * 0.5,
 		(canvas_size.y - text_height) * 0.5 + ascent
 	)
-	canvas.draw_string(codex_title_font, draw_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, CollectionPalette.PAPER_LIGHT)
+	canvas.draw_string(count_badge_font, draw_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, CollectionPalette.PAPER_LIGHT)
 
 func update_print_count_badge_layout(stamp_slot: Control, stamp_visual: StampVisual) -> void:
 	var badge: Control = stamp_slot.get_node_or_null("CountBadge") as Control

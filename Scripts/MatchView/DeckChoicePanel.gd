@@ -13,8 +13,6 @@ class_name DeckChoicePanel
 signal chosen(deck_id: String)
 
 const COUNTDOWN_SECONDS: float = 20.0
-const TITLE_FONT_SIZE: int = 22
-const COUNTDOWN_FONT_SIZE: int = 32
 const ROW_SEPARATION: int = 10
 const COLUMN_SEPARATION: int = 14
 const LIST_MIN_WIDTH: float = 240.0
@@ -55,7 +53,7 @@ func _build() -> void:
 	var title := Label.new()
 	title.text = tr("MATCH_DECK_CHOICE_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)
+	title.theme_type_variation = &"PanelTitleLabel"
 	add_child(title)
 
 	var row := HBoxContainer.new()
@@ -76,7 +74,7 @@ func _build() -> void:
 
 	_countdown = Label.new()
 	_countdown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_countdown.add_theme_font_size_override("font_size", COUNTDOWN_FONT_SIZE)
+	_countdown.theme_type_variation = &"CountdownLabel"
 	add_child(_countdown)
 
 func _fill_list() -> void:

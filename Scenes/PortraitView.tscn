@@ -2,9 +2,6 @@
 
 [ext_resource type="Script" uid="uid://c18dpdgku4mgw" path="res://Scenes/PortraitView.gd" id="1_portrait_view"]
 [ext_resource type="Script" uid="uid://prxce8kchyxi" path="res://Scripts/PortraitConfig.gd" id="2_xmh5g"]
-[ext_resource type="Texture2D" uid="uid://dhg1sfqmpjv2v" path="res://Assets/portrait_mask_local.png" id="3_mask"]
-[ext_resource type="Shader" uid="uid://dlvxdbnaxj1iy" path="res://Shaders/portrait_scene_mask.gdshader" id="3_mmthx"]
-[ext_resource type="Shader" uid="uid://djswjrwhireyx" path="res://Shaders/portrait_mask_debug.gdshader" id="4_mask_debug"]
 
 [sub_resource type="Resource" id="Resource_mmthx"]
 script = ExtResource("2_xmh5g")
@@ -62,16 +59,6 @@ look_down_layer_offsets = {
 }
 blink_style = "move_eyes"
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_cvdxm"]
-shader = ExtResource("3_mmthx")
-shader_parameter/mask_texture = ExtResource("3_mask")
-shader_parameter/mask_threshold = 0.05
-shader_parameter/mask_softness = 0.02
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_mask_debug"]
-shader = ExtResource("4_mask_debug")
-shader_parameter/debug_color = Color(0.1, 0.85, 1, 0.26)
-
 [node name="PortraitView" type="Control" unique_id=1459214290]
 clip_contents = true
 custom_minimum_size = Vector2(449, 178)
@@ -84,86 +71,69 @@ script = ExtResource("1_portrait_view")
 portrait_config = SubResource("Resource_mmthx")
 show_frame = false
 show_background = true
-use_scene_mask = true
 
-[node name="PortraitMaskGroup" type="CanvasGroup" parent="." unique_id=1721502087]
-material = SubResource("ShaderMaterial_cvdxm")
+[node name="PortraitPictureGroup" type="CanvasGroup" parent="." unique_id=1721502087]
 
-[node name="PortraitBackground" type="ColorRect" parent="PortraitMaskGroup" unique_id=1665939617]
-z_index = -1000
+[node name="PortraitBackground" type="ColorRect" parent="PortraitPictureGroup" unique_id=1665939617]
 offset_right = 449.0
 offset_bottom = 178.0
 mouse_filter = 2
 color = Color(0.909804, 0.694118, 0.486275, 1)
 
-[node name="PortraitCanvas" type="Node2D" parent="PortraitMaskGroup" unique_id=1561070255]
+[node name="PortraitCanvas" type="Node2D" parent="PortraitPictureGroup" unique_id=1561070255]
 position = Vector2(42, -58)
 
-[node name="TorsoRoot" type="Node2D" parent="PortraitMaskGroup/PortraitCanvas" unique_id=117245032]
+[node name="TorsoRoot" type="Node2D" parent="PortraitPictureGroup/PortraitCanvas" unique_id=117245032]
 
-[node name="Body_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/TorsoRoot" unique_id=1659137531]
+[node name="Body_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/TorsoRoot" unique_id=1659137531]
 texture_filter = 1
 centered = false
 
-[node name="Neck_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/TorsoRoot" unique_id=37997328]
+[node name="Neck_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/TorsoRoot" unique_id=37997328]
 texture_filter = 1
 centered = false
 
-[node name="HeadRoot" type="Node2D" parent="PortraitMaskGroup/PortraitCanvas" unique_id=1371132224]
+[node name="HeadRoot" type="Node2D" parent="PortraitPictureGroup/PortraitCanvas" unique_id=1371132224]
 position = Vector2(256, 296)
 
-[node name="Head_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1491586399]
+[node name="Head_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/HeadRoot" unique_id=1491586399]
 texture_filter = 1
 position = Vector2(-124.5, -170)
 centered = false
 
-[node name="Hair_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=2116986648]
+[node name="Hair_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/HeadRoot" unique_id=2116986648]
 texture_filter = 1
 position = Vector2(-124.5, -170)
 centered = false
 
-[node name="Facial_hair_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1193254919]
+[node name="Facial_hair_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/HeadRoot" unique_id=1193254919]
 texture_filter = 1
 position = Vector2(-124.5, -170)
 centered = false
 
-[node name="Eyebrows_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1005669811]
+[node name="Eyebrows_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/HeadRoot" unique_id=1005669811]
 texture_filter = 1
 position = Vector2(-124.5, -170)
 centered = false
 
-[node name="Pupils_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=285021983]
+[node name="Pupils_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/HeadRoot" unique_id=285021983]
 texture_filter = 1
 position = Vector2(-124.5, -170)
 centered = false
 
-[node name="Eyelash_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1334185174]
+[node name="Eyelash_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/HeadRoot" unique_id=1334185174]
 texture_filter = 1
 position = Vector2(-124.5, -170)
 centered = false
 
-[node name="Nose_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1299448564]
+[node name="Nose_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/HeadRoot" unique_id=1299448564]
 texture_filter = 1
 position = Vector2(-124.5, -170)
 centered = false
 
-[node name="Mouth_layer" type="Sprite2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=311222599]
+[node name="Mouth_layer" type="Sprite2D" parent="PortraitPictureGroup/PortraitCanvas/HeadRoot" unique_id=311222599]
 texture_filter = 1
 position = Vector2(-124.5, -170)
 centered = false
 
-[node name="FaceRoot" type="Node2D" parent="PortraitMaskGroup/PortraitCanvas/HeadRoot" unique_id=1511098848]
-
-[node name="PortraitMaskDebug" type="TextureRect" parent="." unique_id=1869334916]
-z_index = 1000
-material = SubResource("ShaderMaterial_mask_debug")
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = ExtResource("3_mask")
-expand_mode = 1
-stretch_mode = 5
+[node name="FaceRoot" type="Node2D" parent="PortraitPictureGroup/PortraitCanvas/HeadRoot" unique_id=1511098848]

@@ -14,6 +14,15 @@ class_name MatchTabButton
 ## stays under the board whatever shape the window is. Up and down it is
 ## anchored to the screen's own bottom edge, because that is the edge it is
 ## meant to be poking through.
+##
+## It looks like the UI's other buttons - outline, ink stamp, the hover's ink
+## fill - from the theme's MatchTabButton variation, cut as a tab: rounded
+## along the top, open along the bottom. Its styles leave 48 at the bottom
+## (tab_height - raised_height, and 6 more), so the words sit in the part that
+## shows rather than in the middle of the whole tab. Unlike the other buttons
+## it is paper, not clear: the theme's "face" style, drawn on a layer of its
+## own at the very back, so the hover's ink (InkHoverFill) floods in over the
+## paper and under the outline and the label.
 
 const SLIDE_SECONDS: float = 0.26
 
@@ -24,12 +33,6 @@ const SLIDE_SECONDS: float = 0.26
 @export var tab_height: float = 114.0
 @export var raised_height: float = 72.0
 
-@export_group("Look")
-@export var face_color: Color = Color(0.956863, 0.941176, 0.901961, 1.0)
-@export var hover_color: Color = Color(1.0, 0.99, 0.96, 1.0)
-@export var pressed_color: Color = Color(0.88, 0.86, 0.81, 1.0)
-@export var edge_color: Color = UiPalette.INK
-
 var _shown: float = 0.0
 var _slide: Tween
 var _was_disabled: bool = true
@@ -39,7 +42,8 @@ func _ready() -> void:
 	anchor_bottom = 1.0
 	focus_mode = Control.FOCUS_NONE
 	custom_minimum_size = Vector2(tab_width, tab_height)
-	_apply_look()
+	theme_type_variation = &"MatchTabButton"
+	add_child(_Face.new(), false, Node.INTERNAL_MODE_FRONT)
 	_place()
 	get_viewport().size_changed.connect(_place)
 	_was_disabled = disabled
@@ -83,29 +87,18 @@ func _set_shown(value: float) -> void:
 
 # --- How it looks -------------------------------------------------------------
 
-## Rounded along the top, square along the bottom, and with its words sitting
-## in the part that shows rather than in the middle of the whole tab.
-func _apply_look() -> void:
-	var radius: int = 10
-	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-		var box := StyleBoxFlat.new()
-		box.bg_color = face_color
-		if state == "hover":
-			box.bg_color = hover_color
-		elif state == "pressed":
-			box.bg_color = pressed_color
-		box.border_color = edge_color
-		box.border_width_left = 2
-		box.border_width_top = 2
-		box.border_width_right = 2
-		box.corner_radius_top_left = radius
-		box.corner_radius_top_right = radius
-		box.content_margin_left = 12
-		box.content_margin_right = 12
-		box.content_margin_top = 8
-		box.content_margin_bottom = maxf(tab_height - raised_height + 6.0, 6.0)
-		add_theme_stylebox_override(state, box)
-	add_theme_color_override("font_color", edge_color)
-	add_theme_color_override("font_hover_color", edge_color)
-	add_theme_color_override("font_pressed_color", edge_color)
-	add_theme_color_override("font_disabled_color", edge_color)
+## The tab's paper, behind everything the button draws itself.
+class _Face:
+	extends Control
+
+	func _init() -> void:
+		name = "Face"
+		show_behind_parent = true
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	func _ready() -> void:
+		get_parent().theme_changed.connect(queue_redraw)
+
+	func _draw() -> void:
+		draw_style_box(get_parent().get_theme_stylebox(&"face"), Rect2(Vector2.ZERO, size))

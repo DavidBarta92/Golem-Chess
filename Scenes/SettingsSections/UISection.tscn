@@ -31,6 +31,7 @@ OptionsRef = NodePath("Options")
 
 [node name="Label" type="Label" parent="Scroll/Content/Language"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Language"
 
 [node name="Options" type="OptionButton" parent="Scroll/Content/Language"]

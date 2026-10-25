@@ -27,11 +27,13 @@ grow_vertical = 2
 
 [node name="TitleLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_type_variation = &"DisplayLabel"
 text = "Multiplayer"
 horizontal_alignment = 1
 
 [node name="DeckLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Deck"
 
 [node name="DeckOptionButton" type="OptionButton" parent="VBoxContainer"]
@@ -39,6 +41,7 @@ layout_mode = 2
 
 [node name="ServerIPLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Server IP"
 
 [node name="ServerIPLineEdit" type="LineEdit" parent="VBoxContainer"]
@@ -48,6 +51,7 @@ placeholder_text = "79.76.116.120"
 
 [node name="PortLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Port"
 
 [node name="PortLineEdit" type="LineEdit" parent="VBoxContainer"]
@@ -70,6 +74,7 @@ text = "Server Room"
 [node name="StatusLabel" type="Label" parent="VBoxContainer"]
 visible = false
 layout_mode = 2
+theme_type_variation = &"CaptionLabel"
 horizontal_alignment = 1
 autowrap_mode = 2
 

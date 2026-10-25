@@ -6,16 +6,11 @@ const CODEX_TEXTURE: Texture2D = preload("res://Assets/collection_codex.png")
 const CODEX_FOLD_TEXTURE: Texture2D = preload("res://Assets/collection_codex_folder.png")
 const EDIT_ICON: Texture2D = preload("res://Assets/edit.png")
 const DELETE_ICON: Texture2D = preload("res://Assets/delete.png")
-const COLLECTION_THEME: Theme = preload("res://ui/themes/collection_theme.tres")
-const INK_TINT_SHADER = preload("res://Shaders/ink_tint.gdshader")
+const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 ## A warm dark grey, a little lighter than the ink of the buttons.
-const CODEX_NAME_COLOR: Color = CollectionPalette.INK
 ## Small enough for most names to fit; a long one wraps onto a second line
 ## before it is cut.
-const CODEX_NAME_FONT_SIZE: int = 16
 const CODEX_NAME_MAX_LINES: int = 2
-const CODEX_COUNT_COLOR: Color = Color(0.95, 0.92, 0.86)
-const CODEX_COUNT_INCOMPLETE_COLOR: Color = Color(0.93, 0.33, 0.27)
 const MIN_MATCHES_FOR_WIN_RATE: int = 3
 const CODEX_PREVIEW_STAMP_SCALE: float = 0.38
 const CODEX_ICON_BUTTON_SIZE: Vector2 = Vector2(40, 40)
@@ -34,7 +29,6 @@ var deck_list: VBoxContainer
 var stamp_visual_size: Vector2 = Vector2(168.7, 229)
 var max_deck_size: int = 6
 var codex_size: Vector2 = Vector2(368, 139)
-var icon_ink_material: ShaderMaterial
 
 var reset_scroll_callback: Callable = Callable()
 var edit_deck_callback: Callable = Callable()
@@ -115,9 +109,7 @@ func create_saved_deck_row(deck_data: Dictionary) -> Control:
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_label.max_lines_visible = CODEX_NAME_MAX_LINES
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	name_label.add_theme_font_size_override("font_size", CODEX_NAME_FONT_SIZE)
-	name_label.add_theme_constant_override("line_spacing", 0)
-	name_label.add_theme_color_override("font_color", CODEX_NAME_COLOR)
+	name_label.theme_type_variation = &"CodexRowNameLabel"
 
 	var footer := HBoxContainer.new()
 	row_frame.add_child(footer)
@@ -137,8 +129,7 @@ func create_saved_deck_row(deck_data: Dictionary) -> Control:
 		var stats: Dictionary = PlayerDeckStore.get_deck_stats(deck_data)
 		count_label.tooltip_text = tr("CODEX_WIN_RATE_TOOLTIP").format({"won": int(stats["won"]), "played": int(stats["played"])})
 		count_label.mouse_filter = Control.MOUSE_FILTER_PASS
-	count_label.add_theme_font_size_override("font_size", 18)
-	count_label.add_theme_color_override("font_color", CODEX_COUNT_INCOMPLETE_COLOR if !is_playable else CODEX_COUNT_COLOR)
+	count_label.theme_type_variation = &"CodexRowCountIncompleteLabel" if !is_playable else &"CodexRowCountLabel"
 
 	var edit_button := create_circle_icon_button(EDIT_ICON, tr("Edit codex"))
 	footer.add_child(edit_button)
@@ -206,30 +197,20 @@ func create_small_deck_preview_stamp(stamp_print: StampPrint) -> StampVisual:
 	stamp_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return stamp_visual
 
-## A round version of the Collection's buttons: the same near-white fill and
-## thin ink outline (from collection_theme.tres), with the icon re-inked warm.
+## A round version of the UI's buttons (the global theme's CodexIconButton),
+## its black icon art re-inked and stamped like the rest of the UI's ink.
 func create_circle_icon_button(icon: Texture2D, tooltip: String) -> Button:
 	var button := Button.new()
 	button.tooltip_text = tooltip
 	button.custom_minimum_size = CODEX_ICON_BUTTON_SIZE
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	button.focus_mode = Control.FOCUS_NONE
-	var radius: int = int(CODEX_ICON_BUTTON_SIZE.x * 0.5)
-	var pressed_style := _round_theme_button_style("hover", radius)
-	pressed_style.bg_color = CollectionPalette.PAPER
-	button.add_theme_stylebox_override("normal", _round_theme_button_style("normal", radius))
-	button.add_theme_stylebox_override("hover", _round_theme_button_style("hover", radius))
-	button.add_theme_stylebox_override("pressed", pressed_style)
-	button.add_theme_stylebox_override("hover_pressed", pressed_style)
+	button.theme_type_variation = &"CodexIconButton"
 
-	if icon_ink_material == null:
-		icon_ink_material = ShaderMaterial.new()
-		icon_ink_material.shader = INK_TINT_SHADER
-		icon_ink_material.set_shader_parameter("ink_color", CollectionPalette.INK)
 	var icon_rect := TextureRect.new()
 	icon_rect.name = "Icon"
 	icon_rect.texture = icon
-	icon_rect.material = icon_ink_material
+	InkStampMaterial.apply(icon_rect, false, true)
 	icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -237,12 +218,6 @@ func create_circle_icon_button(icon: Texture2D, tooltip: String) -> Button:
 	button.add_child(icon_rect)
 	icon_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, int(CODEX_ICON_BUTTON_ICON_MARGIN))
 	return button
-
-func _round_theme_button_style(style_name: String, radius: int) -> StyleBoxFlat:
-	var style := COLLECTION_THEME.get_stylebox(style_name, "Button").duplicate() as StyleBoxFlat
-	style.set_corner_radius_all(radius)
-	style.set_content_margin_all(0.0)
-	return style
 
 func on_delete_deck_pressed(deck_id: String) -> void:
 	if deck_id.is_empty():

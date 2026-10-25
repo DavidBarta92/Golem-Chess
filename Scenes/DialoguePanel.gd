@@ -8,6 +8,7 @@ signal continue_requested
 signal line_finished
 
 const PORTRAIT_VIEW = preload("res://Scenes/PortraitView.tscn")
+const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 const TYPEWRITER_CHARS_PER_SECOND: float = 42.0
 const DIALOGUE_LINE_WIDTH: float = 1.5
 const DIALOGUE_LINE_MIN_HEIGHT: float = 14.0
@@ -79,6 +80,8 @@ var speech_background_texture: GradientTexture2D
 var speech_background_alpha: float = 0.0
 var speech_background_tween: Tween
 var _identity_alpha: float = 1.0
+## Set by hold_words(): the next line's words wait for release_words().
+var _words_held: bool = false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -88,6 +91,8 @@ func _ready() -> void:
 	_default_speaker_min_height = speaker_label.custom_minimum_size.y
 	speech_background_texture = _create_speech_background_texture()
 	text_panel.draw.connect(_draw_speech_background)
+	# The line beside the words is the UI's ink, printed like the rest of it.
+	InkStampMaterial.apply(dialogue_line)
 	create_portrait_view()
 	reset_dialogue_line()
 	_reserve_button_row_height()
@@ -111,7 +116,6 @@ func create_portrait_view() -> void:
 	portrait_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	portrait_view.show_frame = false
 	portrait_view.show_background = true
-	portrait_view.use_scene_mask = true
 	portrait_view.background_color = portrait_background_color
 
 ## The colour behind the face. Defaults to the warm card the mentor and the
@@ -204,8 +208,23 @@ func show_line(speaker: String, text: String, portrait = null, allow_continue: b
 	dialogue_line.visible = true
 	continue_button.visible = is_interactive and button_row_enabled
 	continue_button.text = tr("Skip")
-	call_deferred("prepare_dialogue_line_before_typing", prepare_version)
+	if !_words_held:
+		call_deferred("prepare_dialogue_line_before_typing", prepare_version)
 	set_process(true)
+
+## Holds the next line's words back: show_line() then sets the name, the face
+## and the box, but the line beside the words is not drawn and nothing is
+## typed until release_words(). For a caller that brings the face in first.
+func hold_words() -> void:
+	_words_held = true
+
+## Lets held words go: the line beside them draws itself, then they type out.
+func release_words() -> void:
+	if !_words_held:
+		return
+	_words_held = false
+	if waiting_for_line_before_typing:
+		call_deferred("prepare_dialogue_line_before_typing", dialogue_line_prepare_version)
 
 ## For a panel with no face above the words: the box is centred on the
 ## screen's middle line and its contents within the box, so the words sit

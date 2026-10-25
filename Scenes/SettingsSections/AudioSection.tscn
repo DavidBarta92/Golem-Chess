@@ -36,6 +36,7 @@ AUDIO_BUS = "Master"
 
 [node name="Label" type="Label" parent="Scroll/Content/MasterVolume"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Master Volume"
 
 [node name="Row" type="HBoxContainer" parent="Scroll/Content/MasterVolume"]
@@ -49,6 +50,7 @@ size_flags_horizontal = 3
 [node name="ValueLabel" type="Label" parent="Scroll/Content/MasterVolume/Row"]
 custom_minimum_size = Vector2(58, 0)
 layout_mode = 2
+theme_type_variation = &"NumberLabel"
 horizontal_alignment = 2
 vertical_alignment = 1
 
@@ -67,6 +69,7 @@ AUDIO_BUS = "Music"
 
 [node name="Label" type="Label" parent="Scroll/Content/MusicVolume"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Music Volume"
 
 [node name="Row" type="HBoxContainer" parent="Scroll/Content/MusicVolume"]
@@ -80,6 +83,7 @@ size_flags_horizontal = 3
 [node name="ValueLabel" type="Label" parent="Scroll/Content/MusicVolume/Row"]
 custom_minimum_size = Vector2(58, 0)
 layout_mode = 2
+theme_type_variation = &"NumberLabel"
 horizontal_alignment = 2
 vertical_alignment = 1
 
@@ -98,6 +102,7 @@ AUDIO_BUS = "Ambience"
 
 [node name="Label" type="Label" parent="Scroll/Content/AmbienceVolume"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Ambience Volume"
 
 [node name="Row" type="HBoxContainer" parent="Scroll/Content/AmbienceVolume"]
@@ -111,6 +116,7 @@ size_flags_horizontal = 3
 [node name="ValueLabel" type="Label" parent="Scroll/Content/AmbienceVolume/Row"]
 custom_minimum_size = Vector2(58, 0)
 layout_mode = 2
+theme_type_variation = &"NumberLabel"
 horizontal_alignment = 2
 vertical_alignment = 1
 
@@ -129,6 +135,7 @@ AUDIO_BUS = "SFX"
 
 [node name="Label" type="Label" parent="Scroll/Content/SfxVolume"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "SFX Volume"
 
 [node name="Row" type="HBoxContainer" parent="Scroll/Content/SfxVolume"]
@@ -142,5 +149,6 @@ size_flags_horizontal = 3
 [node name="ValueLabel" type="Label" parent="Scroll/Content/SfxVolume/Row"]
 custom_minimum_size = Vector2(58, 0)
 layout_mode = 2
+theme_type_variation = &"NumberLabel"
 horizontal_alignment = 2
 vertical_alignment = 1

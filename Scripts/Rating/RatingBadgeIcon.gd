@@ -1,12 +1,18 @@
 extends Control
 
 ## The rating's mark in the top bar: two stacked chevrons, read as a rank.
-## Drawn rather than loaded so it needs no imported texture.
+## Drawn rather than loaded so it needs no imported texture; printed with the
+## ink stamp like the bar's other icons.
+
+const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 
 var color: Color = UiPalette.INK:
 	set(value):
 		color = value
 		queue_redraw()
+
+func _ready() -> void:
+	InkStampMaterial.apply(self)
 
 func _draw() -> void:
 	var thickness: float = maxf(2.0, size.x * 0.13)

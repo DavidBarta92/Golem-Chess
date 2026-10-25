@@ -11,11 +11,12 @@ class_name OpponentSpeechPanel
 ##
 ## One line's life:
 ##
-##   1. the frame draws itself, the face fades in behind it, then the words
-##   2. the words hold for `line_seconds`, counted down by the dial beneath
-##      them; pointing at the face or the words stops that clock, so a line
-##      being read never goes out from under the pointer
-##   3. the face and the words fade out together over `fade_seconds`
+##   1. the frame draws itself, the face fades in behind it, then the words:
+##      the line beside them draws and they type themselves out
+##   2. once written out, the words hold for `line_seconds`, counted down by
+##      the dial beneath them; pointing at the face or the words stops that
+##      clock, so a line being read never goes out from under the pointer
+##   3. everything fades out together over `fade_seconds`
 ##
 ## A second line arriving mid-hold does not restart any of that. Only the words
 ## leave and come back - the speaker has not gone anywhere.
@@ -93,9 +94,12 @@ func speak(speaker: String, text: String, portrait) -> void:
 	_holding = true
 
 ## Everything arrives: the frame draws, the face follows it, the words follow
-## the face.
+## the face. The words are held back until then, so they type themselves out
+## where they can be seen rather than behind the fade; this returns once they
+## are written out.
 func _arrive(token: int, speaker: String, text: String, portrait) -> void:
 	_panel.visible = true
+	_panel.hold_words()
 	_panel.show_line(speaker, text, portrait, false)
 	_panel.set_interactive(false)
 	_set_identity_alpha(0.0)
@@ -117,6 +121,8 @@ func _arrive(token: int, speaker: String, text: String, portrait) -> void:
 	if token != _token:
 		return
 	_fade(_panel.set_speech_alpha, 0.0, 1.0, speech_fade_seconds)
+	_panel.release_words()
+	await _panel.line_finished
 
 ## The speaker is already here: only their words change.
 func _replace_words(token: int, speaker: String, text: String) -> void:
@@ -129,6 +135,7 @@ func _replace_words(token: int, speaker: String, text: String) -> void:
 	_panel.set_speech_alpha(0.0)
 	_countdown.set_remaining(1.0)
 	_fade(_panel.set_speech_alpha, 0.0, 1.0, speech_fade_seconds)
+	await _panel.line_finished
 
 # --- Going away --------------------------------------------------------------
 

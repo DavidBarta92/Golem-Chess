@@ -50,7 +50,7 @@ alignment = 1
 
 [node name="Title" type="Label" parent="ArtFrame/Layout"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_type_variation = &"LanguageTitleLabel"
 text = "Language / Nyelv"
 horizontal_alignment = 1
 

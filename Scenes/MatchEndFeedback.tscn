@@ -1,22 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://Scenes/MatchEndFeedback.gd" id="1_feedback"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.94, 0.93, 0.89, 0.96)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-content_margin_left = 28
-content_margin_top = 24
-content_margin_right = 28
-content_margin_bottom = 24
 
 [node name="MatchEndFeedback" type="Control"]
 layout_mode = 3
@@ -50,7 +34,7 @@ offset_right = 280.0
 offset_bottom = 130.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+theme_type_variation = &"ResultPanel"
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ContentPanel"]
 layout_mode = 2
@@ -59,15 +43,13 @@ alignment = 1
 
 [node name="TitleLabel" type="Label" parent="ContentPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-theme_override_font_sizes/font_size = 30
+theme_type_variation = &"ResultTitleLabel"
 text = "Thank you for playing!"
 horizontal_alignment = 1
 
 [node name="MessageLabel" type="Label" parent="ContentPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"ResultMessageLabel"
 text = "If you have not filled out the questionnaire yet, please take two minutes to do it. It would help a lot as I continue improving the game and the overall experience."
 horizontal_alignment = 1
 autowrap_mode = 3

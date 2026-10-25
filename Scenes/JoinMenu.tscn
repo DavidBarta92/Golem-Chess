@@ -25,6 +25,7 @@ grow_vertical = 2
 
 [node name="Label" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Enter Server IP:"
 
 [node name="IPLineEdit" type="LineEdit" parent="VBoxContainer"]
@@ -33,6 +34,7 @@ placeholder_text = "127.0.0.1"
 
 [node name="PortLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Port:"
 
 [node name="PortLineEdit" type="LineEdit" parent="VBoxContainer"]
@@ -42,6 +44,7 @@ placeholder_text = "9999"
 
 [node name="StatusLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_type_variation = &"CaptionLabel"
 text = ""
 
 [node name="ConnectButton" type="Button" parent="VBoxContainer"]

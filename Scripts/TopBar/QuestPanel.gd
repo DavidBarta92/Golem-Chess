@@ -13,6 +13,7 @@ signal claim_requested(quest_id: String)
 
 const TopBarStyle = preload("res://Scripts/TopBar/TopBarStyle.gd")
 const TOP_BAR_ICON_SCRIPT = preload("res://Scripts/TopBar/TopBarIcon.gd")
+const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 const COIN_TEXTURE: Texture2D = preload("res://Assets/coin.svg")
 
 const KIND_KEY: Dictionary = {
@@ -70,14 +71,14 @@ func show_quest(quest: Dictionary, time_left_text: String, is_urgent: bool, open
 
 	var title: String = tr(str(quest.get("title", "")))
 	if !title.is_empty():
-		var title_label := TopBarStyle.make_label(title, TopBarStyle.FONT_SEMIBOLD, TopBarStyle.FONT_SIZE_TITLE, TopBarStyle.INK)
+		var title_label := TopBarStyle.make_label(title, &"QuestTitleLabel")
 		title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_content.add_child(title_label)
 		_add_gap(4.5)
 
 	var text: String = tr(str(quest.get("text", "")))
 	if !text.is_empty():
-		_content.add_child(_build_text(text))
+		_add_text(text)
 
 	var target: int = maxi(1, int(quest.get("target", 1)))
 	if target > 1:
@@ -157,11 +158,12 @@ func _build_kicker(kind: String, reward: String, time_left_text: String, is_urge
 	row.alignment = BoxContainer.ALIGNMENT_BEGIN
 
 	var mini_ribbon = TOP_BAR_ICON_SCRIPT.new("mini_" + kind, 0.0, TopBarStyle.INK)
-	mini_ribbon.custom_minimum_size = Vector2(7.5, 10.5)
+	mini_ribbon.custom_minimum_size = Vector2(10.0, 14.0)
 	mini_ribbon.fill_color = TopBarStyle.reward_color(reward)
 	mini_ribbon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(mini_ribbon)
-	var kicker := TopBarStyle.make_label(KIND_KEY.get(kind, "QUEST_KIND_REWARD"), TopBarStyle.kicker_font(), TopBarStyle.FONT_SIZE_KICKER, TopBarStyle.reward_text_color(reward))
+	var kicker := TopBarStyle.make_label(KIND_KEY.get(kind, "QUEST_KIND_REWARD"), &"QuestKickerLabel")
+	kicker.add_theme_color_override("font_color", TopBarStyle.reward_text_color(reward))
 	kicker.uppercase = true
 	row.add_child(kicker)
 
@@ -174,32 +176,25 @@ func _build_kicker(kind: String, reward: String, time_left_text: String, is_urge
 		row.add_child(spacer)
 		var time_color: Color = TopBarStyle.URGENT if is_urgent else TopBarStyle.INK_SOFT
 		if is_urgent:
-			var hourglass = TOP_BAR_ICON_SCRIPT.new("hourglass", 10.5, time_color, true)
+			var hourglass = TOP_BAR_ICON_SCRIPT.new("hourglass", 13.0, time_color, true)
 			hourglass.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			row.add_child(hourglass)
-		_time_label = TopBarStyle.make_label(time_left_text, TopBarStyle.FONT_MEDIUM, TopBarStyle.FONT_SIZE_CAPTION, time_color)
+		_time_label = TopBarStyle.make_label(time_left_text, &"QuestUrgentCaptionLabel" if is_urgent else &"QuestCaptionLabel")
 		row.add_child(_time_label)
 	return row
 
 ## Italic like a card description, the exact condition upright in bold: <b>...</b>.
-func _build_text(text: String) -> RichTextLabel:
+## Added before the text is set, so the icon size comes from the theme.
+func _add_text(text: String) -> void:
 	var label := RichTextLabel.new()
 	label.bbcode_enabled = true
 	label.fit_content = true
 	label.scroll_active = false
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	label.add_theme_font_override("normal_font", TopBarStyle.FONT_ITALIC)
-	label.add_theme_font_override("italics_font", TopBarStyle.FONT_ITALIC)
-	label.add_theme_font_override("bold_font", TopBarStyle.FONT_SEMIBOLD)
-	label.add_theme_font_override("bold_italics_font", TopBarStyle.FONT_SEMIBOLD)
-	for font_size_name in ["normal_font_size", "italics_font_size", "bold_font_size", "bold_italics_font_size"]:
-		label.add_theme_font_size_override(font_size_name, TopBarStyle.FONT_SIZE_TEXT)
-	label.add_theme_color_override("default_color", TopBarStyle.INK)
-	label.add_theme_constant_override("line_separation", 3)
-	label.text = DescriptionMarkup.to_bbcode(text, TopBarStyle.FONT_SIZE_TEXT)
-	return label
+	label.theme_type_variation = &"QuestText"
+	_content.add_child(label)
+	label.text = DescriptionMarkup.to_bbcode(text, label.get_theme_font_size("normal_font_size"))
 
 func _build_progress(progress: int, target: int, reward: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
@@ -217,7 +212,7 @@ func _build_progress(progress: int, target: int, reward: String) -> HBoxContaine
 		track.ratio = float(progress) / float(target)
 		track.fill_color = fill_color
 		row.add_child(track)
-	var count := TopBarStyle.make_label("%d / %d" % [progress, target], TopBarStyle.tabular_font(), TopBarStyle.FONT_SIZE_CAPTION, TopBarStyle.INK_SOFT)
+	var count := TopBarStyle.make_label("%d / %d" % [progress, target], &"QuestCountLabel")
 	count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(count)
 	return row
@@ -232,9 +227,9 @@ func _build_footer(quest: Dictionary, reward: String) -> HBoxContainer:
 	reward_row.add_theme_constant_override("separation", 4)
 	reward_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reward_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	reward_row.add_child(TopBarStyle.make_label(tr("QUEST_REWARD_LABEL"), TopBarStyle.FONT_MEDIUM, TopBarStyle.FONT_SIZE_CAPTION, TopBarStyle.INK_SOFT))
+	reward_row.add_child(TopBarStyle.make_label(tr("QUEST_REWARD_LABEL"), &"QuestCaptionLabel"))
 	var amount_text: String = tr("QUEST_STORY_CONTINUES") if reward == "story" else "+" + TopBarStyle.format_number(int(quest.get("amount", 0)))
-	reward_row.add_child(TopBarStyle.make_label(amount_text, TopBarStyle.FONT_SEMIBOLD, TopBarStyle.FONT_SIZE_FLOAT, TopBarStyle.INK))
+	reward_row.add_child(TopBarStyle.make_label(amount_text, &"QuestAmountLabel"))
 	reward_row.add_child(_reward_icon(reward))
 	row.add_child(reward_row)
 
@@ -249,10 +244,10 @@ func _reward_icon(reward: String) -> Control:
 		coin.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		coin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		coin.custom_minimum_size = Vector2.ONE * 13.5
+		coin.custom_minimum_size = Vector2.ONE * 16.0
 		coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		return coin
-	var icon = TOP_BAR_ICON_SCRIPT.new("draw" if reward == "draw" else "book", 13.5, TopBarStyle.INK)
+	var icon = TOP_BAR_ICON_SCRIPT.new("draw" if reward == "draw" else "book", 16.0, TopBarStyle.INK)
 	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return icon
 
@@ -263,38 +258,33 @@ func _build_claim_button(reward: String) -> Button:
 	button.focus_mode = Control.FOCUS_NONE
 	button.custom_minimum_size = Vector2(0.0, 30.0)
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	button.add_theme_font_size_override("font_size", 12)
-	for state in ["normal", "hover", "pressed", "hover_pressed"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = TopBarStyle.INK if state == "normal" else TopBarStyle.INK_SOFT
-		style.set_corner_radius_all(4)
-		style.content_margin_left = 15.0
-		style.content_margin_right = 15.0
-		button.add_theme_stylebox_override(state, style)
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
-		button.add_theme_color_override(color_name, TopBarStyle.PAPER)
+	button.theme_type_variation = &"QuestClaimButton"
 	if reward != "story":
 		button.set_meta("sfx_click", "buy")
 	button.pressed.connect(func() -> void: claim_requested.emit(quest_id))
 	return button
 
-## One step of a quest up to ten steps long.
+## One step of a quest up to ten steps long; an empty one is a paper-shade slot.
 class _Pip:
 	extends Control
+
+	const RADIUS: float = 5.0
 
 	var filled: bool = false
 	var fill_color: Color = Color.WHITE
 
 	func _init() -> void:
-		custom_minimum_size = Vector2(9.0, 9.0)
+		custom_minimum_size = Vector2.ONE * RADIUS * 2.0
 		size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	func _ready() -> void:
+		InkStampMaterial.apply(self, true)
+
 	func _draw() -> void:
 		var center: Vector2 = size * 0.5
-		draw_circle(center, 4.5, fill_color if filled else TopBarStyle.PAPER, true, -1.0, true)
-		draw_arc(center, 4.0, 0.0, TAU, 24, TopBarStyle.INK, 1.0, true)
+		draw_circle(center, RADIUS, fill_color if filled else TopBarStyle.PAPER_SHADE, true, -1.0, true)
+		draw_arc(center, RADIUS - TopBarStyle.STROKE * 0.5, 0.0, TAU, 24, TopBarStyle.INK, TopBarStyle.STROKE, true)
 
 ## The progress of a quest longer than ten steps.
 class _Track:
@@ -304,24 +294,27 @@ class _Track:
 	var fill_color: Color = Color.WHITE
 
 	func _init() -> void:
-		custom_minimum_size = Vector2(0.0, 6.0)
+		custom_minimum_size = Vector2(0.0, 8.0)
 		size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	func _ready() -> void:
+		InkStampMaterial.apply(self, true)
+
 	func _draw() -> void:
 		var track := StyleBoxFlat.new()
-		track.bg_color = TopBarStyle.PAPER
-		track.set_corner_radius_all(3)
+		track.bg_color = TopBarStyle.PAPER_SHADE
+		track.set_corner_radius_all(4)
 		draw_style_box(track, Rect2(Vector2.ZERO, size))
 		if ratio > 0.0:
 			var fill := StyleBoxFlat.new()
 			fill.bg_color = fill_color
-			fill.set_corner_radius_all(3)
+			fill.set_corner_radius_all(4)
 			draw_style_box(fill, Rect2(Vector2.ZERO, Vector2(maxf(size.y, size.x * clampf(ratio, 0.0, 1.0)), size.y)))
 		var border := StyleBoxFlat.new()
 		border.draw_center = false
-		border.set_border_width_all(1)
+		border.set_border_width_all(int(TopBarStyle.STROKE))
 		border.border_color = TopBarStyle.INK
-		border.set_corner_radius_all(3)
+		border.set_corner_radius_all(4)
 		draw_style_box(border, Rect2(Vector2.ZERO, size))

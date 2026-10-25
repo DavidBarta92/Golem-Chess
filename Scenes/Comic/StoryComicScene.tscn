@@ -57,7 +57,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="PaperTextureLayer" type="CanvasLayer" parent="."]
-layer = 10
+layer = 1210
 
 [node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer"]
 material = SubResource("ShaderMaterial_comic_paper")

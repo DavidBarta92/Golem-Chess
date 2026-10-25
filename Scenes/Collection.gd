@@ -7,7 +7,6 @@ const SAVED_DECK_LIST_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionSavedD
 const INTRO_CONTROLLER_SCRIPT = preload("res://Scenes/CollectionIntroController.gd")
 const ELASTIC_SCROLL_SCRIPT = preload("res://Scenes/CollectionElasticScroll.gd")
 const WINDOW_CLOSE_ICON: Texture2D = preload("res://ui/themes/icons/window_close.svg")
-const CODEX_TITLE_FONT: FontFile = preload("res://Fonts/ElmsSans-ExtraBold.ttf")
 const MAIN_MENU_SCENE = "res://Scenes/MainMenu.tscn"
 const STAMP_VISUAL_SIZE: Vector2 = Vector2(168.7, 229)
 const TOP_BAR_HEIGHT: int = 60
@@ -26,7 +25,6 @@ const BROWSER_STAMP_SLOT_SIZE: Vector2 = Vector2(128, 142) * ALBUM_SCALE
 const BROWSER_STAMP_GAP: Vector2 = Vector2(8, 2) * ALBUM_SCALE
 const DECK_EDIT_STAMP_SLOT_SIZE: Vector2 = Vector2(100, 140)
 const DECK_SLOT_REMOVE_BUTTON_SIZE: Vector2 = Vector2(20, 20)
-const CODEX_PAGE_TITLE_FONT_SIZE: int = 19
 const CODEX_PAGE_GRID_HORIZONTAL_GAP: int = 8
 const CODEX_PAGE_BOTTOM_SPACING: int = 2
 const PAGER_BUTTON_PRESSED_SCALE: float = 0.92
@@ -72,12 +70,11 @@ const PACK_NOTICE_Z_INDEX: int = 25
 const DECK_PANEL_Z_INDEX: int = PACK_NOTICE_Z_INDEX + 5
 # A warm paper grey: a step darker than the codex art's paper so the codexes
 # still stand out on it.
-const DECK_PANEL_BACKGROUND_COLOR: Color = Color8(233, 228, 217)
+const DECK_PANEL_BACKGROUND_COLOR: Color = UiPalette.PAPER_SHADE
 const DECK_PANEL_SIDE_PADDING: float = 10.0
 # How far the panel sits left of where the codex art is placed in the frame.
 const DECK_PANEL_LEFT_SHIFT: float = 40.0
 const DECK_PANEL_BOTTOM_RADIUS: int = 10
-const PAPER_CUTOUT_FADE_SECONDS: float = 0.2
 const DECK_PANEL_CONTENT_TOP_MARGIN: float = 12.0
 const DECK_PANEL_BOTTOM_MARGIN: float = 24.0
 const DECK_PANEL_SLIDE_DELAY: float = 0.2
@@ -110,15 +107,10 @@ const MAGNIFIER_GLASS_SOURCE_SIZE: Vector2 = Vector2(337, 570)
 const MAGNIFIER_GLASS_LENS_SOURCE_RECT: Rect2 = Rect2(15, 15, 305, 305)
 const MAGNIFIER_GLASS_ROTATION_DEGREES: float = -36.0
 const HOVER_DESCRIPTION_WIDTH: float = 300.0
-const HOVER_DESCRIPTION_FONT_SIZE: int = 16
-const HOVER_DESCRIPTION_BACKGROUND_COLOR: Color = Color(0.988, 0.976, 0.949, 0.96)
 # Same line as beside the dialogue panels' text in the match.
 const HOVER_DESCRIPTION_LINE_WIDTH: float = 1.5
 const HOVER_DESCRIPTION_LINE_COLOR: Color = CollectionPalette.INK
-const INK_TINT_SHADER = preload("res://Shaders/ink_tint.gdshader")
-const HOVER_DESCRIPTION_MARGIN_LEFT: float = 14.0
-const HOVER_DESCRIPTION_MARGIN_RIGHT: float = 28.0
-const HOVER_DESCRIPTION_MARGIN_VERTICAL: float = 12.0
+const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 const STAMP_SLOT_SCALE_MULTIPLIER: float = 0.88
 const BROWSER_STAMP_VERTICAL_OFFSET: float = -12.0
 const DECK_EDIT_STAMP_VERTICAL_OFFSET: float = -8.0
@@ -173,8 +165,6 @@ var pager: HBoxContainer
 var deck_panel_rest_position: Vector2 = Vector2.ZERO
 var deck_panel_slide_offset: float = 0.0
 var deck_panel_slide_tween: Tween
-var paper_texture_overlay: ColorRect
-var paper_cutout_amount: float = 1.0
 var magnifier_viewport: SubViewport
 var magnifier_case_button: Control
 var magnifier_case_click_area: Button
@@ -211,7 +201,6 @@ func _process(delta: float) -> void:
 	codex_scroll_motion.update(delta)
 	deck_selector_scroll_motion.update(delta)
 	_update_magnifier_position()
-	_update_paper_cutout(delta)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if magnifier_enabled && event.is_action_pressed("ui_cancel"):
@@ -264,7 +253,8 @@ func _setup_stamp_browser_controller() -> void:
 		"previous_button": previous_button,
 		"next_button": next_button,
 		"page_label": page_label,
-		"codex_title_font": CODEX_TITLE_FONT,
+		"count_badge_font": get_theme_font("font", &"FieldLabel"),
+		"count_badge_font_size": get_theme_font_size("font_size", &"FieldLabel"),
 		"stamp_visual_size": STAMP_VISUAL_SIZE,
 		"stamp_slot_scale_multiplier": STAMP_SLOT_SCALE_MULTIPLIER,
 		"browser_stamp_vertical_offset": BROWSER_STAMP_VERTICAL_OFFSET,
@@ -411,8 +401,6 @@ func _bind_scene_ui() -> void:
 	# The packs peek out from behind the codex panel, never across it.
 	deck_panel_frame.z_as_relative = false
 	deck_panel_frame.z_index = DECK_PANEL_Z_INDEX
-	paper_texture_overlay = get_node_or_null("PaperTextureLayer/PaperTextureOverlay") as ColorRect
-	_connect_once(deck_panel_frame.item_rect_changed, Callable(self, "_sync_paper_cutout"))
 	right_column = $DeckPanelFrame/RightColumn
 	browser_tools = $BrowserTools
 	stamp_grid = $StampGrid
@@ -483,18 +471,15 @@ func _bind_scene_ui() -> void:
 
 func _configure_pager_buttons() -> void:
 	stamp_browser_controller.configure_pager_buttons()
-	# The arrow art is black; re-ink it warm. The icon colours stay white so
-	# the theme's ink does not darken the arrow's light chevron first.
-	var ink_material := ShaderMaterial.new()
-	ink_material.shader = INK_TINT_SHADER
-	ink_material.set_shader_parameter("ink_color", CollectionPalette.INK)
+	# The arrow art is black; re-ink and stamp it like the UI's other ink - a
+	# disc of ink, so with the fill's specks. PagerArrowButton keeps the icon
+	# colours raised paper, not ink, so the theme's ink does not darken the
+	# arrow's light chevron first.
 	for button in [previous_button, next_button]:
 		if button == null:
 			continue
-		button.material = ink_material
-		for icon_color_name in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color", "icon_focus_color"]:
-			button.add_theme_color_override(icon_color_name, Color.WHITE)
-		button.add_theme_color_override("icon_disabled_color", Color(1.0, 1.0, 1.0, 0.35))
+		InkStampMaterial.apply(button, true, true)
+		button.theme_type_variation = &"PagerArrowButton"
 
 func _configure_pack_notice_panel() -> void:
 	if pack_panel == null:
@@ -527,7 +512,8 @@ func _setup_hover_description_panel() -> void:
 		hover_description_panel.z_index = MAGNIFIER_Z_INDEX + 12
 		hover_description_panel.visible = false
 		add_child(hover_description_panel)
-		hover_description_panel.add_theme_stylebox_override("panel", _create_hover_description_style())
+		# A paper fade from the left, starting in the old panel colour.
+		hover_description_panel.theme_type_variation = &"StampDescriptionPanel"
 		hover_description_panel.draw.connect(_draw_hover_description_line)
 		# The text decides the height; refit whenever it changes what it needs.
 		hover_description_panel.minimum_size_changed.connect(_on_hover_description_minimum_size_changed)
@@ -537,34 +523,14 @@ func _setup_hover_description_panel() -> void:
 		hover_description_label.bbcode_enabled = true
 		hover_description_label.fit_content = true
 		hover_description_label.scroll_active = false
-		hover_description_label.custom_minimum_size = Vector2(HOVER_DESCRIPTION_WIDTH - HOVER_DESCRIPTION_MARGIN_LEFT - HOVER_DESCRIPTION_MARGIN_RIGHT, 0.0)
+		var panel_style: StyleBox = hover_description_panel.get_theme_stylebox("panel")
+		hover_description_label.custom_minimum_size = Vector2(HOVER_DESCRIPTION_WIDTH - panel_style.get_margin(SIDE_LEFT) - panel_style.get_margin(SIDE_RIGHT), 0.0)
 		hover_description_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hover_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		hover_description_label.add_theme_font_size_override("normal_font_size", HOVER_DESCRIPTION_FONT_SIZE)
-		hover_description_label.add_theme_color_override("default_color", CollectionPalette.INK)
+		hover_description_label.theme_type_variation = &"StampDescriptionText"
 	elif hover_description_label == null or !is_instance_valid(hover_description_label):
 		if hover_description_panel.get_child_count() > 0:
 			hover_description_label = hover_description_panel.get_child(0) as RichTextLabel
-
-# The background starts in the old panel colour and fades out to the right.
-func _create_hover_description_style() -> StyleBoxTexture:
-	var faded_color: Color = HOVER_DESCRIPTION_BACKGROUND_COLOR
-	faded_color.a = 0.0
-	var gradient := Gradient.new()
-	gradient.set_color(0, HOVER_DESCRIPTION_BACKGROUND_COLOR)
-	gradient.set_color(1, faded_color)
-	var gradient_texture := GradientTexture2D.new()
-	gradient_texture.gradient = gradient
-	gradient_texture.width = 256
-	gradient_texture.height = 1
-
-	var style := StyleBoxTexture.new()
-	style.texture = gradient_texture
-	style.content_margin_left = HOVER_DESCRIPTION_MARGIN_LEFT
-	style.content_margin_right = HOVER_DESCRIPTION_MARGIN_RIGHT
-	style.content_margin_top = HOVER_DESCRIPTION_MARGIN_VERTICAL
-	style.content_margin_bottom = HOVER_DESCRIPTION_MARGIN_VERTICAL
-	return style
 
 func _draw_hover_description_line() -> void:
 	hover_description_panel.draw_rect(Rect2(0.0, 0.0, HOVER_DESCRIPTION_LINE_WIDTH, hover_description_panel.size.y), HOVER_DESCRIPTION_LINE_COLOR)
@@ -733,30 +699,6 @@ func _play_deck_panel_slide_in() -> void:
 		deck_panel_slide_tween.tween_method(slide_callable, previous_offset, next_offset, DECK_PANEL_BOUNCE_SECONDS[index]) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		previous_offset = next_offset
-
-# The paper overlay tints the whole room except the codex panel. While the
-# buy-packs window or the pack opening covers the screen, the cut-out fades
-# out so those overlays are tinted evenly, panel area included.
-func _update_paper_cutout(delta: float) -> void:
-	var screen_covered: bool = pack_controller != null and (pack_controller.is_buy_packs_modal_open() or pack_controller.is_pack_overlay_active())
-	var target_amount: float = 0.0 if screen_covered else 1.0
-	paper_cutout_amount = move_toward(paper_cutout_amount, target_amount, delta / PAPER_CUTOUT_FADE_SECONDS)
-	_sync_paper_cutout()
-
-func _sync_paper_cutout() -> void:
-	if paper_texture_overlay == null or deck_panel_frame == null:
-		return
-	var paper_material := paper_texture_overlay.material as ShaderMaterial
-	if paper_material == null:
-		return
-	# Measured on screen, so the cut-out follows the panel through its slide-in
-	# and the scene-change zoom.
-	var panel_transform: Transform2D = deck_panel_frame.get_global_transform_with_canvas()
-	var panel_rect: Rect2 = panel_transform * Rect2(Vector2.ZERO, deck_panel_frame.size)
-	paper_material.set_shader_parameter("cutout_rect", Vector4(panel_rect.position.x, panel_rect.position.y, panel_rect.size.x, panel_rect.size.y))
-	paper_material.set_shader_parameter("cutout_bottom_radius", DECK_PANEL_BOTTOM_RADIUS * panel_transform.get_scale().x)
-	paper_material.set_shader_parameter("cutout_canvas_size", paper_texture_overlay.size)
-	paper_material.set_shader_parameter("cutout_amount", paper_cutout_amount)
 
 func _setup_magnifier() -> void:
 	# The lens shows a second render of the room's own canvas, zoomed in around
@@ -982,7 +924,8 @@ func _load_stamps() -> void:
 	stamp_browser_controller.load_stamps()
 
 func _on_buy_packs_pressed() -> void:
-	if pack_controller != null:
+	# Its button stays pressed while the shop is open; a second click is nothing.
+	if pack_controller != null and !pack_controller.is_buy_packs_modal_open():
 		pack_controller.show_buy_packs()
 
 func _on_pack_opened(_rewards: Array[StampPrint]) -> void:
@@ -1066,8 +1009,6 @@ func _configure_deck_name_display() -> void:
 	deck_name_display.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	deck_name_display.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	deck_name_display.clip_text = true
-	deck_name_display.add_theme_font_override("font", CODEX_TITLE_FONT)
-	deck_name_display.add_theme_font_size_override("font_size", 22)
 	_sync_deck_name_display()
 
 func _sync_deck_name_display() -> void:
@@ -1075,7 +1016,7 @@ func _sync_deck_name_display() -> void:
 		return
 	var name_text: String = deck_name_edit.text.strip_edges()
 	deck_name_display.text = name_text if !name_text.is_empty() else tr("New")
-	deck_name_display.add_theme_color_override("font_color", CollectionPalette.INK if !name_text.is_empty() else CollectionPalette.INK_SOFT)
+	deck_name_display.theme_type_variation = &"CodexNameLabel" if !name_text.is_empty() else &"CodexNamePlaceholderLabel"
 
 func _on_deck_name_display_gui_input(event: InputEvent) -> void:
 	if !is_creating_deck:
@@ -1199,7 +1140,7 @@ func _show_stamp_preview(stamp: Stamp, stamp_print: StampPrint = null) -> void:
 	hovered_browser_stamp_name = stamp.stamp_name
 	var description: String = stamp.get_display_description().strip_edges()
 	if hover_description_label != null:
-		hover_description_label.text = DescriptionMarkup.to_bbcode(description, HOVER_DESCRIPTION_FONT_SIZE)
+		hover_description_label.text = DescriptionMarkup.to_bbcode(description, hover_description_label.get_theme_font_size("normal_font_size"))
 	if hover_description_panel != null:
 		hover_description_panel.visible = !description.is_empty()
 		if hover_description_panel.visible:
@@ -1408,8 +1349,7 @@ func _add_selected_deck_section(title: String, page_index: int) -> void:
 	section_title.custom_minimum_size = Vector2(0.0, 28.0)
 	section_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	section_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	section_title.add_theme_font_size_override("font_size", CODEX_PAGE_TITLE_FONT_SIZE)
-	section_title.add_theme_color_override("font_color", CollectionPalette.INK)
+	section_title.theme_type_variation = &"CodexPageTitleLabel"
 
 	var section_line := HSeparator.new()
 	deck_stamp_list.add_child(section_line)

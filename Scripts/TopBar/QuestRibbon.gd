@@ -9,11 +9,14 @@ extends BaseButton
 ## The control's top is the top of the screen and its height is the ribbon's
 ## length, so hover, done, retracted and open are all just a length. A
 ## BaseButton, so the UI click and hover sounds pick it up like any button.
+## Printed with the ink stamp, its pattern pinned to the foot: pulled down,
+## the ribbon carries its specks along.
 
 signal left_bar
 
 const TopBarStyle = preload("res://Scripts/TopBar/TopBarStyle.gd")
 const TopBarIcons = preload("res://Scripts/TopBar/TopBarIcons.gd")
+const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 
 const REWARD_ICON: Dictionary = {"story": "book", "coin": "coin", "draw": "draw"}
 ## x of the crenellation edges on a daily ribbon (design: 6 / 11 / 17 / 22 of 28).
@@ -30,6 +33,7 @@ var length: float = TopBarStyle.RIBBON_REST:
 	set(value):
 		length = value
 		size = Vector2(TopBarStyle.RIBBON_WIDTH, length)
+		InkStampMaterial.set_anchor(self, Vector2(0.0, length))
 		queue_redraw()
 ## 0 = its own colours, 1 = grey; an expiring ribbon fades to grey on its way out.
 var desaturation: float = 0.0:
@@ -52,6 +56,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	size = Vector2(TopBarStyle.RIBBON_WIDTH, length)
 	pivot_offset = Vector2(TopBarStyle.RIBBON_WIDTH * 0.5, 0.0)
+	InkStampMaterial.apply(self, true)
+	InkStampMaterial.set_anchor(self, Vector2(0.0, length))
 	mouse_entered.connect(_set_hovered.bind(true))
 	mouse_exited.connect(_set_hovered.bind(false))
 	set_process(false)
@@ -176,7 +182,7 @@ func _draw() -> void:
 	var on_color: Color = _tone(TopBarStyle.on_reward_color(reward))
 
 	draw_colored_polygon(_shape(width, length, tail), fill_color)
-	draw_polyline(_outline(width, length, tail), ink, TopBarStyle.RIBBON_OUTLINE, true)
+	draw_polyline(_outline(width, length, tail), ink, TopBarStyle.STROKE, true)
 
 	var foot: float = length - tail
 	if show_seam:
@@ -185,7 +191,7 @@ func _draw() -> void:
 	if done:
 		var seal_center := Vector2(width * 0.5, foot - 3.75 - 7.5)
 		draw_circle(seal_center, 7.5, _tone(TopBarStyle.PAPER), true, -1.0, true)
-		draw_arc(seal_center, 7.5 - 0.6, 0.0, TAU, 32, ink, 1.25, true)
+		draw_arc(seal_center, 7.5 - TopBarStyle.STROKE * 0.5, 0.0, TAU, 32, ink, TopBarStyle.STROKE, true)
 		TopBarIcons.draw_icon(self, "check", Rect2(seal_center - Vector2.ONE * 4.5, Vector2.ONE * 9.0), ink, true)
 	else:
 		var icon_size: float = TopBarStyle.ICON_RIBBON
@@ -195,7 +201,7 @@ func _draw() -> void:
 	if urgent:
 		var badge_center := Vector2(width - 0.75, foot - 18.0 - 6.75)
 		draw_circle(badge_center, 6.75, _tone(TopBarStyle.URGENT), true, -1.0, true)
-		draw_arc(badge_center, 6.75 - 0.6, 0.0, TAU, 32, ink, 1.25, true)
+		draw_arc(badge_center, 6.75 - TopBarStyle.STROKE * 0.5, 0.0, TAU, 32, ink, TopBarStyle.STROKE, true)
 		TopBarIcons.draw_icon(self, "hourglass", Rect2(badge_center - Vector2.ONE * 3.75, Vector2.ONE * 7.5), _tone(TopBarStyle.PAPER), true)
 
 ## Stitching down the middle: solid for the share done, dashed for the rest.
@@ -232,7 +238,7 @@ func _shape(width: float, height: float, tail: float) -> PackedVector2Array:
 
 ## The ink line down both sides and along the cut; the top edge has none.
 func _outline(width: float, height: float, tail: float) -> PackedVector2Array:
-	var inset: float = TopBarStyle.RIBBON_OUTLINE * 0.5
+	var inset: float = TopBarStyle.STROKE * 0.5
 	var bottom: float = height - inset
 	var notch: float = height - tail + inset * 0.6
 	match kind:

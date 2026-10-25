@@ -48,6 +48,8 @@ SFXManager="*res://Scripts/Audio/SFXManager.gd"
 AmbienceManager="*res://Scripts/Audio/AmbienceManager.gd"
 MusicManager="*res://Scripts/Audio/MusicManager.gd"
 UIButtonSoundHook="*res://Scripts/Audio/UIButtonSoundHook.gd"
+InkStampTitles="*res://Scripts/InkStamp/InkStampTitles.gd"
+InkHoverFill="*res://Scripts/InkStamp/InkHoverFill.gd"
 
 [display]
 

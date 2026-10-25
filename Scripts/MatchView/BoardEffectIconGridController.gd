@@ -2,6 +2,7 @@ extends RefCounted
 
 const BURN_SHADER = preload("res://Shaders/stamp_burn.gdshader")
 const GLOW_SHADER = preload("res://Shaders/piece_attach_glow.gdshader")
+const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 
 var match_board
 
@@ -366,6 +367,10 @@ func _create_cell(entry: Dictionary) -> Control:
 	effect_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	effect_rect.size = icon_area
 	effect_rect.position = Vector2.ONE * icon_padding
+	# Printed with the UI's ink stamp; filled glyphs, so with the fill's specks.
+	# The cell's own fade (icon_default_opacity) sits on top of it, and the burn
+	# takes the material over when the icon goes.
+	InkStampMaterial.apply(effect_rect, true)
 
 	return cell
 

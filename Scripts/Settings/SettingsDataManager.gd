@@ -5,10 +5,11 @@ signal settings_retrieved
 const FILE_NAME: String = "settings.cfg"
 var PATH: String = "user://" + FILE_NAME
 
-const FILM_GRAIN_SHADER = preload("res://Shaders/film_grain.gdshader")
-const FILM_GRAIN_SIZE: float = 1.55
-const FILM_GRAIN_SPEED: float = 12.0
-const FILM_GRAIN_LAYER: int = 128
+const CRT_OVERLAY_SCENE = preload("res://Scenes/CrtOverlay.tscn")
+## The CRT pass reworks the finished frame, so it sits above every other canvas
+## layer: the scene transition (1000), the embedded popup windows (1024), the
+## top bar (1200), the scenes' paper (1210) and the hint arrows (1250) included.
+const CRT_LAYER: int = RenderingServer.CANVAS_LAYER_MAX
 
 var settingsData_: Dictionary = {}
 var SECTION_REFERENCE_TABLE_: Dictionary = {}
@@ -16,8 +17,7 @@ var SECTION_REFERENCE_TABLE_: Dictionary = {}
 var noSaveFile: bool = false
 var invalidSaveFile: bool = false
 
-var film_grain_layer: CanvasLayer
-var film_grain_overlay: ColorRect
+var crt_overlay: CanvasLayer
 
 func _ready() -> void:
 	if FileAccess.file_exists(PATH):
@@ -25,6 +25,8 @@ func _ready() -> void:
 	else:
 		noSaveFile = true
 	call_deferred("emit_signal", "settings_retrieved")
+	ensure_crt_overlay()
+	settings_retrieved.connect(_apply_saved_crt_effect)
 
 func save_data() -> void:
 	var config := ConfigFile.new()
@@ -81,29 +83,23 @@ func set_move_ends_turn_warning_enabled(enabled: bool) -> void:
 func is_enemy_attack_markers_enabled() -> bool:
 	return bool(settingsData_.get("UI", {}).get("ShowEnemyAttackMarkers", true))
 
-func apply_film_grain_intensity(intensity: float) -> void:
-	ensure_film_grain_overlay()
-	film_grain_overlay.visible = intensity > 0.0
-	var material := film_grain_overlay.material as ShaderMaterial
-	material.set_shader_parameter("intensity", intensity)
-	material.set_shader_parameter("grain_size", FILM_GRAIN_SIZE)
-	material.set_shader_parameter("animation_speed", FILM_GRAIN_SPEED)
+## The overlay exists from startup, so every scene gets it, even one run on its
+## own; the saved setting only switches it on or off.
+func is_crt_effect_enabled() -> bool:
+	return bool(settingsData_.get("Video", {}).get("CrtEffect", true))
 
-func ensure_film_grain_overlay() -> void:
-	if film_grain_layer == null or !is_instance_valid(film_grain_layer):
-		film_grain_layer = CanvasLayer.new()
-		film_grain_layer.name = "GlobalFilmGrainLayer"
-		film_grain_layer.layer = FILM_GRAIN_LAYER
-		add_child(film_grain_layer)
+func _apply_saved_crt_effect() -> void:
+	apply_crt_effect(is_crt_effect_enabled())
 
-	if film_grain_overlay == null or !is_instance_valid(film_grain_overlay):
-		film_grain_overlay = ColorRect.new()
-		film_grain_overlay.name = "GlobalFilmGrainOverlay"
-		film_grain_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		film_grain_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-		film_grain_overlay.color = Color.WHITE
-		film_grain_layer.add_child(film_grain_overlay)
+func apply_crt_effect(enabled: bool) -> void:
+	ensure_crt_overlay()
+	crt_overlay.visible = enabled
 
-		var material := ShaderMaterial.new()
-		material.shader = FILM_GRAIN_SHADER
-		film_grain_overlay.material = material
+## The overlay's material is the shared res://Shaders/crt_vhs_material.tres, not
+## a copy, so editing that resource in the inspector while the game runs from
+## the editor updates the effect live.
+func ensure_crt_overlay() -> void:
+	if crt_overlay == null or !is_instance_valid(crt_overlay):
+		crt_overlay = CRT_OVERLAY_SCENE.instantiate()
+		crt_overlay.layer = CRT_LAYER
+		add_child(crt_overlay)

@@ -175,10 +175,7 @@ func ensure_network_status_label() -> void:
 	network_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	network_status_label.position = Vector2(18, 18)
 	network_status_label.size = Vector2(520, 34)
-	network_status_label.add_theme_color_override("font_color", Color(1.0, 0.94, 0.78))
-	network_status_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.85))
-	network_status_label.add_theme_constant_override("shadow_offset_x", 2)
-	network_status_label.add_theme_constant_override("shadow_offset_y", 2)
+	network_status_label.theme_type_variation = &"NetworkStatusLabel"
 	canvas_layer.add_child(network_status_label)
 
 func set_network_status(message: String) -> void:
@@ -220,6 +217,7 @@ func ensure_custom_lobby_panel() -> void:
 	var title_label := Label.new()
 	title_label.text = tr("Server Room")
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.theme_type_variation = &"TitleLabel"
 	container.add_child(title_label)
 
 	custom_lobby_status_label = Label.new()

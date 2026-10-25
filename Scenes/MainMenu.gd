@@ -6,7 +6,10 @@ const MAX_AI_VS_AI_MATCH_COUNT: int = 9999
 const TOP_BAR_HEIGHT: int = 60
 const SETTINGS_DIALOG_SCREEN_MARGIN: int = 30
 const SETTINGS_DIALOG_WIDTH: int = 540
-const SETTINGS_DIALOG_BELOW_TOP_BAR_LAYER: int = -10
+## The top bar's layer while the settings dialog is open: under embedded
+## windows (canvas layer 1024), so the dialog is above it, and above the
+## scene, so the bar stays on screen behind the dialog.
+const TOP_BAR_LAYER_UNDER_DIALOGS: int = 1000
 
 @onready var dev_tools_window: Window = $DevToolsWindow
 @onready var ai_match_count_field: LineEdit = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/MatchCountField
@@ -36,10 +39,7 @@ const SETTINGS_DIALOG_BELOW_TOP_BAR_LAYER: int = -10
 
 const BACKGROUND_LINES_FALLBACK_BASE_DURATION: float = 1.6
 const BACKGROUND_LINES_FALLBACK_MAX_DELAY: float = 1.8
-const NEXT_BOSS_STAKES_FONT_SIZE: int = 22
 const NEXT_BOSS_STAKES_GAP: float = 6.0
-const NEXT_BOSS_STAKES_OUTLINE_SIZE: int = 8
-const NEXT_BOSS_STAKES_OUTLINE_COLOR: Color = Color(0.9366637, 0.9330646, 0.89437205, 1.0)
 
 var ai_vs_ai_unlock_presses: int = 0
 var background_lines_animating: bool = false
@@ -144,10 +144,7 @@ func _build_next_boss_stakes_label() -> void:
 	]
 	next_boss_stakes_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	next_boss_stakes_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	next_boss_stakes_label.add_theme_font_size_override("font_size", NEXT_BOSS_STAKES_FONT_SIZE)
-	next_boss_stakes_label.add_theme_color_override("font_color", UiPalette.INK)
-	next_boss_stakes_label.add_theme_color_override("font_outline_color", NEXT_BOSS_STAKES_OUTLINE_COLOR)
-	next_boss_stakes_label.add_theme_constant_override("outline_size", NEXT_BOSS_STAKES_OUTLINE_SIZE)
+	next_boss_stakes_label.theme_type_variation = &"NextBossStakesLabel"
 	play_button.add_child(next_boss_stakes_label)
 	next_boss_stakes_label.anchor_left = 0.0
 	next_boss_stakes_label.anchor_right = 1.0
@@ -488,7 +485,7 @@ func _on_settings_button_pressed() -> void:
 	ui_section.load_all()
 	audio_section.load_all()
 	settings_dialog_saved_top_bar_layer = GlobalTopBar.layer
-	GlobalTopBar.layer = SETTINGS_DIALOG_BELOW_TOP_BAR_LAYER
+	GlobalTopBar.layer = TOP_BAR_LAYER_UNDER_DIALOGS
 	settings_dialog.popup(_compute_settings_dialog_rect())
 
 func _compute_settings_dialog_rect() -> Rect2i:

@@ -81,7 +81,7 @@ offset_bottom = 700.0
 grow_vertical = 1
 
 [node name="PaperTextureLayer" type="CanvasLayer" parent="."]
-layer = 10
+layer = 1210
 
 [node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer"]
 material = SubResource("ShaderMaterial_reward_paper")

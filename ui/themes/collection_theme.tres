@@ -1,161 +1,291 @@
 [gd_resource type="Theme" format=3 uid="uid://b50cqssro8lwq"]
 
-[ext_resource type="FontFile" uid="uid://biol362n3c8uh" path="res://Fonts/Alegreya-VariableFont_wght.ttf" id="1_f4ivv"]
+[ext_resource type="Script" uid="uid://csauxl4bklqd2" path="res://Scripts/InkStamp/InkStampStyleBox.gd" id="20_ink_stamp"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_button_disabled"]
-content_margin_left = 18.0
-content_margin_top = 9.0
-content_margin_right = 18.0
-content_margin_bottom = 9.0
-bg_color = Color(0.91, 0.89, 0.85, 0.7)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.68, 0.64, 0.58, 0.7)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
-[sub_resource type="StyleBoxFlat" id="StyleBox_button_hover"]
-content_margin_left = 18.0
-content_margin_top = 9.0
-content_margin_right = 18.0
-content_margin_bottom = 9.0
-bg_color = Color(1, 0.996, 0.984, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBox_deck_preview"]
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+bg_color = Color(0.035, 0.035, 0.04, 0.95)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+border_color = Color(0.9882353, 0.9764706, 0.9490196, 0.18)
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_button_pressed"]
-content_margin_left = 18.0
-content_margin_top = 9.0
-content_margin_right = 18.0
-content_margin_bottom = 9.0
-bg_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[sub_resource type="StyleBox" id="Stamp_deck_preview"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_deck_preview")
+stamp_name = "collection_deck_preview"
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_button_normal"]
-content_margin_left = 18.0
-content_margin_top = 9.0
-content_margin_right = 18.0
-content_margin_bottom = 9.0
-bg_color = Color(0.988, 0.976, 0.949, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxEmpty" id="StyleBox_bare"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_check_normal"]
+[sub_resource type="StyleBoxFlat" id="StyleBox_pack_card_hover"]
 content_margin_left = 8.0
-content_margin_top = 6.0
-content_margin_right = 8.0
-content_margin_bottom = 6.0
-bg_color = Color(0, 0, 0, 0)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="StyleBox_check_hover"]
-content_margin_left = 8.0
-content_margin_top = 6.0
-content_margin_right = 8.0
-content_margin_bottom = 6.0
-bg_color = Color(0.9, 0.87, 0.81, 0.6)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="StyleBox_input_focus"]
-content_margin_left = 11.0
-content_margin_top = 7.0
-content_margin_right = 11.0
-content_margin_bottom = 7.0
-bg_color = Color(1, 0.996, 0.984, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="StyleBox_input_normal"]
-content_margin_left = 12.0
 content_margin_top = 8.0
-content_margin_right = 12.0
+content_margin_right = 8.0
 content_margin_bottom = 8.0
-bg_color = Color(0.988, 0.976, 0.949, 0.96)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.4, 0.35, 0.29, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
+bg_color = Color(1, 0.99607843, 0.9843137, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBox" id="Stamp_pack_card_hover"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_pack_card_hover")
+stamp_name = "collection_pack_card_hover"
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_pack_card_selected"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0.9098039, 0.8901961, 0.8509804, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBox" id="Stamp_pack_card_selected"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_pack_card_selected")
+stamp_name = "collection_pack_card_selected"
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_pack_card"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0.9882353, 0.9764706, 0.9490196, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.34901962, 0.2901961, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBox" id="Stamp_pack_card"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_pack_card")
+stamp_name = "collection_pack_card"
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_shop_details"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.9098039, 0.8901961, 0.8509804, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBox" id="Stamp_shop_details"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_shop_details")
+stamp_name = "collection_shop_details"
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_shop_tooltip"]
+content_margin_left = 7.0
+content_margin_top = 7.0
+content_margin_right = 7.0
+content_margin_bottom = 7.0
+bg_color = Color(0.09019608, 0.17254902, 0.2627451, 0.94)
+border_color = Color(0.09019608, 0.17254902, 0.2627451, 0.94)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBox" id="Stamp_shop_tooltip"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 7.0
+content_margin_top = 7.0
+content_margin_right = 7.0
+content_margin_bottom = 7.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_shop_tooltip")
+stamp_name = "collection_shop_tooltip"
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_shop_window"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.95686275, 0.9411765, 0.9019608, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBox" id="Stamp_shop_window"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_shop_window")
+stamp_name = "collection_shop_window"
+
+[sub_resource type="Gradient" id="Gradient_stamp_description"]
+colors = PackedColorArray(0.988, 0.976, 0.949, 0.96, 0.988, 0.976, 0.949, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_stamp_description"]
+gradient = SubResource("Gradient_stamp_description")
+width = 256
+height = 1
+
+[sub_resource type="StyleBoxTexture" id="StyleBox_stamp_description"]
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 28.0
+content_margin_bottom = 12.0
+texture = SubResource("GradientTexture2D_stamp_description")
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_stamp_slot"]
+bg_color = Color(0.9882353, 0.9764706, 0.9490196, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.09019608, 0.17254902, 0.2627451, 0.85)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBox" id="Stamp_stamp_slot"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_stamp_slot")
+stamp_name = "collection_stamp_slot"
 
 [resource]
-default_font = ExtResource("1_f4ivv")
-Button/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-Button/colors/font_disabled_color = Color(0.47, 0.43, 0.38, 0.72)
-Button/colors/font_focus_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-Button/colors/font_hover_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-Button/colors/font_hover_pressed_color = Color(0.988, 0.976, 0.949, 1)
-Button/colors/font_pressed_color = Color(0.988, 0.976, 0.949, 1)
-Button/colors/icon_disabled_color = Color(0.47, 0.43, 0.38, 0.72)
-Button/colors/icon_hover_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-Button/colors/icon_normal_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-Button/colors/icon_pressed_color = Color(0.988, 0.976, 0.949, 1)
-Button/styles/disabled = SubResource("StyleBox_button_disabled")
-Button/styles/hover = SubResource("StyleBox_button_hover")
-Button/styles/hover_pressed = SubResource("StyleBox_button_pressed")
-Button/styles/normal = SubResource("StyleBox_button_normal")
-Button/styles/pressed = SubResource("StyleBox_button_pressed")
-CheckBox/colors/checkbox_checked_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-CheckBox/colors/checkbox_unchecked_color = Color(0.4, 0.35, 0.29, 1)
-CheckBox/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-CheckBox/colors/font_focus_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-CheckBox/colors/font_hover_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-CheckBox/colors/font_hover_pressed_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-CheckBox/colors/font_pressed_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-CheckBox/styles/disabled = SubResource("StyleBox_check_normal")
-CheckBox/styles/hover = SubResource("StyleBox_check_hover")
-CheckBox/styles/hover_pressed = SubResource("StyleBox_check_hover")
-CheckBox/styles/normal = SubResource("StyleBox_check_normal")
-CheckBox/styles/pressed = SubResource("StyleBox_check_hover")
-Label/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-LineEdit/colors/caret_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-LineEdit/colors/clear_button_color = Color(0.4, 0.35, 0.29, 1)
-LineEdit/colors/clear_button_color_pressed = Color(0.09019608, 0.17254902, 0.2627451, 1)
-LineEdit/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
-LineEdit/colors/font_placeholder_color = Color(0.47, 0.43, 0.38, 0.8)
-LineEdit/colors/selection_color = Color(0.09019608, 0.17254902, 0.2627451, 0.35)
-LineEdit/styles/focus = SubResource("StyleBox_input_focus")
-LineEdit/styles/normal = SubResource("StyleBox_input_normal")
-RichTextLabel/colors/default_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+CodexListTitleLabel/base_type = &"TitleLabel"
+CodexNameLabel/base_type = &"TitleLabel"
+CodexNameLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+CodexNamePlaceholderLabel/base_type = &"CodexNameLabel"
+CodexNamePlaceholderLabel/colors/font_color = Color(0.4, 0.34901962, 0.2901961, 1)
+CodexPageTitleLabel/base_type = &"TitleLabel"
+CodexPageTitleLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+CodexRowCountIncompleteLabel/base_type = &"CodexRowCountLabel"
+CodexRowCountIncompleteLabel/colors/font_color = Color(0.93, 0.33, 0.27, 1)
+CodexRowCountLabel/base_type = &"NumberLabel"
+CodexRowCountLabel/colors/font_color = Color(0.95686275, 0.9411765, 0.9019608, 1)
+CodexRowNameLabel/base_type = &"Label"
+CodexRowNameLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+CodexRowNameLabel/constants/line_spacing = 0
+DeckPreviewLabel/base_type = &"Label"
+DeckPreviewLabel/colors/font_color = Color(0.95686275, 0.9411765, 0.9019608, 1)
+DeckPreviewPanel/base_type = &"PanelContainer"
+DeckPreviewPanel/styles/panel = SubResource("Stamp_deck_preview")
+PackCardButton/base_type = &"Button"
+PackCardButton/styles/focus = SubResource("StyleBox_bare")
+PackCardButton/styles/hover = SubResource("Stamp_pack_card_hover")
+PackCardButton/styles/hover_pressed = SubResource("Stamp_pack_card_selected")
+PackCardButton/styles/normal = SubResource("Stamp_pack_card")
+PackCardButton/styles/pressed = SubResource("Stamp_pack_card_selected")
+PackCardButtonSelected/base_type = &"PackCardButton"
+PackCardButtonSelected/styles/hover = SubResource("Stamp_pack_card_selected")
+PackCardButtonSelected/styles/normal = SubResource("Stamp_pack_card_selected")
+PackCardNameLabel/base_type = &"FieldLabel"
+PackCardNameLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+PackCardPriceLabel/base_type = &"FieldLabel"
+PackCardPriceLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopCloseButton/base_type = &"Button"
+ShopCloseButton/colors/icon_disabled_color = Color(0.47058824, 0.43137255, 0.38039216, 0.72)
+ShopCloseButton/colors/icon_focus_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopCloseButton/colors/icon_hover_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopCloseButton/colors/icon_normal_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopCloseButton/colors/icon_pressed_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopContentsTitleLabel/base_type = &"TitleLabel"
+ShopContentsTitleLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopDetailsPanel/base_type = &"PanelContainer"
+ShopDetailsPanel/styles/panel = SubResource("Stamp_shop_details")
+ShopHeaderPanel/base_type = &"PanelContainer"
+ShopHeaderPanel/styles/panel = SubResource("StyleBox_bare")
+ShopHeadingLabel/base_type = &"TitleLabel"
+ShopHeadingLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopNoteLabel/base_type = &"CaptionLabel"
+ShopNoteLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopTitleLabel/base_type = &"TitleLabel"
+ShopTitleLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopTooltipLabel/base_type = &"CaptionLabel"
+ShopTooltipLabel/colors/font_color = Color(0.9882353, 0.9764706, 0.9490196, 1)
+ShopTooltipPanel/base_type = &"PanelContainer"
+ShopTooltipPanel/styles/panel = SubResource("Stamp_shop_tooltip")
+ShopTotalLabel/base_type = &"NumberLabel"
+ShopTotalLabel/colors/font_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+ShopWindowPanel/base_type = &"PanelContainer"
+ShopWindowPanel/styles/panel = SubResource("Stamp_shop_window")
+StampDescriptionPanel/base_type = &"PanelContainer"
+StampDescriptionPanel/styles/panel = SubResource("StyleBox_stamp_description")
+StampDescriptionText/base_type = &"RichTextLabel"
+StampDescriptionText/colors/default_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
+StampSlotPanel/base_type = &"PanelContainer"
+StampSlotPanel/styles/panel = SubResource("Stamp_stamp_slot")

@@ -41,6 +41,7 @@ func _init() -> void:
 	button.size = custom_minimum_size
 	button.tooltip_text = "TOPBAR_MENU"
 	button.toggled.connect(_on_button_toggled)
+	button.draw.connect(_sync_button_icon)
 	add_child(button)
 	_button_icon = TOP_BAR_ICON_SCRIPT.new("menu", TopBarStyle.ICON_STAT, TopBarStyle.INK)
 	_button_icon.position = (custom_minimum_size - _button_icon.custom_minimum_size) * 0.5
@@ -52,17 +53,7 @@ func _init() -> void:
 	_dropdown.visible = false
 	_dropdown.mouse_filter = Control.MOUSE_FILTER_STOP
 	_dropdown.custom_minimum_size = Vector2(TopBarStyle.MENU_WIDTH, 0.0)
-	var style := StyleBoxFlat.new()
-	style.bg_color = TopBarStyle.PAPER
-	style.border_color = TopBarStyle.INK
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(8)
-	style.content_margin_top = GROUP_GAP
-	style.content_margin_bottom = GROUP_GAP
-	style.shadow_color = Color(TopBarStyle.INK, 0.24)
-	style.shadow_size = 12
-	style.shadow_offset = Vector2(0.0, 6.0)
-	_dropdown.add_theme_stylebox_override("panel", style)
+	_dropdown.theme_type_variation = &"TopBarDropdown"
 	_dropdown.resized.connect(_align_dropdown)
 	add_child(_dropdown)
 
@@ -88,12 +79,7 @@ func add_item(group_index: int, item_id: String, icon_name: String, label_key: S
 	row.name = "%sItem" % item_id.capitalize().replace(" ", "")
 	row.focus_mode = Control.FOCUS_NONE
 	row.custom_minimum_size = Vector2(0.0, TopBarStyle.MENU_ROW)
-	row.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	row.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	for state in ["hover", "pressed", "hover_pressed"]:
-		var hover_style := StyleBoxFlat.new()
-		hover_style.bg_color = TopBarStyle.PAPER_HOVER
-		row.add_theme_stylebox_override(state, hover_style)
+	row.theme_type_variation = &"TopBarMenuRow"
 
 	var content := HBoxContainer.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -105,7 +91,7 @@ func add_item(group_index: int, item_id: String, icon_name: String, label_key: S
 	var icon = TOP_BAR_ICON_SCRIPT.new(icon_name, TopBarStyle.ICON_MENU, TopBarStyle.INK)
 	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	content.add_child(icon)
-	var label := TopBarStyle.make_label(label_key, TopBarStyle.FONT_MEDIUM, TopBarStyle.FONT_SIZE_MENU, TopBarStyle.INK)
+	var label := TopBarStyle.make_label(label_key, &"TopBarMenuItemLabel")
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	content.add_child(label)
@@ -153,7 +139,7 @@ func set_open(open: bool) -> void:
 		return
 	_open = open
 	button.set_pressed_no_signal(open)
-	_button_icon.color = TopBarStyle.PAPER if open else TopBarStyle.INK
+	_sync_button_icon()
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 
@@ -188,6 +174,20 @@ func contains_global_point(point: Vector2) -> bool:
 	if button.get_global_rect().has_point(point):
 		return true
 	return _dropdown.visible and _dropdown.get_global_rect().has_point(point)
+
+## The glyph is a child, not the button's icon, so it follows the button's
+## label colour by hand: paper on the pressed button, the inactive colour
+## while out of use, and through the hover's ink fill (InkHoverFill), which
+## tints the label as the ink comes in.
+func _sync_button_icon() -> void:
+	var colour: StringName = &"font_color"
+	if button.disabled:
+		colour = &"font_disabled_color"
+	elif button.button_pressed:
+		colour = &"font_pressed_color"
+	elif button.is_hovered():
+		colour = &"font_hover_color"
+	_button_icon.color = button.get_theme_color(colour)
 
 func _on_button_toggled(pressed: bool) -> void:
 	set_open(pressed)
@@ -228,25 +228,26 @@ class _Separator:
 class _Tag:
 	extends MarginContainer
 
-	const DASH: float = 2.25
-	const GAP: float = 1.5
+	const DASH: float = 3.0
+	const GAP: float = 2.0
+	const LINE_WIDTH: float = 1.5
 
 	func _init(text_key: String) -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_theme_constant_override("margin_left", 5)
-		add_theme_constant_override("margin_right", 5)
+		add_theme_constant_override("margin_left", 7)
+		add_theme_constant_override("margin_right", 7)
 		add_theme_constant_override("margin_top", 0)
 		add_theme_constant_override("margin_bottom", 0)
-		var label := TopBarStyle.make_label(text_key, TopBarStyle.kicker_font(), 8, TopBarStyle.INK_SOFT)
+		var label := TopBarStyle.make_label(text_key, &"TopBarTagLabel")
 		label.uppercase = true
-		label.custom_minimum_size = Vector2(0.0, 12.0)
+		label.custom_minimum_size = Vector2(0.0, 16.0)
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		add_child(label)
 
 	func _draw() -> void:
-		var radius: float = size.y * 0.5 - 0.5
-		var left := Vector2(radius + 0.5, size.y * 0.5)
-		var right := Vector2(size.x - radius - 0.5, size.y * 0.5)
+		var radius: float = (size.y - LINE_WIDTH) * 0.5
+		var left := Vector2(radius + LINE_WIDTH * 0.5, size.y * 0.5)
+		var right := Vector2(size.x - radius - LINE_WIDTH * 0.5, size.y * 0.5)
 		# The pill's outline as one path: top edge, right cap, bottom edge, left cap.
 		var path := PackedVector2Array([left + Vector2(0.0, -radius), right + Vector2(0.0, -radius)])
 		for step in range(1, 13):
@@ -267,7 +268,7 @@ class _Tag:
 				var start: Vector2 = from.lerp(to, travelled / length)
 				var end: Vector2 = from.lerp(to, (travelled + run) / length)
 				if drawing:
-					draw_line(start, end, TopBarStyle.INK_SOFT, 1.0, true)
+					draw_line(start, end, TopBarStyle.INK_SOFT, LINE_WIDTH, true)
 				travelled += run
 				left_in_run -= run
 				if left_in_run <= 0.0:

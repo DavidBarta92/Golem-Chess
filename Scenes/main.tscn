@@ -269,7 +269,7 @@ layout_mode = 2
 
 [node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot0"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"CodexCountLabel"
 text = "1:0"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -280,7 +280,7 @@ layout_mode = 2
 
 [node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot1"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"CodexCountLabel"
 text = "2:0"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -291,7 +291,7 @@ layout_mode = 2
 
 [node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot2"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"CodexCountLabel"
 text = "3:0"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -302,7 +302,7 @@ layout_mode = 2
 
 [node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot3"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"CodexCountLabel"
 text = "4:0"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -313,7 +313,7 @@ layout_mode = 2
 
 [node name="CountLabel" type="Label" parent="CanvasLayer/CodexPanel/CountsRow/CountSlot4"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"CodexCountLabel"
 text = "5:0"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -346,7 +346,7 @@ offset_right = 12.0
 offset_bottom = -63.0
 
 [node name="PaperTextureLayer" type="CanvasLayer" parent="." unique_id=-1283521716]
-layer = 10
+layer = 1210
 
 [node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer" unique_id=-1283521715]
 material = SubResource("ShaderMaterial_paper_texture")

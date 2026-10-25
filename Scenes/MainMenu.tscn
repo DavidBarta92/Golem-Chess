@@ -56,10 +56,6 @@ shader_parameter/light_strength = 0.55
 shader_parameter/contrast = 1.25
 shader_parameter/effect_opacity = 0.5
 shader_parameter/paper_color = Color(0.956863, 0.941176, 0.901961, 1)
-shader_parameter/cutout_rect = Vector4(0, 0, 0, 0)
-shader_parameter/cutout_bottom_radius = 0.0
-shader_parameter/cutout_amount = 0.0
-shader_parameter/cutout_canvas_size = Vector2(1, 1)
 
 [sub_resource type="Resource" id="Fade_menu_all_out"]
 script = ExtResource("92_music_stem_fade")
@@ -269,7 +265,7 @@ metadata/_tab_index = 4
 [node name="InputRebindDialog" parent="." unique_id=1469922501 instance=ExtResource("13_input_rebind_dialog")]
 
 [node name="PaperTextureLayer" type="CanvasLayer" parent="." unique_id=1167201497]
-layer = 10
+layer = 1210
 
 [node name="PaperTextureOverlay" type="ColorRect" parent="PaperTextureLayer" unique_id=1372048643]
 material = SubResource("ShaderMaterial_paper_texture")

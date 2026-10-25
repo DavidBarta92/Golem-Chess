@@ -2,7 +2,6 @@
 extends Control
 class_name PortraitView
 
-const CANVAS_SIZE: Vector2 = Vector2(512, 512)
 const HEAD_PIVOT: Vector2 = Vector2(256, 296)
 const HEAD_TURN_DEGREES: float = 2.0
 const HEAD_DRIFT_PIXELS: float = 2.0
@@ -32,8 +31,9 @@ const HEAD_MOTION_MIN_DURATION: float = 0.28
 const HEAD_MOTION_MAX_DURATION: float = 0.58
 const PNG_EYELASH_BLINK_DROP_SCALE: float = 0.3
 const PNG_EYELASH_OCCLUSION_BASE_Y: float = 125.0
-const SCENE_MASK_SHADER = preload("res://Shaders/portrait_scene_mask.gdshader")
-const SCENE_MASK_TEXTURE = preload("res://Assets/portrait_mask_local.png")
+## The part of the portrait's canvas the picture shows, from its top left:
+## wide, cut at the chest. A plain rectangle.
+const PICTURE_SIZE: Vector2 = Vector2(449, 178)
 const EYE_OCCLUSION_SHADER = preload("res://Shaders/portrait_eye_occlusion.gdshader")
 
 @export var portrait_config: PortraitConfig:
@@ -60,20 +60,10 @@ const EYE_OCCLUSION_SHADER = preload("res://Shaders/portrait_eye_occlusion.gdsha
 			update_background_style()
 	get:
 		return _background_color
-@export var use_scene_mask: bool = false:
-	set(value):
-		_use_scene_mask = value
-		if is_inside_tree():
-			apply_scene_mask()
-	get:
-		return _use_scene_mask
-
 var _portrait_config: PortraitConfig
-var _use_scene_mask: bool = false
 var _show_background: bool = false
 var _background_color: Color = Color(0.909804, 0.694118, 0.486275, 1.0)
-var mask_group: CanvasGroup
-var _owns_mask_material: bool = false
+var picture_group: CanvasGroup
 var _picture_alpha: float = 1.0
 var background_rect: ColorRect
 var canvas_root: Node2D
@@ -150,31 +140,27 @@ func build_node_tree() -> void:
 	if canvas_root != null:
 		return
 
-	mask_group = get_node_or_null("PortraitMaskGroup") as CanvasGroup
-	if mask_group == null:
-		mask_group = CanvasGroup.new()
-		mask_group.name = "PortraitMaskGroup"
-		add_child(mask_group)
-	mask_group.z_index = 0
+	picture_group = get_node_or_null("PortraitPictureGroup") as CanvasGroup
+	if picture_group == null:
+		picture_group = CanvasGroup.new()
+		picture_group.name = "PortraitPictureGroup"
+		add_child(picture_group)
+	picture_group.z_index = 0
 
-	background_rect = mask_group.get_node_or_null("PortraitBackground") as ColorRect
+	background_rect = picture_group.get_node_or_null("PortraitBackground") as ColorRect
 	if background_rect == null:
 		background_rect = ColorRect.new()
 		background_rect.name = "PortraitBackground"
-		mask_group.add_child(background_rect)
+		picture_group.add_child(background_rect)
 	background_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	background_rect.z_index = -1000
+	# Underneath by its place in the tree (_stack_layers), not by z.
+	background_rect.z_index = 0
 
-	canvas_root = mask_group.get_node_or_null("PortraitCanvas") as Node2D
+	canvas_root = picture_group.get_node_or_null("PortraitCanvas") as Node2D
 	if canvas_root == null:
 		canvas_root = Node2D.new()
 		canvas_root.name = "PortraitCanvas"
-		mask_group.add_child(canvas_root)
-
-	var mask_debug := get_node_or_null("PortraitMaskDebug") as Control
-	if mask_debug != null:
-		mask_debug.visible = Engine.is_editor_hint()
-		move_child(mask_debug, get_child_count() - 1)
+		picture_group.add_child(canvas_root)
 
 	torso_root = canvas_root.get_node_or_null("TorsoRoot") as Node2D
 	if torso_root == null:
@@ -195,33 +181,18 @@ func build_node_tree() -> void:
 		face_root.name = "FaceRoot"
 		head_root.add_child(face_root)
 
-	apply_scene_mask()
+	update_picture_group()
 	update_background_style()
 	arrange_canvas()
 
-func apply_scene_mask() -> void:
-	update_mask_group_material()
-	update_layer_scene_mask_materials()
-	update_background_style()
-
-func update_mask_group_material() -> void:
-	if mask_group == null:
+## The layers are drawn as one picture by their CanvasGroup's own shader, and
+## faded through its self_modulate - so the picture fades as a whole, and no
+## layer shows through the one above it on the way in or out.
+func update_picture_group() -> void:
+	if picture_group == null:
 		return
-	if !_use_scene_mask:
-		mask_group.material = null
-		mask_group.self_modulate.a = _picture_alpha
-		return
-	# A material of this view's own: the one the scene file brings is shared by
-	# every portrait made from it, and the picture's alpha is set on it.
-	var material := mask_group.material as ShaderMaterial
-	if material == null or material.shader != SCENE_MASK_SHADER or !_owns_mask_material:
-		material = ShaderMaterial.new()
-		material.shader = SCENE_MASK_SHADER
-		mask_group.material = material
-		_owns_mask_material = true
-	material.set_shader_parameter("mask_texture", SCENE_MASK_TEXTURE)
-	material.set_shader_parameter("picture_alpha", _picture_alpha)
-	mask_group.self_modulate.a = 1.0
+	picture_group.material = null
+	picture_group.self_modulate.a = _picture_alpha
 
 func update_background_style() -> void:
 	if background_rect == null:
@@ -277,13 +248,7 @@ func set_expression(expression: String) -> void:
 func set_picture_alpha(alpha: float) -> void:
 	_picture_alpha = clampf(alpha, 0.0, 1.0)
 	self_modulate.a = _picture_alpha
-	if mask_group == null:
-		return
-	var material := mask_group.material as ShaderMaterial
-	if material != null and _owns_mask_material:
-		material.set_shader_parameter("picture_alpha", _picture_alpha)
-	else:
-		mask_group.self_modulate.a = _picture_alpha
+	update_picture_group()
 
 func set_turn_focus(enabled: bool) -> void:
 	if turn_focus_enabled == enabled:
@@ -328,6 +293,7 @@ func rebuild_layers() -> void:
 		rebuild_png_layers()
 	else:
 		rebuild_legacy_layers()
+	_stack_layers()
 
 	apply_expression()
 	apply_pupil_position()
@@ -376,31 +342,10 @@ func apply_eye_occlusion_material(layer: Sprite2D) -> void:
 		return
 	var material := ShaderMaterial.new()
 	material.shader = EYE_OCCLUSION_SHADER
-	material.set_shader_parameter("scene_mask_texture", SCENE_MASK_TEXTURE)
-	material.set_shader_parameter("scene_mask_enabled", 0.0)
 	material.set_shader_parameter("occlusion_bottom_y_pixels", PNG_EYELASH_OCCLUSION_BASE_Y)
 	material.set_shader_parameter("mask_strength", 0.0)
 	layer.material = material
 	eye_occlusion_materials[layer] = material
-
-func update_layer_scene_mask_materials() -> void:
-	for layer in layer_base_positions.keys():
-		if layer is Sprite2D and is_instance_valid(layer):
-			apply_scene_mask_material_to_layer(layer as Sprite2D)
-	for material in eye_occlusion_materials.values():
-		var shader_material := material as ShaderMaterial
-		if shader_material != null:
-			shader_material.set_shader_parameter("scene_mask_enabled", 0.0)
-
-func apply_scene_mask_material_to_layer(layer: Sprite2D) -> void:
-	if layer == null:
-		return
-	if eye_occlusion_materials.has(layer):
-		var eye_material := eye_occlusion_materials[layer] as ShaderMaterial
-		if eye_material != null:
-			eye_material.set_shader_parameter("scene_mask_enabled", 0.0)
-		return
-	layer.material = null
 
 func rebuild_legacy_layers() -> void:
 	torso_layer = add_layer(torso_root, "torso", applied_config.torso_id, applied_config.clothing_color, get_layer_local_offset("torso", torso_root))
@@ -413,7 +358,9 @@ func rebuild_legacy_layers() -> void:
 		face_root = Node2D.new()
 		face_root.name = "FaceRoot"
 		head_root.add_child(face_root)
-	face_root.z_index = 3
+	# Over the head, under the hair (_stack_layers).
+	face_root.z_index = 0
+	face_root.set_meta("render_depth", 3.5)
 
 	pupils_layer = add_layer(face_root, "pupils", applied_config.pupils_id, applied_config.eye_color, get_layer_local_offset("pupils", face_root))
 	eyes_layer = add_layer(face_root, "eyes", applied_config.eyes_id, Color.WHITE, get_layer_local_offset("eyes", face_root))
@@ -467,14 +414,37 @@ func add_layer(parent: Node2D, category: String, part_id: String, tint: Color, l
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	sprite.centered = false
 	sprite.modulate = get_layer_tint(tint)
-	sprite.z_as_relative = false
-	sprite.z_index = PortraitLibrary.get_render_order_z_index(category)
+	# Stacked by its place in the tree, not by z, so it stays inside the mask
+	# group (_stack_layers).
+	sprite.z_as_relative = true
+	sprite.z_index = 0
+	sprite.set_meta("render_depth", PortraitLibrary.get_render_order_z_index(category))
 	sprite.set_meta("category", category)
 	sprite.set_meta("base_position", base_position)
 	sprite.set_meta("base_modulate", sprite.modulate)
 	layer_base_positions[sprite] = base_position
-	apply_scene_mask_material_to_layer(sprite)
 	return sprite
+
+## A CanvasGroup only gathers the children drawn at its own depth: a layer
+## with a z_index of its own is drawn outside it, past the picture's alpha and
+## its scene mask (set_picture_alpha), so the face would neither fade nor be
+## masked. The layers therefore keep z 0 and are stacked by their order in the
+## tree: the background first, then the torso's parent before the head's (as
+## PortraitLibrary.PNG_LAYER_ORDER has every body layer under every head
+## layer), and within each parent its layers bottom to top by render depth.
+func _stack_layers() -> void:
+	if background_rect != null and background_rect.get_parent() == picture_group:
+		picture_group.move_child(background_rect, 0)
+	for parent in [torso_root, head_root, face_root]:
+		if parent == null or !is_instance_valid(parent):
+			continue
+		var layers: Array[Node] = []
+		for child in parent.get_children():
+			if child.has_meta("render_depth"):
+				layers.append(child)
+		layers.sort_custom(func(a: Node, b: Node) -> bool: return float(a.get_meta("render_depth")) < float(b.get_meta("render_depth")))
+		for layer in layers:
+			parent.move_child(layer, -1)
 
 func get_or_create_layer(parent: Node2D, category: String, part_id: String) -> Sprite2D:
 	var layer := find_layer(parent, category)
@@ -602,7 +572,7 @@ func reset_static_layer_positions() -> void:
 			set_layer_alpha(layer, 1.0)
 
 func arrange_canvas() -> void:
-	if mask_group == null:
+	if picture_group == null:
 		return
 
 	var available_size: Vector2 = size
@@ -617,20 +587,13 @@ func arrange_canvas() -> void:
 		background_rect.position = Vector2.ZERO
 		background_rect.size = composition_size
 
-	mask_group.scale = Vector2.ONE * scale_factor
-	mask_group.position = canvas_position
+	picture_group.scale = Vector2.ONE * scale_factor
+	picture_group.position = canvas_position
 	if canvas_root != null:
 		canvas_root.scale = Vector2.ONE
 
 func get_composition_size() -> Vector2:
-	if _use_scene_mask and SCENE_MASK_TEXTURE != null:
-		return SCENE_MASK_TEXTURE.get_size()
-	return get_canvas_size()
-
-func get_canvas_size() -> Vector2:
-	if applied_config == null:
-		return CANVAS_SIZE
-	return Vector2(maxf(1.0, applied_config.canvas_size.x), maxf(1.0, applied_config.canvas_size.y))
+	return PICTURE_SIZE
 
 func get_head_pivot() -> Vector2:
 	if applied_config == null:

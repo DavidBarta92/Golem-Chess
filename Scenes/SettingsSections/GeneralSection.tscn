@@ -30,6 +30,7 @@ TextRef = NodePath("TextField")
 
 [node name="Label" type="Label" parent="Scroll/Content/PlayerName"]
 layout_mode = 2
+theme_type_variation = &"FieldLabel"
 text = "Player name"
 
 [node name="TextField" type="LineEdit" parent="Scroll/Content/PlayerName"]

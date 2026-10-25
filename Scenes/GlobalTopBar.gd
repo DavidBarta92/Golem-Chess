@@ -3,8 +3,8 @@ extends CanvasLayer
 ## The bar across the top of the hub screens, in two zones (Docs/TopBar):
 ##   * left - the logo on the main menu; on a sub-screen Back, then that
 ##     screen's own buttons right after it. Clipped, so it gives way first.
-##   * right - anchored to the right edge, right to left: menu button (main
-##     menu only) -> counters (rank, coin, draw points, as the story reveals
+##   * right - anchored to the right edge, right to left: menu button (out of
+##     use off the main menu) -> counters (rank, coin, draw points, as the story reveals
 ##     them) -> quest ribbons (oldest next to the counters, each new one to its
 ##     left). Nothing screen-specific ever goes in here.
 ## The right group is laid out by hand rather than by a container, so ribbons
@@ -17,12 +17,25 @@ const COLLECTION_MODE: String = "collection"
 const POINTS_ONLY_MODE: String = "points_only"
 const MAIN_MENU_SCENE: String = "res://Scenes/MainMenu.tscn"
 const COLLECTION_SCENE: String = "res://Scenes/Collection.tscn"
-const SLIDE_DISTANCE: float = 64.0
-const SLIDE_OUT_SECONDS: float = 0.16
-const SLIDE_IN_SECONDS: float = 0.18
-const ITEM_STAGGER_SECONDS: float = 0.045
-const TOP_BAR_TEXT_COLOR: Color = UiPalette.INK
-const VERSION_TEXT_COLOR: Color = Color(0.61960787, 0.6039216, 0.6862745, 1.0)
+## Arriving, a scene's items are stamped onto the paper (_stamp_items_in).
+const STAMP_SECONDS: float = 0.42
+const STAMP_START_SCALE: float = 1.3
+## How far a stamp is turned before it lands, either way, in degrees.
+const STAMP_MIN_TILT: float = 1.5
+const STAMP_MAX_TILT: float = 6.0
+## Leaving, they dissolve into the paper (_dissolve_items_out).
+const DISSOLVE_SECONDS: float = 0.4
+const ITEM_STAGGER_SECONDS: float = 0.07
+const INK_DISSOLVE_SHADER: Shader = preload("res://Shaders/ink_dissolve.gdshader")
+const FRONT_NOISE_PATH: String = "res://ui/themes/stamp/ink_flood_noise.png"
+const LOGO_REVEAL_SHADER: Shader = preload("res://Shaders/art_line_reveal.gdshader")
+## Made by tools/generate_line_reveal_mask.py (see there) from
+## Assets/golem_logo_reveal_source.png, the logo rasterized at half size.
+const LOGO_REVEAL_MASK_PATH: String = "res://Assets/golem_logo_reveal_mask.png"
+## The logo's writing: each stroke takes up to this long, and the last starts
+## this long after the first.
+const LOGO_STROKE_SECONDS: float = 0.5
+const LOGO_SPREAD_SECONDS: float = 1.0
 const SINGLEPLAYER_UNLOCK_KEY: Key = KEY_A
 const SINGLEPLAYER_UNLOCK_PRESS_COUNT: int = 3
 ## How often the time left on daily quests is brought up to date on screen.
@@ -52,6 +65,7 @@ const COUNTER_FEATURE: Dictionary = {
 @onready var back_button: Button = $Root/SceneItemsClip/CollectionItems/BackSlot/BackButton
 @onready var buy_packs_button: Button = $Root/SceneItemsClip/CollectionItems/BuyPacksSlot/BuyPacksButton
 @onready var version_label: Label = $Root/SceneItemsClip/MainMenuItems/VersionSlot/VersionLabel
+@onready var logo: TextureRect = $Root/SceneItemsClip/MainMenuItems/LogoSlot/Logo
 @onready var right_group: Control = $Root/RightGroup
 
 var current_mode: String = ""
@@ -60,7 +74,6 @@ var active_items: HBoxContainer
 var scene_items_tween: Tween
 var button_by_id: Dictionary = {}
 var pressed_connections: Dictionary = {}
-var rest_positions: Dictionary = {}
 var scene_transition_active: bool = false
 var singleplayer_unlock_presses: int = 0
 
@@ -84,6 +97,10 @@ var _open_token: int = 0
 var _target_x: Dictionary = {}
 var _slide_tweens: Dictionary = {}
 var _layout_queued: bool = false
+var _dissolve_material: ShaderMaterial
+var _logo_reveal_material: ShaderMaterial
+## The button whose window is open over its screen (set_window_open).
+var _window_opener: Button
 
 
 func _ready() -> void:
@@ -96,7 +113,6 @@ func _ready() -> void:
 	scene_items_clip.mouse_filter = Control.MOUSE_FILTER_PASS
 	right_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	version_label.text = "v%s" % str(ProjectSettings.get_setting("application/config/version", "0.0.8"))
-	version_label.add_theme_color_override("font_color", VERSION_TEXT_COLOR)
 
 	_build_counters()
 	_build_menu()
@@ -119,9 +135,9 @@ func _ready() -> void:
 	for slot_button in [back_button, buy_packs_button]:
 		slot_button.minimum_size_changed.connect(_fit_slot_to_button.bind(slot_button))
 		_fit_slot_to_button(slot_button)
-	_reset_container_items(main_menu_items)
-	_reset_container_items(collection_items)
+	buy_packs_button.toggled.connect(_keep_window_opener_pressed.bind(buy_packs_button))
 	collection_items.visible = false
+	_build_item_materials()
 
 	root.resized.connect(_queue_layout)
 	QuestStore.quest_added.connect(_on_quest_added)
@@ -191,7 +207,37 @@ func show_main_menu(settings_pressed: Callable, exit_pressed: Callable, singlepl
 func show_collection(back_pressed: Callable, buy_packs_pressed: Callable = Callable()) -> void:
 	_replace_button_connection(back_button, back_pressed)
 	_replace_button_connection(buy_packs_button, buy_packs_pressed)
+	set_window_open("buy_packs", false)
 	_show_mode(COLLECTION_MODE)
+
+
+## While a screen's own window is open over it (the collection's pack shop),
+## the button that opened it stays pressed in ink and Back is out of use;
+## both come back when it closes.
+func set_window_open(opener_id: String, open: bool) -> void:
+	if !open:
+		_release_window_opener()
+		return
+	var opener: Button = get_button(opener_id)
+	if opener != null:
+		opener.toggle_mode = true
+		opener.set_pressed_no_signal(true)
+	_window_opener = opener
+	back_button.disabled = true
+
+
+func _release_window_opener() -> void:
+	if _window_opener != null:
+		_window_opener.toggle_mode = false
+		_window_opener.set_pressed_no_signal(false)
+	_window_opener = null
+	back_button.disabled = false
+
+
+## A pressed opener clicked again stays pressed: its window is still open.
+func _keep_window_opener_pressed(pressed: bool, button: Button) -> void:
+	if !pressed and button == _window_opener:
+		button.set_pressed_no_signal(true)
 
 
 ## Shows only the bar and its counters - no menu items, no ribbons - so a
@@ -203,6 +249,8 @@ func show_points_only() -> void:
 		scene_items_tween.kill()
 	_close_quest_panel(false)
 	menu.close_now()
+	_settle_items(main_menu_items)
+	_settle_items(collection_items)
 	main_menu_items.visible = false
 	collection_items.visible = false
 	root.visible = true
@@ -235,6 +283,8 @@ func pulse_points_hud() -> void:
 func prepare_for_scene_change(target_scene_path: String) -> void:
 	_close_quest_panel(false)
 	menu.close_now()
+	# A screen's window does not outlive the screen.
+	_release_window_opener()
 	var target_mode: String = _mode_for_scene_path(target_scene_path)
 	if target_mode == current_mode:
 		return
@@ -245,7 +295,7 @@ func prepare_for_scene_change(target_scene_path: String) -> void:
 			root.visible = false
 		return
 
-	_animate_items_out(active_items, target_mode.is_empty())
+	_dissolve_items_out(active_items, target_mode.is_empty())
 
 
 func set_scene_transition_active(active: bool) -> void:
@@ -318,8 +368,10 @@ func _show_mode(mode: String) -> void:
 	var bar_was_visible: bool = root.visible
 	root.visible = true
 	top_background.visible = true
-	menu.visible = mode == MAIN_MENU_MODE
-	if !menu.visible:
+	# Off the main menu the menu button stays, out of use, so nothing shifts.
+	menu.visible = true
+	menu.button.disabled = mode != MAIN_MENU_MODE
+	if menu.button.disabled:
 		menu.close_now()
 	_set_ribbons_shown(true)
 	refresh_points()
@@ -327,17 +379,20 @@ func _show_mode(mode: String) -> void:
 
 	if current_mode == mode and active_items == target_items:
 		target_items.visible = true
-		_reset_container_items(target_items)
+		_settle_items(target_items)
 		_set_container_items_interactive(target_items, !scene_transition_active)
 		return
 
-	if active_items != null and active_items != target_items:
-		active_items.visible = false
+	# The other row too when the bar first comes up on this screen, not the
+	# main menu's.
+	for items in [main_menu_items, collection_items]:
+		if items != target_items:
+			items.visible = false
 
 	current_mode = mode
 	pending_mode = ""
 	active_items = target_items
-	_animate_items_in(target_items)
+	_stamp_items_in(target_items)
 
 
 # --- Right group layout ---------------------------------------------------------
@@ -703,31 +758,57 @@ func _container_for_mode(mode: String) -> HBoxContainer:
 	return null
 
 
-func _animate_items_out(container: HBoxContainer, hide_shell_after: bool) -> void:
+func _build_item_materials() -> void:
+	if ResourceLoader.exists(FRONT_NOISE_PATH):
+		_dissolve_material = ShaderMaterial.new()
+		_dissolve_material.shader = INK_DISSOLVE_SHADER
+		_dissolve_material.set_shader_parameter(&"front_noise", load(FRONT_NOISE_PATH))
+	if ResourceLoader.exists(LOGO_REVEAL_MASK_PATH):
+		_logo_reveal_material = ShaderMaterial.new()
+		_logo_reveal_material.shader = LOGO_REVEAL_SHADER
+		_logo_reveal_material.set_shader_parameter(&"reveal_mask", load(LOGO_REVEAL_MASK_PATH))
+		_logo_reveal_material.set_shader_parameter(&"base_duration", LOGO_STROKE_SECONDS)
+		_logo_reveal_material.set_shader_parameter(&"max_delay", LOGO_SPREAD_SECONDS)
+
+
+## Leaving, a scene's items go the way the hover's ink comes in, turned inside
+## out: paper floods in over each from its edges along the same ragged front
+## (Shaders/ink_dissolve.gdshader), while it fades.
+func _dissolve_items_out(container: HBoxContainer, hide_shell_after: bool) -> void:
 	if container == null:
 		return
 	if scene_items_tween != null and scene_items_tween.is_valid():
 		scene_items_tween.kill()
 
 	_set_container_items_interactive(container, false)
-	var animated_items := _get_animated_items(container)
-	_remember_rest_positions(animated_items)
-
+	var hover_fill: Node = get_node_or_null("/root/InkHoverFill")
 	scene_items_tween = create_tween()
 	scene_items_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	scene_items_tween.set_parallel(true)
-	scene_items_tween.set_trans(Tween.TRANS_SINE)
-	scene_items_tween.set_ease(Tween.EASE_IN)
+	var animated_items := _get_animated_items(container)
 	for index in range(animated_items.size()):
 		var item := animated_items[index]
-		var rest_position: Vector2 = rest_positions.get(item, item.position)
-		scene_items_tween.tween_property(item, "position:y", rest_position.y - SLIDE_DISTANCE, SLIDE_OUT_SECONDS).set_delay(index * ITEM_STAGGER_SECONDS)
+		var delay: float = index * ITEM_STAGGER_SECONDS
+		# A clicked button still holds its hover ink, on a layer of its own.
+		if item is Button and hover_fill != null:
+			hover_fill.clear(item)
+		if _dissolve_material != null:
+			item.material = _dissolve_material
+			item.set_instance_shader_parameter(&"dissolve_seed", float(item.get_instance_id() % 997))
+			item.set_instance_shader_parameter(&"dissolve_size", item.size)
+			item.set_instance_shader_parameter(&"dissolve_progress", 0.0)
+			scene_items_tween.tween_method(_set_dissolve.bind(item), 0.0, 1.0, DISSOLVE_SECONDS).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		scene_items_tween.tween_property(item, "modulate:a", 0.0, DISSOLVE_SECONDS).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	scene_items_tween.chain().tween_callback(Callable(self, "_finish_items_out").bind(container, hide_shell_after))
+
+
+func _set_dissolve(progress: float, item: CanvasItem) -> void:
+	item.set_instance_shader_parameter(&"dissolve_progress", progress)
 
 
 func _finish_items_out(container: HBoxContainer, hide_shell_after: bool) -> void:
 	if container != null:
-		_reset_container_items(container)
+		_settle_items(container)
 		container.visible = false
 	if active_items == container:
 		active_items = null
@@ -737,54 +818,72 @@ func _finish_items_out(container: HBoxContainer, hide_shell_after: bool) -> void
 		root.visible = false
 
 
-func _animate_items_in(container: HBoxContainer) -> void:
+## Arriving, a scene's items are stamped onto the paper: from nothing, a
+## third larger and a little turned, each drops onto its place - slowly, then
+## all at once - and is fully inked halfway down, so the drop still shows. The
+## main menu's logo writes itself instead, letter by letter.
+func _stamp_items_in(container: HBoxContainer) -> void:
 	if container == null:
 		return
 	if scene_items_tween != null and scene_items_tween.is_valid():
 		scene_items_tween.kill()
 
-	var animated_items := _get_animated_items(container)
-	_remember_rest_positions(animated_items)
-	for item in animated_items:
-		var rest_position: Vector2 = rest_positions.get(item, item.position)
-		item.position.y = rest_position.y - SLIDE_DISTANCE
-
 	container.visible = true
 	_set_container_items_interactive(container, false)
-
 	scene_items_tween = create_tween()
 	scene_items_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	scene_items_tween.set_parallel(true)
-	scene_items_tween.set_trans(Tween.TRANS_SINE)
-	scene_items_tween.set_ease(Tween.EASE_OUT)
-	for index in range(animated_items.size()):
-		var item := animated_items[index]
-		var rest_position: Vector2 = rest_positions.get(item, item.position)
-		scene_items_tween.tween_property(item, "position:y", rest_position.y, SLIDE_IN_SECONDS).set_delay(index * ITEM_STAGGER_SECONDS)
+	var delay: float = 0.0
+	for item in _get_animated_items(container):
+		_settle_item(item)
+		if item == logo and _logo_reveal_material != null:
+			_write_logo()
+			continue
+		item.modulate.a = 0.0
+		item.scale = Vector2.ONE * STAMP_START_SCALE
+		item.rotation = deg_to_rad(randf_range(STAMP_MIN_TILT, STAMP_MAX_TILT)) * (1.0 if randf() < 0.5 else -1.0)
+		# By then the item has been laid out, so its middle is known.
+		scene_items_tween.tween_callback(_centre_pivot.bind(item)).set_delay(delay)
+		scene_items_tween.tween_property(item, "scale", Vector2.ONE, STAMP_SECONDS).set_delay(delay).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+		scene_items_tween.tween_property(item, "rotation", 0.0, STAMP_SECONDS).set_delay(delay).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+		scene_items_tween.tween_property(item, "modulate:a", 1.0, STAMP_SECONDS * 0.5).set_delay(delay)
+		delay += ITEM_STAGGER_SECONDS
 	scene_items_tween.chain().tween_callback(Callable(self, "_finish_items_in").bind(container))
 
 
+func _centre_pivot(item: Control) -> void:
+	item.pivot_offset = item.size * 0.5
+
+
+## The logo drawn the way the main menu's room draws itself
+## (Shaders/art_line_reveal.gdshader), left to right.
+func _write_logo() -> void:
+	logo.material = _logo_reveal_material
+	var duration: float = LOGO_STROKE_SECONDS + LOGO_SPREAD_SECONDS
+	_set_logo_time(0.0)
+	scene_items_tween.tween_method(_set_logo_time, 0.0, duration, duration)
+
+
+func _set_logo_time(time: float) -> void:
+	_logo_reveal_material.set_shader_parameter(&"time", time)
+
+
 func _finish_items_in(container: HBoxContainer) -> void:
-	_reset_container_items(container)
+	_settle_items(container)
 	_set_container_items_interactive(container, !scene_transition_active)
 
 
-func _reset_container_items(container: HBoxContainer) -> void:
-	if container == null:
-		return
-	var animated_items := _get_animated_items(container)
-	_remember_rest_positions(animated_items)
-	for item in animated_items:
-		var rest_position: Vector2 = rest_positions.get(item, item.position)
-		# Only y is animated; x follows the item's anchors, which move it when
-		# its translated text makes it wider than when the rest was recorded.
-		item.position.y = rest_position.y
+## Back to rest, whatever was under way.
+func _settle_items(container: HBoxContainer) -> void:
+	for item in _get_animated_items(container):
+		_settle_item(item)
 
 
-func _remember_rest_positions(animated_items: Array[Control]) -> void:
-	for item in animated_items:
-		if !rest_positions.has(item):
-			rest_positions[item] = item.position
+func _settle_item(item: Control) -> void:
+	item.material = null
+	item.modulate.a = 1.0
+	item.scale = Vector2.ONE
+	item.rotation = 0.0
 
 
 func _get_animated_items(container: HBoxContainer) -> Array[Control]:
