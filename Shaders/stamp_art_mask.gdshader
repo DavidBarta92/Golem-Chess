@@ -17,9 +17,11 @@ uniform vec2 art_target_size = vec2(1.0, 1.0);
 uniform float edge_softness : hint_range(0.0, 0.08) = 0.015;
 
 #include "res://Shaders/foil_on_white.gdshaderinc"
+#include "res://Shaders/stamp_ink_blot.gdshaderinc"
 
 void vertex() {
 	foil_stamp_uv = foil_stamp_uv_of(VERTEX);
+	stamp_blot_position = stamp_blot_position_of(VERTEX);
 }
 
 float mask_value(vec4 mask_sample) {
@@ -101,5 +103,8 @@ void fragment() {
 	float art_alpha = art_coverage * source_art.a;
 	float alpha = art_alpha + frame_coverage;
 	vec3 color = (source_art.rgb * art_alpha + frame_color) / max(alpha, 0.0001);
+	// The ink blot takes ink away towards the stamp's white paper, rather than
+	// letting the coloured square beneath show through the art.
+	color = mix(vec3(1.0), color, stamp_blot_density(stamp_blot_position));
 	COLOR = vec4(foil_on_white_tint(color, foil_stamp_uv), alpha * COLOR.a);
 }

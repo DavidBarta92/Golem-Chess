@@ -50,6 +50,7 @@ MusicManager="*res://Scripts/Audio/MusicManager.gd"
 UIButtonSoundHook="*res://Scripts/Audio/UIButtonSoundHook.gd"
 InkStampTitles="*res://Scripts/InkStamp/InkStampTitles.gd"
 InkHoverFill="*res://Scripts/InkStamp/InkHoverFill.gd"
+InkBlot="*res://Scripts/InkBlot/InkBlot.gd"
 
 [display]
 
@@ -79,3 +80,30 @@ locale/locale_filter=PackedStringArray("en", "hu")
 
 renderer/rendering_method="gl_compatibility"
 anti_aliasing/quality/msaa_2d=2
+
+[shader_globals]
+
+ink_blot_noise={
+"type": "sampler2D",
+"value": "res://ui/themes/stamp/ink_blot_noise.png"
+}
+ink_blot_ui={
+"type": "vec4",
+"value": Vector4(0.25, 0.6, 72, 6)
+}
+ink_blot_lines={
+"type": "vec4",
+"value": Vector4(0.35, 0.8, 105, 8)
+}
+ink_blot_washes={
+"type": "vec4",
+"value": Vector4(0.35, 2, 135, 14)
+}
+ink_blot_stamps={
+"type": "vec4",
+"value": Vector4(0.25, 0.8, 90, 8)
+}
+ink_blot_contrast={
+"type": "float",
+"value": 0.35
+}

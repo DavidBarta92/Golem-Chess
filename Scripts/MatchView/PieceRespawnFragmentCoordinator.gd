@@ -150,7 +150,9 @@ func play_piece_shatter_animations(animations: Array[Dictionary]) -> void:
 		var fragment_group: String = str(animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
 		play_piece_shatter_animation(source_pos, respawn_pos, piece_color, fragment_group)
 
-func play_piece_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, fragment_group: String = "") -> void:
+## `with_impact_effects` is false for a capture whose sparkle already went off
+## at the moment of contact, before the hitstop.
+func play_piece_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, fragment_group: String = "", with_impact_effects: bool = true) -> void:
 	if match_board.should_skip_visual_animations():
 		return
 	if piece_color == 0:
@@ -162,7 +164,8 @@ func play_piece_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, pie
 	if match_board.piece_effects_node == null:
 		return
 
-	play_capture_impact_effects(source_pos)
+	if with_impact_effects:
+		play_capture_impact_effects(source_pos)
 
 	var resolved_fragment_group: String = fragment_group
 	if resolved_fragment_group.is_empty():

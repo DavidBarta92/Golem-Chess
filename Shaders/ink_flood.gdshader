@@ -5,9 +5,10 @@ shader_type canvas_item;
 // the whole face is ink. Scripts/InkStamp/InkHoverFill.gd drives
 // flood_progress from 0 (no ink) to 1 (all ink) on a layer behind the
 // button, so its outline and label stay on top. The ink then gets the stamp's
-// fill specks, as the pressed print has.
+// fill specks and the UI's ink blot, as the pressed print has.
 
 #include "res://Shaders/ink_front.gdshaderinc"
+#include "res://Shaders/ink_blot.gdshaderinc"
 
 // UiPalette.INK.
 uniform vec4 ink_color : source_color = vec4(0.090196, 0.172549, 0.262745, 1.0);
@@ -29,5 +30,6 @@ void fragment() {
 	float ink = ink_front(local_position, flood_size, flood_radii, flood_progress, flood_seed);
 	vec2 mask_size = vec2(textureSize(stamp_mask, 0));
 	float keep = texture(stamp_mask, (local_position + front_offset(flood_seed, mask_size)) / mask_size).g;
+	keep *= ink_blot_density(ink_blot_ui, local_position, flood_seed);
 	COLOR = vec4(ink_color.rgb, ink_color.a * ink * keep);
 }

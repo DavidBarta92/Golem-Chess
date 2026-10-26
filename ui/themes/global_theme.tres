@@ -74,6 +74,7 @@ content_margin_bottom = 9.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_button_disabled")
 stamp_name = "button_disabled"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_focus"]
 bg_color = Color(0, 0, 0, 0)
@@ -128,6 +129,7 @@ content_margin_bottom = 9.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_button_hover")
 stamp_name = "button_hover"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_button_pressed"]
 content_margin_left = 18.0
@@ -155,6 +157,7 @@ content_margin_bottom = 9.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_button_pressed")
 stamp_name = "button_pressed"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_button_normal"]
 content_margin_left = 18.0
@@ -182,6 +185,7 @@ content_margin_bottom = 9.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_button_normal")
 stamp_name = "button_normal"
+live_blot = true
 
 [sub_resource type="FontVariation" id="Font_Caption"]
 base_font = ExtResource("8_yll6c")
@@ -527,6 +531,7 @@ content_margin_bottom = 48.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_match_tab_normal")
 stamp_name = "match_tab_normal"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_match_tab_face"]
 bg_color = Color(0.95686275, 0.9411765, 0.9019608, 1)
@@ -556,6 +561,7 @@ content_margin_bottom = 48.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_match_tab_hover")
 stamp_name = "match_tab_hover"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_match_tab_pressed"]
 content_margin_left = 12.0
@@ -580,6 +586,7 @@ content_margin_bottom = 48.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_match_tab_pressed")
 stamp_name = "match_tab_pressed"
+live_blot = true
 
 [sub_resource type="FontVariation" id="Font_MenuItem"]
 base_font = ExtResource("8_yll6c")

@@ -22,6 +22,8 @@
 [ext_resource type="Script" uid="uid://boksbytph4vh4" path="res://Scripts/Audio/MusicCue.gd" id="91_music_cue"]
 [ext_resource type="Script" uid="uid://ejdsaop7goq5" path="res://Scripts/Audio/MusicStemFade.gd" id="92_music_stem_fade"]
 [ext_resource type="Script" uid="uid://grtkbcln0pvh" path="res://Scripts/Audio/SceneMusicCue.gd" id="93_scene_music_cue"]
+[ext_resource type="Material" path="res://Shaders/ink_blot_washes.tres" id="94_blot_washes"]
+[ext_resource type="Material" path="res://Shaders/ink_blot_pictures.tres" id="95_blot_pictures"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_book_shadow"]
 shader = ExtResource("21_flat_shadow")
@@ -102,6 +104,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="CollectionBackground" type="TextureRect" parent="." unique_id=1736889225]
+material = ExtResource("94_blot_washes")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -202,6 +205,7 @@ ignore_texture_size = true
 stretch_mode = 0
 
 [node name="BookImage" type="TextureRect" parent="BookStage" unique_id=2037943316]
+material = ExtResource("95_blot_pictures")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -573,6 +577,7 @@ pivot_offset = Vector2(27, 60.5)
 mouse_filter = 2
 
 [node name="ClosedImage" type="TextureRect" parent="MagnifierCaseButton" unique_id=610992149]
+material = ExtResource("95_blot_pictures")
 texture_filter = 2
 layout_mode = 1
 anchors_preset = 15
@@ -586,6 +591,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="OpenedImage" type="TextureRect" parent="MagnifierCaseButton" unique_id=2063781119]
+material = ExtResource("95_blot_pictures")
 visible = false
 texture_filter = 2
 layout_mode = 1

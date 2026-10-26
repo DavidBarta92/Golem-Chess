@@ -1,5 +1,13 @@
 extends RefCounted
 
+const PIECE_HIT_FLASH_SHADER = preload("res://Shaders/piece_hit_flash.gdshader")
+## How far the struck piece's flash has faded back toward its drawing by the
+## time it breaks.
+const CAPTURE_HIT_FLASH_END_AMOUNT: float = 0.35
+## How far the struck piece is jolted along the blow during the hitstop, in
+## board units (a square is `BoardConfig.CELL_WIDTH`).
+const CAPTURE_HIT_JOLT_DISTANCE: float = 0.8
+
 var match_board
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
 
@@ -125,12 +133,14 @@ func play_local_move_transition(move_context: Dictionary) -> void:
 		var shatter_fragment_group: String = str(move_context.get("shatter_fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
 		var capturing_cast: String = get_capturing_cast_sound_name(end_pos)
 		capture_impact_callback = func() -> void:
-			if is_instance_valid(capture_placeholder):
-				capture_placeholder.queue_free()
-			match_board.get_piece_respawn_fragment_coordinator().play_piece_shatter_animation(end_pos, shatter_respawn_pos, captured_color, shatter_fragment_group)
+			if captured_color != 0:
+				match_board.get_piece_respawn_fragment_coordinator().play_capture_impact_effects(end_pos)
 			if !capturing_cast.is_empty():
 				SFXManager.play(capturing_cast)
 			SFXManager.play("piece_captured")
+			play_capture_hit_reaction(capture_placeholder, start_pos, end_pos, func() -> void:
+				match_board.get_piece_respawn_fragment_coordinator().play_piece_shatter_animation(end_pos, shatter_respawn_pos, captured_color, shatter_fragment_group, false)
+			)
 	await play_piece_move_animation(start_pos, end_pos, moving_start_texture, moving_piece_visible_to_enemy, capture_impact_callback)
 	if is_instance_valid(capture_placeholder):
 		capture_placeholder.queue_free()
@@ -159,19 +169,26 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 	if capture_placeholder != null:
 		var capturing_cast: String = get_capturing_cast_sound_name(move_to_pos)
 		capture_impact_callback = func() -> void:
-			if is_instance_valid(capture_placeholder):
-				capture_placeholder.queue_free()
+			var break_callback: Callable = Callable()
 			if !capture_shatter_animation.is_empty():
+				# Taken off the list at contact, so the shatter still to come
+				# after the hitstop is not played a second time with the rest.
 				remove_piece_shatter_animation_from_list(state_piece_shatter_animations, capture_shatter_animation, capture_shatter_animation_index)
-				match_board.get_piece_respawn_fragment_coordinator().play_piece_shatter_animation(
-					move_to_pos,
-					match_board.value_to_vector2(capture_shatter_animation.get("respawn_pos", invalid_board_pos), invalid_board_pos),
-					int(capture_shatter_animation.get("piece_color", 0)),
-					str(capture_shatter_animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
-				)
+				var captured_color: int = int(capture_shatter_animation.get("piece_color", 0))
+				if captured_color != 0:
+					match_board.get_piece_respawn_fragment_coordinator().play_capture_impact_effects(move_to_pos)
+				break_callback = func() -> void:
+					match_board.get_piece_respawn_fragment_coordinator().play_piece_shatter_animation(
+						move_to_pos,
+						match_board.value_to_vector2(capture_shatter_animation.get("respawn_pos", invalid_board_pos), invalid_board_pos),
+						captured_color,
+						str(capture_shatter_animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE)),
+						false
+					)
 			if !capturing_cast.is_empty():
 				SFXManager.play(capturing_cast)
 			SFXManager.play("piece_captured")
+			play_capture_hit_reaction(capture_placeholder, move_from_pos, move_to_pos, break_callback)
 
 	var move_start_texture: Texture2D = state_piece_move_animation.get("start_texture", null) as Texture2D
 	var hide_after_move: bool = bool(state_piece_move_animation.get("hide_after_move", false))
@@ -278,6 +295,44 @@ func create_piece_move_capture_placeholder(board_pos: Vector2, texture_value: Te
 		return null
 	placeholder.z_index = match_board.pieces_node.z_index + match_board.get_piece_visuals().get_depth_z_index(board_pos)
 	return placeholder
+
+## The struck piece through the hitstop the striker holds at contact: lit up
+## and jolted along the blow, then gone, and `break_callback` shatters it.
+## Runs as long as `PieceMoveAnimator` holds the striker still.
+func play_capture_hit_reaction(capture_placeholder: Sprite2D, from_pos: Vector2, to_pos: Vector2, break_callback: Callable) -> void:
+	var finish: Callable = func() -> void:
+		if is_instance_valid(capture_placeholder):
+			capture_placeholder.queue_free()
+		if break_callback.is_valid():
+			break_callback.call()
+
+	var hitstop_duration: float = match_board.piece_move_capture_hitstop_duration
+	if hitstop_duration <= 0.0 or !match_board.is_inside_tree():
+		finish.call()
+		return
+
+	var tween: Tween = match_board.create_tween()
+	tween.tween_interval(hitstop_duration)
+	if is_instance_valid(capture_placeholder):
+		# A placeholder still carrying the invisibility reveal's material is
+		# left unlit rather than having that animation cut short.
+		if capture_placeholder.material == null:
+			var flash_material := ShaderMaterial.new()
+			flash_material.shader = PIECE_HIT_FLASH_SHADER
+			flash_material.set_shader_parameter("flash_color", match_board.capture_sparkle_color)
+			flash_material.set_shader_parameter("flash_amount", 1.0)
+			capture_placeholder.material = flash_material
+			tween.parallel().tween_property(flash_material, "shader_parameter/flash_amount", CAPTURE_HIT_FLASH_END_AMOUNT, hitstop_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+
+		var rest_position: Vector2 = capture_placeholder.position
+		var blow: Vector2 = (match_board.get_board_position_local_position(to_pos) - match_board.get_board_position_local_position(from_pos)).normalized()
+		tween.parallel().tween_method(func(progress: float): update_capture_hit_jolt(capture_placeholder, rest_position, blow, progress), 0.0, 1.0, hitstop_duration)
+	tween.tween_callback(finish)
+
+func update_capture_hit_jolt(capture_placeholder: Sprite2D, rest_position: Vector2, blow: Vector2, progress: float) -> void:
+	if !is_instance_valid(capture_placeholder):
+		return
+	capture_placeholder.position = rest_position + blow * CAPTURE_HIT_JOLT_DISTANCE * sin(progress * PI * 3.0) * (1.0 - progress)
 
 ## A piece the viewer cannot see, going out of sight where it stands: the
 ## same shimmer and fade as one hidden by a fresh stamp, played on a stand-in

@@ -9,3 +9,6 @@
   `Scenes/GlobalTopBar`.
 - [Docs/Style/STYLE_PLAN.md](Docs/Style/STYLE_PLAN.md) — UI style: palette,
   type roles, line weight, the ink-stamp texture, and the order to roll them out.
+- [Docs/Style/INK_BLOT.md](Docs/Style/INK_BLOT.md) — the ink blot: uneven ink
+  density and wandering edges on the UI, the scenes' line art and washes, and
+  the stamps, and where to tune it.

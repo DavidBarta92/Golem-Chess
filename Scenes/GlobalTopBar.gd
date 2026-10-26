@@ -881,6 +881,10 @@ func _settle_items(container: HBoxContainer) -> void:
 
 func _settle_item(item: Control) -> void:
 	item.material = null
+	# A button's frame draws its ink blot live; give that back.
+	var hover_fill: Node = get_node_or_null("/root/InkHoverFill")
+	if item is Button and hover_fill != null:
+		hover_fill.frame(item)
 	item.modulate.a = 1.0
 	item.scale = Vector2.ONE
 	item.rotation = 0.0

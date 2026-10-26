@@ -7,7 +7,7 @@ const STAMP_ART_MASK_SHADER = preload("res://Shaders/stamp_art_mask.gdshader")
 const STAMP_SQUARE_GRADIENT_SHADER = preload("res://Shaders/stamp_square_gradient.gdshader")
 const FOIL_TINT_SHADER = preload("res://Shaders/stamp_foil_tint.gdshader")
 const FOIL_SHINE_SHADER = preload("res://Shaders/stamp_foil_shine.gdshader")
-const FOIL_ON_WHITE_SHADER = preload("res://Shaders/stamp_foil_on_white.gdshader")
+const STAMP_LAYER_SHADER = preload("res://Shaders/stamp_layer.gdshader")
 const DEFAULT_STAMP_SQUARE_COLOR: Color = Color(0.867, 0.561, 0.016, 1.0)
 const STAMP_FRONT_TEXTURE = preload("res://Assets/stamp_base.svg")
 const STAMP_BACK_TEXTURE = preload("res://Assets/stamp_back.svg")
@@ -25,6 +25,10 @@ const STAMP_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR
 const STAMP_ART_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 const STAMP_SHIMMER_ENABLED: bool = false
 const STAMP_MASK_ASPECT_TOLERANCE: float = 0.01
+## The stamp height the ink blot's blotches are sized for
+## (Shaders/stamp_ink_blot.gdshaderinc): a smaller stamp shows the same
+## blotches, smaller.
+const INK_BLOT_REFERENCE_HEIGHT: float = 229.0
 const DRAG_TILT_FACTOR: float = 0.115
 const DRAG_TILT_ROTATION_FACTOR: float = 0.0072
 const DRAG_TILT_MAX: float = 46.0
@@ -78,8 +82,9 @@ var foil_style: FoilStyle
 var foil_tint_material: ShaderMaterial
 var foil_shine_material: ShaderMaterial
 var foil_on_white_enabled: bool = false
-# Layers with no shader of their own get the white-parts foil's material only while it is on.
-var foil_on_white_materials: Dictionary = {}
+# Layers with no shader of their own, each with a material of its own: the ink
+# blot always, the white-parts foil while one is on.
+var layer_materials: Dictionary = {}
 var tween_hover: Tween
 var tween_reset: Tween
 var tween_move: Tween
@@ -144,6 +149,12 @@ func _ready() -> void:
 	foil_shine_material.shader = FOIL_SHINE_SHADER
 	foil_shine_material.set_shader_parameter("surface_mask_texture", STAMP_FRONT_TEXTURE)
 	foil_shine.material = foil_shine_material
+	for layer: CanvasItem in [name_label, duration_label, effect_art, trigger_art, type_frame]:
+		var layer_material := ShaderMaterial.new()
+		layer_material.shader = STAMP_LAYER_SHADER
+		layer_materials[layer] = layer_material
+		layer.material = layer_material
+	_update_ink_blot_frames()
 	last_position = position
 	last_scale = scale
 	last_rotation = rotation
@@ -181,6 +192,29 @@ func _on_stamp_visual_resized() -> void:
 	pivot_offset = size * 0.5
 	_update_stamp_art_sampling_uniforms(_get_stamp_art_texture())
 	_update_foil_parameters()
+	_update_ink_blot_frames()
+
+## Where each inked layer sits in the stamp, for the ink blot: its blotches run
+## across the layers as one print. The pattern's markers are left out - they
+## are what the stamp does, and must read at a glance.
+func _update_ink_blot_frames() -> void:
+	var units: float = INK_BLOT_REFERENCE_HEIGHT / maxf(size.y, 1.0)
+	var seed_value: float = _ink_blot_seed()
+	var layers: Array = [stamp_square, stamp_art]
+	layers.append_array(layer_materials.keys())
+	for layer: Control in layers:
+		layer.set_instance_shader_parameter(&"stamp_blot_frame", Vector4(layer.position.x, layer.position.y, units, seed_value))
+
+## The blot's pattern comes from which print the stamp is, never from this
+## node: a stamp keeps its worn look wherever it shows and however often it is
+## drawn anew - in the hand, on the collection's pages, in a codex.
+func _ink_blot_seed() -> float:
+	var identity: String = ""
+	if stamp_print != null:
+		identity = stamp_print.print_id
+	elif stamp != null:
+		identity = stamp.stamp_code
+	return float(posmod(identity.hash(), 997))
 
 func _apply_foil_state(content_visible: bool = true) -> void:
 	var style: FoilStyle = stamp_print.foil_style if stamp_print != null else null
@@ -196,16 +230,10 @@ func _apply_foil_state(content_visible: bool = true) -> void:
 # pixels, rather than by an overlay reading the screen back.
 func _set_foil_on_white_enabled(enabled: bool) -> void:
 	foil_on_white_enabled = enabled
-	for layer: CanvasItem in [name_label, duration_label, effect_art, trigger_art, type_frame]:
-		if enabled && !foil_on_white_materials.has(layer):
-			var layer_material := ShaderMaterial.new()
-			layer_material.shader = FOIL_ON_WHITE_SHADER
-			foil_on_white_materials[layer] = layer_material
-		layer.material = foil_on_white_materials[layer] if enabled else null
 
 func _get_foil_on_white_layers() -> Dictionary:
 	var layers: Dictionary = {stamp_art: stamp_art_material, pattern_view: pattern_view.material}
-	layers.merge(foil_on_white_materials)
+	layers.merge(layer_materials)
 	return layers
 
 func _update_foil_parameters() -> void:
@@ -685,6 +713,7 @@ func _apply_stamp() -> void:
 	_apply_art_state()
 	_apply_face_state()
 	_apply_collection_state()
+	_update_ink_blot_frames()
 	if preview_alpha_enabled:
 		apply_preview_alpha()
 

@@ -375,6 +375,9 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @export_range(0.2, 0.55, 0.01) var piece_move_capture_approach_edge_ratio: float = 0.42
 @export_range(0.0, 0.6, 0.01) var piece_move_capture_approach_hold_duration: float = 0.25
 @export_range(0.05, 0.35, 0.01) var piece_move_capture_push_duration: float = 0.14
+## Both pieces hold still this long at the moment of contact, the struck one
+## flashing, before it breaks and the striker recoils.
+@export_range(0.0, 0.2, 0.01) var piece_move_capture_hitstop_duration: float = 0.08
 @export_range(0.05, 0.35, 0.01) var piece_move_capture_recoil_duration: float = 0.12
 @export_range(0.05, 0.5, 0.01) var piece_move_capture_center_settle_duration: float = 0.24
 @export_range(0.0, 18.0, 0.5) var piece_move_capture_push_rotation_degrees: float = 8.0

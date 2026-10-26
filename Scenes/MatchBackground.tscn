@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bd4avsx325i0l"]
+[gd_scene load_steps=12 format=3 uid="uid://bd4avsx325i0l"]
 
 [ext_resource type="Script" path="res://Scripts/MatchView/MatchBackgroundController.gd" id="1_background"]
 [ext_resource type="Texture2D" uid="uid://yor8xr1ql6ct" path="res://Assets/bg3.png" id="10_bg3"]
@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://bun5o7u5l4jpf" path="res://Assets/bg_window_line.png" id="16_bgwindowline"]
 [ext_resource type="Texture2D" uid="uid://bdqps56hqsp3r" path="res://Assets/bg4_color.png" id="17_bg4color"]
 [ext_resource type="Texture2D" uid="uid://hid8efesyp1s" path="res://Assets/bg4_line_reveal_mask.png" id="18_bg4line"]
+[ext_resource type="Material" path="res://Shaders/ink_blot_washes.tres" id="19_blot_washes"]
 
 [node name="MatchBackground" type="Control"]
 z_index = -100
@@ -78,6 +79,7 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="BgTableColor" type="TextureRect" parent="."]
+material = ExtResource("19_blot_washes")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -126,6 +128,7 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Bg4Color" type="TextureRect" parent="."]
+material = ExtResource("19_blot_washes")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

@@ -11,6 +11,12 @@ shader_type canvas_item;
 // It can re-ink black UI art first (pager arrows, the codex buttons' icons):
 // black becomes ink_color, white stays white, greys fall in between. A plain
 // modulate cannot do it - multiplying never lifts black off zero.
+//
+// The ink also gets the UI's ink blot (ink_blot.gdshaderinc), its density
+// only: titles sample a font atlas, where a wandering edge would pull in the
+// neighbouring glyphs.
+
+#include "res://Shaders/ink_blot.gdshaderinc"
 
 uniform sampler2D stamp_mask : repeat_enable, filter_linear, hint_default_white;
 // 1 = the mask as baked, 0 = no specks.
@@ -41,5 +47,5 @@ void fragment() {
 	vec2 offset = vec2(fract(stamp_seed * 0.6180339), fract(stamp_seed * 0.7548777)) * mask_size;
 	vec2 masks = texture(stamp_mask, (local_position + offset) / mask_size).rg;
 	float keep = mix(masks.r, masks.g, stamp_fill);
-	COLOR.a *= mix(1.0, keep, strength);
+	COLOR.a *= mix(1.0, keep, strength) * ink_blot_density(ink_blot_ui, local_position, stamp_seed);
 }

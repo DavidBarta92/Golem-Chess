@@ -15,8 +15,16 @@ extends Node
 ## it - but a popup draws a radio item's mark untinted. The theme's mark is
 ## white; while a popup is open, each radio item's mark is tinted here with
 ## its item's label colour: ink, paper on the hovered item.
+##
+## The buttons that flood, and the spin boxes whose arrows wear the same
+## prints, draw their frame's ink blot live (Shaders/ink_frame.gdshader), with
+## the seed their hover ink uses: outline, hover ink and pressed fill show one
+## pattern. Their prints are baked without it (live_blot in InkStampStyleBox).
+## The hover's state is copied onto the button too, so where its ink already
+## lies, the frame adds none of its own.
 
 const FLOOD_SHADER: Shader = preload("res://Shaders/ink_flood.gdshader")
+const FRAME_SHADER: Shader = preload("res://Shaders/ink_frame.gdshader")
 const FRONT_NOISE_PATH: String = "res://ui/themes/stamp/ink_flood_noise.png"
 const STAMP_MASK_PATH: String = "res://ui/themes/stamp/ink_stamp_mask.png"
 ## Theme types whose hover style floods.
@@ -25,6 +33,7 @@ const FILL_SECONDS: float = 0.5
 const DRAIN_SECONDS: float = 0.25
 
 var _material: ShaderMaterial
+var _frame_material: ShaderMaterial
 var _hover_styles: Array[StyleBox] = []
 ## Popup menus open now, whose radio marks follow the hover.
 var _open_popups: Array[PopupMenu] = []
@@ -40,6 +49,10 @@ func _ready() -> void:
 		_material.shader = FLOOD_SHADER
 		_material.set_shader_parameter(&"front_noise", load(FRONT_NOISE_PATH))
 		_material.set_shader_parameter(&"stamp_mask", load(STAMP_MASK_PATH))
+		_frame_material = ShaderMaterial.new()
+		_frame_material.shader = FRAME_SHADER
+		_frame_material.set_shader_parameter(&"front_noise", load(FRONT_NOISE_PATH))
+		_frame_material.set_shader_parameter(&"stamp_mask", load(STAMP_MASK_PATH))
 	get_tree().node_added.connect(_on_node_added)
 	_visit(get_tree().root)
 
@@ -64,6 +77,12 @@ func _on_node_added(node: Node) -> void:
 		if !popup.about_to_popup.is_connected(opened):
 			popup.about_to_popup.connect(opened)
 		return
+	var spin_box := node as SpinBox
+	if spin_box != null:
+		var spin_drawn: Callable = frame.bind(spin_box)
+		if !spin_box.draw.is_connected(spin_drawn):
+			spin_box.draw.connect(spin_drawn)
+		return
 	var button := node as Button
 	if button == null:
 		return
@@ -80,11 +99,11 @@ func _on_node_added(node: Node) -> void:
 		button.draw.connect(drawn)
 
 func _on_mouse_entered(button: Button) -> void:
-	if _material == null or button.disabled or button.flat or !_hover_styles.has(button.get_theme_stylebox(&"hover")):
+	if _material == null or button.disabled or !_floods(button):
 		return
 	var flood: _Flood = _flood_of(button)
 	if flood == null:
-		flood = _Flood.new(button, _material)
+		flood = _Flood.new(button, _material, _seed_of(button))
 		# Internal, so scripts walking the button's children do not meet it.
 		button.add_child(flood, false, Node.INTERNAL_MODE_FRONT)
 		button.set_meta(&"ink_flood", flood)
@@ -96,10 +115,30 @@ func _on_mouse_exited(button: Button) -> void:
 		flood.fill_to(0.0, DRAIN_SECONDS)
 
 func _on_button_drawn(button: Button) -> void:
+	frame(button)
 	if button.is_hovered():
 		_on_mouse_entered(button)
 	else:
 		_on_mouse_exited(button)
+
+## Gives a button that floods, or a spin box, the live ink blot on its frame,
+## unless it has a material of its own. Done when it first draws, after its
+## scene's own scripts have had their say; call it again for a control whose
+## material was taken away (the top bar's items, once they have settled).
+func frame(control: Control) -> void:
+	if _frame_material == null or control.material != null:
+		return
+	if control is Button and !_floods(control as Button):
+		return
+	control.material = _frame_material
+	control.set_instance_shader_parameter(&"ink_blot_seed", _seed_of(control))
+
+func _floods(button: Button) -> bool:
+	return !button.flat and _hover_styles.has(button.get_theme_stylebox(&"hover"))
+
+## The frame's blotches and the hover ink's are one pattern.
+func _seed_of(control: Control) -> float:
+	return float(control.get_instance_id() % 997)
 
 ## Takes a button's ink away at once: for a button on its way out, which
 ## leaves in a way of its own (the top bar's dissolve).
@@ -153,6 +192,8 @@ class _Flood:
 	const LABEL_TURN_END: float = 0.95
 
 	var button: Button
+	## Shared with the button's frame, so the two show one pattern.
+	var blot_seed: float
 	var progress: float = 0.0
 	## Where the ink is heading: 1 hovered, 0 not.
 	var target: float = 0.0
@@ -162,8 +203,9 @@ class _Flood:
 	## Overrides the button had of its own, put back once the ink has drained.
 	var _own_overrides: Dictionary = {}
 
-	func _init(owner_button: Button, flood_material: ShaderMaterial) -> void:
+	func _init(owner_button: Button, flood_material: ShaderMaterial, owner_seed: float) -> void:
 		button = owner_button
+		blot_seed = owner_seed
 		name = "InkFlood"
 		material = flood_material
 		show_behind_parent = true
@@ -171,7 +213,7 @@ class _Flood:
 		set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	func _ready() -> void:
-		set_instance_shader_parameter(&"flood_seed", float(get_instance_id() % 997))
+		set_instance_shader_parameter(&"flood_seed", blot_seed)
 		set_instance_shader_parameter(&"flood_progress", 0.0)
 		resized.connect(_sync_shape)
 		# A button that turns disabled under the pointer shows no ink.
@@ -179,6 +221,7 @@ class _Flood:
 		_sync_shape()
 
 	func _draw() -> void:
+		_sync_button()
 		if button.disabled:
 			return
 		draw_rect(Rect2(Vector2.ZERO, size), Color.WHITE)
@@ -213,15 +256,24 @@ class _Flood:
 			_take_label_colours()
 		progress = value
 		set_instance_shader_parameter(&"flood_progress", value)
+		_sync_button()
 		_tint_label()
+
+	## The ink as the button's frame sees it (Shaders/ink_frame.gdshader): none
+	## while the button is disabled, as none is drawn then.
+	func _sync_button() -> void:
+		button.set_instance_shader_parameter(&"flood_progress", 0.0 if button.disabled else progress)
 
 	## Size and corners from the button's hover style, which the ink fills.
 	func _sync_shape() -> void:
-		set_instance_shader_parameter(&"flood_size", size)
+		for item: CanvasItem in [self, button]:
+			item.set_instance_shader_parameter(&"flood_size", size)
 		var style: StyleBox = button.get_theme_stylebox(&"hover")
 		var flat: StyleBoxFlat = (style as InkStampStyleBox).shape if style is InkStampStyleBox else style as StyleBoxFlat
 		if flat != null:
-			set_instance_shader_parameter(&"flood_radii", Vector4(flat.corner_radius_top_left, flat.corner_radius_top_right, flat.corner_radius_bottom_right, flat.corner_radius_bottom_left))
+			var radii := Vector4(flat.corner_radius_top_left, flat.corner_radius_top_right, flat.corner_radius_bottom_right, flat.corner_radius_bottom_left)
+			for item: CanvasItem in [self, button]:
+				item.set_instance_shader_parameter(&"flood_radii", radii)
 
 	func _take_label_colours() -> void:
 		_label_from.clear()

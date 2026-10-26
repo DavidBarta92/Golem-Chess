@@ -40,6 +40,12 @@ const CORNER_EXTRA: int = 2
 		variants = value
 		_prints_loaded = false
 		emit_changed()
+## The ink blot's density (Docs/Style/INK_BLOT.md) is left out of the prints:
+## the control draws it live (InkHoverFill gives the buttons it floods
+## Shaders/ink_frame.gdshader), so the frame shares its blotches with the
+## hover's ink. The wandering edge is baked either way. Run the tool after
+## changing it.
+@export var live_blot: bool = false
 
 var _prints: Array[Texture2D] = []
 var _prints_loaded: bool = false

@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="Script" path="res://Scenes/TutorialIntro.gd" id="1_intro"]
 [ext_resource type="PackedScene" path="res://Scenes/Comic/ComicPanel.tscn" id="2_comic_panel"]
@@ -20,6 +20,7 @@
 [ext_resource type="Texture2D" path="res://Assets/tutorial_3_color.png" id="19_pointer_color"]
 [ext_resource type="Script" path="res://Scripts/Audio/MusicCue.gd" id="90_music_cue"]
 [ext_resource type="Script" path="res://Scripts/Audio/MusicStemFade.gd" id="91_music_stem_fade"]
+[ext_resource type="Material" path="res://Shaders/ink_blot_washes.tres" id="30_blot_washes"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_codex_shadow"]
 shader = ExtResource("17_flat_shadow")
@@ -175,6 +176,7 @@ fill_fade_duration = 1.0
 reveal_sfx_name = ""
 
 [node name="FigureColor" type="TextureRect" parent="Root/ArtClip"]
+material = ExtResource("30_blot_washes")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

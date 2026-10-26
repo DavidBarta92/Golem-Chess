@@ -31,6 +31,8 @@ signal reveal_started
 signal reveal_finished
 
 const LINE_REVEAL_SHADER = preload("res://Shaders/mainmenu_line_reveal.gdshader")
+## The fill is a wash under the ink, so it gets the washes' ink blot.
+const FILL_MATERIAL = preload("res://Shaders/ink_blot_washes.tres")
 const EDITOR_PREVIEW_TIME: float = 1000.0
 ## Shader time for "not drawn at all". The reveal is per stroke, each with its
 ## own random start delay, so at time 0 the strokes that drew the shortest
@@ -570,6 +572,8 @@ func _build_layers() -> void:
 		layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		layer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	if _fill_rect.material == null:
+		_fill_rect.material = FILL_MATERIAL
 
 	# Each panel animates on its own clock, so it needs its own material - a
 	# material shared through the .tscn would make every panel on the page

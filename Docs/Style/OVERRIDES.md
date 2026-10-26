@@ -59,6 +59,9 @@ missing print falls back to drawing the shape plainly.
   or after adding an `InkStampStyleBox`, run
   `python tools/generate_ink_stamps.py`. The editor imports the PNGs when it
   next gets focus.
+- The prints also carry the ink blot (uneven density, wandering edges), by
+  the UI values of `Shaders/ink_blot_settings.tres`; see
+  [INK_BLOT.md](INK_BLOT.md). Run the tool again after changing those.
 
 Stamped: buttons in every state including focus, fields, tabs, panels,
 dialogs, windows, popups, grabbers, progress bars, list selection, the codex

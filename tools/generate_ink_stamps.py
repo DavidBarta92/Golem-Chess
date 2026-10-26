@@ -19,12 +19,19 @@ one look: the line's specks in red, the sparser specks of an ink fill in green.
 And ui/themes/stamp/ink_flood_noise.png, the noise that gives a button's
 hover fill (Shaders/ink_flood.gdshader) its ragged front.
 
+The ink blot (Docs/Style/INK_BLOT.md) goes into the prints too: the ink's
+density drifts in blotches and its edges wander, by the UI values of
+Shaders/ink_blot_settings.tres. The shaders read those values live; the
+prints only change when this script runs again. It also writes
+ui/themes/stamp/ink_blot_noise.png, the noise the shaders' blot is drawn with.
+
 Usage:
     python tools/generate_ink_stamps.py
 
 Re-run it whenever a stamped style's shape changes (a colour, a border, a
-radius) or after adding an InkStampStyleBox to a theme. Godot imports the PNGs
-when the editor next gets focus. The look is tuned by the constants below.
+radius), after adding an InkStampStyleBox to a theme, or after changing the
+blot's UI values. Godot imports the PNGs when the editor next gets focus. The
+look is tuned by the constants below and by the blot settings.
 """
 
 from __future__ import annotations
@@ -76,12 +83,67 @@ FLOOD_BLOTCH_SCALE = 9.0
 FLOOD_WANDER_SCALE = 2.5
 SEED = 1871
 
+# The ink blot's values: the settings script's defaults, overridden by what
+# the .tres sets (Godot leaves values at their default out of it).
+BLOT_SETTINGS = ROOT / "Shaders/ink_blot_settings.tres"
+BLOT_SETTINGS_SCRIPT = ROOT / "Scripts/InkBlot/InkBlotSettings.gd"
+# The blot's noise texture: blotches in red, the edge's wander in green (x)
+# and blue (y). Feature sizes in texels - keep them in step with
+# INK_BLOT_NOISE_BLOTCH and INK_BLOT_NOISE_WANDER in Shaders/ink_blot.gdshaderinc.
+BLOT_NOISE_SIZE = 1024
+BLOT_NOISE_BLOTCH = 64.0
+BLOT_NOISE_WANDER = 16.0
+# A print has PAD units of room around its shape; the blot's wander and the
+# ragged edge together must stay inside it.
+BLOT_MAX_UI_EDGE = PAD - RAGGED_AMOUNT - 0.25
+
 
 def periodic_noise(rng: np.random.Generator, width: int, height: int, sigma: float) -> np.ndarray:
     """Smooth noise in 0..1 that tiles seamlessly over width x height."""
     field = gaussian_filter(rng.standard_normal((height, width)), sigma, mode="wrap")
     field -= field.min()
     return field / max(field.max(), 1e-9)
+
+
+def fractal_noise(rng: np.random.Generator, width: int, height: int, size: float) -> np.ndarray:
+    """Periodic noise with blobs about `size` across and finer ones on them:
+    four octaves, each half the size and half as strong. Zero mean, unit spread."""
+    field = np.zeros((height, width))
+    amplitude, sigma = 1.0, size / 4.0
+    for _ in range(4):
+        octave = gaussian_filter(rng.standard_normal((height, width)), max(sigma, 0.3), mode="wrap")
+        field += amplitude * octave / max(octave.std(), 1e-9)
+        amplitude, sigma = amplitude * 0.5, sigma * 0.5
+    return (field - field.mean()) / max(field.std(), 1e-9)
+
+
+def equalized(field: np.ndarray) -> np.ndarray:
+    """The same pattern with its values spread evenly over 0..1."""
+    ranks = np.argsort(np.argsort(field, axis=None)).reshape(field.shape)
+    return (ranks + 0.5) / field.size
+
+
+def blot_keep(blotches: np.ndarray, density: float, contrast: float) -> np.ndarray:
+    """The share of the ink kept, from evenly spread blotch noise - as
+    ink_blot_density() in Shaders/ink_blot.gdshaderinc does it."""
+    softness = max(1.0 - contrast, 0.02)
+    shaped = np.clip((blotches - 0.5) / softness + 0.5, 0.0, 1.0)
+    return 1.0 - density * (1.0 - shaped)
+
+
+def blot_wander(rng: np.random.Generator, width: int, height: int, size: float) -> np.ndarray:
+    """How far an edge is pushed, -1..1 (three spreads either way), periodic."""
+    return np.clip(fractal_noise(rng, width, height, size) / 3.0, -1.0, 1.0)
+
+
+def read_blot_settings() -> dict[str, float]:
+    script = BLOT_SETTINGS_SCRIPT.read_text(encoding="utf-8")
+    values = {name: float(value) for name, value in re.findall(r"^@export[^\n]*?var (\w+): float = ([-\d.]+)", script, re.M)}
+    if BLOT_SETTINGS.exists():
+        for name, value in re.findall(r"^(\w+) = ([-\d.e]+)$", BLOT_SETTINGS.read_text(encoding="utf-8"), re.M):
+            if name in values:
+                values[name] = float(value)
+    return values
 
 
 def speck_keep_mask(rng: np.random.Generator, width: int, height: int, share: float = 1.0) -> np.ndarray:
@@ -133,7 +195,7 @@ def patch_margins(shape: dict) -> tuple[int, int, int, int]:
     return tuple(PAD + int(np.ceil(side)) + CORNER_EXTRA for side in sides)
 
 
-def render_print(shape: dict, rng: np.random.Generator) -> np.ndarray:
+def render_print(shape: dict, rng: np.random.Generator, blot_rng: np.random.Generator, blot: dict[str, float], live_blot: bool = False) -> np.ndarray:
     left, top, right, bottom = patch_margins(shape)
     width, height = left + CENTRE_WIDTH + right, top + CENTRE_HEIGHT + bottom
     # Specks and raggedness are periodic over the centre tile, so the tiled
@@ -141,11 +203,19 @@ def render_print(shape: dict, rng: np.random.Generator) -> np.ndarray:
     keep_tile = speck_keep_mask(rng, CENTRE_WIDTH, CENTRE_HEIGHT)
     fill_keep_tile = speck_keep_mask(rng, CENTRE_WIDTH, CENTRE_HEIGHT, FILL_SPECK_SHARE)
     ragged_tile = (periodic_noise(rng, CENTRE_WIDTH, CENTRE_HEIGHT, RAGGED_SCALE) - 0.5) * 2.0 * RAGGED_AMOUNT
+    # The ink blot: blotches of density over the ink, and edges pushed in and
+    # out further along a coarser noise. A live_blot style gets its density
+    # from Shaders/ink_frame.gdshader instead, so only its edge is baked.
+    blotches = equalized(fractal_noise(blot_rng, CENTRE_WIDTH, CENTRE_HEIGHT, blot["ui_blotch_size"]))
+    blot_keep_tile = blot_keep(blotches, 0.0 if live_blot else blot["ui_density"], blot["contrast"])
+    ui_edge = min(blot["ui_edge"], BLOT_MAX_UI_EDGE)
+    ragged_tile = ragged_tile + blot_wander(blot_rng, CENTRE_WIDTH, CENTRE_HEIGHT, blot["ui_wander_size"]) * ui_edge
     rows = (np.arange(height) - top) % CENTRE_HEIGHT
     cols = (np.arange(width) - left) % CENTRE_WIDTH
     keep = keep_tile[np.ix_(rows, cols)]
     fill_keep_all = fill_keep_tile[np.ix_(rows, cols)]
     ragged = ragged_tile[np.ix_(rows, cols)]
+    blot_keep_all = blot_keep_tile[np.ix_(rows, cols)]
 
     py, px = np.mgrid[0:height, 0:width] + 0.5
     bw = shape["border"]
@@ -174,8 +244,8 @@ def render_print(shape: dict, rng: np.random.Generator) -> np.ndarray:
 
     border_rgba, fill_rgba = shape["border_color"], shape["bg_color"]
     ring_keep = np.where(np.minimum(-outer_sdf, inner_sdf) > THICK_BORDER_DEPTH, fill_keep_all, keep)
-    ring_alpha = ring * border_rgba[3] * ring_keep
-    fill_keep = fill_keep_all if luminance(fill_rgba) < INK_FILL_LUMINANCE else 1.0
+    ring_alpha = ring * border_rgba[3] * ring_keep * blot_keep_all
+    fill_keep = fill_keep_all * blot_keep_all if luminance(fill_rgba) < INK_FILL_LUMINANCE else 1.0
     fill_alpha = fill * fill_rgba[3] * fill_keep
     alpha = ring_alpha + fill_alpha
     safe = np.maximum(alpha, 1e-6)
@@ -214,6 +284,7 @@ def read_stamps(theme_path: Path) -> list[dict]:
         stamps.append({
             "name": props["stamp_name"].strip('"'),
             "variants": int(props.get("variants", "4")),
+            "live_blot": props.get("live_blot") == "true",
             "shape": {
                 "bg_color": parse_color(flat.get("bg_color", "Color(0.6, 0.6, 0.6, 1)")),
                 "border_color": parse_color(flat.get("border_color", "Color(0.8, 0.8, 0.8, 1)")),
@@ -239,12 +310,26 @@ def main() -> None:
     wander = periodic_noise(flood_rng, MASK_SIZE, MASK_SIZE, FLOOD_WANDER_SCALE)
     flood = np.stack([blotches, wander, np.zeros_like(blotches)], axis=-1)
     Image.fromarray((flood * 255.0 + 0.5).astype(np.uint8), "RGB").save(OUT_DIR / "ink_flood_noise.png")
-    written = 2
+    # The ink blot's noise (Shaders/ink_blot.gdshaderinc): blotches spread
+    # evenly over 0..1 in red, the edge's wander around 0.5 in green and blue.
+    blot_rng = np.random.default_rng([SEED, sum(map(ord, "blot"))])
+    size = BLOT_NOISE_SIZE
+    blot_noise = np.stack([
+        equalized(fractal_noise(blot_rng, size, size, BLOT_NOISE_BLOTCH)),
+        blot_wander(blot_rng, size, size, BLOT_NOISE_WANDER) * 0.5 + 0.5,
+        blot_wander(blot_rng, size, size, BLOT_NOISE_WANDER) * 0.5 + 0.5,
+    ], axis=-1)
+    Image.fromarray((blot_noise * 255.0 + 0.5).astype(np.uint8), "RGB").save(OUT_DIR / "ink_blot_noise.png")
+    blot = read_blot_settings()
+    if blot["ui_edge"] > BLOT_MAX_UI_EDGE:
+        print(f"ui_edge {blot['ui_edge']} is more than a print has room for; using {BLOT_MAX_UI_EDGE}")
+    written = 3
     for theme_path in THEMES:
         for stamp in read_stamps(theme_path):
             for index in range(stamp["variants"]):
                 variant_rng = np.random.default_rng([SEED, index, sum(map(ord, stamp["name"]))])
-                pixels = render_print(stamp["shape"], variant_rng)
+                variant_blot_rng = np.random.default_rng([SEED, index, sum(map(ord, stamp["name"])), sum(map(ord, "blot"))])
+                pixels = render_print(stamp["shape"], variant_rng, variant_blot_rng, blot, stamp["live_blot"])
                 Image.fromarray(pixels, "RGBA").save(OUT_DIR / f"{stamp['name']}_{index}.png")
                 written += 1
             print(f"{theme_path.name}: {stamp['name']} x{stamp['variants']}")

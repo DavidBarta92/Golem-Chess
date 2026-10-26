@@ -17,6 +17,7 @@ var movement_tilt_degrees: float = 1.4
 var capture_approach_edge_ratio: float = 0.42
 var capture_approach_hold_duration: float = 0.25
 var capture_push_duration: float = 0.14
+var capture_hitstop_duration: float = 0.08
 var capture_recoil_duration: float = 0.12
 var capture_center_settle_duration: float = 0.24
 var capture_push_rotation_degrees: float = 8.0
@@ -63,6 +64,7 @@ func configure(config: Dictionary) -> void:
 	capture_approach_edge_ratio = float(config.get("capture_approach_edge_ratio", capture_approach_edge_ratio))
 	capture_approach_hold_duration = float(config.get("capture_approach_hold_duration", capture_approach_hold_duration))
 	capture_push_duration = float(config.get("capture_push_duration", capture_push_duration))
+	capture_hitstop_duration = float(config.get("capture_hitstop_duration", capture_hitstop_duration))
 	capture_recoil_duration = float(config.get("capture_recoil_duration", capture_recoil_duration))
 	capture_center_settle_duration = float(config.get("capture_center_settle_duration", capture_center_settle_duration))
 	capture_push_rotation_degrees = float(config.get("capture_push_rotation_degrees", capture_push_rotation_degrees))
@@ -256,7 +258,9 @@ func play_capture_impact_sequence(
 	var push_tween: Tween = create_animation_tween()
 	if push_tween == null:
 		return false
-	push_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	# Speeding up into the target, not easing off before it: the blow lands at
+	# full speed.
+	push_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 	push_tween.tween_method(
 		func(progress: float): update_capture_impact_motion(
 			holder,
@@ -275,6 +279,15 @@ func play_capture_impact_sequence(
 
 	if capture_impact_callback.is_valid():
 		capture_impact_callback.call()
+
+	if capture_hitstop_duration > 0.0:
+		var hitstop_tween: Tween = create_animation_tween()
+		if hitstop_tween == null:
+			return false
+		hitstop_tween.tween_interval(capture_hitstop_duration)
+		await hitstop_tween.finished
+		if !is_move_holder_active(holder):
+			return false
 
 	var recoil_tween: Tween = create_animation_tween()
 	if recoil_tween == null:

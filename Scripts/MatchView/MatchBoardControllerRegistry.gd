@@ -636,6 +636,7 @@ func sync_piece_move_animator() -> void:
 		"capture_approach_edge_ratio": match_board.piece_move_capture_approach_edge_ratio,
 		"capture_approach_hold_duration": match_board.piece_move_capture_approach_hold_duration,
 		"capture_push_duration": match_board.piece_move_capture_push_duration,
+		"capture_hitstop_duration": match_board.piece_move_capture_hitstop_duration,
 		"capture_recoil_duration": match_board.piece_move_capture_recoil_duration,
 		"capture_center_settle_duration": match_board.piece_move_capture_center_settle_duration,
 		"capture_push_rotation_degrees": match_board.piece_move_capture_push_rotation_degrees,
