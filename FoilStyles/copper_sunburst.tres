@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="FoilStyle" format=3 uid="uid://tekx7l8rc62x"]
+
+[ext_resource type="Script" path="res://Scripts/FoilStyle.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Assets/FoilPatterns/sunburst.png" id="2_pattern"]
+
+[sub_resource type="Gradient" id="Gradient_colors"]
+offsets = PackedFloat32Array(0, 0.4, 0.75, 1)
+colors = PackedColorArray(0.35, 0.12, 0.06, 1, 0.78, 0.38, 0.2, 1, 0.98, 0.6, 0.35, 1, 1, 0.75, 0.75, 1)
+
+[resource]
+script = ExtResource("1_script")
+area = 0
+gradient = SubResource("Gradient_colors")
+gradient_mirrored = true
+height_map = ExtResource("2_pattern")
+pattern_scale = 1
+pattern_bend = 0.8
+band_density = 0.7
+band_angle = 45
+speed = 0.45
+tint_strength = 0.6
+shine_strength = 0.3
+sparkle_amount = 0.05
+sparkle_size = 7

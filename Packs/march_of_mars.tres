@@ -31,6 +31,19 @@
 [ext_resource type="Resource" path="res://Stamps/Celestials/sun.tres" id="35_sun"]
 [ext_resource type="Resource" path="res://Stamps/Celestials/uranus.tres" id="36_uranus"]
 [ext_resource type="Resource" path="res://Stamps/Celestials/venus.tres" id="37_venus"]
+[ext_resource type="Resource" uid="uid://bmt4h7tstwxju" path="res://StampPrints/Courtyard/archer_foil.tres" id="foil_archer"]
+[ext_resource type="Resource" uid="uid://bfje3yfhjjpmm" path="res://StampPrints/Courtyard/assassin_foil.tres" id="foil_assassin"]
+[ext_resource type="Resource" uid="uid://brrne1j0ieerc" path="res://StampPrints/Courtyard/berserk_foil.tres" id="foil_berserk"]
+[ext_resource type="Resource" uid="uid://cyajfo858nhyd" path="res://StampPrints/Courtyard/bishop_foil.tres" id="foil_bishop"]
+[ext_resource type="Resource" uid="uid://dmm1oc5fuy45k" path="res://StampPrints/Courtyard/duke_foil.tres" id="foil_duke"]
+[ext_resource type="Resource" uid="uid://c5xgej5ob1y42" path="res://StampPrints/Courtyard/gold_general_foil.tres" id="foil_gold_general"]
+[ext_resource type="Resource" uid="uid://dq61aanc0qukn" path="res://StampPrints/Courtyard/knight_foil.tres" id="foil_knight"]
+[ext_resource type="Resource" uid="uid://i24wj1noanr" path="res://StampPrints/Courtyard/lance_foil.tres" id="foil_lance"]
+[ext_resource type="Resource" uid="uid://k7373jcakm0r" path="res://StampPrints/Courtyard/prince_foil.tres" id="foil_prince"]
+[ext_resource type="Resource" uid="uid://cqd3h286viyhe" path="res://StampPrints/Courtyard/silver_general_foil.tres" id="foil_silver_general"]
+[ext_resource type="Resource" uid="uid://cb68tuctduyjw" path="res://StampPrints/Courtyard/the_golem_foil.tres" id="foil_the_golem"]
+[ext_resource type="Resource" uid="uid://b7j35s02ihu8c" path="res://StampPrints/Courtyard/war_drummer_foil.tres" id="foil_war_drummer"]
+[ext_resource type="Resource" uid="uid://duv7bheu1rmyd" path="res://StampPrints/Courtyard/warlord_foil.tres" id="foil_warlord"]
 
 [resource]
 script = ExtResource("9_qgwlf")
@@ -44,5 +57,6 @@ pack_normal_texture_path = "res://Assets/booster_normal.png"
 pack_roughness_texture_path = "res://Assets/booster_roughness.png"
 pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 possible_stamps = Array[ExtResource("8_xotab")]([ExtResource("10_archer"), ExtResource("11_assassin"), ExtResource("12_berserk"), ExtResource("13_bishop"), ExtResource("14_duke"), ExtResource("15_gold_general"), ExtResource("16_knight"), ExtResource("17_lance"), ExtResource("18_prince"), ExtResource("19_silver_general"), ExtResource("20_the_golem"), ExtResource("21_war_drummer"), ExtResource("22_warlord"), ExtResource("23_black_hole"), ExtResource("24_comet"), ExtResource("25_earth"), ExtResource("26_jupiter"), ExtResource("27_mars"), ExtResource("28_mercury"), ExtResource("29_moon"), ExtResource("30_nebula"), ExtResource("31_neptune"), ExtResource("32_north_star"), ExtResource("33_nova"), ExtResource("34_saturn"), ExtResource("35_sun"), ExtResource("36_uranus"), ExtResource("37_venus")])
+possible_stamp_prints = Array[ExtResource("7_8rira")]([ExtResource("foil_archer"), ExtResource("foil_assassin"), ExtResource("foil_berserk"), ExtResource("foil_bishop"), ExtResource("foil_duke"), ExtResource("foil_gold_general"), ExtResource("foil_knight"), ExtResource("foil_lance"), ExtResource("foil_prince"), ExtResource("foil_silver_general"), ExtResource("foil_the_golem"), ExtResource("foil_war_drummer"), ExtResource("foil_warlord")])
 include_all_standard_prints = false
 price = 1

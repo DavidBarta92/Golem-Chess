@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://c1hoxdtpqrkg1" path="res://Assets/10b.png" id="1_3ead7"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="4_nyud8"]
-[ext_resource type="Texture2D" uid="uid://dud0kn0ci4j77" path="res://Assets/Stamps/berserk_1.png" id="4_omue0"]
+[ext_resource type="Texture2D" uid="uid://dud0kn0ci4j77" path="res://Assets/Stamps/Courtyard/berserk_1.png" id="4_omue0"]
 [ext_resource type="Texture2D" uid="uid://crbfhk5qpqbmo" path="res://Assets/10w.png" id="5_d7ph4"]
 
 [resource]

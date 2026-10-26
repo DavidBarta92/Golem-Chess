@@ -30,14 +30,15 @@ enum Role {
 @export var square_color_a: Color = Color(0, 0, 0, 0)
 @export var square_color_b: Color = Color(0, 0, 0, 0)
 # Per-stamp look of the name, the duration number and the pattern markers.
-# A transparent color, an empty font or a size of 0 keeps StampVisual's default.
+# A transparent color, an empty font or a size of 0 keeps StampVisual's default;
+# the duration outline keeps it at -1, and 0 turns the outline off.
 @export_group("Text & Markers")
 @export var name_color: Color = Color(0, 0, 0, 0)
 @export var name_font: Font
 @export var name_font_size: int = 0
 @export var duration_color: Color = Color(0, 0, 0, 0)
 @export var duration_outline_color: Color = Color(0, 0, 0, 0)
-@export var duration_outline_size: int = 0
+@export_range(-1, 64) var duration_outline_size: int = -1
 # One color for every movement and effect marker in the pattern.
 @export var marker_color: Color = Color(0, 0, 0, 0)
 @export_group("")

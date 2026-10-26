@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FoilStyle" format=3 uid="uid://rj0n1261a3hv"]
+
+[ext_resource type="Script" path="res://Scripts/FoilStyle.gd" id="1_script"]
+
+[sub_resource type="Gradient" id="Gradient_colors"]
+offsets = PackedFloat32Array(0, 0.1667, 0.3333, 0.5, 0.6667, 0.8333, 1)
+colors = PackedColorArray(1, 0.4, 0.4, 1, 1, 1, 0.4, 1, 0.4, 1, 0.4, 1, 0.4, 1, 1, 1, 0.4, 0.4, 1, 1, 1, 0.4, 1, 1, 1, 0.4, 0.4, 1)
+
+[resource]
+script = ExtResource("1_script")
+area = 1
+gradient = SubResource("Gradient_colors")
+gradient_mirrored = false
+pattern_scale = 1
+pattern_bend = 0
+band_density = 0.354
+band_angle = 45
+speed = 0.5
+tint_strength = 1
+shine_strength = 0
+sparkle_amount = 0
+sparkle_size = 6

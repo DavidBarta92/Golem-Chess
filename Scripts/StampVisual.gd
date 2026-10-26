@@ -5,6 +5,9 @@ const BURN_SHADER = preload("res://Shaders/stamp_burn.gdshader")
 const GRAYSCALE_SHADER = preload("res://Shaders/stamp_grayscale.gdshader")
 const STAMP_ART_MASK_SHADER = preload("res://Shaders/stamp_art_mask.gdshader")
 const STAMP_SQUARE_GRADIENT_SHADER = preload("res://Shaders/stamp_square_gradient.gdshader")
+const FOIL_TINT_SHADER = preload("res://Shaders/stamp_foil_tint.gdshader")
+const FOIL_SHINE_SHADER = preload("res://Shaders/stamp_foil_shine.gdshader")
+const FOIL_ON_WHITE_SHADER = preload("res://Shaders/stamp_foil_on_white.gdshader")
 const DEFAULT_STAMP_SQUARE_COLOR: Color = Color(0.867, 0.561, 0.016, 1.0)
 const STAMP_FRONT_TEXTURE = preload("res://Assets/stamp_base.svg")
 const STAMP_BACK_TEXTURE = preload("res://Assets/stamp_back.svg")
@@ -52,6 +55,8 @@ signal burn_finished(stamp_visual: StampVisual)
 @onready var type_frame: TextureRect = $TypeFrame
 @onready var stamp_art: TextureRect = $StampArt
 @onready var shimmer: ColorRect = $Shimmer
+@onready var foil_tint: ColorRect = $FoilTint
+@onready var foil_shine: ColorRect = $FoilShine
 @onready var duration_label: Label = $DurationLabel
 @onready var seeker_icon_label: Label = $SeekerIconLabel
 @onready var effect_art: TextureRect = $EffectArt
@@ -68,6 +73,13 @@ var face_material: ShaderMaterial
 var stamp_square_material: ShaderMaterial
 var stamp_art_material: ShaderMaterial
 var shimmer_material: ShaderMaterial
+# The shown print's foil while it can show, else null.
+var foil_style: FoilStyle
+var foil_tint_material: ShaderMaterial
+var foil_shine_material: ShaderMaterial
+var foil_on_white_enabled: bool = false
+# Layers with no shader of their own get the white-parts foil's material only while it is on.
+var foil_on_white_materials: Dictionary = {}
 var tween_hover: Tween
 var tween_reset: Tween
 var tween_move: Tween
@@ -124,6 +136,14 @@ func _ready() -> void:
 	shimmer.material = shimmer_material
 	_configure_shimmer_surface()
 	shimmer.visible = _is_stamp_shimmer_enabled() && !face_down
+	foil_tint_material = ShaderMaterial.new()
+	foil_tint_material.shader = FOIL_TINT_SHADER
+	foil_tint_material.set_shader_parameter("surface_mask_texture", STAMP_FRONT_TEXTURE)
+	foil_tint.material = foil_tint_material
+	foil_shine_material = ShaderMaterial.new()
+	foil_shine_material.shader = FOIL_SHINE_SHADER
+	foil_shine_material.set_shader_parameter("surface_mask_texture", STAMP_FRONT_TEXTURE)
+	foil_shine.material = foil_shine_material
 	last_position = position
 	last_scale = scale
 	last_rotation = rotation
@@ -160,6 +180,62 @@ func _configure_shimmer_surface() -> void:
 func _on_stamp_visual_resized() -> void:
 	pivot_offset = size * 0.5
 	_update_stamp_art_sampling_uniforms(_get_stamp_art_texture())
+	_update_foil_parameters()
+
+func _apply_foil_state(content_visible: bool = true) -> void:
+	var style: FoilStyle = stamp_print.foil_style if stamp_print != null else null
+	var can_show: bool = content_visible && !face_down && collection_owned && style != null
+	foil_style = style if can_show else null
+	var whole_stamp: bool = foil_style != null && foil_style.area == FoilStyle.Area.WHOLE_STAMP
+	foil_tint.visible = whole_stamp && foil_style.tint_strength > 0.0
+	foil_shine.visible = whole_stamp && (foil_style.shine_strength > 0.0 || foil_style.sparkle_amount > 0.0)
+	_set_foil_on_white_enabled(foil_style != null && foil_style.area == FoilStyle.Area.WHITE_PARTS)
+	_update_foil_parameters()
+
+# On white parts the foil is drawn by every layer that can show white, each on its own
+# pixels, rather than by an overlay reading the screen back.
+func _set_foil_on_white_enabled(enabled: bool) -> void:
+	foil_on_white_enabled = enabled
+	for layer: CanvasItem in [name_label, duration_label, effect_art, trigger_art, type_frame]:
+		if enabled && !foil_on_white_materials.has(layer):
+			var layer_material := ShaderMaterial.new()
+			layer_material.shader = FOIL_ON_WHITE_SHADER
+			foil_on_white_materials[layer] = layer_material
+		layer.material = foil_on_white_materials[layer] if enabled else null
+
+func _get_foil_on_white_layers() -> Dictionary:
+	var layers: Dictionary = {stamp_art: stamp_art_material, pattern_view: pattern_view.material}
+	layers.merge(foil_on_white_materials)
+	return layers
+
+func _update_foil_parameters() -> void:
+	if foil_style != null && foil_style.area == FoilStyle.Area.WHOLE_STAMP:
+		for layer_material: ShaderMaterial in [foil_tint_material, foil_shine_material]:
+			foil_style.apply_to(layer_material)
+			layer_material.set_shader_parameter("foil_stamp_size", size)
+			layer_material.set_shader_parameter("foil_flow_time", shimmer_time)
+
+	var layers: Dictionary = _get_foil_on_white_layers()
+	for layer: Control in layers:
+		var layer_material := layers[layer] as ShaderMaterial
+		if layer_material == null:
+			continue
+		layer_material.set_shader_parameter("foil_on_white", foil_on_white_enabled)
+		if !foil_on_white_enabled:
+			continue
+		foil_style.apply_to(layer_material)
+		# Each layer's place in the stamp, so the foil runs across them as one.
+		layer_material.set_shader_parameter("foil_layer_origin", layer.position)
+		layer_material.set_shader_parameter("foil_stamp_size", size)
+		layer_material.set_shader_parameter("foil_flow_time", shimmer_time)
+
+func _update_foil_flow_time() -> void:
+	if foil_style == null:
+		return
+	var materials: Array = _get_foil_on_white_layers().values() if foil_on_white_enabled else [foil_tint_material, foil_shine_material]
+	for layer_material in materials:
+		if layer_material != null:
+			layer_material.set_shader_parameter("foil_flow_time", shimmer_time)
 
 func _update_stamp_art_sampling_uniforms(art_texture: Texture2D) -> void:
 	if stamp_art_material == null:
@@ -204,6 +280,7 @@ func update_shimmer_time(delta: float) -> void:
 	if !face_down && visible && (moved || scaled || rotated || tilted):
 		shimmer_time += delta
 		shimmer_material.set_shader_parameter("shimmer_time", shimmer_time)
+		_update_foil_flow_time()
 		_update_pattern_shimmer_space()
 		pattern_view.set_shimmer_time(shimmer_time)
 
@@ -591,6 +668,7 @@ func set_stamp_content_visible(value: bool) -> void:
 	seeker_icon_label.visible = false
 	name_label.visible = value && !face_down
 	pattern_view.visible = value && !face_down
+	_apply_foil_state(value)
 
 func _apply_stamp() -> void:
 	if stamp == null:
@@ -603,7 +681,7 @@ func _apply_stamp() -> void:
 		duration_label.text = tr("INF") if stamp.duration < 0 else str(stamp.duration)
 		pattern_view.set_stamp(stamp)
 
-	_apply_text_style()
+	_apply_look_overrides()
 	_apply_art_state()
 	_apply_face_state()
 	_apply_collection_state()
@@ -653,7 +731,7 @@ func _apply_art_state() -> void:
 	trigger_art.texture = trigger_art_texture
 	trigger_art.visible = !face_down && trigger_art_texture != null
 
-# The labels' look set in StampVisual.tscn is the default a stamp can override.
+# The labels' look set in StampVisual.tscn is the default a stamp or print can override.
 func _capture_default_text_style() -> void:
 	default_name_color = name_label.get_theme_color("font_color")
 	default_name_font = name_label.get_theme_font("font")
@@ -662,33 +740,38 @@ func _capture_default_text_style() -> void:
 	default_duration_outline_color = duration_label.get_theme_color("font_outline_color")
 	default_duration_outline_size = duration_label.get_theme_constant("outline_size")
 
-func _apply_text_style() -> void:
-	var name_color: Color = default_name_color
-	var name_font: Font = default_name_font
-	var name_font_size: int = default_name_font_size
-	var duration_color: Color = default_duration_color
-	var duration_outline_color: Color = default_duration_outline_color
-	var duration_outline_size: int = default_duration_outline_size
-	if stamp != null:
-		if stamp.name_color.a > 0.0:
-			name_color = stamp.name_color
-		if stamp.name_font != null:
-			name_font = stamp.name_font
-		if stamp.name_font_size > 0:
-			name_font_size = stamp.name_font_size
-		if stamp.duration_color.a > 0.0:
-			duration_color = stamp.duration_color
-		if stamp.duration_outline_color.a > 0.0:
-			duration_outline_color = stamp.duration_outline_color
-		if stamp.duration_outline_size > 0:
-			duration_outline_size = stamp.duration_outline_size
+func _apply_look_overrides() -> void:
+	name_label.add_theme_color_override("font_color", _get_look_color(&"name_color", default_name_color))
+	name_label.add_theme_font_override("font", _get_look_font(&"name_font", default_name_font))
+	name_label.add_theme_font_size_override("font_size", _get_look_size(&"name_font_size", default_name_font_size))
+	duration_label.add_theme_color_override("font_color", _get_look_color(&"duration_color", default_duration_color))
+	duration_label.add_theme_color_override("font_outline_color", _get_look_color(&"duration_outline_color", default_duration_outline_color))
+	duration_label.add_theme_constant_override("outline_size", _get_look_size(&"duration_outline_size", default_duration_outline_size, 0))
+	pattern_view.set_marker_color_override(_get_look_color(&"marker_color", Color(0, 0, 0, 0)))
 
-	name_label.add_theme_color_override("font_color", name_color)
-	name_label.add_theme_font_override("font", name_font)
-	name_label.add_theme_font_size_override("font_size", name_font_size)
-	duration_label.add_theme_color_override("font_color", duration_color)
-	duration_label.add_theme_color_override("font_outline_color", duration_outline_color)
-	duration_label.add_theme_constant_override("outline_size", duration_outline_size)
+# A print's own look wins over its stamp's, and the stamp's over the scene default.
+# Unset means a transparent color, no font or a size of 0.
+func _get_look_color(property: StringName, default_color: Color) -> Color:
+	for source: Resource in [stamp_print, stamp]:
+		if source != null:
+			var value: Color = source.get(property)
+			if value.a > 0.0:
+				return value
+	return default_color
+
+func _get_look_font(property: StringName, default_font: Font) -> Font:
+	for source: Resource in [stamp_print, stamp]:
+		if source != null && source.get(property) != null:
+			return source.get(property)
+	return default_font
+
+# A size counts as set from min_set_size up: 1 for a font size, 0 for the duration
+# outline, where 0 turns the outline off and -1 leaves it to the next source.
+func _get_look_size(property: StringName, default_size: int, min_set_size: int = 1) -> int:
+	for source: Resource in [stamp_print, stamp]:
+		if source != null && int(source.get(property)) >= min_set_size:
+			return int(source.get(property))
+	return default_size
 
 func _get_square_color_a() -> Color:
 	if stamp_print != null && stamp_print.has_square_color_a():
@@ -803,6 +886,7 @@ func _apply_face_state() -> void:
 	seeker_icon_label.visible = false
 	pattern_view.visible = !face_down
 	shimmer.visible = _is_stamp_shimmer_enabled() && !face_down
+	_apply_foil_state()
 	_apply_art_state()
 	stamp_face.texture = STAMP_BACK_TEXTURE if face_down else STAMP_FRONT_TEXTURE
 	stamp_face.material = null if face_down else face_material
@@ -811,6 +895,7 @@ func _apply_face_state() -> void:
 		scale = rest_scale
 
 func _apply_collection_state() -> void:
+	_apply_foil_state()
 	if collection_owned:
 		stamp_face.texture = STAMP_BACK_TEXTURE if face_down else STAMP_FRONT_TEXTURE
 		stamp_face.material = null if face_down else face_material

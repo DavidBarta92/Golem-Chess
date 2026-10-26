@@ -8,12 +8,19 @@ uniform float shimmer_time = 0.0;
 uniform vec2 shimmer_origin = vec2(0.0, 0.0);
 uniform vec2 shimmer_size = vec2(164.0, 229.0);
 
+#include "res://Shaders/foil_on_white.gdshaderinc"
+
+void vertex() {
+	foil_stamp_uv = foil_stamp_uv_of(VERTEX);
+}
+
 float random(vec2 uv) {
 	return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
 void fragment() {
 	vec4 base = texture(TEXTURE, UV) * COLOR;
+	base.rgb = foil_on_white_tint(base.rgb, foil_stamp_uv);
 	vec2 shimmer_uv = clamp((FRAGCOORD.xy - shimmer_origin) / max(shimmer_size, vec2(1.0)), vec2(0.0), vec2(1.0));
 	float max_channel = max(base.r, max(base.g, base.b));
 	float marker_mask = smoothstep(0.28, 0.55, base.a) * smoothstep(0.18, 0.52, max_channel);

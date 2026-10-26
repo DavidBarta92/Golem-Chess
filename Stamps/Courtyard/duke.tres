@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="1_white"]
 [ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="2_black"]
 [ext_resource type="Resource" uid="uid://beq12efn5kyj6" path="res://PieceVisualSets/prince.tres" id="2_ecpk5"]
-[ext_resource type="Texture2D" uid="uid://c1mt5qoppyaoe" path="res://Assets/Stamps/duke_1.png" id="3_cewdf"]
+[ext_resource type="Texture2D" uid="uid://c1mt5qoppyaoe" path="res://Assets/Stamps/Courtyard/duke_1.png" id="3_cewdf"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_stamp"]
 
 [resource]

@@ -2,9 +2,9 @@
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_dmw0c"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_dvfe8"]
-[ext_resource type="Texture2D" uid="uid://d1nudyefuo4c4" path="res://Assets/Stamps/goldgeneral_1.png" id="3_dvfe8"]
+[ext_resource type="Texture2D" uid="uid://d1nudyefuo4c4" path="res://Assets/Stamps/Courtyard/goldgeneral_1.png" id="3_dvfe8"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_ubhqc"]
-[ext_resource type="Texture2D" uid="uid://ck1hbbdd1apxd" path="res://Assets/Stamps/goldgeneral_1_mask.png" id="4_ubhqc"]
+[ext_resource type="Texture2D" uid="uid://ck1hbbdd1apxd" path="res://Assets/Stamps/Courtyard/goldgeneral_1_mask.png" id="4_ubhqc"]
 
 [resource]
 script = ExtResource("2_dvfe8")

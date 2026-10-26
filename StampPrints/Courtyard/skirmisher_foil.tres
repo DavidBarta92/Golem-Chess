@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StampPrint" format=3 uid="uid://4176876yxyvb"]
+
+[ext_resource type="Texture2D" uid="uid://bjaalmdn602yq" path="res://Assets/Stamps/Courtyard/skirmisher_1_foil.png" id="1_art"]
+[ext_resource type="Script" uid="uid://jywk3em8fjkn" path="res://Scripts/StampPrint.gd" id="3_script"]
+[ext_resource type="Resource" uid="uid://rj0n1261a3hv" path="res://FoilStyles/rainbow_white.tres" id="4_foil"]
+
+[resource]
+script = ExtResource("3_script")
+print_id = "skirmisher.foil"
+stamp_code = "skirmisher"
+variant_id = "foil"
+variant_name = "Foil"
+stamp_art = ExtResource("1_art")
+foil_style = ExtResource("4_foil")
+square_color_a = Color(0, 0, 0, 1)
+square_color_b = Color(0, 0, 0, 1)
+name_color = Color(1, 1, 1, 1)
+duration_color = Color(1, 1, 1, 1)
+duration_outline_size = 0
+marker_color = Color(1, 1, 1, 1)

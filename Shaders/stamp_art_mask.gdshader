@@ -16,6 +16,12 @@ uniform vec2 art_texture_size = vec2(1.0, 1.0);
 uniform vec2 art_target_size = vec2(1.0, 1.0);
 uniform float edge_softness : hint_range(0.0, 0.08) = 0.015;
 
+#include "res://Shaders/foil_on_white.gdshaderinc"
+
+void vertex() {
+	foil_stamp_uv = foil_stamp_uv_of(VERTEX);
+}
+
 float mask_value(vec4 mask_sample) {
 	float luma = dot(mask_sample.rgb, vec3(0.2126, 0.7152, 0.0722));
 	return max(mask_sample.a, luma);
@@ -95,5 +101,5 @@ void fragment() {
 	float art_alpha = art_coverage * source_art.a;
 	float alpha = art_alpha + frame_coverage;
 	vec3 color = (source_art.rgb * art_alpha + frame_color) / max(alpha, 0.0001);
-	COLOR = vec4(color, alpha * COLOR.a);
+	COLOR = vec4(foil_on_white_tint(color, foil_stamp_uv), alpha * COLOR.a);
 }

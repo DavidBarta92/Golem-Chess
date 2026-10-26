@@ -3,8 +3,8 @@
 [ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="1_white"]
 [ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="2_black"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_stamp"]
-[ext_resource type="Texture2D" uid="uid://csmy4rqbl4lxi" path="res://Assets/Stamps/archer_1.png" id="3_u33tx"]
-[ext_resource type="Texture2D" uid="uid://cn7qcds185qgs" path="res://Assets/Stamps/archer_1_mask.png" id="4_ypgqs"]
+[ext_resource type="Texture2D" uid="uid://csmy4rqbl4lxi" path="res://Assets/Stamps/Courtyard/archer_1.png" id="3_u33tx"]
+[ext_resource type="Texture2D" uid="uid://cn7qcds185qgs" path="res://Assets/Stamps/Courtyard/archer_1_mask.png" id="4_ypgqs"]
 
 [resource]
 script = ExtResource("3_stamp")

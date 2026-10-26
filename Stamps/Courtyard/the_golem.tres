@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://c7arify7j2wfn" path="res://Assets/black_rook.png" id="1_eaqrh"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_vk3nj"]
-[ext_resource type="Texture2D" uid="uid://cnprg3jn1vupt" path="res://Assets/Stamps/golem_1.png" id="3_ms5ay"]
+[ext_resource type="Texture2D" uid="uid://cnprg3jn1vupt" path="res://Assets/Stamps/Courtyard/golem_1.png" id="3_ms5ay"]
 [ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="3_v3e3h"]
 
 [resource]

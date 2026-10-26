@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="FoilStyle" format=3 uid="uid://ddo2r4c5kulgi"]
+
+[ext_resource type="Script" path="res://Scripts/FoilStyle.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Assets/FoilPatterns/starlight.png" id="2_pattern"]
+
+[sub_resource type="Gradient" id="Gradient_colors"]
+offsets = PackedFloat32Array(0, 0.4, 0.7, 1)
+colors = PackedColorArray(0.52, 0.57, 0.68, 1, 0.84, 0.87, 0.94, 1, 1, 1, 1, 1, 0.74, 0.84, 1, 1)
+
+[resource]
+script = ExtResource("1_script")
+area = 0
+gradient = SubResource("Gradient_colors")
+gradient_mirrored = true
+height_map = ExtResource("2_pattern")
+pattern_scale = 0.5
+pattern_bend = 0.4
+band_density = 1.4
+band_angle = 120
+speed = 0.6
+tint_strength = 0.25
+shine_strength = 0.18
+sparkle_amount = 0.55
+sparkle_size = 5

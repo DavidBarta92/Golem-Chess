@@ -144,7 +144,8 @@ func _register_pack(pack_definition: PackDefinition) -> void:
 	all_packs[pack_id] = pack_definition
 
 func _add_print_to_pool(pool_by_id: Dictionary, stamp_print: StampPrint) -> void:
-	if stamp_print == null:
+	# A pack can name a print file directly, so a turned-off print is left out here too.
+	if stamp_print == null or !stamp_print.enabled:
 		return
 	if StampPrintLibrary.get_stamp_for_print(stamp_print) == null:
 		return

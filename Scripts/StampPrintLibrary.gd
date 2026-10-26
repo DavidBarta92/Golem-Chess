@@ -97,18 +97,25 @@ func _create_implicit_standard_prints() -> void:
 		_register_print(stamp_print)
 
 func _load_explicit_prints() -> void:
-	var dir := DirAccess.open(PRINTS_PATH)
+	_load_prints_from_directory(PRINTS_PATH)
+
+# Prints sit in one folder per set (StampPrints/Courtyard/ ...), like the stamps do.
+func _load_prints_from_directory(directory_path: String) -> void:
+	var dir := DirAccess.open(directory_path)
 	if dir == null:
 		return
 
 	dir.list_dir_begin()
 	var file_name: String = dir.get_next()
 	while file_name != "":
-		if !dir.current_is_dir():
+		if dir.current_is_dir():
+			if file_name != "." and file_name != "..":
+				_load_prints_from_directory(directory_path.path_join(file_name))
+		else:
 			var resource_file_name: String = file_name.trim_suffix(".remap")
 			if resource_file_name.ends_with(".tres"):
-				var stamp_print := load(PRINTS_PATH + resource_file_name) as StampPrint
-				if stamp_print != null:
+				var stamp_print := load(directory_path.path_join(resource_file_name)) as StampPrint
+				if stamp_print != null && stamp_print.enabled:
 					_prepare_explicit_print(stamp_print)
 					_register_print(stamp_print)
 		file_name = dir.get_next()

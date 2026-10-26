@@ -48,7 +48,8 @@ var effect_pattern: Array = []
 var effect_type: String = StampEffect.TYPE_NONE
 var has_effect_pattern: bool = false
 var pattern_shimmer_material: ShaderMaterial
-# The shown stamp's own color for every marker; transparent falls back to the colors above.
+# The color StampVisual picked for every marker (the print's or the stamp's own);
+# transparent falls back to the colors above.
 var marker_color_override: Color = Color(0, 0, 0, 0)
 
 func _ready() -> void:
@@ -74,7 +75,10 @@ func set_stamp(stamp: Stamp) -> void:
 	effect_pattern = stamp.effect_params if _should_show_effect_pattern(stamp) else []
 	effect_type = stamp.effect_type
 	has_effect_pattern = !effect_pattern.is_empty()
-	marker_color_override = stamp.marker_color
+	queue_redraw()
+
+func set_marker_color_override(value: Color) -> void:
+	marker_color_override = value
 	queue_redraw()
 
 func set_shimmer_time(value: float) -> void:

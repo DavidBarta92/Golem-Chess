@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="FoilStyle" format=3 uid="uid://cqmo4kcjhcjk1"]
+
+[ext_resource type="Script" path="res://Scripts/FoilStyle.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Assets/FoilPatterns/waves.png" id="2_pattern"]
+
+[sub_resource type="Gradient" id="Gradient_colors"]
+offsets = PackedFloat32Array(0, 0.35, 0.7, 1)
+colors = PackedColorArray(0.02, 0.2, 0.45, 1, 0, 0.55, 0.65, 1, 0.3, 0.85, 0.75, 1, 0.75, 1, 0.8, 1)
+
+[resource]
+script = ExtResource("1_script")
+area = 0
+gradient = SubResource("Gradient_colors")
+gradient_mirrored = true
+height_map = ExtResource("2_pattern")
+pattern_scale = 1
+pattern_bend = 0.9
+band_density = 0.6
+band_angle = 90
+speed = 0.35
+tint_strength = 0.85
+shine_strength = 0.15
+sparkle_amount = 0
+sparkle_size = 6

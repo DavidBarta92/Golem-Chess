@@ -3,9 +3,9 @@
 [ext_resource type="Texture2D" uid="uid://2afksp26bsr7" path="res://Assets/black_bishop.png" id="1_wf0io"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_3isp8"]
 [ext_resource type="Resource" uid="uid://br4oybocnaq4y" path="res://PieceVisualSets/bishop.tres" id="2_d1beu"]
-[ext_resource type="Texture2D" uid="uid://cp7wobpfjvbjc" path="res://Assets/Stamps/bishop_1.png" id="3_3isp8"]
+[ext_resource type="Texture2D" uid="uid://cp7wobpfjvbjc" path="res://Assets/Stamps/Courtyard/bishop_1.png" id="3_3isp8"]
 [ext_resource type="Texture2D" uid="uid://b5pm38hexu7g0" path="res://Assets/white_bishop.png" id="3_d1beu"]
-[ext_resource type="Texture2D" uid="uid://den5aa2x5u3yv" path="res://Assets/Stamps/bishop_1_mask.png" id="5_f58e0"]
+[ext_resource type="Texture2D" uid="uid://den5aa2x5u3yv" path="res://Assets/Stamps/Courtyard/bishop_1_mask.png" id="5_f58e0"]
 
 [resource]
 script = ExtResource("2_3isp8")

@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_thdmx"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_dhmt0"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_0ixt7"]
-[ext_resource type="Texture2D" uid="uid://d1mjta0sm8u5o" path="res://Assets/Stamps/monk_1.png" id="3_dhmt0"]
+[ext_resource type="Texture2D" uid="uid://d1mjta0sm8u5o" path="res://Assets/Stamps/Courtyard/monk_1.png" id="3_dhmt0"]
 
 [resource]
 script = ExtResource("2_dhmt0")

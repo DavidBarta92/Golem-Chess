@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="StampPrint" format=3 uid="uid://k7373jcakm0r"]
+
+[ext_resource type="Texture2D" uid="uid://c2o8oyj0x1ywr" path="res://Assets/Stamps/Courtyard/prince_1_foil.png" id="1_art"]
+[ext_resource type="Texture2D" uid="uid://b0veqy2mbqdoh" path="res://Assets/Stamps/Courtyard/prince_1_mask.png" id="2_mask"]
+[ext_resource type="Script" uid="uid://jywk3em8fjkn" path="res://Scripts/StampPrint.gd" id="3_script"]
+[ext_resource type="Resource" uid="uid://rj0n1261a3hv" path="res://FoilStyles/rainbow_white.tres" id="4_foil"]
+
+[resource]
+script = ExtResource("3_script")
+print_id = "prince.foil"
+stamp_code = "prince"
+variant_id = "foil"
+variant_name = "Foil"
+stamp_art = ExtResource("1_art")
+stamp_art_mask = ExtResource("2_mask")
+foil_style = ExtResource("4_foil")
+square_color_a = Color(0, 0, 0, 1)
+square_color_b = Color(0, 0, 0, 1)
+name_color = Color(1, 1, 1, 1)
+duration_color = Color(1, 1, 1, 1)
+duration_outline_size = 0
+marker_color = Color(1, 1, 1, 1)

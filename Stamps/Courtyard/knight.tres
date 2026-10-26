@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_wjj3i"]
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_joy3f"]
 [ext_resource type="Resource" uid="uid://bwmtsdha4nmb4" path="res://PieceVisualSets/soldier2.tres" id="2_lifin"]
-[ext_resource type="Texture2D" uid="uid://bon76whgexw5c" path="res://Assets/Stamps/knight_1.png" id="3_joy3f"]
+[ext_resource type="Texture2D" uid="uid://bon76whgexw5c" path="res://Assets/Stamps/Courtyard/knight_1.png" id="3_joy3f"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_lifin"]
 
 [resource]

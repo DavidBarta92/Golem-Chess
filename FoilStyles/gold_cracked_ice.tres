@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="FoilStyle" format=3 uid="uid://gtcsqi7e7cob"]
+
+[ext_resource type="Script" path="res://Scripts/FoilStyle.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Assets/FoilPatterns/cracked_ice.png" id="2_pattern"]
+
+[sub_resource type="Gradient" id="Gradient_colors"]
+offsets = PackedFloat32Array(0, 0.45, 0.75, 1)
+colors = PackedColorArray(0.36, 0.22, 0.05, 1, 0.93, 0.7, 0.22, 1, 1, 0.9, 0.55, 1, 1, 0.98, 0.84, 1)
+
+[resource]
+script = ExtResource("1_script")
+area = 0
+gradient = SubResource("Gradient_colors")
+gradient_mirrored = true
+height_map = ExtResource("2_pattern")
+pattern_scale = 0.55
+pattern_bend = 1.2
+band_density = 0.8
+band_angle = 30
+speed = 0.4
+tint_strength = 0.55
+shine_strength = 0.35
+sparkle_amount = 0.08
+sparkle_size = 7
