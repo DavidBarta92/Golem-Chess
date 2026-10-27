@@ -34,6 +34,10 @@ func play(sound_name: String) -> AudioStreamPlayer:
 
 	var player: AudioStreamPlayer = _get_free_player()
 	player.stream = _pick_variant(sound_name, variants)
+	# A player taken back from a sound still playing never got to put back
+	# what play_pitched changed.
+	player.pitch_scale = 1.0
+	player.volume_db = 0.0
 	player.play()
 	return player
 
@@ -43,14 +47,17 @@ func play(sound_name: String) -> AudioStreamPlayer:
 ##
 ## The pool hands the same players round, so the pitch is put back when the
 ## sound ends - otherwise the next thing to borrow that player would inherit it.
-func play_pitched(sound_name: String, pitch: float) -> AudioStreamPlayer:
+## `volume_db` lifts or lowers this one playing the same way.
+func play_pitched(sound_name: String, pitch: float, volume_db: float = 0.0) -> AudioStreamPlayer:
 	var player: AudioStreamPlayer = play(sound_name)
 	if player == null:
 		return null
 	player.pitch_scale = maxf(0.01, pitch)
+	player.volume_db = volume_db
 	player.finished.connect(func() -> void:
 		if is_instance_valid(player):
 			player.pitch_scale = 1.0
+			player.volume_db = 0.0
 	, CONNECT_ONE_SHOT)
 	return player
 

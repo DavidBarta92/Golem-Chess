@@ -31,7 +31,7 @@ func has_piece_shatter_respawn_fragment_markers(board_pos: Vector2) -> bool:
 func should_hide_piece_for_shatter_respawn(board_pos: Vector2) -> bool:
 	return is_piece_shatter_respawn_reveal_pending(board_pos) or has_piece_shatter_respawn_fragment_markers(board_pos)
 
-func add_piece_shatter_respawn_fragment_marker(respawn_pos: Vector2, fragment: Sprite2D) -> void:
+func add_piece_shatter_respawn_fragment_marker(respawn_pos: Vector2, fragment: Polygon2D) -> void:
 	if !match_board.is_valid_position(respawn_pos) or fragment == null or !is_instance_valid(fragment):
 		return
 
@@ -66,9 +66,10 @@ func clear_all_fragment_markers() -> void:
 	match_board.pending_edge_respawn_fragment_markers.clear()
 	match_board.pending_piece_shatter_respawn_reveal_counts.clear()
 	match_board.pending_piece_shatter_respawn_reveal_groups.clear()
+	match_board.get_piece_shatter_animator().clear_debris()
 
 func get_piece_shatter_return_fragment_count(fragment_group: String) -> int:
-	return mini(get_piece_shatter_fragment_textures(fragment_group).size(), maxi(0, match_board.piece_shatter_returning_debris_count))
+	return mini(get_piece_shatter_fragment_cut_indices(fragment_group).size(), maxi(0, match_board.piece_shatter_returning_debris_count))
 
 func begin_piece_shatter_respawn_reveal(respawn_pos: Vector2, fragment_group: String) -> int:
 	if !match_board.is_valid_position(respawn_pos):
@@ -150,9 +151,19 @@ func play_piece_shatter_animations(animations: Array[Dictionary]) -> void:
 		var fragment_group: String = str(animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
 		play_piece_shatter_animation(source_pos, respawn_pos, piece_color, fragment_group)
 
-## `with_impact_effects` is false for a capture whose sparkle already went off
-## at the moment of contact, before the hitstop.
-func play_piece_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, fragment_group: String = "", with_impact_effects: bool = true) -> void:
+## A piece broken without a blow to read (a bomb, a sync with no move shown):
+## a golem's chips, flying every way, with the sparkle going off as it breaks.
+func play_piece_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, fragment_group: String = "") -> void:
+	shatter_piece(source_pos, respawn_pos, piece_color, fragment_group, null, Vector2.ZERO, true)
+
+## A piece broken by a blow, once the hitstop is over: its chips are cut from
+## `captured_texture`, the drawing it showed, and fly along `blow_direction`
+## (board steps, from the striker's square towards its own). Its sparkle went
+## off at contact.
+func play_capture_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, fragment_group: String, captured_texture: Texture2D, blow_direction: Vector2) -> void:
+	shatter_piece(source_pos, respawn_pos, piece_color, fragment_group, captured_texture, blow_direction, false)
+
+func shatter_piece(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, fragment_group: String, captured_texture: Texture2D, blow_direction: Vector2, with_impact_effects: bool) -> void:
 	if match_board.should_skip_visual_animations():
 		return
 	if piece_color == 0:
@@ -170,82 +181,81 @@ func play_piece_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, pie
 	var resolved_fragment_group: String = fragment_group
 	if resolved_fragment_group.is_empty():
 		resolved_fragment_group = match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE
-	var fragment_textures: Array[Texture2D] = get_piece_shatter_fragment_textures(resolved_fragment_group)
+	# The fragments that roll away are the golem that will stand up again,
+	# whatever the broken piece looked like.
+	var golem_texture: Texture2D = match_board.get_piece_texture_resolver().get_default_piece_texture(piece_color)
+	var fragment_polygons: Array[PackedVector2Array] = get_piece_shatter_fragment_polygons(resolved_fragment_group, golem_texture)
 	var returns_to_pending_edge: bool = resolved_fragment_group == match_board.PIECE_SHATTER_FRAGMENT_GROUP_PENDING
 	var return_count: int = get_piece_shatter_return_fragment_count(resolved_fragment_group) if returns_to_pending_edge else begin_piece_shatter_respawn_reveal(respawn_pos, resolved_fragment_group)
-	var can_return_fragments: bool = (match_board.is_valid_position(respawn_pos) or returns_to_pending_edge) and !fragment_textures.is_empty() and return_count > 0
+	var can_return_fragments: bool = (match_board.is_valid_position(respawn_pos) or returns_to_pending_edge) and !fragment_polygons.is_empty() and return_count > 0
 	var debris_count: int = maxi(0, match_board.piece_shatter_debris_count)
 	if debris_count <= 0 and !can_return_fragments:
 		return
 
-	for debris_index in range(debris_count):
-		var shard: Polygon2D = match_board.get_piece_shatter_animator().create_shard(source_pos, piece_color, debris_index)
-		if shard == null:
-			continue
-
-		var scatter_target: Vector2 = match_board.get_piece_shatter_animator().get_scatter_target(source_pos, debris_index)
-		match_board.get_piece_shatter_animator().animate_shard(shard, scatter_target, invalid_board_pos, false)
+	var debris_texture: Texture2D = captured_texture if captured_texture != null else golem_texture
+	match_board.get_piece_shatter_animator().play_debris(source_pos, debris_texture, debris_count, blow_direction)
 
 	if returns_to_pending_edge and can_return_fragments:
-		play_piece_shatter_pending_edge_fragments(source_pos, piece_color, fragment_textures)
+		play_piece_shatter_pending_edge_fragments(source_pos, piece_color, golem_texture, fragment_polygons, blow_direction)
 	elif can_return_fragments:
-		play_piece_shatter_return_fragments(source_pos, respawn_pos, fragment_textures, resolved_fragment_group)
+		play_piece_shatter_return_fragments(source_pos, respawn_pos, golem_texture, fragment_polygons, resolved_fragment_group, blow_direction)
 
-func play_capture_impact_effects(board_pos: Vector2) -> void:
+func play_capture_impact_effects(board_pos: Vector2, sparkle_color: Color = Color.TRANSPARENT) -> void:
 	if !match_board.is_valid_position(board_pos):
 		return
 	if match_board.piece_effects_node == null or !is_instance_valid(match_board.piece_effects_node):
 		match_board.create_piece_effects_node()
 	if match_board.piece_effects_node == null:
 		return
-	match_board.get_piece_effect_animator().play_capture_sparkle(board_pos)
+	match_board.get_piece_effect_animator().play_capture_sparkle(board_pos, sparkle_color)
 
-func get_piece_shatter_fragment_textures(fragment_group: String) -> Array[Texture2D]:
-	var textures: Array[Texture2D] = []
+## Which pieces of `PieceShatterAnimator.get_fragment_cut()` a group carries:
+## the top three, or the bottom three.
+func get_piece_shatter_fragment_cut_indices(fragment_group: String) -> Array[int]:
 	match fragment_group:
-		match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM:
-			textures.append(match_board.GOLEM_FRAGMENT_BOTTOM_LEFT_TEXTURE)
-			textures.append(match_board.GOLEM_FRAGMENT_BOTTOM_CENTER_TEXTURE)
-			textures.append(match_board.GOLEM_FRAGMENT_BOTTOM_RIGHT_TEXTURE)
+		match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM, match_board.PIECE_SHATTER_FRAGMENT_GROUP_PENDING:
+			return [3, 4, 5]
 		match_board.PIECE_SHATTER_FRAGMENT_GROUP_TOP:
-			textures.append(match_board.GOLEM_FRAGMENT_TOP_LEFT_TEXTURE)
-			textures.append(match_board.GOLEM_FRAGMENT_TOP_CENTER_TEXTURE)
-			textures.append(match_board.GOLEM_FRAGMENT_TOP_RIGHT_TEXTURE)
-		match_board.PIECE_SHATTER_FRAGMENT_GROUP_PENDING:
-			textures.append(match_board.GOLEM_FRAGMENT_BOTTOM_LEFT_TEXTURE)
-			textures.append(match_board.GOLEM_FRAGMENT_BOTTOM_CENTER_TEXTURE)
-			textures.append(match_board.GOLEM_FRAGMENT_BOTTOM_RIGHT_TEXTURE)
-	return textures
+			return [0, 1, 2]
+	return []
 
-func play_piece_shatter_return_fragments(source_pos: Vector2, respawn_pos: Vector2, fragment_textures: Array[Texture2D], fragment_group: String) -> void:
-	var return_count: int = mini(fragment_textures.size(), maxi(0, match_board.piece_shatter_returning_debris_count))
+func get_piece_shatter_fragment_polygons(fragment_group: String, golem_texture: Texture2D) -> Array[PackedVector2Array]:
+	var polygons: Array[PackedVector2Array] = []
+	if golem_texture == null:
+		return polygons
+
+	var cut: Array[PackedVector2Array] = match_board.get_piece_shatter_animator().get_fragment_cut(golem_texture)
+	var cut_indices: Array[int] = get_piece_shatter_fragment_cut_indices(fragment_group)
+	for cut_index in cut_indices.slice(0, get_piece_shatter_return_fragment_count(fragment_group)):
+		if cut_index < cut.size():
+			polygons.append(cut[cut_index])
+	return polygons
+
+func play_piece_shatter_return_fragments(source_pos: Vector2, respawn_pos: Vector2, golem_texture: Texture2D, fragment_polygons: Array[PackedVector2Array], fragment_group: String, blow_direction: Vector2) -> void:
 	var created_count: int = 0
-	for fragment_index in range(return_count):
-		var fragment_texture: Texture2D = fragment_textures[fragment_index]
-		var fragment: Sprite2D = match_board.get_piece_shatter_animator().create_fragment(source_pos, fragment_texture, fragment_index)
+	for fragment_index in range(fragment_polygons.size()):
+		var fragment: Polygon2D = match_board.get_piece_shatter_animator().create_fragment(source_pos, golem_texture, fragment_polygons[fragment_index], fragment_index)
 		if fragment == null:
 			continue
 
 		created_count += 1
 		if fragment_group == match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM:
 			add_piece_shatter_respawn_fragment_marker(respawn_pos, fragment)
-		var scatter_target: Vector2 = match_board.get_piece_shatter_animator().get_scatter_target(source_pos, match_board.piece_shatter_debris_count + fragment_index)
+		var scatter_target: Vector2 = match_board.get_piece_shatter_animator().get_scatter_target(source_pos, fragment_index, blow_direction)
 		match_board.get_piece_shatter_animator().animate_fragment(fragment, scatter_target, source_pos, respawn_pos, fragment_group, fragment_index)
 	adjust_piece_shatter_respawn_reveal_count(respawn_pos, created_count)
 
-func play_piece_shatter_pending_edge_fragments(source_pos: Vector2, piece_color: int, fragment_textures: Array[Texture2D]) -> void:
-	var return_count: int = mini(fragment_textures.size(), maxi(0, match_board.piece_shatter_returning_debris_count))
-	for fragment_index in range(return_count):
-		var fragment_texture: Texture2D = fragment_textures[fragment_index]
-		var fragment: Sprite2D = match_board.get_piece_shatter_animator().create_fragment(source_pos, fragment_texture, fragment_index)
+func play_piece_shatter_pending_edge_fragments(source_pos: Vector2, piece_color: int, golem_texture: Texture2D, fragment_polygons: Array[PackedVector2Array], blow_direction: Vector2) -> void:
+	for fragment_index in range(fragment_polygons.size()):
+		var fragment: Polygon2D = match_board.get_piece_shatter_animator().create_fragment(source_pos, golem_texture, fragment_polygons[fragment_index], fragment_index)
 		if fragment == null:
 			continue
 
 		add_pending_edge_respawn_fragment_marker(piece_color, fragment)
-		var scatter_target: Vector2 = match_board.get_piece_shatter_animator().get_scatter_target(source_pos, match_board.piece_shatter_debris_count + fragment_index)
+		var scatter_target: Vector2 = match_board.get_piece_shatter_animator().get_scatter_target(source_pos, fragment_index, blow_direction)
 		match_board.get_piece_shatter_animator().animate_pending_edge_fragment(fragment, scatter_target, source_pos, piece_color, fragment_index)
 
-func add_pending_edge_respawn_fragment_marker(piece_color: int, fragment: Sprite2D) -> void:
+func add_pending_edge_respawn_fragment_marker(piece_color: int, fragment: Polygon2D) -> void:
 	if piece_color == 0 or fragment == null or !is_instance_valid(fragment):
 		return
 
@@ -254,12 +264,12 @@ func add_pending_edge_respawn_fragment_marker(piece_color: int, fragment: Sprite
 	markers.append(fragment)
 	match_board.pending_edge_respawn_fragment_markers[key] = markers
 
-func take_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Sprite2D]:
-	var markers: Array[Sprite2D] = []
+func take_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Polygon2D]:
+	var markers: Array[Polygon2D] = []
 	var key: int = get_pending_edge_respawn_key(piece_color)
 	var stored_markers: Array = match_board.pending_edge_respawn_fragment_markers.get(key, [])
 	for marker_value in stored_markers:
-		var marker: Sprite2D = marker_value as Sprite2D
+		var marker: Polygon2D = marker_value as Polygon2D
 		if marker != null and is_instance_valid(marker):
 			markers.append(marker)
 	match_board.pending_edge_respawn_fragment_markers.erase(key)
@@ -279,7 +289,7 @@ func play_pending_edge_respawn_arrival_animations(animations: Array) -> void:
 		if !match_board.is_valid_position(respawn_pos) or piece_color == 0:
 			continue
 
-		var fragments: Array[Sprite2D] = take_pending_edge_respawn_fragment_markers(piece_color)
+		var fragments: Array[Polygon2D] = take_pending_edge_respawn_fragment_markers(piece_color)
 		if fragments.is_empty():
 			fragments = create_pending_edge_respawn_fragment_markers(piece_color)
 		if fragments.is_empty():
@@ -288,7 +298,7 @@ func play_pending_edge_respawn_arrival_animations(animations: Array) -> void:
 
 		var created_count: int = 0
 		for fragment_index in range(fragments.size()):
-			var fragment: Sprite2D = fragments[fragment_index]
+			var fragment: Polygon2D = fragments[fragment_index]
 			if fragment == null or !is_instance_valid(fragment):
 				continue
 			created_count += 1
@@ -296,15 +306,15 @@ func play_pending_edge_respawn_arrival_animations(animations: Array) -> void:
 			match_board.get_piece_shatter_animator().animate_pending_edge_arrival_fragment(fragment, respawn_pos, fragment_group, fragment_index)
 		adjust_piece_shatter_respawn_reveal_count(respawn_pos, created_count)
 
-func create_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Sprite2D]:
+func create_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Polygon2D]:
 	if match_board.piece_effects_node == null or !is_instance_valid(match_board.piece_effects_node):
 		match_board.create_piece_effects_node()
 	if match_board.piece_effects_node == null:
 		return []
 
-	var fragment_textures: Array[Texture2D] = get_piece_shatter_fragment_textures(match_board.PIECE_SHATTER_FRAGMENT_GROUP_PENDING)
-	var return_count: int = mini(fragment_textures.size(), maxi(0, match_board.piece_shatter_returning_debris_count))
-	return match_board.get_piece_shatter_animator().create_pending_edge_fragment_markers(piece_color, fragment_textures, return_count)
+	var golem_texture: Texture2D = match_board.get_piece_texture_resolver().get_default_piece_texture(piece_color)
+	var fragment_polygons: Array[PackedVector2Array] = get_piece_shatter_fragment_polygons(match_board.PIECE_SHATTER_FRAGMENT_GROUP_PENDING, golem_texture)
+	return match_board.get_piece_shatter_animator().create_pending_edge_fragment_markers(piece_color, golem_texture, fragment_polygons)
 
 func is_piece_shatter_route_cell_blocked(board_pos: Vector2, source_pos: Vector2, respawn_pos: Vector2) -> bool:
 	if !match_board.is_valid_position(board_pos):

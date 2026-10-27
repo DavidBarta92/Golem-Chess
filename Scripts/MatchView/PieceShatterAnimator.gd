@@ -1,5 +1,117 @@
 extends RefCounted
 
+const DEBRIS_SHADER = preload("res://Shaders/piece_debris.gdshader")
+
+# The chips that fly off a broken piece fall under a gravity of their own.
+# Heights and fall speeds are in the board's local units as drawn (a piece
+# stands about 24 tall); distances along the ground are on the board's plane
+# before the perspective, where a square is `cell_width` across.
+const DEBRIS_GRAVITY: float = 260.0
+const DEBRIS_MIN_LAUNCH_RISE: float = 20.0
+const DEBRIS_MAX_LAUNCH_RISE: float = 75.0
+## About how long a chip is in the air before it first lands; with
+## `scatter_radius` it sets how fast the chips leave.
+const DEBRIS_FLIGHT_TIME: float = 0.5
+## How far either side of the blow the chips thrown along it fan out, radians.
+const DEBRIS_BLOW_SPREAD: float = 0.66
+## The share of chips that spray off any way at all, slower, instead.
+const DEBRIS_SPRAY_SHARE: float = 0.2
+## Chips sitting further out on the piece fly off a little faster sideways.
+const DEBRIS_OUTWARD_SPEED: float = 1.5
+## What a bounce keeps of a chip's fall speed and of its speed along the ground.
+const DEBRIS_BOUNCE_RISE_KEPT: float = 0.32
+const DEBRIS_BOUNCE_GROUND_KEPT: float = 0.55
+const DEBRIS_MAX_BOUNCES: int = 3
+## A chip that would bounce up slower than this lies down instead.
+const DEBRIS_MIN_BOUNCE_RISE: float = 16.0
+const DEBRIS_SLIDE_FRICTION: float = 110.0
+const DEBRIS_MAX_SPIN: float = 14.0
+const DEBRIS_MIN_TURN_SPEED: float = 5.0
+const DEBRIS_MAX_TURN_SPEED: float = 18.0
+## How dark a chip gets turned edge-on, and how much darker its underside is.
+const DEBRIS_EDGE_ON_SHADE: float = 0.6
+const DEBRIS_UNDERSIDE_SHADE: float = 0.82
+const DEBRIS_SIMULATION_DURATION: float = 1.2
+const DEBRIS_SHADOW_COLOR: Color = Color(0.03, 0.025, 0.02, 0.26)
+const DEBRIS_SHADOW_Z_OFFSET: int = -2
+## Blotch size of the chips' soaking, in their own units (pixels of the
+## drawing they broke off).
+const DEBRIS_BLOT_SIZE: float = 40.0
+## How quickly chips still lying about soak away once the next move begins.
+const DEBRIS_CLEAR_DURATION: float = 0.25
+# The bigger chips click as they first land: a piece set down, played high,
+# short and quiet. A few to a break, so a burst ticks rather than rattles.
+const DEBRIS_CLICK_SOUND: String = "piece_placed"
+const DEBRIS_CLICK_MIN_PITCH: float = 1.9
+const DEBRIS_CLICK_MAX_PITCH: float = 2.5
+const DEBRIS_CLICK_VOLUME_DB: float = -14.0
+const DEBRIS_CLICKS_PER_BREAK: int = 3
+## A chip clicks if it is at least this far from the smallest size to the largest.
+const DEBRIS_CLICK_SIZE_SHARE: float = 0.4
+
+# The blot left on the square a piece broke on: ink soaked into the board,
+# stretched along the blow, spreading for a moment and then soaking away.
+# Painted onto the board, so below the grid (z 9) and the bomb warnings, but
+# over the special tiles (z 1).
+const STAIN_Z_INDEX: int = 2
+const STAIN_COLOR: Color = Color(0.14, 0.11, 0.09, 0.22)
+## Its half-width across the blow, as a share of a square.
+const STAIN_RADIUS: float = 0.36
+const STAIN_STRETCH: float = 1.35
+const STAIN_SPREAD_DURATION: float = 0.35
+const STAIN_SOAK_DURATION: float = 3.6
+const STAIN_TEXTURE_SIZE: int = 128
+const STAIN_BLOT_SIZE: float = 22.0
+## Where its soaking starts: a little ink is already gone, so the blot's edge
+## is ragged from the first.
+const STAIN_FIRST_SOAK: float = 0.18
+
+# A drawing's shape is read off a grid this fine, for where chips can come from.
+const SHAPE_SAMPLE_COLUMNS: int = 12
+const SHAPE_SAMPLE_ROWS: int = 20
+const SHAPE_OPAQUE_ALPHA: float = 0.5
+
+# The returning fragments are a fixed cut of the drawing, top and bottom
+# halves in three pieces each, the same every time so that two halves broken
+# off at different times still fit together.
+const FRAGMENT_CUT_SEED: int = 4111
+const FRAGMENT_CUT_HEIGHT: float = 0.5
+## How far the cut lines zigzag, as a share of the drawing's size.
+const FRAGMENT_CUT_JAG: float = 0.07
+
+class DebrisChip:
+	var node: Polygon2D
+	var shadow: Polygon2D
+	## On the board's plane, from the point under the piece's feet.
+	var ground: Vector2
+	var velocity: Vector2
+	var height: float
+	var rise_speed: float
+	var spin_angle: float
+	var spin: float
+	## How far the chip has turned over about its own axis.
+	var turn: float
+	var turn_speed: float
+	var bounces: int = 0
+	var lying: bool = false
+	var clicks: bool = false
+
+class DebrisBurst:
+	var chips: Array[DebrisChip] = []
+	var ground_origin: Vector2
+	## Board plane to local: a step along the plane's x and y, as drawn.
+	var plane: Transform2D
+	var up: Vector2
+	var base_rotation: float
+	var visual_scale: Vector2
+	var time: float = 0.0
+	var tween: Tween
+	## The chips have come to rest; until then they are not cleared early.
+	var settled: bool = false
+	var clear_requested: bool = false
+	var soak: float = 0.0
+	var clicks_left: int = DEBRIS_CLICKS_PER_BREAK
+
 var geometry
 var piece_visuals
 var pieces_node: Node
@@ -21,8 +133,9 @@ var return_fade_duration: float = 0.16
 var fragment_settle_duration: float = 0.24
 var scatter_radius: float = 0.84
 var scatter_jitter: float = 0.28
-var min_piece_scale: float = 0.16
-var max_piece_scale: float = 0.32
+var min_chip_size: float = 0.09
+var max_chip_size: float = 0.26
+var debris_linger_duration: float = 2.4
 var avoid_occupied_cells: bool = true
 var route_jitter_ratio: float = 0.12
 var fragment_landing_hold_duration: float = 0.08
@@ -36,6 +149,14 @@ var route_cell_blocked_provider: Callable = Callable()
 var finish_respawn_fragment_callback: Callable = Callable()
 var player_id_for_color_provider: Callable = Callable()
 var antialias_provider: Callable = Callable()
+
+var texture_shapes: Dictionary = {}
+var fragment_cuts: Dictionary = {}
+var debris_bursts: Array[DebrisBurst] = []
+var stains: Array[Sprite2D] = []
+var debris_material: ShaderMaterial
+var stain_material: ShaderMaterial
+var stain_texture: Texture2D
 
 func configure(config: Dictionary) -> void:
 	geometry = config.get("geometry", geometry)
@@ -59,8 +180,9 @@ func configure(config: Dictionary) -> void:
 	fragment_settle_duration = float(config.get("fragment_settle_duration", fragment_settle_duration))
 	scatter_radius = float(config.get("scatter_radius", scatter_radius))
 	scatter_jitter = float(config.get("scatter_jitter", scatter_jitter))
-	min_piece_scale = float(config.get("min_piece_scale", min_piece_scale))
-	max_piece_scale = float(config.get("max_piece_scale", max_piece_scale))
+	min_chip_size = float(config.get("min_chip_size", min_chip_size))
+	max_chip_size = float(config.get("max_chip_size", max_chip_size))
+	debris_linger_duration = float(config.get("debris_linger_duration", debris_linger_duration))
 	avoid_occupied_cells = bool(config.get("avoid_occupied_cells", avoid_occupied_cells))
 	route_jitter_ratio = float(config.get("route_jitter_ratio", route_jitter_ratio))
 	fragment_landing_hold_duration = float(config.get("fragment_landing_hold_duration", fragment_landing_hold_duration))
@@ -75,58 +197,64 @@ func configure(config: Dictionary) -> void:
 	player_id_for_color_provider = config.get("player_id_for_color_provider", player_id_for_color_provider)
 	antialias_provider = config.get("antialias_provider", antialias_provider)
 
-func create_fragment(source_pos: Vector2, texture_value: Texture2D, fragment_index: int) -> Sprite2D:
-	if texture_value == null or piece_effects_node == null or !is_instance_valid(piece_effects_node):
+## One piece of `get_fragment_cut()` of `texture_value`, standing where the
+## whole drawing would: it is drawn with the piece's own scale and offset, so
+## the pieces of a cut laid side by side make up the piece.
+func create_fragment(source_pos: Vector2, texture_value: Texture2D, cut_polygon: PackedVector2Array, fragment_index: int) -> Polygon2D:
+	if texture_value == null or cut_polygon.size() < 3 or piece_effects_node == null or !is_instance_valid(piece_effects_node):
 		return null
 	if !_is_valid_position(source_pos):
 		return null
 
-	var fragment := Sprite2D.new()
-	if flipped_view:
-		fragment.global_rotation_degrees = 180
-	piece_effects_node.add_child(fragment)
+	var fragment: Polygon2D = create_fragment_node(texture_value, cut_polygon)
 	fragment.name = "PieceShatterFragment_%d" % fragment_index
-	fragment.light_mask = piece_effect_light_receive_mask
-	fragment.texture_filter = texture_filter_value
-	fragment.texture = texture_value
-	fragment.z_as_relative = false
 	fragment.position = get_position_local(source_pos)
 	fragment.set_meta("board_pos", source_pos)
 	fragment.z_index = get_z_index_for_local_position(fragment.position)
-	fragment.self_modulate = Color.WHITE
-	apply_piece_visual_size(fragment, source_pos)
+	apply_fragment_visual_size(fragment, source_pos)
 	return fragment
 
-func create_pending_edge_fragment_markers(piece_color: int, fragment_textures: Array[Texture2D], return_count: int) -> Array[Sprite2D]:
-	var fragments: Array[Sprite2D] = []
-	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
+func create_pending_edge_fragment_markers(piece_color: int, texture_value: Texture2D, cut_polygons: Array[PackedVector2Array]) -> Array[Polygon2D]:
+	var fragments: Array[Polygon2D] = []
+	if texture_value == null or piece_effects_node == null or !is_instance_valid(piece_effects_node):
 		return fragments
 
 	var home_pos: Vector2 = Vector2(BoardConfig.get_home_row_for_player_id(get_player_id_for_color(piece_color)), BoardConfig.CENTER_INDEX)
-	for fragment_index in range(return_count):
-		if fragment_index >= fragment_textures.size():
-			break
-		var texture_value: Texture2D = fragment_textures[fragment_index]
-		if texture_value == null:
+	for fragment_index in range(cut_polygons.size()):
+		if cut_polygons[fragment_index].size() < 3:
 			continue
 
-		var fragment := Sprite2D.new()
-		if flipped_view:
-			fragment.global_rotation_degrees = 180
-		piece_effects_node.add_child(fragment)
+		var fragment: Polygon2D = create_fragment_node(texture_value, cut_polygons[fragment_index])
 		fragment.name = "PendingRespawnFragment_%d" % fragment_index
-		fragment.light_mask = piece_effect_light_receive_mask
-		fragment.texture_filter = texture_filter_value
-		fragment.texture = texture_value
-		fragment.z_as_relative = false
 		fragment.position = get_pending_respawn_edge_fragment_target(piece_color, fragment_index)
 		fragment.z_index = get_z_index_for_local_position(fragment.position)
-		fragment.self_modulate = Color.WHITE
-		apply_piece_visual_size(fragment, home_pos)
+		apply_fragment_visual_size(fragment, home_pos)
 		fragments.append(fragment)
 	return fragments
 
-func animate_fragment(fragment: Sprite2D, scatter_target: Vector2, source_pos: Vector2, respawn_pos: Vector2, fragment_group: String, fragment_index: int) -> void:
+func create_fragment_node(texture_value: Texture2D, cut_polygon: PackedVector2Array) -> Polygon2D:
+	var fragment := Polygon2D.new()
+	if flipped_view:
+		fragment.global_rotation_degrees = 180
+	piece_effects_node.add_child(fragment)
+	fragment.light_mask = piece_effect_light_receive_mask
+	fragment.texture_filter = texture_filter_value
+	fragment.texture = texture_value
+	# Centred on the texture, as a Sprite2D draws it, so the piece's offset
+	# and scale place it the same way.
+	var half_size: Vector2 = texture_value.get_size() * 0.5
+	var points := PackedVector2Array()
+	for point: Vector2 in cut_polygon:
+		points.append(point - half_size)
+	fragment.polygon = points
+	fragment.uv = cut_polygon
+	fragment.z_as_relative = false
+	fragment.self_modulate = Color.WHITE
+	# No antialiasing: its soft edge would show as a seam between fragments
+	# lying side by side.
+	return fragment
+
+func animate_fragment(fragment: Polygon2D, scatter_target: Vector2, source_pos: Vector2, respawn_pos: Vector2, fragment_group: String, fragment_index: int) -> void:
 	if fragment == null or !is_instance_valid(fragment) or !_is_valid_position(respawn_pos):
 		return
 
@@ -185,7 +313,7 @@ func animate_fragment(fragment: Sprite2D, scatter_target: Vector2, source_pos: V
 			fragment.queue_free()
 	)
 
-func animate_pending_edge_fragment(fragment: Sprite2D, scatter_target: Vector2, source_pos: Vector2, piece_color: int, fragment_index: int) -> void:
+func animate_pending_edge_fragment(fragment: Polygon2D, scatter_target: Vector2, source_pos: Vector2, piece_color: int, fragment_index: int) -> void:
 	if fragment == null or !is_instance_valid(fragment):
 		return
 
@@ -231,7 +359,7 @@ func animate_pending_edge_fragment(fragment: Sprite2D, scatter_target: Vector2, 
 			rolling_player.stop()
 	)
 
-func animate_pending_edge_arrival_fragment(fragment: Sprite2D, respawn_pos: Vector2, fragment_group: String, fragment_index: int) -> void:
+func animate_pending_edge_arrival_fragment(fragment: Polygon2D, respawn_pos: Vector2, fragment_group: String, fragment_index: int) -> void:
 	if fragment == null or !is_instance_valid(fragment) or !_is_valid_position(respawn_pos):
 		return
 
@@ -271,76 +399,492 @@ func animate_pending_edge_arrival_fragment(fragment: Sprite2D, respawn_pos: Vect
 			fragment.queue_free()
 	)
 
-func create_shard(source_pos: Vector2, piece_color: int, debris_index: int) -> Polygon2D:
-	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
-		return null
-
-	var source_center: Vector2 = get_position_local(source_pos)
-	var shard := Polygon2D.new()
-	var shard_scale_min: float = minf(min_piece_scale, max_piece_scale)
-	var shard_scale_max: float = maxf(min_piece_scale, max_piece_scale)
-	shard.name = "PieceShatter_%d" % debris_index
-	shard.position = source_center + Vector2(randf_range(-2.0, 2.0), randf_range(-3.0, 2.0))
-	shard.rotation = randf_range(-PI, PI)
-	shard.scale = Vector2.ONE * randf_range(shard_scale_min, shard_scale_max) * get_perspective_scale(source_pos)
-	shard.color = get_piece_shatter_color(piece_color)
-	shard.polygon = create_shatter_polygon()
-	shard.z_as_relative = false
-	shard.z_index = get_z_index_for_local_position(shard.position)
-	shard.light_mask = piece_effect_light_receive_mask
-	enable_antialiasing(shard)
-	piece_effects_node.add_child(shard)
-	return shard
-
-func create_shatter_polygon() -> PackedVector2Array:
-	var point_count: int = randi_range(3, 5)
-	var radius: float = randf_range(7.0, 13.0)
-	var points := PackedVector2Array()
-	for point_index in range(point_count):
-		var angle: float = TAU * float(point_index) / float(point_count) + randf_range(-0.22, 0.22)
-		var point_radius: float = radius * randf_range(0.58, 1.08)
-		points.append(Vector2(cos(angle), sin(angle)) * point_radius)
-	return points
-
-func get_piece_shatter_color(piece_color: int) -> Color:
-	var base_color: Color = Color(0.62, 0.60, 0.55, 1.0) if piece_color > 0 else Color(0.22, 0.22, 0.21, 1.0)
-	var warm_tint: Color = Color(0.78, 0.70, 0.58, 1.0) if piece_color > 0 else Color(0.34, 0.32, 0.29, 1.0)
-	var tint_amount: float = randf_range(0.0, 0.38)
-	var brightness: float = randf_range(0.86, 1.16)
-	var color: Color = base_color.lerp(warm_tint, tint_amount)
-	color.r = clampf(color.r * brightness, 0.0, 1.0)
-	color.g = clampf(color.g * brightness, 0.0, 1.0)
-	color.b = clampf(color.b * brightness, 0.0, 1.0)
-	color.a = 1.0
-	return color
-
-func animate_shard(shard: Polygon2D, scatter_target: Vector2, return_center: Vector2, returns_to_respawn: bool) -> void:
-	if shard == null or !is_instance_valid(shard):
+## Chips broken off `texture_value`, the drawing the piece at `source_pos`
+## showed: each starts where it sat on the piece, is thrown along
+## `blow_direction` (board steps, from the striker's square towards the
+## piece's; zero throws them every way), bounces and slides to rest, then
+## fades.
+func play_debris(source_pos: Vector2, texture_value: Texture2D, chip_count: int, blow_direction: Vector2 = Vector2.ZERO) -> void:
+	if texture_value == null or chip_count <= 0 or !_is_valid_position(source_pos):
 		return
+	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
+		return
+
+	var shape: Dictionary = get_texture_shape(texture_value)
+	var opaque_points: PackedVector2Array = shape.get("opaque_points", PackedVector2Array())
+	if opaque_points.is_empty():
+		return
+	var used_rect: Rect2 = shape.get("used_rect", Rect2())
+	var sample_cell: Vector2 = used_rect.size / Vector2(SHAPE_SAMPLE_COLUMNS, SHAPE_SAMPLE_ROWS)
+	var visual_transform: Dictionary = get_visual_transform_for_texture(texture_value, source_pos)
+
+	var burst := DebrisBurst.new()
+	burst.visual_scale = visual_transform.get("scale", Vector2.ONE)
+	burst.base_rotation = PI if flipped_view else 0.0
+	burst.up = get_screen_up()
+	burst.plane = get_board_plane_transform(source_pos)
+	var visual_offset: Vector2 = visual_transform.get("offset", Vector2.ZERO)
+	var piece_position: Vector2 = get_position_local(source_pos)
+	var feet_point := Vector2(used_rect.get_center().x, used_rect.end.y)
+	burst.ground_origin = piece_position + get_texture_point_local(feet_point, texture_value, burst.visual_scale, visual_offset, burst.base_rotation)
+	var to_plane: Transform2D = burst.plane.affine_inverse()
+
+	var flat_blow := Vector2.ZERO
+	if blow_direction != Vector2.ZERO:
+		flat_blow = (BoardConfig.get_cell_center_local(source_pos + blow_direction) - BoardConfig.get_cell_center_local(source_pos)).normalized()
+	var base_speed: float = float(cell_width) * scatter_radius / DEBRIS_FLIGHT_TIME
+	var chip_size_min: float = minf(min_chip_size, max_chip_size)
+	var chip_size_max: float = maxf(min_chip_size, max_chip_size)
+
+	for chip_index in range(chip_count):
+		var chip_center: Vector2 = opaque_points[randi() % opaque_points.size()]
+		chip_center += Vector2(randf_range(-0.5, 0.5), randf_range(-0.5, 0.5)) * sample_cell
+		# Mostly small, the odd bigger one.
+		var size_share: float = pow(randf(), 1.5)
+		var radius: float = used_rect.size.y * lerpf(chip_size_min, chip_size_max, size_share) * 0.5
+
+		var chip := DebrisChip.new()
+		chip.node = create_debris_chip_node(texture_value, chip_center, radius, chip_index)
+		chip.shadow = create_debris_shadow_node(radius * absf(burst.visual_scale.x), chip_index)
+
+		var from_feet: Vector2 = piece_position + get_texture_point_local(chip_center, texture_value, burst.visual_scale, visual_offset, burst.base_rotation) - burst.ground_origin
+		chip.height = maxf(0.0, from_feet.dot(burst.up))
+		chip.ground = to_plane.basis_xform(from_feet - burst.up * from_feet.dot(burst.up))
+
+		var direction: Vector2
+		var speed: float
+		if flat_blow == Vector2.ZERO:
+			direction = Vector2.RIGHT.rotated(randf() * TAU)
+			speed = base_speed * randf_range(0.4, 1.1)
+		elif randf() < DEBRIS_SPRAY_SHARE:
+			direction = Vector2.RIGHT.rotated(randf() * TAU)
+			speed = base_speed * randf_range(0.15, 0.55)
+		else:
+			# Bunched towards the line of the blow rather than spread evenly.
+			direction = flat_blow.rotated(randf_range(-DEBRIS_BLOW_SPREAD, DEBRIS_BLOW_SPREAD) * randf())
+			speed = base_speed * randf_range(0.55, 1.35)
+		chip.velocity = direction * speed + chip.ground * DEBRIS_OUTWARD_SPEED
+		chip.rise_speed = randf_range(DEBRIS_MIN_LAUNCH_RISE, DEBRIS_MAX_LAUNCH_RISE)
+		chip.spin = randf_range(-DEBRIS_MAX_SPIN, DEBRIS_MAX_SPIN)
+		chip.turn_speed = randf_range(DEBRIS_MIN_TURN_SPEED, DEBRIS_MAX_TURN_SPEED) * (1.0 if randf() < 0.5 else -1.0)
+		chip.clicks = size_share >= DEBRIS_CLICK_SIZE_SHARE
+		burst.chips.append(chip)
+		place_debris_chip(burst, chip)
+
+	play_stain(burst.ground_origin, burst.plane, flat_blow)
+
+	burst.tween = create_animation_tween()
+	if burst.tween == null:
+		free_debris(burst)
+		return
+	debris_bursts.append(burst)
+	burst.tween.tween_method(func(time: float): step_debris(burst, time), 0.0, DEBRIS_SIMULATION_DURATION, DEBRIS_SIMULATION_DURATION)
+	burst.tween.tween_callback(func(): settle_debris(burst))
+
+## The chips have come to rest: they lie for the rest of
+## `debris_linger_duration`, then soak into the paper - at once if the next
+## move began while they were still flying.
+func settle_debris(burst: DebrisBurst) -> void:
+	burst.settled = true
+	if burst.clear_requested:
+		soak_debris(burst, 0.0, DEBRIS_CLEAR_DURATION)
+	else:
+		soak_debris(burst, maxf(0.0, debris_linger_duration - DEBRIS_SIMULATION_DURATION), fade_duration)
+
+func soak_debris(burst: DebrisBurst, delay: float, duration: float) -> void:
+	if burst.tween != null and burst.tween.is_valid():
+		burst.tween.kill()
+	burst.tween = create_animation_tween()
+	if burst.tween == null:
+		free_debris(burst)
+		return
+	if delay > 0.0:
+		burst.tween.tween_interval(delay)
+	burst.tween.tween_method(func(soak: float): set_debris_soak(burst, soak), burst.soak, 1.0, duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	burst.tween.tween_callback(func(): free_debris(burst))
+
+func set_debris_soak(burst: DebrisBurst, soak: float) -> void:
+	burst.soak = soak
+	for chip: DebrisChip in burst.chips:
+		if is_instance_valid(chip.node):
+			chip.node.set_instance_shader_parameter(&"soak", soak)
+		if is_instance_valid(chip.shadow):
+			chip.shadow.modulate.a = 1.0 - soak
+
+## The next move is beginning: chips lying about soak away quickly, and those
+## still in the air as soon as they land, so the board reads clearly again.
+## The blots go on soaking in at their own pace.
+func soak_away_debris() -> void:
+	for burst: DebrisBurst in debris_bursts.duplicate():
+		if burst.clear_requested:
+			continue
+		burst.clear_requested = true
+		if burst.settled:
+			soak_debris(burst, 0.0, DEBRIS_CLEAR_DURATION)
+
+## For a board replaced wholesale: every chip and blot gone at once.
+func clear_debris() -> void:
+	for burst: DebrisBurst in debris_bursts.duplicate():
+		if burst.tween != null and burst.tween.is_valid():
+			burst.tween.kill()
+		free_debris(burst)
+	for stain: Sprite2D in stains:
+		if is_instance_valid(stain):
+			stain.queue_free()
+	stains.clear()
+
+func get_debris_material() -> ShaderMaterial:
+	if debris_material == null:
+		debris_material = ShaderMaterial.new()
+		debris_material.shader = DEBRIS_SHADER
+		debris_material.set_shader_parameter(&"blot_size", DEBRIS_BLOT_SIZE)
+	return debris_material
+
+## The blot on the square under the broken piece, stretched along the blow on
+## the board's plane: it spreads out quickly, then soaks in.
+func play_stain(ground_origin: Vector2, plane: Transform2D, flat_blow: Vector2) -> void:
+	var along: Vector2 = flat_blow if flat_blow != Vector2.ZERO else Vector2.RIGHT.rotated(randf() * TAU)
+	along = along.rotated(randf_range(-0.3, 0.3))
+	var radius: float = float(cell_width) * STAIN_RADIUS
+	var half_texture: float = float(STAIN_TEXTURE_SIZE) * 0.5
+	var x_axis: Vector2 = plane.basis_xform(along) * radius * STAIN_STRETCH / half_texture
+	var y_axis: Vector2 = plane.basis_xform(along.orthogonal()) * radius / half_texture
+	# Leaning the way the blow sent the pieces.
+	var center: Vector2 = ground_origin + plane.basis_xform(along * radius * 0.35 if flat_blow != Vector2.ZERO else Vector2.ZERO)
+
+	var stain := Sprite2D.new()
+	stain.name = "PieceShatterStain"
+	stain.texture = get_stain_texture()
+	stain.material = get_stain_material()
+	stain.self_modulate = STAIN_COLOR
+	stain.modulate.a = 0.0
+	stain.light_mask = 0
+	stain.z_as_relative = false
+	stain.z_index = STAIN_Z_INDEX
+	piece_effects_node.add_child(stain)
+	stain.set_instance_shader_parameter(&"soak_seed", randf() * 10.0)
+	set_stain_soak(stain, STAIN_FIRST_SOAK)
+	set_stain_spread(stain, x_axis, y_axis, center, 0.7)
+	stains.append(stain)
 
 	var tween: Tween = create_animation_tween()
 	if tween == null:
+		stains.erase(stain)
+		stain.queue_free()
 		return
-	tween.set_trans(Tween.TRANS_QUAD)
-	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_method(func(local_pos: Vector2): update_item_motion(shard, local_pos), shard.position, scatter_target, scatter_duration)
-	tween.parallel().tween_property(shard, "rotation", shard.rotation + randf_range(-PI * 1.4, PI * 1.4), scatter_duration)
-	tween.parallel().tween_property(shard, "scale", shard.scale * randf_range(0.82, 1.18), scatter_duration)
-
-	if returns_to_respawn and return_center != invalid_board_pos:
-		tween.tween_interval(fade_duration)
-		tween.set_ease(Tween.EASE_IN_OUT)
-		tween.tween_method(func(local_pos: Vector2): update_item_motion(shard, local_pos), scatter_target, return_center + Vector2(randf_range(-3.0, 3.0), randf_range(-5.0, 2.0)), return_duration)
-		tween.parallel().tween_property(shard, "rotation", shard.rotation + randf_range(-PI * 2.0, PI * 2.0), return_duration)
-		tween.tween_property(shard, "modulate:a", 0.0, return_fade_duration)
-	else:
-		tween.set_ease(Tween.EASE_IN)
-		tween.tween_property(shard, "modulate:a", 0.0, fade_duration)
-
-	tween.finished.connect(func():
-		if is_instance_valid(shard):
-			shard.queue_free()
+	tween.tween_method(func(spread: float): set_stain_spread(stain, x_axis, y_axis, center, spread), 0.7, 1.0, STAIN_SPREAD_DURATION).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(stain, "modulate:a", 1.0, STAIN_SPREAD_DURATION * 0.3)
+	tween.tween_method(func(soak: float): set_stain_soak(stain, soak), STAIN_FIRST_SOAK, 1.0, STAIN_SOAK_DURATION).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_callback(func():
+		stains.erase(stain)
+		if is_instance_valid(stain):
+			stain.queue_free()
 	)
+
+func set_stain_spread(stain: Sprite2D, x_axis: Vector2, y_axis: Vector2, center: Vector2, spread: float) -> void:
+	if is_instance_valid(stain):
+		stain.transform = Transform2D(x_axis * spread, y_axis * spread, center)
+
+func set_stain_soak(stain: Sprite2D, soak: float) -> void:
+	if is_instance_valid(stain):
+		stain.set_instance_shader_parameter(&"soak", soak)
+
+func get_stain_material() -> ShaderMaterial:
+	if stain_material == null:
+		stain_material = ShaderMaterial.new()
+		stain_material.shader = DEBRIS_SHADER
+		stain_material.set_shader_parameter(&"blot_size", STAIN_BLOT_SIZE)
+	return stain_material
+
+## A soft round blot, white, tinted by `STAIN_COLOR`; its ragged edge comes
+## from the soaking.
+func get_stain_texture() -> Texture2D:
+	if stain_texture != null:
+		return stain_texture
+
+	var image := Image.create(STAIN_TEXTURE_SIZE, STAIN_TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	var half_size: float = float(STAIN_TEXTURE_SIZE) * 0.5
+	for y in range(STAIN_TEXTURE_SIZE):
+		for x in range(STAIN_TEXTURE_SIZE):
+			var distance: float = Vector2(float(x) + 0.5 - half_size, float(y) + 0.5 - half_size).length() / half_size
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, 1.0 - smoothstep(0.55, 1.0, distance)))
+	stain_texture = ImageTexture.create_from_image(image)
+	return stain_texture
+
+func create_debris_chip_node(texture_value: Texture2D, chip_center: Vector2, radius: float, chip_index: int) -> Polygon2D:
+	var texture_rect := Rect2(Vector2.ZERO, texture_value.get_size())
+	var chip := Polygon2D.new()
+	chip.name = "PieceShatterChip_%d" % chip_index
+	chip.texture = texture_value
+	chip.texture_filter = texture_filter_value
+	chip.light_mask = piece_effect_light_receive_mask
+	chip.z_as_relative = false
+	chip.material = get_debris_material()
+	var points := PackedVector2Array()
+	var uv := PackedVector2Array()
+	var point_count: int = randi_range(3, 5)
+	var stretch := Vector2(1.0, randf_range(0.45, 1.0))
+	var tilt: float = randf() * TAU
+	for point_index in range(point_count):
+		var angle: float = TAU * float(point_index) / float(point_count) + randf_range(-0.3, 0.3)
+		var point: Vector2 = (Vector2(cos(angle), sin(angle)) * stretch * radius * randf_range(0.6, 1.08)).rotated(tilt)
+		var texture_point: Vector2 = (chip_center + point).clamp(texture_rect.position, texture_rect.end)
+		uv.append(texture_point)
+		points.append(texture_point - chip_center)
+	chip.polygon = points
+	chip.uv = uv
+	enable_antialiasing(chip)
+	piece_effects_node.add_child(chip)
+	chip.set_instance_shader_parameter(&"soak_seed", randf() * 10.0)
+	return chip
+
+func create_debris_shadow_node(radius: float, chip_index: int) -> Polygon2D:
+	var shadow := Polygon2D.new()
+	shadow.name = "PieceShatterChipShadow_%d" % chip_index
+	shadow.color = DEBRIS_SHADOW_COLOR
+	shadow.light_mask = 0
+	shadow.z_as_relative = false
+	var points := PackedVector2Array()
+	for point_index in range(10):
+		var angle: float = TAU * float(point_index) / 10.0
+		points.append(Vector2(cos(angle), sin(angle) * 0.45) * radius * 0.9)
+	shadow.polygon = points
+	enable_antialiasing(shadow)
+	piece_effects_node.add_child(shadow)
+	return shadow
+
+func step_debris(burst: DebrisBurst, time: float) -> void:
+	var delta: float = maxf(0.0, time - burst.time)
+	burst.time = time
+	for chip: DebrisChip in burst.chips:
+		var landed: bool = advance_debris_chip(chip, delta)
+		if landed and chip.clicks and chip.bounces == 1 and burst.clicks_left > 0:
+			burst.clicks_left -= 1
+			SFXManager.play_pitched(DEBRIS_CLICK_SOUND, randf_range(DEBRIS_CLICK_MIN_PITCH, DEBRIS_CLICK_MAX_PITCH), DEBRIS_CLICK_VOLUME_DB)
+		place_debris_chip(burst, chip)
+
+## Moves a chip on by `delta`; true on the step it hits the ground.
+func advance_debris_chip(chip: DebrisChip, delta: float) -> bool:
+	if !chip.lying:
+		chip.rise_speed -= DEBRIS_GRAVITY * delta
+		chip.height += chip.rise_speed * delta
+		chip.ground += chip.velocity * delta
+		chip.spin_angle += chip.spin * delta
+		chip.turn += chip.turn_speed * delta
+		if chip.height > 0.0 or chip.rise_speed >= 0.0:
+			return false
+
+		chip.height = 0.0
+		chip.bounces += 1
+		var bounce_rise: float = -chip.rise_speed * DEBRIS_BOUNCE_RISE_KEPT
+		chip.velocity *= DEBRIS_BOUNCE_GROUND_KEPT
+		chip.spin *= 0.5
+		chip.turn_speed *= 0.4
+		if chip.bounces >= DEBRIS_MAX_BOUNCES or bounce_rise < DEBRIS_MIN_BOUNCE_RISE:
+			chip.lying = true
+			chip.rise_speed = 0.0
+		else:
+			chip.rise_speed = bounce_rise
+		return true
+
+	# Lying: it slides to a stop and settles face up or face down.
+	var speed: float = maxf(0.0, chip.velocity.length() - DEBRIS_SLIDE_FRICTION * delta)
+	chip.velocity = chip.velocity.normalized() * speed
+	chip.ground += chip.velocity * delta
+	chip.spin *= exp(-8.0 * delta)
+	chip.spin_angle += chip.spin * delta
+	chip.turn = lerpf(chip.turn, roundf(chip.turn / PI) * PI, 1.0 - exp(-14.0 * delta))
+	return false
+
+func place_debris_chip(burst: DebrisBurst, chip: DebrisChip) -> void:
+	if !is_instance_valid(chip.node) or !is_instance_valid(chip.shadow):
+		return
+
+	var ground_local: Vector2 = burst.ground_origin + burst.plane.basis_xform(chip.ground)
+	chip.node.position = ground_local + burst.up * chip.height
+	chip.node.rotation = burst.base_rotation + chip.spin_angle
+	# Turning over about its own axis: squeezed edge-on, mirrored past it.
+	var facing: float = cos(chip.turn)
+	var facing_sign: float = 1.0 if facing >= 0.0 else -1.0
+	chip.node.scale = Vector2(burst.visual_scale.x * facing_sign * maxf(absf(facing), 0.06), burst.visual_scale.y)
+	var shade: float = lerpf(DEBRIS_EDGE_ON_SHADE, 1.0, absf(facing)) * (1.0 if facing >= 0.0 else DEBRIS_UNDERSIDE_SHADE)
+	chip.node.self_modulate = Color(shade, shade, shade, 1.0)
+	chip.node.z_index = get_z_index_for_local_position(ground_local)
+
+	chip.shadow.position = ground_local
+	chip.shadow.z_index = get_ground_shadow_z_index(ground_local)
+	var lift: float = clampf(chip.height / float(cell_width), 0.0, 1.0)
+	chip.shadow.scale = Vector2.ONE * lerpf(1.0, 0.55, lift)
+	chip.shadow.self_modulate.a = lerpf(1.0, 0.35, lift)
+
+func free_debris(burst: DebrisBurst) -> void:
+	for chip: DebrisChip in burst.chips:
+		if is_instance_valid(chip.node):
+			chip.node.queue_free()
+		if is_instance_valid(chip.shadow):
+			chip.shadow.queue_free()
+	burst.chips.clear()
+	debris_bursts.erase(burst)
+
+## Where pixel `texture_point` of a piece's drawing is drawn, from the piece's
+## position, for a Sprite2D centred on the texture.
+func get_texture_point_local(texture_point: Vector2, texture_value: Texture2D, visual_scale: Vector2, visual_offset: Vector2, base_rotation: float) -> Vector2:
+	return ((texture_point - texture_value.get_size() * 0.5 + visual_offset) * visual_scale).rotated(base_rotation)
+
+## The board's plane around `board_pos` as drawn: a step along its x and y,
+## perspective included. Taken as flat over the square or two debris crosses.
+func get_board_plane_transform(board_pos: Vector2) -> Transform2D:
+	var center: Vector2 = BoardConfig.get_cell_center_local(board_pos)
+	if geometry == null:
+		return Transform2D.IDENTITY
+	var projected_center: Vector2 = geometry.project_point_local(center, false)
+	return Transform2D(
+		geometry.project_point_local(center + Vector2.RIGHT, false) - projected_center,
+		geometry.project_point_local(center + Vector2.DOWN, false) - projected_center,
+		Vector2.ZERO
+	)
+
+## Up on screen, in local units: the camera is turned round for the second
+## player, and pieces with it.
+func get_screen_up() -> Vector2:
+	return Vector2.DOWN if flipped_view else Vector2.UP
+
+## Where a drawing has ink, read once per texture: the rectangle it fills and
+## a grid of points inside it that are not transparent.
+func get_texture_shape(texture_value: Texture2D) -> Dictionary:
+	if texture_shapes.has(texture_value):
+		return texture_shapes[texture_value]
+
+	var used_rect := Rect2(Vector2.ZERO, texture_value.get_size())
+	var image: Image = texture_value.get_image()
+	if image != null and image.is_compressed():
+		image.decompress()
+	var can_read: bool = image != null and !image.is_empty() and !image.is_compressed() and Vector2(image.get_size()) == used_rect.size
+	if can_read:
+		var image_used_rect: Rect2i = image.get_used_rect()
+		if image_used_rect.has_area():
+			used_rect = Rect2(image_used_rect)
+
+	var opaque_points := PackedVector2Array()
+	for row in range(SHAPE_SAMPLE_ROWS):
+		for column in range(SHAPE_SAMPLE_COLUMNS):
+			var point: Vector2 = used_rect.position + used_rect.size * Vector2((float(column) + 0.5) / SHAPE_SAMPLE_COLUMNS, (float(row) + 0.5) / SHAPE_SAMPLE_ROWS)
+			if !can_read or image.get_pixelv(Vector2i(point)).a >= SHAPE_OPAQUE_ALPHA:
+				opaque_points.append(point)
+
+	var shape := {
+		"used_rect": used_rect,
+		"opaque_points": opaque_points,
+	}
+	texture_shapes[texture_value] = shape
+	return shape
+
+## `texture_value`'s drawing cut into six, in texture pixels: top left, top
+## centre, top right, then the bottom three. Neighbours share their edges
+## exactly, so the pieces fit back together without a gap.
+func get_fragment_cut(texture_value: Texture2D) -> Array[PackedVector2Array]:
+	if !fragment_cuts.has(texture_value):
+		fragment_cuts[texture_value] = build_fragment_cut(texture_value)
+	return fragment_cuts[texture_value].polygons
+
+## Where `texture_value`'s drawing cracks before it breaks: the lines of its
+## `get_fragment_cut()` and a few short cracks off them, as segments (from in
+## xy, to in zw) in texture pixels.
+func get_fragment_crack_segments(texture_value: Texture2D) -> PackedVector4Array:
+	get_fragment_cut(texture_value)
+	var segments := PackedVector4Array()
+	for line: PackedVector2Array in fragment_cuts[texture_value].crack_lines:
+		for index in range(line.size() - 1):
+			segments.append(Vector4(line[index].x, line[index].y, line[index + 1].x, line[index + 1].y))
+	return segments
+
+func build_fragment_cut(texture_value: Texture2D) -> Dictionary:
+
+	var texture_rect := Rect2(Vector2.ZERO, texture_value.get_size())
+	var used_rect: Rect2 = get_texture_shape(texture_value).get("used_rect", texture_rect)
+	var area: Rect2 = used_rect.grow(2.0).intersection(texture_rect)
+	var jag: Vector2 = area.size * FRAGMENT_CUT_JAG
+	var rng := RandomNumberGenerator.new()
+	rng.seed = FRAGMENT_CUT_SEED
+
+	var left: float = area.position.x
+	var right: float = area.end.x
+	var top: float = area.position.y
+	var bottom: float = area.end.y
+	var middle: float = top + area.size.y * FRAGMENT_CUT_HEIGHT
+	var third: float = area.size.x / 3.0
+	var top_left := Vector2(left, top)
+	var top_right := Vector2(right, top)
+	var bottom_left := Vector2(left, bottom)
+	var bottom_right := Vector2(right, bottom)
+	var middle_left := Vector2(left, middle + rng.randf_range(-jag.y, jag.y))
+	var middle_right := Vector2(right, middle + rng.randf_range(-jag.y, jag.y))
+	var middle_1 := Vector2(left + third + rng.randf_range(-jag.x, jag.x), middle + rng.randf_range(-jag.y, jag.y))
+	var middle_2 := Vector2(left + third * 2.0 + rng.randf_range(-jag.x, jag.x), middle + rng.randf_range(-jag.y, jag.y))
+	var top_1 := Vector2(left + third + rng.randf_range(-jag.x, jag.x), top)
+	var top_2 := Vector2(left + third * 2.0 + rng.randf_range(-jag.x, jag.x), top)
+	var bottom_1 := Vector2(left + third + rng.randf_range(-jag.x, jag.x), bottom)
+	var bottom_2 := Vector2(left + third * 2.0 + rng.randf_range(-jag.x, jag.x), bottom)
+
+	var across_0: PackedVector2Array = get_jagged_cut(middle_left, middle_1, jag.y, rng, area)
+	var across_1: PackedVector2Array = get_jagged_cut(middle_1, middle_2, jag.y, rng, area)
+	var across_2: PackedVector2Array = get_jagged_cut(middle_2, middle_right, jag.y, rng, area)
+	var down_1_top: PackedVector2Array = get_jagged_cut(top_1, middle_1, jag.x, rng, area)
+	var down_1_bottom: PackedVector2Array = get_jagged_cut(middle_1, bottom_1, jag.x, rng, area)
+	var down_2_top: PackedVector2Array = get_jagged_cut(top_2, middle_2, jag.x, rng, area)
+	var down_2_bottom: PackedVector2Array = get_jagged_cut(middle_2, bottom_2, jag.x, rng, area)
+
+	var cut: Array[PackedVector2Array] = [
+		join_cut_edges([PackedVector2Array([top_left]), down_1_top, reversed_cut(across_0)]),
+		join_cut_edges([down_2_top, reversed_cut(across_1), reversed_cut(down_1_top)]),
+		join_cut_edges([PackedVector2Array([top_2, top_right, middle_right]), reversed_cut(across_2), reversed_cut(down_2_top)]),
+		join_cut_edges([across_0, down_1_bottom, PackedVector2Array([bottom_left])]),
+		join_cut_edges([across_1, down_2_bottom, reversed_cut(down_1_bottom)]),
+		join_cut_edges([across_2, PackedVector2Array([bottom_right]), reversed_cut(down_2_bottom)]),
+	]
+
+	var crack_lines: Array[PackedVector2Array] = [across_0, across_1, across_2, down_1_top, down_1_bottom, down_2_top, down_2_bottom]
+	# A few short cracks branching off the cut, so that it reads as broken
+	# rather than ruled.
+	for line: PackedVector2Array in [across_1, down_1_top, down_2_bottom]:
+		var from: Vector2 = line[rng.randi_range(1, line.size() - 2)]
+		var turn: float = rng.randf_range(0.6, 1.1) * (1.0 if rng.randf() < 0.5 else -1.0)
+		var heading: Vector2 = (line[line.size() - 1] - line[0]).normalized().rotated(turn)
+		var to: Vector2 = (from + heading * area.size.y * rng.randf_range(0.05, 0.09)).clamp(area.position, area.end)
+		crack_lines.append(PackedVector2Array([from, to]))
+
+	return {
+		"polygons": cut,
+		"crack_lines": crack_lines,
+	}
+
+## A cut line from `from` to `to` with two kinks, pushed at most `amount`
+## either side.
+func get_jagged_cut(from: Vector2, to: Vector2, amount: float, rng: RandomNumberGenerator, area: Rect2) -> PackedVector2Array:
+	var side: Vector2 = (to - from).orthogonal().normalized()
+	var points := PackedVector2Array([from])
+	for kink in [0.36, 0.68]:
+		var point: Vector2 = from.lerp(to, kink + rng.randf_range(-0.08, 0.08)) + side * rng.randf_range(-amount, amount)
+		points.append(point.clamp(area.position, area.end))
+	points.append(to)
+	return points
+
+func reversed_cut(points: PackedVector2Array) -> PackedVector2Array:
+	var reversed := points.duplicate()
+	reversed.reverse()
+	return reversed
+
+## Edges walked round a fragment, one after another, with the corner each
+## shares with the next (and the last with the first) kept once.
+func join_cut_edges(edges: Array) -> PackedVector2Array:
+	var polygon := PackedVector2Array()
+	for edge: PackedVector2Array in edges:
+		for point: Vector2 in edge:
+			if polygon.is_empty() or !polygon[polygon.size() - 1].is_equal_approx(point):
+				polygon.append(point)
+	if polygon.size() > 1 and polygon[0].is_equal_approx(polygon[polygon.size() - 1]):
+		polygon.remove_at(polygon.size() - 1)
+	return polygon
 
 func get_return_route_points(source_pos: Vector2, respawn_pos: Vector2, fragment_index: int) -> Array[Vector2]:
 	var points: Array[Vector2] = []
@@ -486,7 +1030,9 @@ func get_edge_route_points(source_pos: Vector2, target_local_pos: Vector2, fragm
 	points.append(source_center.lerp(target_local_pos, 0.72) + route_offset * 0.48)
 	return points
 
-func get_scatter_target(source_pos: Vector2, debris_index: int) -> Vector2:
+## With a `blow_direction` (board steps), the first indices go to the squares
+## most nearly along it, so the fragments fly on the way the blow sent them.
+func get_scatter_target(source_pos: Vector2, debris_index: int, blow_direction: Vector2 = Vector2.ZERO) -> Vector2:
 	var directions: Array[Vector2] = [
 		Vector2(-1, -1),
 		Vector2(-1, 0),
@@ -497,6 +1043,11 @@ func get_scatter_target(source_pos: Vector2, debris_index: int) -> Vector2:
 		Vector2(1, 0),
 		Vector2(1, 1),
 	]
+	if blow_direction != Vector2.ZERO:
+		var blow: Vector2 = blow_direction.normalized()
+		directions.sort_custom(func(a: Vector2, b: Vector2) -> bool:
+			return a.normalized().dot(blow) > b.normalized().dot(blow)
+		)
 	var direction: Vector2 = get_scatter_direction(source_pos, debris_index, directions)
 	var source_center: Vector2 = get_position_local(source_pos)
 	var target_pos: Vector2 = source_pos + direction
@@ -614,6 +1165,15 @@ func get_z_index_for_local_position(local_pos: Vector2) -> int:
 	var side_offset: int = route_z_front_offset if front_side else route_z_back_offset
 	return base_z_index + get_depth_z_index(nearest_pos) + side_offset
 
+## On the ground under whatever stands nearest: below the pieces of that rank,
+## as `PieceMoveAnimator`'s shadow of a piece in flight is.
+func get_ground_shadow_z_index(local_pos: Vector2) -> int:
+	var base_z_index: int = int(pieces_node.z_index) if pieces_node != null else 0
+	var nearest_pos: Vector2 = get_nearest_board_position_for_local_position(local_pos)
+	if !_is_valid_position(nearest_pos):
+		return base_z_index + DEBRIS_SHADOW_Z_OFFSET
+	return base_z_index + get_depth_z_index(nearest_pos) + DEBRIS_SHADOW_Z_OFFSET
+
 func get_respawn_z_index_for_local_position(local_pos: Vector2, respawn_pos: Vector2) -> int:
 	var base_z_index: int = int(pieces_node.z_index) if pieces_node != null else 0
 	if _is_valid_position(respawn_pos):
@@ -644,9 +1204,10 @@ func get_visual_transform_for_texture(texture_value: Texture2D, board_pos: Vecto
 		return {"scale": Vector2.ONE, "offset": Vector2.ZERO}
 	return piece_visuals.get_visual_transform_for_texture(texture_value, board_pos)
 
-func apply_piece_visual_size(holder: Sprite2D, board_pos: Vector2) -> void:
-	if piece_visuals != null:
-		piece_visuals.apply_visual_size(holder, board_pos)
+func apply_fragment_visual_size(fragment: Polygon2D, board_pos: Vector2) -> void:
+	var visual_transform: Dictionary = get_visual_transform_for_texture(fragment.texture, board_pos)
+	fragment.scale = visual_transform.get("scale", Vector2.ONE)
+	fragment.offset = visual_transform.get("offset", Vector2.ZERO)
 
 func get_perspective_scale(board_pos: Vector2) -> float:
 	if piece_visuals == null:

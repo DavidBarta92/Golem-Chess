@@ -22,14 +22,8 @@ const BOARD_TILE_BASE_BLACK_TEXTURE = preload("res://Assets/board_tile_base_blac
 const BOARD_TILE_FREEZE_TEXTURE = preload("res://Assets/board_tile_freeze.svg")
 const BOARD_TILE_DISABLED_TEXTURE = preload("res://Assets/board_tile_disabled.svg")
 
-const DEFAULT_PIECE_TEXTURE = preload("res://Assets/golem_front.svg")
-const OWN_DEFAULT_PIECE_TEXTURE = preload("res://Assets/golem_back.svg")
-const GOLEM_FRAGMENT_TOP_LEFT_TEXTURE = preload("res://Assets/golem_fragment_top_left.svg")
-const GOLEM_FRAGMENT_TOP_CENTER_TEXTURE = preload("res://Assets/golem_fragment_top_center.svg")
-const GOLEM_FRAGMENT_TOP_RIGHT_TEXTURE = preload("res://Assets/golem_fragment_top_right.svg")
-const GOLEM_FRAGMENT_BOTTOM_LEFT_TEXTURE = preload("res://Assets/golem_fragment_bottom_left.svg")
-const GOLEM_FRAGMENT_BOTTOM_CENTER_TEXTURE = preload("res://Assets/golem_fragment_bottom_center.svg")
-const GOLEM_FRAGMENT_BOTTOM_RIGHT_TEXTURE = preload("res://Assets/golem_fragment_bottom_right.svg")
+const DEFAULT_PIECE_TEXTURE = preload("res://Assets/golem_front.png")
+const OWN_DEFAULT_PIECE_TEXTURE = preload("res://Assets/golem_back.png")
 const BOMB_WARNING_TEXTURE = preload("res://Assets/stamp_pattern_bomb.svg")
 
 const DECK_COUNTER_DIGITS_TEXTURE = preload("res://Assets/deck_counter_digits.png")
@@ -344,8 +338,13 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @export_range(0.0, 1.0, 0.01) var piece_shatter_fragment_settle_duration: float = 0.24
 @export_range(0.1, 2.0, 0.05) var piece_shatter_scatter_radius: float = 0.84
 @export_range(0.0, 1.0, 0.05) var piece_shatter_scatter_jitter: float = 0.28
-@export_range(0.05, 1.0, 0.01) var piece_shatter_min_piece_scale: float = 0.16
-@export_range(0.05, 1.0, 0.01) var piece_shatter_max_piece_scale: float = 0.32
+## A chip's size, as a share of the height of the drawing it breaks off from.
+@export_range(0.01, 0.5, 0.01) var piece_shatter_min_chip_size: float = 0.09
+@export_range(0.01, 0.5, 0.01) var piece_shatter_max_chip_size: float = 0.26
+## How long after a piece breaks its chips lie about before they soak into
+## the paper (over `piece_shatter_fade_duration`). The next move clears them
+## sooner.
+@export_range(0.0, 6.0, 0.1) var piece_shatter_debris_linger_duration: float = 2.4
 @export var piece_shatter_avoid_occupied_cells: bool = true
 @export_range(0.0, 0.45, 0.01) var piece_shatter_route_jitter_ratio: float = 0.12
 
@@ -376,8 +375,8 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @export_range(0.0, 0.6, 0.01) var piece_move_capture_approach_hold_duration: float = 0.25
 @export_range(0.05, 0.35, 0.01) var piece_move_capture_push_duration: float = 0.14
 ## Both pieces hold still this long at the moment of contact, the struck one
-## flashing, before it breaks and the striker recoils.
-@export_range(0.0, 0.2, 0.01) var piece_move_capture_hitstop_duration: float = 0.08
+## flashing and cracking, before it breaks and the striker recoils.
+@export_range(0.0, 0.2, 0.01) var piece_move_capture_hitstop_duration: float = 0.1
 @export_range(0.05, 0.35, 0.01) var piece_move_capture_recoil_duration: float = 0.12
 @export_range(0.05, 0.5, 0.01) var piece_move_capture_center_settle_duration: float = 0.24
 @export_range(0.0, 18.0, 0.5) var piece_move_capture_push_rotation_degrees: float = 8.0

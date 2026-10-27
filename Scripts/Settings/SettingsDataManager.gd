@@ -18,6 +18,8 @@ var noSaveFile: bool = false
 var invalidSaveFile: bool = false
 
 var crt_overlay: CanvasLayer
+var crt_aberration_tween: Tween
+var crt_rest_aberration: float = 0.0
 
 func _ready() -> void:
 	if FileAccess.file_exists(PATH):
@@ -83,6 +85,11 @@ func set_move_ends_turn_warning_enabled(enabled: bool) -> void:
 func is_enemy_attack_markers_enabled() -> bool:
 	return bool(settingsData_.get("UI", {}).get("ShowEnemyAttackMarkers", true))
 
+## Whether a capture may jolt the board and flash: off for players these
+## bother. The rest of a capture - its cracks and sounds - stays.
+func is_screen_shake_enabled() -> bool:
+	return bool(settingsData_.get("UI", {}).get("ScreenShake", true))
+
 ## The overlay exists from startup, so every scene gets it, even one run on its
 ## own; the saved setting only switches it on or off.
 func is_crt_effect_enabled() -> bool:
@@ -103,3 +110,29 @@ func ensure_crt_overlay() -> void:
 		crt_overlay = CRT_OVERLAY_SCENE.instantiate()
 		crt_overlay.layer = CRT_LAYER
 		add_child(crt_overlay)
+
+## A shudder through the old screen: the CRT pass's colour fringes swing from
+## `amplitude` to minus `amplitude` and back, `swings` times over `duration`,
+## then settle back on the material's own value. The tween is this autoload's,
+## so it finishes and puts the value back even if the scene that asked is
+## gone by then - the material is shared by every scene. A second shudder
+## while one is running starts over from the same resting value.
+func wobble_crt_aberration(amplitude: float, duration: float, swings: float) -> void:
+	ensure_crt_overlay()
+	var overlay: CanvasItem = crt_overlay.get_node_or_null("Overlay") as CanvasItem
+	var material: ShaderMaterial = overlay.material as ShaderMaterial if overlay != null else null
+	if material == null:
+		return
+	if crt_aberration_tween != null and crt_aberration_tween.is_valid():
+		crt_aberration_tween.kill()
+	else:
+		crt_rest_aberration = float(material.get_shader_parameter(&"aberration"))
+	var rest: float = crt_rest_aberration
+	crt_aberration_tween = create_tween()
+	crt_aberration_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	crt_aberration_tween.tween_method(func(progress: float):
+		# Full swings for the first part, then dying away onto the resting value.
+		var swing: float = amplitude * sin(progress * TAU * swings) * (1.0 - smoothstep(0.4, 1.0, progress))
+		material.set_shader_parameter(&"aberration", swing + rest * smoothstep(0.6, 1.0, progress))
+	, 0.0, 1.0, maxf(duration, 0.01))
+	crt_aberration_tween.tween_callback(func(): material.set_shader_parameter(&"aberration", rest))

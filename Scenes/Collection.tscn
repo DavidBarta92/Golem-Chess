@@ -577,8 +577,8 @@ pivot_offset = Vector2(27, 60.5)
 mouse_filter = 2
 
 [node name="ClosedImage" type="TextureRect" parent="MagnifierCaseButton" unique_id=610992149]
-material = ExtResource("95_blot_pictures")
 texture_filter = 2
+material = ExtResource("95_blot_pictures")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -591,9 +591,9 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="OpenedImage" type="TextureRect" parent="MagnifierCaseButton" unique_id=2063781119]
-material = ExtResource("95_blot_pictures")
 visible = false
 texture_filter = 2
+material = ExtResource("95_blot_pictures")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

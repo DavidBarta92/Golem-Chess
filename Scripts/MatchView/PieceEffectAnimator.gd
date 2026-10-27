@@ -818,7 +818,8 @@ func play_invisibility_reveal(holder: Sprite2D) -> void:
 		holder.material = null
 		holder.self_modulate.a = 1.0
 
-func play_capture_sparkle(board_pos: Vector2) -> void:
+## `color` stands in for `capture_sparkle_color` when it is not transparent.
+func play_capture_sparkle(board_pos: Vector2, color: Color = Color.TRANSPARENT) -> void:
 	if piece_capture_sparkle_shader == null or !has_effect_parent():
 		return
 
@@ -839,7 +840,7 @@ func play_capture_sparkle(board_pos: Vector2) -> void:
 
 	var material := ShaderMaterial.new()
 	material.shader = piece_capture_sparkle_shader
-	material.set_shader_parameter("color", capture_sparkle_color)
+	material.set_shader_parameter("color", color if color.a > 0.0 else capture_sparkle_color)
 	material.set_shader_parameter("scale", capture_sparkle_shader_scale)
 	material.set_shader_parameter("circle_ratio", capture_sparkle_circle_ratio)
 	material.set_shader_parameter("decay_magnitude", capture_sparkle_decay_magnitude)

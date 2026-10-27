@@ -1,15 +1,51 @@
 extends RefCounted
 
-const PIECE_HIT_FLASH_SHADER = preload("res://Shaders/piece_hit_flash.gdshader")
+const CaptureFeelLayer = preload("res://Scripts/MatchView/CaptureFeelLayer.gd")
+const PIECE_HIT_REACTION_SHADER = preload("res://Shaders/piece_hit_reaction.gdshader")
 ## How far the struck piece's flash has faded back toward its drawing by the
 ## time it breaks.
 const CAPTURE_HIT_FLASH_END_AMOUNT: float = 0.35
+## The share of the hitstop the cracks take to run across the struck piece.
+const CAPTURE_HIT_CRACK_SHARE: float = 0.6
 ## How far the struck piece is jolted along the blow during the hitstop, in
 ## board units (a square is `BoardConfig.CELL_WIDTH`).
 const CAPTURE_HIT_JOLT_DISTANCE: float = 0.8
 
+# How a capture lands on the player, by whose piece it was. One of theirs
+# striking: quick, warm and bright. One of theirs struck: a longer hold, a
+# heavier and slower jolt of the board, a colder light, a lower sound, and a
+# wash up from their own side. A transparent light means the board's own
+# `capture_sparkle_color`. Jolts are in screen pixels.
+const CAPTURE_STRIKE_FEEL: Dictionary = {
+	"hitstop_scale": 1.0,
+	"light": Color(0.0, 0.0, 0.0, 0.0),
+	"pitch_min": 1.05,
+	"pitch_max": 1.12,
+	"volume_db": 0.0,
+	"jolt_distance": 3.5,
+	"jolt_duration": 0.22,
+	"jolt_swings": 2.5,
+}
+const CAPTURE_LOSS_FEEL: Dictionary = {
+	"hitstop_scale": 1.3,
+	"light": Color(0.78, 0.86, 1.0, 1.0),
+	"pitch_min": 0.78,
+	"pitch_max": 0.84,
+	"volume_db": 1.5,
+	"jolt_distance": 5.5,
+	"jolt_duration": 0.42,
+	"jolt_swings": 2.0,
+}
+const CAPTURE_LOSS_WASH_COLOR: Color = Color(0.55, 0.12, 0.1, 0.3)
+const CAPTURE_LOSS_WASH_RISE_DURATION: float = 0.07
+const CAPTURE_LOSS_WASH_FADE_DURATION: float = 0.65
+## How far the CRT pass's colour fringes swing either way while the board
+## jolts under one of the player's own pieces breaking.
+const CAPTURE_LOSS_ABERRATION: float = 0.01
+
 var match_board
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
+var capture_feel_layer: CaptureFeelLayer
 
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
@@ -132,14 +168,9 @@ func play_local_move_transition(move_context: Dictionary) -> void:
 		var shatter_respawn_pos: Vector2 = match_board.value_to_vector2(move_context.get("shatter_respawn_pos", invalid_board_pos), invalid_board_pos)
 		var shatter_fragment_group: String = str(move_context.get("shatter_fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
 		var capturing_cast: String = get_capturing_cast_sound_name(end_pos)
-		capture_impact_callback = func() -> void:
-			if captured_color != 0:
-				match_board.get_piece_respawn_fragment_coordinator().play_capture_impact_effects(end_pos)
-			if !capturing_cast.is_empty():
-				SFXManager.play(capturing_cast)
-			SFXManager.play("piece_captured")
-			play_capture_hit_reaction(capture_placeholder, start_pos, end_pos, func() -> void:
-				match_board.get_piece_respawn_fragment_coordinator().play_piece_shatter_animation(end_pos, shatter_respawn_pos, captured_color, shatter_fragment_group, false)
+		capture_impact_callback = func() -> float:
+			return play_capture_contact(captured_color, start_pos, end_pos, capturing_cast, capture_placeholder, func() -> void:
+				match_board.get_piece_respawn_fragment_coordinator().play_capture_shatter_animation(end_pos, shatter_respawn_pos, captured_color, shatter_fragment_group, captured_start_texture, end_pos - start_pos)
 			)
 	await play_piece_move_animation(start_pos, end_pos, moving_start_texture, moving_piece_visible_to_enemy, capture_impact_callback)
 	if is_instance_valid(capture_placeholder):
@@ -156,10 +187,8 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 	var move_to_pos: Vector2 = match_board.value_to_vector2(state_piece_move_animation.get("to", invalid_board_pos), invalid_board_pos)
 	var move_from_pos: Vector2 = match_board.value_to_vector2(state_piece_move_animation.get("from", invalid_board_pos), invalid_board_pos)
 	var move_piece_color: int = int(state_piece_move_animation.get("piece_color", 0))
-	var capture_placeholder: Sprite2D = create_piece_move_capture_placeholder(
-		move_to_pos,
-		state_piece_move_animation.get("captured_texture", null) as Texture2D
-	)
+	var captured_texture: Texture2D = state_piece_move_animation.get("captured_texture", null) as Texture2D
+	var capture_placeholder: Sprite2D = create_piece_move_capture_placeholder(move_to_pos, captured_texture)
 	if capture_placeholder != null and bool(state_piece_move_animation.get("captured_reveal_from_invisibility", false)):
 		play_capture_invisibility_reveal(capture_placeholder)
 
@@ -168,27 +197,24 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 	var capture_impact_callback: Callable = Callable()
 	if capture_placeholder != null:
 		var capturing_cast: String = get_capturing_cast_sound_name(move_to_pos)
-		capture_impact_callback = func() -> void:
+		capture_impact_callback = func() -> float:
+			var captured_color: int = 0
 			var break_callback: Callable = Callable()
 			if !capture_shatter_animation.is_empty():
 				# Taken off the list at contact, so the shatter still to come
 				# after the hitstop is not played a second time with the rest.
 				remove_piece_shatter_animation_from_list(state_piece_shatter_animations, capture_shatter_animation, capture_shatter_animation_index)
-				var captured_color: int = int(capture_shatter_animation.get("piece_color", 0))
-				if captured_color != 0:
-					match_board.get_piece_respawn_fragment_coordinator().play_capture_impact_effects(move_to_pos)
+				captured_color = int(capture_shatter_animation.get("piece_color", 0))
 				break_callback = func() -> void:
-					match_board.get_piece_respawn_fragment_coordinator().play_piece_shatter_animation(
+					match_board.get_piece_respawn_fragment_coordinator().play_capture_shatter_animation(
 						move_to_pos,
 						match_board.value_to_vector2(capture_shatter_animation.get("respawn_pos", invalid_board_pos), invalid_board_pos),
 						captured_color,
 						str(capture_shatter_animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE)),
-						false
+						captured_texture,
+						move_to_pos - move_from_pos
 					)
-			if !capturing_cast.is_empty():
-				SFXManager.play(capturing_cast)
-			SFXManager.play("piece_captured")
-			play_capture_hit_reaction(capture_placeholder, move_from_pos, move_to_pos, break_callback)
+			return play_capture_contact(captured_color, move_from_pos, move_to_pos, capturing_cast, capture_placeholder, break_callback)
 
 	var move_start_texture: Texture2D = state_piece_move_animation.get("start_texture", null) as Texture2D
 	var hide_after_move: bool = bool(state_piece_move_animation.get("hide_after_move", false))
@@ -251,10 +277,18 @@ func play_piece_move_animation(
 		return
 
 	match_board.begin_visual_process(match_board.VISUAL_PROCESS_PIECE_MOVE)
+	# Whatever the last blow left lying about soaks away as the next move begins.
+	match_board.get_piece_shatter_animator().soak_away_debris()
 	var end_texture: Texture2D = holder.texture
 	var display_texture: Texture2D = start_texture if start_texture != null else end_texture
+	# It is `display_texture` that is drawn the whole way, so the move is sized
+	# by that drawing at both ends. Sized by the square's drawing instead - the
+	# golem, for a piece whose stamp ran out with this move - a stamped piece
+	# shrank and lifted off on the way, the golem's canvas being far larger.
+	# Once it lands the square's drawing takes over and the revert burns the
+	# old one away.
 	var start_transform: Dictionary = match_board.get_piece_visuals().get_visual_transform_for_texture(display_texture, from_pos)
-	var end_transform: Dictionary = match_board.get_piece_visuals().get_visual_transform_for_texture(end_texture if end_texture != null else display_texture, to_pos)
+	var end_transform: Dictionary = match_board.get_piece_visuals().get_visual_transform_for_texture(display_texture, to_pos)
 	var start_scale: Vector2 = start_transform.get("scale", holder.scale)
 	var end_scale: Vector2 = end_transform.get("scale", holder.scale)
 	var start_offset: Vector2 = start_transform.get("offset", holder.offset)
@@ -296,17 +330,54 @@ func create_piece_move_capture_placeholder(board_pos: Vector2, texture_value: Te
 	placeholder.z_index = match_board.pieces_node.z_index + match_board.get_piece_visuals().get_depth_z_index(board_pos)
 	return placeholder
 
+## The moment of contact, for both kinds of capture: the sparkle and the
+## sounds, the board's jolt and the struck piece's hit reaction, each as
+## `CAPTURE_STRIKE_FEEL` or `CAPTURE_LOSS_FEEL` has it for the player
+## watching. `captured_color` is 0 when it is not known, which gets the
+## sounds and the hit but no sparkle. Answers the hitstop, for
+## `PieceMoveAnimator` to hold the striker still that long.
+func play_capture_contact(captured_color: int, from_pos: Vector2, to_pos: Vector2, capturing_cast: String, capture_placeholder: Sprite2D, break_callback: Callable) -> float:
+	var own_loss: bool = captured_color != 0 and captured_color == match_board.get_own_color()
+	var feel: Dictionary = CAPTURE_LOSS_FEEL if own_loss else CAPTURE_STRIKE_FEEL
+	var light: Color = feel.light if feel.light.a > 0.0 else match_board.capture_sparkle_color
+	# Shaking and flashing are for those who have not turned them off.
+	var calm: bool = !SettingsDataManager.is_screen_shake_enabled()
+	var blow: Vector2 = (match_board.get_board_position_local_position(to_pos) - match_board.get_board_position_local_position(from_pos)).normalized()
+
+	if captured_color != 0:
+		match_board.get_piece_respawn_fragment_coordinator().play_capture_impact_effects(to_pos, light)
+	if !capturing_cast.is_empty():
+		SFXManager.play(capturing_cast)
+	SFXManager.play_pitched("piece_captured", randf_range(feel.pitch_min, feel.pitch_max), feel.volume_db)
+
+	if !calm:
+		var camera: MatchCamera = match_board.get_viewport().get_camera_2d() as MatchCamera
+		if camera != null:
+			camera.jolt(blow, feel.jolt_distance, feel.jolt_duration, feel.jolt_swings)
+		if own_loss:
+			get_capture_feel_layer().wash_from_own_side(CAPTURE_LOSS_WASH_COLOR, CAPTURE_LOSS_WASH_RISE_DURATION, CAPTURE_LOSS_WASH_FADE_DURATION)
+			SettingsDataManager.wobble_crt_aberration(CAPTURE_LOSS_ABERRATION, feel.jolt_duration, feel.jolt_swings)
+
+	var hitstop_duration: float = match_board.piece_move_capture_hitstop_duration * feel.hitstop_scale
+	play_capture_hit_reaction(capture_placeholder, blow, break_callback, hitstop_duration, light, calm)
+	return hitstop_duration
+
+func get_capture_feel_layer() -> CaptureFeelLayer:
+	if capture_feel_layer == null or !is_instance_valid(capture_feel_layer):
+		capture_feel_layer = CaptureFeelLayer.new()
+		match_board.add_child(capture_feel_layer)
+	return capture_feel_layer
+
 ## The struck piece through the hitstop the striker holds at contact: lit up
-## and jolted along the blow, then gone, and `break_callback` shatters it.
-## Runs as long as `PieceMoveAnimator` holds the striker still.
-func play_capture_hit_reaction(capture_placeholder: Sprite2D, from_pos: Vector2, to_pos: Vector2, break_callback: Callable) -> void:
+## in `light`, cracking and jolted along the blow, then gone, and
+## `break_callback` shatters it. A `calm` hit cracks without the flash.
+func play_capture_hit_reaction(capture_placeholder: Sprite2D, blow: Vector2, break_callback: Callable, hitstop_duration: float, light: Color, calm: bool) -> void:
 	var finish: Callable = func() -> void:
 		if is_instance_valid(capture_placeholder):
 			capture_placeholder.queue_free()
 		if break_callback.is_valid():
 			break_callback.call()
 
-	var hitstop_duration: float = match_board.piece_move_capture_hitstop_duration
 	if hitstop_duration <= 0.0 or !match_board.is_inside_tree():
 		finish.call()
 		return
@@ -315,19 +386,40 @@ func play_capture_hit_reaction(capture_placeholder: Sprite2D, from_pos: Vector2,
 	tween.tween_interval(hitstop_duration)
 	if is_instance_valid(capture_placeholder):
 		# A placeholder still carrying the invisibility reveal's material is
-		# left unlit rather than having that animation cut short.
-		if capture_placeholder.material == null:
-			var flash_material := ShaderMaterial.new()
-			flash_material.shader = PIECE_HIT_FLASH_SHADER
-			flash_material.set_shader_parameter("flash_color", match_board.capture_sparkle_color)
-			flash_material.set_shader_parameter("flash_amount", 1.0)
-			capture_placeholder.material = flash_material
-			tween.parallel().tween_property(flash_material, "shader_parameter/flash_amount", CAPTURE_HIT_FLASH_END_AMOUNT, hitstop_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		# left as it is rather than having that animation cut short.
+		if capture_placeholder.material == null and capture_placeholder.texture != null:
+			var hit_material: ShaderMaterial = create_capture_hit_material(capture_placeholder, blow, light, 0.0 if calm else 1.0)
+			capture_placeholder.material = hit_material
+			if !calm:
+				tween.parallel().tween_property(hit_material, "shader_parameter/flash_amount", CAPTURE_HIT_FLASH_END_AMOUNT, hitstop_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+			tween.parallel().tween_property(hit_material, "shader_parameter/crack_reach", capture_placeholder.texture.get_size().length(), hitstop_duration * CAPTURE_HIT_CRACK_SHARE).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 
 		var rest_position: Vector2 = capture_placeholder.position
-		var blow: Vector2 = (match_board.get_board_position_local_position(to_pos) - match_board.get_board_position_local_position(from_pos)).normalized()
 		tween.parallel().tween_method(func(progress: float): update_capture_hit_jolt(capture_placeholder, rest_position, blow, progress), 0.0, 1.0, hitstop_duration)
 	tween.tween_callback(finish)
+
+## The struck piece lit up, with cracks ready to run along the lines it will
+## break on (`PieceShatterAnimator.get_fragment_crack_segments()`), starting
+## on the side the blow came from.
+func create_capture_hit_material(capture_placeholder: Sprite2D, blow: Vector2, light: Color, flash_amount: float) -> ShaderMaterial:
+	var texture_value: Texture2D = capture_placeholder.texture
+	var shatter_animator = match_board.get_piece_shatter_animator()
+	var used_rect: Rect2 = shatter_animator.get_texture_shape(texture_value).get("used_rect", Rect2(Vector2.ZERO, texture_value.get_size()))
+	var crack_segments: PackedVector4Array = shatter_animator.get_fragment_crack_segments(texture_value)
+	# The blow as it falls on the drawing, which is turned round with the
+	# camera for the second player.
+	var blow_on_drawing: Vector2 = blow.rotated(-capture_placeholder.rotation)
+	var crack_origin: Vector2 = used_rect.get_center() + Vector2(-blow_on_drawing.x * used_rect.size.x * 0.3, -used_rect.size.y * 0.08)
+
+	var hit_material := ShaderMaterial.new()
+	hit_material.shader = PIECE_HIT_REACTION_SHADER
+	hit_material.set_shader_parameter("flash_color", light)
+	hit_material.set_shader_parameter("flash_amount", flash_amount)
+	hit_material.set_shader_parameter("crack_segments", crack_segments)
+	hit_material.set_shader_parameter("crack_segment_count", crack_segments.size())
+	hit_material.set_shader_parameter("crack_origin", crack_origin)
+	hit_material.set_shader_parameter("crack_reach", 0.0)
+	return hit_material
 
 func update_capture_hit_jolt(capture_placeholder: Sprite2D, rest_position: Vector2, blow: Vector2, progress: float) -> void:
 	if !is_instance_valid(capture_placeholder):

@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Settings/SettingsSection.gd" id="1_section"]
 [ext_resource type="Script" path="res://Scripts/Settings/UIElements/LastMoveArrowElement.gd" id="2_last_move_arrow"]
 [ext_resource type="Script" path="res://Scripts/Settings/UIElements/EnemyAttackMarkersElement.gd" id="3_enemy_attack_markers"]
 [ext_resource type="Script" path="res://Scripts/Settings/UIElements/LanguageElement.gd" id="4_language"]
+[ext_resource type="Script" path="res://Scripts/Settings/UIElements/ScreenShakeElement.gd" id="5_screen_shake"]
 
 [node name="UI" type="VBoxContainer"]
 layout_mode = 2
@@ -55,3 +56,12 @@ ToggleRef = NodePath("Check")
 [node name="Check" type="CheckBox" parent="Scroll/Content/EnemyAttackMarkers"]
 layout_mode = 2
 text = "Show enemy attack highlights"
+
+[node name="ScreenShake" type="HBoxContainer" parent="Scroll/Content" node_paths=PackedStringArray("ToggleRef")]
+layout_mode = 2
+script = ExtResource("5_screen_shake")
+ToggleRef = NodePath("Check")
+
+[node name="Check" type="CheckBox" parent="Scroll/Content/ScreenShake"]
+layout_mode = 2
+text = "Screen shake and flashes"
