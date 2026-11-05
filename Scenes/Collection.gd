@@ -1249,7 +1249,7 @@ func _update_deck_editor_state() -> void:
 				visual.set_meta("sfx_hover", "")
 
 func _can_complete_deck() -> bool:
-	return is_creating_deck && !editing_deck_has_missing_stamps && !deck_name_edit.text.strip_edges().is_empty() && _get_selected_deck_stamp_count() == MAX_DECK_SIZE && _has_selected_seeker_stamp() && !_has_too_many_stamp_copies()
+	return is_creating_deck && !editing_deck_has_missing_stamps && !deck_name_edit.text.strip_edges().is_empty() && _get_selected_deck_stamp_count() == MAX_DECK_SIZE && !_has_too_many_stamp_copies() && _get_selected_deck_sets().size() <= 1
 
 func _can_add_print_to_deck(print_id: String) -> bool:
 	if editing_deck_has_missing_stamps:
@@ -1661,7 +1661,24 @@ func _can_add_stamp_to_deck(stamp: Stamp) -> bool:
 	if stamp == null:
 		return false
 
-	return _get_selected_stamp_count(stamp) < MAX_COPIES_PER_STAMP
+	return _get_selected_stamp_count(stamp) < MAX_COPIES_PER_STAMP && _selected_deck_accepts_set(stamp.Set)
+
+## A codex holds stamps of one set: an empty one takes any set, after that
+## only the set of the stamps already in it, until it is emptied again.
+func _selected_deck_accepts_set(stamp_set: String) -> bool:
+	var deck_sets: Array[String] = _get_selected_deck_sets()
+	return deck_sets.is_empty() || (deck_sets.size() == 1 && deck_sets[0] == stamp_set)
+
+## More than one only in a codex saved before the one-set rule.
+func _get_selected_deck_sets() -> Array[String]:
+	var deck_sets: Array[String] = []
+	for deck_stamp in selected_deck_stamps:
+		if !(deck_stamp is Dictionary):
+			continue
+		var stamp_set: String = PlayerDeckStore.get_deck_stamp_set(deck_stamp)
+		if !stamp_set.is_empty() && !deck_sets.has(stamp_set):
+			deck_sets.append(stamp_set)
+	return deck_sets
 
 func _get_selected_stamp_count(stamp: Stamp) -> int:
 	if stamp == null:
@@ -1688,26 +1705,6 @@ func _has_too_many_stamp_copies() -> bool:
 		if next_count > MAX_COPIES_PER_STAMP:
 			return true
 		stamp_counts[stamp_code] = next_count
-	return false
-
-func _has_selected_seeker_stamp() -> bool:
-	for deck_stamp in selected_deck_stamps:
-		if !(deck_stamp is Dictionary):
-			continue
-
-		var stamp_print: StampPrint = _get_print_for_deck_stamp(deck_stamp)
-		var print_stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
-		if MoveRules.is_seeker_stamp(print_stamp):
-			return true
-
-		var stamp: Stamp = StampLibrary.get_stamp(str(deck_stamp.get("stamp_name", "")))
-		if MoveRules.is_seeker_stamp(stamp):
-			return true
-
-		var stamp_by_code: Stamp = StampLibrary.get_stamp_by_code(str(deck_stamp.get("stamp_code", "")))
-		if MoveRules.is_seeker_stamp(stamp_by_code):
-			return true
-
 	return false
 
 func _on_edit_deck_pressed(deck_data: Dictionary) -> void:

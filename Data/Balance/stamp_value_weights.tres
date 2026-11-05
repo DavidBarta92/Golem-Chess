@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="StampValueWeights" format=3 uid="uid://fya5m313het2"]
+
+[ext_resource type="Script" uid="uid://5nhl36dokurx" path="res://Scripts/StampValue/StampValueWeights.gd" id="1_weights"]
+
+[resource]
+script = ExtResource("1_weights")
+cell_move_only = 0.55
+cell_capture_only = 1.65
+cell_move_and_capture = 1.77

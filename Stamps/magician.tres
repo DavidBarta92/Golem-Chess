@@ -10,6 +10,7 @@ stamp_name = "Magician"
 stamp_code = "magician"
 enabled = false
 duration = 2
+estimated_value = 16.97
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "No special effect."

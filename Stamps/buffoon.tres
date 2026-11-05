@@ -9,6 +9,7 @@ script = ExtResource("2_stamp")
 stamp_name = "Buffoon"
 stamp_code = "buffoon"
 enabled = false
+estimated_value = 13.95
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "When this stamp expires, give a random stamp from your hand to your opponent."

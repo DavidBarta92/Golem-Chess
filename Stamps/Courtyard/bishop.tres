@@ -13,6 +13,7 @@ stamp_name = "Bishop"
 stamp_code = "bishop"
 Set = "Courtyard"
 duration = 1
+estimated_value = 15.93
 stamp_art = ExtResource("3_3isp8")
 stamp_art_mask = ExtResource("5_f58e0")
 piece_visuals = ExtResource("2_d1beu")

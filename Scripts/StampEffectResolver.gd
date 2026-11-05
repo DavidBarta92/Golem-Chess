@@ -54,6 +54,10 @@ static func resolve_trigger(trigger: String, game_state: GameStateData, context:
 			result = resolve_duration_adjustment(game_state, player_id, stamp, source_piece, source_pos, board_size, 1 - player_id, -1)
 		StampEffect.TYPE_INCREASE_SELF_DURATION:
 			result = resolve_self_duration_adjustment(game_state, player_id, source_piece, source_pos, board_size, 1)
+		StampEffect.TYPE_GAIN_CROWN_POINT:
+			result = resolve_crown_point_change(game_state, player_id, 1)
+		StampEffect.TYPE_REMOVE_ENEMY_CROWN_POINT:
+			result = resolve_crown_point_change(game_state, 1 - player_id, -1)
 		_:
 			pass
 
@@ -61,6 +65,35 @@ static func resolve_trigger(trigger: String, game_state: GameStateData, context:
 		game_state.match_logger.log_effect_event(game_state, effect_log_context, result)
 
 	return true
+
+## The golem at piece_pos has just been crowned: its stamp's crown_condition
+## effect fires, if it has one.
+static func resolve_crown_trigger(game_state: GameStateData, player_id: int, piece_pos: Vector2, board_size: int = DEFAULT_BOARD_SIZE) -> bool:
+	if game_state == null:
+		return false
+	var piece: Piece = game_state.get_piece(piece_pos)
+	if piece == null or piece.affixed_stamp == null:
+		return false
+	return resolve_trigger(StampEffect.TRIGGER_CROWN_CONDITION, game_state, {
+		"player_id": player_id,
+		"piece": piece,
+		"piece_pos": piece_pos,
+		"stamp": piece.affixed_stamp,
+	}, board_size)
+
+## One crown point more or less for target_player_id, within 0 and what a
+## crown costs.
+static func resolve_crown_point_change(game_state: GameStateData, target_player_id: int, delta: int) -> Dictionary:
+	var points_before: int = int(game_state.crown_points.get(target_player_id, 0))
+	if delta > 0:
+		game_state.gain_crown_point(target_player_id)
+	else:
+		game_state.remove_crown_point(target_player_id)
+	return {
+		"target_player_id": target_player_id,
+		"crown_points_before": points_before,
+		"crown_points_after": int(game_state.crown_points.get(target_player_id, 0)),
+	}
 
 static func resolve_symbol_count_trigger(game_state: GameStateData, player_id: int, piece: Piece, piece_pos: Vector2, stamp: Stamp, board_size: int = DEFAULT_BOARD_SIZE) -> bool:
 	if game_state == null or game_state.game_over:
@@ -154,37 +187,53 @@ static func resolve_steal_stamp(game_state: GameStateData, player_id: int, stamp
 		DebugLog.info("Stamp stolen: player=%d stole %s from player=%d" % [player_id, stolen_stamp_name, source_player_id])
 	return build_stamp_transfer_result(source_player_id, player_id, source, "hand_or_deleted", stolen_stamps)
 
+## Glues a new copy of the stamp named in effect_settings ("stamp_name", the
+## granting stamp's own name if unset) into the nearest free codex slot, the
+## open page first. With no free slot it is lost.
 static func resolve_grant_stamp(game_state: GameStateData, player_id: int, stamp: Stamp, source_pos: Vector2 = Vector2(-1, -1)) -> Dictionary:
 	var params: Dictionary = stamp.effect_settings
-	var granted_stamp_name: String = str(params.get("stamp_name", stamp.stamp_name))
-	if granted_stamp_name.is_empty():
+	var granted_stamp: Stamp = StampLibrary.get_stamp(str(params.get("stamp_name", stamp.stamp_name)))
+	if granted_stamp == null:
+		DebugLog.info("Stamp grant ignored: %s names no stamp" % stamp.stamp_name)
 		return {}
 
+	var granted_stamp_name: String = granted_stamp.stamp_name
 	var target_player_id: int = int(params.get("target_player_id", player_id))
 	var amount: int = max(1, int(params.get("amount", 1)))
-	var max_hand_size: int = max(1, int(params.get("max_hand_size", DEFAULT_MAX_HAND_SIZE)))
+	var source_zone: String = "piece" if source_pos != Vector2(-1, -1) else "effect"
 	var granted_stamps: Array = []
 	for grant_index in range(amount):
-		if !take_named_stamp_from_player_deck(game_state, target_player_id, granted_stamp_name):
-			DebugLog.info("Stamp grant ignored: %s is not in player=%d deck" % [granted_stamp_name, target_player_id])
-			return build_stamp_transfer_result(target_player_id, target_player_id, "deck", "hand_or_deleted", granted_stamps)
-
-		var target_zone: String = give_stamp_to_player(game_state, target_player_id, granted_stamp_name, max_hand_size)
-		register_stamp_transfer(game_state, target_player_id, target_player_id, granted_stamp_name, "deck", target_zone, source_pos)
-		granted_stamps.append(granted_stamp_name)
+		var target_zone: String = add_stamp_to_player_codex(game_state, target_player_id, granted_stamp_name)
+		if target_zone != "deleted":
+			granted_stamps.append(granted_stamp_name)
+		register_stamp_transfer(game_state, player_id, target_player_id, granted_stamp_name, source_zone, target_zone, source_pos)
 		if game_state.match_logger != null:
 			game_state.match_logger.log_stamp_event(game_state, "grant_stamp", {
-				"player_id": target_player_id,
+				"player_id": player_id,
 				"stamp_name": granted_stamp_name,
-				"source_player_id": target_player_id,
+				"source_player_id": player_id,
 				"target_player_id": target_player_id,
-				"source_zone": "deck",
+				"source_zone": source_zone,
 				"target_zone": target_zone,
 				"reason": stamp.stamp_name,
 			})
 
-	DebugLog.info("Stamp granted: %s x%d to player=%d" % [granted_stamp_name, amount, target_player_id])
-	return build_stamp_transfer_result(target_player_id, target_player_id, "deck", "hand_or_deleted", granted_stamps)
+	DebugLog.info("Stamp granted: %s, %d of %d to player=%d" % [granted_stamp_name, granted_stamps.size(), amount, target_player_id])
+	return build_stamp_transfer_result(player_id, target_player_id, source_zone, "codex", granted_stamps)
+
+## A new stamp for the player's codex (see GameStateData.add_stamp_to_nearest_free_slot),
+## or for the deck when the player has no codex. Returns where it went: "hand"
+## (the open page), "codex", "deck", or "deleted" when there is no room.
+static func add_stamp_to_player_codex(game_state: GameStateData, player_id: int, stamp_name: String) -> String:
+	if game_state.has_codex_for_player(player_id):
+		var page_index: int = game_state.add_stamp_to_nearest_free_slot(player_id, stamp_name)
+		if page_index == -1:
+			return "deleted"
+		return "hand" if page_index == game_state.get_current_page_index(player_id) else "codex"
+	var deck: Array = game_state.player_decks.get(player_id, [])
+	deck.append(stamp_name)
+	game_state.player_decks[player_id] = deck
+	return "deck"
 
 static func resolve_give_stamp(game_state: GameStateData, player_id: int, stamp: Stamp, source_pos: Vector2 = Vector2(-1, -1)) -> Dictionary:
 	var params: Dictionary = stamp.effect_settings
@@ -252,22 +301,6 @@ static func take_stamp_from_player_zone(game_state: GameStateData, source_player
 		game_state.player_hands[source_player_id] = source_stamps
 
 	return stolen_stamp_name
-
-static func take_named_stamp_from_player_deck(game_state: GameStateData, player_id: int, stamp_name: String) -> bool:
-	if game_state != null and game_state.has_codex_for_player(player_id):
-		return !game_state.remove_stamp_from_codex_zone(player_id, stamp_name, false).is_empty()
-
-	if !game_state.player_decks.has(player_id):
-		return false
-
-	var deck: Array = game_state.player_decks[player_id]
-	var stamp_index: int = deck.find(stamp_name)
-	if stamp_index == -1:
-		return false
-
-	deck.remove_at(stamp_index)
-	game_state.player_decks[player_id] = deck
-	return true
 
 static func give_stamp_to_player(game_state: GameStateData, player_id: int, stamp_name: String, max_hand_size: int) -> String:
 	if game_state != null and game_state.has_codex_for_player(player_id):
@@ -528,7 +561,6 @@ static func expire_piece_stamp_due_to_duration_adjustment(game_state: GameStateD
 	piece.detach_stamp()
 
 	if MoveRules.is_seeker_stamp(expired_stamp):
-		clear_seeker_position_if_needed(game_state, piece_owner_player_id, true)
 		return_stamp_to_owner_deck(game_state, piece_owner_player_id, expired_stamp.stamp_name, piece_pos, "expired_seeker", expired_stamp)
 		return
 
@@ -540,6 +572,16 @@ static func expire_piece_stamp_due_to_duration_adjustment(game_state: GameStateD
 		"stamp": expired_stamp,
 		"expired_by_player_id": effect_owner_player_id,
 	}, board_size)
+
+## An Overseal going onto a golem that already has a stamp covers it: the
+## covered stamp is lost without firing anything, except a Seeker, which goes
+## back to its owner's codex as it does when it runs out. The crown stays.
+static func cover_piece_stamp(game_state: GameStateData, owner_player_id: int, piece: Piece, piece_pos: Vector2) -> void:
+	if piece == null or piece.affixed_stamp == null:
+		return
+	var covered_stamp: Stamp = piece.detach_stamp()
+	if MoveRules.is_seeker_stamp(covered_stamp):
+		return_stamp_to_owner_deck(game_state, owner_player_id, covered_stamp.stamp_name, piece_pos, "covered_seeker", covered_stamp)
 
 static func register_stamp_expiration(game_state: GameStateData, player_id: int, stamp_name: String, piece_pos: Vector2) -> void:
 	if game_state == null:
@@ -560,6 +602,9 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 	var target_stamp: Stamp = target_piece.affixed_stamp
 	var target_was_seeker: bool = is_seeker_piece(target_piece)
 
+	# Off the board before its own on_captured effect fires: a bomb there must
+	# not find it again, so a chain of bombs ends.
+	game_state.remove_piece(target_pos)
 	if target_stamp != null:
 		resolve_trigger(StampEffect.TRIGGER_ON_CAPTURED, game_state, {
 			"player_id": target_player_id,
@@ -567,17 +612,11 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 			"piece_pos": target_pos,
 			"stamp": target_stamp,
 		})
-		if game_state.game_over or game_state.get_piece(target_pos) != target_piece:
-			return
-
-	if target_stamp != null:
 		if target_was_seeker:
 			return_stamp_to_owner_deck(game_state, target_player_id, target_stamp.stamp_name, target_pos, "effect_capture", target_stamp)
 
 	target_piece.detach_stamp()
-	game_state.remove_piece(target_pos)
 	respawn_captured_piece(game_state, target_piece, target_player_id)
-	clear_seeker_position_if_needed(game_state, target_player_id, target_was_seeker)
 
 	if target_was_seeker:
 		DebugLog.info("Seeker removed by effect. Seeker stamp returned to player=%d deck. Effect owner=%d" % [target_player_id, effect_owner_player_id])
@@ -586,6 +625,11 @@ static func respawn_captured_piece(game_state: GameStateData, captured_piece: Pi
 	if captured_piece == null or player_id < 0:
 		return false
 
+	# Captured or blown up alike: the crown goes back to its owner, whose meter
+	# starts again from 0 (GameStateData.gain_crown_point).
+	if captured_piece.has_crown:
+		game_state.crown_points[player_id] = 0
+	captured_piece.has_crown = false
 	if release_pending_respawn_piece(game_state, player_id):
 		return true
 
@@ -744,19 +788,6 @@ static func return_stamp_to_owner_deck(game_state: GameStateData, owner_player_i
 			"reason": reason,
 		})
 
-static func player_has_available_seeker_stamp(game_state: GameStateData, player_id: int) -> bool:
-	if game_state.player_hands.has(player_id) && DeckManager.has_seeker_stamp(game_state.player_hands[player_id]):
-		return true
-	if game_state.player_decks.has(player_id) && DeckManager.has_seeker_stamp(game_state.player_decks[player_id]):
-		return true
-
-	var player_color: int = get_color_for_player_id(player_id)
-	for position_value in game_state.pieces:
-		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && MoveRules.is_seeker_stamp(piece.affixed_stamp):
-			return true
-	return false
-
 static func tick_board_effects(game_state: GameStateData) -> void:
 	var remaining_effects: Array = []
 	for effect_value in game_state.board_effects:
@@ -845,14 +876,6 @@ static func count_symbol_pieces_for_player(game_state: GameStateData, player_id:
 
 static func is_seeker_piece(piece: Piece) -> bool:
 	return piece != null && MoveRules.is_seeker_stamp(piece.affixed_stamp)
-
-static func clear_seeker_position_if_needed(game_state: GameStateData, player_id: int, was_seeker: bool) -> void:
-	if !was_seeker:
-		return
-	if player_id == 0:
-		game_state.white_seeker_position = Vector2(-1, -1)
-	else:
-		game_state.black_seeker_position = Vector2(-1, -1)
 
 static func get_base_field_for_player(game_state: GameStateData, player_id: int) -> Vector2:
 	if game_state.player_base_fields.has(player_id):

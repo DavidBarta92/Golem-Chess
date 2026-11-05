@@ -10,6 +10,7 @@ stamp_name = "Pathfinder"
 stamp_code = "pathfinder"
 enabled = false
 duration = 4
+estimated_value = 27.03
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "No special effect."

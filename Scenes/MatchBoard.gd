@@ -32,7 +32,6 @@ const DECK_COUNTER_FRAME_TEXTURE = preload("res://Assets/counter_frame.png")
 const DECK_COUNTER_SHADOW_TEXTURE = preload("res://Assets/counter_shadow.png")
 
 const MOVE_OPTION_DOT_TEXTURE = preload("res://Assets/dot.svg")
-const PIECE_FREEZE_CRACK_SHADER = preload("res://Shaders/piece_freeze_crack.gdshader")
 const DECK_COUNTER_DIGIT_SHADER = preload("res://Shaders/deck_counter_digit.gdshader")
 const PIECE_ATTACH_GLOW_SHADER = preload("res://Shaders/piece_attach_glow.gdshader")
 const PIECE_ATTACH_RAYS_SHADER = preload("res://Shaders/piece_attach_rays.gdshader")
@@ -193,26 +192,6 @@ const SELECTED_PIECE_GLOW_Z_INDEX = 24
 const SELECTED_PIECE_GLOW_STRENGTH: float = 1.0
 const PIECE_HOVER_DIM_COLOR: Color = Color(0.68, 0.68, 0.68, 1.0)
 const PIECE_HOVER_DIM_TWEEN_DURATION: float = 0.18
-const PIECE_FREEZE_CRACK_NAME = "PieceFreezeCrack"
-const PIECE_FREEZE_CRACK_Z_INDEX = 0
-const PIECE_FREEZE_CRACK_DURATION: float = 1.5
-const PIECE_FREEZE_CRACK_RELEASE_DURATION: float = 1.5
-const PIECE_FREEZE_CRACK_START_WIDTH: float = 0.0
-const PIECE_FREEZE_CRACK_END_WIDTH: float = 0.7
-const PIECE_FREEZE_CRACK_DEPTH: float = 2.46
-const PIECE_FREEZE_CRACK_SCALE: float = 7.96
-const PIECE_FREEZE_CRACK_ZEBRA_SCALE: float = 1.61
-const PIECE_FREEZE_CRACK_ZEBRA_AMP: float = 1.33
-const PIECE_FREEZE_CRACK_PROFILE: float = 0.33
-const PIECE_FREEZE_CRACK_SLOPE: float = 13.03
-const PIECE_FREEZE_REFRACTION_OFFSET = Vector2(24.92, 25.0)
-const PIECE_FREEZE_REFLECTION_OFFSET = Vector2(1.28, 1.0)
-const PIECE_FREEZE_RELEASE_NAME = "PieceFreezeRelease"
-const PIECE_FREEZE_SQUARE_NAME = "PieceFreezeSquare"
-const PIECE_FREEZE_SQUARE_RELEASE_NAME = "PieceFreezeSquareRelease"
-const PIECE_FREEZE_SQUARE_Z_INDEX: int = 0
-const PIECE_FREEZE_SQUARE_INSET: float = 0.0
-const PIECE_FREEZE_SQUARE_ALPHA: float = 0.74
 const PIECE_ATTACH_GLOW_NAME = "PieceAttachGlow"
 const PIECE_ATTACH_TARGET_GLOW_NAME = "PieceAttachTargetGlow"
 const PIECE_ATTACH_RAYS_NAME = "PieceAttachRays"
@@ -312,6 +291,7 @@ const TUTORIAL_ACTION_MOVE_PIECE = "move_piece"
 const TUTORIAL_ACTION_EXCHANGE_STAMP = "exchange_stamp"
 const TUTORIAL_ACTION_TURN_PAGE = "turn_page"
 const TUTORIAL_ACTION_END_TURN = "end_turn"
+const TUTORIAL_ACTION_PLACE_CROWN = "place_crown"
 # Translation key, not display text - the actual paragraph lives in Localization/translations.csv.
 const PIECE_SHATTER_FRAGMENT_GROUP_NONE: String = ""
 const PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM: String = "bottom"
@@ -656,6 +636,9 @@ func get_stamp_hud_controller():
 
 func get_match_codex_controller():
 	return get_controller_registry().get_match_codex_controller()
+
+func get_crown_controller():
+	return get_controller_registry().get_crown_controller()
 
 func play_codex_page_turn_animation() -> void:
 	if codex_visual != null and is_instance_valid(codex_visual):
@@ -1059,8 +1042,8 @@ func insert_drawn_stamp(owner_color: int, hand_index: int, stamp_name: String):
 func get_stamp_names_from_hand(stamps: Array[Stamp]) -> Array[String]:
 	return get_match_state_sync_controller().get_stamp_names_from_hand(stamps)
 
-func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_stamp_expirations: Array) -> Array[Dictionary]:
-	return get_match_state_sync_controller().get_state_stamp_expiration_events(previous_snapshot, recent_stamp_expirations, piece_objects)
+func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_stamp_expirations: Array, recent_bomb_effects: Array) -> Array[Dictionary]:
+	return get_match_state_sync_controller().get_state_stamp_expiration_events(previous_snapshot, recent_stamp_expirations, recent_bomb_effects, piece_objects)
 
 func queue_piece_revert_animation(piece_position: Vector2, start_texture: Texture2D) -> void:
 	if start_texture == null or !is_valid_position(piece_position):

@@ -8,15 +8,17 @@
 script = ExtResource("2_e2whl")
 stamp_name = "Logician"
 stamp_code = "logician"
+duration = 2
+estimated_value = 21.17
 white_piece_texture = ExtResource("3_gx4e3")
 black_piece_texture = ExtResource("1_gux7p")
 description = "When the linked piece captures, take a Seeker stamp from your deck and add it to your hand."
 effect_type = "grant_stamp"
-effect_trigger = "on_capture"
-square_color_a = Color(0.61960787, 0.627451, 0.5568628, 1)
+effect_trigger = "on_move"
+square_color_a = Color(0.41909316, 0.1279814, 0.17384937, 1)
 square_color_b = Color(0.61960787, 0.627451, 0.5568628, 1)
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
 effect_settings = {
-"stamp_name": "King"
+"stamp_name": "Bicycle"
 }
-movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 3, 3, 1, 0], [0, 1, 0, 3, 0], [0, 3, 1, 1, 0], [0, 0, 0, 0, 0]])
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 3, 3, 2, 0], [0, 2, 0, 3, 0], [0, 3, 2, 2, 0], [0, 0, 0, 0, 0]])

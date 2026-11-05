@@ -52,6 +52,15 @@ done - that is its whole contract. The story opens with one
 writes the choice into the same settings store the Settings menu reads, so the
 two never disagree. It is a placeholder for a proper first-run panel.
 
+The intro chapter closes with another one, `feedback_after_boss_02`: the
+thank-you screen with the questionnaire link (`Scenes/MatchEndFeedback.tscn`).
+That scene also ends every non-story match, so it checks whether it is the
+current node: if it is, its Main Menu button finishes the node, otherwise it
+simply goes to the hub. It is the last node of the chapter on purpose and does
+not chain. A save already past Boss 2 meets it once at the next launch, and a
+chained node would take such a player from the Main Menu button straight into
+their next fight.
+
 ### Losing a boss fight
 
 The node never completes on a loss. What happens next is the boss node's
@@ -156,10 +165,10 @@ the finished board during the wait before the defeat comic.
 | Trigger | Fires when | Default chance |
 | --- | --- | --- |
 | `entered_route_setup` | the AI settles into building a route | 0.4 |
-| `entered_active_seeker_push` | the AI has a live Seeker heading for the player's base | 0.7 |
-| `entered_endgame_seeker_finish` | the AI is low on resources and goes all in | 0.9 |
+| `entered_crown_push` | the AI has crowned a golem and is walking it to the player's base | 0.7 |
+| `entered_endgame_finish` | the AI is low on resources and goes all in | 0.9 |
 | `entered_soft_defense` | enemy pieces are gathering near the AI's base | 0.5 |
-| `entered_emergency_defense` | the player can win next move, or their Seeker is close | 1.0, bypasses cooldown |
+| `entered_emergency_defense` | the player can win next move, or their crowned golem is close | 1.0, bypasses cooldown |
 | `boss_captured_piece` | the boss takes a piece | 0.3 |
 | `boss_piece_captured` | the player takes one of the boss's pieces | 0.35 |
 | `stamp_played` | the boss affixes the stamp set on that entry | 0.8 |

@@ -10,6 +10,7 @@ stamp_name = "Ruler"
 stamp_code = "ruler"
 enabled = false
 duration = 4
+estimated_value = 21.02
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "When attached, creates invalid squares in front of the linked piece."

@@ -22,6 +22,16 @@ const MAX_PLAYER_NAME_LENGTH: int = 24
 const QUICK_PLAY_AI_DIFFICULTY_MIN: int = 1
 const QUICK_PLAY_AI_DIFFICULTY_MAX: int = 6
 
+## Crown points a player needs before they can crown a golem. One is gained at
+## the start of each of the player's turns, also while their crown is on the
+## board (a full meter then moves it to another golem); crowning spends them
+## all. The second player starts the match this many points ahead, which is
+## what answers the first player's move. Variables rather than constants so a
+## balance run can try other values; the host copies them into the match state
+## when the match starts.
+var crown_points_required: int = 6
+var crown_second_player_head_start: int = 1
+
 var is_singleplayer: bool = false
 var is_hosting: bool = false
 var is_dedicated_server: bool = false

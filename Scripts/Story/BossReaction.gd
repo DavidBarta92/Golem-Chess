@@ -22,9 +22,9 @@ const TRIGGER_BOSS_PIECE_CAPTURED: String = "boss_piece_captured"
 ## AIStrategyDirector) - not every turn it stays there, or it would repeat
 ## itself for the whole defensive phase.
 const TRIGGER_ENTERED_ROUTE_SETUP: String = "entered_route_setup"
-const TRIGGER_ENTERED_ACTIVE_SEEKER_PUSH: String = "entered_active_seeker_push"
-const TRIGGER_ENTERED_ENDGAME_SEEKER_FINISH: String = "entered_endgame_seeker_finish"
-const TRIGGER_ENTERED_SEEKER_ATTACK: String = "entered_seeker_attack"
+const TRIGGER_ENTERED_CROWN_PUSH: String = "entered_crown_push"
+const TRIGGER_ENTERED_ENDGAME_FINISH: String = "entered_endgame_finish"
+const TRIGGER_ENTERED_CROWN_ATTACK: String = "entered_crown_attack"
 const TRIGGER_ENTERED_SOFT_DEFENSE: String = "entered_soft_defense"
 const TRIGGER_ENTERED_EMERGENCY_DEFENSE: String = "entered_emergency_defense"
 ## Fired when the boss affixes the specific stamp set in `stamp` below.
@@ -34,9 +34,9 @@ const TRIGGER_STAMP_PLAYED: String = "stamp_played"
 ## director never has to know AIStrategyDirector's vocabulary.
 const MODE_TRIGGERS: Dictionary = {
 	AIStrategyDirector.MODE_ROUTE_SETUP: TRIGGER_ENTERED_ROUTE_SETUP,
-	AIStrategyDirector.MODE_ACTIVE_SEEKER_PUSH: TRIGGER_ENTERED_ACTIVE_SEEKER_PUSH,
-	AIStrategyDirector.MODE_ENDGAME_SEEKER_FINISH: TRIGGER_ENTERED_ENDGAME_SEEKER_FINISH,
-	AIStrategyDirector.MODE_SEEKER_ATTACK: TRIGGER_ENTERED_SEEKER_ATTACK,
+	AIStrategyDirector.MODE_CROWN_PUSH: TRIGGER_ENTERED_CROWN_PUSH,
+	AIStrategyDirector.MODE_ENDGAME_FINISH: TRIGGER_ENTERED_ENDGAME_FINISH,
+	AIStrategyDirector.MODE_CROWN_ATTACK: TRIGGER_ENTERED_CROWN_ATTACK,
 	AIStrategyDirector.MODE_SOFT_DEFENSE: TRIGGER_ENTERED_SOFT_DEFENSE,
 	AIStrategyDirector.MODE_EMERGENCY_DEFENSE: TRIGGER_ENTERED_EMERGENCY_DEFENSE,
 }
@@ -47,9 +47,9 @@ const MODE_TRIGGERS: Dictionary = {
 	"boss_captured_piece",
 	"boss_piece_captured",
 	"entered_route_setup",
-	"entered_active_seeker_push",
-	"entered_endgame_seeker_finish",
-	"entered_seeker_attack",
+	"entered_crown_push",
+	"entered_endgame_finish",
+	"entered_crown_attack",
 	"entered_soft_defense",
 	"entered_emergency_defense",
 	"stamp_played"

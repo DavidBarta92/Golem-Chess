@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Golem"
-config/version="0.1.4"
+config/version="0.1.5"
 run/main_scene="uid://b2oed0tahffou"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
@@ -64,7 +64,7 @@ window/size/min_height=576
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/stamp_pattern_editor/plugin.cfg")
+enabled=PackedStringArray("res://addons/stamp_pattern_editor/plugin.cfg", "res://addons/stamp_value_estimator/plugin.cfg")
 
 [gui]
 

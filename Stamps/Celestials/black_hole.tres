@@ -11,6 +11,7 @@ stamp_code = "black_hole"
 role = 4
 Set = "Celestials"
 duration = 8
+estimated_value = 32.83
 white_piece_texture = ExtResource("3_5hxaj")
 black_piece_texture = ExtResource("1_pgrw7")
 description = "Setup (early)"

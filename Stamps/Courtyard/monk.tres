@@ -11,6 +11,7 @@ stamp_name = "Monk"
 stamp_code = "monk"
 Set = "Courtyard"
 duration = 1
+estimated_value = 11.15
 stamp_art = ExtResource("3_dhmt0")
 white_piece_texture = ExtResource("3_0ixt7")
 black_piece_texture = ExtResource("1_thdmx")

@@ -8,6 +8,12 @@ const OPPONENT_COLOR: int = -1
 const GRANDPA_SPEAKER: String = "grandpa"
 const GRANDPA_BOSS: BossDefinition = preload("res://Story/Bosses/boss_01.tres")
 const INVALID_BOARD_POS: Vector2 = Vector2(-1, -1)
+## The last part of the tutorial: Grandpa's base, and the one square next to it
+## that the player can reach and he cannot (see court_setup()).
+const COURT_BASE: Vector2 = Vector2(6, 3)
+const COURT_SQUARE_FOR_THE_CROWN: Vector2 = Vector2(5, 2)
+## Far enough from full that he never gets to crown a golem of his own here.
+const COURT_OPPONENT_CROWN_POINTS: int = 2
 
 @export var board_path: NodePath = NodePath("../MatchBoard")
 @export var dialogue_panel_path: NodePath = NodePath("../CanvasLayer/DialoguePanel")
@@ -186,6 +192,7 @@ func connect_board_signals() -> void:
 	board.piece_moved.connect(_on_piece_moved)
 	board.turn_ended.connect(_on_turn_ended)
 	board.tutorial_action_rejected.connect(_on_tutorial_action_rejected)
+	board.get_crown_controller().crown_placed.connect(_on_crown_placed)
 
 func connect_dialogue_signals() -> void:
 	dialogue_panel.continue_requested.connect(_on_dialogue_continue_requested)
@@ -199,6 +206,7 @@ func connect_dialogue_signals() -> void:
 ##   "completion"  what ends the step:
 ##                   "dialogue"          Continue
 ##                   "stamp_affixed", "stamp_exchanged", "codex_page_turned"
+##                   "crown_placed"
 ##                   "piece_moved"       a move, once it has ended the turn
 ##                   "piece_captured"    a capturing move, likewise
 ##                   "stamp_moves"       the piece wearing "track_stamp" has
@@ -217,8 +225,10 @@ func connect_dialogue_signals() -> void:
 ##   "expected_stamp_name"        only this stamp counts for "stamp_affixed"
 ##   "expected_from", "expected_to"  only this move counts for "piece_moved"
 ##   "required_count"             how many affixes/moves the step needs
-##   "retry_on_miss"              "piece_captured": a move that captures
-##                                nothing starts the step over
+##   "retry_on_miss"              a move that captures nothing, on a
+##                                "piece_captured" step, or lands anywhere but
+##                                "expected_to", on a "piece_moved" one, starts
+##                                the step over
 ##   "track_stamp"                "stamp_moves": the stamp to follow; if it
 ##                                comes off before enough moves, the step
 ##                                starts over
@@ -244,9 +254,6 @@ func connect_dialogue_signals() -> void:
 ##   "punish_unsafe_moves"        a move onto a square Grandpa can capture on
 ##                                is answered by that capture, and the step
 ##                                starts over once his turn is done
-##   "check_turn"                 name of a method asked after each of the
-##                                player's turns; false starts the step over
-##                                (the part can no longer be finished)
 ##   "text_on_opponent_move"      show "text" when Grandpa moves rather than
 ##                                when the step starts; a "dialogue" step
 ##                                with Grandpa turns holds Continue until his
@@ -363,25 +370,97 @@ func build_steps() -> void:
 				"allow_auto_end_turn": false,
 			},
 		},
-		# The last one: the Knight has a single jump left. Land it next to
-		# Grandpa's court on the square he cannot reach, put the Silver
-		# General (a pentagon) on the bare golem, and step into the court.
-		# Winning ends the tutorial.
+		# The last part is how a game is won. Its board comes in with the crown
+		# meters, and the line says what they are for.
+		{
+			"speaker": GRANDPA_SPEAKER,
+			"text": "TUTORIAL_STEP_CROWN_GOAL",
+			"completion": "dialogue",
+			"setup": court_setup(),
+			"reveal_hud": ["OwnCrownMeter", "OpponentCrownMeter"],
+			"glow": "OwnCrownMeter",
+			"constraints": no_actions(),
+		},
+		# The Knight has a single jump left, and it has to end next to Grandpa's
+		# base on the square he cannot reach. Anywhere else starts this over.
 		{
 			"speaker": GRANDPA_SPEAKER,
 			"text": "TUTORIAL_STEP_COURT",
-			"completion": "game_won",
+			"completion": "piece_moved",
+			"expected_to": COURT_SQUARE_FOR_THE_CROWN,
+			"retry_on_miss": true,
 			"punish_unsafe_moves": true,
-			"check_turn": "can_still_reach_court",
 			"setup": court_setup(),
+			"constraints": {
+				"allowed_actions": ["select_piece", "move_piece"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		# Grandpa's turn, at the end of which the player's meter fills.
+		{
+			"speaker": GRANDPA_SPEAKER,
+			"completion": "turn_ended",
+			"turn_color": OPPONENT_COLOR,
 			"opponent_turns": [
 				{"move": {"from": Vector2(6, 0), "to": Vector2(5, 0)}},
-				{"move": {"from": Vector2(5, 0), "to": Vector2(6, 0)}},
-				{"move": {"from": Vector2(6, 0), "to": Vector2(5, 0)}},
+			],
+			"constraints": no_actions(),
+		},
+		# The crown goes on the golem by Grandpa's base...
+		{
+			"speaker": GRANDPA_SPEAKER,
+			"text": "TUTORIAL_STEP_CROWN_PLACE",
+			"completion": "crown_placed",
+			"glow": "OwnCrownMeter",
+			"constraints": {
+				"allowed_actions": ["place_crown"],
+				"allowed_crown_positions": [COURT_SQUARE_FOR_THE_CROWN],
+				"allow_auto_end_turn": false,
+			},
+		},
+		# ...which is bare, so a stamp goes on it too. Only the two on the page
+		# that step diagonally forward will do, one of them without a pentagon:
+		# any stamp can carry the crown home.
+		{
+			"speaker": GRANDPA_SPEAKER,
+			"text": "TUTORIAL_STEP_CROWN_STAMP",
+			"completion": "stamp_affixed",
+			"constraints": {
+				"allowed_actions": ["affix_stamp"],
+				"allowed_affix_piece_positions": [COURT_SQUARE_FOR_THE_CROWN],
+				"allowed_affix_stamp_names": ["Silver General", "Monk"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		# The golem has waited out this turn, and the only other two are bare.
+		{
+			"speaker": GRANDPA_SPEAKER,
+			"text": "TUTORIAL_STEP_CROWN_END_TURN",
+			"completion": "turn_ended",
+			"glow": "EndTurnTab",
+			"constraints": {
+				"allowed_actions": ["end_turn"],
+				"allow_auto_end_turn": false,
+			},
+		},
+		{
+			"speaker": GRANDPA_SPEAKER,
+			"completion": "turn_ended",
+			"turn_color": OPPONENT_COLOR,
+			"opponent_turns": [
 				{"move": {"from": Vector2(5, 0), "to": Vector2(6, 0)}},
 			],
+			"constraints": no_actions(),
+		},
+		# Winning ends the tutorial.
+		{
+			"speaker": GRANDPA_SPEAKER,
+			"text": "TUTORIAL_STEP_CROWN_WIN",
+			"completion": "game_won",
 			"constraints": {
-				"allowed_actions": ["affix_stamp", "end_turn", "select_piece", "move_piece"],
+				"allowed_actions": ["select_piece", "move_piece"],
+				"allowed_move_sources": [COURT_SQUARE_FOR_THE_CROWN],
+				"allowed_move_targets": [COURT_BASE],
 				"allow_auto_end_turn": false,
 			},
 		},
@@ -490,12 +569,13 @@ func danger_setup() -> Dictionary:
 	}
 
 ## The Knight on (3, 3) has one jump left; its stamp runs out wherever it
-## lands. From (5, 2) or (5, 4) a Silver General steps diagonally into the
-## court on (6, 3) - but Grandpa's Knight on (6, 6) covers (5, 4), so (5, 2) is
-## the square. The open page is the last one of Grandpa's codex, with the
-## Silver General on it and no other pentagon. Grandpa's Lance on (6, 0) goes
-## back and forth meanwhile, and covers (4, 1); his bare golems on (6, 2) and
-## (6, 4) only look the part.
+## lands. Next to Grandpa's base on (6, 3) that is (5, 2) or (5, 4) - but his
+## Knight on (6, 6) covers (5, 4), and (4, 5) with it, so (5, 2) is the square.
+## The open page is the last one of Grandpa's codex: the Silver General and the
+## Monk on it both step from (5, 2) onto the base. Grandpa's Lance on (6, 0)
+## covers (4, 1) and goes back and forth meanwhile; his bare golems on (6, 2)
+## and (6, 4) only look the part. The player's meter is one point short, so it
+## fills at the start of the turn after the jump.
 func court_setup() -> Dictionary:
 	var court_page: Array[String] = ["Silver General", "Archer", "Monk"]
 	var opponent_page: Array[String] = grandpa_first_page()
@@ -518,6 +598,10 @@ func court_setup() -> Dictionary:
 		"white_deck": grandpa_deck_without(court_page),
 		"black_hand": opponent_page,
 		"black_deck": grandpa_deck_without(opponent_page),
+		"crown_points": {
+			PLAYER_COLOR: GameConfig.crown_points_required - 1,
+			OPPONENT_COLOR: COURT_OPPONENT_CROWN_POINTS,
+		},
 		"turn_color": PLAYER_COLOR,
 	}
 
@@ -623,6 +707,10 @@ func _on_stamp_affixed(piece_pos: Vector2, stamp_name: String, owner_color: int,
 	if affixed_this_step >= int(step.get("required_count", 1)):
 		complete_current_action_step()
 
+func _on_crown_placed(_piece_pos: Vector2, owner_color: int) -> void:
+	if owner_color == PLAYER_COLOR and is_current_completion("crown_placed"):
+		complete_current_action_step()
+
 func _on_stamp_exchanged(stamp_name: String, owner_color: int, _hand_index: int) -> void:
 	if !is_current_completion("stamp_exchanged"):
 		return
@@ -671,6 +759,8 @@ func _on_piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int) -> vo
 		return
 	var expected_to: Vector2 = value_to_vector2(step.get("expected_to", INVALID_BOARD_POS), INVALID_BOARD_POS)
 	if expected_to != INVALID_BOARD_POS and to_pos != expected_to:
+		if bool(step.get("retry_on_miss", false)):
+			pending_turn_outcome = "retry"
 		return
 
 	moved_this_step += 1
@@ -703,9 +793,6 @@ func _on_turn_ended(ending_color: int, _next_color: int) -> void:
 			complete_current_action_step()
 			return
 		if pending_turn_outcome == "retry":
-			retry_current_step()
-			return
-		if step.has("check_turn") and !bool(call(str(step.get("check_turn", "")))):
 			retry_current_step()
 			return
 		if is_current_completion("stamp_moves") and tracked_stamp_pos != INVALID_BOARD_POS:
@@ -781,32 +868,6 @@ func find_opponent_capture(target: Vector2) -> Dictionary:
 		if targets.has(target):
 			return {"from": position_value, "to": target}
 	return {}
-
-## The last part's check: can a pentagon stamp still step into Grandpa's court
-## in one move - one already on a golem, or one from the open page on a bare
-## golem standing where it would need to be? Once neither is true the part
-## cannot be finished any more.
-func can_still_reach_court() -> bool:
-	var court: Vector2 = board.get_local_state_mutator().get_base_field_for_player(board.get_player_id_for_color(OPPONENT_COLOR))
-	var hand_seekers: Array[Stamp] = []
-	for stamp: Stamp in board.get_stamp_hand(PLAYER_COLOR):
-		if MoveRules.is_seeker_stamp(stamp):
-			hand_seekers.append(stamp)
-	for position_value in board.piece_objects:
-		var piece: Piece = board.piece_objects[position_value] as Piece
-		if piece == null or piece.color != PLAYER_COLOR:
-			continue
-		if MoveRules.is_seeker_stamp(piece.affixed_stamp):
-			if stamp_reaches(position_value, piece.affixed_stamp, court):
-				return true
-		elif piece.affixed_stamp == null:
-			for stamp in hand_seekers:
-				if stamp_reaches(position_value, stamp, court):
-					return true
-	return false
-
-func stamp_reaches(from_pos: Vector2, stamp: Stamp, target: Vector2) -> bool:
-	return MoveRules.get_stamp_moves_for_piece(board.piece_objects, from_pos, PLAYER_COLOR, stamp, BoardConfig.BOARD_SIZE, board.current_board_effects).has(target)
 
 func is_tracked_stamp_on_board() -> bool:
 	var piece: Piece = board.piece_objects.get(tracked_stamp_pos, null) as Piece
@@ -924,10 +985,14 @@ func glow_behind(node_name: String) -> void:
 	var target := match_intro.get_hud_node(node_name) as Control
 	if target == null:
 		return
-	# A tab only shows its top above the screen's edge; the glow goes there.
-	var visible_height: float = target.raised_height if target is MatchTabButton else target.size.y
-	var centre := Vector2(target.size.x * 0.5, visible_height * 0.5)
-	step_glow = HintGlow.attach(target, centre, Vector2(target.size.x * 2.2, visible_height * 3.0))
+	var lit_rect := Rect2(Vector2.ZERO, target.size)
+	if target is MatchTabButton:
+		# A tab only shows its top above the screen's edge; the glow goes there.
+		lit_rect.size.y = target.raised_height
+	elif target.has_method("get_crown_rect"):
+		# On a crown meter the eye belongs on the crown, at the end of its row.
+		lit_rect = target.get_crown_rect()
+	step_glow = HintGlow.attach(target, lit_rect.get_center(), lit_rect.size * Vector2(2.2, 3.0))
 
 func clear_step_glow() -> void:
 	if step_glow != null and is_instance_valid(step_glow):

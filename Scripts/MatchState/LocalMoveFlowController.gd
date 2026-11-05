@@ -86,11 +86,13 @@ func apply_local_move_post_move_effects(move_context: Dictionary) -> void:
 	var pending_respawn_arrivals: Array = move_context.get("pending_respawn_arrivals", [])
 	if moving_piece != null and !GameController.current_game_host:
 		var mutator = match_board.get_local_state_mutator()
-		pending_respawn_arrivals.append_array(mutator.apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_MOVE, end_pos, moving_piece, moving_piece.affixed_stamp))
 		# A capture wakes the capturing stamp's on-capture ability before the
-		# move is paid for, as on the host (NetworkGameHost.handle_move).
+		# move is paid for, as on the host (NetworkGameHost.handle_move); only
+		# a step that takes nothing sets off the on_move one.
 		if move_context.get("captured_piece", null) != null:
 			pending_respawn_arrivals.append_array(mutator.apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_CAPTURE, end_pos, moving_piece, moving_piece.affixed_stamp))
+		else:
+			pending_respawn_arrivals.append_array(mutator.apply_stamp_effect_trigger(StampEffect.TRIGGER_ON_MOVE, end_pos, moving_piece, moving_piece.affixed_stamp))
 	consume_moved_piece_duration_locally(moving_piece, end_pos)
 	move_context["pending_respawn_arrivals"] = pending_respawn_arrivals
 

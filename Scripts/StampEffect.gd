@@ -16,14 +16,17 @@ const TYPE_INCREASE_ENEMY_DURATIONS: String = "increase_enemy_durations"
 const TYPE_DECREASE_OWN_DURATIONS: String = "decrease_own_durations"
 const TYPE_DECREASE_ENEMY_DURATIONS: String = "decrease_enemy_durations"
 const TYPE_INCREASE_SELF_DURATION: String = "increase_self_duration"
+const TYPE_GAIN_CROWN_POINT: String = "gain_crown_point"
+const TYPE_REMOVE_ENEMY_CROWN_POINT: String = "remove_enemy_crown_point"
 
 const TRIGGER_ON_AFFIX: String = "on_affix"
 const TRIGGER_ON_MOVE: String = "on_move"
 const TRIGGER_ON_CAPTURE: String = "on_capture"
 const TRIGGER_ON_CAPTURED: String = "on_captured"
 const TRIGGER_ON_EXPIRE: String = "on_expire"
-const TRIGGER_WHILE_ATTACHED: String = "while_attached"
 const TRIGGER_ON_SYMBOL_COUNT: String = "on_symbol_count"
+# Fires when the golem carrying the stamp is crowned (GameStateData.place_crown).
+const TRIGGER_CROWN_CONDITION: String = "crown_condition"
 
 const MOVEMENT_NONE: int = 0
 const MOVEMENT_MOVE_AND_CAPTURE: int = 1
@@ -45,6 +48,8 @@ const EFFECT_ICON_TEXTURES: Dictionary = {
 	TYPE_DECREASE_OWN_DURATIONS: preload("res://Assets/effect_icon_decrease_own_duration.svg"),
 	TYPE_DECREASE_ENEMY_DURATIONS: preload("res://Assets/effect_icon_decrease_enemy_duration.svg"),
 	TYPE_INCREASE_SELF_DURATION: preload("res://Assets/effect_icon_incrase_self_duration.svg"),
+	TYPE_GAIN_CROWN_POINT: preload("res://Assets/effect_icon_gain_crown_point.svg"),
+	TYPE_REMOVE_ENEMY_CROWN_POINT: preload("res://Assets/effect_icon_remove_enemy_crown_point.svg"),
 }
 
 const EFFECT_ICON_STANDALONE_TEXTURES: Dictionary = {
@@ -62,6 +67,8 @@ const EFFECT_ICON_STANDALONE_TEXTURES: Dictionary = {
 	TYPE_DECREASE_OWN_DURATIONS: preload("res://Assets/effect_icon_decrease_own_duration_standalone.svg"),
 	TYPE_DECREASE_ENEMY_DURATIONS: preload("res://Assets/effect_icon_decrease_enemy_duration_standalone.svg"),
 	TYPE_INCREASE_SELF_DURATION: preload("res://Assets/effect_icon_incrase_self_duration_standalone.svg"),
+	TYPE_GAIN_CROWN_POINT: preload("res://Assets/effect_icon_gain_crown_point_standalone.svg"),
+	TYPE_REMOVE_ENEMY_CROWN_POINT: preload("res://Assets/effect_icon_remove_enemy_crown_point_standalone.svg"),
 }
 
 const TRIGGER_ICON_TEXTURES: Dictionary = {
@@ -70,6 +77,7 @@ const TRIGGER_ICON_TEXTURES: Dictionary = {
 	TRIGGER_ON_CAPTURE: preload("res://Assets/trigger_on_captures.svg"),
 	TRIGGER_ON_CAPTURED: preload("res://Assets/trigger_on_captured.svg"),
 	TRIGGER_ON_EXPIRE: preload("res://Assets/trigger_expired.svg"),
+	TRIGGER_CROWN_CONDITION: preload("res://Assets/trigger_crown_condition.svg"),
 }
 
 static func get_effect_icon_texture(effect_type: String) -> Texture2D:
@@ -114,6 +122,10 @@ static func get_effect_label(effect_type: String) -> String:
 			return "E-"
 		TYPE_INCREASE_SELF_DURATION:
 			return "S+"
+		TYPE_GAIN_CROWN_POINT:
+			return "C+"
+		TYPE_REMOVE_ENEMY_CROWN_POINT:
+			return "C-"
 		_:
 			return "FX" if has_effect(effect_type) else ""
 
@@ -147,5 +159,9 @@ static func get_effect_display_name(effect_type: String) -> String:
 			return "Decrease Enemy Durations"
 		TYPE_INCREASE_SELF_DURATION:
 			return "Increase Self Duration"
+		TYPE_GAIN_CROWN_POINT:
+			return "Gain Crown Point"
+		TYPE_REMOVE_ENEMY_CROWN_POINT:
+			return "Remove Enemy Crown Point"
 		_:
 			return ""

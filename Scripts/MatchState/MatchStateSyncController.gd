@@ -153,9 +153,12 @@ func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
 			if stamp:
 				piece.affix_stamp(stamp)
 				piece.turns_remaining = int(data.turns_remaining)
-				piece.exhausted_this_turn = bool(data.get("exhausted_this_turn", false))
 				piece.protection_turns_remaining = int(data.get("protection_turns_remaining", -1))
+		# For every golem, not just stamped ones: a bare golem crowned this turn
+		# waits it out too, and that is what lets the turn end on it.
+		piece.exhausted_this_turn = bool(data.get("exhausted_this_turn", false))
 		piece.respawn_cooldown_turns = int(data.get("respawn_cooldown_turns", 0))
+		piece.has_crown = bool(data.get("has_crown", false))
 
 		parsed_piece_objects[piece_position] = piece
 		if is_valid_position(piece_position):
@@ -198,9 +201,10 @@ func parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals: A
 		})
 	return animations
 
-func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_stamp_expirations: Array, piece_objects: Dictionary) -> Array[Dictionary]:
+func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_stamp_expirations: Array, recent_bomb_effects: Array, piece_objects: Dictionary) -> Array[Dictionary]:
 	var expiration_events: Array[Dictionary] = []
 	var known_expirations: Dictionary = {}
+	var forced_capture_positions: Dictionary = get_recent_effect_capture_positions(recent_bomb_effects)
 	for expiration_value in recent_stamp_expirations:
 		if !(expiration_value is Dictionary):
 			continue
@@ -218,6 +222,9 @@ func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_sta
 	for position_value in previous_snapshot:
 		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
 		if !is_valid_position(board_pos) or !piece_objects.has(board_pos):
+			continue
+		# A golem blown up and back on its own square lost its stamp with the rest of it.
+		if forced_capture_positions.has(board_pos):
 			continue
 
 		var previous_state: Dictionary = previous_snapshot[position_value]
@@ -596,7 +603,7 @@ func collect_piece_shatter_animations(previous_snapshot: Dictionary, piece_objec
 
 	var pending_respawn_source_positions: Dictionary = get_pending_respawn_queue_source_positions(recent_pending_respawn_queues)
 	var forced_capture_positions: Dictionary = get_recent_effect_capture_positions(recent_bomb_effects)
-	var respawn_targets_by_color: Dictionary = collect_new_respawn_targets_by_color(previous_snapshot, piece_objects)
+	var respawn_targets_by_color: Dictionary = collect_new_respawn_targets_by_color(previous_snapshot, piece_objects, forced_capture_positions)
 	var release_targets_by_color: Dictionary = collect_released_respawn_targets_by_color(previous_snapshot, piece_objects)
 	var used_respawn_targets: Dictionary = {}
 	var used_release_targets: Dictionary = {}
@@ -612,6 +619,16 @@ func collect_piece_shatter_animations(previous_snapshot: Dictionary, piece_objec
 
 		var current_piece: Piece = piece_objects.get(board_pos, null) as Piece
 		if current_piece != null and current_piece.color == previous_color:
+			# The square looks unchanged, but the bomb took this golem: on a full home
+			# row its own square is the only one free to come back to. Already locked,
+			# it was rubble before and stays rubble.
+			if forced_capture_positions.has(board_pos) and int(previous_state.get("respawn_cooldown_turns", 0)) <= 0:
+				animations.append({
+					"source_pos": board_pos,
+					"respawn_pos": board_pos,
+					"piece_color": previous_color,
+					"fragment_group": fragment_group_bottom if current_piece.is_respawn_locked() else fragment_group_top,
+				})
 			continue
 
 		var respawn_pos: Vector2 = get_unused_respawn_target_for_color(respawn_targets_by_color, used_respawn_targets, previous_color)
@@ -692,7 +709,9 @@ func append_hidden_capture_shatter_animation(
 		"fragment_group": fragment_group,
 	})
 
-func collect_new_respawn_targets_by_color(previous_snapshot: Dictionary, piece_objects: Dictionary) -> Dictionary:
+## Squares a golem broken elsewhere came back on. One blown up onto its own square
+## is left out: it breaks there itself, and no other golem's pieces are headed for it.
+func collect_new_respawn_targets_by_color(previous_snapshot: Dictionary, piece_objects: Dictionary, forced_capture_positions: Dictionary) -> Dictionary:
 	var targets_by_color: Dictionary = {}
 	for position_value in piece_objects:
 		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
@@ -706,7 +725,7 @@ func collect_new_respawn_targets_by_color(previous_snapshot: Dictionary, piece_o
 		var previous_state: Dictionary = previous_snapshot.get(board_pos, {})
 		var previous_color: int = int(previous_state.get("color", 0))
 		var previous_cooldown: int = int(previous_state.get("respawn_cooldown_turns", 0))
-		if previous_color == piece.color and previous_cooldown > 0:
+		if previous_color == piece.color and (previous_cooldown > 0 or forced_capture_positions.has(board_pos)):
 			continue
 
 		var targets: Array = targets_by_color.get(piece.color, [])

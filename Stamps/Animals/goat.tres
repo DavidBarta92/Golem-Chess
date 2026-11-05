@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_axm2v"]
 [ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_cr8a3"]
-[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="3_bal7a"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_bal7a"]
 [ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_i8lob"]
 [ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_ty3sh"]
 
@@ -12,11 +12,14 @@ stamp_name = "Goat"
 stamp_code = "goat"
 Set = "Animals"
 duration = 2
+estimated_value = 5.34
 stamp_art = ExtResource("4_i8lob")
 piece_visuals = ExtResource("2_cr8a3")
 white_piece_texture = ExtResource("5_ty3sh")
 black_piece_texture = ExtResource("1_axm2v")
 description = "No special effect."
+effect_type = "uncapturable"
+effect_trigger = "crown_condition"
 square_color_a = Color(0.3372549, 0.1882353, 0.19607843, 1)
 square_color_b = Color(0.3372549, 0.1882353, 0.19607843, 1)
-movement_pattern = [[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 2], [0, 2, 0, 0, 0], [0, 0, 0, 0, 0]]
+movement_pattern = Array[Array]([[0, 0, 0, 2, 0], [2, 0, 0, 0, 0], [0, 0, 0, 0, 2], [0, 2, 0, 0, 0], [0, 0, 0, 0, 0]])

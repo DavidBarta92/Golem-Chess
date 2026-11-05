@@ -19,10 +19,13 @@ func defer_for_bomb_warning(bomb_warning_animations: Array[Dictionary], visual_c
 	)
 
 func finish(visual_context: Dictionary) -> void:
+	var state_piece_shatter_animations: Array[Dictionary] = visual_context.get("state_piece_shatter_animations", [] as Array[Dictionary])
+	# Not before the bomb warning: a golem blown up onto its own square has to stand
+	# there for the warning to play over.
+	match_board.get_piece_respawn_fragment_coordinator().prepare_piece_shatter_respawn_reveals(state_piece_shatter_animations)
 	match_board.display_board()
 
 	var state_piece_move_animation: Dictionary = visual_context.get("state_piece_move_animation", {})
-	var state_piece_shatter_animations: Array = visual_context.get("state_piece_shatter_animations", [])
 	if !state_piece_move_animation.is_empty():
 		await match_board.get_piece_effect_flow_controller().play_state_piece_move_animation(state_piece_move_animation, state_piece_shatter_animations)
 
@@ -56,6 +59,10 @@ func finish(visual_context: Dictionary) -> void:
 	# leaves the active set (on_captured/on_expire) still flashes before it
 	# burns away instead of silently vanishing.
 	match_board.get_board_effect_icon_grid_controller().refresh_active_effects(visual_context.get("recent_effect_activations", []))
+	match_board.get_crown_controller().show_state_points(
+		visual_context.get("recent_effect_activations", []),
+		bool(visual_context.get("should_play_post_state_animations", false))
+	)
 
 	if bool(visual_context.get("should_play_post_state_animations", false)):
 		play_post_state_stamp_animations(visual_context)

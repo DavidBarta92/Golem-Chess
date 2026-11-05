@@ -12,3 +12,8 @@
 - [Docs/Style/INK_BLOT.md](Docs/Style/INK_BLOT.md) — the ink blot: uneven ink
   density and wandering edges on the UI, the scenes' line art and washes, and
   the stamps, and where to tune it.
+- [Docs/Style/FREEZE_ICE.md](Docs/Style/FREEZE_ICE.md) — the ice on frozen
+  pieces: how it animates, reflects and bends, and where to tune it.
+- [Docs/Balance/STAMP_VALUE.md](Docs/Balance/STAMP_VALUE.md) — the stamp value
+  estimate: the formula, its weights, and the editor plugin that shows it and
+  stores it on each stamp.

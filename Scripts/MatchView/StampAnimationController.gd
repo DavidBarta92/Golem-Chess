@@ -122,9 +122,9 @@ func animate_recent_stamp_transfers(recent_stamp_transfers: Array, previous_whit
 			play_transfer_source_pulse(transfer)
 			queue_stamp_transfer_burn_animation(transfer)
 			continue
-		# Off a piece and back to its owner: only a seeker does this, when it
-		# runs out or its piece is taken. With a codex the stamp goes back to
-		# its page rather than into a deck, but it is the same trip home.
+		# Off a piece into its owner's codex: a seeker going home when it runs
+		# out or its piece is taken, or a stamp a grant_stamp effect glues onto
+		# a codex page. Without a codex it goes to the deck, the same trip.
 		if (target_zone == "deck" or target_zone == "codex") and str(transfer.get("source_zone", "")) == "piece":
 			queue_stamp_return_to_deck_animation(transfer)
 			continue

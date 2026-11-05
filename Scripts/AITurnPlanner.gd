@@ -4,12 +4,15 @@ class_name AITurnPlanner
 const DEFAULT_BOARD_SIZE: int = BoardConfig.BOARD_SIZE
 const ACTION_AFFIX_STAMP: String = "affix_stamp"
 const ACTION_TURN_PAGE: String = "turn_page"
+const ACTION_PLACE_CROWN: String = "place_crown"
 const ACTION_MOVE_PIECE: String = "move_piece"
 const ACTION_END_TURN: String = "end_turn"
 const MAX_SEQUENTIAL_AFFIX_ACTIONS: int = DeckManager.HAND_SIZE
 const MAX_PLAN_AFFIX_DEPTH: int = DeckManager.HAND_SIZE
 const MAX_PLAN_AFFIX_OPTIONS_PER_STATE: int = 2
 const MAX_PLAN_EXCHANGE_OPTIONS: int = 1
+## Golems tried as the crown's bearer when the crown can be put down.
+const MAX_PLAN_CROWN_OPTIONS: int = 2
 const MAX_GENERATED_TURN_PLANS: int = 120
 const AFFIX_ACTION_DELAY: float = 1.00
 const TACTICAL_SEARCH_SCRIPT = preload("res://Scripts/AITacticalSearch.gd")
@@ -171,14 +174,15 @@ func execute_ai_action(
 ## Rolls this turn's whole pause up front. Each action before the closing one
 ## then takes a random slice of what is left, and the closing action (the move,
 ## the end-turn button, or the stamp that auto-ends the first turn) waits out
-## the rest. A total of zero turns pacing off.
+## the rest. A total of zero turns pacing off. The move that wins the game is
+## exempt: with the win on the board there is nothing left to think about.
 func begin_turn_pacing(total_seconds: float) -> void:
 	turn_pacing_start_msec = Time.get_ticks_msec()
 	turn_pacing_total_seconds = maxf(total_seconds, 0.0)
 	turn_pacing_scheduled_seconds = 0.0
 
 func wait_turn_pacing_before_action(host: NetworkGameHost, tree: SceneTree, action: Dictionary) -> void:
-	if tree == null or turn_pacing_total_seconds <= 0.0:
+	if tree == null or turn_pacing_total_seconds <= 0.0 or is_winning_move_action(host, action):
 		return
 
 	if action_closes_turn(host, action):
@@ -192,6 +196,13 @@ func wait_turn_pacing_before_action(host: NetworkGameHost, tree: SceneTree, acti
 	if wait_seconds > 0.0:
 		thinking_pause_started.emit(int(action.get("player_id", -1)), wait_seconds)
 		await tree.create_timer(wait_seconds).timeout
+
+func is_winning_move_action(host: NetworkGameHost, action: Dictionary) -> bool:
+	if host == null or host.game_state == null or str(action.get("type", "")) != ACTION_MOVE_PIECE:
+		return false
+	var player_id: int = int(action.get("player_id", -1))
+	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(host.game_state, 1 - player_id)
+	return AIStateSimulator.is_base_win_move(host.game_state.pieces, action, player_id, opponent_base)
 
 func action_closes_turn(host: NetworkGameHost, action: Dictionary) -> bool:
 	match str(action.get("type", "")):
@@ -245,13 +256,13 @@ func find_best_affix_setup(
 		for position_value in game_state.pieces:
 			var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 			var piece: Piece = game_state.pieces[position_value] as Piece
-			if piece == null or piece.color != player_color or !piece.can_receive_stamp():
+			if piece == null or piece.color != player_color or !can_plan_affix_on(piece, stamp):
 				continue
 			if !MoveRules.can_affix_stamp_for_turn(game_state.pieces, player_color, stamp):
 				continue
 
 			var affix_action: Dictionary = make_affix_action(player_id, stamp, piece_pos, hand_index)
-			var affix_score: float = evaluator.score_affix_setup(game_state, player_id, affix_action, board_size)
+			var affix_score: float = evaluator.score_affix_setup(game_state, player_id, affix_action, board_size) 				+ evaluator.score_se_tenant_affix(game_state, player_id, affix_action)
 			increment_profile_count(profile, "evaluated_own_plans")
 			if best_action.is_empty() or affix_score > best_score:
 				best_action = affix_action
@@ -305,7 +316,7 @@ func score_best_fit_for_stamp(
 	for position_value in game_state.pieces:
 		var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.affixed_stamp != null:
+		if piece == null or piece.color != player_color or !can_plan_affix_on(piece, stamp):
 			continue
 
 		var affix_action: Dictionary = make_affix_action(player_id, stamp, piece_pos, hand_index)
@@ -386,7 +397,8 @@ func create_turn_plans_from_state(game_state: GameStateData, player_id: int, boa
 		root_actions,
 		root_setup_actions,
 		0,
-		board_size
+		board_size,
+		false
 	)
 
 	return plans
@@ -398,7 +410,8 @@ func add_sequential_turn_plan_branches(
 	prefix_actions: Array[Dictionary],
 	setup_affix_actions: Array[Dictionary],
 	affix_depth: int,
-	board_size: int
+	board_size: int,
+	crown_ready_before_last_affix: bool
 ) -> void:
 	if plans.size() >= MAX_GENERATED_TURN_PLANS or game_state == null or game_state.game_over:
 		return
@@ -406,6 +419,31 @@ func add_sequential_turn_plan_branches(
 	add_current_state_finish_plans(plans, game_state, player_id, prefix_actions, setup_affix_actions, board_size)
 	if plans.size() >= MAX_GENERATED_TURN_PLANS:
 		return
+
+	# The crown goes down before any stamp: crowning and stamping in either
+	# order end in the same state, so trying it only here saves the duplicates.
+	# Unless a stamp is what charged it - the one that makes a Se-tenant set
+	# whole, or a crown point on affix: then it goes down right after that one.
+	if (setup_affix_actions.is_empty() or !crown_ready_before_last_affix) and game_state.can_place_crown(player_id):
+		for crown_action: Dictionary in get_ranked_crown_actions_for_state(game_state, player_id, board_size):
+			if plans.size() >= MAX_GENERATED_TURN_PLANS:
+				return
+			var crown_state: GameStateData = AIStateSimulator.clone_game_state(game_state)
+			AIStateSimulator.apply_place_crown_action(crown_state, player_id, crown_action)
+			if !bool(crown_state.crowned_this_turn.get(player_id, false)):
+				continue
+			var crown_prefix: Array[Dictionary] = duplicate_actions(prefix_actions)
+			crown_prefix.append(crown_action)
+			add_sequential_turn_plan_branches(
+				plans,
+				crown_state,
+				player_id,
+				crown_prefix,
+				duplicate_actions(setup_affix_actions),
+				affix_depth,
+				board_size,
+				crown_ready_before_last_affix
+			)
 
 	if can_turn_page_in_plan(game_state, player_id) and prefix_actions.is_empty():
 		var turn_page_state: GameStateData = AIStateSimulator.clone_game_state(game_state)
@@ -421,7 +459,8 @@ func add_sequential_turn_plan_branches(
 				turn_page_prefix,
 				duplicate_actions(setup_affix_actions),
 				affix_depth,
-				board_size
+				board_size,
+				crown_ready_before_last_affix
 			)
 
 	if affix_depth >= MAX_PLAN_AFFIX_DEPTH:
@@ -450,7 +489,8 @@ func add_sequential_turn_plan_branches(
 			next_prefix,
 			next_setup,
 			affix_depth + 1,
-			board_size
+			board_size,
+			game_state.can_place_crown(player_id)
 		)
 
 func add_current_state_finish_plans(
@@ -513,7 +553,9 @@ func get_ranked_affix_actions_for_state(game_state: GameStateData, player_id: in
 	for affix_action: Dictionary in affix_actions:
 		var score: float = 0.0
 		if planning_evaluator != null:
-			score = planning_evaluator.score_affix_setup(game_state, player_id, affix_action, board_size)
+			# The Se-tenant set shows in full plan scoring only through the
+			# crown race, so the stamp that finishes it has to rank here.
+			score = planning_evaluator.score_affix_setup(game_state, player_id, affix_action, board_size) 				+ planning_evaluator.score_se_tenant_affix(game_state, player_id, affix_action)
 		scored_actions.append({
 			"action": affix_action,
 			"score": score,
@@ -523,6 +565,29 @@ func get_ranked_affix_actions_for_state(game_state: GameStateData, player_id: in
 	var ranked_actions: Array[Dictionary] = []
 	var action_count: int = mini(MAX_PLAN_AFFIX_OPTIONS_PER_STATE, scored_actions.size())
 	for index in range(action_count):
+		ranked_actions.append(scored_actions[index].get("action", {}))
+	return ranked_actions
+
+func get_ranked_crown_actions_for_state(game_state: GameStateData, player_id: int, board_size: int) -> Array[Dictionary]:
+	var scored_actions: Array[Dictionary] = []
+	var crown_is_forced: bool = AIStateSimulator.is_crown_the_only_action(game_state, player_id, board_size)
+	for position_value in game_state.pieces:
+		var piece_pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
+		if !game_state.can_crown_piece(player_id, piece_pos):
+			continue
+		var score: float = 0.0
+		if planning_evaluator != null:
+			if !crown_is_forced and !planning_evaluator.is_crown_move_worthwhile(game_state, player_id, piece_pos, board_size):
+				continue
+			score = planning_evaluator.score_crown_landing(game_state, player_id, piece_pos, board_size)
+		scored_actions.append({
+			"action": make_crown_action(player_id, piece_pos),
+			"score": score,
+		})
+	scored_actions.sort_custom(Callable(self, "sort_scored_action_desc"))
+
+	var ranked_actions: Array[Dictionary] = []
+	for index in range(mini(MAX_PLAN_CROWN_OPTIONS, scored_actions.size())):
 		ranked_actions.append(scored_actions[index].get("action", {}))
 	return ranked_actions
 
@@ -622,17 +687,26 @@ func get_affix_actions_for_pieces(pieces: Dictionary, player_id: int, hand_stamp
 	for position_value in pieces:
 		var piece_position: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or !piece.can_receive_stamp():
+		if piece == null or piece.color != player_color:
 			continue
 
 		for stamp: Stamp in hand_stamps:
-			if !MoveRules.stamp_can_be_used(stamp):
+			if !MoveRules.stamp_can_be_used(stamp) or !can_plan_affix_on(piece, stamp):
 				continue
 			if !MoveRules.can_affix_stamp_for_turn(pieces, player_color, stamp):
 				continue
 			actions.append(make_affix_action(player_id, stamp, piece_position))
 
 	return actions
+
+## Piece.can_receive_stamp, less an Overseal onto a golem stamped earlier this
+## turn: the rules allow it, but it only throws that stamp away, and plan
+## scoring, which scores every affix against the turn's starting state, would
+## not see the loss.
+func can_plan_affix_on(piece: Piece, stamp: Stamp) -> bool:
+	if piece.affixed_stamp != null and piece.exhausted_this_turn:
+		return false
+	return piece.can_receive_stamp(stamp)
 
 func execute_turn_plan(host: NetworkGameHost, tree: SceneTree, player_id: int, plan: Dictionary, action_delay: float) -> bool:
 	if host == null or host.game_state == null or host.game_state.game_over:
@@ -696,6 +770,13 @@ func make_turn_page_action(player_id: int) -> Dictionary:
 		"player_id": player_id,
 	}
 
+func make_crown_action(player_id: int, piece_pos: Vector2) -> Dictionary:
+	return {
+		"type": ACTION_PLACE_CROWN,
+		"player_id": player_id,
+		"piece_pos": piece_pos,
+	}
+
 func make_move_action(player_id: int, move: Dictionary) -> Dictionary:
 	return {
 		"type": ACTION_MOVE_PIECE,
@@ -721,7 +802,7 @@ func make_executable_action(action: Dictionary) -> Dictionary:
 func get_ai_action_delay(action: Dictionary, action_delay: float) -> float:
 	if action_delay <= 0.0:
 		return 0.0
-	if str(action.get("type", "")) == ACTION_AFFIX_STAMP:
+	if str(action.get("type", "")) in [ACTION_AFFIX_STAMP, ACTION_PLACE_CROWN]:
 		return maxf(action_delay, AFFIX_ACTION_DELAY)
 	return action_delay
 

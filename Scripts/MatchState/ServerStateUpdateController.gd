@@ -22,7 +22,13 @@ func apply_state_data(state_data: Dictionary) -> void:
 			"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0)),
 			"hidden_from_viewer": bool(piece_data.get("hidden_from_viewer", false)),
 			"protection_turns_remaining": int(piece_data.get("protection_turns_remaining", -1)),
+			"has_crown": bool(piece_data.get("has_crown", false)),
 		}
+	match_board.get_crown_controller().apply_state_from_server(
+		state_data.get("crown_points", {}),
+		int(state_data.get("crown_points_required", GameConfig.crown_points_required)),
+		state_data.get("turn_action_state", {}).get("crowned_this_turn", {})
+	)
 
 	update_from_server_state(
 		pieces_data,
@@ -137,7 +143,7 @@ func update_from_server_state(
 	match_board.delete_dots()
 	match_board.hide_hover_piece_details()
 	match_board.update_stamp_presentation()
-	var stamp_expiration_events: Array[Dictionary] = match_board.get_state_stamp_expiration_events(previous_piece_visual_state, recent_stamp_expirations)
+	var stamp_expiration_events: Array[Dictionary] = match_board.get_state_stamp_expiration_events(previous_piece_visual_state, recent_stamp_expirations, recent_bomb_effects)
 	var state_affix_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().collect_state_affix_animations(
 		previous_piece_visual_state,
 		match_board.piece_objects,
@@ -186,9 +192,7 @@ func update_from_server_state(
 		var animated_affix_pos: Vector2 = match_board.value_to_vector2(position_value, match_board.INVALID_BOARD_POS)
 		if match_board.is_valid_position(animated_affix_pos):
 			match_board.begin_stamp_affix_process(animated_affix_pos)
-	var respawn_fragment_coordinator = match_board.get_piece_respawn_fragment_coordinator()
-	respawn_fragment_coordinator.prepare_piece_shatter_respawn_reveals(state_piece_shatter_animations)
-	respawn_fragment_coordinator.prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrival_animations)
+	match_board.get_piece_respawn_fragment_coordinator().prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrival_animations)
 
 	var visual_context: Dictionary = {
 		"animated_affix_positions": animated_affix_positions,

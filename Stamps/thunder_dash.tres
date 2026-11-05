@@ -10,6 +10,7 @@ stamp_name = "Thunder Dash"
 stamp_code = "thunder_dash"
 enabled = false
 duration = 5
+estimated_value = 42.61
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "Burst Movement (late)"

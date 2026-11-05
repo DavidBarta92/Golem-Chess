@@ -129,6 +129,9 @@ func create_saved_deck_row(deck_data: Dictionary) -> Control:
 		var stats: Dictionary = PlayerDeckStore.get_deck_stats(deck_data)
 		count_label.tooltip_text = tr("CODEX_WIN_RATE_TOOLTIP").format({"won": int(stats["won"]), "played": int(stats["played"])})
 		count_label.mouse_filter = Control.MOUSE_FILTER_PASS
+	elif !bool(ownership_info.get("is_single_set", true)):
+		count_label.tooltip_text = tr("CODEX_MIXED_SETS_TOOLTIP")
+		count_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	count_label.theme_type_variation = &"CodexRowCountIncompleteLabel" if !is_playable else &"CodexRowCountLabel"
 
 	var edit_button := create_circle_icon_button(EDIT_ICON, tr("Edit codex"))

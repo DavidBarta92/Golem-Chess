@@ -138,20 +138,19 @@ func can_affix_stamp_to_piece(piece_position: Vector2, stamp_name: String = "", 
 		return false
 
 	var piece: Piece = match_board.piece_objects[piece_position] as Piece
-	return piece.can_receive_stamp()
+	return piece.can_receive_stamp(StampLibrary.get_stamp(stamp_name))
 
 func apply_stamp_to_piece(piece_position: Vector2, stamp_name: String) -> bool:
 	if not match_board.piece_objects.has(piece_position):
 		return false
 
 	var piece: Piece = match_board.piece_objects[piece_position] as Piece
-	if !piece.can_receive_stamp():
-		push_warning("This piece cannot receive a stamp right now: %s" % piece_position)
-		return false
-
 	var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
 	if stamp == null:
 		push_warning("Stamp not found for affix: %s" % stamp_name)
+		return false
+	if !piece.can_receive_stamp(stamp):
+		push_warning("This piece cannot receive a stamp right now: %s" % piece_position)
 		return false
 
 	var owner_player_id: int = match_board.get_player_id_for_color(piece.color)

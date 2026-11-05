@@ -13,6 +13,7 @@ stamp_code = "silver_general"
 role = 1
 Set = "Courtyard"
 duration = 2
+estimated_value = 32.36
 stamp_art = ExtResource("3_qyuvm")
 stamp_art_mask = ExtResource("4_m5jcg")
 white_piece_texture = ExtResource("3_m5jcg")

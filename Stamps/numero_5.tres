@@ -12,6 +12,7 @@ stamp_name = "Numero_5"
 stamp_code = "numero_5"
 enabled = false
 duration = 2
+estimated_value = 27.3
 stamp_art = ExtResource("2_5j7x2")
 piece_visuals = ExtResource("3_5j7x2")
 white_piece_texture = ExtResource("3_vqbu2")

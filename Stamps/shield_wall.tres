@@ -10,6 +10,7 @@ stamp_name = "Shield Wall"
 stamp_code = "shield_wall"
 enabled = false
 duration = 5
+estimated_value = 26.04
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "Structure (early)"

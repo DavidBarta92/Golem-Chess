@@ -10,6 +10,7 @@ stamp_name = "Crane Spiral"
 stamp_code = "crane_spiral"
 enabled = false
 duration = 5
+estimated_value = 38.47
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "Combos (mid)"

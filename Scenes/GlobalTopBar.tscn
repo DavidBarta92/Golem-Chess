@@ -98,7 +98,7 @@ offset_bottom = 31.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"VersionLabel"
-text = "v0.1.4"
+text = "v0.1.5"
 vertical_alignment = 1
 
 [node name="MainMenuSpacer" type="Control" parent="Root/SceneItemsClip/MainMenuItems" unique_id=702296893]

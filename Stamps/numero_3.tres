@@ -12,6 +12,7 @@ stamp_name = "Numero_3"
 stamp_code = "numero_3"
 role = 1
 enabled = false
+estimated_value = 14.52
 stamp_art = ExtResource("2_mjihx")
 piece_visuals = ExtResource("3_mjihx")
 white_piece_texture = ExtResource("3_042o3")

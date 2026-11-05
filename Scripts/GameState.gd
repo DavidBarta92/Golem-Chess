@@ -24,8 +24,16 @@ var spent_stamps: Dictionary = {
 var current_turn_player: int = 0  # 0 = white, 1 = black
 var completed_turn_counts: Dictionary = {0: 0, 1: 0}
 var player_clock_seconds: Dictionary = {0: 600.0, 1: 600.0}
-var white_seeker_position: Vector2 = Vector2(-1, -1)
-var black_seeker_position: Vector2 = Vector2(-1, -1)
+## Crown points per player and the number a crown costs, copied from GameConfig
+## when the match starts (begin_crown_points) so everything that reads or
+## simulates this state - the host, the AI, a remote client - uses the same rule.
+var crown_points: Dictionary = {0: 0, 1: 0}
+var crown_points_required: int = 5
+const SE_TENANT_SET_SIZE: int = 3
+var crowned_this_turn: Dictionary = {0: false, 1: false}
+## Whether the player's Se-tenant set (refresh_se_tenant_crown_points) was whole
+## when last looked at, so its breaking can take the points back to 0.
+var se_tenant_set_whole: Dictionary = {0: false, 1: false}
 var player_base_fields: Dictionary = {
 	0: BoardConfig.WHITE_BASE_FIELD,
 	1: BoardConfig.BLACK_BASE_FIELD,
@@ -94,7 +102,102 @@ func switch_turn():
 	exchanged_stamp_this_turn[current_turn_player] = false
 	played_stamp_hand_slots_this_turn[current_turn_player] = []
 	exchanged_stamp_names_this_turn[current_turn_player] = []
+	crowned_this_turn[current_turn_player] = false
 	reset_turn_page_state(current_turn_player)
+	gain_crown_point(current_turn_player)
+
+## Starts both players' crown points: the second player gets their head start,
+## and the player about to take the first turn gets that turn's point.
+func begin_crown_points(points_required: int, second_player_head_start: int) -> void:
+	crown_points_required = maxi(1, points_required)
+	var first_player: int = current_turn_player
+	crown_points = {
+		first_player: 0,
+		1 - first_player: clampi(second_player_head_start, 0, crown_points_required),
+	}
+	crowned_this_turn = {0: false, 1: false}
+	se_tenant_set_whole = {0: false, 1: false}
+	gain_crown_point(first_player)
+
+## A point at the start of each of the player's turns, up to what a crown
+## costs. It keeps coming while the crown is on the board: a full meter then
+## moves the crown to another golem (place_crown).
+func gain_crown_point(player_id: int) -> void:
+	crown_points[player_id] = mini(crown_points_required, int(crown_points.get(player_id, 0)) + 1)
+
+## Takes a point away (remove_enemy_crown_point), never below zero.
+func remove_crown_point(player_id: int) -> void:
+	crown_points[player_id] = maxi(0, int(crown_points.get(player_id, 0)) - 1)
+
+## With Se-tenant stamps on at least SE_TENANT_SET_SIZE of a player's golems,
+## their crown meter stays full. When the set breaks - a stamp captured, run
+## out or covered - the meter drops to 0 and fills again turn by turn. The host
+## and the AI call this after every affix and crowning, and before each turn's
+## point.
+func refresh_se_tenant_crown_points() -> void:
+	for player_id in [0, 1]:
+		if count_se_tenant_golems(player_id) >= SE_TENANT_SET_SIZE:
+			se_tenant_set_whole[player_id] = true
+			crown_points[player_id] = crown_points_required
+		elif bool(se_tenant_set_whole.get(player_id, false)):
+			se_tenant_set_whole[player_id] = false
+			crown_points[player_id] = 0
+
+func count_se_tenant_golems(player_id: int) -> int:
+	var player_color: int = BoardConfig.get_color_for_player_id(player_id)
+	var count: int = 0
+	for position_value in pieces:
+		var piece: Piece = pieces[position_value] as Piece
+		if piece != null and piece.color == player_color and MoveRules.is_se_tenant_stamp(piece.affixed_stamp):
+			count += 1
+	return count
+
+func has_crown_on_board(player_id: int) -> bool:
+	return get_crowned_piece_position(player_id) != Vector2(-1, -1)
+
+func get_crowned_piece_position(player_id: int) -> Vector2:
+	var player_color: int = BoardConfig.get_color_for_player_id(player_id)
+	for position_value in pieces:
+		var piece: Piece = pieces[position_value] as Piece
+		if piece != null and piece.color == player_color and piece.has_crown:
+			return position_value
+	return Vector2(-1, -1)
+
+## Whether the player may crown a golem now: in their own turn, before moving,
+## once a turn, with the points gathered. With their crown already on the
+## board, this moves it to another golem.
+func can_place_crown(player_id: int) -> bool:
+	if game_over or current_turn_player != player_id:
+		return false
+	if bool(moved_piece_this_turn.get(player_id, false)) or bool(crowned_this_turn.get(player_id, false)):
+		return false
+	return int(crown_points.get(player_id, 0)) >= crown_points_required
+
+## Any golem of the player's will do - bare, stamped, anywhere on the board -
+## except one that is locked after a capture, and the one wearing the crown.
+func can_crown_piece(player_id: int, piece_pos: Vector2) -> bool:
+	if !can_place_crown(player_id):
+		return false
+	var piece: Piece = get_piece(piece_pos)
+	if piece == null or piece.color != BoardConfig.get_color_for_player_id(player_id):
+		return false
+	return !piece.is_respawn_locked() and !piece.has_crown
+
+## Crowns the golem: the points are spent, the crown leaves the golem that
+## wore it, and the new one waits out the turn, like a golem that has just
+## been stamped.
+func place_crown(player_id: int, piece_pos: Vector2) -> bool:
+	if !can_crown_piece(player_id, piece_pos):
+		return false
+	var previous_pos: Vector2 = get_crowned_piece_position(player_id)
+	if previous_pos != Vector2(-1, -1):
+		get_piece(previous_pos).has_crown = false
+	var piece: Piece = get_piece(piece_pos)
+	piece.has_crown = true
+	piece.exhausted_this_turn = true
+	crown_points[player_id] = 0
+	crowned_this_turn[player_id] = true
+	return true
 
 func initialize_player_codex(player_id: int, stamp_names: Array) -> void:
 	var normalized_names: Array[String] = []
@@ -142,7 +245,7 @@ func has_stamps_on_page(player_id: int, page_index: int) -> bool:
 func can_turn_page(player_id: int) -> bool:
 	if bool(has_turned_page_this_turn.get(player_id, false)):
 		return false
-	if bool(affixed_stamp_this_turn.get(player_id, false)):
+	if bool(affixed_stamp_this_turn.get(player_id, false)) or bool(crowned_this_turn.get(player_id, false)):
 		return false
 	if count_non_empty_pages(player_id) <= 1:
 		return false
@@ -294,6 +397,37 @@ func add_stamp_to_current_page(player_id: int, stamp_name: String, max_page_size
 	player_codex_pages[player_id] = pages
 	sync_player_stamp_zones_from_codex(player_id)
 	return true
+
+## Puts the stamp into the nearest free slot: on the open page if it has one,
+## else on the pages after it, in the order they come up. Returns the page
+## index, or -1 when the codex is full.
+func add_stamp_to_nearest_free_slot(player_id: int, stamp_name: String) -> int:
+	if stamp_name.is_empty():
+		return -1
+	var pages: Array = get_codex_pages(player_id)
+	var current_index: int = get_current_page_index(player_id)
+	for offset in range(DeckManager.CODEX_PAGE_COUNT):
+		var page_index: int = (current_index + offset) % DeckManager.CODEX_PAGE_COUNT
+		if page_index >= pages.size():
+			continue
+		var stamps: Array = pages[page_index] if pages[page_index] is Array else []
+		if stamps.size() >= DeckManager.CODEX_STAMPS_PER_PAGE:
+			continue
+		stamps.append(stamp_name)
+		pages[page_index] = stamps
+		player_codex_pages[player_id] = pages
+		sync_player_stamp_zones_from_codex(player_id)
+		return page_index
+	return -1
+
+## The free slots add_stamp_to_nearest_free_slot can fill.
+func count_free_codex_slots(player_id: int) -> int:
+	var pages: Array = get_codex_pages(player_id)
+	var free_slots: int = 0
+	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
+		var page_size: int = (pages[page_index] as Array).size() if page_index < pages.size() and pages[page_index] is Array else 0
+		free_slots += maxi(0, DeckManager.CODEX_STAMPS_PER_PAGE - page_size)
+	return free_slots
 
 func return_stamp_to_codex_page(player_id: int, stamp_name: String, preferred_page_index: int = -1, preferred_stamp_index: int = -1) -> bool:
 	if stamp_name.is_empty():

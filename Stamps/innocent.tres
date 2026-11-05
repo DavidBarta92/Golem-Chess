@@ -10,6 +10,7 @@ stamp_name = "Innocent"
 stamp_code = "innocent"
 enabled = false
 duration = 6
+estimated_value = 29.28
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "When this stamp expires, take a Seeker stamp from your deck and add it to your hand."

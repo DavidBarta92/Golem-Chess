@@ -10,6 +10,7 @@ stamp_name = "Sage"
 stamp_code = "sage"
 enabled = false
 duration = 7
+estimated_value = 39.24
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "When the linked piece moves, move your base field onto that piece's new square."

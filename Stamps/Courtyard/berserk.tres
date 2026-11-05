@@ -11,6 +11,7 @@ stamp_name = "Berserk"
 stamp_code = "berserk"
 Set = "Courtyard"
 duration = 1
+estimated_value = 13.86
 stamp_art = ExtResource("4_omue0")
 white_piece_texture = ExtResource("5_d7ph4")
 black_piece_texture = ExtResource("1_3ead7")

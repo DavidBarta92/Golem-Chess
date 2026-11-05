@@ -9,6 +9,7 @@ script = ExtResource("2_stamp")
 stamp_name = "Training Seal"
 stamp_code = "training_seal"
 enabled = false
+estimated_value = 20.14
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "When attached, creates frozen squares around the linked piece."

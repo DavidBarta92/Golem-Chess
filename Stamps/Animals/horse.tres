@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_thd16"]
 [ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_j3x57"]
-[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="3_i8gwp"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_i8gwp"]
 [ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_6qhmn"]
 [ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_k7pjx"]
 
@@ -11,12 +11,14 @@ script = ExtResource("3_i8gwp")
 stamp_name = "Horse"
 stamp_code = "horse"
 Set = "Animals"
-duration = 2
+duration = 1
+estimated_value = 13.16
 stamp_art = ExtResource("4_6qhmn")
 piece_visuals = ExtResource("2_j3x57")
 white_piece_texture = ExtResource("5_k7pjx")
 black_piece_texture = ExtResource("1_thd16")
 description = "No special effect."
+effect_type = "uncapturable"
 square_color_a = Color(0.4509804, 0.21176471, 0.16470589, 1)
 square_color_b = Color(0.4509804, 0.21176471, 0.16470589, 1)
-movement_pattern = [[0, 2, 0, 2, 0], [2, 0, 0, 0, 2], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2], [0, 2, 0, 2, 0]]
+movement_pattern = Array[Array]([[0, 1, 0, 1, 0], [2, 0, 0, 0, 2], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2], [0, 2, 0, 2, 0]])

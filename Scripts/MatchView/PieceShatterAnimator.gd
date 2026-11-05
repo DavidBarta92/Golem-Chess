@@ -567,11 +567,9 @@ func play_stain(ground_origin: Vector2, plane: Transform2D, flat_blow: Vector2) 
 	set_stain_spread(stain, x_axis, y_axis, center, 0.7)
 	stains.append(stain)
 
-	var tween: Tween = create_animation_tween()
-	if tween == null:
-		stains.erase(stain)
-		stain.queue_free()
-		return
+	# The stain's own tween: a board replaced under it (clear_debris) frees the
+	# stain half way through, and the tween has to go with it.
+	var tween: Tween = stain.create_tween()
 	tween.tween_method(func(spread: float): set_stain_spread(stain, x_axis, y_axis, center, spread), 0.7, 1.0, STAIN_SPREAD_DURATION).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tween.parallel().tween_property(stain, "modulate:a", 1.0, STAIN_SPREAD_DURATION * 0.3)
 	tween.tween_method(func(soak: float): set_stain_soak(stain, soak), STAIN_FIRST_SOAK, 1.0, STAIN_SOAK_DURATION).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)

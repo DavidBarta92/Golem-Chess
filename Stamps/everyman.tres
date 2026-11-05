@@ -10,6 +10,7 @@ stamp_name = "Everyman"
 stamp_code = "everyman"
 enabled = false
 duration = 5
+estimated_value = 28.47
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "When the linked piece captures, take a Hero stamp from your deck and add it to your hand."

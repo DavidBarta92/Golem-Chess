@@ -32,6 +32,7 @@ const FREEZE_EFFECT_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/FreezeEff
 const BOARD_EFFECT_ICON_GRID_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/BoardEffectIconGridController.gd")
 const MATCH_STAMP_HUD_SCRIPT = preload("res://Scripts/MatchView/MatchStampHud.gd")
 const MATCH_CODEX_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/MatchCodexController.gd")
+const CROWN_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/CrownController.gd")
 const STAMP_HOVER_PREVIEW_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampHoverPreviewController.gd")
 const PIECE_DURATION_CHANGE_ANIMATOR_SCRIPT = preload("res://Scripts/MatchView/PieceDurationChangeAnimator.gd")
 const STAMP_INTERACTION_CONTROLLER_SCRIPT = preload("res://Scripts/MatchView/StampInteractionController.gd")
@@ -74,6 +75,7 @@ var freeze_effect_animator
 var board_effect_icon_grid_controller
 var stamp_hud_controller
 var match_codex_controller
+var crown_controller
 var stamp_hover_preview_controller
 var piece_duration_change_animator
 var stamp_interaction_controller
@@ -110,6 +112,7 @@ func initialize_startup_controllers() -> void:
 	initialize_stamp_animation_controller()
 	initialize_deck_counter_controller()
 	initialize_match_codex_controller()
+	initialize_crown_controller()
 	initialize_turn_hud_controller()
 	initialize_match_input_controller()
 	initialize_stamp_hand_state_controller()
@@ -906,9 +909,9 @@ func sync_freeze_effect_animator() -> void:
 		"geometry": get_board_geometry(),
 		"visuals": get_board_visuals(),
 		"board_markers_node": match_board.board_markers_node,
-		"freeze_shader": match_board.PIECE_FREEZE_CRACK_SHADER,
 		"square_texture_provider": Callable(effect_animator, "get_attach_rays_square_texture"),
 		"sync_overlay_to_holder_callback": Callable(effect_animator, "sync_sprite_overlay_to_holder"),
+		"footprint_metrics_provider": Callable(get_piece_visuals(), "get_footprint_metrics"),
 		"piece_holder_provider": Callable(match_board, "get_piece_holder_at"),
 		"should_skip_visual_animations_provider": Callable(match_board, "should_skip_visual_animations"),
 		"pending_affix_positions_provider": Callable(match_board, "get_pending_stamp_affix_positions"),
@@ -916,26 +919,6 @@ func sync_freeze_effect_animator() -> void:
 		"board_effects_provider": Callable(match_board, "get_current_board_effects"),
 		"player_id_for_color_callback": Callable(match_board, "get_player_id_for_color"),
 		"is_valid_position_callback": Callable(match_board, "is_valid_position"),
-		"crack_name": match_board.PIECE_FREEZE_CRACK_NAME,
-		"release_name": match_board.PIECE_FREEZE_RELEASE_NAME,
-		"square_name": match_board.PIECE_FREEZE_SQUARE_NAME,
-		"square_release_name": match_board.PIECE_FREEZE_SQUARE_RELEASE_NAME,
-		"crack_z_index": match_board.PIECE_FREEZE_CRACK_Z_INDEX,
-		"square_z_index": match_board.PIECE_FREEZE_SQUARE_Z_INDEX,
-		"crack_duration": match_board.PIECE_FREEZE_CRACK_DURATION,
-		"crack_release_duration": match_board.PIECE_FREEZE_CRACK_RELEASE_DURATION,
-		"crack_start_width": match_board.PIECE_FREEZE_CRACK_START_WIDTH,
-		"crack_end_width": match_board.PIECE_FREEZE_CRACK_END_WIDTH,
-		"crack_depth": match_board.PIECE_FREEZE_CRACK_DEPTH,
-		"crack_scale": match_board.PIECE_FREEZE_CRACK_SCALE,
-		"crack_zebra_scale": match_board.PIECE_FREEZE_CRACK_ZEBRA_SCALE,
-		"crack_zebra_amp": match_board.PIECE_FREEZE_CRACK_ZEBRA_AMP,
-		"crack_profile": match_board.PIECE_FREEZE_CRACK_PROFILE,
-		"crack_slope": match_board.PIECE_FREEZE_CRACK_SLOPE,
-		"refraction_offset": match_board.PIECE_FREEZE_REFRACTION_OFFSET,
-		"reflection_offset": match_board.PIECE_FREEZE_REFLECTION_OFFSET,
-		"square_inset": match_board.PIECE_FREEZE_SQUARE_INSET,
-		"square_alpha": match_board.PIECE_FREEZE_SQUARE_ALPHA,
 		"piece_effect_light_receive_mask": match_board.PIECE_EFFECT_LIGHT_RECEIVE_MASK,
 	})
 
@@ -995,6 +978,17 @@ func sync_match_codex_controller() -> void:
 	match_codex_controller.configure({
 		"match_board": match_board,
 	})
+
+func initialize_crown_controller() -> void:
+	if crown_controller == null:
+		crown_controller = CROWN_CONTROLLER_SCRIPT.new()
+	crown_controller.configure({
+		"match_board": match_board,
+	})
+
+func get_crown_controller():
+	initialize_crown_controller()
+	return crown_controller
 
 func get_match_codex_controller():
 	initialize_match_codex_controller()

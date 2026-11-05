@@ -121,6 +121,9 @@ func respawn_captured_piece(captured_piece: Piece) -> Dictionary:
 			"fragment_group": fragment_group_none,
 		}
 
+	# As on the host (StampEffectResolver.respawn_captured_piece): a captured
+	# golem loses its crown.
+	captured_piece.has_crown = false
 	var released_respawn_pos: Vector2 = release_pending_respawn_piece(captured_piece.color)
 	if released_respawn_pos != invalid_board_pos:
 		return {
@@ -356,20 +359,13 @@ func filter_base_fields_from_effect_squares(squares: Array[Vector2]) -> Array[Ve
 			filtered_squares.append(square_pos)
 	return filtered_squares
 
-func player_has_available_seeker_stamp(owner_color: int) -> bool:
-	for stamp: Stamp in get_stamp_hand(owner_color):
-		if MoveRules.is_seeker_stamp(stamp):
-			return true
-	if DeckManager.has_seeker_stamp(get_stamp_deck(owner_color)):
-		return true
-	for position_value in piece_objects:
-		var piece: Piece = piece_objects[position_value] as Piece
-		if piece != null and piece.color == owner_color and MoveRules.is_seeker_stamp(piece.affixed_stamp):
-			return true
-	return false
-
+## Called once the piece stands on end_pos: a crowned golem of the mover's own
+## that has just stepped onto the enemy base wins.
 func get_winner_after_move(moving_color: int, end_pos: Vector2) -> int:
-	if is_opponent_base_field(moving_color, end_pos) and is_seeker_piece_at(end_pos):
+	if !is_opponent_base_field(moving_color, end_pos):
+		return 0
+	var piece: Piece = piece_objects.get(end_pos, null) as Piece
+	if piece != null and piece.has_crown and piece.color == moving_color:
 		return moving_color
 	return 0
 
@@ -402,11 +398,6 @@ func has_any_piece(owner_color: int) -> bool:
 
 func is_seeker_piece(piece: Piece) -> bool:
 	return piece != null and MoveRules.is_seeker_stamp(piece.affixed_stamp)
-
-func is_seeker_piece_at(piece_position: Vector2) -> bool:
-	if !piece_objects.has(piece_position):
-		return false
-	return is_seeker_piece(piece_objects[piece_position] as Piece)
 
 func current_player_has_valid_turn_action() -> bool:
 	var current_color: int = get_current_turn_color()

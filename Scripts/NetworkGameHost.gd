@@ -41,6 +41,7 @@ func initialize_game(board_data: Array):
 	# Both clocks start full when the match does, however long the host waited
 	# for its opponent before this.
 	game_state.player_clock_seconds = {0: CHESS_CLOCK_SECONDS, 1: CHESS_CLOCK_SECONDS}
+	game_state.begin_crown_points(GameConfig.crown_points_required, GameConfig.crown_second_player_head_start)
 	setup_match_logging()
 
 	DebugLog.info("NetworkGameHost: game state initialized")
@@ -116,6 +117,8 @@ func on_player_action(action: Dictionary):
 			return handle_turn_page(action)
 		"exchange_stamp":
 			return handle_exchange_stamp(action)
+		"place_crown":
+			return handle_place_crown(action)
 		"move_piece":
 			handle_move_piece(action)
 		"end_turn":
@@ -153,7 +156,7 @@ func handle_affix_stamp(action: Dictionary):
 		push_warning("This piece does not belong to the player.")
 		return
 
-	if !piece.can_receive_stamp():
+	if !piece.can_receive_stamp(StampLibrary.get_stamp(stamp_name)):
 		push_warning("This piece cannot receive a stamp right now.")
 		return
 
@@ -171,14 +174,10 @@ func handle_affix_stamp(action: Dictionary):
 		stamp.set_meta("codex_owner_player_id", player_id)
 		stamp.set_meta("codex_page_index", int(consumed_stamp.get("page_index", game_state.get_current_page_index(player_id))))
 		stamp.set_meta("codex_stamp_index", int(consumed_stamp.get("stamp_index", hand_index)))
+		StampEffectResolver.cover_piece_stamp(game_state, player_id, piece, piece_pos)
 		piece.affix_stamp(stamp, true)
 		game_state.affixed_stamp_this_turn[player_id] = true
 		game_state.affixed_stamp_count_this_turn[player_id] = int(game_state.affixed_stamp_count_this_turn.get(player_id, 0)) + 1
-		if MoveRules.is_seeker_stamp(stamp):
-			if player_id == 0:
-				game_state.white_seeker_position = piece_pos
-			else:
-				game_state.black_seeker_position = piece_pos
 		log_stamp_affixed(player_id, stamp, piece, piece_pos, hand_before, deck_before, deck_top_before, piece_stamp_before, piece_turns_before)
 		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_AFFIX, game_state, {
 			"player_id": player_id,
@@ -195,6 +194,7 @@ func handle_affix_stamp(action: Dictionary):
 			log_turn_snapshot("after_affix")
 			broadcast_full_state()
 			return
+		game_state.refresh_se_tenant_crown_points()
 		log_turn_snapshot("after_affix")
 
 		DebugLog.info("Stamp affixed successfully")
@@ -217,6 +217,19 @@ func handle_turn_page(action: Dictionary) -> bool:
 		return false
 
 	log_turn_snapshot("after_turn_page")
+	broadcast_full_state()
+	return true
+
+func handle_place_crown(action: Dictionary) -> bool:
+	var player_id: int = int(action.get("player_id", -1))
+	var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+	DebugLog.info("Place crown: player=%s, position=%s" % [player_id, piece_pos])
+	if !game_state.place_crown(player_id, piece_pos):
+		push_warning("This player cannot crown that golem now.")
+		return false
+	StampEffectResolver.resolve_crown_trigger(game_state, player_id, piece_pos, BoardConfig.BOARD_SIZE)
+	game_state.refresh_se_tenant_crown_points()
+	log_turn_snapshot("after_place_crown")
 	broadcast_full_state()
 	return true
 
@@ -280,26 +293,6 @@ func handle_move_piece(action: Dictionary):
 
 	if captured_piece != null:
 		DebugLog.info("Piece captured at: %s" % to_pos)
-		if captured_piece.affixed_stamp != null:
-			StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_CAPTURED, game_state, {
-				"player_id": 1 - player_id,
-				"piece": captured_piece,
-				"piece_pos": to_pos,
-				"stamp": captured_piece.affixed_stamp,
-				"capturing_piece": piece,
-				"capturing_piece_pos": from_pos,
-			})
-			if game_state.game_over:
-				log_move_result(move_log_context, game_state.win_condition)
-				broadcast_full_state()
-				return
-			if game_state.get_piece(from_pos) != piece:
-				log_move_result(move_log_context, "capturing_piece_removed")
-				game_state.moved_piece_this_turn[player_id] = true
-				log_turn_snapshot("after_move")
-				end_current_turn()
-				return
-
 		if captured_seeker && captured_piece.affixed_stamp != null:
 			return_stamp_to_player_deck(captured_piece_owner_player_id, captured_piece.affixed_stamp, "captured_seeker", to_pos)
 
@@ -308,17 +301,33 @@ func handle_move_piece(action: Dictionary):
 	game_state.set_piece(to_pos, piece)
 	record_last_move(player_id, from_pos, to_pos, moving_piece_visible_to_enemy, captured_piece)
 
-	if MoveRules.is_seeker_stamp(piece.affixed_stamp):
-		var moved_piece_owner_player_id: int = StampEffectResolver.get_player_id_for_color(piece.color)
-		if moved_piece_owner_player_id == 0:
-			game_state.white_seeker_position = to_pos
-		else:
-			game_state.black_seeker_position = to_pos
-
 	if captured_seeker:
-		var captured_player_id: int = captured_piece_owner_player_id
-		StampEffectResolver.clear_seeker_position_if_needed(game_state, captured_player_id, true)
-		DebugLog.info("Seeker piece captured. Seeker stamp returned to player %d deck." % captured_player_id)
+		DebugLog.info("Seeker piece captured. Seeker stamp returned to player %d deck." % captured_piece_owner_player_id)
+
+	# The captured stamp's on_captured effect fires once the capturing golem
+	# stands on its square, so a bomb there takes the capturing golem too.
+	if captured_piece != null && captured_piece.affixed_stamp != null:
+		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_CAPTURED, game_state, {
+			"player_id": captured_piece_owner_player_id,
+			"piece": captured_piece,
+			"piece_pos": to_pos,
+			"stamp": captured_piece.affixed_stamp,
+			"capturing_piece": piece,
+			"capturing_piece_pos": to_pos,
+		})
+		if game_state.game_over:
+			log_move_result(move_log_context, game_state.win_condition)
+			broadcast_full_state()
+			return
+		if game_state.get_piece(to_pos) != piece:
+			captured_piece.detach_stamp()
+			respawn_captured_piece(captured_piece, captured_piece_owner_player_id)
+			StampEffectResolver.resolve_pending_respawns_for_all_players(game_state)
+			log_move_result(move_log_context, "capturing_piece_removed")
+			game_state.moved_piece_this_turn[player_id] = true
+			log_turn_snapshot("after_move")
+			end_current_turn()
+			return
 
 	if captured_piece != null && piece.affixed_stamp != null:
 		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_CAPTURE, game_state, {
@@ -340,16 +349,16 @@ func handle_move_piece(action: Dictionary):
 	StampEffectResolver.resolve_pending_respawns_for_all_players(game_state)
 
 	var opponent_base_field: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
-	var entered_opponent_base: bool = to_pos == opponent_base_field
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
-	if is_seeker_piece(piece) && piece.color == player_color && entered_opponent_base:
-		DebugLog.info("Opponent base reached by Seeker. Player %d wins." % player_id)
+	if piece.has_crown && piece.color == player_color && to_pos == opponent_base_field:
+		DebugLog.info("Opponent base reached by the crowned golem. Player %d wins." % player_id)
 		finish_game(player_id, "base_reached")
 		log_move_result(move_log_context, game_state.win_condition)
 		broadcast_full_state()
 		return
 
-	if piece.affixed_stamp != null:
+	# A capturing step does not set off the on_move effect.
+	if piece.affixed_stamp != null and captured_piece == null:
 		StampEffectResolver.resolve_trigger(StampEffect.TRIGGER_ON_MOVE, game_state, {
 			"player_id": player_id,
 			"piece": piece,
@@ -404,6 +413,9 @@ func end_current_turn():
 	clear_exchanged_stamp_names_this_turn(ending_player_id)
 	clear_piece_exhaustion_for_player(ending_player_id)
 	game_state.completed_turn_counts[ending_player_id] = int(game_state.completed_turn_counts.get(ending_player_id, 0)) + 1
+	# Before the turn's point, so a set broken this turn starts again from 0 the
+	# way a captured crown's meter does.
+	game_state.refresh_se_tenant_crown_points()
 	game_state.switch_turn()
 	advance_logged_turn()
 	StampEffectResolver.tick_board_effects(game_state)
@@ -423,7 +435,6 @@ func clear_piece_exhaustion_for_player(player_id: int) -> void:
 			piece.exhausted_this_turn = false
 
 func handle_expired_seeker_stamp(player_id: int, expired_stamp: Stamp, piece_pos: Vector2) -> void:
-	StampEffectResolver.clear_seeker_position_if_needed(game_state, player_id, true)
 	return_stamp_to_player_deck(player_id, expired_stamp, "expired_seeker", piece_pos)
 
 func consume_moved_piece_duration(player_id: int, piece: Piece, piece_pos: Vector2) -> void:
@@ -482,11 +493,11 @@ func can_affix_any_stamp_for_player(player_id: int) -> bool:
 
 	for position_value in game_state.pieces:
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or !piece.can_receive_stamp():
+		if piece == null or piece.color != player_color:
 			continue
 
 		for stamp: Stamp in hand_stamps:
-			if !MoveRules.stamp_can_be_used(stamp):
+			if !MoveRules.stamp_can_be_used(stamp) or !piece.can_receive_stamp(stamp):
 				continue
 			if MoveRules.can_affix_stamp_for_turn(game_state.pieces, player_color, stamp):
 				return true
@@ -526,6 +537,8 @@ func player_has_valid_turn_action(player_id: int) -> bool:
 	if can_affix_any_stamp_for_player(player_id):
 		return true
 	if can_turn_page_for_player(player_id):
+		return true
+	if game_state.can_place_crown(player_id):
 		return true
 	if can_end_turn_due_to_frozen_piece(player_id):
 		return true
@@ -681,6 +694,10 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 		"last_move": serialize_last_move_for_player(viewer_player_id),
 		"turn_action_state": serialize_turn_action_state(),
 		"player_clock_seconds": game_state.player_clock_seconds.duplicate(),
+		# Both players' points are open information; where a crown is, is not
+		# when its golem is hidden from the viewer (has_crown below).
+		"crown_points": game_state.crown_points.duplicate(),
+		"crown_points_required": game_state.crown_points_required,
 	}
 
 	for pos in game_state.pieces:
@@ -697,6 +714,7 @@ func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
 			"hidden_from_viewer": hidden_from_viewer,
 			"protection_turns_remaining": -1 if hidden_from_viewer else piece.protection_turns_remaining,
+			"has_crown": false if hidden_from_viewer else piece.has_crown,
 		})
 
 	return data
@@ -709,6 +727,7 @@ func serialize_turn_action_state() -> Dictionary:
 		"has_turned_page_this_turn": duplicate_bool_dictionary(game_state.has_turned_page_this_turn),
 		"affixed_stamp_count_this_turn": game_state.affixed_stamp_count_this_turn.duplicate(),
 		"completed_turn_counts": game_state.completed_turn_counts.duplicate(),
+		"crowned_this_turn": duplicate_bool_dictionary(game_state.crowned_this_turn),
 	}
 
 func serialize_player_codex_state() -> Dictionary:
@@ -1043,19 +1062,6 @@ func return_stamp_to_player_deck(player_id: int, stamp: Stamp, reason: String, p
 	game_state.return_stamp_to_codex_page(player_id, stamp.stamp_name, page_index, stamp_index)
 	StampEffectResolver.register_stamp_transfer(game_state, player_id, player_id, stamp.stamp_name, "piece", "codex", piece_pos)
 	log_stamp_returned_to_deck(player_id, stamp, piece_pos, reason)
-
-func player_has_available_seeker_stamp(player_id: int) -> bool:
-	if game_state.player_hands.has(player_id) && DeckManager.has_seeker_stamp(game_state.player_hands[player_id]):
-		return true
-	if game_state.player_decks.has(player_id) && DeckManager.has_seeker_stamp(game_state.player_decks[player_id]):
-		return true
-
-	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
-	for position_value in game_state.pieces:
-		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && MoveRules.is_seeker_stamp(piece.affixed_stamp):
-			return true
-	return false
 
 func setup_logger_if_needed() -> MatchCsvLogger:
 	return game_state.match_logger

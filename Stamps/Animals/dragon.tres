@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://ittara214bp0" path="res://Assets/4b.png" id="1_kvh1h"]
 [ext_resource type="Resource" uid="uid://1fis6807ij4u" path="res://PieceVisualSets/queen.tres" id="2_15n1w"]
-[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="3_v3s1x"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_v3s1x"]
 [ext_resource type="Texture2D" uid="uid://bhxllcso6b8be" path="res://Assets/numare_image.svg" id="4_usmii"]
 [ext_resource type="Texture2D" uid="uid://dhox745pjuy07" path="res://Assets/4w.png" id="5_jw7ae"]
 
@@ -12,11 +12,14 @@ stamp_name = "Dragon"
 stamp_code = "dragon"
 Set = "Animals"
 duration = 2
+estimated_value = 20.26
 stamp_art = ExtResource("4_usmii")
 piece_visuals = ExtResource("2_15n1w")
 white_piece_texture = ExtResource("5_jw7ae")
 black_piece_texture = ExtResource("1_kvh1h")
 description = "No special effect."
+effect_type = "uncapturable"
+effect_trigger = "on_capture"
 square_color_a = Color(0.74509805, 0.16862746, 0.105882354, 1)
 square_color_b = Color(0.74509805, 0.16862746, 0.105882354, 1)
-movement_pattern = [[0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 1, 0, 1, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]]
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 1, 0, 1, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]])

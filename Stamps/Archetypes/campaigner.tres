@@ -8,12 +8,15 @@
 script = ExtResource("2_cls25")
 stamp_name = "Campaigner"
 stamp_code = "campaigner"
+duration = 2
+estimated_value = 22.43
 white_piece_texture = ExtResource("3_65p5f")
 black_piece_texture = ExtResource("1_q800d")
 description = "No special effect."
-effect_trigger = "on_expire"
+effect_type = "remove_enemy_crown_point"
+effect_trigger = "on_move"
 square_color_a = Color(0.91764706, 0.59607846, 0.29803923, 1)
 square_color_b = Color(0.91764706, 0.59607846, 0.29803923, 1)
 effect_params = Array[Array]([[0, 1, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
-movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 3, 1, 1, 0], [0, 3, 0, 1, 0], [0, 3, 3, 1, 0], [0, 0, 0, 0, 0]])
+movement_pattern = Array[Array]([[0, 0, 0, 0, 0], [0, 3, 2, 2, 0], [0, 3, 0, 2, 0], [0, 3, 3, 2, 0], [0, 0, 0, 0, 0]])
 metadata/_custom_type_script = "uid://ceu346mj3mqc5"

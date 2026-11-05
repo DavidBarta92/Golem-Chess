@@ -42,7 +42,7 @@ var last_turn_affixed_stamp_names: Array[String] = []
 # main thread while that thread is alive, so reusing them across turns is
 # safe even though GDScript dictionaries aren't thread-safe under concurrent
 # access. Persisting them (instead of building fresh ones every turn) is what
-# lets AIMoveEvaluator's internal caches (stamp_cache, seeker_route_cache)
+# lets AIMoveEvaluator's internal caches (stamp_cache, base_route_cache)
 # actually carry over between turns.
 var _persistent_thread_evaluator
 var _persistent_thread_planner

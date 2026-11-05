@@ -8,10 +8,13 @@
 script = ExtResource("2_pbxup")
 stamp_name = "Bicycle"
 stamp_code = "bicycle"
+role = 3
 Set = "Structures"
+estimated_value = 32.44
 white_piece_texture = ExtResource("3_dl7c8")
 black_piece_texture = ExtResource("1_ows3t")
 description = "No special effect."
+effect_type = "gain_crown_point"
 square_color_a = Color(0.5568628, 0.90588236, 0.80784315, 1)
 square_color_b = Color(0.5568628, 0.90588236, 0.80784315, 1)
-movement_pattern = [[0, 0, 2, 0, 0], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2], [0, 0, 0, 0, 0], [0, 0, 2, 0, 0]]
+movement_pattern = [[1, 0, 2, 0, 1], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2], [0, 0, 0, 0, 0], [1, 0, 2, 0, 1]]

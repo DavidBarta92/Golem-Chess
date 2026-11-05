@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="Stamp" format=3 uid="uid://br75k4fo86tuq"]
 
 [ext_resource type="Texture2D" uid="uid://bgvpj6vuqpe0i" path="res://Assets/black_knight.png" id="1_black"]
-[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="2_stamp"]
+[ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_stamp"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_white"]
 
 [resource]
@@ -9,10 +9,10 @@ script = ExtResource("2_stamp")
 stamp_name = "Elephant"
 stamp_code = "elephant"
 Set = "Animals"
-duration = 4
+estimated_value = 14.61
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "No special effect."
 square_color_a = Color(0.61960787, 0.627451, 0.5568628, 1)
 square_color_b = Color(0.61960787, 0.627451, 0.5568628, 1)
-movement_pattern = Array[Array]([[1, 0, 0, 0, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [1, 0, 0, 0, 1]])
+movement_pattern = Array[Array]([[1, 0, 0, 0, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [2, 0, 0, 0, 2]])

@@ -13,6 +13,7 @@ stamp_name = "Lance"
 stamp_code = "lance"
 Set = "Courtyard"
 duration = 1
+estimated_value = 11.51
 stamp_art = ExtResource("3_ru14i")
 stamp_art_mask = ExtResource("5_f1jol")
 piece_visuals = ExtResource("2_hs83i")

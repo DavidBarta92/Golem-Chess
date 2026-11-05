@@ -9,10 +9,14 @@ var black_page_counts: Array[int] = [0, 0, 0, 0, 0]
 var white_pages: Array = []
 var black_pages: Array = []
 
-## Pale type on the dark rim, and the page in hand picked out in reverse.
+## Pale type on the dark rim, and the page in hand picked out in reverse, on a
+## white sheet of paper.
 const PAGE_TEXT_COLOR: Color = Color(0.82, 0.80, 0.74)
 const CURRENT_PAGE_TEXT_COLOR: Color = UiPalette.INK
-const CURRENT_PAGE_DISC_COLOR: Color = Color(1.0, 1.0, 1.0)
+const CURRENT_PAGE_MARKER: Texture2D = preload("res://Assets/page_marker.png")
+## The sheet stands this far out of its slot on every side, or its margins leave
+## it smaller than the numbers around it want.
+const CURRENT_PAGE_MARKER_GROW: float = 3.0
 
 var codex_panel: Control
 var counts_row: HBoxContainer
@@ -20,7 +24,7 @@ var turn_page_button: Button
 var count_labels: Array[Label] = []
 var count_slots: Array[PanelContainer] = []
 
-var _current_page_style: StyleBoxFlat
+var _current_page_style: StyleBoxTexture
 var _plain_slot_style: StyleBoxEmpty
 
 func configure(config: Dictionary) -> void:
@@ -47,34 +51,25 @@ func create_ui() -> void:
 			count_slots.append(slot)
 			count_labels.append(slot.get_node("CountLabel") as Label)
 			continue
-	_build_page_disc_style()
+	_current_page_style = StyleBoxTexture.new()
+	_current_page_style.texture = CURRENT_PAGE_MARKER
+	_current_page_style.set_expand_margin_all(CURRENT_PAGE_MARKER_GROW)
+	_plain_slot_style = StyleBoxEmpty.new()
 
 	turn_page_button.text = tr("Turn Page")
 	turn_page_button.pressed.connect(on_turn_page_pressed)
 	counts_row.get_viewport().size_changed.connect(place_counts_row)
 	update_ui()
 
-## A disc, not a rounded box: the slots are square and the radius is half their
-## side, so the page the player is on reads as a filled white dot with its
-## number sitting in it.
-func _build_page_disc_style() -> void:
-	_current_page_style = StyleBoxFlat.new()
-	_current_page_style.bg_color = CURRENT_PAGE_DISC_COLOR
-	var radius: int = int(count_slots[0].custom_minimum_size.y * 0.5)
-	_current_page_style.corner_radius_top_left = radius
-	_current_page_style.corner_radius_top_right = radius
-	_current_page_style.corner_radius_bottom_left = radius
-	_current_page_style.corner_radius_bottom_right = radius
-	_plain_slot_style = StyleBoxEmpty.new()
-
-## Stands the counter on the board's near rim. The room's art is scaled to
-## cover the viewport, so where that rim lands depends on the window's shape;
-## BoardCanvas knows the conversion.
+## Stands the counter on the board's near rim, right over the Turn Page tab. The
+## room's art is scaled to cover the viewport, so where that rim lands depends on
+## the window's shape; BoardCanvas knows the conversion.
 func place_counts_row() -> void:
 	if counts_row == null or !is_instance_valid(counts_row):
 		return
 	var viewport_size: Vector2 = counts_row.get_viewport_rect().size
-	var centre: Vector2 = BoardCanvas.to_viewport(BoardCanvas.RIM_CENTRE, viewport_size)
+	var tab := turn_page_button as MatchTabButton
+	var centre: Vector2 = BoardCanvas.to_viewport(Vector2(tab.canvas_centre_x, BoardCanvas.RIM_CENTRE.y), viewport_size)
 	counts_row.size = counts_row.get_combined_minimum_size()
 	counts_row.position = centre - counts_row.size * 0.5
 
@@ -204,6 +199,8 @@ func can_turn_page_locally(owner_color: int) -> bool:
 	if bool(match_board.has_turned_page_this_turn.get(owner_color, false)):
 		return false
 	if bool(match_board.affixed_stamp_this_turn.get(owner_color, false)):
+		return false
+	if match_board.get_crown_controller().has_crowned_this_turn(owner_color):
 		return false
 	return count_non_empty_pages(owner_color) > 1
 

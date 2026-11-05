@@ -50,16 +50,16 @@ lines = Array[String](["BOSS_01_ROUTE_1", "BOSS_01_ROUTE_2", "BOSS_01_ROUTE_3", 
 chance = 0.4
 
 [sub_resource type="Resource" id="Resource_reaction_02"]
-resource_name = "entered_active_seeker_push"
+resource_name = "entered_crown_push"
 script = ExtResource("2_boss_reaction")
-trigger = "entered_active_seeker_push"
+trigger = "entered_crown_push"
 lines = Array[String](["BOSS_01_PUSH_1", "BOSS_01_PUSH_2", "BOSS_01_PUSH_3", "BOSS_01_PUSH_4", "BOSS_01_PUSH_5"])
 chance = 0.7
 
 [sub_resource type="Resource" id="Resource_reaction_03"]
-resource_name = "entered_endgame_seeker_finish"
+resource_name = "entered_endgame_finish"
 script = ExtResource("2_boss_reaction")
-trigger = "entered_endgame_seeker_finish"
+trigger = "entered_endgame_finish"
 lines = Array[String](["BOSS_01_ENDGAME_1", "BOSS_01_ENDGAME_2"])
 chance = 0.9
 

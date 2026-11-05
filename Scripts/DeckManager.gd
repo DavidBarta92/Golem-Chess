@@ -5,7 +5,6 @@ const HAND_SIZE = 3
 const STARTING_HAND_SIZE = 3
 const CODEX_PAGE_COUNT = 5
 const CODEX_STAMPS_PER_PAGE = 3
-const DEFAULT_SEEKER_STAMP_NAME = "Prince"
 const RANDOM_DATABASE_EXCLUDED_STAMP_NAMES: Array[String] = [
 	"Training Seal",
 	"Test_001",
@@ -42,25 +41,18 @@ static func create_random_database_deck() -> Array[String]:
 	if StampLibrary.all_stamps.is_empty():
 		StampLibrary.load_all_stamps()
 
-	var seeker_names: Array[String] = get_database_stamp_names_by_seeker_role(true)
-	var non_seeker_names: Array[String] = get_database_stamp_names_by_seeker_role(false)
-	if seeker_names.is_empty() or non_seeker_names.is_empty():
+	var stamp_names: Array[String] = get_random_database_stamp_names()
+	if stamp_names.is_empty():
 		return create_starting_deck()
 
-	seeker_names.shuffle()
 	var deck: Array[String] = []
-	deck.append(seeker_names[0])
 	var remaining_stamps: Array[String] = []
-	remaining_stamps.assign(non_seeker_names)
-	remaining_stamps.shuffle()
-
 	while deck.size() < DECK_SIZE:
 		if remaining_stamps.is_empty():
-			remaining_stamps.assign(non_seeker_names)
+			remaining_stamps.assign(stamp_names)
 			remaining_stamps.shuffle()
 		deck.append(str(remaining_stamps.pop_front()))
 
-	deck.shuffle()
 	DebugLog.info("Random database codex created: %s" % [deck])
 	return deck
 
@@ -89,7 +81,7 @@ static func flatten_codex_pages(pages: Array, excluded_page_index: int = -1) -> 
 			stamp_names.append(str(stamp_name_value))
 	return stamp_names
 
-static func get_database_stamp_names_by_seeker_role(wants_seeker: bool) -> Array[String]:
+static func get_random_database_stamp_names() -> Array[String]:
 	var stamp_names: Array[String] = []
 	for stamp_value in StampLibrary.all_stamps.values():
 		var stamp: Stamp = stamp_value as Stamp
@@ -99,8 +91,7 @@ static func get_database_stamp_names_by_seeker_role(wants_seeker: bool) -> Array
 			continue
 		if !MoveRules.stamp_can_be_used(stamp):
 			continue
-		if MoveRules.is_seeker_stamp(stamp) == wants_seeker:
-			stamp_names.append(stamp.stamp_name)
+		stamp_names.append(stamp.stamp_name)
 	stamp_names.sort()
 	return stamp_names
 
@@ -136,19 +127,3 @@ static func play_stamp(hand: Array, stamp_name: String, _deck: Array) -> bool:
 static func return_stamp_to_deck(deck: Array, stamp_name: String):
 	deck.append(stamp_name)
 	DebugLog.info("Stamp returned to deck: %s" % stamp_name)
-
-static func find_seeker_stamp_index(deck: Array) -> int:
-	for i in deck.size():
-		if is_seeker_stamp_name(deck[i]):
-			return i
-	return -1
-
-static func is_seeker_stamp_name(stamp_name: String) -> bool:
-	var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
-	return MoveRules.is_seeker_stamp(stamp)
-
-static func has_seeker_stamp(stamp_names: Array) -> bool:
-	for stamp_name_value in stamp_names:
-		if is_seeker_stamp_name(str(stamp_name_value)):
-			return true
-	return false

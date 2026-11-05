@@ -13,6 +13,7 @@ stamp_name = "Assassin"
 stamp_code = "assassin"
 Set = "Courtyard"
 duration = 2
+estimated_value = 28.62
 stamp_art = ExtResource("3_5vmtu")
 stamp_art_mask = ExtResource("5_3xs4k")
 piece_visuals = ExtResource("2_3xs4k")

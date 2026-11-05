@@ -10,6 +10,7 @@ stamp_name = "Debater"
 stamp_code = "debater"
 enabled = false
 duration = 6
+estimated_value = 22.49
 white_piece_texture = ExtResource("3_50y3g")
 black_piece_texture = ExtResource("1_xnrh2")
 description = "When the linked piece is captured, move your base field to the lower-right target square."

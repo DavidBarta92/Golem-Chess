@@ -12,6 +12,7 @@ stamp_name = "Warlord"
 stamp_code = "warlord"
 Set = "Courtyard"
 duration = 1
+estimated_value = 12.86
 stamp_art = ExtResource("3_c3mmp")
 piece_visuals = ExtResource("2_e34sr")
 white_piece_texture = ExtResource("3_white")

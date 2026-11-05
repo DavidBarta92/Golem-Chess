@@ -50,7 +50,7 @@ class_name BossDefinition
 ## How well this boss guards its base, on top of what its difficulty level
 ## allows. 1.0 is the level as it is; lower, and on that share of its turns
 ## only does the boss look at what the player threatens against its base - at
-## 0.4, six turns in ten it does not see the Seeker coming. For the first
+## 0.4, six turns in ten it does not see the crown coming. For the first
 ## opponents, whom a new player should beat without many retries.
 @export_range(0.0, 1.0, 0.05) var ai_defense: float = 1.0
 

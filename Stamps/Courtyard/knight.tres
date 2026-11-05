@@ -12,6 +12,7 @@ stamp_name = "Knight"
 stamp_code = "knight"
 Set = "Courtyard"
 duration = 2
+estimated_value = 29.77
 stamp_art = ExtResource("3_joy3f")
 piece_visuals = ExtResource("2_lifin")
 white_piece_texture = ExtResource("3_lifin")

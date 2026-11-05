@@ -12,6 +12,7 @@ stamp_name = "Archer"
 stamp_code = "archer"
 Set = "Courtyard"
 duration = 1
+estimated_value = 10.45
 stamp_art = ExtResource("3_u33tx")
 stamp_art_mask = ExtResource("4_ypgqs")
 white_piece_texture = ExtResource("1_white")

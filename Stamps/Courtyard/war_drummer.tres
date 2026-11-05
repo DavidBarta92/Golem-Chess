@@ -10,6 +10,7 @@ script = ExtResource("2_stamp")
 stamp_name = "War Drummer"
 stamp_code = "war_drummer"
 Set = "Courtyard"
+estimated_value = 11.01
 stamp_art = ExtResource("3_al1pk")
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")

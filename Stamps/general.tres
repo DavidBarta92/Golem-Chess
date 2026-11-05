@@ -9,6 +9,7 @@ script = ExtResource("3_stamp")
 stamp_name = "General"
 stamp_code = "general"
 enabled = false
+estimated_value = 40.35
 white_piece_texture = ExtResource("1_white")
 black_piece_texture = ExtResource("2_black")
 description = "No special effect."

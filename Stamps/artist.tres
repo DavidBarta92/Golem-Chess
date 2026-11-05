@@ -11,6 +11,7 @@ stamp_name = "Artist"
 stamp_code = "artist"
 enabled = false
 duration = 5
+estimated_value = 25.81
 stamp_art = ExtResource("2_kf3i2")
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")

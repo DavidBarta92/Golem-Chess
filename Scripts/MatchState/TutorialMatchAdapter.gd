@@ -27,6 +27,7 @@ func refresh_dependent_ui() -> void:
 	match_board.update_end_turn_button()
 	# The page-turn tab rises and sinks with whether turning is allowed.
 	match_board.get_match_codex_controller().update_ui()
+	match_board.get_crown_controller().refresh()
 	if match_board.state:
 		match_board.show_options()
 
@@ -54,6 +55,9 @@ func is_action_allowed(action_name: String, context: Dictionary = {}, emit_rejec
 		match_board.TUTORIAL_ACTION_EXCHANGE_STAMP:
 			if context.has("stamp_name"):
 				allowed = allowed and string_allowed(["allowed_exchange_stamp_names", "allowed_stamp_names", "allowed_stamps"], str(context.get("stamp_name", "")))
+		match_board.TUTORIAL_ACTION_PLACE_CROWN:
+			if context.has("piece_pos"):
+				allowed = vector_allowed(["allowed_crown_positions"], context.get("piece_pos"))
 
 	if !allowed:
 		return reject_action(action_name, context, emit_rejection)
@@ -128,6 +132,8 @@ func apply_setup(setup: Dictionary) -> void:
 		set_stamp_deck(-1, setup.get("black_deck", []))
 	if setup.has("turn_color"):
 		set_turn(int(setup.get("turn_color", 1)))
+	if setup.has("crown_points"):
+		match_board.get_crown_controller().set_local_points(setup.get("crown_points", {}), GameConfig.crown_points_required)
 	if bool(setup.get("reset_turn_state", true)):
 		reset_turn_state()
 

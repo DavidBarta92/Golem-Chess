@@ -56,6 +56,7 @@ func display_board() -> void:
 			holder.texture = texture_resolver.get_piece_texture_for_position(board_pos, int(match_board.board[i][j])) if texture_resolver != null else null
 			apply_piece_visual_size(holder, board_pos)
 			apply_piece_respawn_lock_opacity(holder, board_pos)
+			match_board.get_crown_controller().apply_crown_mark(holder, board_pos)
 			if match_board.get_piece_respawn_fragment_coordinator().should_hide_piece_for_shatter_respawn(board_pos):
 				continue
 			apply_piece_light_occluder(holder, board_pos)
@@ -64,6 +65,7 @@ func display_board() -> void:
 			apply_piece_freeze_overlay(holder, board_pos)
 			apply_selected_piece_glow(holder, board_pos)
 			apply_piece_hover_dim(holder, board_pos)
+	match_board.get_crown_controller().refresh()
 
 func refresh_piece_holder_visual(holder: Sprite2D, board_pos: Vector2) -> void:
 	if match_board == null or piece_visuals == null or holder == null or !is_instance_valid(holder):
@@ -71,12 +73,14 @@ func refresh_piece_holder_visual(holder: Sprite2D, board_pos: Vector2) -> void:
 
 	piece_visuals.apply_holder_base_visual(holder, board_pos)
 	apply_piece_respawn_lock_opacity(holder, board_pos)
+	match_board.get_crown_controller().apply_crown_mark(holder, board_pos)
 	if match_board.get_piece_respawn_fragment_coordinator().should_hide_piece_for_shatter_respawn(board_pos):
 		apply_piece_exhausted_material(holder, board_pos)
 		remove_piece_light_occluder(holder)
 		remove_piece_shadow(holder)
 		remove_piece_freeze_overlay(holder)
 		remove_piece_freeze_square_overlay(board_pos)
+		match_board.get_freeze_effect_animator().forget(board_pos)
 		remove_selected_piece_glow(holder)
 		return
 	apply_piece_light_occluder(holder, board_pos)
@@ -158,6 +162,7 @@ func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool =
 	var tint: Color = piece_hover_dim_color if should_dim else Color(1.0, 1.0, 1.0)
 	var shadow_light: PointLight2D = piece_visuals.get_shadow_light(holder) if piece_visuals != null else null
 	var target_shadow_energy: float = 0.0 if should_dim else piece_shadow_light_energy
+	var ice: Sprite2D = match_board.get_freeze_effect_animator().get_overlay(holder)
 
 	# get_meta() reads a null default as "no default" and reports the key as
 	# missing, so ask first.
@@ -168,6 +173,8 @@ func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool =
 	if !animate:
 		var current: Color = holder.self_modulate
 		holder.self_modulate = Color(tint.r, tint.g, tint.b, current.a)
+		if ice != null:
+			ice.self_modulate = holder.self_modulate
 		if shadow_light != null:
 			shadow_light.energy = target_shadow_energy
 		return
@@ -180,6 +187,10 @@ func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool =
 	tween.tween_property(holder, "self_modulate:r", tint.r, piece_hover_dim_tween_duration)
 	tween.tween_property(holder, "self_modulate:g", tint.g, piece_hover_dim_tween_duration)
 	tween.tween_property(holder, "self_modulate:b", tint.b, piece_hover_dim_tween_duration)
+	if ice != null:
+		tween.tween_property(ice, "self_modulate:r", tint.r, piece_hover_dim_tween_duration)
+		tween.tween_property(ice, "self_modulate:g", tint.g, piece_hover_dim_tween_duration)
+		tween.tween_property(ice, "self_modulate:b", tint.b, piece_hover_dim_tween_duration)
 	if shadow_light != null:
 		tween.tween_property(shadow_light, "energy", target_shadow_energy, piece_hover_dim_tween_duration)
 	holder.set_meta(PIECE_HOVER_DIM_TWEEN_META, tween)

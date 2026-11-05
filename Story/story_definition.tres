@@ -93,14 +93,22 @@ blocks_hub_until_completed = true
 script = ExtResource("6_comic_node")
 id = "comic_ch00_collection"
 display_name = "A Collection bemutatása"
+auto_continue_after_completion = true
 blocks_hub_until_completed = true
 unlocks_feature = "collection"
+
+[sub_resource type="Resource" id="Resource_feedback_after_boss_02"]
+script = ExtResource("12_scene_node")
+scene_path = "res://Scenes/MatchEndFeedback.tscn"
+id = "feedback_after_boss_02"
+display_name = "Köszönet és kérdőív"
+blocks_hub_until_completed = true
 
 [sub_resource type="Resource" id="Resource_chapter_00"]
 script = ExtResource("1_story_chapter")
 id = "chapter_00"
 title = "Bevezetés"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_first_run_language"), SubResource("Resource_comic_ch00_intro"), SubResource("Resource_comic_ch00_memory"), SubResource("Resource_tutorial_basics"), SubResource("Resource_boss_01_match"), SubResource("Resource_reward_01_grandpa_deck"), SubResource("Resource_comic_ch00_bridge"), SubResource("Resource_boss_02_match"), SubResource("Resource_comic_ch00_collection")])
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_first_run_language"), SubResource("Resource_comic_ch00_intro"), SubResource("Resource_comic_ch00_memory"), SubResource("Resource_tutorial_basics"), SubResource("Resource_boss_01_match"), SubResource("Resource_reward_01_grandpa_deck"), SubResource("Resource_comic_ch00_bridge"), SubResource("Resource_boss_02_match"), SubResource("Resource_comic_ch00_collection"), SubResource("Resource_feedback_after_boss_02")])
 
 [sub_resource type="Resource" id="Resource_comic_ch01_intro"]
 script = ExtResource("6_comic_node")

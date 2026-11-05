@@ -10,6 +10,7 @@ stamp_name = "Explorer"
 stamp_code = "explorer"
 enabled = false
 duration = 2
+estimated_value = 11.74
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "When this stamp expires, give a random stamp from your hand to your opponent."

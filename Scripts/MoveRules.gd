@@ -33,12 +33,14 @@ static func is_se_tenant_stamp(stamp: Stamp) -> bool:
 static func is_overseal_stamp(stamp: Stamp) -> bool:
 	return stamp != null && stamp.role == Stamp.Role.OVERSEAL
 
-static func has_affixed_seeker(pieces: Dictionary, player_color: int) -> bool:
-	for position_value: Vector2 in pieces:
-		var piece: Piece = get_piece_at(pieces, position_value)
-		if piece != null && piece.color == player_color && is_seeker_stamp(piece.affixed_stamp):
-			return true
-	return false
+## True when the move takes a crowned golem of the mover's own onto the enemy
+## base - the one way to win. A shared golem can be moved by either player, but
+## its crown, like its colour, stays its owner's.
+static func is_winning_crown_move(pieces: Dictionary, from_pos: Vector2, to_pos: Vector2, player_id: int, enemy_base: Vector2) -> bool:
+	if to_pos != enemy_base:
+		return false
+	var piece: Piece = get_piece_at(pieces, from_pos)
+	return piece != null && piece.has_crown && piece.color == BoardConfig.get_color_for_player_id(player_id)
 
 static func can_affix_stamp_for_turn(pieces: Dictionary, player_color: int, stamp: Stamp) -> bool:
 	return stamp_can_be_used(stamp)
@@ -129,11 +131,11 @@ static func get_affix_stamp_moves(pieces: Dictionary, player_color: int, hand_st
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || piece.color != player_color || !piece.can_receive_stamp():
+		if piece == null || piece.color != player_color:
 			continue
 
 		for stamp: Stamp in hand_stamps:
-			if !stamp_can_be_used(stamp):
+			if !stamp_can_be_used(stamp) || !piece.can_receive_stamp(stamp):
 				continue
 			if !can_affix_stamp_for_turn(pieces, player_color, stamp):
 				continue
@@ -152,11 +154,11 @@ static func can_affix_any_stamp(pieces: Dictionary, player_color: int, hand_stam
 	for position_value: Vector2 in pieces:
 		var piece_position: Vector2 = position_value
 		var piece: Piece = get_piece_at(pieces, piece_position)
-		if piece == null || piece.color != player_color || !piece.can_receive_stamp():
+		if piece == null || piece.color != player_color:
 			continue
 
 		for stamp: Stamp in hand_stamps:
-			if !stamp_can_be_used(stamp):
+			if !stamp_can_be_used(stamp) || !piece.can_receive_stamp(stamp):
 				continue
 			if can_affix_stamp_for_turn(pieces, player_color, stamp):
 				return true
@@ -185,7 +187,9 @@ static func has_frozen_movable_piece(pieces: Dictionary, player_color: int, boar
 		var piece: Piece = get_piece_at(pieces, piece_position)
 		if piece == null || !StampEffectResolver.can_player_control_piece(piece, player_id):
 			continue
-		if piece.affixed_stamp != null and piece.exhausted_this_turn:
+		# Stamped or crowned this turn: either leaves the golem waiting out the
+		# turn, and either is something done that the turn can end on.
+		if (piece.affixed_stamp != null or piece.has_crown) and piece.exhausted_this_turn:
 			return true
 		if piece.can_move() and StampEffectResolver.is_square_frozen(board_effects, piece_position, player_id):
 			return true

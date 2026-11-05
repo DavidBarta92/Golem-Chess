@@ -10,6 +10,7 @@ stamp_name = "Gatebreaker"
 stamp_code = "gatebreaker"
 enabled = false
 duration = 5
+estimated_value = 25.45
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "Breakthrough (late)"

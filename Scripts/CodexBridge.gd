@@ -203,12 +203,12 @@ func serialize_legal_actions(host) -> Dictionary:
 	for position_value in game_state.pieces:
 		var pos: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = game_state.pieces[position_value] as Piece
-		if piece == null or piece.color != player_color or piece.affixed_stamp != null:
+		if piece == null or piece.color != player_color:
 			continue
 		for hand_index in range(hand_stamp_names.size()):
 			var stamp_name: String = str(hand_stamp_names[hand_index])
 			var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
-			if !MoveRules.stamp_can_be_used(stamp) or !MoveRules.can_affix_stamp_for_turn(game_state.pieces, player_color, stamp):
+			if !MoveRules.stamp_can_be_used(stamp) or !piece.can_receive_stamp(stamp) or !MoveRules.can_affix_stamp_for_turn(game_state.pieces, player_color, stamp):
 				continue
 			legal_actions["affix_stamp"].append({
 				"type": "affix_stamp",

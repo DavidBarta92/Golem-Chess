@@ -86,7 +86,7 @@ const POINTER_REFERENCE_TILE_SIZE: Vector2 = Vector2(70.0, 66.0)
 const POINTER_REFERENCE_SCALE: float = 0.75
 const POINTER_REFERENCE_FINGERTIP_OFFSET: Vector2 = Vector2(-15.5, -12.0)
 ## Parts of the interface the steps bring in later, if at all.
-const HUD_HELD_BACK: Array[String] = ["EndTurnTab", "ChessClock"]
+const HUD_HELD_BACK: Array[String] = ["EndTurnTab", "ChessClock", "OwnCrownMeter", "OpponentCrownMeter"]
 const INVALID_BOARD_POS: Vector2 = Vector2(-1, -1)
 
 @export var line_keys: Array[String] = [

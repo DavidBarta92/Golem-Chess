@@ -9,6 +9,7 @@ script = ExtResource("1_nm70a")
 stamp_name = "Pawn"
 stamp_code = "pawn"
 enabled = false
+estimated_value = 4.84
 white_piece_texture = ExtResource("3_vedvu")
 black_piece_texture = ExtResource("1_svcd4")
 description = "No special effect."

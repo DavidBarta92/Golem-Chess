@@ -25,16 +25,16 @@ lines = Array[String](["BOSS_02_ROUTE_1", "BOSS_02_ROUTE_2", "BOSS_02_ROUTE_3", 
 chance = 0.4
 
 [sub_resource type="Resource" id="Resource_reaction_02"]
-resource_name = "entered_active_seeker_push"
+resource_name = "entered_crown_push"
 script = ExtResource("2_boss_reaction")
-trigger = "entered_active_seeker_push"
+trigger = "entered_crown_push"
 lines = Array[String](["BOSS_02_PUSH_1", "BOSS_02_PUSH_2", "BOSS_02_PUSH_3", "BOSS_02_PUSH_4", "BOSS_02_PUSH_5"])
 chance = 0.7
 
 [sub_resource type="Resource" id="Resource_reaction_03"]
-resource_name = "entered_endgame_seeker_finish"
+resource_name = "entered_endgame_finish"
 script = ExtResource("2_boss_reaction")
-trigger = "entered_endgame_seeker_finish"
+trigger = "entered_endgame_finish"
 lines = Array[String](["BOSS_02_ENDGAME_1", "BOSS_02_ENDGAME_2"])
 chance = 0.9
 
@@ -108,7 +108,7 @@ portrait = ExtResource("3_gabi_portrait")
 deck_stamps = Array[ExtResource("1_e15w3")]([ExtResource("9_stamp_01"), ExtResource("9_stamp_02"), ExtResource("9_stamp_03"), ExtResource("9_stamp_04"), ExtResource("9_stamp_05"), ExtResource("9_stamp_06"), ExtResource("9_stamp_07"), ExtResource("9_stamp_08"), ExtResource("9_stamp_09"), ExtResource("9_stamp_10"), ExtResource("9_stamp_02"), ExtResource("9_stamp_04"), ExtResource("9_stamp_11"), ExtResource("9_stamp_12"), ExtResource("9_stamp_10")])
 ai_difficulty_level = 2
 ai_defense = 0.7
-rating = 830
+rating = 1000
 show_clock = false
 can_leave_match = false
 intro_lines = Array[String](["BOSS_02_INTRO_1", "BOSS_02_INTRO_2", "BOSS_02_INTRO_3", "BOSS_02_INTRO_4", "BOSS_02_INTRO_5"])

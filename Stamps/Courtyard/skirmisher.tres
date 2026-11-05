@@ -11,6 +11,7 @@ stamp_name = "Skirmisher"
 stamp_code = "skirmisher"
 Set = "Courtyard"
 duration = 1
+estimated_value = 11.07
 stamp_art = ExtResource("3_ob23g")
 white_piece_texture = ExtResource("3_ca4w8")
 black_piece_texture = ExtResource("1_3g73j")

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder icon for the crown_condition trigger; to be replaced by drawn art. -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 103.8 140.9">
+  <defs>
+    <style>
+      .st0 {
+        fill: #121279;
+      }
+
+      .st1 {
+        opacity: .7;
+      }
+
+      .st2 {
+        fill: none;
+        stroke: #121279;
+      }
+    </style>
+  </defs>
+  <g class="st1">
+    <circle class="st2" cx="86.3" cy="15.0" r="27" stroke-width="1.8" />
+    <circle class="st2" cx="86.3" cy="15.0" r="21.4" stroke-width="0.8" />
+    <path class="st0" transform="rotate(160.0 94.58 37.74)" d="M92.98,39.34 L92.98,37.26 L93.78,38.06 L94.58,36.46 L95.38,38.06 L96.18,37.26 L96.18,39.34 Z" />
+    <path class="st0" transform="rotate(190.0 82.10 38.83)" d="M80.50,40.43 L80.50,38.35 L81.30,39.15 L82.10,37.55 L82.90,39.15 L83.70,38.35 L83.70,40.43 Z" />
+    <path class="st0" transform="rotate(220.0 70.74 33.54)" d="M69.14,35.14 L69.14,33.06 L69.94,33.86 L70.74,32.26 L71.54,33.86 L72.34,33.06 L72.34,35.14 Z" />
+    <path class="st0" transform="rotate(250.0 63.56 23.28)" d="M61.96,24.88 L61.96,22.80 L62.76,23.60 L63.56,22.00 L64.36,23.60 L65.16,22.80 L65.16,24.88 Z" />
+    <path class="st0" transform="rotate(280.0 62.47 10.80)" d="M60.87,12.40 L60.87,10.32 L61.67,11.12 L62.47,9.52 L63.27,11.12 L64.07,10.32 L64.07,12.40 Z" />
+  </g>
+</svg>

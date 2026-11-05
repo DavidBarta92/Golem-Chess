@@ -100,6 +100,7 @@ func get_deck_ownership_info(deck: Dictionary) -> Dictionary:
 	var over_copy_limit_count: int = 0
 	var missing_stamp_codes: Array[String] = []
 	var stamp_counts: Dictionary = {}
+	var stamp_sets: Array[String] = []
 	var stamps = deck.get("stamps", [])
 	if stamps is Array:
 		for deck_stamp in stamps:
@@ -118,6 +119,10 @@ func get_deck_ownership_info(deck: Dictionary) -> Dictionary:
 			else:
 				missing_stamp_codes.append(stamp_code)
 
+			var stamp_set: String = _get_stamp_set_for_code(stamp_code)
+			if !stamp_set.is_empty() && !stamp_sets.has(stamp_set):
+				stamp_sets.append(stamp_set)
+
 	var missing_count: int = missing_stamp_codes.size()
 	return {
 		"total_count": total_count,
@@ -127,8 +132,21 @@ func get_deck_ownership_info(deck: Dictionary) -> Dictionary:
 		"over_copy_limit_count": over_copy_limit_count,
 		"missing_stamp_codes": missing_stamp_codes,
 		"is_collection_complete": missing_count == 0,
-		"is_playable": total_count == MAX_DECK_SIZE && owned_count == MAX_DECK_SIZE && missing_count == 0 && over_copy_limit_count == 0,
+		"stamp_sets": stamp_sets,
+		# A codex holds stamps of one set only; one saved before that rule may not.
+		"is_single_set": stamp_sets.size() <= 1,
+		"is_playable": total_count == MAX_DECK_SIZE && owned_count == MAX_DECK_SIZE && missing_count == 0 && over_copy_limit_count == 0 && stamp_sets.size() <= 1,
 	}
+
+## The set (Animals, Flora, ...) of one codex entry; empty when its stamp is unknown.
+func get_deck_stamp_set(deck_stamp) -> String:
+	return _get_stamp_set_for_code(_get_deck_stamp_code(deck_stamp))
+
+func _get_stamp_set_for_code(stamp_code: String) -> String:
+	if stamp_code.is_empty():
+		return ""
+	var stamp: Stamp = StampLibrary.get_stamp_by_code(stamp_code)
+	return stamp.Set if stamp != null else ""
 
 func get_owned_stamps_from_deck(deck: Dictionary) -> Array:
 	ensure_loaded()

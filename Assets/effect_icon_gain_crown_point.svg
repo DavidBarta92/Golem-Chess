@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder icon for the crown point effects; to be replaced by drawn art. -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 103.8 140.9">
+  <defs>
+    <style>
+      .st0 {
+        fill: #121279;
+      }
+
+      .st1 {
+        opacity: .7;
+      }
+
+      .st2 {
+        fill: none;
+        stroke: #121279;
+      }
+    </style>
+  </defs>
+  <g class="st1" transform="translate(77.4,7.65) scale(1.05)">
+    <path class="st0" d="M2.6,0.8 L5.2,4 L3.5,4 L3.5,9.6 L1.7,9.6 L1.7,4 L0,4 Z" />
+    <path class="st0" d="M6.6,10 L6.6,4.3 L9.1,7 L11.45,2.7 L13.8,7 L16.3,4.3 L16.3,10 Z" />
+    <path class="st0" d="M6.6,10.9 L16.3,10.9 L16.3,13 L6.6,13 Z" />
+    <circle class="st0" cx="6.6" cy="3.9" r="0.85" />
+    <circle class="st0" cx="11.45" cy="2.2" r="0.85" />
+    <circle class="st0" cx="16.3" cy="3.9" r="0.85" />
+  </g>
+</svg>

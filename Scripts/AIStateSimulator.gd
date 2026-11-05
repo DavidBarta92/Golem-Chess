@@ -19,6 +19,7 @@ static func clone_piece(piece: Piece) -> Piece:
 	cloned_piece.respawn_cooldown_turns = piece.respawn_cooldown_turns
 	cloned_piece.protection_turns_remaining = piece.protection_turns_remaining
 	cloned_piece.protection_skip_next_tick = piece.protection_skip_next_tick
+	cloned_piece.has_crown = piece.has_crown
 	return cloned_piece
 
 static func clone_game_state(source_state: GameStateData) -> GameStateData:
@@ -37,8 +38,10 @@ static func clone_game_state(source_state: GameStateData) -> GameStateData:
 	cloned_state.current_turn_player = source_state.current_turn_player
 	cloned_state.completed_turn_counts = source_state.completed_turn_counts.duplicate()
 	cloned_state.player_clock_seconds = source_state.player_clock_seconds.duplicate()
-	cloned_state.white_seeker_position = source_state.white_seeker_position
-	cloned_state.black_seeker_position = source_state.black_seeker_position
+	cloned_state.crown_points = source_state.crown_points.duplicate()
+	cloned_state.crown_points_required = source_state.crown_points_required
+	cloned_state.crowned_this_turn = source_state.crowned_this_turn.duplicate()
+	cloned_state.se_tenant_set_whole = source_state.se_tenant_set_whole.duplicate()
 	cloned_state.player_base_fields = duplicate_vector2_dictionary(source_state.player_base_fields)
 	cloned_state.board_effects = duplicate_board_effects(source_state.board_effects)
 	cloned_state.recent_stamp_transfers = []
@@ -162,6 +165,8 @@ static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: D
 				apply_affix_action(simulated_state, player_id, action, board_size)
 			"turn_page":
 				apply_turn_page_action(simulated_state, player_id)
+			"place_crown":
+				apply_place_crown_action(simulated_state, player_id, action)
 			"exchange_stamp":
 				apply_exchange_action(simulated_state, player_id, action)
 			"move_piece":
@@ -178,12 +183,9 @@ static func apply_turn_plan(source_state: GameStateData, player_id: int, plan: D
 static func apply_affix_action(game_state: GameStateData, player_id: int, action: Dictionary, board_size: int) -> void:
 	var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
 	var piece: Piece = game_state.get_piece(piece_pos)
-	if piece == null or !piece.can_receive_stamp():
-		return
-
 	var stamp_name: String = str(action.get("stamp_name", ""))
 	var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
-	if stamp == null:
+	if piece == null or stamp == null or !piece.can_receive_stamp(stamp):
 		return
 
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
@@ -201,6 +203,7 @@ static func apply_affix_action(game_state: GameStateData, player_id: int, action
 	affixed_stamp.set_meta("codex_owner_player_id", player_id)
 	affixed_stamp.set_meta("codex_page_index", int(consumed_stamp.get("page_index", game_state.get_current_page_index(player_id))))
 	affixed_stamp.set_meta("codex_stamp_index", int(consumed_stamp.get("stamp_index", removed_hand_index)))
+	StampEffectResolver.cover_piece_stamp(game_state, player_id, piece, piece_pos)
 	piece.affixed_stamp = affixed_stamp
 	piece.turns_remaining = stamp.duration
 	piece.exhausted_this_turn = true
@@ -208,12 +211,20 @@ static func apply_affix_action(game_state: GameStateData, player_id: int, action
 	if game_state.game_over:
 		return
 	StampEffectResolver.resolve_symbol_count_trigger(game_state, player_id, piece, piece_pos, affixed_stamp, board_size)
-	_refresh_seeker_positions(game_state)
+	game_state.refresh_se_tenant_crown_points()
 
 static func apply_turn_page_action(game_state: GameStateData, player_id: int) -> void:
 	if game_state == null:
 		return
 	game_state.turn_page(player_id)
+
+static func apply_place_crown_action(game_state: GameStateData, player_id: int, action: Dictionary) -> void:
+	if game_state == null:
+		return
+	var piece_pos: Vector2 = StampEffectResolver.as_vector2(action.get("piece_pos", Vector2(-1, -1)), Vector2(-1, -1))
+	if game_state.place_crown(player_id, piece_pos):
+		StampEffectResolver.resolve_crown_trigger(game_state, player_id, piece_pos)
+		game_state.refresh_se_tenant_crown_points()
 
 static func apply_exchange_action(game_state: GameStateData, player_id: int, action: Dictionary) -> void:
 	return
@@ -255,33 +266,34 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 
 	var captured_piece: Piece = game_state.get_piece(to_pos)
 	var captured_player_id: int = StampEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
+	var captured_stamp: Stamp = captured_piece.affixed_stamp if captured_piece != null else null
 	if captured_piece != null:
 		handle_captured_piece_stamp(game_state, captured_piece, captured_player_id, to_pos)
-		if game_state.game_over:
-			return
 	game_state.remove_piece(from_pos)
 	moving_piece.position = to_pos
 	game_state.set_piece(to_pos, moving_piece)
 	game_state.moved_piece_this_turn[player_id] = true
+	# As on the host: the captured stamp's on_captured effect fires with the
+	# capturing golem on its square, and a bomb there ends the move.
+	if captured_stamp != null:
+		simulate_trigger_effect(game_state, StampEffect.TRIGGER_ON_CAPTURED, captured_player_id, captured_piece, to_pos, captured_stamp, board_size, {
+			"capturing_piece": moving_piece,
+			"capturing_piece_pos": to_pos,
+		})
+		if game_state.game_over:
+			return
 	if captured_piece != null:
 		respawn_captured_piece(game_state, captured_piece, captured_player_id)
 	StampEffectResolver.resolve_pending_respawns_for_all_players(game_state)
-
-	if MoveRules.is_seeker_stamp(moving_piece.affixed_stamp):
-		if player_id == 0:
-			game_state.white_seeker_position = to_pos
-		else:
-			game_state.black_seeker_position = to_pos
+	if game_state.get_piece(to_pos) != moving_piece:
+		return
 
 	var opponent_base: Vector2 = StampEffectResolver.get_base_field_for_player(game_state, 1 - player_id)
-	if MoveRules.is_seeker_stamp(moving_piece.affixed_stamp) && to_pos == opponent_base:
+	if is_crown_carrier_of(moving_piece, player_id) && to_pos == opponent_base:
 		game_state.game_over = true
 		game_state.winner_player = player_id
 		game_state.win_condition = "base_reached"
 		return
-
-	if captured_piece != null && StampEffectResolver.is_seeker_piece(captured_piece):
-		StampEffectResolver.clear_seeker_position_if_needed(game_state, captured_player_id, true)
 
 	if moving_piece.affixed_stamp != null:
 		var moving_stamp: Stamp = moving_piece.affixed_stamp
@@ -292,19 +304,16 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 			})
 			if game_state.game_over:
 				return
-
-		simulate_trigger_effect(game_state, StampEffect.TRIGGER_ON_MOVE, player_id, moving_piece, to_pos, moving_stamp, board_size, {
-			"from_pos": from_pos,
-			"to_pos": to_pos,
-		})
-		if game_state.game_over:
-			return
+		else:
+			# A capturing step does not set off the on_move effect.
+			simulate_trigger_effect(game_state, StampEffect.TRIGGER_ON_MOVE, player_id, moving_piece, to_pos, moving_stamp, board_size, {
+				"from_pos": from_pos,
+				"to_pos": to_pos,
+			})
+			if game_state.game_over:
+				return
 
 	consume_moved_piece_duration(game_state, player_id, moving_piece, to_pos, board_size)
-	if game_state.game_over:
-		return
-
-	_refresh_seeker_positions(game_state)
 
 static func simulate_trigger_effect(
 	game_state: GameStateData,
@@ -329,7 +338,6 @@ static func simulate_trigger_effect(
 		context[key] = extra_context[key]
 
 	StampEffectResolver.resolve_trigger(trigger, game_state, context, board_size)
-	_refresh_seeker_positions(game_state)
 
 static func remove_stamp_name_from_hand(game_state: GameStateData, player_id: int, stamp_name: String) -> int:
 	if !game_state.player_hands.has(player_id):
@@ -351,6 +359,7 @@ static func end_simulated_turn(game_state: GameStateData, player_id: int, board_
 	game_state.exchanged_stamp_names_this_turn[player_id] = []
 	clear_piece_exhaustion_for_player(game_state, player_id)
 	game_state.completed_turn_counts[player_id] = int(game_state.completed_turn_counts.get(player_id, 0)) + 1
+	game_state.refresh_se_tenant_crown_points()
 	game_state.switch_turn()
 	StampEffectResolver.tick_board_effects(game_state)
 	StampEffectResolver.tick_piece_protection_windows(game_state)
@@ -378,7 +387,23 @@ static func player_has_valid_turn_action(game_state: GameStateData, player_id: i
 		return true
 	if is_first_turn:
 		return false
+	if game_state.can_place_crown(player_id):
+		return true
 	return MoveRules.has_frozen_movable_piece(game_state.pieces, player_color, board_size, game_state.board_effects)
+
+## Placing the crown is the one legal thing left, so the player has to do it,
+## worth it or not: no other action closes the turn (rulebook 4.3).
+static func is_crown_the_only_action(game_state: GameStateData, player_id: int, board_size: int) -> bool:
+	if !game_state.can_place_crown(player_id):
+		return false
+	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+	if MoveRules.has_valid_piece_move(game_state.pieces, player_color, board_size, game_state.board_effects):
+		return false
+	if MoveRules.can_affix_any_stamp(game_state.pieces, player_color, get_hand_stamps_from_state(game_state, player_id)):
+		return false
+	if game_state.can_turn_page(player_id):
+		return false
+	return !MoveRules.has_frozen_movable_piece(game_state.pieces, player_color, board_size, game_state.board_effects)
 
 static func clear_piece_exhaustion_for_player(game_state: GameStateData, player_id: int) -> void:
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
@@ -438,7 +463,6 @@ static func refill_played_stamps_for_player(game_state: GameStateData, player_id
 	game_state.exchanged_stamp_names_this_turn[player_id] = []
 
 static func handle_expired_seeker_stamp(game_state: GameStateData, player_id: int, expired_stamp: Stamp, piece_pos: Vector2) -> void:
-	StampEffectResolver.clear_seeker_position_if_needed(game_state, player_id, true)
 	StampEffectResolver.return_stamp_to_owner_deck(game_state, player_id, expired_stamp.stamp_name, piece_pos, "expired_seeker", expired_stamp)
 
 static func handle_captured_piece_stamp(game_state: GameStateData, captured_piece: Piece, captured_player_id: int, piece_pos: Vector2) -> void:
@@ -451,8 +475,6 @@ static func handle_captured_piece_stamp(game_state: GameStateData, captured_piec
 		StampEffectResolver.return_stamp_to_owner_deck(game_state, captured_player_id, captured_stamp.stamp_name, piece_pos, "effect_capture", captured_stamp)
 
 	captured_piece.detach_stamp()
-	if captured_was_seeker:
-		StampEffectResolver.clear_seeker_position_if_needed(game_state, captured_player_id, true)
 
 static func respawn_captured_piece(game_state: GameStateData, captured_piece: Piece, captured_player_id: int) -> bool:
 	return StampEffectResolver.respawn_captured_piece(game_state, captured_piece, captured_player_id)
@@ -477,10 +499,6 @@ static func consume_moved_piece_duration(game_state: GameStateData, player_id: i
 
 	simulate_trigger_effect(game_state, StampEffect.TRIGGER_ON_EXPIRE, player_id, piece, piece_pos, expired_stamp, board_size)
 
-static func _refresh_seeker_positions(game_state: GameStateData) -> void:
-	game_state.white_seeker_position = find_seeker_position(game_state.pieces, 0)
-	game_state.black_seeker_position = find_seeker_position(game_state.pieces, 1)
-
 static func apply_candidate_to_pieces(source_pieces: Dictionary, move: Dictionary) -> Dictionary:
 	var simulated_pieces: Dictionary = clone_pieces(source_pieces)
 	var from_pos: Vector2 = get_move_from(move)
@@ -502,14 +520,43 @@ static func apply_candidate_to_pieces(source_pieces: Dictionary, move: Dictionar
 	simulated_pieces[to_pos] = moving_piece
 	moving_piece.use_turn()
 	if captured_piece != null:
-		captured_piece.detach_stamp()
+		var captured_stamp: Stamp = captured_piece.detach_stamp()
+		if is_on_captured_bomb(captured_stamp):
+			blow_up_pieces(simulated_pieces, captured_stamp, to_pos, captured_piece.color)
 		respawn_captured_piece_in_pieces(simulated_pieces, captured_piece)
 	return simulated_pieces
+
+static func is_on_captured_bomb(stamp: Stamp) -> bool:
+	return stamp != null and stamp.effect_type == StampEffect.TYPE_BOMB and stamp.effect_trigger == StampEffect.TRIGGER_ON_CAPTURED
+
+## Whether taking the golem at the move's target sets off a bomb that takes the
+## capturing golem with it: an on_captured bomb covering its own square.
+static func capture_blows_up_capturer(pieces: Dictionary, move: Dictionary) -> bool:
+	var captured_piece: Piece = get_captured_piece(pieces, move)
+	if captured_piece == null or !is_on_captured_bomb(captured_piece.affixed_stamp):
+		return false
+	var to_pos: Vector2 = get_move_to(move)
+	return StampEffectResolver.get_effect_squares_unfiltered(captured_piece.affixed_stamp, to_pos, captured_piece.color).has(to_pos)
+
+## apply_candidate_to_pieces' share of StampEffectResolver.resolve_bomb: the
+## golems on the bomb's squares go back to their home rows, and their own
+## on_captured bombs go off in turn.
+static func blow_up_pieces(pieces: Dictionary, stamp: Stamp, source_pos: Vector2, effect_color: int) -> void:
+	for square: Vector2 in StampEffectResolver.get_effect_squares(stamp, source_pos, BoardConfig.BOARD_SIZE, effect_color):
+		var target_piece: Piece = pieces.get(square, null) as Piece
+		if target_piece == null:
+			continue
+		pieces.erase(square)
+		var target_stamp: Stamp = target_piece.detach_stamp()
+		if is_on_captured_bomb(target_stamp):
+			blow_up_pieces(pieces, target_stamp, square, target_piece.color)
+		respawn_captured_piece_in_pieces(pieces, target_piece)
 
 static func respawn_captured_piece_in_pieces(pieces: Dictionary, captured_piece: Piece) -> bool:
 	if captured_piece == null:
 		return false
 
+	captured_piece.has_crown = false
 	var player_id: int = StampEffectResolver.get_player_id_for_color(captured_piece.color)
 	if release_pending_respawn_piece_in_pieces(pieces, player_id):
 		return true
@@ -560,24 +607,26 @@ static func get_captured_piece(pieces: Dictionary, move: Dictionary) -> Piece:
 	var to_pos: Vector2 = get_move_to(move)
 	return pieces.get(to_pos, null) as Piece
 
-static func find_seeker_position(pieces: Dictionary, player_id: int) -> Vector2:
-	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
+static func find_crowned_position(pieces: Dictionary, player_id: int) -> Vector2:
 	for position_value in pieces:
-		var position: Vector2 = StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 		var piece: Piece = pieces[position_value] as Piece
-		if piece != null && piece.color == player_color && StampEffectResolver.is_seeker_piece(piece):
-			return position
+		if is_crown_carrier_of(piece, player_id):
+			return StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))
 	return Vector2(-1, -1)
 
-static func is_own_seeker_candidate(pieces: Dictionary, move: Dictionary, player_id: int) -> bool:
-	var from_pos: Vector2 = get_move_from(move)
-	var moving_piece: Piece = pieces.get(from_pos, null) as Piece
-	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)
-	if moving_piece == null or moving_piece.color != player_color:
-		return false
+## Whether the move is made by the player's own crowned golem - the only one
+## that wins by stepping onto the enemy base. A golem of theirs the opponent
+## moves through a shared stamp does not count for the opponent.
+static func is_own_crown_candidate(pieces: Dictionary, move: Dictionary, player_id: int) -> bool:
+	return is_crown_carrier_of(pieces.get(get_move_from(move), null) as Piece, player_id)
 
-	var stamp: Stamp = get_stamp_for_candidate(pieces, move)
-	return MoveRules.is_seeker_stamp(stamp)
+## Whether the move wins the game: the player's crowned golem steps onto the
+## opponent's base and is not blown up there by the golem it takes.
+static func is_base_win_move(pieces: Dictionary, move: Dictionary, player_id: int, opponent_base: Vector2) -> bool:
+	return get_move_to(move) == opponent_base and is_own_crown_candidate(pieces, move, player_id) and !capture_blows_up_capturer(pieces, move)
+
+static func is_crown_carrier_of(piece: Piece, player_id: int) -> bool:
+	return piece != null and piece.has_crown and piece.color == StampEffectResolver.get_color_for_player_id(player_id)
 
 static func get_hand_stamps_from_state(game_state: GameStateData, player_id: int) -> Array[Stamp]:
 	var hand_stamps: Array[Stamp] = []

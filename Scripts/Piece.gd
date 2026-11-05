@@ -8,6 +8,11 @@ var turns_remaining: int = 0
 var exhausted_this_turn: bool = false
 var respawn_cooldown_turns: int = 0
 var hidden_from_viewer: bool = false
+## The crown belongs to the golem, not to its stamp: it stays when the stamp
+## runs out. A capture takes it off (back to its owner, whose meter starts
+## again from 0), and so does crowning another golem with a full meter. Only a
+## crowned golem wins by stepping onto the enemy base.
+var has_crown: bool = false
 # Real turn-calendar window for effects whose protection is meant to be
 # temporary and independent of the affixed stamp's own (move-based)
 # duration -- currently invisible_to_enemy and uncapturable. -1 means "no
@@ -59,8 +64,11 @@ func can_move() -> bool:
 	return !is_respawn_locked() && !exhausted_this_turn && affixed_stamp != null && (turns_remaining > 0 || turns_remaining == -1)
 	# return has_stamp() && (turns_remaining > 0 || turns_remaining == -1)
 
-func can_receive_stamp() -> bool:
-	return !is_respawn_locked() && affixed_stamp == null
+## A bare golem takes any stamp. One that already has a stamp takes only an
+## Overseal, which covers it (StampEffectResolver.cover_piece_stamp); without a
+## stamp to ask about, only bare golems count.
+func can_receive_stamp(stamp: Stamp = null) -> bool:
+	return !is_respawn_locked() && (affixed_stamp == null || MoveRules.is_overseal_stamp(stamp))
 
 func is_respawn_locked() -> bool:
 	return respawn_cooldown_turns > 0

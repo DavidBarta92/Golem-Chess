@@ -52,11 +52,11 @@ func can_affix_action_now() -> bool:
 
 	for position_value in match_board.piece_objects:
 		var piece: Piece = match_board.piece_objects[position_value] as Piece
-		if piece == null or piece.color != owner_color or piece.affixed_stamp != null:
+		if piece == null or piece.color != owner_color:
 			continue
 
 		for stamp: Stamp in hand_stamps:
-			if !MoveRules.stamp_can_be_used(stamp):
+			if !MoveRules.stamp_can_be_used(stamp) or !piece.can_receive_stamp(stamp):
 				continue
 			if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, {
 				"owner_color": owner_color,
@@ -185,6 +185,7 @@ func end_current_turn_locally() -> void:
 	match_board.get_local_state_mutator().clear_piece_exhaustion_for_color(ending_color)
 	match_board.completed_turn_counts[ending_player_id] = int(match_board.completed_turn_counts.get(ending_player_id, 0)) + 1
 	match_board.white = !match_board.white
+	match_board.get_crown_controller().begin_local_turn(match_board.get_current_turn_color())
 	match_board.get_turn_action_state_controller().reset_current_turn_stamp_affix()
 	match_board.state = false
 	match_board.delete_dots()

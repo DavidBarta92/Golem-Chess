@@ -16,6 +16,9 @@ enum Role {
 @export_enum("Animals", "Flora", "Celestials", "Archetypes", "Courtyard", "Structures") var Set: String = "Archetypes"
 @export var enabled: bool = true
 @export var duration: int = 3
+# Estimated value from StampValueCalculator. The Stamp Value Estimator editor plugin keeps it
+# up to date and shows its breakdown; nothing at runtime writes it.
+@export_custom(PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY) var estimated_value: float = 0.0
 @export var texture: Texture2D
 @export var stamp_art: Texture2D
 @export var stamp_art_mask: Texture2D
@@ -24,9 +27,8 @@ enum Role {
 @export_storage var black_piece_texture: Texture2D
 @export var description: String = ""
 @export var symbol: String = ""
-@export_enum("none", "steal_stamp", "grant_stamp", "give_stamp", "move_base", "invisible_to_enemy", "invalid_squares", "frozen_squares", "bomb", "uncapturable", "increase_own_durations", "increase_enemy_durations", "decrease_own_durations", "decrease_enemy_durations", "increase_self_duration") var effect_type: String = StampEffect.TYPE_NONE
-@export_enum("on_affix", "on_move", "on_capture", "on_captured", "on_expire", "while_attached", "on_symbol_count") var effect_trigger: String = StampEffect.TRIGGER_ON_AFFIX
-@export var effect_icon: Texture2D
+@export_enum("none", "steal_stamp", "grant_stamp", "give_stamp", "move_base", "invisible_to_enemy", "invalid_squares", "frozen_squares", "bomb", "uncapturable", "increase_own_durations", "increase_enemy_durations", "decrease_own_durations", "decrease_enemy_durations", "increase_self_duration", "gain_crown_point", "remove_enemy_crown_point") var effect_type: String = StampEffect.TYPE_NONE
+@export_enum("on_affix", "on_move", "on_capture", "on_captured", "on_expire", "on_symbol_count", "crown_condition") var effect_trigger: String = StampEffect.TRIGGER_ON_AFFIX
 @export var square_color_a: Color = Color(0, 0, 0, 0)
 @export var square_color_b: Color = Color(0, 0, 0, 0)
 # Per-stamp look of the name, the duration number and the pattern markers.
@@ -117,13 +119,14 @@ func has_effect() -> bool:
 	return StampEffect.has_effect(effect_type)
 
 # Player-facing text lives in Localization/translations.csv under STAMP_DESC_<STAMP_CODE>;
-# `description` is only the fallback for stamps without a row there.
+# `description` is only the fallback for stamps without a row there. {granted_stamp} in
+# the text names the stamp a grant_stamp effect glues into the codex, so the text
+# follows effect_settings.
 func get_display_description() -> String:
 	var key: String = "STAMP_DESC_%s" % stamp_code.strip_edges().to_upper()
 	var translated: String = tr(key)
-	if translated == key:
-		return description
-	return translated
+	var text: String = description if translated == key else translated
+	return text.replace("{granted_stamp}", str(effect_settings.get("stamp_name", stamp_name)))
 
 func has_square_color_a() -> bool:
 	return square_color_a.a > 0.0
