@@ -78,7 +78,7 @@ standing on a square above it. The grid drawing is at 9 and the gap either side
 of it is one slot wide. The table says which is which:
 
 ```
- -24 board shadow · -2 frame · 0 base tiles · 1-8 special tiles, tints, markers
+ -24 board shadow · -2 frame · 0 base tiles · 1-8 special tiles, tints, markers, contact shadows
  --- 9  the drawn grid ---
  10-34 pieces, one rank every BoardConfig.DEPTH_Z_STRIDE · 46 move dots
 ```
@@ -132,11 +132,12 @@ ones, so it drifts across the drawn room as the window changes shape. Fixing it
 means making its slot a canvas-space container and rescaling the four constants
 that drive its page-turn animation.
 
-**4. Turn changes are polled, not signalled.** `TurnHudController` compares the
-turn colour every frame to drive the clock's knock, the rocker and the
-end-of-turn sound. It works and costs nothing measurable, but a
-`turn_changed(colour)` signal on `MatchBoard` would say what is happening. Do
-this while doing (1); it is the same kind of work.
+**4. Turn changes are found by polling.** `TurnHudController` compares the turn
+colour every frame to drive the clock's knock, the rocker and the end-of-turn
+sound, and raises `MatchBoard.turn_changed` for what else follows the turn: the
+board's light, the vignette, the player's crown. It works and costs nothing
+measurable, but the state sync could raise that signal itself. Do this while
+doing (1); it is the same kind of work.
 
 **5. The tutorial is reached by a path that skips
 `_configure_singleplayer_match`**, which is why `GameConfig.is_singleplayer` is

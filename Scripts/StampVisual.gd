@@ -200,10 +200,11 @@ func _on_stamp_visual_resized() -> void:
 func _update_ink_blot_frames() -> void:
 	var units: float = INK_BLOT_REFERENCE_HEIGHT / maxf(size.y, 1.0)
 	var seed_value: float = _ink_blot_seed()
-	var layers: Array = [stamp_square, stamp_art]
-	layers.append_array(layer_materials.keys())
+	var layers: Dictionary = layer_materials.duplicate()
+	layers[stamp_square] = stamp_square_material
+	layers[stamp_art] = stamp_art_material
 	for layer: Control in layers:
-		layer.set_instance_shader_parameter(&"stamp_blot_frame", Vector4(layer.position.x, layer.position.y, units, seed_value))
+		layers[layer].set_shader_parameter(&"stamp_blot_frame", Vector4(layer.position.x, layer.position.y, units, seed_value))
 
 ## The blot's pattern comes from which print the stamp is, never from this
 ## node: a stamp keeps its worn look wherever it shows and however often it is

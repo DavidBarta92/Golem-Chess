@@ -95,6 +95,15 @@ func apply_state_from_server(points_by_player: Dictionary, points_required: int,
 	_has_state = true
 	refresh()
 
+## The player's crown goes pale on the opponent's turn, when it cannot be taken.
+## The opponent's stays as it is: that one is worth keeping an eye on.
+func follow_turn(turn_color: int, animate: bool) -> void:
+	if rims.is_empty():
+		return
+	var own_color: int = match_board.get_own_color()
+	rims[own_color].set_ring_faded(turn_color != own_color, animate)
+	rims[-own_color].set_ring_faded(false, false)
+
 ## The rims catch up with the last state. `animate` is false for what should
 ## simply be there: the first state, and matches nobody is watching.
 func show_state_points(recent_effect_activations: Array, animate: bool) -> void:

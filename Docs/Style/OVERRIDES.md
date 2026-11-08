@@ -319,9 +319,9 @@ collection's page number and codex count are `NumberLabel`. The older menus
 title is `TitleLabel`. The collection's "2 db" badges take `FieldLabel`'s
 font and size.
 
-**One-off sizes, with Display's face.** The match result line (72) and the
-speaker's initial in an empty portrait frame (44) use `DisplayLabel` for the
-face. Their size comes from their own `LabelSettings`: big display text that
+**One-off sizes, with Display's face.** The match result line (72), the turn
+banner (72) and the speaker's initial in an empty portrait frame (44) use
+`DisplayLabel` for the face. Their size comes from their own `LabelSettings`: big display text that
 fits no role size. The countdowns use Display at 32. Display has lining
 tabular figures, so a countdown does not shift as it counts.
 

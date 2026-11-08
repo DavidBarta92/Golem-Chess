@@ -1,5 +1,18 @@
 extends RefCounted
 
+const TURN_LIGHT_SLIDE_SECONDS: float = 0.9
+## Over the first open rank rather than the home row itself: half of a light on
+## the edge would land off the board, and most of the rest behind the pieces.
+const TURN_LIGHT_ROWS_IN: int = 1
+## The far side's squares are smaller and paler, so the same light would burn out
+## there. Fractions of the near side's energy and size.
+const TURN_LIGHT_FAR_ENERGY: float = 0.72
+const TURN_LIGHT_FAR_SCALE: float = 0.73
+## Where the picture's dark edge closes in to while the opponent is on the move.
+const TURN_VIGNETTE_INNER_RADIUS: float = 0.30
+const TURN_VIGNETTE_OUTER_RADIUS: float = 1.05
+const VIGNETTE_OVERLAY_PATH: NodePath = ^"../VignetteLayer/VignetteOverlay"
+
 var match_board
 var board_kuwahara_shader: Shader
 var piece_kuwahara_shader: Shader
@@ -24,6 +37,12 @@ var piece_light_occluder_mask: int = 1
 
 var ambient_board_light: PointLight2D
 var ambient_board_fill_light: PointLight2D
+var turn_light_tween: Tween
+var turn_vignette_tween: Tween
+var turn_vignette: float = 0.0
+var own_vignette: ShaderMaterial
+var vignette_rest_inner_radius: float = 0.0
+var vignette_rest_outer_radius: float = 0.0
 var board_shader_backbuffer: BackBufferCopy
 var board_shader_overlay: ColorRect
 var board_shader_material: ShaderMaterial
@@ -83,6 +102,66 @@ func create_ambient_board_light() -> void:
 		ambient_board_light.shadow_item_cull_mask = piece_light_occluder_mask
 		ambient_board_light.position = ambient_board_light_offset
 		match_board.add_child(ambient_board_light)
+
+## The light stands on the side of whoever is on the move, so the board itself
+## says whose turn it is, right where the player is looking. The fill goes with
+## it, or the far rows would stay lit on the player's own turn.
+func follow_turn(turn_color: int, animate: bool) -> void:
+	var closed_in: bool = turn_color != match_board.get_own_color() and match_board.get_turn_flow_controller().should_announce_turn()
+	set_turn_vignette(1.0 if closed_in else 0.0, animate)
+	if ambient_board_light == null or !is_instance_valid(ambient_board_light) or ambient_board_fill_light == null or !is_instance_valid(ambient_board_fill_light):
+		return
+	var row: int = BoardConfig.WHITE_HOME_ROW + TURN_LIGHT_ROWS_IN if turn_color == BoardConfig.WHITE_COLOR else BoardConfig.BLACK_HOME_ROW - TURN_LIGHT_ROWS_IN
+	var target: Vector2 = match_board.get_board_position_local_position(Vector2(row, BoardConfig.CENTER_INDEX))
+	var is_near: bool = turn_color == match_board.get_board_view_color()
+	var energy: float = ambient_board_light_energy * (1.0 if is_near else TURN_LIGHT_FAR_ENERGY)
+	var texture_scale: float = ambient_board_light_texture_scale * (1.0 if is_near else TURN_LIGHT_FAR_SCALE)
+	if turn_light_tween != null and turn_light_tween.is_valid():
+		turn_light_tween.kill()
+	if !animate:
+		ambient_board_light.position = target
+		ambient_board_fill_light.position = target
+		ambient_board_light.energy = energy
+		ambient_board_light.texture_scale = texture_scale
+		return
+	turn_light_tween = match_board.create_tween().set_parallel().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	turn_light_tween.tween_property(ambient_board_light, "position", target, TURN_LIGHT_SLIDE_SECONDS)
+	turn_light_tween.tween_property(ambient_board_fill_light, "position", target, TURN_LIGHT_SLIDE_SECONDS)
+	turn_light_tween.tween_property(ambient_board_light, "energy", energy, TURN_LIGHT_SLIDE_SECONDS)
+	turn_light_tween.tween_property(ambient_board_light, "texture_scale", texture_scale, TURN_LIGHT_SLIDE_SECONDS)
+
+## 0 is the picture's usual edge, 1 the opponent's turn.
+func set_turn_vignette(amount: float, animate: bool = true) -> void:
+	if turn_vignette_tween != null and turn_vignette_tween.is_valid():
+		turn_vignette_tween.kill()
+	if !animate:
+		_apply_turn_vignette(amount)
+		return
+	turn_vignette_tween = match_board.create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	turn_vignette_tween.tween_method(_apply_turn_vignette, turn_vignette, amount, TURN_LIGHT_SLIDE_SECONDS)
+
+func _apply_turn_vignette(amount: float) -> void:
+	turn_vignette = amount
+	var vignette: ShaderMaterial = get_own_vignette()
+	if vignette == null:
+		return
+	vignette.set_shader_parameter("inner_radius", lerpf(vignette_rest_inner_radius, TURN_VIGNETTE_INNER_RADIUS, amount))
+	vignette.set_shader_parameter("outer_radius", lerpf(vignette_rest_outer_radius, TURN_VIGNETTE_OUTER_RADIUS, amount))
+
+## Every scene points at one vignette resource, so the match works on a copy, or
+## the next scene would open with the edge closed in.
+func get_own_vignette() -> ShaderMaterial:
+	if own_vignette != null:
+		return own_vignette
+	var overlay: CanvasItem = match_board.get_node_or_null(VIGNETTE_OVERLAY_PATH) as CanvasItem
+	var shared: ShaderMaterial = overlay.material as ShaderMaterial if overlay != null else null
+	if shared == null:
+		return null
+	own_vignette = shared.duplicate() as ShaderMaterial
+	vignette_rest_inner_radius = float(own_vignette.get_shader_parameter("inner_radius"))
+	vignette_rest_outer_radius = float(own_vignette.get_shader_parameter("outer_radius"))
+	overlay.material = own_vignette
+	return own_vignette
 
 func create_board_shader_overlay() -> void:
 	if !match_board.board_shader_enabled:

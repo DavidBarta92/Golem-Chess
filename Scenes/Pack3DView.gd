@@ -3,7 +3,10 @@ class_name Pack3DView
 
 const FRONT_SHADER = preload("res://Shaders/pack_front_3d.gdshader")
 const SIDE_SHADER = preload("res://Shaders/pack_side_3d.gdshader")
+const FLAP_SHADER = preload("res://Shaders/pack_tear_flap_3d.gdshader")
 const VIEWPORT_SIZE: Vector2i = Vector2i(768, 1024)
+const CAMERA_DISTANCE: float = 6.35
+const CAMERA_FOV: float = 28.0
 const PACK_HEIGHT: float = 2.62
 const PACK_WIDTH: float = PACK_HEIGHT * 0.75
 const PACK_THICKNESS: float = 0.36
@@ -17,6 +20,15 @@ const AMBIENT_ROLL_DEGREES: float = 1.4
 const AMBIENT_FLOAT_HEIGHT: float = 0.055
 const MOTION_LERP_SPEED: float = 9.5
 const FOIL_TILT_UV_SHIFT: float = 0.18
+const DOME_STRENGTH: float = 0.20
+## How much a pack swells on top of its dome when it is about to go.
+const SWELL_DOME_STRENGTH: float = 0.17
+## Where the torn strip turns as it flies: about its own middle.
+const FLAP_PIVOT_Y: float = PACK_HEIGHT * 0.44
+const FLAP_FLIGHT_SECONDS: float = 0.95
+const FLAP_THROW_DISTANCE: float = 3.6
+const FLAP_THROW_RISE: float = 0.6
+const FLAP_THROW_DROP: float = 5.2
 
 @export var front_texture: Texture2D
 @export var back_texture: Texture2D
@@ -42,6 +54,9 @@ var default_height_texture: Texture2D
 var default_normal_texture: Texture2D
 var default_roughness_texture: Texture2D
 var default_foil_mask_texture: Texture2D
+var flap_pivot: Node3D
+var flap_surface: MeshInstance3D
+var flap_material: ShaderMaterial
 var hovered: bool = false
 var selected: bool = false
 var hover_tracking_enabled: bool = true
@@ -50,7 +65,19 @@ var current_pitch: float = 0.0
 var current_yaw: float = 0.0
 var current_roll: float = 0.0
 var current_float: float = 0.0
-var tear_cut_progress: float = 0.0
+## 1 lets the pack sway and follow the mouse, 0 holds it still: a tear is made
+## with the pack held still, so the line under the mouse stays where it is.
+var motion_amount: float = 1.0
+## Added to the pack's turn, in degrees: how it gives to a pull on its top.
+var pull_yaw: float = 0.0
+## How hard the pack trembles, in world units.
+var shake_amount: float = 0.0
+## Where the pack is moved to, on top of its sway.
+var drop_offset: Vector3 = Vector3.ZERO
+var on_stage: bool = false
+var stage_pack_area: Rect2 = Rect2()
+var tear_front: float = 0.0
+var tear_direction: float = 1.0
 var tear_cut_y: float = 0.085
 var tear_wave_strength: float = 0.012
 var tear_seed: float = 0.0
@@ -117,10 +144,80 @@ func set_tear_parameters(cut_y: float, wave_strength: float, seed: float, edge_s
 	tear_edge_softness = edge_softness
 	_sync_tear_shader_parameters()
 
-func set_tear_cut_progress(progress: float) -> void:
-	tear_cut_progress = clampf(progress, 0.0, 1.0)
+## 1 tears from the left edge, -1 from the right.
+func set_tear_direction(direction: int) -> void:
+	tear_direction = 1.0 if direction >= 0 else -1.0
+	_sync_tear_shader_parameters()
+
+## How far the tear has run across the pack, 0 to 1.
+func set_tear_front(value: float) -> void:
+	tear_front = clampf(value, 0.0, 1.0)
 	_sync_tear_shader_parameters()
 	request_static_render()
+
+## The strip comes away and flies off the way the tear ran.
+func release_flap() -> void:
+	if flap_pivot == null:
+		return
+	flap_pivot.reparent(pack_pivot.get_parent(), true)
+	var start: Vector3 = flap_pivot.position
+	var spin := Vector3(randf_range(-170.0, 170.0), randf_range(-80.0, 80.0), -tear_direction * randf_range(120.0, 210.0))
+	var flight := create_tween().set_parallel(true)
+	flight.tween_property(flap_pivot, "position:x", start.x + tear_direction * FLAP_THROW_DISTANCE, FLAP_FLIGHT_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	flight.tween_property(flap_pivot, "rotation_degrees", spin, FLAP_FLIGHT_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	var arc := create_tween()
+	arc.tween_property(flap_pivot, "position:y", start.y + FLAP_THROW_RISE, FLAP_FLIGHT_SECONDS * 0.26).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	arc.tween_property(flap_pivot, "position:y", start.y - FLAP_THROW_DROP, FLAP_FLIGHT_SECONDS * 0.74).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	arc.tween_callback(Callable(flap_pivot, "hide"))
+
+## 0 is the pack at rest, 1 about to burst.
+func set_swell(amount: float) -> void:
+	if front_material == null:
+		return
+	var dome: float = DOME_STRENGTH + SWELL_DOME_STRENGTH * clampf(amount, 0.0, 1.0)
+	front_material.set_shader_parameter("dome_strength", dome)
+	flap_material.set_shader_parameter("dome_strength", dome)
+
+func set_foil_opacity(value: float) -> void:
+	if front_material == null:
+		return
+	front_material.set_shader_parameter("foil_layer_opacity", value)
+	flap_material.set_shader_parameter("foil_layer_opacity", value)
+
+## Widens the view to a frame of `stage_size` around the same pack, so that what
+## is torn off can fly anywhere on the screen instead of ending at the edge of
+## the pack's own picture. Only the frame grows: the camera stays where it is,
+## so the pack looks exactly as it did, `pack_center` being where it is on the
+## stage and `frame_height` how tall its old frame was.
+##
+## The caller moves this control over the stage. Rendering at the window's own
+## pixels costs more than the small picture, so only the opened pack does this.
+func frame_on_stage(pack_center: Vector2, frame_height: float, stage_size: Vector2, stage_pixels: Vector2i) -> void:
+	var world_height: float = 2.0 * CAMERA_DISTANCE * tan(deg_to_rad(CAMERA_FOV) * 0.5)
+	var world_per_unit: float = world_height / maxf(frame_height, 1.0)
+	camera.fov = rad_to_deg(2.0 * atan(stage_size.y * world_per_unit * 0.5 / CAMERA_DISTANCE))
+	var off_centre: Vector2 = (pack_center - stage_size * 0.5) * world_per_unit
+	camera.h_offset = -off_centre.x
+	camera.v_offset = off_centre.y
+	sub_viewport.size = stage_pixels
+	on_stage = true
+	# It draws nothing until the tear frees it, but its shader is compiled now and
+	# not on the frame the tear starts.
+	flap_pivot.visible = true
+	var pack_size := Vector2(PACK_WIDTH, PACK_HEIGHT) / world_per_unit
+	stage_pack_area = Rect2(pack_center - pack_size * 0.5, pack_size)
+
+## The share of its picture's height that the pack fills.
+static func get_pack_share() -> float:
+	return PACK_HEIGHT / (2.0 * CAMERA_DISTANCE * tan(deg_to_rad(CAMERA_FOV) * 0.5))
+
+## How tall the pack's picture stands on the screen.
+func get_frame_height() -> float:
+	return minf(size.y, size.x * float(VIEWPORT_SIZE.y) / float(VIEWPORT_SIZE.x)) * scale.y
+
+func set_hovered(value: bool) -> void:
+	hovered = value
+	set_continuous_rendering(selected or hovered)
 
 func set_selected(value: bool) -> void:
 	selected = value
@@ -139,7 +236,8 @@ func set_continuous_rendering(value: bool) -> void:
 	sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if value else SubViewport.UPDATE_ONCE
 
 func request_static_render() -> void:
-	if sub_viewport != null:
+	# While it renders every frame anyway, once would stop it after this one.
+	if sub_viewport != null and !is_processing():
 		sub_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _process(delta: float) -> void:
@@ -153,8 +251,9 @@ func _process(delta: float) -> void:
 	var target_float: float = sin(motion_time * 1.18) * AMBIENT_FLOAT_HEIGHT
 
 	if hovered and hover_tracking_enabled:
-		var local_mouse: Vector2 = get_local_mouse_position()
-		var safe_size: Vector2 = size.max(Vector2.ONE)
+		var hover_area: Rect2 = stage_pack_area if on_stage else Rect2(Vector2.ZERO, size)
+		var local_mouse: Vector2 = get_local_mouse_position() - hover_area.position
+		var safe_size: Vector2 = hover_area.size.max(Vector2.ONE)
 		var x_ratio: float = clampf(local_mouse.x / safe_size.x, 0.0, 1.0)
 		var y_ratio: float = clampf(local_mouse.y / safe_size.y, 0.0, 1.0)
 		target_yaw = lerpf(-MAX_HOVER_YAW_DEGREES, MAX_HOVER_YAW_DEGREES, x_ratio)
@@ -162,12 +261,13 @@ func _process(delta: float) -> void:
 		target_roll = target_yaw * 0.08
 
 	var smoothing: float = 1.0 - exp(-MOTION_LERP_SPEED * maxf(delta, 0.001))
-	current_yaw = lerpf(current_yaw, target_yaw, smoothing)
-	current_pitch = lerpf(current_pitch, target_pitch, smoothing)
-	current_roll = lerpf(current_roll, target_roll, smoothing)
-	current_float = lerpf(current_float, target_float, smoothing)
-	pack_pivot.rotation_degrees = Vector3(current_pitch, current_yaw, current_roll)
-	pack_pivot.position.y = current_float
+	current_yaw = lerpf(current_yaw, target_yaw * motion_amount, smoothing)
+	current_pitch = lerpf(current_pitch, target_pitch * motion_amount, smoothing)
+	current_roll = lerpf(current_roll, target_roll * motion_amount, smoothing)
+	current_float = lerpf(current_float, target_float * motion_amount, smoothing)
+	pack_pivot.rotation_degrees = Vector3(current_pitch, current_yaw + pull_yaw, current_roll)
+	var tremble := Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), 0.0) * shake_amount
+	pack_pivot.position = Vector3(0.0, current_float, 0.0) + drop_offset + tremble
 	_update_foil_tilt_offset()
 
 func _create_viewport_nodes() -> void:
@@ -202,8 +302,8 @@ func _create_3d_scene() -> void:
 
 	camera = Camera3D.new()
 	camera.name = "Camera3D"
-	camera.position = Vector3(0.0, 0.0, 6.35)
-	camera.fov = 28.0
+	camera.position = Vector3(0.0, 0.0, CAMERA_DISTANCE)
+	camera.fov = CAMERA_FOV
 	camera.near = 0.03
 	camera.far = 20.0
 	camera.current = true
@@ -228,6 +328,7 @@ func _create_3d_scene() -> void:
 
 	_create_side_body()
 	_create_front_surface()
+	_create_flap_surface()
 	_create_back_surface()
 
 func _create_side_body() -> void:
@@ -266,6 +367,27 @@ func _create_front_surface() -> void:
 	)
 	pack_pivot.add_child(front_surface)
 
+## The strip above the tear: the same mesh and paper as the front, drawn only
+## where the tear has freed it.
+func _create_flap_surface() -> void:
+	flap_material = ShaderMaterial.new()
+	flap_material.shader = FLAP_SHADER
+	flap_material.set_shader_parameter("pack_width", PACK_WIDTH)
+
+	flap_pivot = Node3D.new()
+	flap_pivot.name = "TearFlapPivot"
+	flap_pivot.position = Vector3(0.0, FLAP_PIVOT_Y, front_surface.position.z)
+	flap_pivot.visible = false
+	pack_pivot.add_child(flap_pivot)
+
+	flap_surface = MeshInstance3D.new()
+	flap_surface.name = "TearFlap"
+	flap_surface.mesh = front_surface.mesh
+	flap_surface.position = -Vector3(0.0, FLAP_PIVOT_Y, 0.0)
+	flap_surface.material_override = flap_material
+	flap_surface.custom_aabb = AABB(Vector3(-PACK_WIDTH * 1.6, -PACK_HEIGHT, -1.0), Vector3(PACK_WIDTH * 3.2, PACK_HEIGHT * 2.0, 4.0))
+	flap_pivot.add_child(flap_surface)
+
 func _create_back_surface() -> void:
 	back_material = StandardMaterial3D.new()
 	back_material.roughness = 0.82
@@ -295,16 +417,17 @@ func _apply_assets() -> void:
 	var resolved_roughness: Texture2D = roughness_texture if roughness_texture != null else default_roughness_texture
 	var resolved_foil_mask: Texture2D = foil_mask_texture if foil_mask_texture != null else default_foil_mask_texture
 
-	front_material.set_shader_parameter("albedo_texture", resolved_front)
-	front_material.set_shader_parameter("height_texture", resolved_height)
-	front_material.set_shader_parameter("normal_texture", resolved_normal)
-	front_material.set_shader_parameter("roughness_texture", resolved_roughness)
-	front_material.set_shader_parameter("foil_mask_texture", resolved_foil_mask)
-	front_material.set_shader_parameter("has_height_texture", height_texture != null)
-	front_material.set_shader_parameter("has_normal_texture", normal_texture != null)
-	front_material.set_shader_parameter("has_roughness_texture", roughness_texture != null)
-	front_material.set_shader_parameter("has_foil_mask_texture", foil_mask_texture != null)
-	front_material.set_shader_parameter("foil_tilt_offset", Vector2.ZERO)
+	for material: ShaderMaterial in [front_material, flap_material]:
+		material.set_shader_parameter("albedo_texture", resolved_front)
+		material.set_shader_parameter("height_texture", resolved_height)
+		material.set_shader_parameter("normal_texture", resolved_normal)
+		material.set_shader_parameter("roughness_texture", resolved_roughness)
+		material.set_shader_parameter("foil_mask_texture", resolved_foil_mask)
+		material.set_shader_parameter("has_height_texture", height_texture != null)
+		material.set_shader_parameter("has_normal_texture", normal_texture != null)
+		material.set_shader_parameter("has_roughness_texture", roughness_texture != null)
+		material.set_shader_parameter("has_foil_mask_texture", foil_mask_texture != null)
+		material.set_shader_parameter("foil_tilt_offset", Vector2.ZERO)
 	_sync_tear_shader_parameters()
 
 	if back_material != null:
@@ -322,20 +445,18 @@ func _update_foil_tilt_offset() -> void:
 	var pitch_ratio: float = clampf(current_pitch / MAX_HOVER_PITCH_DEGREES, -1.0, 1.0)
 	var counter_tilt_offset := Vector2(-yaw_ratio, pitch_ratio) * FOIL_TILT_UV_SHIFT
 	front_material.set_shader_parameter("foil_tilt_offset", counter_tilt_offset)
+	flap_material.set_shader_parameter("foil_tilt_offset", counter_tilt_offset)
 
 func _sync_tear_shader_parameters() -> void:
-	if front_material != null:
-		front_material.set_shader_parameter("tear_cut_progress", tear_cut_progress)
-		front_material.set_shader_parameter("tear_cut_y", tear_cut_y)
-		front_material.set_shader_parameter("tear_wave_strength", tear_wave_strength)
-		front_material.set_shader_parameter("tear_seed", tear_seed)
-		front_material.set_shader_parameter("tear_edge_softness", tear_edge_softness)
-	if side_material != null:
-		side_material.set_shader_parameter("tear_cut_progress", tear_cut_progress)
-		side_material.set_shader_parameter("tear_cut_y", tear_cut_y)
-		side_material.set_shader_parameter("tear_wave_strength", tear_wave_strength)
-		side_material.set_shader_parameter("tear_seed", tear_seed)
-		side_material.set_shader_parameter("tear_edge_softness", tear_edge_softness)
+	for material: ShaderMaterial in [front_material, flap_material, side_material]:
+		if material == null:
+			continue
+		material.set_shader_parameter("tear_front", tear_front)
+		material.set_shader_parameter("tear_direction", tear_direction)
+		material.set_shader_parameter("tear_cut_y", tear_cut_y)
+		material.set_shader_parameter("tear_wave_strength", tear_wave_strength)
+		material.set_shader_parameter("tear_seed", tear_seed)
+		material.set_shader_parameter("tear_edge_softness", tear_edge_softness)
 
 func _create_default_textures() -> void:
 	default_albedo_texture = _create_color_texture(Color(1.0, 1.0, 1.0, 1.0))

@@ -47,6 +47,8 @@ edge, like bookmarks.
   crenellations = daily (24 hours).
 - **Colour = reward**: story is always burgundy; reward and daily are gold
   (coins) or ink-blue (draw points) — the colour of the counter they fill.
+- The cloth runs on above the top of the screen (`RIBBON_OVERHANG`), so no top edge
+  shows when a ribbon moves down: its arrival's overshoot, a claim's tug, the sway.
 - Every quest gives exactly one kind of reward, so a ribbon is always one colour.
 - The reward's icon sits at the bottom of the ribbon; colour is never the only signal.
 - **Order**: the oldest is on the right, next to the counters; each new one
@@ -78,7 +80,8 @@ units tall, which is exactly the design's 80 px.
 | --- | --- | --- |
 | `bar-height` | 80 | 60 |
 | `button-size` (menu button square) | 52 | 39 (the current buttons are 40 — keep 40) |
-| `ribbon-width` | 28 | 21 |
+| `ribbon-width` | 28 | 42 (twice the design's; the tail cuts and the icon grew with it) |
+| ribbons <-> counters | `space-6` | 18 + 42 (a ribbon's width of air, `RIBBON_CLEARANCE`) |
 | `ribbon-rest` (from the top of the screen) | 96 | 72 |
 | `ribbon-lift` / `ribbon-done-drop` | 6 / 12 | 4.5 / 9 |
 | `tail-story` / `tail-reward` / `tail-daily` | 10 / 9 / 6 | 7.5 / 6.75 / 4.5 |

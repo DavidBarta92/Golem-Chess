@@ -6,6 +6,9 @@ signal piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int)
 signal stamp_exchanged(stamp_name: String, owner_color: int, hand_index: int)
 signal codex_page_turned(owner_color: int, page_index: int)
 signal turn_ended(ending_color: int, next_color: int)
+## The turn has gone over, as soon as the state says so: turn_ended waits for the
+## board to show it. `animate` is false when things are only being set in place.
+signal turn_changed(turn_color: int, animate: bool)
 signal tutorial_action_rejected(action_name: String, context: Dictionary)
 ## The result has gone up on screen. See hold_after_result.
 signal game_finished(winner_color: int)
@@ -146,11 +149,11 @@ const LIGHT_TEXTURE_GRAIN_FREQUENCY: float = 0.085
 const LIGHT_TEXTURE_FINE_GRAIN_FREQUENCY: float = 0.31
 const AMBIENT_BOARD_LIGHT_NAME = "AmbientBoardLight"
 const AMBIENT_BOARD_FILL_LIGHT_NAME = "AmbientBoardFillLight"
-const AMBIENT_BOARD_LIGHT_TEXTURE_SCALE: float = 0.92
+const AMBIENT_BOARD_LIGHT_TEXTURE_SCALE: float = 0.85
 const AMBIENT_BOARD_FILL_LIGHT_TEXTURE_SCALE: float = 2.35
 const AMBIENT_BOARD_LIGHT_OFFSET = Vector2.ZERO
-const AMBIENT_BOARD_LIGHT_ENERGY: float = 0.32
-const AMBIENT_BOARD_FILL_LIGHT_ENERGY: float = 0.16
+const AMBIENT_BOARD_LIGHT_ENERGY: float = 0.70
+const AMBIENT_BOARD_FILL_LIGHT_ENERGY: float = 0.10
 const AMBIENT_BOARD_LIGHT_COLOR = Color(1.0, 0.86, 0.58, 1.0)
 const AMBIENT_BOARD_LIGHT_SHADOW_COLOR = Color(0.0, 0.0, 0.0, 0.50)
 const AMBIENT_BOARD_LIGHT_SHADOW_SMOOTH: float = 2.0
@@ -360,12 +363,12 @@ const BOMB_WARNING_Z_OFFSET: int = 7
 @export_range(0.05, 0.35, 0.01) var piece_move_capture_recoil_duration: float = 0.12
 @export_range(0.05, 0.5, 0.01) var piece_move_capture_center_settle_duration: float = 0.24
 @export_range(0.0, 18.0, 0.5) var piece_move_capture_push_rotation_degrees: float = 8.0
-@export var piece_move_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.30)
-@export var piece_move_shadow_radius_scale: Vector2 = Vector2(0.92, 0.72)
-@export_range(0.01, 0.9, 0.01) var piece_move_shadow_ground_edge_softness: float = 0.10
+@export var piece_move_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.85)
+@export var piece_move_shadow_radius_scale: Vector2 = Vector2(1.30, 1.15)
+@export_range(0.01, 0.9, 0.01) var piece_move_shadow_ground_edge_softness: float = 0.35
 @export_range(0.01, 0.9, 0.01) var piece_move_shadow_lifted_edge_softness: float = 0.72
 @export var piece_move_shadow_lifted_scale: Vector2 = Vector2(1.38, 1.28)
-@export_range(0.05, 1.0, 0.01) var piece_move_shadow_lifted_alpha: float = 0.42
+@export_range(0.05, 1.0, 0.01) var piece_move_shadow_lifted_alpha: float = 0.25
 @export_range(0.0, 16.0, 0.5) var piece_move_footprint_clearance: float = 2.0
 
 @export_group("Piece Effect Occlusion")

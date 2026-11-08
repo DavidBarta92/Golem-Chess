@@ -160,6 +160,8 @@ WHITE WINS!,WHITE WINS!,VILÁGOS NYER!
 BLACK WINS!,BLACK WINS!,SÖTÉT NYER!
 YOU WON!,YOU WON!,NYERTÉL!
 YOU LOST!,YOU LOST!,VESZTETTÉL!
+YOUR_TURN,Your turn,Te jössz
+OPPONENT_TURN,%s's turn,%s jön
 Opponent,Opponent,Ellenfél
 WHITE,WHITE,VILÁGOS
 BLACK,BLACK,SÖTÉT
@@ -1032,3 +1034,8 @@ QUEST_SAMPLE_COLLECTOR_TEXT,Every stamp has a story. <b>Stick on 40 stamps</b> i
 QUEST_SAMPLE_QUICK_TITLE,Quick hand,Gyors kéz
 QUEST_SAMPLE_QUICK_TEXT,Fast and sure. <b>Win 2 matches</b> today.,Gyorsan és biztosan. <b>Nyerj 2 meccset</b> ma.
 CODEX_MIXED_SETS_TOOLTIP,A codex can only hold stamps of one set,Egy kódexben csak egy típus bélyegei lehetnek
+Open all,Open all,Mind megnyit
+Choose a pack to open,Choose a pack to open,Válassz egy csomagot
+Drag along the top of the pack to tear it open,Drag along the top of the pack to tear it open,Húzd végig az egeret a csomag tetején a kitépéshez
+Click the stamps to turn them over,Click the stamps to turn them over,Kattints a bélyegekre a megfordításukhoz
+Click to continue,Click to continue,Kattints a folytatáshoz

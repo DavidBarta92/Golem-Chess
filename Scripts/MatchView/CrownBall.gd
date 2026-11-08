@@ -9,6 +9,8 @@ const CrownGold = preload("res://Scripts/MatchView/CrownGold.gd")
 ## At full heat the picture is this many times brighter, which burns gold white.
 const HOT_BRIGHTNESS: float = 2.6
 const LIGHT_MASK_BOARD: int = 1
+## The picture at `fade` 1.
+const FADED_TINT: Color = Color(0.92, 0.92, 0.92, 0.72)
 
 var body: Sprite2D
 var rest_position: Vector2 = Vector2.ZERO
@@ -16,10 +18,16 @@ var rest_scale: Vector2 = Vector2.ONE
 ## Several lit at once share one light's worth, or together they would burn the
 ## board white.
 var light_share: float = 1.0
+## How far it has gone pale and thin, 0 to 1.
+var fade: float = 0.0:
+	set(value):
+		fade = value
+		_tint_body()
 
 var _glow: Sprite2D
 var _light: PointLight2D
 var _light_energy: float = 1.0
+var _heat: float = 0.0
 
 ## `light_scale` is the light's reach, as a share of its texture.
 func _init(picture: Texture2D, light_texture: Texture2D, light_scale: float, light_energy: float) -> void:
@@ -85,9 +93,13 @@ func land() -> void:
 	z_index = 0
 
 func set_glow(amount: float) -> void:
-	var brightness: float = lerpf(1.0, HOT_BRIGHTNESS, amount)
-	body.self_modulate = Color(brightness, brightness, brightness)
+	_heat = amount
+	_tint_body()
 	_glow.modulate.a = amount
 	_glow.visible = amount > 0.0
 	_light.enabled = amount > 0.0
 	_light.energy = amount * _light_energy * light_share
+
+func _tint_body() -> void:
+	var brightness: float = lerpf(1.0, HOT_BRIGHTNESS, _heat)
+	body.self_modulate = Color.WHITE.lerp(FADED_TINT, fade) * Color(brightness, brightness, brightness)

@@ -7,8 +7,10 @@ extends BaseButton
 ## colour is never the only signal.
 ##
 ## The control's top is the top of the screen and its height is the ribbon's
-## length, so hover, done, retracted and open are all just a length. A
-## BaseButton, so the UI click and hover sounds pick it up like any button.
+## length, so hover, done, retracted and open are all just a length. The cloth
+## is drawn on past that top, off the screen (TopBarStyle.RIBBON_OVERHANG), so
+## no top edge shows when the ribbon moves down. A BaseButton, so the UI click
+## and hover sounds pick it up like any button.
 ## Printed with the ink stamp, its pattern pinned to the foot: pulled down,
 ## the ribbon carries its specks along.
 
@@ -19,8 +21,15 @@ const TopBarIcons = preload("res://Scripts/TopBar/TopBarIcons.gd")
 const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 
 const REWARD_ICON: Dictionary = {"story": "book", "coin": "coin", "draw": "draw"}
-## x of the crenellation edges on a daily ribbon (design: 6 / 11 / 17 / 22 of 28).
-const DAILY_TEETH: Array[float] = [4.5, 8.25, 12.75, 16.5]
+## The crenellation edges on a daily ribbon, as shares of its width (design:
+## 6 / 11 / 17 / 22 of 28).
+const DAILY_TEETH: Array[float] = [6.0 / 28.0, 11.0 / 28.0, 17.0 / 28.0, 22.0 / 28.0]
+const SEAL_RADIUS: float = 11.0
+const SEAL_CHECK_SIZE: float = 13.0
+const BADGE_RADIUS: float = 10.0
+const BADGE_ICON_SIZE: float = 11.0
+## The icon's margin above the foot, and the stitching's above the icon.
+const ICON_MARGIN: float = 5.25
 
 var quest_id: String = ""
 var kind: String = "story"
@@ -185,24 +194,26 @@ func _draw() -> void:
 	draw_polyline(_outline(width, length, tail), ink, TopBarStyle.STROKE, true)
 
 	var foot: float = length - tail
+	var icon_size: float = TopBarStyle.ICON_RIBBON
+	var icon_top: float = foot - ICON_MARGIN - icon_size
 	if show_seam:
-		_draw_seam(width * 0.5, 6.0, foot - 22.5, on_color)
+		_draw_seam(width * 0.5, 6.0, icon_top - ICON_MARGIN, on_color)
 
 	if done:
-		var seal_center := Vector2(width * 0.5, foot - 3.75 - 7.5)
-		draw_circle(seal_center, 7.5, _tone(TopBarStyle.PAPER), true, -1.0, true)
-		draw_arc(seal_center, 7.5 - TopBarStyle.STROKE * 0.5, 0.0, TAU, 32, ink, TopBarStyle.STROKE, true)
-		TopBarIcons.draw_icon(self, "check", Rect2(seal_center - Vector2.ONE * 4.5, Vector2.ONE * 9.0), ink, true)
+		var seal_center := Vector2(width * 0.5, foot - 3.75 - SEAL_RADIUS)
+		draw_circle(seal_center, SEAL_RADIUS, _tone(TopBarStyle.PAPER), true, -1.0, true)
+		draw_arc(seal_center, SEAL_RADIUS - TopBarStyle.STROKE * 0.5, 0.0, TAU, 32, ink, TopBarStyle.STROKE, true)
+		TopBarIcons.draw_icon(self, "check", Rect2(seal_center - Vector2.ONE * SEAL_CHECK_SIZE * 0.5, Vector2.ONE * SEAL_CHECK_SIZE), ink, true)
 	else:
-		var icon_size: float = TopBarStyle.ICON_RIBBON
-		var icon_rect := Rect2(Vector2(width * 0.5 - icon_size * 0.5, foot - 5.25 - icon_size), Vector2.ONE * icon_size)
+		var icon_rect := Rect2(Vector2(width * 0.5 - icon_size * 0.5, icon_top), Vector2.ONE * icon_size)
 		TopBarIcons.draw_icon(self, REWARD_ICON.get(reward, "book"), icon_rect, on_color, true)
 
 	if urgent:
-		var badge_center := Vector2(width - 0.75, foot - 18.0 - 6.75)
-		draw_circle(badge_center, 6.75, _tone(TopBarStyle.URGENT), true, -1.0, true)
-		draw_arc(badge_center, 6.75 - TopBarStyle.STROKE * 0.5, 0.0, TAU, 32, ink, TopBarStyle.STROKE, true)
-		TopBarIcons.draw_icon(self, "hourglass", Rect2(badge_center - Vector2.ONE * 3.75, Vector2.ONE * 7.5), _tone(TopBarStyle.PAPER), true)
+		# Hanging over the edge by no more than the gap to the next ribbon.
+		var badge_center := Vector2(width + TopBarStyle.RIBBON_GAP - BADGE_RADIUS, icon_top - 4.0)
+		draw_circle(badge_center, BADGE_RADIUS, _tone(TopBarStyle.URGENT), true, -1.0, true)
+		draw_arc(badge_center, BADGE_RADIUS - TopBarStyle.STROKE * 0.5, 0.0, TAU, 32, ink, TopBarStyle.STROKE, true)
+		TopBarIcons.draw_icon(self, "hourglass", Rect2(badge_center - Vector2.ONE * BADGE_ICON_SIZE * 0.5, Vector2.ONE * BADGE_ICON_SIZE), _tone(TopBarStyle.PAPER), true)
 
 ## Stitching down the middle: solid for the share done, dashed for the rest.
 func _draw_seam(x: float, top: float, bottom: float, color: Color) -> void:
@@ -218,13 +229,14 @@ func _draw_seam(x: float, top: float, bottom: float, color: Color) -> void:
 		y += 5.25
 
 func _shape(width: float, height: float, tail: float) -> PackedVector2Array:
+	var top: float = -TopBarStyle.RIBBON_OVERHANG
 	match kind:
 		"story":
-			return PackedVector2Array([Vector2(0, 0), Vector2(width, 0), Vector2(width, height - tail + 0.75), Vector2(0, height)])
+			return PackedVector2Array([Vector2(0, top), Vector2(width, top), Vector2(width, height - tail + 0.75), Vector2(0, height)])
 		"daily":
-			var points := PackedVector2Array([Vector2(0, 0), Vector2(width, 0), Vector2(width, height)])
+			var points := PackedVector2Array([Vector2(0, top), Vector2(width, top), Vector2(width, height)])
 			for index in range(DAILY_TEETH.size() - 1, -1, -1):
-				var edge: float = DAILY_TEETH[index]
+				var edge: float = DAILY_TEETH[index] * width
 				# Walking right to left: the even edges step up into a gap, the odd ones back down.
 				if index % 2 == 1:
 					points.append(Vector2(edge, height))
@@ -234,20 +246,21 @@ func _shape(width: float, height: float, tail: float) -> PackedVector2Array:
 					points.append(Vector2(edge, height))
 			points.append(Vector2(0, height))
 			return points
-	return PackedVector2Array([Vector2(0, 0), Vector2(width, 0), Vector2(width, height), Vector2(width * 0.5, height - tail), Vector2(0, height)])
+	return PackedVector2Array([Vector2(0, top), Vector2(width, top), Vector2(width, height), Vector2(width * 0.5, height - tail), Vector2(0, height)])
 
 ## The ink line down both sides and along the cut; the top edge has none.
 func _outline(width: float, height: float, tail: float) -> PackedVector2Array:
 	var inset: float = TopBarStyle.STROKE * 0.5
+	var top: float = -TopBarStyle.RIBBON_OVERHANG
 	var bottom: float = height - inset
 	var notch: float = height - tail + inset * 0.6
 	match kind:
 		"story":
-			return PackedVector2Array([Vector2(inset, 0), Vector2(inset, bottom), Vector2(width - inset, height - tail + 0.75), Vector2(width - inset, 0)])
+			return PackedVector2Array([Vector2(inset, top), Vector2(inset, bottom), Vector2(width - inset, height - tail + 0.75), Vector2(width - inset, top)])
 		"daily":
-			var points := PackedVector2Array([Vector2(inset, 0), Vector2(inset, bottom)])
+			var points := PackedVector2Array([Vector2(inset, top), Vector2(inset, bottom)])
 			for index in range(DAILY_TEETH.size()):
-				var edge: float = DAILY_TEETH[index]
+				var edge: float = DAILY_TEETH[index] * width
 				if index % 2 == 0:
 					points.append(Vector2(edge, bottom))
 					points.append(Vector2(edge, notch))
@@ -255,6 +268,6 @@ func _outline(width: float, height: float, tail: float) -> PackedVector2Array:
 					points.append(Vector2(edge, notch))
 					points.append(Vector2(edge, bottom))
 			points.append(Vector2(width - inset, bottom))
-			points.append(Vector2(width - inset, 0))
+			points.append(Vector2(width - inset, top))
 			return points
-	return PackedVector2Array([Vector2(inset, 0), Vector2(inset, bottom), Vector2(width * 0.5, notch), Vector2(width - inset, bottom), Vector2(width - inset, 0)])
+	return PackedVector2Array([Vector2(inset, top), Vector2(inset, bottom), Vector2(width * 0.5, notch), Vector2(width - inset, bottom), Vector2(width - inset, top)])

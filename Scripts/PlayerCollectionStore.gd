@@ -15,6 +15,13 @@ const DEFAULT_COLLECTION_STAMP_NAMES: Array[String] = []
 var collection_data: Dictionary = {}
 var is_loaded: bool = false
 
+# The collection by stamp and by print. It is a flat list, and a codex list asks
+# about every stamp of every codex: walking the list each time adds up to seconds.
+# Every change to the collection ends in save_collection(), which drops these.
+var _owned_by_stamp_code: Dictionary = {}
+var _items_by_print_id: Dictionary = {}
+var _lookups_ready: bool = false
+
 func ensure_loaded() -> void:
 	if is_loaded:
 		return
@@ -61,33 +68,24 @@ func get_owned_count_for_stamp(stamp: Stamp) -> int:
 	if stamp == null:
 		return 0
 
-	var stamp_code: String = get_stamp_code(stamp)
-	var owned_count: int = 0
-	for item in _get_items():
-		if item is Dictionary && _resolve_stamp_code(str(item.get("stamp_code", ""))) == stamp_code:
-			owned_count += int(item.get("quantity", 0))
-	return owned_count
+	_prepare_lookups()
+	return int(_owned_by_stamp_code.get(get_stamp_code(stamp), 0))
 
 func get_owned_count_for_stamp_code(stamp_code: String) -> int:
 	var normalized_stamp_code: String = _resolve_stamp_code(stamp_code)
 	if normalized_stamp_code.is_empty():
 		return 0
 
-	var owned_count: int = 0
-	for item in _get_items():
-		if item is Dictionary && _resolve_stamp_code(str(item.get("stamp_code", ""))) == normalized_stamp_code:
-			owned_count += int(item.get("quantity", 0))
-	return owned_count
+	_prepare_lookups()
+	return int(_owned_by_stamp_code.get(normalized_stamp_code, 0))
 
 func get_owned_count_for_print_id(print_id: String) -> int:
 	var normalized_print_id: String = _resolve_print_id(print_id)
 	if normalized_print_id.is_empty():
 		return 0
 
-	for item in _get_items():
-		if item is Dictionary && _resolve_print_id(str(item.get("print_id", ""))) == normalized_print_id:
-			return int(item.get("quantity", 0))
-	return 0
+	_prepare_lookups()
+	return int(_items_by_print_id.get(normalized_print_id, {}).get("quantity", 0))
 
 func get_first_owned_item_for_stamp(stamp: Stamp) -> Dictionary:
 	if stamp == null:
@@ -123,25 +121,38 @@ func add_local_stamp_copy(stamp_name: String, variant_id: String = DEFAULT_VARIA
 
 func add_local_print_copy(print_id: String, amount: int = 1) -> Dictionary:
 	ensure_loaded()
+	var item: Dictionary = _add_print_copy(print_id, amount)
+	if item.is_empty():
+		return {}
+	save_collection()
+	return item.duplicate(true)
+
+## Many copies with a single save, for what comes in together: a save takes long
+## enough to be felt when each copy has its own.
+func add_local_print_copies(print_ids: Array[String]) -> void:
+	ensure_loaded()
+	for print_id in print_ids:
+		_add_print_copy(print_id, 1)
+	save_collection()
+
+## The caller saves.
+func _add_print_copy(print_id: String, amount: int) -> Dictionary:
 	var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
 	if stamp_print == null:
 		return {}
 
-	var items: Array = _get_items()
-	for index in range(items.size()):
-		var item = items[index]
-		if item is Dictionary && _resolve_print_id(str(item.get("print_id", ""))) == stamp_print.print_id:
-			item["quantity"] = maxi(0, int(item.get("quantity", 0))) + maxi(1, amount)
-			items[index] = item
-			collection_data["items"] = items
-			save_collection()
-			return item.duplicate(true)
+	_prepare_lookups()
+	var item: Dictionary = _items_by_print_id.get(stamp_print.print_id, {})
+	if !item.is_empty():
+		item["quantity"] = maxi(0, int(item.get("quantity", 0))) + maxi(1, amount)
+		return item
 
 	var new_item: Dictionary = _create_collection_item(stamp_print, maxi(1, amount))
+	var items: Array = _get_items()
 	items.append(new_item)
 	collection_data["items"] = items
-	save_collection()
-	return new_item.duplicate(true)
+	_items_by_print_id[stamp_print.print_id] = new_item
+	return new_item
 
 func remove_stamp_instance(instance_id: String) -> bool:
 	ensure_loaded()
@@ -161,7 +172,23 @@ func remove_stamp_instance(instance_id: String) -> bool:
 
 func save_collection() -> bool:
 	ensure_loaded()
+	_lookups_ready = false
 	return SaveIO.write_json(COLLECTION_PATH, collection_data, COLLECTION_SCHEMA_VERSION)
+
+func _prepare_lookups() -> void:
+	if _lookups_ready:
+		return
+	_owned_by_stamp_code.clear()
+	_items_by_print_id.clear()
+	for item in _get_items():
+		if !(item is Dictionary):
+			continue
+		var stamp_code: String = _resolve_stamp_code(str(item.get("stamp_code", "")))
+		_owned_by_stamp_code[stamp_code] = int(_owned_by_stamp_code.get(stamp_code, 0)) + int(item.get("quantity", 0))
+		var print_id: String = _resolve_print_id(str(item.get("print_id", "")))
+		if !_items_by_print_id.has(print_id):
+			_items_by_print_id[print_id] = item
+	_lookups_ready = true
 
 func get_stamp_code(stamp: Stamp) -> String:
 	if stamp == null:

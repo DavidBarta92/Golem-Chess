@@ -17,8 +17,32 @@ func has_pending_visual_processes() -> bool:
 	)
 
 func wait_for_pending_visual_processes() -> void:
-	while match_board.is_inside_tree() and has_pending_visual_processes():
+	while is_instance_valid(match_board) and match_board.is_inside_tree() and has_pending_visual_processes():
 		await match_board.get_tree().process_frame
+
+## Says whose turn it is once the board has finished showing how it got there, so
+## the words do not land on a capture still breaking apart. By then the player
+## may have moved already, and the words would be out of date.
+func announce_turn() -> void:
+	if !should_announce_turn():
+		return
+	var turn_color: int = match_board.get_current_turn_color()
+	# A capture's shatter only starts on the next frame, so it is not pending yet.
+	await match_board.get_tree().process_frame
+	await wait_for_pending_visual_processes()
+	if !is_instance_valid(match_board) or match_board.game_over or match_board.get_current_turn_color() != turn_color:
+		return
+	match_board.get_turn_hud_controller().announce_turn(turn_color)
+
+## Not in the tutorial, where Grandpa does the talking, and not over the intro:
+## the first turn is announced as the interface comes in.
+func should_announce_turn() -> bool:
+	if match_board.tutorial_mode_active or GameConfig.is_ai_vs_ai_batch or GameConfig.is_dedicated_server:
+		return false
+	if match_board.game_over or !match_board.has_received_server_state:
+		return false
+	var intro: MatchIntroController = match_board.get_node_or_null("../MatchIntroController") as MatchIntroController
+	return intro == null or intro.is_interface_revealed()
 
 func can_switch_action_now() -> bool:
 	var owner_color: int = match_board.get_controllable_color()

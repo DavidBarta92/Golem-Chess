@@ -1,14 +1,16 @@
 // The stamps' ink blot (ink_blot.gdshaderinc). Every inked layer of a stamp
 // works in the stamp's own units, so the blotches run across the square, the
-// art and the lettering as one print. StampVisual sets the instance uniform
-// on each layer.
+// art and the lettering as one print. StampVisual sets the uniform on each
+// layer's material. Each layer has a material of its own, so this is not an
+// instance uniform: those are limited to 256 items under the Compatibility
+// renderer, and at seven layers a stamp a collection page goes past that.
 
 #include "res://Shaders/ink_blot.gdshaderinc"
 
 // xy = the layer's top-left corner in the stamp, z = stamp units per layer
 // unit (the stamp's usual height over its height now, so a smaller stamp
 // shows the same blotches), w = the stamp's seed.
-instance uniform vec4 stamp_blot_frame = vec4(0.0, 0.0, 1.0, 0.0);
+uniform vec4 stamp_blot_frame = vec4(0.0, 0.0, 1.0, 0.0);
 
 // Set in vertex() with stamp_blot_position_of(VERTEX).
 varying vec2 stamp_blot_position;

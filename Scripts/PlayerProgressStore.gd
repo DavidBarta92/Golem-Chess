@@ -202,7 +202,8 @@ func purchase_packs(amount: int, pack_id: String = LEGACY_PACK_ID, pack_price: i
 	add_unopened_packs(pack_count, pack_id)
 	return true
 
-func open_pack(pack_id: String = "") -> bool:
+## `save` off is for opening several in a row, with one save_progress() after them.
+func open_pack(pack_id: String = "", save: bool = true) -> bool:
 	ensure_loaded()
 	var normalized_pack_id: String = pack_id.strip_edges()
 	if normalized_pack_id.is_empty():
@@ -231,7 +232,8 @@ func open_pack(pack_id: String = "") -> bool:
 			pack_counts[normalized_pack_id] = next_count
 		progress_data["unopened_pack_counts"] = _remove_empty_pack_counts(pack_counts)
 		progress_data["unopened_pack_queue"] = _normalize_unopened_pack_queue([], pack_counts)
-	save_progress()
+	if save:
+		save_progress()
 	return true
 
 func get_first_unopened_pack_id() -> String:

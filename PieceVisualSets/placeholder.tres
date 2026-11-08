@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="PieceVisualSet" format=3]
+
+[ext_resource type="Texture2D" uid="uid://cesyrou720i1x" path="res://Assets/golem_back.svg" id="1_back"]
+[ext_resource type="Texture2D" uid="uid://3chugtxqnrdn" path="res://Assets/golem_front.svg" id="2_front"]
+[ext_resource type="Script" uid="uid://brv1p4k8s2mty" path="res://Scripts/PieceVisualSet.gd" id="3_script"]
+
+[resource]
+script = ExtResource("3_script")
+white_front = ExtResource("2_front")
+white_back = ExtResource("1_back")
+black_front = ExtResource("2_front")
+black_back = ExtResource("1_back")

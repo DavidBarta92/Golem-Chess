@@ -1,5 +1,13 @@
 extends RefCounted
 
+const GROUND_SHADOW_SHADER = preload("res://Shaders/piece_move_shadow.gdshader")
+const CONTACT_SHADOW_NAME: String = "PieceContactShadow"
+## Under the drawn grid, so its ink stays on top and every piece stands in front.
+const CONTACT_SHADOW_Z_INDEX: int = BoardGridOverlay.Z_INDEX - 1
+## How far below the footprint it lies, as a share of its height: the rim that
+## shows in front of the feet is what stands the piece on the board.
+const CONTACT_SHADOW_DROP: float = 0.45
+
 var geometry
 var board_size: int = BoardConfig.BOARD_SIZE
 var cell_width: int = BoardConfig.CELL_WIDTH
@@ -20,6 +28,11 @@ var piece_shadow_light_energy: float = 0.30
 var piece_shadow_light_color: Color = Color(1.0, 0.92, 0.72, 1.0)
 var piece_shadow_light_shadow_color: Color = Color(0.0, 0.0, 0.0, 0.88)
 var piece_shadow_light_shadow_smooth: float = 0.0
+var piece_ground_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.30)
+var piece_ground_shadow_radius_scale: Vector2 = Vector2(0.92, 0.72)
+var piece_ground_shadow_edge_softness: float = 0.10
+var ground_shadow_texture: Texture2D
+var contact_shadow_material: ShaderMaterial
 var board_light_receive_mask: int = 1
 var piece_light_occluder_mask: int = 1
 
@@ -62,6 +75,9 @@ func configure(config: Dictionary) -> void:
 	piece_shadow_light_color = config.get("piece_shadow_light_color", piece_shadow_light_color)
 	piece_shadow_light_shadow_color = config.get("piece_shadow_light_shadow_color", piece_shadow_light_shadow_color)
 	piece_shadow_light_shadow_smooth = float(config.get("piece_shadow_light_shadow_smooth", piece_shadow_light_shadow_smooth))
+	piece_ground_shadow_color = config.get("piece_ground_shadow_color", piece_ground_shadow_color)
+	piece_ground_shadow_radius_scale = config.get("piece_ground_shadow_radius_scale", piece_ground_shadow_radius_scale)
+	piece_ground_shadow_edge_softness = float(config.get("piece_ground_shadow_edge_softness", piece_ground_shadow_edge_softness))
 	board_light_receive_mask = int(config.get("board_light_receive_mask", board_light_receive_mask))
 	piece_light_occluder_mask = int(config.get("piece_light_occluder_mask", piece_light_occluder_mask))
 	piece_light_receive_mask = int(config.get("piece_light_receive_mask", piece_light_receive_mask))
@@ -222,6 +238,42 @@ func apply_shadow(
 	if piece_color * own_color < 0:
 		light_source_y_direction *= -1.0
 	shadow.global_position = holder.to_global(footprint_center) + Vector2(0.0, piece_shadow_light_source_offset * light_source_y_direction)
+	add_contact_shadow(holder, footprint)
+
+## The dark rim on the board around a piece's feet. The cast shadow above is too
+## faint and too long to do this: without it a piece looks laid on the board
+## rather than standing on it.
+func add_contact_shadow(holder: Sprite2D, footprint: Dictionary) -> void:
+	var radius: Vector2 = Vector2(float(footprint.get("radius_x", 0.0)), float(footprint.get("radius_y", 0.0))) * piece_ground_shadow_radius_scale
+	if radius.x <= 0.0 or radius.y <= 0.0:
+		return
+	var contact := Sprite2D.new()
+	contact.name = CONTACT_SHADOW_NAME
+	contact.z_as_relative = false
+	contact.z_index = CONTACT_SHADOW_Z_INDEX
+	contact.light_mask = 0
+	contact.texture = get_ground_shadow_texture()
+	contact.scale = radius * 2.0 / contact.texture.get_size()
+	contact.material = get_contact_shadow_material()
+	holder.add_child(contact)
+	contact.position = footprint.get("center", Vector2.ZERO) + Vector2(0.0, radius.y * CONTACT_SHADOW_DROP)
+
+func get_contact_shadow_material() -> ShaderMaterial:
+	if contact_shadow_material == null:
+		contact_shadow_material = ShaderMaterial.new()
+		contact_shadow_material.shader = GROUND_SHADOW_SHADER
+		contact_shadow_material.set_shader_parameter("alpha_strength", 1.0)
+	contact_shadow_material.set_shader_parameter("shadow_color", piece_ground_shadow_color)
+	contact_shadow_material.set_shader_parameter("edge_softness", piece_ground_shadow_edge_softness)
+	return contact_shadow_material
+
+## A blank square for the ground shadows' shader to cut the ellipse out of.
+func get_ground_shadow_texture() -> Texture2D:
+	if ground_shadow_texture == null:
+		var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+		image.fill(Color.WHITE)
+		ground_shadow_texture = ImageTexture.create_from_image(image)
+	return ground_shadow_texture
 
 func remove_shadow(holder: Sprite2D) -> void:
 	if holder == null or !is_instance_valid(holder):
@@ -230,6 +282,9 @@ func remove_shadow(holder: Sprite2D) -> void:
 	var existing_shadow: Node = holder.get_node_or_null(piece_shadow_name)
 	if existing_shadow != null:
 		existing_shadow.free()
+	var existing_contact: Node = holder.get_node_or_null(CONTACT_SHADOW_NAME)
+	if existing_contact != null:
+		existing_contact.free()
 
 func get_shadow_light(holder: Sprite2D) -> PointLight2D:
 	if holder == null or !is_instance_valid(holder):

@@ -82,6 +82,7 @@ const BURN_TILT_DEGREES: float = 7.0
 const BURN_NOISE_SCALE: float = 5.0
 const BURN_STAGGER: float = 0.12
 
+const RING_FADE_SECONDS: float = 0.6
 const TAKEN_SECONDS: float = 0.2
 ## The crown has gone onto a golem: what is left of the row hurries out of its way.
 const HURRY_SPEED: float = 4.0
@@ -113,6 +114,7 @@ var _burns_due: int = 0
 var _playing: bool = false
 var _step: Tween
 var _show_share: float = 0.0
+var _ring_fade_tween: Tween
 
 ## `row_centre_canvas_x` is over what, on the 1920x1080 canvas, the row is
 ## centred on the player's own side.
@@ -151,6 +153,17 @@ func is_ring_ready() -> bool:
 func set_ring_lifted(lifted: bool) -> void:
 	_ring_lifted = lifted
 	_settle_ring()
+
+## Pale while it cannot be taken.
+func set_ring_faded(faded: bool, animate: bool) -> void:
+	if _ring_fade_tween != null and _ring_fade_tween.is_valid():
+		_ring_fade_tween.kill()
+	var target: float = 1.0 if faded else 0.0
+	if !animate:
+		_ring.fade = target
+		return
+	_ring_fade_tween = create_tween()
+	_ring_fade_tween.tween_property(_ring, "fade", target, RING_FADE_SECONDS)
 
 ## How large the crown stands in its groove, as a share of its size: it breathes
 ## while it can be taken.

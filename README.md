@@ -14,6 +14,10 @@
   the stamps, and where to tune it.
 - [Docs/Style/FREEZE_ICE.md](Docs/Style/FREEZE_ICE.md) — the ice on frozen
   pieces: how it animates, reflects and bends, and where to tune it.
+- [Docs/PackOpening/PACK_OPENING.md](Docs/PackOpening/PACK_OPENING.md) — opening a
+  pack: the steps, rarity and its odds, where to tune it, the sounds.
+- [Docs/Cutting/CUTTING.md](Docs/Cutting/CUTTING.md) — mouse cuts against a line or
+  a die: the logic behind tearing a pack, and how another scene can use it.
 - [Docs/Balance/STAMP_VALUE.md](Docs/Balance/STAMP_VALUE.md) — the stamp value
   estimate: the formula, its weights, and the editor plugin that shows it and
   stores it on each stamp.

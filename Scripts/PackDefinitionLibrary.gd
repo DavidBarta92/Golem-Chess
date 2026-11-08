@@ -143,6 +143,55 @@ func _register_pack(pack_definition: PackDefinition) -> void:
 		pack_order.append(pack_id)
 	all_packs[pack_id] = pack_definition
 
+## The stamps of one opened pack. Each slot draws its rarity by the pack's odds,
+## then a stamp of that rarity that this pack has not given yet: not the same
+## print, and not another print of the same stamp either. With nothing left at
+## that rarity it takes the next one down, then up.
+func roll_rewards(pack_definition: PackDefinition, count: int) -> Array[StampPrint]:
+	var prints_by_rarity: Dictionary = {}
+	for stamp_print in get_reward_print_pool(pack_definition):
+		var rarity: int = stamp_print.get_rarity()
+		if !prints_by_rarity.has(rarity):
+			prints_by_rarity[rarity] = []
+		prints_by_rarity[rarity].append(stamp_print)
+	for prints_value in prints_by_rarity.values():
+		(prints_value as Array).shuffle()
+
+	var rewards: Array[StampPrint] = []
+	var drawn_stamp_codes: Dictionary = {}
+	for i in range(count):
+		var drawn: StampPrint = _draw_print(prints_by_rarity, _roll_rarity(pack_definition), drawn_stamp_codes)
+		if drawn == null:
+			break
+		rewards.append(drawn)
+		drawn_stamp_codes[drawn.stamp_code] = true
+	return rewards
+
+func _roll_rarity(pack_definition: PackDefinition) -> int:
+	if pack_definition == null:
+		return StampPrint.Rarity.BASIC
+	var roll: float = randf()
+	if roll < pack_definition.full_art_chance:
+		return StampPrint.Rarity.FULL_ART
+	if roll < pack_definition.full_art_chance + pack_definition.foil_chance:
+		return StampPrint.Rarity.FOIL
+	return StampPrint.Rarity.BASIC
+
+func _draw_print(prints_by_rarity: Dictionary, rarity: int, drawn_stamp_codes: Dictionary) -> StampPrint:
+	var rarities: Array[int] = []
+	for lower_rarity in range(rarity, StampPrint.Rarity.BASIC - 1, -1):
+		rarities.append(lower_rarity)
+	for higher_rarity in range(rarity + 1, StampPrint.Rarity.FULL_ART + 1):
+		rarities.append(higher_rarity)
+
+	for candidate_rarity in rarities:
+		var prints: Array = prints_by_rarity.get(candidate_rarity, [])
+		while !prints.is_empty():
+			var candidate: StampPrint = prints.pop_back()
+			if !drawn_stamp_codes.has(candidate.stamp_code):
+				return candidate
+	return null
+
 func _add_print_to_pool(pool_by_id: Dictionary, stamp_print: StampPrint) -> void:
 	# A pack can name a print file directly, so a turned-off print is left out here too.
 	if stamp_print == null or !stamp_print.enabled:

@@ -2,6 +2,9 @@
 extends Resource
 class_name Stamp
 
+# What a stamp's piece looks like until it has piece_visuals of its own.
+const PLACEHOLDER_PIECE_VISUALS = preload("res://PieceVisualSets/placeholder.tres")
+
 enum Role {
 	UNIT,
 	SEEKER,
@@ -23,6 +26,7 @@ enum Role {
 @export var stamp_art: Texture2D
 @export var stamp_art_mask: Texture2D
 @export var piece_visuals: PieceVisualSet
+# Old per-stamp pieces. Nothing reads these any more; they stay so the stamp files keep their values.
 @export_storage var white_piece_texture: Texture2D
 @export_storage var black_piece_texture: Texture2D
 @export var description: String = ""
@@ -139,12 +143,7 @@ func get_piece_texture(piece_color: int, view: String = PieceVisualSet.VIEW_BACK
 		var visual_set_texture: Texture2D = piece_visuals.get_texture(piece_color, view)
 		if visual_set_texture != null:
 			return visual_set_texture
-	return get_legacy_piece_texture(piece_color)
+	return PLACEHOLDER_PIECE_VISUALS.get_texture(piece_color, view)
 
 func get_piece_preview_texture(piece_color: int) -> Texture2D:
 	return get_piece_texture(piece_color, PieceVisualSet.VIEW_PREVIEW)
-
-func get_legacy_piece_texture(piece_color: int) -> Texture2D:
-	if piece_color > 0:
-		return white_piece_texture
-	return black_piece_texture

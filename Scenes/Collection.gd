@@ -235,6 +235,7 @@ func _setup_pack_controller() -> void:
 		"buy_packs_panel": buy_packs_panel,
 		"pack_notice_panel": pack_panel,
 		"pack_inventory": pack_inventory,
+		"book_node": book_image,
 	}, Callable(self, "_on_pack_opened"))
 
 func _setup_elastic_scrolls() -> void:
@@ -928,8 +929,10 @@ func _on_buy_packs_pressed() -> void:
 	if pack_controller != null and !pack_controller.is_buy_packs_modal_open():
 		pack_controller.show_buy_packs()
 
-func _on_pack_opened(_rewards: Array[StampPrint]) -> void:
-	_populate_saved_decks_list()
+func _on_pack_opened(_rewards: Array[StampPrint], has_new_stamps: bool) -> void:
+	# A codex only asks whether a stamp is owned, not how many copies there are.
+	if has_new_stamps:
+		_populate_saved_decks_list()
 	_update_deck_editor_state()
 	_refresh_stamp_filter(false)
 

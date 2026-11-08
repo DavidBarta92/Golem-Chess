@@ -19,6 +19,8 @@ func set_turn(turn_value) -> void:
 		match_board.get_node("../Camera2D").global_rotation_degrees = 180
 	else:
 		match_board.get_node("../Camera2D").global_rotation_degrees = 0
+	# The board has just turned round, and the player may be someone else.
+	match_board.turn_changed.emit(match_board.get_current_turn_color(), false)
 
 func ready() -> void:
 	randomize()
@@ -49,6 +51,19 @@ func ready() -> void:
 	match_board.create_quit_confirmation_ui()
 	match_board.get_turn_hud_controller().create_end_turn_ui()
 	match_board.get_turn_hud_controller().create_turn_timer_ui()
+	match_board.get_turn_hud_controller().create_turn_banner_ui()
+	match_board.turn_changed.connect(Callable(match_board.get_board_environment_controller(), "follow_turn"))
+	match_board.turn_changed.connect(Callable(match_board.get_crown_controller(), "follow_turn"))
+	match_board.game_finished.connect(Callable(match_board.get_board_environment_controller(), "set_turn_vignette").bind(0.0).unbind(1))
+	var turn_flow = match_board.get_turn_flow_controller()
+	match_board.turn_ended.connect(Callable(turn_flow, "announce_turn").unbind(2))
+	var intro: MatchIntroController = match_board.get_node_or_null("../MatchIntroController") as MatchIntroController
+	if intro != null:
+		intro.interface_revealed.connect(Callable(turn_flow, "announce_turn"))
+		# The edge stays where it is through the intro, whoever is on the move.
+		intro.interface_revealed.connect(func() -> void:
+			match_board.turn_changed.emit(match_board.get_current_turn_color(), true)
+		)
 	var hud_controller = match_board.get_turn_hud_controller()
 	var resize_callable := Callable(self, "on_viewport_size_changed")
 	if !match_board.get_viewport().size_changed.is_connected(resize_callable):

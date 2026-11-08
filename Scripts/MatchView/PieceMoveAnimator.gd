@@ -44,7 +44,6 @@ var view_color: int = 1
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
 var piece_exists_provider: Callable = Callable()
 var sprite_bounds_provider: Callable = Callable()
-var movement_shadow_texture: Texture2D
 var last_wobble_variant_index: int = -1
 
 func configure(config: Dictionary) -> void:
@@ -372,31 +371,30 @@ func create_movement_shadow(holder: Sprite2D, from_pos: Vector2) -> Sprite2D:
 	shadow.name = "PieceMoveGroundShadow"
 	shadow.z_index = get_depth_z_index(from_pos) + movement_shadow_z_offset
 	shadow.light_mask = 0
-	shadow.texture = get_movement_shadow_texture()
+	shadow.texture = piece_visuals.get_ground_shadow_texture()
 	shadow.scale = Vector2(radius_x * 2.0 / float(shadow.texture.get_width()), radius_y * 2.0 / float(shadow.texture.get_height()))
 	var shadow_material := ShaderMaterial.new()
 	shadow_material.shader = PIECE_MOVE_SHADOW_SHADER
 	shadow_material.set_shader_parameter("shadow_color", movement_shadow_color)
-	shadow_material.set_shader_parameter("alpha_strength", 0.0)
+	# Takes over from the shadow the piece stood on, so it does not go out as the
+	# piece leaves the board.
+	shadow_material.set_shader_parameter("alpha_strength", 1.0)
 	shadow_material.set_shader_parameter("edge_softness", movement_shadow_ground_edge_softness)
 	shadow.material = shadow_material
 	pieces_node.add_child(shadow)
 
-	var footprint_center: Vector2 = footprint.get("center", get_position_local(from_pos))
+	var footprint_center: Vector2 = get_ground_shadow_center(footprint, get_position_local(from_pos))
 	if pieces_node is Node2D and local_space_node != null and is_instance_valid(local_space_node):
 		shadow.position = (pieces_node as Node2D).to_local(local_space_node.to_global(footprint_center))
 	else:
 		shadow.position = footprint_center
 	return shadow
 
-func get_movement_shadow_texture() -> Texture2D:
-	if movement_shadow_texture != null:
-		return movement_shadow_texture
-
-	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
-	image.fill(Color.WHITE)
-	movement_shadow_texture = ImageTexture.create_from_image(image)
-	return movement_shadow_texture
+## Where a resting piece's contact shadow lies, so this one takes over from it and
+## hands back to it without a jump. Board space turns over with the view.
+func get_ground_shadow_center(footprint: Dictionary, fallback: Vector2) -> Vector2:
+	var drop: float = float(footprint.get("radius_y", 0.0)) * movement_shadow_radius_scale.y * piece_visuals.CONTACT_SHADOW_DROP
+	return footprint.get("center", fallback) + Vector2(0.0, drop * float(piece_visuals.view_color))
 
 func get_random_wobble_variant() -> Dictionary:
 	var variants: Array[Dictionary] = [
@@ -1067,7 +1065,7 @@ func update_movement_shadow_position(shadow: Sprite2D, holder: Sprite2D, lift_he
 	var footprint: Dictionary = get_footprint_board_geometry(holder)
 	if bool(footprint.get("empty", true)):
 		return
-	var ground_center: Vector2 = footprint.get("center", holder.position) + Vector2(0.0, lift_height)
+	var ground_center: Vector2 = get_ground_shadow_center(footprint, holder.position) + Vector2(0.0, lift_height)
 	shadow.z_index = get_z_index_for_local_position(ground_center, holder) + movement_shadow_z_offset
 	if pieces_node is Node2D and local_space_node != null and is_instance_valid(local_space_node):
 		shadow.position = (pieces_node as Node2D).to_local(local_space_node.to_global(ground_center))

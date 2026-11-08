@@ -3,32 +3,79 @@ class_name CollectionPackController
 
 const BOOSTER_PACK_TEXTURE = preload("res://Assets/booster.png")
 const PACK_3D_VIEW = preload("res://Scenes/Pack3DView.tscn")
-const PACK_TEAR_PIECE_SHADER = preload("res://Shaders/pack_tear_piece.gdshader")
 const WINDOW_CLOSE_ICON = preload("res://ui/themes/icons/window_close_large.svg")
 const COIN_TEXTURE = preload("res://Assets/coin.svg")
 const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
 const PACK_REWARD_STAMP_COUNT: int = 4
 const MAX_VISIBLE_PACK_ICONS: int = 4
 const MAX_SELECTION_PACK_ICONS: int = 15
-const PACK_OVERLAY_Z_INDEX: int = 2200
+## Above the top bar, under the paper texture and so printed on the same paper.
+const PACK_OVERLAY_LAYER: int = 1205
+const PACK_OVERLAY_DIM: Color = Color(0.0, 0.0, 0.0, 0.9)
 const PACK_FLY_IN_SECONDS: float = 0.42
 const PACK_FLY_STAGGER_SECONDS: float = 0.055
 const PACK_FOCUS_SECONDS: float = 0.42
 const PACK_INVENTORY_PREVIEW_SCALE: float = 1.1
 const PACK_VISUAL_SIZE_SCALE: float = 1.15
-const PACK_FOCUSED_SCALE: float = 1.61
-const PACK_TEAR_SECONDS: float = 1.05
-const PACK_TEAR_CUT_SECONDS: float = 0.28
-const PACK_TEAR_TO_FALL_DELAY: float = 0.42
+## How tall the pack being opened stands, as a share of the screen.
+const PACK_FOCUSED_HEIGHT_SHARE: float = 0.56
+const PACK_FOCUSED_FOIL: float = 0.22
 const PACK_TEAR_CUT_Y: float = 0.085
 const PACK_TEAR_WAVE_STRENGTH: float = 0.012
 const PACK_TEAR_EDGE_SOFTNESS: float = 0.006
-const PACK_FALL_SECONDS: float = 1.12
-const PACK_REWARD_SPREAD_DELAY: float = 0.56
+## How long the torn pack holds its breath before the stamps come, by the best
+## rarity inside: the rarer, the longer the light has to build.
+const PACK_BREATH_SECONDS: Dictionary = {
+	StampPrint.Rarity.BASIC: 0.14,
+	StampPrint.Rarity.FOIL: 0.5,
+	StampPrint.Rarity.FULL_ART: 0.95,
+}
+const PACK_LIGHT_STRENGTH: Dictionary = {
+	StampPrint.Rarity.FOIL: 0.42,
+	StampPrint.Rarity.FULL_ART: 0.9,
+}
+const PACK_LIGHT_SHAKE: float = 0.012
+const PACK_KICK_WORLD: float = 0.09
+## The stamps peek this far over the torn edge before they come out.
+const PACK_STAMP_PEEK: float = 9.0
+## How much of a stamp is out of the pack at the top of its rise.
+const PACK_STAMP_RISE_SHARE: float = 0.62
+const PACK_STAMP_RISE_SECONDS: float = 0.34
+const PACK_STAMP_RISE_STAGGER: float = 0.09
+## They come out as one stack, narrower than the pack: a stamp showing beside the
+## pack would look as if it had come from behind it.
+const PACK_STAMP_RISE_SPREAD: float = 5.0
+const PACK_STAMP_RISE_DEGREES: float = 1.2
+## Stamps are built over several frames, this many a frame: one takes a few
+## milliseconds, and a whole heap of them at once would stop the game.
+const PACK_STAMPS_BUILT_PER_FRAME: int = 2
+const PACK_DROP_WORLD: float = 4.4
+const PACK_FALL_SECONDS: float = 0.52
 const PACK_REWARD_SPREAD_SECONDS: float = 0.44
+const PACK_REWARD_SPREAD_STAGGER: float = 0.05
 const PACK_REWARD_FLIP_SECONDS: float = 0.18
-const PACK_REWARD_MAX_SCALE: float = 0.72
-const PACK_REWARD_MIN_SCALE: float = 0.38
+## A turned stamp jumps a little, as the reward scenes' cards do.
+const PACK_REWARD_HOP_HEIGHT: float = 0.1
+const PACK_REWARD_HOP_GROW: float = 0.06
+const PACK_REWARD_FOIL_LIFT: float = 14.0
+const PACK_REWARD_FOIL_LIFT_SECONDS: float = 0.16
+const PACK_REWARD_CAPTION_SIZE: Vector2 = Vector2(230.0, 44.0)
+const PACK_REWARD_CAPTION_GAP: float = 10.0
+const PACK_REWARD_DESCRIPTION_WIDTH: float = 320.0
+## What the description leaves free at the edges of the screen, and under it for the hint.
+const PACK_REWARD_DESCRIPTION_MARGIN: float = 16.0
+const PACK_REWARD_DESCRIPTION_FOOTER: float = 44.0
+## A click while the opening plays runs what is left at this speed.
+const PACK_SKIP_SPEED: float = 3.5
+const PACK_LEAVE_SECONDS: float = 0.42
+const PACK_LEAVE_STAGGER: float = 0.06
+const PACK_LEAVE_SCALE: float = 0.14
+const PACK_BATCH_GATHER_SECONDS: float = 0.26
+const PACK_BATCH_FLIP_STAGGER: float = 0.06
+const PACK_BATCH_FLIP_SHARE: float = 0.5
+const PACK_REWARD_MAX_SCALE: float = 1.1
+const PACK_REWARD_MIN_SCALE: float = 0.3
+const PACK_REWARD_ROW_GAP: float = 12.0
 const PACK_REWARD_SIDE_MARGIN: float = 36.0
 const STAMP_VISUAL_SIZE: Vector2 = Vector2(168.7, 229.0)
 const BUY_PACKS_WINDOW_MIN_SIZE: Vector2 = Vector2(860.0, 430.0)
@@ -47,6 +94,7 @@ const BUY_PACKS_CONTENT_TOP_PADDING: float = 4.0
 const BUY_PACKS_STAMP_TOOLTIP_OFFSET: Vector2 = Vector2(14.0, 14.0)
 const OVERLAY_STATE_SELECTION: String = "selection"
 const OVERLAY_STATE_FOCUSED: String = "focused"
+const OVERLAY_STATE_TEARING: String = "tearing"
 const OVERLAY_STATE_OPENING: String = "opening"
 const OVERLAY_STATE_REWARDS: String = "rewards"
 
@@ -73,15 +121,42 @@ var pack_preview_nodes: Array[Control] = []
 var pack_inventory_arrival_tweens: Dictionary = {}
 var pack_opened_callback: Callable
 var pack_click_area: Control
+var pack_overlay_layer: CanvasLayer
 var pack_overlay: Control
-var pack_overlay_backbuffer: BackBufferCopy
-var pack_blur_rect: ColorRect
+var pack_dim_rect: ColorRect
 var pack_layer: Control
 var reward_layer: Control
+var pack_fx_layer: Control
+var pack_footer: Control
+var pack_hint_label: Label
+var pack_footer_buttons: Control
+var open_all_button: Button
+var pack_tear: PackTearInteraction
+var pack_light: ColorRect
+var book_node: Control
 var opening_pack_nodes: Array[Control] = []
 var revealed_stamp_nodes: Array[StampVisual] = []
 var reward_stamp_flipped: Array[bool] = []
 var reward_flip_hitboxes: Array[Control] = []
+var reward_captions: Array[Control] = []
+## The prints that came out of this opening and were not in the collection before.
+var reward_new_print_ids: Dictionary = {}
+## Claimed stamps the room behind the overlay does not show yet.
+var unseen_rewards: Array[StampPrint] = []
+var reward_flips_running: int = 0
+var full_art_stage: PackFullArtStage
+var reward_description_panel: PanelContainer
+var reward_description_label: RichTextLabel
+## The stamp under the mouse, -1 for none.
+var hovered_reward_stamp: int = -1
+## Changes whenever the overlay's content is thrown away, so that work spread
+## over frames can tell it has been left behind.
+var overlay_build_id: int = 0
+var batch_opening: bool = false
+## A batch turns its stamps one at a time: this is the pause between two.
+var batch_flip_waiting: bool = false
+var opening_tweens: Array[Tween] = []
+var opening_speed: float = 1.0
 var focused_pack_node: Control
 var overlay_state: String = ""
 var overlay_animating: bool = false
@@ -94,6 +169,7 @@ func bind(nodes: Dictionary, opened_callback: Callable = Callable()) -> void:
 	buy_packs_panel = nodes.get("buy_packs_panel", null) as PanelContainer
 	pack_notice_panel = nodes.get("pack_notice_panel", null) as Control
 	pack_inventory = nodes.get("pack_inventory", null) as Control
+	book_node = nodes.get("book_node", null) as Control
 	pack_opened_callback = opened_callback
 
 	PackDefinitionLibrary.ensure_loaded()
@@ -1008,14 +1084,17 @@ func is_pack_overlay_active() -> bool:
 func handle_back_pressed() -> bool:
 	if !is_pack_overlay_active():
 		return false
+	if overlay_state == OVERLAY_STATE_TEARING:
+		# A pack once started cannot be closed again: it finishes.
+		if pack_tear != null and is_instance_valid(pack_tear):
+			pack_tear.tear_by_itself()
+		return true
 	if overlay_animating:
+		_speed_up_opening()
 		return true
 
 	if overlay_state == OVERLAY_STATE_REWARDS:
-		if PlayerProgressStore.get_unopened_pack_count() > 0:
-			_show_pack_selection_overlay(true)
-		else:
-			_close_pack_overlay(true)
+		_leave_rewards()
 		return true
 
 	if overlay_state == OVERLAY_STATE_FOCUSED:
@@ -1025,28 +1104,38 @@ func handle_back_pressed() -> bool:
 	_close_pack_overlay(true)
 	return true
 
-func _claim_pack_rewards(pack_id: String = "") -> Array[StampPrint]:
-	var empty_rewards: Array[StampPrint] = []
-	var normalized_pack_id: String = pack_id.strip_edges()
-	if normalized_pack_id.is_empty():
-		normalized_pack_id = PlayerProgressStore.get_first_unopened_pack_id()
-	if PlayerProgressStore.get_unopened_pack_count(normalized_pack_id) <= 0:
-		return empty_rewards
-
-	var rewards: Array[StampPrint] = _roll_pack_rewards(normalized_pack_id)
+## Opens these packs together: the stamps are the player's from here on, with one
+## save for all of them. The room behind the overlay is brought up to date when the
+## overlay has done with them, in _refresh_room_behind_overlay: it takes too long
+## for the moment the mouse takes hold of a pack.
+func _claim_packs(pack_ids: Array[String]) -> Array[StampPrint]:
+	var rewards: Array[StampPrint] = []
+	for pack_id in pack_ids:
+		var pack_rewards: Array[StampPrint] = _roll_pack_rewards(pack_id)
+		if !pack_rewards.is_empty() and PlayerProgressStore.open_pack(pack_id, false):
+			rewards.append_array(pack_rewards)
 	if rewards.is_empty():
-		return empty_rewards
-	if !PlayerProgressStore.open_pack(normalized_pack_id):
-		return empty_rewards
+		return rewards
 
+	PlayerProgressStore.save_progress()
+	var print_ids: Array[String] = []
 	for stamp_print: StampPrint in rewards:
-		PlayerCollectionStore.add_local_print_copy(stamp_print.print_id)
+		print_ids.append(stamp_print.print_id)
+		if !PlayerCollectionStore.owns_print(stamp_print):
+			reward_new_print_ids[stamp_print.print_id] = true
+	PlayerCollectionStore.add_local_print_copies(print_ids)
 
 	refresh_progress_ui()
 	refresh_pack_inventory_ui()
-	if pack_opened_callback.is_valid():
-		pack_opened_callback.call(rewards)
+	unseen_rewards.append_array(rewards)
 	return rewards
+
+func _refresh_room_behind_overlay() -> void:
+	if unseen_rewards.is_empty():
+		return
+	if pack_opened_callback.is_valid():
+		pack_opened_callback.call(unseen_rewards, !reward_new_print_ids.is_empty())
+	unseen_rewards = []
 
 func _ensure_pack_overlay() -> void:
 	if is_pack_overlay_active():
@@ -1055,30 +1144,30 @@ func _ensure_pack_overlay() -> void:
 	if collection == null or !is_instance_valid(collection):
 		return
 
+	pack_overlay_layer = CanvasLayer.new()
+	pack_overlay_layer.name = "PackOpeningLayer"
+	pack_overlay_layer.layer = PACK_OVERLAY_LAYER
+	collection.add_child(pack_overlay_layer)
+
 	pack_overlay = Control.new()
 	pack_overlay.name = "PackOpeningOverlay"
-	collection.add_child(pack_overlay)
-	pack_overlay.z_as_relative = false
-	pack_overlay.z_index = PACK_OVERLAY_Z_INDEX
+	# A CanvasLayer cuts a control off from the theme above it.
+	pack_overlay.theme = collection.theme
+	pack_overlay_layer.add_child(pack_overlay)
 	pack_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	pack_overlay.clip_contents = false
 	_sync_pack_overlay_rect()
 
-	pack_overlay_backbuffer = BackBufferCopy.new()
-	pack_overlay_backbuffer.name = "PackOpeningBackBuffer"
-	pack_overlay_backbuffer.copy_mode = BackBufferCopy.COPY_MODE_VIEWPORT
-	pack_overlay.add_child(pack_overlay_backbuffer)
-
-	pack_blur_rect = ColorRect.new()
-	pack_blur_rect.name = "PackOpeningDim"
-	pack_overlay.add_child(pack_blur_rect)
-	pack_blur_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	pack_blur_rect.offset_left = 0.0
-	pack_blur_rect.offset_top = 0.0
-	pack_blur_rect.offset_right = 0.0
-	pack_blur_rect.offset_bottom = 0.0
-	pack_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pack_blur_rect.color = Color(0.0, 0.0, 0.0, 0.82)
+	pack_dim_rect = ColorRect.new()
+	pack_dim_rect.name = "PackOpeningDim"
+	pack_overlay.add_child(pack_dim_rect)
+	pack_dim_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pack_dim_rect.offset_left = 0.0
+	pack_dim_rect.offset_top = 0.0
+	pack_dim_rect.offset_right = 0.0
+	pack_dim_rect.offset_bottom = 0.0
+	pack_dim_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pack_dim_rect.color = PACK_OVERLAY_DIM
 
 	reward_layer = Control.new()
 	reward_layer.name = "PackRewardLayer"
@@ -1103,11 +1192,92 @@ func _ensure_pack_overlay() -> void:
 	pack_layer.offset_bottom = 0.0
 	pack_layer.mouse_filter = Control.MOUSE_FILTER_PASS
 	pack_layer.clip_contents = false
+
+	pack_fx_layer = Control.new()
+	pack_fx_layer.name = "PackEffectsLayer"
+	pack_overlay.add_child(pack_fx_layer)
+	pack_fx_layer.z_index = 25
+	pack_fx_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pack_fx_layer.offset_left = 0.0
+	pack_fx_layer.offset_top = 0.0
+	pack_fx_layer.offset_right = 0.0
+	pack_fx_layer.offset_bottom = 0.0
+	pack_fx_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	_build_pack_overlay_footer()
 	_connect_once(pack_overlay, "gui_input", Callable(self, "_on_pack_overlay_gui_input"))
 
 	var viewport := collection.get_viewport()
 	if viewport != null:
 		_connect_once(viewport, "size_changed", Callable(self, "_on_pack_overlay_viewport_resized"))
+
+## The line of text under the action, and the buttons of the choosing screen:
+## the overlay covers the top bar and its back button.
+func _build_pack_overlay_footer() -> void:
+	pack_footer = VBoxContainer.new()
+	pack_footer.name = "PackOverlayFooter"
+	pack_overlay.add_child(pack_footer)
+	pack_footer.z_index = 40
+	pack_footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pack_footer.anchor_left = 0.0
+	pack_footer.anchor_right = 1.0
+	pack_footer.anchor_top = 1.0
+	pack_footer.anchor_bottom = 1.0
+	pack_footer.offset_top = -104.0
+	pack_footer.offset_bottom = -18.0
+	pack_footer.alignment = BoxContainer.ALIGNMENT_END
+	pack_footer.add_theme_constant_override("separation", 10)
+
+	pack_hint_label = Label.new()
+	pack_hint_label.name = "PackHint"
+	pack_footer.add_child(pack_hint_label)
+	pack_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pack_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pack_hint_label.add_theme_color_override("font_color", Color(UiPalette.PAPER_RAISED, 0.82))
+
+	var buttons_centre := CenterContainer.new()
+	buttons_centre.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pack_footer.add_child(buttons_centre)
+	pack_footer_buttons = buttons_centre
+
+	var buttons_panel := PanelContainer.new()
+	buttons_panel.theme_type_variation = &"ShopWindowPanel"
+	buttons_centre.add_child(buttons_panel)
+
+	var buttons_margin := MarginContainer.new()
+	buttons_panel.add_child(buttons_margin)
+	for side in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
+		buttons_margin.add_theme_constant_override(side, 8)
+
+	var buttons_row := HBoxContainer.new()
+	buttons_margin.add_child(buttons_row)
+	buttons_row.add_theme_constant_override("separation", 10)
+
+	var back_button := Button.new()
+	back_button.text = tr("Back")
+	back_button.custom_minimum_size = Vector2(120.0, 36.0)
+	back_button.focus_mode = Control.FOCUS_NONE
+	back_button.pressed.connect(Callable(self, "_on_pack_footer_back_pressed"))
+	buttons_row.add_child(back_button)
+
+	open_all_button = Button.new()
+	open_all_button.text = tr("Open all")
+	open_all_button.custom_minimum_size = Vector2(150.0, 36.0)
+	open_all_button.focus_mode = Control.FOCUS_NONE
+	open_all_button.pressed.connect(Callable(self, "_open_all_packs"))
+	buttons_row.add_child(open_all_button)
+
+func _on_pack_footer_back_pressed() -> void:
+	if overlay_state == OVERLAY_STATE_SELECTION:
+		_close_pack_overlay(true)
+
+func _set_pack_hint(text: String) -> void:
+	if pack_hint_label != null and is_instance_valid(pack_hint_label):
+		pack_hint_label.text = text
+	if pack_footer_buttons != null and is_instance_valid(pack_footer_buttons):
+		pack_footer_buttons.visible = overlay_state == OVERLAY_STATE_SELECTION and !overlay_animating
+	if open_all_button != null and is_instance_valid(open_all_button):
+		open_all_button.visible = opening_pack_nodes.size() > 1
 
 func _sync_pack_overlay_rect() -> void:
 	if pack_overlay == null or !is_instance_valid(pack_overlay):
@@ -1141,6 +1311,9 @@ func _show_pack_selection_overlay(animate_in: bool) -> void:
 		pack_layer.mouse_filter = Control.MOUSE_FILTER_PASS
 		pack_layer.z_index = 20
 		pack_layer.move_to_front()
+	# Clicks go by tree order, not by z_index: these stay in front of the pack layer.
+	pack_fx_layer.move_to_front()
+	pack_footer.move_to_front()
 	pack_overlay.visible = true
 	pack_overlay.modulate.a = 0.0 if animate_in else 1.0
 	_sync_pack_overlay_rect()
@@ -1149,6 +1322,7 @@ func _show_pack_selection_overlay(animate_in: bool) -> void:
 		var fade_tween := pack_overlay.create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 		fade_tween.tween_property(pack_overlay, "modulate:a", 1.0, 0.16)
 
+	var build_id: int = overlay_build_id
 	var visible_pack_ids: Array[String] = _get_unopened_pack_ids_for_display(MAX_SELECTION_PACK_ICONS)
 	var target_positions: Array[Vector2] = _get_selection_pack_positions(visible_pack_ids.size())
 	for i in range(visible_pack_ids.size()):
@@ -1169,7 +1343,12 @@ func _show_pack_selection_overlay(animate_in: bool) -> void:
 		else:
 			pack_node.position = target_position
 			pack_node.scale = Vector2.ONE
+		# One a frame: each brings its own 3D view, and they arrive one by one anyway.
+		await collection.get_tree().process_frame
+		if build_id != overlay_build_id or !is_pack_overlay_active() or overlay_state != OVERLAY_STATE_SELECTION:
+			return
 
+	_set_pack_hint(tr("Choose a pack to open"))
 	if animate_in:
 		var gate_tween := pack_overlay.create_tween()
 		gate_tween.tween_interval(PACK_FLY_IN_SECONDS + maxf(0.0, float(visible_pack_ids.size() - 1) * PACK_FLY_STAGGER_SECONDS))
@@ -1230,7 +1409,7 @@ func _stop_pack_ambient_motion(pack_node: Control, reset_shader_tilt: bool = tru
 	if pack_node is Pack3DView:
 		var pack_view := pack_node as Pack3DView
 		if reset_shader_tilt:
-			pack_view.set_tear_cut_progress(0.0)
+			pack_view.set_tear_front(0.0)
 		pack_view.set_selected(false)
 		pack_view.request_static_render()
 
@@ -1248,8 +1427,6 @@ func _on_opening_pack_gui_input(event: InputEvent, pack_node: Control) -> void:
 
 	if overlay_state == OVERLAY_STATE_SELECTION:
 		_focus_overlay_pack(pack_node)
-	elif overlay_state == OVERLAY_STATE_FOCUSED and pack_node == focused_pack_node:
-		_open_focused_overlay_pack()
 
 func _focus_overlay_pack(pack_node: Control) -> void:
 	if pack_node == null or !is_instance_valid(pack_node):
@@ -1259,6 +1436,7 @@ func _focus_overlay_pack(pack_node: Control) -> void:
 	overlay_animating = true
 	focused_pack_node = pack_node
 	var focused_position: Vector2 = _get_focused_pack_position(pack_node.size)
+	_set_pack_hint("")
 
 	for node in opening_pack_nodes:
 		if node == null or !is_instance_valid(node):
@@ -1270,8 +1448,9 @@ func _focus_overlay_pack(pack_node: Control) -> void:
 			node.mouse_filter = Control.MOUSE_FILTER_STOP
 			if node is Pack3DView:
 				(node as Pack3DView).set_selected(true)
-			tween.tween_property(node, "position", focused_position, PACK_FOCUS_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-			tween.parallel().tween_property(node, "scale", Vector2.ONE * PACK_FOCUSED_SCALE, PACK_FOCUS_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+				tween.parallel().tween_method(Callable(node, "set_foil_opacity"), 0.0, PACK_FOCUSED_FOIL, PACK_FOCUS_SECONDS)
+			tween.parallel().tween_property(node, "position", focused_position, PACK_FOCUS_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+			tween.parallel().tween_property(node, "scale", Vector2.ONE * _get_focused_pack_scale(node), PACK_FOCUS_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 			tween.parallel().tween_property(node, "rotation", 0.0, PACK_FOCUS_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 		else:
 			node.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1280,150 +1459,325 @@ func _focus_overlay_pack(pack_node: Control) -> void:
 
 	var gate_tween := pack_overlay.create_tween()
 	gate_tween.tween_interval(PACK_FOCUS_SECONDS)
-	gate_tween.tween_callback(Callable(self, "_finish_overlay_animation"))
+	gate_tween.tween_callback(Callable(self, "_finish_pack_focus"))
 
-func _open_focused_overlay_pack() -> void:
-	if focused_pack_node == null or !is_instance_valid(focused_pack_node):
+func _finish_pack_focus() -> void:
+	if !is_pack_overlay_active() or overlay_state != OVERLAY_STATE_FOCUSED:
+		return
+	overlay_animating = false
+	_start_pack_tear()
+	_release_other_packs()
+
+## The packs not chosen are out of sight by now. Each holds a 3D view of its own:
+## one a frame, so that letting them go does not catch the moment the tear starts.
+func _release_other_packs() -> void:
+	var build_id: int = overlay_build_id
+	for node in opening_pack_nodes.duplicate():
+		if node == focused_pack_node or node == null or !is_instance_valid(node):
+			continue
+		_stop_pack_ambient_motion(node, false)
+		node.queue_free()
+		opening_pack_nodes.erase(node)
+		await collection.get_tree().process_frame
+		if build_id != overlay_build_id or !is_pack_overlay_active():
+			return
+
+## Puts the pack on the whole screen, unchanged, and hands it to the player's mouse.
+func _start_pack_tear() -> void:
+	var pack_view := focused_pack_node as Pack3DView
+	if pack_view == null or !is_instance_valid(pack_view):
 		return
 
-	var pack_id: String = str(focused_pack_node.get_meta("pack_id", ""))
-	var rewards: Array[StampPrint] = _claim_pack_rewards(pack_id)
-	if rewards.is_empty():
-		return
+	var stage_size: Vector2 = _get_viewport_size()
+	pack_view.set_tear_parameters(PACK_TEAR_CUT_Y, PACK_TEAR_WAVE_STRENGTH, randf(), PACK_TEAR_EDGE_SOFTNESS)
+	pack_view.frame_on_stage(pack_view.position + pack_view.size * 0.5, pack_view.get_frame_height(), stage_size, collection.get_window().size)
+	pack_view.rotation = 0.0
+	pack_view.scale = Vector2.ONE
+	# Lifted over the other packs while they were there; now it stays under the effects.
+	pack_view.z_index = 0
+	_apply_pack_control_size(pack_view, stage_size)
+	pack_view.position = Vector2.ZERO
+	# The cut area takes the clicks on the pack; the rest of the stage is background.
+	pack_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	pack_tear = PackTearInteraction.new()
+	pack_tear.name = "PackTear"
+	pack_fx_layer.add_child(pack_tear)
+	pack_tear.bind(pack_view, pack_view.stage_pack_area, PACK_TEAR_CUT_Y)
+	pack_tear.tear_started.connect(Callable(self, "_on_pack_tear_started"))
+	pack_tear.tear_finished.connect(Callable(self, "_on_pack_torn"))
+	_set_pack_hint(tr("Drag along the top of the pack to tear it open"))
+	# Ready before the mouse comes down, so that the tear starts without a stutter.
+	_prepare_reward_stamps(PACK_REWARD_STAMP_COUNT)
+
+## The moment the mouse takes hold of the pack it is opened: the stamps are in
+## the collection and in the pack from here on, whatever the tear does.
+func _on_pack_tear_started() -> void:
+	overlay_state = OVERLAY_STATE_TEARING
+	_set_pack_hint("")
+	reward_new_print_ids.clear()
+	var pack_ids: Array[String] = [str(focused_pack_node.get_meta("pack_id", ""))]
+	var rewards: Array[StampPrint] = _claim_packs(pack_ids)
+	_assign_reward_prints(rewards)
+
+func _on_pack_torn(_direction: int) -> void:
+	pack_tear = null
 	overlay_state = OVERLAY_STATE_OPENING
 	overlay_animating = true
-	focused_pack_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stop_pack_ambient_motion(focused_pack_node, false)
-	if focused_pack_node is Pack3DView:
-		(focused_pack_node as Pack3DView).set_selected(true)
-	for node in opening_pack_nodes:
-		if node != focused_pack_node and node != null and is_instance_valid(node):
-			_stop_pack_ambient_motion(node, false)
-			node.queue_free()
-	opening_pack_nodes.clear()
-	opening_pack_nodes.append(focused_pack_node)
+	opening_speed = 1.0
+	if revealed_stamp_nodes.is_empty():
+		_show_pack_selection_overlay(true)
+		return
 
-	_create_reward_stamp_stack(rewards)
-	var fall_start_delay: float = _play_pack_tear_animation(focused_pack_node)
+	var pack_view := focused_pack_node as Pack3DView
+	var rarity: int = _get_best_reward_rarity()
+	var opening_centre: Vector2 = _get_pack_opening_line(pack_view).get_center()
+	SFXManager.play("pack_tear_finish")
+	pack_view.release_flap()
+	PackRevealFx.burst(pack_fx_layer, opening_centre, PackRevealFx.PAPER_FLECK, 34, 300.0)
+	_play_pack_kick(pack_view)
+	_add_reward_auras()
+	if rarity != StampPrint.Rarity.BASIC:
+		_show_pack_light(pack_view, rarity)
+	_raise_reward_stamps(float(PACK_BREATH_SECONDS[rarity]))
 
-	var viewport_size: Vector2 = _get_viewport_size()
-	var exit_position := Vector2(
-		focused_pack_node.position.x,
-		viewport_size.y + focused_pack_node.size.y * focused_pack_node.scale.y + 96.0
-	)
-	var fall_rotation: float = deg_to_rad(randf_range(-10.0, 10.0))
-	var fall_tween := pack_overlay.create_tween()
-	fall_tween.tween_interval(fall_start_delay)
-	fall_tween.tween_property(focused_pack_node, "position", exit_position, PACK_FALL_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
-	fall_tween.parallel().tween_property(focused_pack_node, "rotation", fall_rotation, PACK_FALL_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
-	fall_tween.tween_callback(Callable(focused_pack_node, "queue_free"))
+func _get_best_reward_rarity() -> int:
+	var best: int = StampPrint.Rarity.BASIC
+	for stamp_visual in revealed_stamp_nodes:
+		best = maxi(best, _get_reward_rarity(stamp_visual))
+	return best
 
-	var spread_tween := pack_overlay.create_tween()
-	spread_tween.tween_interval(fall_start_delay + PACK_REWARD_SPREAD_DELAY)
-	spread_tween.tween_callback(Callable(self, "_arrange_reward_stamps").bind(true))
+func _get_reward_rarity(stamp_visual: StampVisual) -> int:
+	return stamp_visual.stamp_print.get_rarity() if stamp_visual.stamp_print != null else StampPrint.Rarity.BASIC
 
-	var finish_tween := pack_overlay.create_tween()
-	finish_tween.tween_interval(fall_start_delay + PACK_FALL_SECONDS + 0.08)
+## The torn edge on the overlay, from one side of the pack to the other.
+func _get_pack_opening_line(pack_view: Pack3DView) -> Rect2:
+	var pack_area: Rect2 = pack_view.stage_pack_area
+	return Rect2(pack_area.position + Vector2(0.0, pack_area.size.y * PACK_TEAR_CUT_Y), Vector2(pack_area.size.x, 0.0))
+
+## The pack jumps as the strain goes out of it.
+func _play_pack_kick(pack_view: Pack3DView) -> void:
+	var kick: float = PACK_KICK_WORLD if SettingsDataManager.is_screen_shake_enabled() else 0.0
+	var tween := _opening_tween()
+	tween.tween_property(pack_view, "drop_offset", Vector3(0.0, -kick, 0.0), 0.06).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(pack_view, "drop_offset", Vector3.ZERO, 0.24).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	var settle := _opening_tween()
+	settle.tween_method(Callable(pack_view, "set_swell"), 1.0, 0.0, 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+
+## Light out of the torn top, in the colour of the best stamp inside. A pack
+## shows it only when it has something to show: it never promises in vain.
+func _show_pack_light(pack_view: Pack3DView, rarity: int) -> void:
+	var opening: Rect2 = _get_pack_opening_line(pack_view)
+	var light_size := Vector2(opening.size.x * 3.2, opening.position.y + 120.0)
+	var light_rect := Rect2(opening.get_center() - Vector2(light_size.x * 0.5, light_size.y), light_size)
+	pack_light = PackRevealFx.add_rays(pack_fx_layer, light_rect, Vector2(0.5, 1.0), PackRevealFx.get_light_color(rarity))
+	var tween := _opening_tween()
+	tween.tween_property(pack_light.material, "shader_parameter/strength", float(PACK_LIGHT_STRENGTH[rarity]), float(PACK_BREATH_SECONDS[rarity]) * 0.8).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	if rarity == StampPrint.Rarity.FULL_ART:
+		SFXManager.play("pack_full_art_tease")
+		if SettingsDataManager.is_screen_shake_enabled():
+			tween.parallel().tween_property(pack_view, "shake_amount", PACK_LIGHT_SHAKE, float(PACK_BREATH_SECONDS[rarity]) * 0.8).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	else:
+		SFXManager.play("pack_foil_tease")
+
+func _fade_pack_light() -> void:
+	if pack_light == null or !is_instance_valid(pack_light):
+		return
+	var tween := _opening_tween()
+	tween.tween_property(pack_light.material, "shader_parameter/strength", 0.0, PACK_FALL_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	tween.tween_callback(Callable(pack_light, "queue_free"))
+	pack_light = null
+
+## The stamps come up out of the torn top one by one. They stand behind the
+## pack's face, so its torn edge hides them until they rise over it.
+func _raise_reward_stamps(start_delay: float) -> void:
+	var count: int = revealed_stamp_nodes.size()
+	var positions: Array[Vector2] = _get_reward_rise_positions(count)
+	for i in range(count):
+		var stamp_visual: StampVisual = revealed_stamp_nodes[i]
+		var rise_rotation: float = deg_to_rad((float(i) - float(count - 1) * 0.5) * PACK_STAMP_RISE_DEGREES)
+		var tween := _opening_tween()
+		tween.tween_interval(start_delay + float(i) * PACK_STAMP_RISE_STAGGER)
+		tween.tween_callback(func() -> void: SFXManager.play("field_slips"))
+		tween.tween_property(stamp_visual, "position", positions[i], PACK_STAMP_RISE_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		tween.parallel().tween_property(stamp_visual, "rotation", rise_rotation, PACK_STAMP_RISE_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+
+	var deal_tween := _opening_tween()
+	deal_tween.tween_interval(start_delay + float(count - 1) * PACK_STAMP_RISE_STAGGER + PACK_STAMP_RISE_SECONDS)
+	deal_tween.tween_callback(Callable(self, "_drop_pack_and_deal"))
+
+func _get_reward_rise_positions(count: int) -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	var pack_view := focused_pack_node as Pack3DView
+	var opening: Rect2 = _get_pack_opening_line(pack_view)
+	var stamp_size: Vector2 = STAMP_VISUAL_SIZE * revealed_stamp_nodes[0].rest_scale
+	var centre_y: float = opening.position.y + stamp_size.y * (0.5 - PACK_STAMP_RISE_SHARE)
+	for i in range(count):
+		var spread: float = (float(i) - float(count - 1) * 0.5) * PACK_STAMP_RISE_SPREAD
+		positions.append(_get_stamp_position_for_center(Vector2(opening.get_center().x + spread, centre_y)))
+	return positions
+
+## How long after it starts to fall the pack has dropped below the stamps' feet.
+func _get_pack_clear_seconds(pack_view: Pack3DView) -> float:
+	var stamp_height: float = STAMP_VISUAL_SIZE.y * revealed_stamp_nodes[0].rest_scale.y
+	var world_per_unit: float = Pack3DView.PACK_HEIGHT / pack_view.stage_pack_area.size.y
+	var clear_world: float = stamp_height * (1.0 - PACK_STAMP_RISE_SHARE) * world_per_unit
+	# The fall eases in by the cube of its time.
+	return PACK_FALL_SECONDS * pow(clear_world / PACK_DROP_WORLD, 1.0 / 3.0)
+
+## The empty pack falls away, and only when it has fallen clear do the stamps part:
+## any sooner and they would show on both sides of it, as if they had lain behind it.
+func _drop_pack_and_deal() -> void:
+	_fade_pack_light()
+	var pack_view := focused_pack_node as Pack3DView
+	var deal_tween := _opening_tween()
+	deal_tween.tween_interval(_get_pack_clear_seconds(pack_view))
+	deal_tween.tween_callback(Callable(self, "_deal_reward_stamps"))
+	var tween := _opening_tween()
+	tween.tween_property(pack_view, "drop_offset", Vector3(0.0, -PACK_DROP_WORLD, 0.0), PACK_FALL_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(pack_view, "pull_yaw", randf_range(-14.0, 14.0), PACK_FALL_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(pack_view, "shake_amount", 0.0, 0.1)
+	tween.tween_callback(Callable(pack_view, "queue_free"))
+
+func _deal_reward_stamps() -> void:
+	_arrange_reward_stamps(true)
+	_finish_opening_after(_get_reward_spread_seconds())
+
+func _finish_opening_after(seconds: float) -> void:
+	var finish_tween := _opening_tween()
+	finish_tween.tween_interval(seconds)
 	finish_tween.tween_callback(Callable(self, "_finish_pack_open_animation"))
 
-func _play_pack_tear_animation(pack_node: Control) -> float:
-	if pack_node == null or !is_instance_valid(pack_node):
-		return 0.0
-	if pack_overlay == null or !is_instance_valid(pack_overlay):
-		return 0.0
-	if pack_layer == null or !is_instance_valid(pack_layer):
-		return 0.0
+func _opening_tween() -> Tween:
+	var tween := pack_overlay.create_tween()
+	tween.set_speed_scale(opening_speed)
+	opening_tweens.append(tween)
+	return tween
 
-	var tear_seed: float = randf()
-	if pack_node is Pack3DView:
-		var pack_view := pack_node as Pack3DView
-		pack_view.set_tear_parameters(PACK_TEAR_CUT_Y, PACK_TEAR_WAVE_STRENGTH, tear_seed, PACK_TEAR_EDGE_SOFTNESS)
-		pack_view.set_tear_cut_progress(0.0)
-		var cut_tween := pack_overlay.create_tween()
-		cut_tween.tween_method(Callable(pack_view, "set_tear_cut_progress"), 0.0, 1.0, PACK_TEAR_CUT_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+func _speed_up_opening() -> void:
+	if overlay_state != OVERLAY_STATE_OPENING:
+		return
+	opening_speed = PACK_SKIP_SPEED
+	for tween in opening_tweens:
+		if tween.is_valid():
+			tween.set_speed_scale(opening_speed)
 
-	var tear_texture: Texture2D = _get_pack_texture_for_node(pack_node)
-	if tear_texture == null:
-		return PACK_TEAR_TO_FALL_DELAY
+func _add_reward_auras() -> void:
+	for stamp_visual in revealed_stamp_nodes:
+		var rarity: int = _get_reward_rarity(stamp_visual)
+		if rarity == StampPrint.Rarity.BASIC:
+			continue
+		var aura: ColorRect = PackRevealFx.add_aura(stamp_visual, rarity)
+		aura.modulate.a = 0.0
+		_opening_tween().tween_property(aura, "modulate:a", 1.0, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 
-	var tear_piece := TextureRect.new()
-	tear_piece.name = "PackTopTearPiece"
-	pack_layer.add_child(tear_piece)
-	tear_piece.z_index = pack_node.z_index + 8
-	tear_piece.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tear_piece.texture = tear_texture
-	tear_piece.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	tear_piece.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tear_piece.stretch_mode = TextureRect.STRETCH_SCALE
-	tear_piece.position = pack_node.position
-	tear_piece.size = pack_node.size
-	tear_piece.scale = pack_node.scale
-	tear_piece.rotation = pack_node.rotation
-	tear_piece.pivot_offset = pack_node.pivot_offset
+## All the packs on the screen at once: they go together into one heap, and the
+## stamps deal out onto the table and turn over by themselves, rarest last.
+func _open_all_packs() -> void:
+	if overlay_state != OVERLAY_STATE_SELECTION or overlay_animating or opening_pack_nodes.is_empty():
+		return
+	overlay_state = OVERLAY_STATE_OPENING
+	overlay_animating = true
+	opening_speed = 1.0
+	batch_opening = true
+	_set_pack_hint("")
+	reward_new_print_ids.clear()
 
-	var tear_material := ShaderMaterial.new()
-	tear_material.shader = PACK_TEAR_PIECE_SHADER
-	tear_material.set_shader_parameter("tear_cut_y", PACK_TEAR_CUT_Y)
-	tear_material.set_shader_parameter("tear_wave_strength", PACK_TEAR_WAVE_STRENGTH)
-	tear_material.set_shader_parameter("tear_seed", tear_seed)
-	tear_material.set_shader_parameter("tear_edge_softness", PACK_TEAR_EDGE_SOFTNESS)
-	tear_piece.material = tear_material
+	var pack_ids: Array[String] = []
+	for pack_node in opening_pack_nodes:
+		pack_ids.append(str(pack_node.get_meta("pack_id", "")))
+	var rewards: Array[StampPrint] = _claim_packs(pack_ids)
+	var heap: Vector2 = _get_viewport_size() * 0.5
+	for pack_node in opening_pack_nodes:
+		_stop_pack_ambient_motion(pack_node, false)
+		pack_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var tween := _opening_tween()
+		tween.tween_property(pack_node, "position", heap - pack_node.size * 0.5, PACK_BATCH_GATHER_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+		tween.parallel().tween_property(pack_node, "scale", Vector2.ONE * 0.5, PACK_BATCH_GATHER_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	rewards.sort_custom(func(a: StampPrint, b: StampPrint) -> bool: return a.get_rarity() < b.get_rarity())
 
-	var viewport_size: Vector2 = _get_viewport_size()
-	var side_direction: float = -1.0 if randf() < 0.5 else 1.0
-	var target_position: Vector2 = pack_node.position + Vector2(
-		side_direction * (viewport_size.x * 0.16 + randf_range(18.0, 54.0)),
-		-viewport_size.y * 0.38 - pack_node.size.y * pack_node.scale.y * 0.18
-	)
-	var target_rotation: float = pack_node.rotation + deg_to_rad(side_direction * randf_range(46.0, 68.0))
-	var target_scale: Vector2 = pack_node.scale * Vector2(0.92, 0.86)
+	var started_msec: int = Time.get_ticks_msec()
+	await _prepare_reward_stamps(rewards.size(), rewards)
+	if !is_pack_overlay_active() or overlay_state != OVERLAY_STATE_OPENING:
+		return
+	reward_layer.visible = false
+	var gathered_seconds: float = float(Time.get_ticks_msec() - started_msec) / 1000.0
+	var deal_tween := _opening_tween()
+	deal_tween.tween_interval(maxf(0.0, PACK_BATCH_GATHER_SECONDS - gathered_seconds))
+	deal_tween.tween_callback(Callable(self, "_deal_batch_rewards").bind(heap))
 
-	var fly_tween := pack_overlay.create_tween()
-	fly_tween.tween_property(tear_piece, "position", target_position, PACK_TEAR_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	fly_tween.parallel().tween_property(tear_piece, "rotation", target_rotation, PACK_TEAR_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	fly_tween.parallel().tween_property(tear_piece, "scale", target_scale, PACK_TEAR_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	fly_tween.tween_callback(Callable(tear_piece, "queue_free"))
+func _deal_batch_rewards(heap: Vector2) -> void:
+	reward_layer.visible = true
+	SFXManager.play("pack_tear_finish")
+	PackRevealFx.burst(pack_fx_layer, heap, PackRevealFx.PAPER_FLECK, 60, 420.0)
+	for pack_node in opening_pack_nodes:
+		if pack_node != null and is_instance_valid(pack_node):
+			pack_node.queue_free()
+	opening_pack_nodes.clear()
+	_add_reward_auras()
+	_arrange_reward_stamps(true)
+	_finish_opening_after(_get_reward_spread_seconds())
 
-	var fade_tween := pack_overlay.create_tween()
-	fade_tween.tween_interval(PACK_TEAR_SECONDS * 0.58)
-	fade_tween.tween_property(tear_piece, "modulate:a", 0.0, PACK_TEAR_SECONDS * 0.42).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
-	return PACK_TEAR_TO_FALL_DELAY
-
-func _create_reward_stamp_stack(rewards: Array[StampPrint]) -> void:
+## Builds a face-down stack of this many stamps, a few each frame. The prints may
+## come later, through _assign_reward_prints: a stamp's back shows nothing of them.
+func _prepare_reward_stamps(count: int, stamp_prints: Array[StampPrint] = []) -> void:
 	if reward_layer == null or !is_instance_valid(reward_layer):
 		return
 
 	_clear_reward_stamps()
 	reward_layer.visible = true
 	reward_layer.mouse_filter = Control.MOUSE_FILTER_PASS
+	var build_id: int = overlay_build_id
+	while revealed_stamp_nodes.size() < count:
+		var index: int = revealed_stamp_nodes.size()
+		_add_reward_stamp(count, stamp_prints[index] if index < stamp_prints.size() else null)
+		if (index + 1) % PACK_STAMPS_BUILT_PER_FRAME == 0:
+			await collection.get_tree().process_frame
+			if build_id != overlay_build_id or !is_pack_overlay_active():
+				return
+
+func _add_reward_stamp(stack_size: int, stamp_print: StampPrint) -> void:
 	var viewport_size: Vector2 = _get_viewport_size()
-	var scale_factor: float = _get_reward_stamp_scale(viewport_size, rewards.size())
+	var scale_factor: float = _get_reward_stamp_scale(viewport_size, stack_size)
 	var stack_center: Vector2 = viewport_size * 0.5
-	if focused_pack_node != null and is_instance_valid(focused_pack_node):
-		stack_center = focused_pack_node.position + focused_pack_node.size * 0.5
-	var stack_position: Vector2 = _get_stamp_position_for_center(stack_center)
+	var pack_view := focused_pack_node as Pack3DView
+	if !batch_opening and pack_view != null and is_instance_valid(pack_view):
+		var opening: Rect2 = _get_pack_opening_line(pack_view)
+		stack_center = opening.get_center() + Vector2(0.0, STAMP_VISUAL_SIZE.y * scale_factor * 0.5 - PACK_STAMP_PEEK)
+
+	var stamp_visual := STAMP_VISUAL.instantiate() as StampVisual
+	reward_layer.add_child(stamp_visual)
+	stamp_visual.size = STAMP_VISUAL_SIZE
+	stamp_visual.custom_minimum_size = STAMP_VISUAL_SIZE
+	stamp_visual.pivot_offset = STAMP_VISUAL_SIZE * 0.5
+	if stamp_print != null:
+		stamp_visual.set_stamp_print(stamp_print)
+	stamp_visual.set_collection_owned(true)
+	stamp_visual.set_face_down(true)
+	stamp_visual.set_hover_raise_enabled(false)
+	stamp_visual.set_rest_scale(Vector2.ONE * scale_factor)
+	stamp_visual.draggable = false
+	stamp_visual.disabled = true
+	stamp_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A stack by hand: no two lie quite the same.
+	stamp_visual.position = _get_stamp_position_for_center(stack_center) + Vector2(randf_range(-3.0, 3.0), randf_range(-1.5, 1.5))
+	stamp_visual.rotation = deg_to_rad(randf_range(-1.6, 1.6))
+	stamp_visual.home_position = stamp_visual.position
+	stamp_visual.z_index = revealed_stamp_nodes.size()
+	PackRevealFx.add_shadow(stamp_visual)
+	revealed_stamp_nodes.append(stamp_visual)
+	reward_stamp_flipped.append(false)
+
+## The prints for a stack prepared without them. The mouse may come down before the
+## stack is finished, and a pack short of stamps gives fewer than the stack holds.
+func _assign_reward_prints(rewards: Array[StampPrint]) -> void:
+	while revealed_stamp_nodes.size() < rewards.size():
+		_add_reward_stamp(rewards.size(), null)
+	while revealed_stamp_nodes.size() > rewards.size():
+		revealed_stamp_nodes.pop_back().queue_free()
+		reward_stamp_flipped.pop_back()
 	for i in range(rewards.size()):
-		var stamp_visual := STAMP_VISUAL.instantiate() as StampVisual
-		if stamp_visual == null:
-			continue
-		reward_layer.add_child(stamp_visual)
-		stamp_visual.size = STAMP_VISUAL_SIZE
-		stamp_visual.custom_minimum_size = STAMP_VISUAL_SIZE
-		stamp_visual.pivot_offset = STAMP_VISUAL_SIZE * 0.5
-		stamp_visual.set_stamp_print(rewards[i])
-		stamp_visual.set_collection_owned(true)
-		stamp_visual.set_face_down(true)
-		stamp_visual.set_hover_raise_enabled(false)
-		stamp_visual.set_rest_scale(Vector2.ONE * scale_factor)
-		stamp_visual.draggable = false
-		stamp_visual.disabled = true
-		stamp_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stamp_visual.position = stack_position
-		stamp_visual.home_position = stack_position
-		stamp_visual.z_index = i
-		revealed_stamp_nodes.append(stamp_visual)
-		reward_stamp_flipped.append(false)
+		revealed_stamp_nodes[i].set_stamp_print(rewards[i])
 
 func _arrange_reward_stamps(animated: bool) -> void:
 	if revealed_stamp_nodes.is_empty():
@@ -1442,7 +1796,10 @@ func _arrange_reward_stamps(animated: bool) -> void:
 		stamp_visual.rest_scale = target_scale
 		stamp_visual.z_index = i
 		if animated:
-			var tween := stamp_visual.create_tween()
+			var tween := _opening_tween()
+			tween.tween_interval(float(i) * _get_reward_spread_stagger())
+			if !batch_opening:
+				tween.tween_callback(func() -> void: SFXManager.play_pitched("field_slips", randf_range(0.92, 1.08), 0.0))
 			tween.tween_property(stamp_visual, "position", positions[i], PACK_REWARD_SPREAD_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 			tween.parallel().tween_property(stamp_visual, "scale", target_scale, PACK_REWARD_SPREAD_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 			tween.parallel().tween_property(stamp_visual, "rotation", deg_to_rad(randf_range(-2.0, 2.0)), PACK_REWARD_SPREAD_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
@@ -1452,12 +1809,20 @@ func _arrange_reward_stamps(animated: bool) -> void:
 			stamp_visual.rotation = 0.0
 
 	_sync_reward_flip_hitboxes()
+	_layout_reward_captions()
 	if animated:
-		var float_tween := pack_overlay.create_tween()
-		float_tween.tween_interval(PACK_REWARD_SPREAD_SECONDS)
+		var float_tween := _opening_tween()
+		float_tween.tween_interval(_get_reward_spread_seconds())
 		float_tween.tween_callback(Callable(self, "_enable_reward_stamp_float"))
 	else:
 		_enable_reward_stamp_float()
+
+func _get_reward_spread_stagger() -> float:
+	# A big deal has to stay short as a whole.
+	return PACK_REWARD_SPREAD_STAGGER if revealed_stamp_nodes.size() <= PACK_REWARD_STAMP_COUNT else 0.012
+
+func _get_reward_spread_seconds() -> float:
+	return PACK_REWARD_SPREAD_SECONDS + float(revealed_stamp_nodes.size() - 1) * _get_reward_spread_stagger()
 
 func _enable_reward_stamp_float() -> void:
 	for stamp_visual in revealed_stamp_nodes:
@@ -1480,6 +1845,8 @@ func _sync_reward_flip_hitboxes() -> void:
 		hitbox.clip_contents = false
 		reward_layer.add_child(hitbox)
 		hitbox.gui_input.connect(Callable(self, "_on_reward_stamp_hitbox_gui_input").bind(reward_flip_hitboxes.size()))
+		hitbox.mouse_entered.connect(Callable(self, "_on_reward_stamp_mouse_entered").bind(reward_flip_hitboxes.size()))
+		hitbox.mouse_exited.connect(Callable(self, "_on_reward_stamp_mouse_exited").bind(reward_flip_hitboxes.size()))
 		reward_flip_hitboxes.append(hitbox)
 
 	for i in range(reward_flip_hitboxes.size()):
@@ -1495,7 +1862,9 @@ func _sync_reward_flip_hitboxes() -> void:
 		hitbox.position = hitbox_rect.position
 		hitbox.size = hitbox_rect.size
 		hitbox.visible = overlay_state == OVERLAY_STATE_REWARDS
-		hitbox.mouse_filter = Control.MOUSE_FILTER_STOP if hitbox.visible else Control.MOUSE_FILTER_IGNORE
+		# A turned stamp still knows the mouse is on it, but leaves its clicks to
+		# the overlay, like the rest of the table.
+		hitbox.mouse_filter = Control.MOUSE_FILTER_PASS if reward_stamp_flipped[i] else Control.MOUSE_FILTER_STOP
 
 func _on_reward_stamp_hitbox_gui_input(event: InputEvent, stamp_index: int) -> void:
 	if !(event is InputEventMouseButton):
@@ -1503,43 +1872,206 @@ func _on_reward_stamp_hitbox_gui_input(event: InputEvent, stamp_index: int) -> v
 	var mouse_event := event as InputEventMouseButton
 	if mouse_event.button_index != MOUSE_BUTTON_LEFT or !mouse_event.pressed:
 		return
-	if stamp_index < 0 or stamp_index >= revealed_stamp_nodes.size():
+	if stamp_index < 0 or stamp_index >= revealed_stamp_nodes.size() or reward_stamp_flipped[stamp_index]:
 		return
 	var hitbox: Control = reward_flip_hitboxes[stamp_index] if stamp_index < reward_flip_hitboxes.size() else null
 	if hitbox != null and is_instance_valid(hitbox):
 		hitbox.accept_event()
 	if overlay_animating or reward_flip_in_progress:
-		return
-	if stamp_index < reward_stamp_flipped.size() and reward_stamp_flipped[stamp_index]:
+		_advance_full_art_stage()
 		return
 	_flip_reward_stamp(stamp_index)
 
+func _on_reward_stamp_mouse_entered(stamp_index: int) -> void:
+	hovered_reward_stamp = stamp_index
+	_show_reward_description()
+
+func _on_reward_stamp_mouse_exited(stamp_index: int) -> void:
+	if hovered_reward_stamp == stamp_index:
+		hovered_reward_stamp = -1
+		_hide_reward_description()
+
+## What the stamp under the mouse does. A stamp still lying face down keeps its secret.
+func _show_reward_description() -> void:
+	if hovered_reward_stamp < 0 or hovered_reward_stamp >= revealed_stamp_nodes.size():
+		return
+	if reward_flip_in_progress or overlay_state != OVERLAY_STATE_REWARDS or overlay_animating:
+		return
+	var stamp_visual: StampVisual = revealed_stamp_nodes[hovered_reward_stamp]
+	if !reward_stamp_flipped[hovered_reward_stamp] or stamp_visual.face_down:
+		return
+	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_visual.stamp_print)
+	var description: String = stamp.get_display_description().strip_edges() if stamp != null else ""
+	if description.is_empty():
+		return
+
+	_ensure_reward_description()
+	var font_size: int = reward_description_label.get_theme_font_size("normal_font_size")
+	var text: String = DescriptionMarkup.to_bbcode(description, font_size)
+	# On a big table the stamps have no captions, and are too small to read.
+	reward_description_label.text = "[b]%s[/b]\n%s" % [stamp.stamp_name, text] if batch_opening else text
+	reward_description_panel.visible = true
+	_layout_reward_description()
+
+func _hide_reward_description() -> void:
+	if reward_description_panel != null and is_instance_valid(reward_description_panel):
+		reward_description_panel.visible = false
+
+func _ensure_reward_description() -> void:
+	if reward_description_panel != null and is_instance_valid(reward_description_panel):
+		return
+	reward_description_panel = PanelContainer.new()
+	reward_description_panel.name = "RewardDescription"
+	reward_description_panel.theme_type_variation = &"ShopWindowPanel"
+	reward_description_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	reward_description_panel.custom_minimum_size = Vector2(PACK_REWARD_DESCRIPTION_WIDTH, 0.0)
+	reward_description_panel.z_index = 700
+	reward_layer.add_child(reward_description_panel)
+	reward_description_panel.minimum_size_changed.connect(Callable(self, "_layout_reward_description"))
+
+	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	reward_description_panel.add_child(margin)
+	for side in ["margin_left", "margin_right"]:
+		margin.add_theme_constant_override(side, 14)
+	for side in ["margin_top", "margin_bottom"]:
+		margin.add_theme_constant_override(side, 10)
+
+	reward_description_label = RichTextLabel.new()
+	reward_description_label.bbcode_enabled = true
+	reward_description_label.fit_content = true
+	reward_description_label.scroll_active = false
+	reward_description_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	reward_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	reward_description_label.custom_minimum_size = Vector2(PACK_REWARD_DESCRIPTION_WIDTH - 28.0, 0.0)
+	reward_description_label.theme_type_variation = &"StampDescriptionText"
+	margin.add_child(reward_description_label)
+
+## Under the stamp and its caption, or over the stamp when there is no room left
+## below it, as on the bottom rows of a big table.
+func _layout_reward_description() -> void:
+	if reward_description_panel == null or !is_instance_valid(reward_description_panel) or !reward_description_panel.visible:
+		return
+	if hovered_reward_stamp < 0 or hovered_reward_stamp >= revealed_stamp_nodes.size():
+		return
+	var stamp_visual: StampVisual = revealed_stamp_nodes[hovered_reward_stamp]
+	var viewport_size: Vector2 = _get_viewport_size()
+	var panel_size: Vector2 = reward_description_panel.get_combined_minimum_size()
+	reward_description_panel.size = panel_size
+	var centre: Vector2 = stamp_visual.home_position + STAMP_VISUAL_SIZE * 0.5
+	var half_height: float = STAMP_VISUAL_SIZE.y * stamp_visual.rest_scale.y * 0.5
+	var caption_height: float = 0.0 if batch_opening else PACK_REWARD_CAPTION_SIZE.y + PACK_REWARD_CAPTION_GAP
+	var top: float = centre.y + half_height + caption_height + PACK_REWARD_CAPTION_GAP
+	if top + panel_size.y > viewport_size.y - PACK_REWARD_DESCRIPTION_FOOTER:
+		top = centre.y - half_height - PACK_REWARD_CAPTION_GAP - panel_size.y
+	var margin: float = PACK_REWARD_DESCRIPTION_MARGIN
+	reward_description_panel.position = Vector2(
+		clampf(centre.x - panel_size.x * 0.5, margin, viewport_size.x - panel_size.x - margin),
+		clampf(top, margin, viewport_size.y - panel_size.y - margin)
+	)
+
+## Turns a stamp by its rarity. Stamps can turn side by side, however fast the
+## clicks come; only a full art stamp holds up the rest while it is shown.
 func _flip_reward_stamp(stamp_index: int) -> void:
 	if stamp_index < 0 or stamp_index >= revealed_stamp_nodes.size():
 		return
 	var stamp_visual: StampVisual = revealed_stamp_nodes[stamp_index]
-	if stamp_visual == null or !is_instance_valid(stamp_visual):
+	if stamp_visual == null or !is_instance_valid(stamp_visual) or reward_stamp_flipped[stamp_index]:
 		return
 
-	reward_flip_in_progress = true
-	var hitbox: Control = reward_flip_hitboxes[stamp_index] if stamp_index < reward_flip_hitboxes.size() else null
-	if hitbox != null and is_instance_valid(hitbox):
-		hitbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
+	reward_stamp_flipped[stamp_index] = true
+	reward_flips_running += 1
+	_sync_reward_flip_hitboxes()
 	stamp_visual.set_ambient_motion_enabled(false)
 	stamp_visual.set_hover_raise_enabled(false)
 	stamp_visual.draggable = false
 	stamp_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stamp_visual.disabled = true
 	stamp_visual.z_index = 120 + stamp_index
+	match _get_reward_rarity(stamp_visual):
+		StampPrint.Rarity.FULL_ART:
+			_show_full_art_stamp(stamp_index)
+		StampPrint.Rarity.FOIL:
+			_lift_foil_stamp(stamp_index)
+		_:
+			_play_flip_sound()
+			_turn_reward_stamp(stamp_index, Callable())
+
+func _play_flip_sound() -> void:
+	# A wave of stamps turning is one sound, not sixty.
+	if !batch_opening:
+		SFXManager.play("codex_fold")
+	elif reward_flips_running <= 2:
+		SFXManager.play_pitched("stamp_up", randf_range(0.9, 1.15), 0.0)
+
+## A foil stamp rises off the table with a shimmer before it turns.
+func _lift_foil_stamp(stamp_index: int) -> void:
+	var stamp_visual: StampVisual = revealed_stamp_nodes[stamp_index]
+	SFXManager.play("pack_foil_tease")
+	var on_face_up := Callable(self, "_reveal_foil_stamp").bind(stamp_visual)
+	if batch_opening:
+		_turn_reward_stamp(stamp_index, on_face_up)
+		return
+	var tween := stamp_visual.create_tween()
+	tween.tween_property(stamp_visual, "position:y", stamp_visual.home_position.y - PACK_REWARD_FOIL_LIFT, PACK_REWARD_FOIL_LIFT_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_callback(Callable(self, "_turn_reward_stamp").bind(stamp_index, on_face_up))
+
+func _reveal_foil_stamp(stamp_visual: StampVisual) -> void:
+	SFXManager.play("pack_foil_reveal")
+	PackRevealFx.sweep(stamp_visual, PackRevealFx.FOIL_LIGHT)
+	PackRevealFx.burst(reward_layer, stamp_visual.position + STAMP_VISUAL_SIZE * 0.5, PackRevealFx.FOIL_LIGHT, 26, 260.0)
+	_quiet_reward_aura(stamp_visual)
+
+## Once it is face up a stamp needs its glow no more: it has its foil.
+func _quiet_reward_aura(stamp_visual: StampVisual) -> void:
+	var aura := stamp_visual.get_node_or_null("RarityAura") as CanvasItem
+	if aura != null:
+		stamp_visual.create_tween().tween_property(aura, "modulate:a", 0.32, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+
+func _turn_reward_stamp(stamp_index: int, on_face_up: Callable) -> void:
+	var stamp_visual: StampVisual = revealed_stamp_nodes[stamp_index]
+	var seconds: float = PACK_REWARD_FLIP_SECONDS * (PACK_BATCH_FLIP_SHARE if batch_opening else 1.0)
 	var target_scale: Vector2 = stamp_visual.rest_scale
 	var squash_scale := Vector2(0.0, target_scale.y * 1.02)
 	var tween := stamp_visual.create_tween()
-	tween.tween_property(stamp_visual, "scale", squash_scale, PACK_REWARD_FLIP_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(stamp_visual, "scale", squash_scale, seconds).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 	tween.tween_callback(Callable(self, "_turn_reward_stamp_face_up").bind(stamp_visual))
-	tween.tween_property(stamp_visual, "scale", target_scale, PACK_REWARD_FLIP_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.parallel().tween_property(stamp_visual, "rotation", deg_to_rad(randf_range(-1.6, 1.6)), PACK_REWARD_FLIP_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	if on_face_up.is_valid():
+		tween.tween_callback(on_face_up)
+	tween.tween_property(stamp_visual, "scale", target_scale, seconds).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.parallel().tween_property(stamp_visual, "position", stamp_visual.home_position, seconds).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	tween.parallel().tween_property(stamp_visual, "rotation", deg_to_rad(randf_range(-1.6, 1.6)), seconds).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	if !batch_opening:
+		var height: float = STAMP_VISUAL_SIZE.y * target_scale.y * PACK_REWARD_HOP_HEIGHT
+		tween.tween_property(stamp_visual, "position:y", stamp_visual.home_position.y - height, 0.09).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		tween.parallel().tween_property(stamp_visual, "scale", target_scale * (1.0 + PACK_REWARD_HOP_GROW), 0.09).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		tween.tween_property(stamp_visual, "position:y", stamp_visual.home_position.y, 0.24).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+		tween.parallel().tween_property(stamp_visual, "scale", target_scale, 0.24).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tween.tween_callback(Callable(self, "_finish_reward_stamp_flip").bind(stamp_index))
+
+func _show_full_art_stamp(stamp_index: int) -> void:
+	var stamp_visual: StampVisual = revealed_stamp_nodes[stamp_index]
+	reward_flip_in_progress = true
+	_hide_reward_description()
+	stamp_visual.z_index = 300
+	full_art_stage = PackFullArtStage.new()
+	full_art_stage.name = "FullArtStage"
+	full_art_stage.z_index = 250
+	reward_layer.add_child(full_art_stage)
+	full_art_stage.finished.connect(Callable(self, "_finish_full_art_stamp").bind(stamp_index))
+	var turn_up := Callable(self, "_turn_reward_stamp_face_up").bind(stamp_visual)
+	full_art_stage.play(stamp_visual, STAMP_VISUAL_SIZE, _get_reward_stamp_name(stamp_visual), tr("Full Art"), turn_up)
+
+func _finish_full_art_stamp(stamp_index: int) -> void:
+	full_art_stage = null
+	reward_flip_in_progress = false
+	revealed_stamp_nodes[stamp_index].z_index = 120 + stamp_index
+	_quiet_reward_aura(revealed_stamp_nodes[stamp_index])
+	_finish_reward_stamp_flip(stamp_index)
+
+func _advance_full_art_stage() -> void:
+	if full_art_stage != null and is_instance_valid(full_art_stage):
+		full_art_stage.advance()
 
 func _turn_reward_stamp_face_up(stamp_visual: StampVisual) -> void:
 	if stamp_visual == null or !is_instance_valid(stamp_visual):
@@ -1550,16 +2082,99 @@ func _turn_reward_stamp_face_up(stamp_visual: StampVisual) -> void:
 	stamp_visual.scale = Vector2(0.0, stamp_visual.scale.y)
 
 func _finish_reward_stamp_flip(stamp_index: int) -> void:
-	if stamp_index >= 0 and stamp_index < reward_stamp_flipped.size():
-		reward_stamp_flipped[stamp_index] = true
+	reward_flips_running -= 1
 	var stamp_visual: StampVisual = revealed_stamp_nodes[stamp_index] if stamp_index >= 0 and stamp_index < revealed_stamp_nodes.size() else null
 	if stamp_visual != null and is_instance_valid(stamp_visual):
 		stamp_visual.disabled = true
 		stamp_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stamp_visual.home_position = stamp_visual.position
+		stamp_visual.position = stamp_visual.home_position
 		stamp_visual.set_ambient_motion_enabled(true)
-	reward_flip_in_progress = false
-	_sync_reward_flip_hitboxes()
+		_add_reward_caption(stamp_visual)
+	# The mouse may have been waiting on this stamp all through its turn.
+	if hovered_reward_stamp == stamp_index:
+		_show_reward_description()
+	if batch_opening:
+		_flip_next_batch_stamp()
+	if _are_all_reward_stamps_flipped() and reward_flips_running == 0:
+		SFXManager.play("stamp_up")
+		_set_pack_hint(tr("Click to continue"))
+
+## The name under a turned stamp, and what is special about it. The stamp's own
+## small lettering is for the album; here it should read at a glance.
+func _add_reward_caption(stamp_visual: StampVisual) -> void:
+	if batch_opening or reward_layer == null or !is_instance_valid(reward_layer):
+		return
+	var caption := VBoxContainer.new()
+	caption.name = "RewardCaption"
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caption.custom_minimum_size = PACK_REWARD_CAPTION_SIZE
+	caption.size = PACK_REWARD_CAPTION_SIZE
+	caption.set_meta("stamp_visual", stamp_visual)
+	caption.add_theme_constant_override("separation", 2)
+	reward_layer.add_child(caption)
+	reward_captions.append(caption)
+
+	var name_label := Label.new()
+	caption.add_child(name_label)
+	name_label.text = _get_reward_stamp_name(stamp_visual)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.clip_text = true
+	name_label.add_theme_color_override("font_color", UiPalette.PAPER_RAISED)
+
+	var note: String = _get_reward_stamp_note(stamp_visual)
+	if !note.is_empty():
+		var note_label := Label.new()
+		caption.add_child(note_label)
+		note_label.text = note.to_upper()
+		note_label.theme_type_variation = &"KickerLabel"
+		note_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var rarity: int = _get_reward_rarity(stamp_visual)
+		note_label.add_theme_color_override("font_color", UiPalette.COIN if rarity == StampPrint.Rarity.BASIC else PackRevealFx.get_light_color(rarity))
+	_layout_reward_captions()
+	caption.modulate.a = 0.0
+	caption.create_tween().tween_property(caption, "modulate:a", 1.0, 0.18)
+
+func _layout_reward_captions() -> void:
+	for caption in reward_captions:
+		var stamp_visual := caption.get_meta("stamp_visual") as StampVisual
+		if stamp_visual == null or !is_instance_valid(stamp_visual):
+			continue
+		var centre: Vector2 = stamp_visual.home_position + STAMP_VISUAL_SIZE * 0.5
+		var half_height: float = STAMP_VISUAL_SIZE.y * stamp_visual.rest_scale.y * 0.5
+		caption.position = Vector2(centre.x - caption.size.x * 0.5, centre.y + half_height + PACK_REWARD_CAPTION_GAP)
+
+func _get_reward_stamp_name(stamp_visual: StampVisual) -> String:
+	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_visual.stamp_print)
+	return stamp.stamp_name if stamp != null else stamp_visual.stamp_print.get_display_name()
+
+func _get_reward_stamp_note(stamp_visual: StampVisual) -> String:
+	var notes: PackedStringArray = PackedStringArray()
+	match _get_reward_rarity(stamp_visual):
+		StampPrint.Rarity.FOIL:
+			notes.append(tr("Foil"))
+		StampPrint.Rarity.FULL_ART:
+			notes.append(tr("Full Art"))
+	if reward_new_print_ids.has(stamp_visual.stamp_print.print_id):
+		notes.append(tr("New"))
+	return " · ".join(notes)
+
+## The next stamp in reading order; a batch and a click on the table both turn this one.
+func _get_next_unflipped_stamp() -> int:
+	return reward_stamp_flipped.find(false)
+
+func _flip_next_batch_stamp() -> void:
+	if !batch_opening or reward_flip_in_progress or overlay_state != OVERLAY_STATE_REWARDS:
+		return
+	var next_stamp: int = _get_next_unflipped_stamp()
+	if next_stamp >= 0 and !batch_flip_waiting:
+		batch_flip_waiting = true
+		_flip_reward_stamp(next_stamp)
+		var tween := pack_overlay.create_tween()
+		tween.tween_interval(PACK_BATCH_FLIP_STAGGER)
+		tween.tween_callback(func() -> void:
+			batch_flip_waiting = false
+			_flip_next_batch_stamp()
+		)
 
 func _get_reward_stamp_hitbox_rect(stamp_visual: StampVisual) -> Rect2:
 	var scale_factor: float = maxf(stamp_visual.rest_scale.x, stamp_visual.rest_scale.y)
@@ -1569,44 +2184,75 @@ func _get_reward_stamp_hitbox_rect(stamp_visual: StampVisual) -> Rect2:
 	var visual_center: Vector2 = stamp_visual.home_position + STAMP_VISUAL_SIZE * 0.5
 	return Rect2(visual_center - visual_size * 0.5, visual_size).grow(8.0)
 
-func _is_global_point_inside_focused_pack(global_point: Vector2) -> bool:
-	if focused_pack_node == null or !is_instance_valid(focused_pack_node):
-		return false
-
-	var scale_abs := Vector2(absf(focused_pack_node.scale.x), absf(focused_pack_node.scale.y))
-	var visual_size: Vector2 = focused_pack_node.size * scale_abs
-	var pivot: Vector2 = focused_pack_node.pivot_offset
-	var visual_position: Vector2 = focused_pack_node.global_position + pivot - Vector2(pivot.x * scale_abs.x, pivot.y * scale_abs.y)
-	return Rect2(visual_position, visual_size).grow(12.0).has_point(global_point)
-
 func _on_pack_overlay_gui_input(event: InputEvent) -> void:
 	if !(event is InputEventMouseButton):
 		return
 	var mouse_event := event as InputEventMouseButton
 	if mouse_event.button_index != MOUSE_BUTTON_LEFT or !mouse_event.pressed:
 		return
-	if overlay_state == OVERLAY_STATE_FOCUSED:
-		if overlay_animating:
-			return
-		if _is_global_point_inside_focused_pack(mouse_event.global_position):
-			return
-		pack_overlay.accept_event()
-		handle_back_pressed()
-		return
-	if overlay_state != OVERLAY_STATE_REWARDS or overlay_animating or reward_flip_in_progress:
-		return
-	if !_are_all_reward_stamps_flipped():
-		return
 	pack_overlay.accept_event()
-	handle_back_pressed()
+	if full_art_stage != null and is_instance_valid(full_art_stage):
+		full_art_stage.advance()
+		return
+	match overlay_state:
+		OVERLAY_STATE_FOCUSED, OVERLAY_STATE_TEARING, OVERLAY_STATE_OPENING:
+			if overlay_state != OVERLAY_STATE_FOCUSED or !overlay_animating:
+				handle_back_pressed()
+		OVERLAY_STATE_REWARDS:
+			_on_reward_table_clicked()
+
+## A click on the table turns the next stamp, and once all are turned it moves on.
+func _on_reward_table_clicked() -> void:
+	if overlay_animating or reward_flip_in_progress:
+		return
+	var next_stamp: int = _get_next_unflipped_stamp()
+	if next_stamp >= 0:
+		_flip_reward_stamp(next_stamp)
+	elif reward_flips_running == 0:
+		handle_back_pressed()
 
 func _are_all_reward_stamps_flipped() -> bool:
-	if revealed_stamp_nodes.is_empty() or reward_stamp_flipped.size() < revealed_stamp_nodes.size():
-		return false
+	return !revealed_stamp_nodes.is_empty() and !reward_stamp_flipped.has(false)
+
+## The stamps go off into the album, and the room is back.
+func _leave_rewards() -> void:
+	overlay_animating = true
+	_set_pack_hint("")
+	_hide_reward_description()
+	for caption in reward_captions:
+		caption.create_tween().tween_property(caption, "modulate:a", 0.0, 0.12)
+	var book_centre: Vector2 = _get_book_centre()
+	var stagger: float = PACK_LEAVE_STAGGER if revealed_stamp_nodes.size() <= PACK_REWARD_STAMP_COUNT else 0.01
 	for i in range(revealed_stamp_nodes.size()):
-		if i >= reward_stamp_flipped.size() or !reward_stamp_flipped[i]:
-			return false
-	return true
+		var stamp_visual: StampVisual = revealed_stamp_nodes[i]
+		stamp_visual.set_ambient_motion_enabled(false)
+		var tween := pack_overlay.create_tween()
+		tween.tween_interval(float(i) * stagger)
+		tween.tween_property(stamp_visual, "position", _get_stamp_position_for_center(book_centre), PACK_LEAVE_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+		tween.parallel().tween_property(stamp_visual, "scale", Vector2.ONE * PACK_LEAVE_SCALE, PACK_LEAVE_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+		tween.parallel().tween_property(stamp_visual, "rotation", deg_to_rad(randf_range(-22.0, 22.0)), PACK_LEAVE_SECONDS)
+		tween.tween_callback(Callable(stamp_visual, "hide"))
+		if i < PACK_REWARD_STAMP_COUNT:
+			tween.tween_callback(func() -> void: SFXManager.play("stamp_glue"))
+
+	var gate_tween := pack_overlay.create_tween()
+	gate_tween.tween_interval(PACK_LEAVE_SECONDS + float(revealed_stamp_nodes.size() - 1) * stagger + 0.06)
+	gate_tween.tween_callback(Callable(self, "_finish_leaving_rewards"))
+
+func _finish_leaving_rewards() -> void:
+	if !is_pack_overlay_active():
+		return
+	# Nothing moves at this moment, so the time it takes does not show.
+	_refresh_room_behind_overlay()
+	if PlayerProgressStore.get_unopened_pack_count() > 0:
+		_show_pack_selection_overlay(true)
+	else:
+		_close_pack_overlay(true)
+
+func _get_book_centre() -> Vector2:
+	if book_node == null or !is_instance_valid(book_node):
+		return _get_viewport_size() * 0.5
+	return book_node.get_global_rect().get_center()
 
 func _finish_pack_open_animation() -> void:
 	if !is_pack_overlay_active() or overlay_state != OVERLAY_STATE_OPENING:
@@ -1624,15 +2270,16 @@ func _finish_pack_open_animation() -> void:
 	overlay_state = OVERLAY_STATE_REWARDS
 	overlay_animating = false
 	_sync_reward_flip_hitboxes()
-
-func _finish_overlay_animation() -> void:
-	if is_pack_overlay_active():
-		overlay_animating = false
+	if batch_opening:
+		_flip_next_batch_stamp()
+	else:
+		_set_pack_hint(tr("Click the stamps to turn them over"))
 
 func _finish_pack_selection_fly_in() -> void:
 	if !is_pack_overlay_active() or overlay_state != OVERLAY_STATE_SELECTION:
 		return
 	overlay_animating = false
+	_set_pack_hint(tr("Choose a pack to open"))
 	_start_selection_pack_ambient_motion()
 
 func _on_pack_overlay_viewport_resized() -> void:
@@ -1641,10 +2288,9 @@ func _on_pack_overlay_viewport_resized() -> void:
 	_sync_pack_overlay_rect()
 	if overlay_state == OVERLAY_STATE_SELECTION:
 		_layout_selection_packs(false)
-	elif overlay_state == OVERLAY_STATE_FOCUSED and focused_pack_node != null and is_instance_valid(focused_pack_node):
-		var pack_texture: Texture2D = _get_pack_texture_for_node(focused_pack_node)
-		_apply_pack_control_size(focused_pack_node, _get_pack_visual_size(pack_texture))
-		focused_pack_node.position = _get_focused_pack_position(focused_pack_node.size)
+	elif overlay_state == OVERLAY_STATE_FOCUSED:
+		# The pack and its tear line are laid out for the old size: choosing again is simplest.
+		_show_pack_selection_overlay(false)
 	elif overlay_state == OVERLAY_STATE_REWARDS:
 		_arrange_reward_stamps(false)
 
@@ -1715,19 +2361,32 @@ func _get_reward_stamp_positions(count: int, scale_factor: float) -> Array[Vecto
 
 	var viewport_size: Vector2 = _get_viewport_size()
 	var visual_size: Vector2 = STAMP_VISUAL_SIZE * scale_factor
-	var gap: float = _get_reward_stamp_gap(viewport_size, count, scale_factor)
-	var row_width: float = visual_size.x * float(count) + gap * float(maxi(0, count - 1))
-	var start_x: float = (viewport_size.x - row_width) * 0.5
-	var min_y: float = 96.0
-	var max_y: float = maxf(min_y, viewport_size.y - visual_size.y - 48.0)
-	var y: float = clampf(viewport_size.y * 0.58 - visual_size.y * 0.5, min_y, max_y)
+	var columns: int = _get_reward_columns(count)
+	var rows: int = int(ceil(float(count) / float(columns)))
+	var gap: float = _get_reward_stamp_gap(viewport_size, columns, scale_factor)
+	var grid_height: float = visual_size.y * float(rows) + PACK_REWARD_ROW_GAP * float(rows - 1)
+	var min_y: float = 48.0
+	var max_y: float = maxf(min_y, viewport_size.y - grid_height - 48.0)
+	# A single row stands a little low, with the captions under it.
+	var middle: float = 0.5 if rows > 1 else 0.46
+	var top: float = clampf(viewport_size.y * middle - grid_height * 0.5, min_y, max_y)
 	for i in range(count):
+		var row: int = i / columns
+		var row_count: int = mini(columns, count - row * columns)
+		var row_width: float = visual_size.x * float(row_count) + gap * float(maxi(0, row_count - 1))
+		var column: int = i - row * columns
 		var center := Vector2(
-			start_x + visual_size.x * 0.5 + float(i) * (visual_size.x + gap),
-			y + visual_size.y * 0.5
+			(viewport_size.x - row_width) * 0.5 + visual_size.x * 0.5 + float(column) * (visual_size.x + gap),
+			top + visual_size.y * 0.5 + float(row) * (visual_size.y + PACK_REWARD_ROW_GAP)
 		)
 		positions.append(_get_stamp_position_for_center(center))
 	return positions
+
+## One row for a pack, and the most square table for a whole heap.
+func _get_reward_columns(count: int) -> int:
+	if count <= PACK_REWARD_STAMP_COUNT:
+		return maxi(1, count)
+	return maxi(PACK_REWARD_STAMP_COUNT, int(ceil(sqrt(float(count) * 1.8))))
 
 func _get_stamp_position_for_center(center: Vector2) -> Vector2:
 	return center - STAMP_VISUAL_SIZE * 0.5
@@ -1735,10 +2394,13 @@ func _get_stamp_position_for_center(center: Vector2) -> Vector2:
 func _get_reward_stamp_scale(viewport_size: Vector2, count: int) -> float:
 	if count <= 0:
 		return PACK_REWARD_MAX_SCALE
+	var columns: int = _get_reward_columns(count)
+	var rows: int = int(ceil(float(count) / float(columns)))
 	var gap: float = clampf(viewport_size.x * 0.034, 18.0, 42.0)
 	var available_width: float = maxf(120.0, viewport_size.x - PACK_REWARD_SIDE_MARGIN * 2.0)
-	var width_scale: float = (available_width - gap * float(maxi(0, count - 1))) / (STAMP_VISUAL_SIZE.x * float(count))
-	var height_scale: float = maxf(PACK_REWARD_MIN_SCALE, (viewport_size.y - 180.0) / STAMP_VISUAL_SIZE.y)
+	var width_scale: float = (available_width - gap * float(maxi(0, columns - 1))) / (STAMP_VISUAL_SIZE.x * float(columns))
+	var available_height: float = viewport_size.y - 180.0 - PACK_REWARD_ROW_GAP * float(rows - 1)
+	var height_scale: float = maxf(PACK_REWARD_MIN_SCALE, available_height / (STAMP_VISUAL_SIZE.y * float(rows)))
 	return clampf(minf(PACK_REWARD_MAX_SCALE, minf(width_scale, height_scale)), PACK_REWARD_MIN_SCALE, PACK_REWARD_MAX_SCALE)
 
 func _get_reward_stamp_gap(viewport_size: Vector2, count: int, scale_factor: float) -> float:
@@ -1801,6 +2463,14 @@ func _get_pack_visual_size(pack_texture: Texture2D = null) -> Vector2:
 	var height: float = clampf(viewport_size.y * 0.24, 132.0, 190.0)
 	return Vector2(height * aspect, height) * PACK_VISUAL_SIZE_SCALE
 
+func _get_focused_pack_scale(pack_node: Control) -> float:
+	var pack_view := pack_node as Pack3DView
+	if pack_view == null:
+		return 1.0
+	# Whatever the size it had among the others.
+	var wanted_frame_height: float = _get_viewport_size().y * PACK_FOCUSED_HEIGHT_SHARE / Pack3DView.get_pack_share()
+	return wanted_frame_height / maxf(pack_view.get_frame_height() / pack_view.scale.y, 1.0)
+
 func _get_focused_pack_position(pack_size: Vector2) -> Vector2:
 	var viewport_size: Vector2 = _get_viewport_size()
 	return viewport_size * 0.5 - pack_size * 0.5
@@ -1825,7 +2495,17 @@ func _get_viewport_size() -> Vector2:
 	return Vector2(1280.0, 720.0)
 
 func _reset_pack_overlay_content() -> void:
+	overlay_build_id += 1
 	_clear_reward_stamps()
+	opening_tweens.clear()
+	opening_speed = 1.0
+	batch_opening = false
+	batch_flip_waiting = false
+	pack_tear = null
+	pack_light = null
+	full_art_stage = null
+	if pack_fx_layer != null and is_instance_valid(pack_fx_layer):
+		_remove_layer_children(pack_fx_layer, false)
 	for node in opening_pack_nodes:
 		if node != null and is_instance_valid(node):
 			_stop_pack_ambient_motion(node, false)
@@ -1865,37 +2545,61 @@ func _clear_reward_stamps() -> void:
 				hitbox.queue_free()
 	reward_flip_hitboxes.clear()
 	reward_stamp_flipped.clear()
+	reward_captions.clear()
 	reward_flip_in_progress = false
+	reward_flips_running = 0
+	hovered_reward_stamp = -1
+	reward_description_panel = null
+	reward_description_label = null
 
 func _close_pack_overlay(animated: bool) -> void:
 	if !is_pack_overlay_active():
 		return
 
 	var overlay_to_close := pack_overlay
+	var layer_to_close := pack_overlay_layer
+	overlay_build_id += 1
+	hovered_reward_stamp = -1
+	reward_description_panel = null
+	reward_description_label = null
 	for node in opening_pack_nodes:
 		if node != null and is_instance_valid(node):
 			_stop_pack_ambient_motion(node, false)
 	pack_overlay = null
-	pack_overlay_backbuffer = null
-	pack_blur_rect = null
+	pack_overlay_layer = null
+	pack_dim_rect = null
 	pack_layer = null
 	reward_layer = null
+	pack_fx_layer = null
+	pack_footer = null
+	pack_hint_label = null
+	pack_footer_buttons = null
+	open_all_button = null
+	pack_tear = null
+	pack_light = null
+	full_art_stage = null
+	opening_tweens.clear()
+	opening_speed = 1.0
+	batch_opening = false
+	batch_flip_waiting = false
 	opening_pack_nodes.clear()
 	revealed_stamp_nodes.clear()
 	reward_stamp_flipped.clear()
 	reward_flip_hitboxes.clear()
+	reward_captions.clear()
 	focused_pack_node = null
 	overlay_state = ""
 	overlay_animating = false
 	reward_flip_in_progress = false
+	reward_flips_running = 0
 
 	if animated and is_instance_valid(overlay_to_close):
 		overlay_to_close.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var tween := overlay_to_close.create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 		tween.tween_property(overlay_to_close, "modulate:a", 0.0, 0.16)
-		tween.tween_callback(Callable(overlay_to_close, "queue_free"))
-	elif is_instance_valid(overlay_to_close):
-		overlay_to_close.queue_free()
+		tween.tween_callback(Callable(layer_to_close, "queue_free"))
+	elif is_instance_valid(layer_to_close):
+		layer_to_close.queue_free()
 	_sync_pack_click_area()
 
 func _ensure_pack_click_area() -> void:
@@ -2002,14 +2706,9 @@ func _canvas_rect_to_collection_rect(canvas_rect: Rect2) -> Rect2:
 		max_point = max_point.max(point)
 	return Rect2(min_point, max_point - min_point)
 
+## Rarest last, so the row builds to its best stamp from left to right.
 func _roll_pack_rewards(pack_id: String) -> Array[StampPrint]:
 	var pack_definition: PackDefinition = PackDefinitionLibrary.get_pack(pack_id)
-	var available_prints: Array[StampPrint] = PackDefinitionLibrary.get_reward_print_pool(pack_definition)
-
-	var rewards: Array[StampPrint] = []
-	if available_prints.is_empty():
-		return rewards
-
-	for i in range(PACK_REWARD_STAMP_COUNT):
-		rewards.append(available_prints[randi() % available_prints.size()])
+	var rewards: Array[StampPrint] = PackDefinitionLibrary.roll_rewards(pack_definition, PACK_REWARD_STAMP_COUNT)
+	rewards.sort_custom(func(a: StampPrint, b: StampPrint) -> bool: return a.get_rarity() < b.get_rarity())
 	return rewards

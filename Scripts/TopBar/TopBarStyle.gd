@@ -30,16 +30,24 @@ const GROUP_GAP: float = 18.0
 const RIBBON_GAP: float = 6.0
 const BUTTON_SIZE: float = 40.0
 
-const RIBBON_WIDTH: float = 21.0
+## Twice the design's 21.
+const RIBBON_WIDTH: float = 42.0
+## Between the ribbons and the counters, on top of GROUP_GAP: a ribbon's width
+## of air, so the ribbons do not crowd the numbers.
+const RIBBON_CLEARANCE: float = RIBBON_WIDTH
+## How far the cloth goes on above the top of the screen, out of sight, so its
+## top never shows when the ribbon moves down: the arrival overshoots by about
+## 8, a claim tugs it down by 6, and the sway dips one corner.
+const RIBBON_OVERHANG: float = 24.0
 ## Measured from the top of the screen, so a resting ribbon hangs 12 below the bar.
 const RIBBON_REST: float = 72.0
 const RIBBON_LIFT: float = 4.5
 const RIBBON_DONE_DROP: float = 9.0
 const RIBBON_RETRACTED: float = 54.0
 const TAIL_DEPTH: Dictionary = {
-	"story": 7.5,
-	"reward": 6.75,
-	"daily": 4.5,
+	"story": 15.0,
+	"reward": 13.5,
+	"daily": 9.0,
 }
 
 ## Wider than the design's 270 / 204, for the shared type sizes.
@@ -53,7 +61,7 @@ const MENU_DROP_GAP: float = 7.5
 ## (TopBarIcons) leaves them open.
 const ICON_STAT: float = 20.0
 const ICON_MENU: float = 20.0
-const ICON_RIBBON: float = 12.0
+const ICON_RIBBON: float = 18.0
 
 ## Ribbon down / up: hover, open, retract.
 const RIBBON_MOVE_SECONDS: float = 0.24

@@ -7,6 +7,14 @@ enum VisualVariant {
 	FULL_ART,
 }
 
+# How rare a print is. It follows the variant: packs draw by it (PackDefinition)
+# and the pack opening plays it up.
+enum Rarity {
+	BASIC,
+	FOIL,
+	FULL_ART,
+}
+
 @export var print_id: String = ""
 @export var stamp_code: String = ""
 @export_enum("standard", "foil", "full_art") var variant_id: String = "standard"
@@ -39,6 +47,14 @@ enum VisualVariant {
 
 func uses_masked_art() -> bool:
 	return true
+
+func get_rarity() -> Rarity:
+	match variant_id:
+		"foil":
+			return Rarity.FOIL
+		"full_art":
+			return Rarity.FULL_ART
+	return Rarity.BASIC
 
 func get_display_name() -> String:
 	if variant_name.strip_edges().is_empty():

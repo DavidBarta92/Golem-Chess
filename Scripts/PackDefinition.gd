@@ -23,6 +23,12 @@ class_name PackDefinition
 @export var include_all_standard_prints: bool = false
 @export var available: bool = true
 @export var price: int = 15
+@export_group("Rarity")
+## The chance of each stamp in the pack to be of that rarity. A pack without such
+## prints gives a basic one instead.
+@export_range(0.0, 1.0, 0.005) var foil_chance: float = 0.1
+@export_range(0.0, 1.0, 0.005) var full_art_chance: float = 0.02
+@export_group("")
 
 func get_display_name() -> String:
 	var trimmed_name: String = pack_name.strip_edges()

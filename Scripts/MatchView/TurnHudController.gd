@@ -45,6 +45,9 @@ var can_move_action_provider: Callable
 var current_turn_color_provider: Callable
 var player_id_for_color_provider: Callable
 var turn_timer_timeout_callback: Callable
+## Told the turn colour when the turn passes, and whether to animate it: the
+## first call of a match only sets things in place.
+var turn_changed_callback: Callable
 var deck_visual_provider: Callable
 var local_view_color_provider: Callable
 var own_color_provider: Callable
@@ -57,6 +60,9 @@ var turn_timer_counter_container: Control
 var player_clock_seconds: Dictionary = {0: 300.0, 1: 300.0}
 var result_overlay: ColorRect
 var result_label: Label
+var turn_banner: TurnBanner
+## Over the whole interface, under the result's overlay.
+const TURN_BANNER_Z_INDEX: int = 1900
 var player_name_labels: Dictionary = {}
 var player_portrait_views: Dictionary = {}
 ## Set by BossDialogueDirector while it is showing a line in the opponent panel.
@@ -119,6 +125,7 @@ func configure(config: Dictionary) -> void:
 	current_turn_color_provider = config.get("current_turn_color_provider", current_turn_color_provider)
 	player_id_for_color_provider = config.get("player_id_for_color_provider", player_id_for_color_provider)
 	turn_timer_timeout_callback = config.get("turn_timer_timeout_callback", turn_timer_timeout_callback)
+	turn_changed_callback = config.get("turn_changed_callback", turn_changed_callback)
 	deck_visual_provider = config.get("deck_visual_provider", deck_visual_provider)
 	local_view_color_provider = config.get("local_view_color_provider", local_view_color_provider)
 	own_color_provider = config.get("own_color_provider", own_color_provider)
@@ -253,19 +260,47 @@ func create_result_ui() -> void:
 	result_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Display's face; the size is this line's own (see Docs/Style/OVERRIDES.md).
 	result_label.theme_type_variation = &"DisplayLabel"
+	result_label.label_settings = make_big_line_settings()
 
+## The size and outline of the big lines in the middle of the screen: the
+## result, and whose turn it is.
+func make_big_line_settings() -> LabelSettings:
 	var label_settings := LabelSettings.new()
 	label_settings.font_size = 72
 	label_settings.font_color = Color(1.0, 1.0, 1.0)
 	label_settings.outline_size = 8
 	label_settings.outline_color = UiPalette.INK
-	result_label.label_settings = label_settings
+	return label_settings
+
+func create_turn_banner_ui() -> void:
+	if canvas_layer == null or !is_instance_valid(canvas_layer):
+		return
+
+	turn_banner = TurnBanner.new()
+	canvas_layer.add_child(turn_banner)
+	turn_banner.name = "TurnBanner"
+	turn_banner.z_index = TURN_BANNER_Z_INDEX
+	# Printed on the same paper as the room, like the rest of the interface.
+	turn_banner.modulate = MatchBackgroundController.PAPER_TINT
+	turn_banner.theme_type_variation = &"DisplayLabel"
+	turn_banner.label_settings = make_big_line_settings()
+
+## Says whose turn it is: the player's own, or the opponent's by name.
+func announce_turn(turn_color: int) -> void:
+	if turn_banner == null or !is_instance_valid(turn_banner):
+		return
+	if turn_color == get_own_color():
+		turn_banner.announce(tr("YOUR_TURN"))
+	else:
+		turn_banner.announce(tr("OPPONENT_TURN") % get_display_name_for_player(get_player_id_for_color(turn_color)))
 
 ## rating_change_text: an extra line under the result - the player's rating
 ## change after a rated match - or empty for none.
 func show_result_message(winner_color: int, rating_change_text: String = "") -> void:
 	if result_label == null or result_overlay == null:
 		return
+	if turn_banner != null and is_instance_valid(turn_banner):
+		turn_banner.dismiss()
 
 	var context: Dictionary = get_game_result_context()
 	if bool(context.get("is_ai_vs_ai_batch", false)):
@@ -409,9 +444,9 @@ func update_turn_timer(delta: float) -> void:
 
 ## Everything that happens when the turn passes: the hanging clocks take a push
 ## and the rocker is thrown - and the rocker is what makes the sound, so there
-## is nothing to play from here. Read from the turn colour rather than hooked to
-## a signal, because this already runs every frame and there is no signal that
-## fires on exactly this.
+## is nothing to play from here - and the board's light goes over. Read from the
+## turn colour rather than hooked to a signal, because this already runs every
+## frame and there is no signal that fires on exactly this.
 func _handle_turn_change() -> void:
 	var turn_color: int = get_current_turn_color()
 	if turn_color == _last_knocked_turn_color:
@@ -424,6 +459,8 @@ func _handle_turn_change() -> void:
 		clock.set_player_to_move(turn_color == get_own_color())
 		if had_previous:
 			clock.nudge(float(turn_color))
+	if turn_changed_callback.is_valid():
+		turn_changed_callback.call(turn_color, had_previous)
 
 func update_turn_timer_label(animate: bool = true) -> void:
 	var own_player_id: int = get_player_id_for_color(get_own_color())

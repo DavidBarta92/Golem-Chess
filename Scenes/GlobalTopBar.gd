@@ -435,6 +435,7 @@ func _layout_right_group(animate: bool) -> void:
 		cursor = left_edge - TopBarStyle.GROUP_GAP
 
 	if _ribbons_shown:
+		cursor -= TopBarStyle.RIBBON_CLEARANCE
 		for quest_id in _ribbon_order:
 			var ribbon: Control = _ribbons[quest_id]
 			left_edge = cursor - TopBarStyle.RIBBON_WIDTH

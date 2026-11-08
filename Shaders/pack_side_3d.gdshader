@@ -7,21 +7,11 @@ uniform float pack_width = 1.965;
 uniform float pack_height = 2.62;
 uniform float alpha_threshold = 0.035;
 uniform vec3 side_tint = vec3(0.23, 0.18, 0.30);
-uniform float tear_cut_progress = 0.0;
-uniform float tear_cut_y = 0.085;
-uniform float tear_wave_strength = 0.012;
-uniform float tear_seed = 0.0;
-uniform float tear_edge_softness = 0.006;
+
+#include "res://Shaders/pack_tear.gdshaderinc"
 
 varying vec2 projected_uv;
 varying float side_amount;
-
-float tear_curve(float x) {
-	float primary = sin((x * 3.35 + tear_seed) * 6.28318);
-	float secondary = sin((x * 8.2 + tear_seed * 1.73 + 0.31) * 6.28318) * 0.42;
-	float fine = sin((x * 17.0 + tear_seed * 0.61 + 0.12) * 6.28318) * 0.16;
-	return tear_cut_y + (primary + secondary + fine) * tear_wave_strength;
-}
 
 void vertex() {
 	projected_uv = vec2(
@@ -45,10 +35,11 @@ void fragment() {
 	float alpha = smoothstep(alpha_threshold, 0.22, mask_sample.a);
 	float cut_line = tear_curve(projected_uv.x);
 	float lower_pack_mask = smoothstep(cut_line - tear_edge_softness, cut_line + tear_edge_softness, projected_uv.y);
-	if (tear_cut_progress > 0.01 && lower_pack_mask <= 0.01) {
+	float passed = tear_passed(projected_uv.x);
+	if (passed > 0.5 && lower_pack_mask <= 0.01) {
 		discard;
 	}
-	alpha *= mix(1.0, lower_pack_mask, clamp(tear_cut_progress, 0.0, 1.0));
+	alpha *= mix(1.0, lower_pack_mask, passed);
 	vec3 darkened_side = mix(side_sample.rgb * 0.46, side_tint, 0.42);
 	vec3 final_color = mix(side_sample.rgb * 0.82, darkened_side, side_amount);
 
