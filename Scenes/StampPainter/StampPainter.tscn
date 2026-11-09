@@ -1,0 +1,292 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/StampPainter/StampPainter.gd" id="1_painter"]
+[ext_resource type="Script" path="res://Scripts/StampPainter/PaintCanvas.gd" id="2_canvas"]
+
+[node name="StampPainter" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_painter")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.956863, 0.941176, 0.901961, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 8
+
+[node name="Rows" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TopRow" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Margin/Rows/TopRow"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Bélyegrajzoló"
+
+[node name="Spacer" type="Control" parent="Margin/Rows/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="StampLabel" type="Label" parent="Margin/Rows/TopRow"]
+layout_mode = 2
+theme_type_variation = &"FieldLabel"
+text = "Bélyeg:"
+
+[node name="StampPicker" type="OptionButton" parent="Margin/Rows/TopRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(230, 0)
+layout_mode = 2
+tooltip_text = "Melyik bélyegnek készül a rajz: ettől függ a maszk és az előnézet."
+
+[node name="NewButton" type="Button" parent="Margin/Rows/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Üres lap a papír színével (Ctrl+N)"
+text = "Új"
+
+[node name="OriginalButton" type="Button" parent="Margin/Rows/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "A bélyeg mostani rajza, kiindulásnak"
+text = "Eredeti rajz"
+
+[node name="OpenButton" type="Button" parent="Margin/Rows/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Egy korábbi rajz vagy bármilyen PNG (Ctrl+O)"
+text = "Megnyitás…"
+
+[node name="SaveButton" type="Button" parent="Margin/Rows/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "PNG-be menti a rajzok mappájába (Ctrl+S)"
+text = "Mentés"
+
+[node name="FolderButton" type="Button" parent="Margin/Rows/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Megnyitja a rajzok mappáját"
+text = "Mappa"
+
+[node name="Main" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="Tools" type="VBoxContainer" parent="Margin/Rows/Main"]
+custom_minimum_size = Vector2(158, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ToolsTitle" type="Label" parent="Margin/Rows/Main/Tools"]
+layout_mode = 2
+theme_type_variation = &"KickerLabel"
+text = "ESZKÖZÖK"
+
+[node name="ToolButtons" type="VBoxContainer" parent="Margin/Rows/Main/Tools"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="SizeLabel" type="Label" parent="Margin/Rows/Main/Tools"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"FieldLabel"
+text = "Méret: 8 px"
+
+[node name="SizeSlider" type="HSlider" parent="Margin/Rows/Main/Tools"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Ecset, ceruza, radír és vonalvastagság ( [ és ] )"
+min_value = 1.0
+max_value = 96.0
+value = 8.0
+exp_edit = true
+
+[node name="FillShapes" type="CheckBox" parent="Margin/Rows/Main/Tools"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Kitöltött alakzat"
+
+[node name="ToolsSeparator" type="HSeparator" parent="Margin/Rows/Main/Tools"]
+layout_mode = 2
+
+[node name="History" type="HBoxContainer" parent="Margin/Rows/Main/Tools"]
+layout_mode = 2
+
+[node name="UndoButton" type="Button" parent="Margin/Rows/Main/Tools/History"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Ctrl+Z"
+text = "Vissza"
+
+[node name="RedoButton" type="Button" parent="Margin/Rows/Main/Tools/History"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Ctrl+Y"
+text = "Újra"
+
+[node name="FitButton" type="Button" parent="Margin/Rows/Main/Tools"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "F"
+text = "Teljes nézet"
+
+[node name="Hints" type="Label" parent="Margin/Rows/Main/Tools"]
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+text = "Bal gomb: tinta
+Jobb gomb: papír
+Görgő: nagyítás
+Középső gomb vagy
+Szóköz + húzás: mozgatás
+Shift: egyenes, négyzet, kör"
+autowrap_mode = 2
+
+[node name="Canvas" type="Control" parent="Margin/Rows/Main"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("2_canvas")
+
+[node name="Side" type="VBoxContainer" parent="Margin/Rows/Main"]
+custom_minimum_size = Vector2(340, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PreviewTitle" type="Label" parent="Margin/Rows/Main/Side"]
+layout_mode = 2
+theme_type_variation = &"KickerLabel"
+text = "ELŐNÉZET"
+
+[node name="PreviewHolder" type="Control" parent="Margin/Rows/Main/Side"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(194, 263)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+
+[node name="PaletteTitle" type="Label" parent="Margin/Rows/Main/Side"]
+layout_mode = 2
+theme_type_variation = &"KickerLabel"
+text = "SZÍNEK"
+
+[node name="Palette" type="GridContainer" parent="Margin/Rows/Main/Side"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 3
+theme_override_constants/v_separation = 3
+columns = 16
+
+[node name="PaletteHint" type="Label" parent="Margin/Rows/Main/Side"]
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+text = "Fent a tinták, alattuk a papírjuk. Bal klikk: tinta, jobb klikk: papír."
+autowrap_mode = 2
+
+[node name="Colors" type="HBoxContainer" parent="Margin/Rows/Main/Side"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="InkSwatch" type="Panel" parent="Margin/Rows/Main/Side/Colors"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(34, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="InkLabel" type="Label" parent="Margin/Rows/Main/Side/Colors"]
+layout_mode = 2
+theme_type_variation = &"FieldLabel"
+text = "Tinta"
+
+[node name="PaperSwatch" type="Panel" parent="Margin/Rows/Main/Side/Colors"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(34, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PaperLabel" type="Label" parent="Margin/Rows/Main/Side/Colors"]
+layout_mode = 2
+theme_type_variation = &"FieldLabel"
+text = "Papír"
+
+[node name="SwapButton" type="Button" parent="Margin/Rows/Main/Side/Colors"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "X"
+text = "Csere"
+
+[node name="GuideTitle" type="Label" parent="Margin/Rows/Main/Side"]
+layout_mode = 2
+theme_type_variation = &"KickerLabel"
+text = "MASZK"
+
+[node name="GuideRow" type="HBoxContainer" parent="Margin/Rows/Main/Side"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="GuideToggle" type="CheckButton" parent="Margin/Rows/Main/Side/GuideRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Sötétíti, amit a bélyeg nem mutat (M)"
+button_pressed = true
+text = "Látszik"
+
+[node name="MarkingsToggle" type="CheckBox" parent="Margin/Rows/Main/Side/GuideRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "A bélyeg neve, száma és mozgásmintája a rajz fölött"
+button_pressed = true
+text = "Mintázat és felirat"
+
+[node name="StrengthRow" type="HBoxContainer" parent="Margin/Rows/Main/Side"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StrengthLabel" type="Label" parent="Margin/Rows/Main/Side/StrengthRow"]
+layout_mode = 2
+theme_type_variation = &"FieldLabel"
+text = "Erősség"
+
+[node name="GuideStrength" type="HSlider" parent="Margin/Rows/Main/Side/StrengthRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 0.15
+max_value = 0.95
+step = 0.05
+value = 0.6
+
+[node name="Status" type="Label" parent="Margin/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+text_overrun_behavior = 3

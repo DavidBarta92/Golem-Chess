@@ -21,3 +21,6 @@
 - [Docs/Balance/STAMP_VALUE.md](Docs/Balance/STAMP_VALUE.md) — the stamp value
   estimate: the formula, its weights, and the editor plugin that shows it and
   stores it on each stamp.
+- [Docs/StampPainter/STAMP_PAINTER.md](Docs/StampPainter/STAMP_PAINTER.md) — the
+  stamp painter trial: drawing a stamp's art in the game, the tools, the mask
+  guide and the preview, and where drawings are saved.
