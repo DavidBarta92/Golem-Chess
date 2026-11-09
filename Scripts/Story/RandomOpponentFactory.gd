@@ -25,10 +25,10 @@ static func create(difficulty_level: int, seed: int = 0) -> Dictionary:
 	else:
 		rng.randomize()
 
-	_ensure_names_loaded()
-	var opponent_name: String = "%s %s" % [_pick(rng, _surnames), _pick(rng, _given_names)]
+	var person: Dictionary = create_person(rng)
+	var opponent_name: String = format_name(str(person["surname"]), str(person["given_name"]))
 
-	var portrait: PortraitConfig = PortraitLibrary.create_random_portrait(int(rng.randi()))
+	var portrait: PortraitConfig = PortraitLibrary.create_random_portrait(int(person["portrait_seed"]))
 	portrait.display_name = opponent_name
 
 	var deck: DeckDefinition = DeckDefinitionLibrary.pick_random_deck(rng)
@@ -42,7 +42,28 @@ static func create(difficulty_level: int, seed: int = 0) -> Dictionary:
 		"difficulty_level": GameConfig.clamp_ai_difficulty_level(difficulty_level),
 	}
 
+## Somebody the game makes up - a filler opponent, a Bourse buyer or seller:
+## the parts of a name and the seed of a face (PortraitLibrary.create_random_portrait).
+## Keep the parts rather than the joined name, so the name follows the language.
+static func create_person(rng: RandomNumberGenerator) -> Dictionary:
+	_ensure_names_loaded()
+	var surname: String = _pick(rng, _surnames)
+	var given_name: String = _pick(rng, _given_names)
+	return {
+		"surname": surname,
+		"given_name": given_name,
+		"portrait_seed": int(rng.randi()),
+	}
+
+## In the order of the game's language: Hungarian puts the surname first
+## ("KovĂˇcs Anna"), the others the given name ("Anna KovĂˇcs").
+static func format_name(surname: String, given_name: String) -> String:
+	if TranslationServer.get_locale().begins_with("hu"):
+		return ("%s %s" % [surname, given_name]).strip_edges()
+	return ("%s %s" % [given_name, surname]).strip_edges()
+
 static func _ensure_names_loaded() -> void:
+
 	if _names_loaded:
 		return
 	_names_loaded = true

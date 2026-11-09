@@ -24,3 +24,6 @@
 - [Docs/StampPainter/STAMP_PAINTER.md](Docs/StampPainter/STAMP_PAINTER.md) — the
   stamp painter trial: drawing a stamp's art in the game, the tools, the mask
   guide and the preview, and where drawings are saved.
+- [Docs/Bourse/BOURSE.md](Docs/Bourse/BOURSE.md) — the Bourse (Börze): lots of
+  five, made-up buyers and sellers, the free-copy rule for codexes, the coin
+  scale, and where to tune them.

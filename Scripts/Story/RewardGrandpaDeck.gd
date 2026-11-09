@@ -10,9 +10,10 @@ extends RewardSceneBase
 ## later; the reward moment is the reveal animation and the fact that the
 ## cards are now theirs on paper.
 ##
-## Idempotent on top of the base payout guard: quantities are topped up to the
-## deck's counts, never added blindly, so a re-entered scene or the copies the
-## deck store already granted cannot inflate the collection.
+## Idempotent on top of the base payout guard: the collection is only topped up
+## to what the codexes hold (PlayerCollectionStore.settle_codex_copies), never
+## added to blindly, so a re-entered scene or the copies the deck store already
+## granted with its starting codex cannot inflate the collection.
 
 const DECK_NAME_KEY: String = "REWARD_GRANDPA_DECK_NAME"
 
@@ -25,8 +26,10 @@ func _on_reward_ready(granted_now: bool) -> void:
 		return
 
 	var stamp_names: Array[String] = boss.get_deck_stamp_names() if boss != null else DeckManager.create_starting_deck()
-	_top_up_collection(stamp_names)
 	_ensure_saved_deck(stamp_names)
+	# The codex comes with its copies: each slot takes one of the collection's.
+	if PlayerCollectionStore.settle_codex_copies() > 0:
+		PlayerCollectionStore.save_collection()
 
 ## The cards dealt onto the table: the deck itself, duplicates included, in
 ## draw order.
@@ -43,19 +46,6 @@ func get_presented_stamps() -> Array[Stamp]:
 				stamps.append(stamp)
 	return stamps
 
-## Brings each stamp's owned count up to how many copies the deck plays.
-func _top_up_collection(stamp_names: Array[String]) -> void:
-	var wanted_counts: Dictionary = {}
-	for stamp_name in stamp_names:
-		wanted_counts[stamp_name] = int(wanted_counts.get(stamp_name, 0)) + 1
-
-	for stamp_name in wanted_counts:
-		var stamp: Stamp = StampLibrary.get_stamp(stamp_name)
-		if stamp == null:
-			continue
-		var owned: int = PlayerCollectionStore.get_owned_count_for_stamp(stamp)
-		for _i in range(maxi(0, int(wanted_counts[stamp_name]) - owned)):
-			PlayerCollectionStore.add_local_stamp_copy(stamp_name)
 
 ## Makes the deck the player's own under Grandpa's name - in the language the
 ## game is in now - and selects it. The store made its default "New" deck from

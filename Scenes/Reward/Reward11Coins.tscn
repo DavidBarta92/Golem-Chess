@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://Scripts/Story/Rewards/CoinDropPresenter.gd" id="9_presenter"]
 
 [node name="RewardScene" instance=ExtResource("1_reward_base")]
-grant_points = 30
+grant_points = 300
 reward_id = "reward_11_coins"
 speaker_name = "Mentor"
 dialogue_lines = Array[String](["REWARD_11_LINE_1"])

@@ -17,7 +17,8 @@ The formula lives in `Scripts/StampValue/StampValueCalculator.gd` and returns
 a breakdown (M, T(D), S, the movement, role and effect parts, the total).
 Unknown effect types and triggers count as 0 and show a warning.
 
-The game itself only reads the stored field.
+The game itself only reads the stored field. Besides the AI, the Bourse
+prices stamps from it ([BOURSE.md](../Bourse/BOURSE.md)).
 
 ## In the AI
 

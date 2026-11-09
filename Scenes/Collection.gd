@@ -270,6 +270,7 @@ func _setup_stamp_browser_controller() -> void:
 		"stamp_drag_started_callback": Callable(self, "_on_stamp_drag_started"),
 		"stamp_drag_released_callback": Callable(self, "_on_stamp_drag_released"),
 		"deck_stamp_display_name_provider": Callable(self, "_get_deck_stamp_display_name"),
+		"free_count_provider": Callable(self, "_get_album_free_count"),
 	})
 	stamp_browser_controller.apply_layout(
 		BROWSER_STAMP_COLUMNS,
@@ -930,8 +931,10 @@ func _on_buy_packs_pressed() -> void:
 		pack_controller.show_buy_packs()
 
 func _on_pack_opened(_rewards: Array[StampPrint], has_new_stamps: bool) -> void:
-	# A codex only asks whether a stamp is owned, not how many copies there are.
+	# A codex that was short of a stamp can be whole now. Copies of stamps the
+	# player already had change only the album's counts.
 	if has_new_stamps:
+
 		_populate_saved_decks_list()
 	_update_deck_editor_state()
 	_refresh_stamp_filter(false)
@@ -1242,7 +1245,8 @@ func _update_deck_editor_state() -> void:
 	for child in stamp_grid.get_children():
 		var visual: StampVisual = _get_browser_stamp_visual(child)
 		if visual != null:
-			visual.draggable = is_creating_deck && !editing_deck_has_missing_stamps && visual.collection_owned && _can_add_stamp_to_deck(visual.stamp) && _get_selected_deck_stamp_count() < MAX_DECK_SIZE
+			var has_free_copy: bool = visual.stamp_print != null && _get_album_free_count(visual.stamp_print.print_id) > 0
+			visual.draggable = is_creating_deck && !editing_deck_has_missing_stamps && visual.collection_owned && has_free_copy && _can_add_stamp_to_deck(visual.stamp) && _get_selected_deck_stamp_count() < MAX_DECK_SIZE
 			visual.disabled = false
 			# A stamp that cannot be picked up stays quiet under the mouse; an
 			# empty name plays nothing, no meta falls back to the usual hover.
@@ -1260,7 +1264,26 @@ func _can_add_print_to_deck(print_id: String) -> bool:
 
 	var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
 	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
-	return stamp != null && PlayerCollectionStore.owns_print(stamp_print) && _can_add_stamp_to_deck(stamp) && _get_selected_deck_stamp_count() < MAX_DECK_SIZE
+	return stamp != null && _get_album_free_count(print_id) > 0 && _can_add_stamp_to_deck(stamp) && _get_selected_deck_stamp_count() < MAX_DECK_SIZE
+
+## The copies of a print the album counts as free. While a codex is being
+## edited its saved copies are given back and the ones now on its pages taken,
+## so dragging a stamp in lowers the count and taking it out raises it.
+func _get_album_free_count(print_id: String) -> int:
+	if !is_creating_deck:
+		return PlayerCollectionStore.get_free_count_for_print_id(print_id)
+	var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
+	if stamp_print == null:
+		return 0
+	var free_count: int = PlayerCollectionStore.get_free_count_for_print_id(stamp_print.print_id, editing_deck_id)
+	for deck_stamp in selected_deck_stamps:
+		if deck_stamp is Dictionary and StampPrintLibrary.resolve_print_id_alias(str(deck_stamp.get("print_id", ""))) == stamp_print.print_id:
+			free_count -= 1
+	return maxi(0, free_count)
+
+## After a codex was deleted from the list: its copies are free again.
+func refresh_album_counts() -> void:
+	_show_page(stamp_browser_controller.get_current_page())
 
 func _reindex_selected_deck_stamps() -> void:
 	_ensure_selected_deck_slots()

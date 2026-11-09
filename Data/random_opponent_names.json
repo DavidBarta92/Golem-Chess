@@ -1,5 +1,5 @@
 {
-	"_comment": "Pools for random story opponents. Hungarian name order: surname first. Edit freely; the game only needs both lists to be non-empty.",
+	"_comment": "Pools for random story opponents. Hungarian name order: surname first in the file; the game orders the name by its language. Edit freely; the game only needs both lists to be non-empty.",
 	"surnames": [
 		"Nagy",
 		"Kovács",

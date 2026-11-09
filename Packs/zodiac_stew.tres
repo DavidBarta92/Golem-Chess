@@ -47,4 +47,4 @@ pack_roughness_texture_path = "res://Assets/booster_roughness.png"
 pack_foil_mask_texture_path = "res://Assets/booster_foil_mask.png"
 possible_stamps = Array[ExtResource("8_osdhi")]([ExtResource("10_bear"), ExtResource("11_blackbird"), ExtResource("12_cat"), ExtResource("13_crocodile"), ExtResource("14_dog"), ExtResource("15_dragon"), ExtResource("16_dragonhorse"), ExtResource("17_duck"), ExtResource("18_elephant"), ExtResource("19_fox"), ExtResource("20_goat"), ExtResource("21_heron"), ExtResource("22_horse"), ExtResource("23_rhinoceros"), ExtResource("24_turtle"), ExtResource("25_black_hole"), ExtResource("26_comet"), ExtResource("27_earth"), ExtResource("28_jupiter"), ExtResource("29_mars"), ExtResource("30_mercury"), ExtResource("31_moon"), ExtResource("32_nebula"), ExtResource("33_neptune"), ExtResource("34_north_star"), ExtResource("35_nova"), ExtResource("36_saturn"), ExtResource("37_sun"), ExtResource("38_uranus"), ExtResource("39_venus")])
 include_all_standard_prints = false
-price = 1
+price = 150

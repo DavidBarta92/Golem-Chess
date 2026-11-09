@@ -22,7 +22,7 @@ class_name PackDefinition
 @export var stamp_print_ids: PackedStringArray = []
 @export var include_all_standard_prints: bool = false
 @export var available: bool = true
-@export var price: int = 15
+@export var price: int = 150
 @export_group("Rarity")
 ## The chance of each stamp in the pack to be of that rarity. A pack without such
 ## prints gives a basic one instead.

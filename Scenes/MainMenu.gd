@@ -10,6 +10,7 @@ const SETTINGS_DIALOG_WIDTH: int = 540
 ## windows (canvas layer 1024), so the dialog is above it, and above the
 ## scene, so the bar stays on screen behind the dialog.
 const TOP_BAR_LAYER_UNDER_DIALOGS: int = 1000
+const BourseSaleNotice = preload("res://Scripts/Bourse/BourseSaleNotice.gd")
 
 @onready var dev_tools_window: Window = $DevToolsWindow
 @onready var ai_match_count_field: LineEdit = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/MatchCountField
@@ -84,6 +85,7 @@ func _ready():
 	_connect_once(rebind_keys_button.pressed, Callable(self, "_on_rebind_keys_button_pressed"))
 	_bind_top_bar()
 	_build_next_boss_stakes_label()
+	add_child(BourseSaleNotice.new())
 	sync_dev_tools_from_config()
 	_populate_ai_vs_ai_deck_options()
 	_connect_once(ai_random_deck_check.toggled, Callable(self, "_on_ai_random_deck_toggled"))

@@ -6,7 +6,7 @@
 [ext_resource type="Script" path="res://Scripts/Story/Rewards/StampRevealPresenter.gd" id="11_stamp"]
 
 [node name="RewardScene" instance=ExtResource("1_reward_base")]
-grant_points = 30
+grant_points = 300
 reward_id = "reward_12_final"
 speaker_name = "Mentor"
 dialogue_lines = Array[String](["REWARD_12_LINE_1"])

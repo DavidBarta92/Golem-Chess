@@ -6,7 +6,7 @@
 [node name="RewardScene" unique_id=1133455441 instance=ExtResource("1_reward_base")]
 reward_id = "reward_04_coins"
 dialogue_lines = Array[String](["REWARD_04_LINE_1"])
-grant_points = 3
+grant_points = 30
 
 [node name="Presenter" type="Control" parent="RightColumn" index="0" unique_id=1933573327]
 layout_mode = 1

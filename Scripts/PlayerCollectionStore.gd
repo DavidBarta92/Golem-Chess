@@ -2,18 +2,32 @@ extends Node
 
 const COLLECTION_SCHEMA_VERSION: int = 4
 const COLLECTION_PATH: String = "user://player_collection.json"
-const SAVED_DECKS_PATH: String = "user://decks.json"
 const LOCAL_PROVIDER: String = "local_json"
 const DEFAULT_VARIANT_ID: String = "standard"
 const DEFAULT_VARIANT_NAME: String = "Standard"
 ## Stamps every new save owns outright. Empty on purpose: the story hands the
 ## player their first cards (Grandpa's deck) in the first reward scene. The
-## default saved deck still guarantees one copy of each stamp it plays, so the
-## starting deck is always playable.
+## default saved deck still comes with the copies it plays (settle_codex_copies),
+## so the starting deck is always playable.
 const DEFAULT_COLLECTION_STAMP_NAMES: Array[String] = []
+## Set once the codexes' copies were made good (settle_codex_copies). Before the
+## free-copy rule a codex only had to own a stamp, not a copy per slot; the first
+## load under the rule gives every codex what it plays, and never again after.
+const CODEX_COPIES_SETTLED_KEY: String = "codex_copies_settled"
+
+## A copy is free when it is neither glued into a codex nor out on a Bourse lot.
+## Emitted when that may have changed: a copy came or went, a codex was saved
+## or deleted, a lot was listed or settled.
+signal copies_changed
 
 var collection_data: Dictionary = {}
 var is_loaded: bool = false
+
+# Copies held by codexes and lots, by print id: {"codexes": {deck_id: count},
+# "lot": count, "total": count}. Rebuilt on the first question after a change.
+var _reserved_by_print_id: Dictionary = {}
+var _deck_names_by_id: Dictionary = {}
+var _reserved_ready: bool = false
 
 # The collection by stamp and by print. It is a flat list, and a codex list asks
 # about every stamp of every codex: walking the list each time adds up to seconds.
@@ -39,14 +53,148 @@ func ensure_loaded() -> void:
 			collection_data = _create_default_collection()
 		else:
 			_add_missing_default_collection_prints()
-		_add_missing_saved_deck_prints()
+		_settle_codex_copies_once()
 		save_collection()
 		return
 
 	collection_data = _create_default_collection()
 	is_loaded = true
-	_add_missing_saved_deck_prints()
+	_settle_codex_copies_once()
 	save_collection()
+
+# --- Free copies ---------------------------------------------------------------
+
+## Copies of the print the player can still use: owned, less those in codexes
+## and on Bourse lots. `ignore_deck_id` leaves that codex's copies out of the
+## reckoning, for the codex being edited.
+func get_free_count_for_print_id(print_id: String, ignore_deck_id: String = "") -> int:
+	var normalized_print_id: String = _resolve_print_id(print_id)
+	if normalized_print_id.is_empty():
+		return 0
+	var owned: int = get_owned_count_for_print_id(normalized_print_id)
+	var reserved: int = get_reserved_count_for_print_id(normalized_print_id)
+	if !ignore_deck_id.is_empty():
+		var codexes: Dictionary = _get_reservation(normalized_print_id).get("codexes", {})
+		reserved -= int(codexes.get(ignore_deck_id, 0))
+	return maxi(0, owned - reserved)
+
+func get_reserved_count_for_print_id(print_id: String) -> int:
+	return int(_get_reservation(_resolve_print_id(print_id)).get("total", 0))
+
+## Where the print's taken copies are, for a hover line: codexes by name, then
+## the Bourse. [{"kind": "codex", "name": ..., "count": n}, {"kind": "lot", "count": n}]
+func get_copy_locations(print_id: String) -> Array[Dictionary]:
+	var locations: Array[Dictionary] = []
+	var reservation: Dictionary = _get_reservation(_resolve_print_id(print_id))
+	var codexes: Dictionary = reservation.get("codexes", {})
+	for deck_id in codexes.keys():
+		locations.append({
+			"kind": "codex",
+			"deck_id": str(deck_id),
+			"name": str(_deck_names_by_id.get(deck_id, "")),
+			"count": int(codexes[deck_id]),
+		})
+	if int(reservation.get("lot", 0)) > 0:
+		locations.append({"kind": "lot", "count": int(reservation.get("lot", 0))})
+	return locations
+
+## Drops the cached reservations; the stores that hold copies call it after a change.
+func invalidate_reserved_copies() -> void:
+	_reserved_ready = false
+	copies_changed.emit()
+
+## Gives every print at least as many copies as the codexes and lots hold, and
+## returns how many copies that took. The caller saves.
+func settle_codex_copies() -> int:
+	_reserved_ready = false
+	_prepare_reservations()
+	var granted: int = 0
+	for print_id in _reserved_by_print_id.keys():
+		var missing: int = int(_reserved_by_print_id[print_id].get("total", 0)) - get_owned_count_for_print_id(str(print_id))
+		if missing > 0 and !_add_print_copy(str(print_id), missing).is_empty():
+			granted += missing
+			_lookups_ready = false
+	return granted
+
+## Takes one copy out of the collection for good (a Bourse sale). Only a free
+## copy can go; false when there is none.
+func remove_free_print_copy(print_id: String) -> bool:
+	var normalized_print_id: String = _resolve_print_id(print_id)
+	if get_free_count_for_print_id(normalized_print_id) <= 0:
+		return false
+	return _remove_print_copies(normalized_print_id, 1)
+
+func _remove_print_copies(print_id: String, amount: int) -> bool:
+	var items: Array = _get_items()
+	for index in range(items.size()):
+		var item = items[index]
+		if item is Dictionary and _resolve_print_id(str(item.get("print_id", ""))) == print_id:
+			var quantity: int = maxi(0, int(item.get("quantity", 0)) - amount)
+			if quantity <= 0:
+				items.remove_at(index)
+			else:
+				item["quantity"] = quantity
+			collection_data["items"] = items
+			var saved: bool = save_collection()
+			invalidate_reserved_copies()
+			return saved
+	return false
+
+func _settle_codex_copies_once() -> void:
+	if bool(collection_data.get(CODEX_COPIES_SETTLED_KEY, false)):
+		return
+	var granted: int = settle_codex_copies()
+	collection_data[CODEX_COPIES_SETTLED_KEY] = true
+	if granted > 0:
+		print("PlayerCollectionStore: gave the codexes the %d copies they were short of." % granted)
+
+func _get_reservation(print_id: String) -> Dictionary:
+	if print_id.is_empty():
+		return {}
+	_prepare_reservations()
+	return _reserved_by_print_id.get(print_id, {})
+
+## Built into locals and swapped in at the end: loading the codexes can ask
+## about free copies on its own (PlayerDeckStore puts its default codex back
+## only when the copies are free), and that inner build must not be counted twice.
+func _prepare_reservations() -> void:
+	if _reserved_ready:
+		return
+	var decks: Array = PlayerDeckStore.list_decks()
+	var lot_counts: Dictionary = BourseStore.get_reserved_print_counts()
+	var reserved: Dictionary = {}
+	var deck_names: Dictionary = {}
+	for deck in decks:
+		if !(deck is Dictionary):
+			continue
+		var deck_id: String = str(deck.get("deck_id", ""))
+		deck_names[deck_id] = str(deck.get("name", ""))
+		var stamps = deck.get("stamps", [])
+		if !(stamps is Array):
+			continue
+		for deck_stamp in stamps:
+			if deck_stamp is Dictionary:
+				_reserve(reserved, _resolve_print_id(str(deck_stamp.get("print_id", ""))), 1, deck_id)
+	for print_id_value in lot_counts.keys():
+		_reserve(reserved, _resolve_print_id(str(print_id_value)), int(lot_counts[print_id_value]), "")
+	_reserved_by_print_id = reserved
+	_deck_names_by_id = deck_names
+	_reserved_ready = true
+
+## Adds `count` copies of the print to the reservations, for a codex or (with
+## no deck id) for the Bourse.
+func _reserve(reserved: Dictionary, print_id: String, count: int, deck_id: String) -> void:
+	if print_id.is_empty() or count <= 0:
+		return
+	var reservation: Dictionary = reserved.get(print_id, {"codexes": {}, "lot": 0, "total": 0})
+	if deck_id.is_empty():
+		reservation["lot"] = int(reservation["lot"]) + count
+	else:
+		var codexes: Dictionary = reservation["codexes"]
+		codexes[deck_id] = int(codexes.get(deck_id, 0)) + count
+	reservation["total"] = int(reservation["total"]) + count
+	reserved[print_id] = reservation
+
 
 func list_items() -> Array:
 	ensure_loaded()
@@ -154,6 +302,8 @@ func _add_print_copy(print_id: String, amount: int) -> Dictionary:
 	_items_by_print_id[stamp_print.print_id] = new_item
 	return new_item
 
+## Takes a copy off a stack by its instance id, free or not; nothing in the game
+## calls it today. remove_free_print_copy is the one that keeps codexes whole.
 func remove_stamp_instance(instance_id: String) -> bool:
 	ensure_loaded()
 	var items: Array = _get_items()
@@ -173,7 +323,9 @@ func remove_stamp_instance(instance_id: String) -> bool:
 func save_collection() -> bool:
 	ensure_loaded()
 	_lookups_ready = false
-	return SaveIO.write_json(COLLECTION_PATH, collection_data, COLLECTION_SCHEMA_VERSION)
+	var saved: bool = SaveIO.write_json(COLLECTION_PATH, collection_data, COLLECTION_SCHEMA_VERSION)
+	copies_changed.emit()
+	return saved
 
 func _prepare_lookups() -> void:
 	if _lookups_ready:
@@ -241,6 +393,9 @@ func _normalize_collection(raw_data: Dictionary) -> Dictionary:
 		"provider": str(raw_data.get("provider", LOCAL_PROVIDER)),
 		"items": [],
 	}
+	if bool(raw_data.get(CODEX_COPIES_SETTLED_KEY, false)):
+		normalized[CODEX_COPIES_SETTLED_KEY] = true
+
 
 	var normalized_items: Array = []
 	var raw_items = raw_data.get("items", [])
@@ -332,92 +487,6 @@ func _add_missing_default_collection_prints() -> void:
 		items.append(_create_collection_item(stamp_print, default_quantity))
 
 	collection_data["items"] = items
-
-func _add_missing_saved_deck_prints() -> void:
-	if str(collection_data.get("provider", LOCAL_PROVIDER)) != LOCAL_PROVIDER:
-		return
-
-	var items: Array = _get_items()
-	var item_index_by_print_id: Dictionary = {}
-	for index in range(items.size()):
-		var item = items[index]
-		if item is Dictionary:
-			item_index_by_print_id[_resolve_print_id(str(item.get("print_id", "")))] = index
-
-	for stamp_print_value in _get_saved_deck_prints():
-		var stamp_print: StampPrint = stamp_print_value as StampPrint
-		if stamp_print == null:
-			continue
-
-		if item_index_by_print_id.has(stamp_print.print_id):
-			var item_index: int = int(item_index_by_print_id[stamp_print.print_id])
-			var existing_item: Dictionary = items[item_index]
-			if int(existing_item.get("quantity", 0)) < 1:
-				existing_item["quantity"] = 1
-				items[item_index] = existing_item
-			continue
-
-		items.append(_create_collection_item(stamp_print, 1))
-		item_index_by_print_id[stamp_print.print_id] = items.size() - 1
-
-	collection_data["items"] = items
-
-func _get_saved_deck_prints() -> Array:
-	var saved_prints: Dictionary = {}
-	var parsed = SaveIO.read_json_value(SAVED_DECKS_PATH)
-	if parsed == null:
-		return []
-
-	var decks: Array = []
-	if parsed is Dictionary:
-		var parsed_decks = parsed.get("decks", [])
-		if parsed_decks is Array:
-			decks = parsed_decks
-	elif parsed is Array:
-		decks = parsed
-
-	for deck_value in decks:
-		if !(deck_value is Dictionary):
-			continue
-
-		var deck: Dictionary = deck_value
-		var stamps = deck.get("stamps", [])
-		if !(stamps is Array):
-			continue
-
-		for deck_stamp in stamps:
-			var stamp_print: StampPrint = _get_saved_deck_stamp_print(deck_stamp)
-			if stamp_print != null:
-				saved_prints[stamp_print.print_id] = stamp_print
-
-	return saved_prints.values()
-
-func _get_saved_deck_stamp_print(deck_stamp) -> StampPrint:
-	if deck_stamp is Dictionary:
-		var print_id: String = str(deck_stamp.get("print_id", "")).strip_edges()
-		if !print_id.is_empty():
-			var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
-			if stamp_print != null:
-				return stamp_print
-
-		var stamp_code: String = str(deck_stamp.get("stamp_code", "")).strip_edges()
-		if stamp_code.is_empty():
-			stamp_code = _get_stamp_code_for_name(str(deck_stamp.get("stamp_name", "")))
-		else:
-			stamp_code = _resolve_stamp_code(stamp_code)
-		if stamp_code.is_empty():
-			return null
-
-		var variant_id: String = StampPrintLibrary.normalize_variant_id(str(deck_stamp.get("variant_id", DEFAULT_VARIANT_ID)))
-		var stamp_print_by_variant: StampPrint = StampPrintLibrary.get_print(StampPrintLibrary.get_print_id(stamp_code, variant_id))
-		if stamp_print_by_variant != null:
-			return stamp_print_by_variant
-		return StampPrintLibrary.get_print(StampPrintLibrary.get_default_print_id_for_stamp_code(stamp_code))
-
-	var legacy_stamp_code: String = _get_stamp_code_for_name(str(deck_stamp))
-	if legacy_stamp_code.is_empty():
-		return null
-	return StampPrintLibrary.get_print(StampPrintLibrary.get_default_print_id_for_stamp_code(legacy_stamp_code))
 
 func _get_default_collection_quantity(stamp_print: StampPrint) -> int:
 	if stamp_print == null:

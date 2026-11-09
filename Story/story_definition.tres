@@ -154,7 +154,7 @@ auto_continue_after_completion = true
 script = ExtResource("8_reward_node")
 reward_scene_path = "res://Scenes/Reward/Reward04Coins.tscn"
 id = "reward_04_coins"
-display_name = "3 coin"
+display_name = "30 coin"
 unlocks_packs = Array[String](["hunters_pack", "beast_engines"])
 
 [sub_resource type="Resource" id="Resource_chapter_02"]

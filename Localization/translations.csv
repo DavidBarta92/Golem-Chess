@@ -861,10 +861,9 @@ RETRY_PROMPT_YES,"Yes, again","Igen, újra"
 RETRY_PROMPT_NO,Not now,Most nem
 STORY_MULTIPLAYER_BUTTON,Multiplayer,Többjátékos
 QUESTS_BUTTON,Quests,Küldetések
-TRADE_BUTTON,Trade,Csere
+TRADE_BUTTON,Bourse,Börze
 STORY_MULTIPLAYER_SCREEN_TITLE,Multiplayer,Többjátékos
 QUESTS_SCREEN_TITLE,Quests,Küldetések
-TRADE_SCREEN_TITLE,Trade,Csere
 PLACEHOLDER_SCREEN_NOTE,This screen is still being built.,Ez a képernyő még készül.
 REWARD_GRANDPA_DECK_NAME,Grandpa's codex,Nagypapa codexe
 REWARD_04_LINE_1,"Here, a few coins for the win.","Tessék, pár érme a győzelemért."
@@ -1039,3 +1038,57 @@ Choose a pack to open,Choose a pack to open,Válassz egy csomagot
 Drag along the top of the pack to tear it open,Drag along the top of the pack to tear it open,Húzd végig az egeret a csomag tetején a kitépéshez
 Click the stamps to turn them over,Click the stamps to turn them over,Kattints a bélyegekre a megfordításukhoz
 Click to continue,Click to continue,Kattints a folytatáshoz
+BOURSE_TAB_MY_LOTS,My lots,Lottjaim
+BOURSE_TAB_MARKET,Bourse,Börze
+BOURSE_MY_LOTS_TITLE,My lots,Lottjaim
+BOURSE_MY_LOTS_NOTE,"When a buyer picks, you get your asking price and the other 4 stamps.","Ha egy vevő választ, megkapod a kért árat és a maradék 4 bélyeget."
+BOURSE_NEXT_BUYER,Next buyer:,A következő vevő:
+BOURSE_NEW_LOTS,New lots:,Új lottok:
+BOURSE_IN_TIME,in %s,még %s
+BOURSE_DURATION_HOURS_MINUTES,%d h %d min,%d ó %d p
+BOURSE_DURATION_MINUTES,%d min,%d p
+BOURSE_LOT_LISTED,On the Bourse,A börzén
+BOURSE_LOT_SOLD,Sold,Eladva
+BOURSE_LOT_NUMBER,Lot %d,%d. lott
+BOURSE_ASKING_PRICE,Asking price,Kért ár
+BOURSE_CHANCE_NEXT_BUYER,Chance at the next buyer,Esély a következő vevőnél
+BOURSE_WITHDRAW,Withdraw,Visszavonás
+BOURSE_BUYER_PICKED,%s picked: %s,%s választott: %s
+BOURSE_SOLD_PAYOUT,and 4 stamps go back to your album,és 4 bélyeg visszakerül az albumodba
+BOURSE_COLLECT,Collect,Begyűjtés
+BOURSE_NEW_LOT,New lot,Új lott
+BOURSE_SLOTS_USED,{used} of {total} in use,{total} helyből {used} foglalt
+BOURSE_NEW_LOT_TITLE,New lot,Új lott
+BOURSE_NEW_LOT_NOTE,Click the stamps in the album. A lot holds 5 stamps.,Kattints a bélyegekre az albumban. Egy lottba 5 bélyeg kerül.
+BOURSE_SHEET_LABEL,Lot,Lott
+BOURSE_ATTRACTION,Appeal to buyers,Vonzerő a vevőknek
+BOURSE_ATTRACTION_0,Nobody would take it,Senki sem vinné
+BOURSE_ATTRACTION_1,Weak,Gyenge
+BOURSE_ATTRACTION_2,Modest,Mérsékelt
+BOURSE_ATTRACTION_3,Fair,Közepes
+BOURSE_ATTRACTION_4,Strong,Erős
+BOURSE_ATTRACTION_5,Excellent,Kiváló
+BOURSE_ATTRACTION_NOTE,"The better the stamps for the price, the sooner a buyer picks the lot.","Minél jobbak a bélyegek az árhoz képest, annál hamarabb választják."
+BOURSE_ADD_MORE,Add %d more stamps to the lot before you list it.,"Tegyél még %d bélyeget a lottba, mielőtt kiteszed."
+BOURSE_READY_TO_LIST,Ready for the Bourse.,Kiteheted a börzére.
+BOURSE_LIST,List on the Bourse,Kiteszem a börzére
+BOURSE_FREE_ONLY,Free only,Csak a szabadok
+BOURSE_MARKET_TITLE,Today's lots,Mai lottok
+BOURSE_MARKET_NOTE,"%d new lots arrive every day. You can draw one stamp from each, blind.","Naponta %d új lott érkezik. Mindegyikből egy bélyeget választhatsz, vakon."
+BOURSE_SELLER_TODAY,today's lot,mai lottja
+BOURSE_SELLER_CLOSED,today's lot · closed,mai lottja · lezárva
+BOURSE_PICK,Pick,Választok
+BOURSE_RESUME_PICK,Go on picking,Folytatom a választást
+BOURSE_NOT_ENOUGH_COINS,Not enough coins,Nincs elég coinod
+BOURSE_PICKED_STAMP,Your stamp: %s,A választott bélyeg: %s
+BOURSE_SELLER_LOT,%s's lot,%s lottja
+BOURSE_PAID,Paid:,Kifizetve:
+BOURSE_PICK_TITLE,Shuffled. Pick a stamp.,Megkevertük. Válassz egy bélyeget.
+BOURSE_PICK_NOTE,All five are from %s's lot. You get the one you click.,"Mind az öt %s lottjából való. Azt kapod, amelyikre kattintasz."
+BOURSE_PICK_WAS_ON,This lot held,A lotton ezek voltak
+BOURSE_YOU_GOT,You got: %s,Ezt kaptad: %s
+BOURSE_PICK_DONE,Back to the Bourse,Vissza a börzére
+BOURSE_NOTICE_SOLD,%s picked from your lot: %s,%s választott a lottodból: %s
+BOURSE_NOTICE_OPEN,To the Bourse,A börzére
+COPIES_IN_CODEX,%s: %d,%s: %d
+COPIES_ON_BOURSE,Bourse: %d,Börze: %d

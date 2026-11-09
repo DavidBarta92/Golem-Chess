@@ -1,9 +1,9 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://cfp851rgh0vwg"]
 
-[ext_resource type="Script" path="res://Scripts/Story/PlaceholderScreen.gd" id="1_placeholder"]
+[ext_resource type="Script" uid="uid://76r452kgg0uc" path="res://Scripts/Story/PlaceholderScreen.gd" id="1_placeholder"]
 [ext_resource type="Theme" uid="uid://dicvefuprprvl" path="res://ui/themes/global_theme.tres" id="2_theme"]
 
-[node name="Trade" type="Control"]
+[node name="Trade" type="Control" unique_id=1883446558]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,7 +14,7 @@ theme = ExtResource("2_theme")
 script = ExtResource("1_placeholder")
 title_key = "TRADE_SCREEN_TITLE"
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=991055883]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -24,7 +24,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.956863, 0.941176, 0.901961, 1)
 
-[node name="BackButton" type="Button" parent="."]
+[node name="BackButton" type="Button" parent="." unique_id=1384534959]
 layout_mode = 1
 offset_left = 24.0
 offset_top = 24.0
@@ -32,7 +32,7 @@ offset_right = 140.0
 offset_bottom = 68.0
 text = "Back"
 
-[node name="Layout" type="VBoxContainer" parent="."]
+[node name="Layout" type="VBoxContainer" parent="." unique_id=831962352]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -48,13 +48,13 @@ grow_vertical = 2
 theme_override_constants/separation = 12
 alignment = 1
 
-[node name="Title" type="Label" parent="Layout"]
+[node name="Title" type="Label" parent="Layout" unique_id=681418022]
 layout_mode = 2
 theme_type_variation = &"ScreenTitleLabel"
 text = "TRADE_SCREEN_TITLE"
 horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="Layout"]
+[node name="Subtitle" type="Label" parent="Layout" unique_id=359722799]
 layout_mode = 2
 text = "PLACEHOLDER_SCREEN_NOTE"
 horizontal_alignment = 1

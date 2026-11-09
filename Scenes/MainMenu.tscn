@@ -339,7 +339,7 @@ custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 text = "TRADE_BUTTON"
 script = ExtResource("18_scene_link_button")
-target_scene_path = "res://Scenes/Trade.tscn"
+target_scene_path = "res://Scenes/Bourse.tscn"
 
 [node name="MultiplayerFeatureHint" type="Node" parent="." unique_id=326675959]
 script = ExtResource("17_feature_hint")

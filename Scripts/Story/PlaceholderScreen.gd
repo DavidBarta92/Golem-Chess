@@ -1,7 +1,7 @@
 extends Control
 
-## A stand-in for a screen whose design is still to come (Quests, Trade, the
-## story's multiplayer). Shows its name and a way back to the main menu, so
+## A stand-in for a screen whose design is still to come (Quests, the story's
+## multiplayer). Shows its name and a way back to the main menu, so
 ## the button that opens it can already be wired up and gated by the story.
 
 const MAIN_MENU_SCENE: String = "res://Scenes/MainMenu.tscn"

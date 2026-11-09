@@ -226,6 +226,10 @@ func on_delete_deck_pressed(deck_id: String) -> void:
 	if deck_id.is_empty():
 		return
 	PlayerDeckStore.delete_deck(deck_id)
+	# Its copies are free again: the album counts go up.
+	if collection != null and collection.has_method("refresh_album_counts"):
+		collection.refresh_album_counts()
+
 	if collection != null and str(collection.editing_deck_id) == deck_id and editor_back_callback.is_valid():
 		editor_back_callback.call()
 	populate_saved_decks_list()

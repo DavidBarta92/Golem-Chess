@@ -23,14 +23,18 @@ func ensure_loaded() -> void:
 	if !raw_data.is_empty():
 		deck_data = _normalize_deck_data(raw_data)
 		is_loaded = true
-		if _ensure_default_deck_exists():
+		if _ensure_default_deck_exists(true):
 			save_decks()
 		return
 
 	deck_data = _create_empty_deck_data()
 	is_loaded = true
-	_ensure_default_deck_exists()
+	_ensure_default_deck_exists(false)
 	save_decks()
+	# A first run: the starting codex comes with its copies. Later on the store
+	# puts it back only when its copies are free (_ensure_default_deck_exists).
+	if PlayerCollectionStore.settle_codex_copies() > 0:
+		PlayerCollectionStore.save_collection()
 
 func list_decks() -> Array:
 	ensure_loaded()
@@ -100,6 +104,7 @@ func get_deck_ownership_info(deck: Dictionary) -> Dictionary:
 	var over_copy_limit_count: int = 0
 	var missing_stamp_codes: Array[String] = []
 	var stamp_counts: Dictionary = {}
+	var print_counts: Dictionary = {}
 	var stamp_sets: Array[String] = []
 	var stamps = deck.get("stamps", [])
 	if stamps is Array:
@@ -114,7 +119,7 @@ func get_deck_ownership_info(deck: Dictionary) -> Dictionary:
 			if next_count > MAX_COPIES_PER_STAMP:
 				over_copy_limit_count += 1
 
-			if PlayerCollectionStore.owns_stamp_code(stamp_code):
+			if _owns_deck_stamp_copy(deck_stamp, print_counts):
 				owned_count += 1
 			else:
 				missing_stamp_codes.append(stamp_code)
@@ -154,6 +159,7 @@ func get_owned_stamps_from_deck(deck: Dictionary) -> Array:
 
 	var owned_stamps: Array = []
 	var stamp_counts: Dictionary = {}
+	var print_counts: Dictionary = {}
 	var stamps = deck.get("stamps", [])
 	if !(stamps is Array):
 		return owned_stamps
@@ -172,12 +178,29 @@ func get_owned_stamps_from_deck(deck: Dictionary) -> Array:
 		if next_count > MAX_COPIES_PER_STAMP:
 			continue
 		stamp_counts[stamp_code] = next_count
-		if !PlayerCollectionStore.owns_stamp_code(stamp_code):
+		if !_owns_deck_stamp_copy(normalized_stamp, print_counts):
 			continue
 
 		normalized_stamp["slot"] = owned_stamps.size()
 		owned_stamps.append(normalized_stamp)
 	return owned_stamps
+
+## Each slot of a codex takes a copy of its own print: the second slot of a
+## print needs two copies. `print_counts` carries the slots counted so far.
+## A codex holds its copies whether or not other codexes use the same print;
+## the collection's free counts keep two codexes from sharing one.
+func _owns_deck_stamp_copy(deck_stamp, print_counts: Dictionary) -> bool:
+	var print_id: String = ""
+	if deck_stamp is Dictionary:
+		print_id = str(deck_stamp.get("print_id", "")).strip_edges()
+	if print_id.is_empty():
+		var stamp_code: String = _get_deck_stamp_code(deck_stamp)
+		print_id = StampPrintLibrary.get_default_print_id_for_stamp_code(stamp_code) if !stamp_code.is_empty() else ""
+	if print_id.is_empty():
+		return false
+	var slot_count: int = int(print_counts.get(print_id, 0)) + 1
+	print_counts[print_id] = slot_count
+	return PlayerCollectionStore.get_owned_count_for_print_id(print_id) >= slot_count
 
 func get_deck_stamp_names(deck_id: String) -> Array[String]:
 	var deck: Dictionary = get_deck(deck_id)
@@ -302,7 +325,10 @@ func delete_deck(deck_id: String) -> bool:
 
 func save_decks() -> bool:
 	ensure_loaded()
-	return SaveIO.write_json(DECKS_PATH, deck_data, DECK_SCHEMA_VERSION)
+	var saved: bool = SaveIO.write_json(DECKS_PATH, deck_data, DECK_SCHEMA_VERSION)
+	# A codex's stamps are copies taken from the collection.
+	PlayerCollectionStore.invalidate_reserved_copies()
+	return saved
 
 func _get_decks() -> Array:
 	ensure_loaded()
@@ -316,7 +342,10 @@ func _create_empty_deck_data() -> Dictionary:
 		"decks": [],
 	}
 
-func _ensure_default_deck_exists() -> bool:
+## Puts the starting codex at the top of the list when it is missing. On a
+## later load (`needs_free_copies`) it comes back only when its copies are free:
+## a codex takes real copies, and deleting it must not be a way to get them twice.
+func _ensure_default_deck_exists(needs_free_copies: bool) -> bool:
 	var decks: Array = _get_decks()
 	for deck in decks:
 		if !(deck is Dictionary):
@@ -326,9 +355,24 @@ func _ensure_default_deck_exists() -> bool:
 		if str(deck.get("name", "")).strip_edges() == DEFAULT_DECK_NAME:
 			return false
 
-	decks.insert(0, _create_default_deck())
+	var default_deck: Dictionary = _create_default_deck()
+	if needs_free_copies and !_has_free_copies_for(default_deck):
+		return false
+	decks.insert(0, default_deck)
 	deck_data["decks"] = decks
 	return true
+
+func _has_free_copies_for(deck: Dictionary) -> bool:
+	var needed: Dictionary = {}
+	for deck_stamp in deck.get("stamps", []):
+		if deck_stamp is Dictionary:
+			var print_id: String = str(deck_stamp.get("print_id", ""))
+			needed[print_id] = int(needed.get(print_id, 0)) + 1
+	for print_id in needed.keys():
+		if PlayerCollectionStore.get_free_count_for_print_id(str(print_id)) < int(needed[print_id]):
+			return false
+	return true
+
 
 func _find_default_deck() -> Dictionary:
 	for deck in _get_decks():

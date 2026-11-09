@@ -4,6 +4,9 @@ class_name CollectionStampBrowserController
 const STAMP_VISUAL = preload("res://Scenes/StampVisual.tscn")
 const UNOWNED_STAMP_SHADER = preload("res://Shaders/collection_unowned_stamp.gdshader")
 const UNOWNED_STAMP_OPACITY: float = 0.5
+## A stamp the player owns but whose every copy is in a codex or on a lot:
+## still in colour, so it does not read as missing, but faded.
+const USED_UP_STAMP_OPACITY: float = 0.45
 const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 ## The print count sits on a pill centred under the stamp, hanging off its
 ## bottom edge: flat top and bottom, round ends.
@@ -30,6 +33,9 @@ var stamp_mouse_exited_callback: Callable = Callable()
 var stamp_drag_started_callback: Callable = Callable()
 var stamp_drag_released_callback: Callable = Callable()
 var deck_stamp_display_name_provider: Callable = Callable()
+## print_id -> the copies the album shows as free (PlayerCollectionStore's,
+## less what the codex being edited holds). Unset: the free copies as saved.
+var free_count_provider: Callable = Callable()
 
 var all_stamp_prints: Array = []
 var filtered_stamp_prints: Array = []
@@ -42,6 +48,7 @@ var current_stamp_grid_horizontal_gap: int = 8
 var current_stamp_grid_vertical_gap: int = 2
 var pager_button_press_tweens: Dictionary = {}
 var unowned_stamp_material: ShaderMaterial
+var used_up_stamp_material: ShaderMaterial
 
 var stamp_visual_size: Vector2 = Vector2(168.7, 229)
 var stamp_slot_scale_multiplier: float = 0.88
@@ -75,6 +82,7 @@ func bind(config: Dictionary) -> void:
 	stamp_drag_started_callback = config.get("stamp_drag_started_callback", stamp_drag_started_callback)
 	stamp_drag_released_callback = config.get("stamp_drag_released_callback", stamp_drag_released_callback)
 	deck_stamp_display_name_provider = config.get("deck_stamp_display_name_provider", deck_stamp_display_name_provider)
+	free_count_provider = config.get("free_count_provider", free_count_provider)
 
 func load_stamps() -> void:
 	if StampLibrary.all_stamps.is_empty():
@@ -115,8 +123,10 @@ func show_page(page_index: int) -> void:
 
 		var stamp_visual: StampVisual = STAMP_VISUAL.instantiate() as StampVisual
 		var owned_count: int = PlayerCollectionStore.get_owned_count_for_print_id(stamp_print.print_id)
-		var stamp_slot: Control = create_browser_stamp_slot(stamp_visual, owned_count)
+		var free_count: int = get_free_count(stamp_print.print_id)
+		var stamp_slot: Control = create_browser_stamp_slot(stamp_visual, owned_count, free_count)
 		stamp_grid.add_child(stamp_slot)
+		stamp_visual.tooltip_text = get_copy_locations_text(stamp_print.print_id) if owned_count > 0 else ""
 		stamp_visual.draggable = collection != null and bool(collection.is_creating_deck)
 		stamp_visual.set_hover_raise_enabled(false)
 		stamp_visual.set_stamp_print(stamp_print)
@@ -139,6 +149,22 @@ func show_page(page_index: int) -> void:
 		next_button.disabled = current_page >= get_page_count() - 1
 	if update_deck_editor_callback.is_valid():
 		update_deck_editor_callback.call()
+
+## The copies the album counts: neither in a codex nor on a lot.
+func get_free_count(print_id: String) -> int:
+	if free_count_provider.is_valid():
+		return int(free_count_provider.call(print_id))
+	return PlayerCollectionStore.get_free_count_for_print_id(print_id)
+
+## "Flora 1: 2 Â· Bourse: 1" - where the copies the count leaves out are.
+func get_copy_locations_text(print_id: String) -> String:
+	var parts: PackedStringArray = []
+	for location in PlayerCollectionStore.get_copy_locations(print_id):
+		if str(location.get("kind", "")) == "lot":
+			parts.append(tr("COPIES_ON_BOURSE") % int(location.get("count", 0)))
+		else:
+			parts.append(tr("COPIES_IN_CODEX") % [str(location.get("name", "")), int(location.get("count", 0))])
+	return " Â· ".join(parts)
 
 func get_page_count() -> int:
 	return int(ceil(float(filtered_stamp_prints.size()) / float(current_stamps_per_page)))
@@ -190,18 +216,24 @@ func set_active_set_filter(set_name: String) -> void:
 	active_set_filter = str(set_name)
 	refresh_stamp_filter(true)
 
-func create_browser_stamp_slot(stamp_visual: StampVisual, owned_count: int) -> Control:
+func create_browser_stamp_slot(stamp_visual: StampVisual, owned_count: int, free_count: int = -1) -> Control:
+	if free_count < 0:
+		free_count = owned_count
 	var stamp_slot := Control.new()
 	stamp_slot.custom_minimum_size = current_stamp_slot_size
 	# The top row's slots reach above the drawn stamps, over the set tags that
 	# peek out above the book; only the stamp itself should catch the mouse.
 	stamp_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stamp_slot.clip_contents = false
-	if owned_count > 0:
-		stamp_slot.add_child(stamp_visual)
-	else:
+	if owned_count <= 0:
 		stamp_slot.add_child(create_unowned_stamp_group(stamp_visual))
-	stamp_slot.add_child(create_print_count_badge(owned_count))
+	elif free_count <= 0:
+		stamp_slot.add_child(create_used_up_stamp_group(stamp_visual))
+	else:
+		stamp_slot.add_child(stamp_visual)
+	# The count is of free copies. A lone copy that is free needs no pill; a
+	# stamp the player has but cannot use now shows its "0 pcs".
+	stamp_slot.add_child(create_print_count_badge(free_count, owned_count > 1 or (owned_count > 0 and free_count <= 0)))
 	stamp_slot.resized.connect(on_browser_stamp_slot_resized.bind(stamp_slot, stamp_visual))
 	configure_browser_stamp_layout(stamp_slot, stamp_visual)
 	return stamp_slot
@@ -220,6 +252,20 @@ func create_unowned_stamp_group(stamp_visual: StampVisual) -> CanvasGroup:
 	group.add_child(stamp_visual)
 	return group
 
+## Owned, but every copy is taken: in colour, faded, through the same kind of
+## group as an unowned stamp.
+func create_used_up_stamp_group(stamp_visual: StampVisual) -> CanvasGroup:
+	if used_up_stamp_material == null:
+		used_up_stamp_material = ShaderMaterial.new()
+		used_up_stamp_material.shader = UNOWNED_STAMP_SHADER
+		used_up_stamp_material.set_shader_parameter("opacity", USED_UP_STAMP_OPACITY)
+		used_up_stamp_material.set_shader_parameter("saturation", 1.0)
+	var group := CanvasGroup.new()
+	group.name = "UsedUpStampGroup"
+	group.material = used_up_stamp_material
+	group.add_child(stamp_visual)
+	return group
+
 func configure_browser_stamp_layout(stamp_slot: Control, stamp_visual: StampVisual) -> void:
 	stamp_slot.custom_minimum_size = current_stamp_slot_size
 	stamp_visual.custom_minimum_size = stamp_visual_size
@@ -232,14 +278,15 @@ func configure_browser_stamp_layout(stamp_slot: Control, stamp_visual: StampVisu
 	stamp_visual.position = (available_size - stamp_visual_size * scale_factor) * 0.5 + Vector2(0.0, browser_stamp_vertical_offset)
 	update_print_count_badge_layout(stamp_slot, stamp_visual)
 
-func create_print_count_badge(owned_count: int) -> Control:
-	var badge_text: String = tr("%d pcs") % owned_count
+func create_print_count_badge(count: int, shown: bool) -> Control:
+	var badge_text: String = tr("%d pcs") % count
 	var text_width: float = count_badge_font.get_string_size(badge_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, count_badge_font_size).x if count_badge_font != null else 24.0
 	var badge_size := Vector2(maxf(COUNT_BADGE_HEIGHT, ceilf(text_width + COUNT_BADGE_PADDING * 2.0)), COUNT_BADGE_HEIGHT)
 
 	var badge := Control.new()
 	badge.name = "CountBadge"
-	badge.visible = owned_count > 1
+	badge.visible = shown
+
 	badge.custom_minimum_size = badge_size
 	badge.size = badge_size
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE

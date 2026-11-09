@@ -15,8 +15,11 @@ const MAIN_MENU_MODE: String = "main_menu"
 const COLLECTION_MODE: String = "collection"
 ## Just the counters, for screens that pay coins out (reward scenes).
 const POINTS_ONLY_MODE: String = "points_only"
+## The Bourse: Back, then its two tabs (the player's lots, the day's market).
+const BOURSE_MODE: String = "bourse"
 const MAIN_MENU_SCENE: String = "res://Scenes/MainMenu.tscn"
 const COLLECTION_SCENE: String = "res://Scenes/Collection.tscn"
+const BOURSE_SCENE: String = "res://Scenes/Bourse.tscn"
 ## Arriving, a scene's items are stamped onto the paper (_stamp_items_in).
 const STAMP_SECONDS: float = 0.42
 const STAMP_START_SCALE: float = 1.3
@@ -101,6 +104,11 @@ var _dissolve_material: ShaderMaterial
 var _logo_reveal_material: ShaderMaterial
 ## The button whose window is open over its screen (set_window_open).
 var _window_opener: Button
+## The Bourse's row, built in code next to the scene's two (_build_bourse_items).
+var bourse_items: HBoxContainer
+var bourse_back_button: Button
+var bourse_lots_button: Button
+var bourse_market_button: Button
 
 
 func _ready() -> void:
@@ -123,6 +131,7 @@ func _ready() -> void:
 	# Below the ribbons, so the open ribbon is the panel's left edge.
 	root.move_child(quest_panel, right_group.get_index())
 
+	_build_bourse_items()
 	button_by_id = {
 		"settings": menu.get_item("settings"),
 		"exit": menu.get_item("exit"),
@@ -131,6 +140,9 @@ func _ready() -> void:
 		"multiplayer": menu.get_item("multiplayer"),
 		"back": back_button,
 		"buy_packs": buy_packs_button,
+		"bourse_back": bourse_back_button,
+		"bourse_lots": bourse_lots_button,
+		"bourse_market": bourse_market_button,
 	}
 	for slot_button in [back_button, buy_packs_button]:
 		slot_button.minimum_size_changed.connect(_fit_slot_to_button.bind(slot_button))
@@ -211,6 +223,26 @@ func show_collection(back_pressed: Callable, buy_packs_pressed: Callable = Calla
 	_show_mode(COLLECTION_MODE)
 
 
+## The Bourse's row. `tab` is "lots" or "market", pressed in ink like the
+## collection's open shop; set_bourse_tab moves it.
+func show_bourse(back_pressed: Callable, lots_pressed: Callable, market_pressed: Callable, tab: String) -> void:
+	_replace_button_connection(bourse_back_button, back_pressed)
+	_replace_button_connection(bourse_lots_button, lots_pressed)
+	_replace_button_connection(bourse_market_button, market_pressed)
+	set_bourse_tab(tab)
+	_show_mode(BOURSE_MODE)
+
+
+## "lots", "market", or "" for neither: the pick screen shows Back alone.
+func set_bourse_tab(tab: String) -> void:
+	if bourse_lots_button == null:
+		return
+	bourse_lots_button.set_pressed_no_signal(tab == "lots")
+	bourse_market_button.set_pressed_no_signal(tab == "market")
+	bourse_lots_button.get_parent().visible = !tab.is_empty()
+	bourse_market_button.get_parent().visible = !tab.is_empty()
+
+
 ## While a screen's own window is open over it (the collection's pack shop),
 ## the button that opened it stays pressed in ink and Back is out of use;
 ## both come back when it closes.
@@ -251,8 +283,10 @@ func show_points_only() -> void:
 	menu.close_now()
 	_settle_items(main_menu_items)
 	_settle_items(collection_items)
+	_settle_items(bourse_items)
 	main_menu_items.visible = false
 	collection_items.visible = false
+	bourse_items.visible = false
 	root.visible = true
 	top_background.visible = true
 	menu.visible = false
@@ -385,7 +419,7 @@ func _show_mode(mode: String) -> void:
 
 	# The other row too when the bar first comes up on this screen, not the
 	# main menu's.
-	for items in [main_menu_items, collection_items]:
+	for items in [main_menu_items, collection_items, bourse_items]:
 		if items != target_items:
 			items.visible = false
 
@@ -756,7 +790,65 @@ func _container_for_mode(mode: String) -> HBoxContainer:
 			return main_menu_items
 		COLLECTION_MODE:
 			return collection_items
+		BOURSE_MODE:
+			return bourse_items
 	return null
+
+
+## Back and the two tabs, laid out as the collection's row is: each button
+## centred in a slot of its own (_fit_slot_to_button). The tabs are toggles;
+## the open one stays pressed.
+func _build_bourse_items() -> void:
+	bourse_items = HBoxContainer.new()
+	bourse_items.name = "BourseItems"
+	bourse_items.visible = false
+	bourse_items.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bourse_items.add_theme_constant_override("separation", collection_items.get_theme_constant("separation"))
+	scene_items_clip.add_child(bourse_items)
+	bourse_items.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bourse_back_button = _add_bourse_slot("BackSlot", "Back", false)
+	bourse_lots_button = _add_bourse_slot("LotsSlot", "BOURSE_TAB_MY_LOTS", true)
+	bourse_market_button = _add_bourse_slot("MarketSlot", "BOURSE_TAB_MARKET", true)
+	var spacer := Control.new()
+	spacer.name = "BourseSpacer"
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bourse_items.add_child(spacer)
+
+
+func _add_bourse_slot(slot_name: String, text: String, is_tab: bool) -> Button:
+	var slot := Control.new()
+	slot.name = slot_name
+	slot.custom_minimum_size = Vector2(112, 60)
+	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bourse_items.add_child(slot)
+	var button := Button.new()
+	button.name = slot_name.trim_suffix("Slot") + "Button"
+	button.text = text
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(112, 40)
+	button.toggle_mode = is_tab
+	slot.add_child(button)
+	_centre_in_slot(button)
+	button.minimum_size_changed.connect(func() -> void:
+		_centre_in_slot(button)
+		_fit_slot_to_button(button))
+	_fit_slot_to_button(button)
+	if is_tab:
+		# A pressed tab clicked again stays pressed: its page is already open.
+		button.toggled.connect(func(pressed: bool) -> void:
+			if !pressed:
+				button.set_pressed_no_signal(true))
+	return button
+
+
+func _centre_in_slot(button: Button) -> void:
+	var button_size: Vector2 = button.get_combined_minimum_size()
+	button.set_anchors_preset(Control.PRESET_CENTER)
+	button.offset_left = -button_size.x * 0.5
+	button.offset_right = button_size.x * 0.5
+	button.offset_top = -button_size.y * 0.5
+	button.offset_bottom = button_size.y * 0.5
 
 
 func _build_item_materials() -> void:
@@ -928,4 +1020,6 @@ func _mode_for_scene_path(scene_path: String) -> String:
 		return MAIN_MENU_MODE
 	if scene_path == COLLECTION_SCENE or scene_path.ends_with("/Collection.tscn"):
 		return COLLECTION_MODE
+	if scene_path == BOURSE_SCENE or scene_path.ends_with("/Bourse.tscn"):
+		return BOURSE_MODE
 	return ""

@@ -2,7 +2,7 @@ extends Button
 class_name SceneLinkButton
 
 ## A button that opens a scene. Used for the story-unlocked menu entries
-## (Quests, Trade, the story's multiplayer) until they get artwork of their
+## (Quests, the Bourse, the story's multiplayer) until they get artwork of their
 ## own; pair it with a FeatureHint to gate and introduce it.
 
 @export_file("*.tscn") var target_scene_path: String = ""

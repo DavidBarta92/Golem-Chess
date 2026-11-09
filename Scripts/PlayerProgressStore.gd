@@ -3,9 +3,13 @@ extends Node
 const PlayerRating = preload("res://Scripts/Rating/PlayerRating.gd")
 const PROGRESS_SCHEMA_VERSION: int = 3
 const PROGRESS_PATH: String = "user://player_progress.json"
-const PACK_COST: int = 15
+const PACK_COST: int = 150
 const LEGACY_PACK_ID: String = "basic_pack"
-const WIN_POINTS_PER_WIN: int = 5
+const WIN_POINTS_PER_WIN: int = 50
+## Coins are counted ten times finer than they were up to the Bourse, so a
+## single stamp can have a price of its own. A save from before (no
+## "coin_scale", or a smaller one) has its coins multiplied up once on load.
+const COIN_SCALE: int = 10
 
 var progress_data: Dictionary = {}
 var is_loaded: bool = false
@@ -255,6 +259,7 @@ func _create_default_progress() -> Dictionary:
 	return {
 		"schema_version": PROGRESS_SCHEMA_VERSION,
 		"points": 0,
+		"coin_scale": COIN_SCALE,
 		"draw_points": 0,
 		"unopened_pack_counts": {},
 		"unopened_pack_queue": [],
@@ -282,9 +287,15 @@ func _normalize_progress(raw_data: Dictionary) -> Dictionary:
 		pack_counts
 	)
 
+	var saved_coin_scale: int = maxi(1, int(raw_data.get("coin_scale", 1)))
+	var points: int = maxi(0, int(raw_data.get("points", 0)))
+	if saved_coin_scale < COIN_SCALE:
+		points = points * COIN_SCALE / saved_coin_scale
 	var normalized: Dictionary = {
 		"schema_version": PROGRESS_SCHEMA_VERSION,
-		"points": maxi(0, int(raw_data.get("points", 0))),
+		"points": points,
+		"coin_scale": maxi(saved_coin_scale, COIN_SCALE),
+
 		"draw_points": maxi(0, int(raw_data.get("draw_points", 0))),
 		"unopened_pack_counts": _counts_from_pack_queue(pack_queue),
 		"unopened_pack_queue": pack_queue,
