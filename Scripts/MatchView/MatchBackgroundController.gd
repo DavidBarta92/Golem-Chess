@@ -4,9 +4,10 @@ class_name MatchBackgroundController
 
 ## The room a match is played in, and the way it arrives.
 ##
-## Two rooms, picked with `variant`:
+## Two rooms, picked with `variant`, and no room at all:
 ##   KIOSK  - the stall: window, table and the opponent sitting behind it
 ##   MEMORY - the remembered room the tutorial plays in
+##   PLAIN  - nothing drawn, on plain white: a puzzle's board
 ##
 ## Both arrive the same way. Some layers are simply there when the scene opens
 ## (the ink that frames the shot); the rest draws or fades in:
@@ -25,7 +26,7 @@ class_name MatchBackgroundController
 signal line_art_finished
 signal colour_finished
 
-enum Variant { KIOSK, MEMORY }
+enum Variant { KIOSK, MEMORY, PLAIN }
 
 const LINE_REVEAL_SHADER = preload("res://Shaders/mainmenu_line_reveal.gdshader")
 const HIDDEN_TIME: float = -1.0
@@ -78,16 +79,26 @@ const MEMORY_LAYERS: Dictionary = {
 	"far_colour": [],
 	"near_colour": ["Bg4Color"],
 }
+const PLAIN_LAYERS: Dictionary = {
+	"instant": [],
+	"lines": [],
+	"far_colour": [],
+	"near_colour": [],
+}
 
 func _ready() -> void:
-	modulate = PAPER_TINT
 	_apply_variant()
 	if Engine.is_editor_hint():
 		return
 	reset_background()
 
 func get_layers() -> Dictionary:
-	return MEMORY_LAYERS if _variant == Variant.MEMORY else KIOSK_LAYERS
+	match _variant:
+		Variant.MEMORY:
+			return MEMORY_LAYERS
+		Variant.PLAIN:
+			return PLAIN_LAYERS
+	return KIOSK_LAYERS
 
 ## Total time from begin() to the last stroke landing - what the board's own
 ## grid should match so the two finish together.
@@ -191,8 +202,10 @@ func _ensure_line_material(rect: TextureRect) -> ShaderMaterial:
 	return material
 
 ## Shows only the layers this variant uses; in the editor they are all drawn
-## so a room can be looked at without running the game.
+## so a room can be looked at without running the game. The plain room is
+## left white rather than printed on the paper tone.
 func _apply_variant() -> void:
+	modulate = Color.WHITE if _variant == Variant.PLAIN else PAPER_TINT
 	var layers: Dictionary = get_layers()
 	for child in get_children():
 		var rect := child as TextureRect

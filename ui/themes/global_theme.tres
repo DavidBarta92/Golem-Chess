@@ -243,6 +243,7 @@ content_margin_bottom = 0.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_codex_icon_hover")
 stamp_name = "codex_icon_hover"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_codex_icon_pressed"]
 content_margin_left = 0.0
@@ -272,6 +273,7 @@ content_margin_bottom = 0.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_codex_icon_pressed")
 stamp_name = "codex_icon_pressed"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_codex_icon_normal"]
 content_margin_left = 0.0
@@ -301,6 +303,7 @@ content_margin_bottom = 0.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_codex_icon_normal")
 stamp_name = "codex_icon_normal"
+live_blot = true
 
 [sub_resource type="FontVariation" id="Font_Display"]
 base_font = ExtResource("11_alegreya")
@@ -761,6 +764,7 @@ content_margin_bottom = 0.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_quest_claim_hover")
 stamp_name = "quest_claim_hover"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_quest_claim_normal"]
 content_margin_left = 15.0
@@ -781,6 +785,7 @@ content_margin_bottom = 0.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_quest_claim_normal")
 stamp_name = "quest_claim_normal"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_result_panel"]
 content_margin_left = 28.0

@@ -860,10 +860,10 @@ RETRY_PROMPT_TITLE,Play again right away?,Új játék azonnal?
 RETRY_PROMPT_YES,"Yes, again","Igen, újra"
 RETRY_PROMPT_NO,Not now,Most nem
 STORY_MULTIPLAYER_BUTTON,Multiplayer,Többjátékos
-QUESTS_BUTTON,Quests,Küldetések
+PUZZLES_BUTTON,Puzzles,Feladványok
 TRADE_BUTTON,Bourse,Börze
 STORY_MULTIPLAYER_SCREEN_TITLE,Multiplayer,Többjátékos
-QUESTS_SCREEN_TITLE,Quests,Küldetések
+PUZZLES_SCREEN_TITLE,Letters,Levelek
 PLACEHOLDER_SCREEN_NOTE,This screen is still being built.,Ez a képernyő még készül.
 REWARD_GRANDPA_DECK_NAME,Grandpa's codex,Nagypapa codexe
 REWARD_04_LINE_1,"Here, a few coins for the win.","Tessék, pár érme a győzelemért."
@@ -1092,3 +1092,47 @@ BOURSE_NOTICE_SOLD,%s picked from your lot: %s,%s választott a lottodból: %s
 BOURSE_NOTICE_OPEN,To the Bourse,A börzére
 COPIES_IN_CODEX,%s: %d,%s: %d
 COPIES_ON_BOURSE,Bourse: %d,Börze: %d
+PUZZLES_SCREEN_SUBTITLE,Every letter holds a puzzle. Click an envelope to open it.,Minden levélben egy feladvány vár. Kattints egy borítékra a megnyitáshoz.
+PUZZLES_COUNT,%d letters · %d new,%d levél · %d új
+PUZZLES_SCROLL_HINT,The mouse wheel turns the page too,Görgetéssel is lapozhatsz
+PUZZLES_NONE,No letters yet.,Még nem jött levél.
+PUZZLE_NEW_BADGE,New,Új
+PUZZLE_STATE_NEW,New letter,Új levél
+PUZZLE_STATE_OPEN,Waiting to be solved,Megoldásra vár
+PUZZLE_STATE_SOLVED,Solved,Megoldva
+PUZZLE_KICKER,Puzzle,Feladvány
+PUZZLE_SOLVE,Solve it,Megoldom
+PUZZLE_REWARD_LINE,Reward: %s,Jutalom: %s
+PUZZLE_ALREADY_SOLVED,Solved - the reward is yours.,Megoldva – a jutalmat már megkaptad.
+PUZZLE_REWARD_COINS,%d coins,%d érme
+PUZZLE_REWARD_DRAW_POINTS,%d draw points,%d rajzpont
+PUZZLE_CLOSE_LETTER,Close the letter,Levél bezárása
+PUZZLE_MOVES,Move %d / %d,Lépés: %d / %d
+PUZZLE_OPPONENT_MOVING,The opponent moves…,Az ellenfél lép…
+PUZZLE_RESTART,Start over,Újrakezdés
+PUZZLE_BACK_TO_LETTERS,Back to the letters,Vissza a levelekhez
+PUZZLE_SOLVED_TITLE,Solved!,Megoldva!
+PUZZLE_SOLVED_AGAIN,Solved again. The reward came the first time.,Újra sikerült. A jutalmat már az első alkalommal megkaptad.
+PUZZLE_FAILED_TITLE,Not this time,Most nem sikerült
+PUZZLE_FAILED_OUT_OF_MOVES,Your %d moves are up.,Elfogyott a %d lépésed.
+PUZZLE_FAILED_OPPONENT_WON,The opponent's crowned golem reached your base.,Az ellenfél koronás golemje beért a bázisodra.
+PUZZLE_FAILED_STUCK,You were left with nothing you could do.,Nem maradt szabályos lépésed.
+PUZZLE_FAILED_WON_WRONG,"You won the game, but not the way the letter asked.","Megnyerted a játszmát, de nem úgy, ahogy a levél kérte."
+PUZZLE_TRY_AGAIN,Try again,Újra
+PUZZLE_GREETING_ANNA,"Dear Anna,","Kedves Anna,"
+PUZZLE_GREETING_MISS_ANNA,"Dear Miss Anna,","Kedves Anna kisasszony,"
+PUZZLE_CLOSING_KIND_REGARDS,"Kind regards,","Szívélyes üdvözlettel,"
+PUZZLE_CLOSING_RESPECTFULLY,"Respectfully,","Tisztelettel,"
+PUZZLE_EDMUND_01_BODY,"Your grandfather sent me a puzzle with every letter. I usually chewed on one for a week, and he always wrote back that it could have been done in three days.\n\nNow it is your turn. The board stands just as he and I last left it. You can win in two moves, if you see how. Your crowned knight has a single move left – or has it?","Nagyapád minden levelében küldött nekem egy feladványt. Én általában egy hétig rágódtam rajta, ő pedig mindig megírta, hogy három nap alatt is meg lehetett volna oldani.\n\nMost te következel. A táblán minden úgy áll, ahogy vele utoljára abbahagytuk. Két lépésből nyerhetsz, ha meglátod, hogyan. A koronás huszárodnak már csak egyetlen lépése maradt – vagy mégsem?"
+PUZZLE_EDMUND_01_TASK,Win in two moves.,Nyerj két lépésből.
+PUZZLE_JAKUB_01_BODY,"Your grandfather once told me that patience is the strongest stamp. I laughed at him then. Today I know he was right.\n\nThe golem in your left corner has a single move left on its stamp. You have three moves to bring it up to five. My golems will not stir meanwhile – it all comes down to the order you do things in.","A nagyapja egyszer azt mondta nekem, hogy a türelem a legerősebb bélyeg. Akkor kinevettem. Ma már tudom, hogy igaza volt.\n\nA bal sarokban álló golemje bélyegén már csak egy lépés maradt. Három lépése van rá, hogy ötre növelje. Az én golemjeim közben meg sem mozdulnak – minden a sorrenden múlik."
+PUZZLE_JAKUB_01_TASK,"In three moves, give the golem in your left corner 5 moves.","Három lépésből érd el, hogy a bal sarokban álló golemednek 5 lépése legyen."
+PUZZLE_GREETING_MY_ANNA,"My dear Anna,","Kedves Annám,"
+PUZZLE_CLOSING_LOVE,"With love,","Ölel:"
+PUZZLE_GRANDPA_01_BODY,"Remember what I always told you? The best trap is the one your opponent walks into all by himself.\n\nMy crowned golem is heading straight for your base, and in two moves it will be there. One thing I know about it: it never passes up a capture. Stop it before it arrives.","Emlékszel, mit mondtam mindig? A legjobb csapda az, amibe az ellenfél magától sétál bele.\n\nA koronás golemem egyenesen a bázisod felé tart, két lépés múlva oda is ér. Egyvalamit tudok róla: sosem hagy ki egy ütést. Állítsd meg, mielőtt beér."
+PUZZLE_GRANDPA_01_TASK,Capture the crowned golem within two moves.,Üsd le a koronás golemet két lépésen belül.
+PUZZLE_REWARD_FROM,%s's puzzle,%s feladványa
+PUZZLE_REWARD_COLLECT_COINS,Click the coins to put them away.,"Kattints az érmékre, hogy elrakd őket."
+PUZZLE_REWARD_COLLECT_DRAW,Click the draw point to take it.,"Kattints a rajzpontra, hogy elvedd."
+PUZZLE_REWARD_CUT_HINT,"Hold the left mouse button and follow the dashed line round to cut the stamp out.","Nyomva tartott bal egérgombbal kövesd körbe a szaggatott vonalat, és vágd ki a bélyeget."
+PUZZLE_REWARD_CUT_RETRY,"That left the line - try again, all the way round.","Ez letért a vonalról – próbáld újra, végig körbe."

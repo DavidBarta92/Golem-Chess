@@ -22,6 +22,12 @@ var moved_piece_this_turn_provider: Callable
 var can_exchange_stamp_provider: Callable
 var can_turn_page_provider: Callable
 var create_board_tiles_callback: Callable
+## A stamp effect changed a golem's moves (board_pos, old, new), and one is
+## about to run out (board_pos, piece) / has run out (board_pos, owner_color,
+## stamp) - for the board to show it.
+var duration_changed_callback: Callable
+var stamp_running_out_callback: Callable
+var stamp_ran_out_callback: Callable
 
 func configure(config: Dictionary) -> void:
 	board = config.get("board", board)
@@ -45,6 +51,9 @@ func configure(config: Dictionary) -> void:
 	can_exchange_stamp_provider = config.get("can_exchange_stamp_provider", can_exchange_stamp_provider)
 	can_turn_page_provider = config.get("can_turn_page_provider", can_turn_page_provider)
 	create_board_tiles_callback = config.get("create_board_tiles_callback", create_board_tiles_callback)
+	duration_changed_callback = config.get("duration_changed_callback", duration_changed_callback)
+	stamp_running_out_callback = config.get("stamp_running_out_callback", stamp_running_out_callback)
+	stamp_ran_out_callback = config.get("stamp_ran_out_callback", stamp_ran_out_callback)
 
 func move_piece_on_board(start_pos: Vector2, end_pos: Vector2) -> Dictionary:
 	var moving_color: int = 1 if board[start_pos.x][start_pos.y] > 0 else -1
@@ -289,7 +298,36 @@ func apply_stamp_effect_trigger(trigger: String, source_pos: Vector2, piece: Pie
 			# gives on the host. A stamp without a limit has nothing to add to.
 			if piece.turns_remaining != -1:
 				piece.turns_remaining += 1
+		StampEffect.TYPE_INCREASE_OWN_DURATIONS:
+			adjust_durations_for_color(piece.color, 1)
+		StampEffect.TYPE_INCREASE_ENEMY_DURATIONS:
+			adjust_durations_for_color(-piece.color, 1)
+		StampEffect.TYPE_DECREASE_OWN_DURATIONS:
+			adjust_durations_for_color(piece.color, -1)
+		StampEffect.TYPE_DECREASE_ENEMY_DURATIONS:
+			adjust_durations_for_color(-piece.color, -1)
 	return pending_respawn_arrivals
+
+## Every stamped golem of `owner_color` one move more or less, as
+## StampEffectResolver.resolve_duration_adjustment does on the host - the one
+## whose stamp set it off included. A stamp brought to 0 runs out.
+func adjust_durations_for_color(owner_color: int, delta: int) -> void:
+	for position_value in piece_objects.keys():
+		var piece: Piece = piece_objects[position_value] as Piece
+		if piece == null or piece.color != owner_color or piece.affixed_stamp == null or piece.turns_remaining == -1:
+			continue
+		var piece_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
+		var old_duration: int = piece.turns_remaining
+		if old_duration + delta > 0:
+			piece.turns_remaining = old_duration + delta
+			if duration_changed_callback.is_valid():
+				duration_changed_callback.call(piece_pos, old_duration, piece.turns_remaining)
+			continue
+		if stamp_running_out_callback.is_valid():
+			stamp_running_out_callback.call(piece_pos, piece)
+		var expired_stamp: Stamp = piece.detach_stamp()
+		if stamp_ran_out_callback.is_valid():
+			stamp_ran_out_callback.call(piece_pos, owner_color, expired_stamp)
 
 func add_board_zone_effect(source_pos: Vector2, piece: Piece, stamp: Stamp) -> void:
 	if piece == null or stamp == null:

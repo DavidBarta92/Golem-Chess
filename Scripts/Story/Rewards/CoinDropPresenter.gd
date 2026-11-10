@@ -24,6 +24,10 @@ const HIGH_LAYER: int = 1250
 @export var sfx_fly: String = "pack_whoosh"
 @export var sfx_count: String = "buy"
 
+## The coins to drop when no reward scene hands them over (begin(null, ...)):
+## a puzzle's reward.
+var amount: int = 0
+
 var _coins: Array[TextureRect] = []
 var _coins_landed: int = 0
 var _coins_arrived: int = 0
@@ -33,7 +37,7 @@ var _accepting_click: bool = false
 var _fly_layer: CanvasLayer
 
 func _start() -> void:
-	var points: int = reward_scene.grant_points if reward_scene != null else 0
+	var points: int = reward_scene.grant_points if reward_scene != null else maxi(0, amount)
 	var coin_count: int = clampi(points, 1, max_visible_coins)
 
 	# The payout is already in the store; the counter starts from before it

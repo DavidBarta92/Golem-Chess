@@ -441,7 +441,7 @@ where that point of the story would have left it.
 ## Unlocking and introducing a menu button
 
 A "feature" is a button the story unlocks and then points at. Ids live in
-`Scripts/Story/StoryFeatures.gd` (`play`, `collection`, `buy_packs`, `multiplayer`, `quests`, `trade`). The last three open screens from plain buttons in the main menu's `StoryButtons` box. `trade` opens the Bourse (`Scenes/Bourse.tscn`, see [Docs/Bourse/BOURSE.md](../Docs/Bourse/BOURSE.md)); the feature keeps its old id so saves stay valid. The other two are still placeholders (`Scenes/Quests.tscn`, `StoryMultiplayer.tscn` — a title and a Back button); replace the buttons with artwork and the screens with real ones when they are designed.
+`Scripts/Story/StoryFeatures.gd` (`play`, `collection`, `buy_packs`, `multiplayer`, `quests`, `trade`). The last three open screens from plain buttons in the main menu's `StoryButtons` box. `trade` opens the Bourse (`Scenes/Bourse.tscn`, see [Docs/Bourse/BOURSE.md](../Docs/Bourse/BOURSE.md)) and `quests` (`StoryFeatures.PUZZLES`) the puzzles' letters (`Scenes/Puzzles.tscn`, see [Docs/Puzzles/PUZZLES.md](../Docs/Puzzles/PUZZLES.md)); both features keep their old ids so saves stay valid. `StoryMultiplayer.tscn` is still a placeholder (a title and a Back button); replace the buttons with artwork and the screen with a real one when they are designed.
 
 To gate and introduce a new button:
 

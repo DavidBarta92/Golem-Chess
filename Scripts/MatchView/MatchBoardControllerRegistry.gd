@@ -396,6 +396,9 @@ func sync_local_state_mutator() -> void:
 		"can_exchange_stamp_provider": Callable(match_board, "can_exchange_stamp_locally"),
 		"can_turn_page_provider": Callable(get_match_codex_controller(), "can_turn_page_locally"),
 		"create_board_tiles_callback": Callable(match_board, "create_board_tiles"),
+		"duration_changed_callback": Callable(get_local_move_flow_controller(), "show_duration_change"),
+		"stamp_running_out_callback": Callable(get_local_move_flow_controller(), "show_stamp_running_out"),
+		"stamp_ran_out_callback": Callable(get_local_move_flow_controller(), "show_stamp_ran_out"),
 	})
 
 func get_local_state_mutator():

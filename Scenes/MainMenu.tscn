@@ -327,12 +327,12 @@ text = "STORY_MULTIPLAYER_BUTTON"
 script = ExtResource("18_scene_link_button")
 target_scene_path = "res://Scenes/StoryMultiplayer.tscn"
 
-[node name="QuestsButton" type="Button" parent="StoryButtons" unique_id=1577467532]
+[node name="PuzzlesButton" type="Button" parent="StoryButtons" unique_id=1577467532]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-text = "QUESTS_BUTTON"
+text = "PUZZLES_BUTTON"
 script = ExtResource("18_scene_link_button")
-target_scene_path = "res://Scenes/Quests.tscn"
+target_scene_path = "res://Scenes/Puzzles.tscn"
 
 [node name="TradeButton" type="Button" parent="StoryButtons" unique_id=53472299]
 custom_minimum_size = Vector2(0, 44)
@@ -347,10 +347,10 @@ feature_id = "multiplayer"
 target_path = NodePath("../StoryButtons/MultiplayerButton")
 hint_style = 1
 
-[node name="QuestsFeatureHint" type="Node" parent="." unique_id=140696544]
+[node name="PuzzlesFeatureHint" type="Node" parent="." unique_id=140696544]
 script = ExtResource("17_feature_hint")
 feature_id = "quests"
-target_path = NodePath("../StoryButtons/QuestsButton")
+target_path = NodePath("../StoryButtons/PuzzlesButton")
 hint_style = 1
 
 [node name="TradeFeatureHint" type="Node" parent="." unique_id=1180891715]

@@ -1,0 +1,86 @@
+[gd_resource type="Resource" script_class="PuzzleDefinition" format=3]
+
+[ext_resource type="Script" path="res://Scripts/Puzzles/PuzzleDefinition.gd" id="script_definition"]
+[ext_resource type="Script" path="res://Scripts/Puzzles/PuzzlePiece.gd" id="script_piece"]
+[ext_resource type="Script" path="res://Scripts/Puzzles/PuzzleGoal.gd" id="script_goal"]
+[ext_resource type="Script" path="res://Scripts/Puzzles/PuzzleOpponentTurn.gd" id="script_turn"]
+[ext_resource type="Script" path="res://Scripts/Stamp.gd" id="script_stamp"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/archer.tres" id="stamp_archer"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/bishop.tres" id="stamp_bishop"]
+[ext_resource type="Resource" path="res://Stamps/Courtyard/lance.tres" id="stamp_lance"]
+
+[sub_resource type="Resource" id="Piece_1"]
+script = ExtResource("script_piece")
+square = "e1"
+stamp = ExtResource("stamp_lance")
+
+[sub_resource type="Resource" id="Piece_2"]
+script = ExtResource("script_piece")
+square = "a1"
+
+[sub_resource type="Resource" id="Piece_3"]
+script = ExtResource("script_piece")
+square = "b1"
+
+[sub_resource type="Resource" id="Piece_4"]
+script = ExtResource("script_piece")
+square = "f1"
+
+[sub_resource type="Resource" id="Piece_5"]
+script = ExtResource("script_piece")
+square = "g1"
+
+[sub_resource type="Resource" id="Piece_6"]
+script = ExtResource("script_piece")
+side = 1
+square = "d4"
+stamp = ExtResource("stamp_lance")
+moves_left = 2
+crowned = true
+
+[sub_resource type="Resource" id="Piece_7"]
+script = ExtResource("script_piece")
+side = 1
+square = "a7"
+
+[sub_resource type="Resource" id="Piece_8"]
+script = ExtResource("script_piece")
+side = 1
+square = "g7"
+
+[sub_resource type="Resource" id="Goal_1"]
+script = ExtResource("script_goal")
+kind = 1
+target_square = "d4"
+
+[sub_resource type="Resource" id="Turn_1"]
+script = ExtResource("script_turn")
+move_from = "d4"
+move_to = "d2"
+
+[sub_resource type="Resource" id="Turn_2"]
+script = ExtResource("script_turn")
+move_from = "d2"
+move_to = "d1"
+
+[resource]
+script = ExtResource("script_definition")
+puzzle_id = "grandpa_01"
+order = 1
+sender = 0
+greeting = "PUZZLE_GREETING_MY_ANNA"
+body = "PUZZLE_GRANDPA_01_BODY"
+closing = "PUZZLE_CLOSING_LOVE"
+task = "PUZZLE_GRANDPA_01_TASK"
+reward_kind = 0
+reward_amount = 1
+reward_stamp = ExtResource("stamp_bishop")
+pieces = Array[ExtResource("script_piece")]([SubResource("Piece_1"), SubResource("Piece_2"), SubResource("Piece_3"), SubResource("Piece_4"), SubResource("Piece_5"), SubResource("Piece_6"), SubResource("Piece_7"), SubResource("Piece_8")])
+player_codex = Array[ExtResource("script_stamp")]([ExtResource("stamp_archer"), ExtResource("stamp_bishop"), ExtResource("stamp_lance")])
+opponent_codex = Array[ExtResource("script_stamp")]([])
+player_crown_points = 0
+opponent_crown_points = 0
+goals = Array[ExtResource("script_goal")]([SubResource("Goal_1")])
+turn_limit = 2
+opponent_takes_chances = true
+opponent_turns = Array[ExtResource("script_turn")]([SubResource("Turn_1"), SubResource("Turn_2")])

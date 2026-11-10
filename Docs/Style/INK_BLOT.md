@@ -32,6 +32,14 @@ Each group has four values:
   `python tools/generate_ink_stamps.py`; the editor imports the prints when it
   next gets focus. The buttons' frames, the titles, the hover's ink and the
   top bar's drawn items follow the settings live.
+- **A button's print is baked without the density.** A print's centre and
+  edges tile with the period of its centre tile (256 x 128), so on a control
+  whose middle is not a whole number of tiles the pattern jumps where the
+  right and bottom edges join it. Small specks hide the jump; the blot's
+  blotches do not - a filled button showed a straight seam near its right
+  and bottom edges until its styles drew the density live as well. A new
+  stamped button style wants `live_blot` on: `InkHoverFill` then gives the
+  button `ink_frame.gdshader`, in the button's own units, so nothing tiles.
 - `project.godot` (`[shader_globals]`) only declares the uniforms, with the
   starting values. The `.tres` wins, so tune there, not in Project Settings >
   Shader Globals.
@@ -40,7 +48,7 @@ Each group has four values:
 
 | group | what | how |
 | --- | --- | --- |
-| UI | the frames of the buttons that flood (Button, MenuButton, OptionButton, the match's tabs) and of the spin boxes' arrows: density live, edge baked | `ink_frame.gdshader`, given by `InkHoverFill`; their styles have `live_blot` on |
+| UI | the frames of the buttons that flood (Button, MenuButton, OptionButton, the match's tabs), of the stamped buttons with a hover of their own (QuestClaimButton, CodexIconButton, PackCardButton) and of the spin boxes' arrows: density live, edge baked | `ink_frame.gdshader`, given by `InkHoverFill`; their styles have `live_blot` on |
 | | every other framed control's print: sliders' grabbers, fields, tabs, panels, windows, popups, progress bars | baked into the prints, density and edge |
 | | the hover's ink, Display and Title text, the top bar's drawn items | `ink_flood.gdshader`, `ink_stamp.gdshader`, density only |
 | Scene lines | all line art drawn by `mainmenu_line_reveal.gdshader`: the main menu, the match's room, the board's grid, the portrait frame, the comics, the tutorial, the collection's opening | in that shader |

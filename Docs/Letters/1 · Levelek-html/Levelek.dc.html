@@ -1,0 +1,124 @@
+<!doctype html>
+<meta charset="utf-8"><style data-dc-design-system-vars>@layer{:root{--paper:#f2f1ea;--paper-deep:#e5e2d6;--paper-hover:#e8e6dc;--paper-shade:#d6d3c7;--ink:#1f2733;--ink-soft:#575e6b;--ink-faint:#8f9196;--line-soft:#bdb9ad;--story:#7a2230;--on-story:#f2f1ea;--coin:#e3b02a;--coin-deep:#8a5d00;--on-coin:#1f2733;--draw:#2c6e9e;--on-draw:#f2f1ea;--urgent:#b44a12;--panel-from:#f2f1eaf5;--panel-to:#f2f1ea00;--shadow-menu:0 2px 0 #1f27331a, 0 12px 28px -8px #1f273347;--focus-ring:0 0 0 2px #f2f1ea, 0 0 0 4px #1f2733;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--radius-sm:4px;--radius-md:6px;--radius-lg:10px;--radius-full:9999px;--bar-height:80px;--button-size:52px;--ribbon-width:28px;--ribbon-rest:96px;--ribbon-lift:6px;--ribbon-done-drop:12px;--tail-story:10px;--tail-reward:9px;--tail-daily:6px;--panel-width:360px;--panel-text:272px;--menu-width:240px;--menu-row:44px;--icon-stat:24px;--icon-menu:20px;--icon-ribbon:16px;--font-ui:"Lexend", "Segoe UI", system-ui, sans-serif;--text-button-label:600 18px/24px var(--font-ui);--text-stat-number:400 22px/28px var(--font-ui);--text-menu-item:500 17px/24px var(--font-ui);--text-caption:500 13px/18px var(--font-ui);--text-quest-kicker:600 12px/16px var(--font-ui);--text-quest-title:600 20px/26px var(--font-ui);--text-quest-text:italic 400 16px/24px var(--font-ui);--text-quest-key:600 16px/24px var(--font-ui);}}</style>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<title>Levelek</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 810px; overflow: hidden; background: #e5e2d6; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #1f2733">
+<header style="position: relative; z-index: 2; height: 80px; box-sizing: border-box; padding: 0 32px; background: #f2f1ea; display: flex; align-items: center; justify-content: space-between; gap: 24px">
+<nav aria-label="Levelek" style="display: flex; align-items: center; gap: 12px">
+<button type="button" style="height: 52px; padding: 0 32px; box-sizing: border-box; border: 1.5px solid #1f2733; border-radius: 6px; background: #f2f1ea; color: #1f2733; font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer">Vissza</button>
+</nav>
+<div style="display: flex; align-items: center; gap: 24px; height: 80px">
+<div style="align-self: flex-start; display: flex; gap: 8px; height: 96px">
+<svg width="28" height="96" viewBox="0 0 28 96" role="img" aria-label="Történet küldetés"><path d="M0.75 0 V86 L27.25 95 V0" fill="#7a2230" stroke="#1f2733" stroke-width="1.5" stroke-linejoin="round"></path><rect x="8" y="61" width="12" height="15" rx="1.5" fill="none" stroke="#f2f1ea" stroke-width="1.5"></rect><path d="M14 61 V76" stroke="#f2f1ea" stroke-width="1.5"></path></svg>
+<svg width="28" height="96" viewBox="0 0 28 96" role="img" aria-label="Rajzpont jutalom"><path d="M0.75 0 V95 L14 86 L27.25 95 V0" fill="#2c6e9e" stroke="#1f2733" stroke-width="1.5" stroke-linejoin="round"></path><circle cx="14" cy="69" r="6.5" fill="none" stroke="#f2f1ea" stroke-width="1.5"></circle><path d="M11.6 72 L12.1 69.9 L15.5 66.5 L17 68 L13.6 71.4 Z" fill="none" stroke="#f2f1ea" stroke-width="1.2" stroke-linejoin="round"></path></svg>
+</div>
+<div style="display: flex; align-items: center; gap: 24px; font-size: 22px; line-height: 28px; font-variant-numeric: tabular-nums">
+<span title="Rajzpont" style="display: flex; align-items: center; gap: 8px"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.25" fill="#2c6e9e" stroke="#1f2733" stroke-width="1.5"></circle><path d="M8.5 15.5 L9.2 12.8 L14.6 7.4 L16.6 9.4 L11.2 14.8 Z" fill="none" stroke="#f2f1ea" stroke-width="1.5" stroke-linejoin="round"></path></svg>3</span>
+<span title="Érme" style="display: flex; align-items: center; gap: 8px"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.25" fill="#e3b02a" stroke="#1f2733" stroke-width="1.5"></circle><circle cx="12" cy="12" r="6" fill="none" stroke="#1f2733" stroke-width="1.25"></circle></svg>125</span>
+<span title="Rang" style="display: flex; align-items: center; gap: 8px"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 L12 6.5 L19 12.5 M5 18 L12 12 L19 18" fill="none" stroke="#1f2733" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path></svg>822</span>
+</div>
+<button type="button" aria-label="Menü" style="width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #1f2733; border-radius: 6px; background: #f2f1ea; cursor: pointer"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5 H17 M3 10 H17 M3 15 H17" stroke="#1f2733" stroke-width="1.75" stroke-linecap="round"></path></svg></button>
+</div>
+</header>
+<main style="padding: 36px 40px 0">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px">
+<div>
+<h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 600">Levelek</h1>
+<p style="margin: 6px 0 0; font-size: 15px; line-height: 22px; color: #575e6b">Minden levélben egy feladvány vár. Kattints egy borítékra a megnyitáshoz.</p>
+</div>
+<div style="font-size: 15px; line-height: 22px; font-weight: 500">14 levél · 3 új</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 26px; row-gap: 26px">
+<sc-for list="{{letters}}" as="e" hint-placeholder-count="8">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 12px">
+<a href="Level.dc.html" onMouseEnter="{{e.enter}}" onMouseLeave="{{e.leave}}" aria-label="{{e.aria}}" style="position: relative; display: flex; align-items: center; justify-content: center; width: 320px; height: 200px; text-decoration: none; transform: {{e.transform}}; filter: {{e.filter}}; transition: transform 240ms cubic-bezier(.2,.8,.2,1), filter 240ms">
+<dc-import name="Boritek" kind="{{e.kind}}" mark="{{e.mark}}" side="front" w="{{e.w}}" hint-size="250px,172px"></dc-import>
+<sc-if value="{{e.isNew}}" hint-placeholder-val="{{false}}">
+<span style="position: absolute; top: {{e.badgeTop}}px; left: {{e.badgeLeft}}px; padding: 3px 10px; border-radius: 9999px; background: #1f2733; color: #f2f1ea; font-size: 12px; line-height: 16px; font-weight: 600">Új</span>
+</sc-if>
+</a>
+<div style="text-align: center">
+<div style="font-size: 15px; line-height: 20px; font-weight: 600">{{e.from}}</div>
+<div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 2px; font-size: 13px; line-height: 18px; font-weight: 500; color: #575e6b">
+<sc-if value="{{e.isSolved}}" hint-placeholder-val="{{false}}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.2 L6 10 L11 4" fill="none" stroke="#575e6b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+<span>{{e.stateText}}</span>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 26px">
+<button type="button" aria-label="Előző oldal" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #1f2733; border-radius: 9999px; background: #f2f1ea; cursor: pointer"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M8.5 3 L4.5 7 L8.5 11" fill="none" stroke="#1f2733" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<div style="display: flex; align-items: center; gap: 8px" aria-label="1. oldal a 2-ből">
+<span style="width: 10px; height: 10px; border-radius: 9999px; background: #1f2733"></span>
+<span style="width: 10px; height: 10px; box-sizing: border-box; border-radius: 9999px; border: 1.5px solid #1f2733"></span>
+</div>
+<button type="button" aria-label="Következő oldal" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #1f2733; border-radius: 9999px; background: #1f2733; cursor: pointer"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M5.5 3 L9.5 7 L5.5 11" fill="none" stroke="#f2f1ea" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span style="margin-left: 8px; font-size: 13px; line-height: 18px; font-weight: 500; color: #575e6b">Görgetéssel is lapozhatsz</span>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":810}}'>
+var HEIGHTS = { brit: 220, magyar: 204, cseh: 228, amerikai: 140 };
+var LETTERS = [
+  { from: 'Edmund Whitmore', kind: 'brit', mark: 'viasz', st: 'new', rot: -3 },
+  { from: 'Nagyapa', kind: 'magyar', mark: 'belyeg', st: 'solved', rot: 2 },
+  { from: 'Jakub Goldstein', kind: 'cseh', mark: 'pecsetelo', st: 'open', rot: -1.5 },
+  { from: 'Darnell Brooks', kind: 'amerikai', mark: 'belyeg', st: 'new', rot: 2.5 },
+  { from: 'Edmund Whitmore', kind: 'brit', mark: 'pecsetelo', st: 'solved', rot: 1.5 },
+  { from: 'Nagyapa', kind: 'magyar', mark: 'pecsetelo', st: 'solved', rot: -2 },
+  { from: 'Jakub Goldstein', kind: 'cseh', mark: 'belyeg', st: 'new', rot: 3 },
+  { from: 'Darnell Brooks', kind: 'amerikai', mark: 'viasz', st: 'open', rot: -1 }
+];
+var STATE_TEXT = { new: 'Új levél', open: 'Megoldásra vár', solved: 'Megoldva' };
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { hover: -1 };
+  }
+  renderVals() {
+    var self = this;
+    var hover = this.state.hover;
+    var letters = LETTERS.map(function (l, i) {
+      var w = l.kind === 'amerikai' ? 300 : 250;
+      var h = Math.round(w * HEIGHTS[l.kind] / 320);
+      var on = hover === i;
+      return {
+        from: l.from,
+        kind: l.kind,
+        mark: l.mark,
+        w: w,
+        isNew: l.st === 'new',
+        isSolved: l.st === 'solved',
+        stateText: STATE_TEXT[l.st],
+        aria: l.from + ' levele, ' + STATE_TEXT[l.st],
+        badgeTop: Math.round((200 - h) / 2) - 10,
+        badgeLeft: Math.round((320 - w) / 2) - 12,
+        transform: on ? 'rotate(0deg) translateY(-10px)' : 'rotate(' + l.rot + 'deg)',
+        filter: on ? 'drop-shadow(0 14px 14px rgba(31,39,51,.28))' : 'drop-shadow(0 2px 2px rgba(31,39,51,.16))',
+        enter: function () { self.setState({ hover: i }); },
+        leave: function () { self.setState({ hover: -1 }); }
+      };
+    });
+    return { letters: letters };
+  }
+}
+</script>
+</body>
+</html>

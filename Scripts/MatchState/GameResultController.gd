@@ -14,6 +14,8 @@ func configure(config: Dictionary) -> void:
 func finish_if_current_player_has_no_valid_turn() -> bool:
 	if match_board.game_over:
 		return false
+	if match_board.scripted_turn_colors.has(match_board.get_current_turn_color()):
+		return false
 	if match_board.get_local_state_mutator().current_player_has_valid_turn_action():
 		return false
 

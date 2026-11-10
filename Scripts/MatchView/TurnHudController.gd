@@ -45,6 +45,9 @@ var can_move_action_provider: Callable
 var current_turn_color_provider: Callable
 var player_id_for_color_provider: Callable
 var turn_timer_timeout_callback: Callable
+## Off for a match that is not played against time at all (a puzzle): the
+## clock stays out of sight.
+var clock_enabled: bool = true
 ## Told the turn colour when the turn passes, and whether to animate it: the
 ## first call of a match only sets things in place.
 var turn_changed_callback: Callable
@@ -486,7 +489,7 @@ func clear_turn_timer_timeout_pending() -> void:
 ## AI-against-AI games has nobody to time, so that one still hides it, and so
 ## does a story boss met before the clock is introduced (BossDefinition.show_clock).
 func should_show_turn_timer() -> bool:
-	return !GameConfig.is_ai_vs_ai_batch and StoryManager.should_show_match_clock()
+	return clock_enabled and !GameConfig.is_ai_vs_ai_batch and StoryManager.should_show_match_clock()
 
 ## Both clocks are on show, so this is no longer about whose turn it is - that
 ## is decided per clock in update_turn_timer. It only asks whether the match is

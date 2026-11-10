@@ -20,7 +20,9 @@ const BUY_PACKS: String = "buy_packs"
 ## The story's own multiplayer entry - a new main menu button, not the
 ## developer one in the top bar.
 const MULTIPLAYER: String = "multiplayer"
-const QUESTS: String = "quests"
+## The puzzles' letters (Scenes/Puzzles.tscn). The screen was called Quests
+## before it was built; the id stays, so saves that unlocked it keep it.
+const PUZZLES: String = "quests"
 const TRADE: String = "trade"
 ## The top bar's counters, revealed one by one in this order. Rank and coin
 ## are there from the start for now; the story beat that brings each in is
@@ -42,7 +44,7 @@ const ALL_FEATURE_IDS: Array[String] = [
 	COLLECTION,
 	BUY_PACKS,
 	MULTIPLAYER,
-	QUESTS,
+	PUZZLES,
 	TRADE,
 	RANK_COUNTER,
 	COIN_COUNTER,

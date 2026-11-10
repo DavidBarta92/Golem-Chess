@@ -128,13 +128,24 @@ func _on_button_drawn(button: Button) -> void:
 func frame(control: Control) -> void:
 	if _frame_material == null or control.material != null:
 		return
-	if control is Button and !_floods(control as Button):
+	if control is Button and !_floods(control as Button) and !_has_live_print(control as Button):
 		return
 	control.material = _frame_material
 	control.set_instance_shader_parameter(&"ink_blot_seed", _seed_of(control))
 
 func _floods(button: Button) -> bool:
 	return !button.flat and _hover_styles.has(button.get_theme_stylebox(&"hover"))
+
+## A button with a hover of its own (QuestClaimButton, CodexIconButton,
+## PackCardButton) whose print leaves the blot to it. Baked into a print, the
+## blot's blotches would break off where the print's tiles meet - its period
+## is the tile's, not the button's - and show as a seam near the right and
+## bottom edges.
+func _has_live_print(button: Button) -> bool:
+	if button.flat:
+		return false
+	var style: StyleBox = button.get_theme_stylebox(&"normal")
+	return style is InkStampStyleBox and (style as InkStampStyleBox).live_blot
 
 ## The frame's blotches and the hover ink's are one pattern.
 func _seed_of(control: Control) -> float:

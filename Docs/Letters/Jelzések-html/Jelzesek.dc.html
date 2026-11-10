@@ -1,0 +1,56 @@
+<!doctype html>
+<meta charset="utf-8"><style data-dc-design-system-vars>@layer{:root{--paper:#f2f1ea;--paper-deep:#e5e2d6;--paper-hover:#e8e6dc;--paper-shade:#d6d3c7;--ink:#1f2733;--ink-soft:#575e6b;--ink-faint:#8f9196;--line-soft:#bdb9ad;--story:#7a2230;--on-story:#f2f1ea;--coin:#e3b02a;--coin-deep:#8a5d00;--on-coin:#1f2733;--draw:#2c6e9e;--on-draw:#f2f1ea;--urgent:#b44a12;--panel-from:#f2f1eaf5;--panel-to:#f2f1ea00;--shadow-menu:0 2px 0 #1f27331a, 0 12px 28px -8px #1f273347;--focus-ring:0 0 0 2px #f2f1ea, 0 0 0 4px #1f2733;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--radius-sm:4px;--radius-md:6px;--radius-lg:10px;--radius-full:9999px;--bar-height:80px;--button-size:52px;--ribbon-width:28px;--ribbon-rest:96px;--ribbon-lift:6px;--ribbon-done-drop:12px;--tail-story:10px;--tail-reward:9px;--tail-daily:6px;--panel-width:360px;--panel-text:272px;--menu-width:240px;--menu-row:44px;--icon-stat:24px;--icon-menu:20px;--icon-ribbon:16px;--font-ui:"Lexend", "Segoe UI", system-ui, sans-serif;--text-button-label:600 18px/24px var(--font-ui);--text-stat-number:400 22px/28px var(--font-ui);--text-menu-item:500 17px/24px var(--font-ui);--text-caption:500 13px/18px var(--font-ui);--text-quest-kicker:600 12px/16px var(--font-ui);--text-quest-title:600 20px/26px var(--font-ui);--text-quest-text:italic 400 16px/24px var(--font-ui);--text-quest-key:600 16px/24px var(--font-ui);}}</style>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<title>Jelzések a jobb felső sarokban</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 860px; box-sizing: border-box; padding: 60px; background: #e5e2d6; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #1f2733">
+<h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 600">Jelzések a jobb felső sarokban</h1>
+<p style="margin: 6px 0 0; font-size: 15px; line-height: 22px; color: #575e6b">Bármelyik jelzés bármelyik borítékstílusra kerülhet. Felül nagyítva, alatta teljes borítékon.</p>
+<div style="margin-top: 36px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 60px">
+<sc-for list="{{marks}}" as="m" hint-placeholder-count="3">
+<section style="display: flex; flex-direction: column">
+<h2 style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 600">{{m.title}}</h2>
+<p style="margin: 6px 0 0; min-height: 40px; font-size: 14px; line-height: 20px; color: #575e6b">{{m.note}}</p>
+<div style="position: relative; margin-top: 20px; width: 400px; height: 280px; box-sizing: border-box; overflow: hidden; border: 1.5px solid #1f2733; border-radius: 10px; background: #e5e2d6">
+<div style="position: absolute; top: 24px; right: 24px">
+<dc-import name="Boritek" kind="{{m.kind}}" mark="{{m.mark}}" side="front" w="900" hint-size="900px,619px"></dc-import>
+</div>
+</div>
+<div style="margin-top: 28px; font-size: 13px; line-height: 18px; font-weight: 500; color: #575e6b">{{m.caption}}</div>
+<div style="margin-top: 8px; height: 214px; display: flex; align-items: flex-start">
+<dc-import name="Boritek" kind="{{m.kind}}" mark="{{m.mark}}" side="front" w="300" hint-size="300px,206px"></dc-import>
+</div>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      marks: [
+        { mark: 'belyeg', kind: 'magyar', title: 'Bélyeg', note: 'Fogazott szél, motívum felirat és értékjelzés nélkül. A színe borítékstílusonként más.', caption: 'Magyar borítékon' },
+        { mark: 'pecsetelo', kind: 'amerikai', title: 'Postai pecsételő', note: 'Kör alakú bélyegző üres dátumsávval, mellette hullámvonalak. Kopott, egyenetlen tinta.', caption: 'Amerikai borítékon' },
+        { mark: 'viasz', kind: 'brit', title: 'Viaszpecsét', note: 'Vörös viasz csillaglenyomattal, a szélén apró csöppekkel.', caption: 'Brit borítékon' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

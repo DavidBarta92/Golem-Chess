@@ -17,9 +17,12 @@ const COLLECTION_MODE: String = "collection"
 const POINTS_ONLY_MODE: String = "points_only"
 ## The Bourse: Back, then its two tabs (the player's lots, the day's market).
 const BOURSE_MODE: String = "bourse"
+## A screen with nothing of its own up here: Back alone (the puzzles' letters).
+const BACK_ONLY_MODE: String = "back_only"
 const MAIN_MENU_SCENE: String = "res://Scenes/MainMenu.tscn"
 const COLLECTION_SCENE: String = "res://Scenes/Collection.tscn"
 const BOURSE_SCENE: String = "res://Scenes/Bourse.tscn"
+const PUZZLES_SCENE: String = "res://Scenes/Puzzles.tscn"
 ## Arriving, a scene's items are stamped onto the paper (_stamp_items_in).
 const STAMP_SECONDS: float = 0.42
 const STAMP_START_SCALE: float = 1.3
@@ -109,6 +112,11 @@ var bourse_items: HBoxContainer
 var bourse_back_button: Button
 var bourse_lots_button: Button
 var bourse_market_button: Button
+## Back on its own, built the same way (_build_back_only_items).
+var back_only_items: HBoxContainer
+var back_only_button: Button
+## The counters show_points_only() shows whether the story has revealed them.
+var _points_only_kinds: Array[String] = ["coin"]
 
 
 func _ready() -> void:
@@ -132,6 +140,7 @@ func _ready() -> void:
 	root.move_child(quest_panel, right_group.get_index())
 
 	_build_bourse_items()
+	_build_back_only_items()
 	button_by_id = {
 		"settings": menu.get_item("settings"),
 		"exit": menu.get_item("exit"),
@@ -143,6 +152,7 @@ func _ready() -> void:
 		"bourse_back": bourse_back_button,
 		"bourse_lots": bourse_lots_button,
 		"bourse_market": bourse_market_button,
+		"back_only": back_only_button,
 	}
 	for slot_button in [back_button, buy_packs_button]:
 		slot_button.minimum_size_changed.connect(_fit_slot_to_button.bind(slot_button))
@@ -233,6 +243,12 @@ func show_bourse(back_pressed: Callable, lots_pressed: Callable, market_pressed:
 	_show_mode(BOURSE_MODE)
 
 
+## Back and nothing else, for a screen whose own controls live on the screen.
+func show_back_only(back_pressed: Callable) -> void:
+	_replace_button_connection(back_only_button, back_pressed)
+	_show_mode(BACK_ONLY_MODE)
+
+
 ## "lots", "market", or "" for neither: the pick screen shows Back alone.
 func set_bourse_tab(tab: String) -> void:
 	if bourse_lots_button == null:
@@ -273,10 +289,12 @@ func _keep_window_opener_pressed(pressed: bool, button: Button) -> void:
 
 
 ## Shows only the bar and its counters - no menu items, no ribbons - so a
-## reward scene has a real counter for its coins to fly into. The coin counter
-## shows here even before the story has revealed it. Leaving the scene hides
-## it again through prepare_for_scene_change like any other mode.
-func show_points_only() -> void:
+## reward scene has a real counter for its coins to fly into. The counters in
+## `kinds` (the coin's, unless told otherwise) show here even before the story
+## has revealed them. Leaving the scene hides it again through
+## prepare_for_scene_change like any other mode.
+func show_points_only(kinds: Array[String] = ["coin"]) -> void:
+	_points_only_kinds = kinds.duplicate()
 	if scene_items_tween != null and scene_items_tween.is_valid():
 		scene_items_tween.kill()
 	_close_quest_panel(false)
@@ -284,9 +302,11 @@ func show_points_only() -> void:
 	_settle_items(main_menu_items)
 	_settle_items(collection_items)
 	_settle_items(bourse_items)
+	_settle_items(back_only_items)
 	main_menu_items.visible = false
 	collection_items.visible = false
 	bourse_items.visible = false
+	back_only_items.visible = false
 	root.visible = true
 	top_background.visible = true
 	menu.visible = false
@@ -308,6 +328,22 @@ func get_coin_global_center() -> Vector2:
 func set_displayed_points(value: int) -> void:
 	if counters.has("coin"):
 		counters["coin"].set_value(maxi(0, value))
+
+## Centre of a counter's icon ("coin", "draw", "rank") in screen space.
+func get_counter_global_center(kind: String) -> Vector2:
+	var counter: TopBarCounter = counters.get(kind, null)
+	if counter == null or counter.icon_control == null:
+		return Vector2.ZERO
+	return counter.icon_control.global_position + counter.icon_control.size * 0.5
+
+## set_displayed_points() for any counter.
+func set_displayed_counter(kind: String, value: int) -> void:
+	if counters.has(kind):
+		counters[kind].set_value(maxi(0, value))
+
+func pulse_counter(kind: String) -> void:
+	if counters.has(kind):
+		counters[kind].pulse()
 
 ## A quick grow-and-settle on the counter, for when a coin lands in it.
 func pulse_points_hud() -> void:
@@ -419,7 +455,7 @@ func _show_mode(mode: String) -> void:
 
 	# The other row too when the bar first comes up on this screen, not the
 	# main menu's.
-	for items in [main_menu_items, collection_items, bourse_items]:
+	for items in [main_menu_items, collection_items, bourse_items, back_only_items]:
 		if items != target_items:
 			items.visible = false
 
@@ -529,7 +565,7 @@ func _refresh_counter_visibility(animate: bool) -> void:
 	var changed: bool = false
 	for kind in COUNTER_ORDER:
 		var counter: TopBarCounter = counters[kind]
-		var shown: bool = _is_counter_unlocked(kind) or (kind == "coin" and current_mode == POINTS_ONLY_MODE)
+		var shown: bool = _is_counter_unlocked(kind) or (_points_only_kinds.has(kind) and current_mode == POINTS_ONLY_MODE)
 		if counter.visible == shown:
 			continue
 		changed = true
@@ -792,6 +828,8 @@ func _container_for_mode(mode: String) -> HBoxContainer:
 			return collection_items
 		BOURSE_MODE:
 			return bourse_items
+		BACK_ONLY_MODE:
+			return back_only_items
 	return null
 
 
@@ -816,12 +854,30 @@ func _build_bourse_items() -> void:
 	bourse_items.add_child(spacer)
 
 
-func _add_bourse_slot(slot_name: String, text: String, is_tab: bool) -> Button:
+func _build_back_only_items() -> void:
+	back_only_items = HBoxContainer.new()
+	back_only_items.name = "BackOnlyItems"
+	back_only_items.visible = false
+	back_only_items.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	back_only_items.add_theme_constant_override("separation", collection_items.get_theme_constant("separation"))
+	scene_items_clip.add_child(back_only_items)
+	back_only_items.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	back_only_button = _add_bourse_slot("BackSlot", "Back", false, back_only_items)
+	var spacer := Control.new()
+	spacer.name = "BackOnlySpacer"
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	back_only_items.add_child(spacer)
+
+
+## A button centred in a slot of its own, in the Bourse's row unless another
+## row is given.
+func _add_bourse_slot(slot_name: String, text: String, is_tab: bool, row: HBoxContainer = null) -> Button:
 	var slot := Control.new()
 	slot.name = slot_name
 	slot.custom_minimum_size = Vector2(112, 60)
 	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bourse_items.add_child(slot)
+	(row if row != null else bourse_items).add_child(slot)
 	var button := Button.new()
 	button.name = slot_name.trim_suffix("Slot") + "Button"
 	button.text = text
@@ -1022,4 +1078,6 @@ func _mode_for_scene_path(scene_path: String) -> String:
 		return COLLECTION_MODE
 	if scene_path == BOURSE_SCENE or scene_path.ends_with("/Bourse.tscn"):
 		return BOURSE_MODE
+	if scene_path == PUZZLES_SCENE or scene_path.ends_with("/Puzzles.tscn"):
+		return BACK_ONLY_MODE
 	return ""

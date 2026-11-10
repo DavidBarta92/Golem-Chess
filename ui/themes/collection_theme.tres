@@ -55,6 +55,7 @@ content_margin_bottom = 8.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_pack_card_hover")
 stamp_name = "collection_pack_card_hover"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_pack_card_selected"]
 content_margin_left = 8.0
@@ -82,6 +83,7 @@ content_margin_bottom = 8.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_pack_card_selected")
 stamp_name = "collection_pack_card_selected"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_pack_card"]
 content_margin_left = 8.0
@@ -109,6 +111,7 @@ content_margin_bottom = 8.0
 script = ExtResource("20_ink_stamp")
 shape = SubResource("StyleBox_pack_card")
 stamp_name = "collection_pack_card"
+live_blot = true
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_shop_details"]
 content_margin_left = 12.0

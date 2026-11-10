@@ -127,8 +127,9 @@ The sketches used stand-ins; the game's own versions win:
     `pulse_points_hud()`;
   - `Scripts/Story/FeatureHint.gd` → `top_bar_button_id`;
   - `Scripts/SceneTransition.gd`.
-- There is a Quests screen (`QUESTS_BUTTON` in the translations), but I found
-  no quest data model the ribbons could read, and no draw-point currency yet.
+- The main menu's former Quests screen is the puzzles' letters now
+  (`Scenes/Puzzles.tscn`, [Docs/Puzzles/PUZZLES.md](../Puzzles/PUZZLES.md));
+  the ribbons' quests live in `QuestStore`, which has nothing to do with it.
 
 ## Godot notes
 

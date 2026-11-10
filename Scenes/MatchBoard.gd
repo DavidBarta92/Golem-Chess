@@ -501,6 +501,10 @@ var tutorial_mode_active: bool = false
 ## outro): the result stays on screen and moving on is that scene's business,
 ## instead of the match leaving on its own after a wait.
 var hold_after_result: bool = false
+## Colours whose turns a script plays rather than a player (a puzzle's
+## opponent). Having nothing to do on such a turn does not lose the game: the
+## script ends the turn itself.
+var scripted_turn_colors: Array[int] = []
 var tutorial_constraints_enabled: bool = false
 var tutorial_constraints: Dictionary = {}
 

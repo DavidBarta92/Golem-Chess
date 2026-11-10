@@ -1,8 +1,9 @@
 # Cutting
 
-A mouse drag measured against a line. Tearing a pack open uses it today; the
-planned envelope scene, where the player cuts a stamp off an envelope by drawing
-around a die such as a square, is what it is built to carry too.
+A mouse drag measured against a line. Tearing a pack open uses it, and so does
+the puzzles' reward scene, where the player cuts a stamp off an envelope by
+drawing around a die (`Scripts/Puzzles/PuzzleRewardScreen.gd`,
+[PUZZLES.md](../Puzzles/PUZZLES.md)).
 
 Three parts in `Scripts/Cutting/`, none of which knows about packs:
 
@@ -33,6 +34,12 @@ leave its line. Everything else there is the pack's own: the speed paper tears a
 that a tear never goes back, that a release past half the width finishes by itself.
 
 ## The envelope
+
+`PuzzleRewardScreen` does this with an irregular die from `CutGuide.outline`.
+Two things it learnt: the drawn path overlaps itself where it meets its start,
+so trim that tail before using it as a polygon (`_cut_outline`), and keep
+the stamp itself out of the `PolygonClip` - only the paper is clipped, the
+stamp lies on top - so nothing that reads the screen ends up inside a clip.
 
 ```gdscript
 var area := CutArea.new()

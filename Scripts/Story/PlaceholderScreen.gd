@@ -1,6 +1,6 @@
 extends Control
 
-## A stand-in for a screen whose design is still to come (Quests, the story's
+## A stand-in for a screen whose design is still to come (the story's
 ## multiplayer). Shows its name and a way back to the main menu, so
 ## the button that opens it can already be wired up and gated by the story.
 

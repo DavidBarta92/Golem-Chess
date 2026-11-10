@@ -95,9 +95,10 @@ lands, which reads as walking through whatever it passed. Anything that sits
 above the pieces, the move dots included, is placed off the top of the band
 rather than at a number typed in by hand.
 
-**The two scenes share the interface, not the sequencing.** The tutorial and a
-match build the same HUD from the same controllers and now carry the same
-nodes, so they look alike without either copying the other. What differs is
+**The scenes share the interface, not the sequencing.** The tutorial, a
+puzzle (`Scenes/PuzzleMatch.tscn`, [Docs/Puzzles/PUZZLES.md](Docs/Puzzles/PUZZLES.md))
+and a match build the same HUD from the same controllers and carry the same
+nodes, so they look alike without any copying another. What differs is
 when each piece arrives: `TurnHudController.set_hud_element_visible()` takes
 `codex`, `opponent_codex`, `page_counter`, `turn_page`, `end_turn`, `clock` or
 `opponent_panel`, and the tutorial uses it to bring them in one at a time. A

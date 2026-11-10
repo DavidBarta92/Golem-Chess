@@ -144,8 +144,22 @@ func consume_moved_piece_duration_locally(piece: Piece, piece_pos: Vector2) -> v
 		return
 
 	match_board.queue_piece_revert_animation(piece_pos, expiring_piece_texture)
+	show_stamp_ran_out(piece_pos, owner_color, expired_stamp)
+
+## A stamp effect is about to take the stamp off the golem at piece_pos
+## (LocalStateMutator.adjust_durations_for_color): the golem turns back from
+## the look it has now.
+func show_stamp_running_out(piece_pos: Vector2, piece: Piece) -> void:
+	match_board.queue_piece_revert_animation(piece_pos, match_board.get_piece_texture_resolver().get_piece_visual_texture(piece))
+
+## A stamp has run out: a Seeker goes back into its codex, any other burns.
+func show_stamp_ran_out(piece_pos: Vector2, owner_color: int, expired_stamp: Stamp) -> void:
 	if MoveRules.is_seeker_stamp(expired_stamp):
 		match_board.handle_expired_seeker_stamp_locally(owner_color, expired_stamp, piece_pos)
 		return
-
 	match_board.get_stamp_animation_controller().queue_stamp_expire_animation(piece_pos, expired_stamp)
+
+## A stamp effect changed a golem's moves without its moving.
+func show_duration_change(piece_pos: Vector2, old_duration: int, new_duration: int) -> void:
+	if !match_board.should_skip_visual_animations():
+		match_board.play_duration_change_animation(piece_pos, old_duration, new_duration)

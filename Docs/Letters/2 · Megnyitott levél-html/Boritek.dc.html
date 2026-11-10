@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<title>Boríték</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: {{w}}px; height: {{h}}px; color: #1f2733">
+
+<sc-if value="{{fBrit}}" hint-placeholder-val="{{true}}">
+<svg width="100%" height="100%" viewBox="0 0 320 220" style="display: block" aria-hidden="true"><defs><pattern id="laid" width="8" height="4" patternUnits="userSpaceOnUse"><rect width="8" height="1.2" fill="#e8ddc2"></rect></pattern></defs><rect x="1" y="1" width="318" height="218" rx="3" fill="#f4ecd8"></rect><rect x="1" y="1" width="318" height="218" rx="3" fill="url(#laid)"></rect><path d="M64 1 V219 M128 1 V219 M192 1 V219 M256 1 V219" stroke="#e8ddc2" stroke-width="1.2"></path><rect x="1" y="1" width="318" height="218" rx="3" fill="none" stroke="#1f2733" stroke-width="1.5" vector-effect="non-scaling-stroke"></rect></svg>
+</sc-if>
+<sc-if value="{{bBrit}}" hint-placeholder-val="{{false}}">
+<svg width="100%" height="100%" viewBox="0 0 320 220" style="display: block" aria-hidden="true"><defs><pattern id="laid" width="8" height="4" patternUnits="userSpaceOnUse"><rect width="8" height="1.2" fill="#e8ddc2"></rect></pattern></defs><rect x="1" y="1" width="318" height="218" rx="3" fill="#f4ecd8"></rect><rect x="1" y="1" width="318" height="218" rx="3" fill="url(#laid)"></rect><path d="M1 219 L150 118 M319 219 L170 118" fill="none" stroke="#1f2733" stroke-width="1" vector-effect="non-scaling-stroke"></path><path d="M1 1 H319 L160 150 Z" fill="#efe4cb" stroke="#1f2733" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><rect x="1" y="1" width="318" height="218" rx="3" fill="none" stroke="#1f2733" stroke-width="1.5" vector-effect="non-scaling-stroke"></rect></svg>
+</sc-if>
+
+<sc-if value="{{fMagyar}}" hint-placeholder-val="{{false}}">
+<svg width="100%" height="100%" viewBox="0 0 320 204" style="display: block" aria-hidden="true"><rect x="1" y="1" width="318" height="202" rx="3" fill="#f8f6ef" stroke="#1f2733" stroke-width="1.5" vector-effect="non-scaling-stroke"></rect><g fill="none" stroke="#c4502a" stroke-width="1.3"><rect x="194" y="160" width="22" height="26" rx="1"></rect><rect x="220" y="160" width="22" height="26" rx="1"></rect><rect x="246" y="160" width="22" height="26" rx="1"></rect><rect x="272" y="160" width="22" height="26" rx="1"></rect></g></svg>
+</sc-if>
+<sc-if value="{{bMagyar}}" hint-placeholder-val="{{false}}">
+<svg width="100%" height="100%" viewBox="0 0 320 204" style="display: block" aria-hidden="true"><rect x="1" y="1" width="318" height="202" rx="3" fill="#f8f6ef"></rect><path d="M1 203 L120 104 H200 L319 203" fill="none" stroke="#1f2733" stroke-width="1" vector-effect="non-scaling-stroke"></path><path d="M1 1 H319 L300 66 H20 Z" fill="#ece9df" stroke="#1f2733" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><rect x="1" y="1" width="318" height="202" rx="3" fill="none" stroke="#1f2733" stroke-width="1.5" vector-effect="non-scaling-stroke"></rect></svg>
+</sc-if>
+
+<sc-if value="{{fCseh}}" hint-placeholder-val="{{false}}">
+<svg width="100%" height="100%" viewBox="0 0 320 228" style="display: block" aria-hidden="true"><rect x="1" y="1" width="318" height="226" rx="3" fill="#e2e9ee" stroke="#1f2733" stroke-width="1.5" vector-effect="non-scaling-stroke"></rect><g fill="none" stroke="#2c4a6e" stroke-width="1.3"><rect x="24" y="184" width="20" height="26" rx="1"></rect><rect x="48" y="184" width="20" height="26" rx="1"></rect><rect x="72" y="184" width="20" height="26" rx="1"></rect><rect x="104" y="184" width="20" height="26" rx="1"></rect><rect x="128" y="184" width="20" height="26" rx="1"></rect></g></svg>
+</sc-if>
+<sc-if value="{{bCseh}}" hint-placeholder-val="{{false}}">
+<svg width="100%" height="100%" viewBox="0 0 320 228" style="display: block" aria-hidden="true"><rect x="1" y="1" width="318" height="226" rx="3" fill="#e2e9ee"></rect><path d="M1 227 L136 118 M319 227 L184 118" fill="none" stroke="#1f2733" stroke-width="1" vector-effect="non-scaling-stroke"></path><path d="M1 1 H319 C306 112 14 112 1 1 Z" fill="#d6dfe6" stroke="#1f2733" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><rect x="1" y="1" width="318" height="226" rx="3" fill="none" stroke="#1f2733" stroke-width="1.5" vector-effect="non-scaling-stroke"></rect></svg>
+</sc-if>
+
+<sc-if value="{{fAmerikai}}" hint-placeholder-val="{{false}}">
+<svg width="100%" height="100%" viewBox="0 0 320 140" style="display: block" aria-hidden="true"><defs><pattern id="airmail" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="22" height="22" fill="#fbfaf6"></rect><rect width="7" height="22" fill="#b8352f"></rect><rect x="11" width="7" height="22" fill="#2b3f6b"></rect></pattern></defs><rect x="1" y="1" width="318" height="138" rx="3" fill="#fbfaf6"></rect><path d="M1 1 H319 V139 H1 Z M9 9 V131 H311 V9 Z" fill="url(#airmail)" fill-rule="evenodd"></path><rect x="1" y="1" width="318" height="138" rx="3" fill="none" stroke="#1f2733" stroke-width="1.5" vector-effect="non-scaling-stroke"></rect></svg>
+</sc-if>
+<sc-if value="{{bAmerikai}}" hint-placeholder-val="{{false}}">
+<svg width="100%" height="100%" viewBox="0 0 320 140" style="display: block" aria-hidden="true"><defs><pattern id="airmail" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="22" height="22" fill="#fbfaf6"></rect><rect width="7" height="22" fill="#b8352f"></rect><rect x="11" width="7" height="22" fill="#2b3f6b"></rect></pattern></defs><rect x="1" y="1" width="318" height="138" rx="3" fill="#fbfaf6"></rect><path d="M1 1 H319 V139 H1 Z M9 9 V131 H311 V9 Z" fill="url(#airmail)" fill-rule="evenodd"></path><path d="M9 131 L130 74 M311 131 L190 74" fill="none" stroke="#1f2733" stroke-width="1" vector-effect="non-scaling-stroke"></path><path d="M1 1 L160 80 L319 1" fill="#f3f1ea" stroke="#1f2733" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><rect x="1" y="1" width="318" height="138" rx="3" fill="none" stroke="#1f2733" stroke-width="1.5" vector-effect="non-scaling-stroke"></rect></svg>
+</sc-if>
+
+<sc-if value="{{showStamp}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; top: {{mt}}px; right: {{mr}}px; width: {{sw}}px; height: {{sh}}px; box-sizing: border-box; padding: {{sp}}px; {{perf}}; filter: drop-shadow(0 0 0.6px rgba(31,39,51,.75)); transform: rotate(2deg)">
+<div style="width: 100%; height: 100%; background: {{stampColor}}; display: flex; align-items: center; justify-content: center">
+<svg width="100%" height="100%" viewBox="0 0 40 50" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><ellipse cx="20" cy="25" rx="14" ry="18" fill="#f3e7c8" stroke="#1f2733" stroke-width="1"></ellipse><path d="M14 35 H26 V32.5 H24.5 L23.6 23 H25.5 V17.5 H23.8 V19.5 H21.6 V17.5 H18.4 V19.5 H16.2 V17.5 H14.5 V23 H16.4 L15.5 32.5 H14 Z" fill="#1f2733"></path></svg>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{showPostmark}}" hint-placeholder-val="{{false}}">
+<svg width="{{pmW}}" height="{{pmH}}" viewBox="0 0 120 60" aria-hidden="true" style="position: absolute; top: {{pmTop}}px; right: {{pmRight}}px; opacity: 0.85; transform: rotate(-10deg)"><g fill="none" stroke="#2a3550" stroke-linecap="round"><circle cx="90" cy="30" r="25" stroke-width="2.2" stroke-dasharray="22 2 9 2"></circle><circle cx="90" cy="30" r="18" stroke-width="1.3"></circle><path d="M74 26.5 H106 M74 33.5 H106" stroke-width="1.3"></path><path d="M2 18 q6.5 -6 13 0 t13 0 t13 0 t13 0 M2 30 q6.5 -6 13 0 t13 0 t13 0 t13 0 M2 42 q6.5 -6 13 0 t13 0 t13 0 t13 0" stroke-width="2.2" stroke-dasharray="40 3 18 2"></path></g></svg>
+</sc-if>
+
+<sc-if value="{{showWax}}" hint-placeholder-val="{{false}}">
+<svg width="{{waxW}}" height="{{waxW}}" viewBox="0 0 60 60" aria-hidden="true" style="position: absolute; top: {{waxTop}}px; right: {{waxRight}}px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.3))"><circle cx="51" cy="48" r="4.5" fill="#a3262a"></circle><circle cx="8" cy="44" r="3" fill="#a3262a"></circle><path d="M30 3 C40 2 47 8 52 13 C58 19 58 27 57 33 C56 42 52 49 44 54 C37 58 27 58 19 55 C11 51 5 45 3 36 C1 27 4 18 10 12 C15 6 22 3 30 3 Z" fill="#a3262a" stroke="#6e1518" stroke-width="1.2"></path><circle cx="30" cy="30" r="16" fill="none" stroke="#7f1a1d" stroke-width="2.2"></circle><path d="M17 21 A16 16 0 0 1 33 14.3" fill="none" stroke="#c9524f" stroke-width="1.5" stroke-linecap="round" opacity="0.8"></path><path d="M30 21 L32.23 26.93 L38.56 27.22 L33.61 31.17 L35.29 37.28 L30 33.8 L24.71 37.28 L26.39 31.17 L21.44 27.22 L27.77 26.93 Z" fill="#7f1a1d"></path></svg>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["brit","magyar","cseh","amerikai"],"default":"brit"},"mark":{"editor":"enum","options":["belyeg","pecsetelo","viasz","nincs"],"default":"belyeg"},"side":{"editor":"enum","options":["front","back"],"default":"front"},"w":{"editor":"int","default":320,"min":120,"max":1400},"$preview":{"width":320,"height":220}}'>
+var HEIGHTS = { brit: 220, magyar: 204, cseh: 228, amerikai: 140 };
+var STAMP_COLORS = { brit: '#3f5f8a', magyar: '#3f7f5f', cseh: '#8a5a3f', amerikai: '#6e5a8c' };
+class Component extends DCLogic {
+  renderVals() {
+    var kind = this.props.kind ?? 'brit';
+    if (!HEIGHTS[kind]) kind = 'brit';
+    var mark = this.props.mark ?? 'belyeg';
+    var side = this.props.side ?? 'front';
+    var w = parseFloat(this.props.w ?? 320) || 320;
+    var h = Math.round(w * HEIGHTS[kind] / 320);
+    var front = side !== 'back';
+    var back = !front;
+    var mW = w * 0.17;
+    var t = Math.max(4, Math.round(mW / 9));
+    var sw = Math.round(mW / t) * t;
+    var sh = Math.round(mW * 1.25 / t) * t;
+    var half = t / 2;
+    var perf = 'background: radial-gradient(circle at ' + half + 'px ' + half + 'px, transparent ' + (t * 0.3).toFixed(2) + 'px, #fdfbf4 ' + (t * 0.36).toFixed(2) + 'px) -' + half + 'px -' + half + 'px / ' + t + 'px ' + t + 'px';
+    var pmW = Math.round(mW * 2.1);
+    var waxW = Math.round(mW * 1.15);
+    return {
+      w: w,
+      h: h,
+      fBrit: front && kind === 'brit', bBrit: back && kind === 'brit',
+      fMagyar: front && kind === 'magyar', bMagyar: back && kind === 'magyar',
+      fCseh: front && kind === 'cseh', bCseh: back && kind === 'cseh',
+      fAmerikai: front && kind === 'amerikai', bAmerikai: back && kind === 'amerikai',
+      showStamp: front && mark === 'belyeg',
+      showPostmark: front && mark === 'pecsetelo',
+      showWax: front && mark === 'viasz',
+      mt: Math.round(w * 0.04),
+      mr: Math.round(w * 0.04),
+      sw: sw,
+      sh: sh,
+      sp: Math.round(t * 0.8),
+      perf: perf,
+      stampColor: STAMP_COLORS[kind],
+      pmW: pmW,
+      pmH: Math.round(pmW / 2),
+      pmTop: Math.round(w * 0.03),
+      pmRight: Math.round(w * 0.025),
+      waxW: waxW,
+      waxTop: Math.round(w * 0.035),
+      waxRight: Math.round(w * 0.04)
+    };
+  }
+}
+</script>
+</body>
+</html>
