@@ -112,7 +112,7 @@ func handle_input(event: InputEvent) -> void:
 					return
 				var clicked_pos: Vector2 = match_board.get_mouse_board_position()
 				var clicked_cell_value = "invalid"
-				if match_board.is_valid_position(clicked_pos):
+				if MoveRules.is_valid_position(clicked_pos):
 					clicked_cell_value = match_board.board[int(clicked_pos.x)][int(clicked_pos.y)]
 
 				DebugLog.info("Click: board[%s][%s]=%s" % [
@@ -121,7 +121,7 @@ func handle_input(event: InputEvent) -> void:
 					clicked_cell_value,
 				])
 
-				if !match_board.is_valid_position(clicked_pos):
+				if !MoveRules.is_valid_position(clicked_pos):
 					return
 
 				if !match_board.state and match_board.can_player_control_piece_at(clicked_pos, match_board.get_own_player_id()):
@@ -182,7 +182,7 @@ func update_hovered_piece() -> void:
 	hide_hover_piece_details()
 	match_board.clear_hover_highlighted_piece()
 
-	if match_board.is_valid_position(board_pos) and !match_board.is_empty(board_pos):
+	if MoveRules.is_valid_position(board_pos) and !match_board.is_empty(board_pos):
 		match_board.moves = match_board.get_local_gameplay_controller().get_moves(board_pos)
 		show_dots(board_pos)
 		show_hover_piece_details(board_pos)
@@ -227,7 +227,7 @@ func hide_hover_piece_details() -> void:
 func update_hover_duration_label_position() -> void:
 	if !match_board.hover_duration_label or !match_board.hover_duration_label.visible:
 		return
-	if !match_board.is_valid_position(match_board.hovered_piece):
+	if !MoveRules.is_valid_position(match_board.hovered_piece):
 		return
 
 	var piece_screen_position: Vector2 = match_board.get_board_position_screen_position(match_board.hovered_piece)

@@ -30,9 +30,7 @@ var stamp_affix_reveal_warp_strength: float = 0.16
 var _active_affix_reveal_visuals: Array = []
 
 var color_for_player_provider: Callable
-var player_id_for_color_provider: Callable
 var local_view_color_provider: Callable
-var is_valid_position_callback: Callable
 var board_screen_position_provider: Callable
 var stamp_draw_start_position_provider: Callable
 var stamp_return_to_deck_target_position_provider: Callable
@@ -41,7 +39,6 @@ var stamp_hand_source_position_provider: Callable
 var deck_visual_provider: Callable
 var viewport_size_provider: Callable
 var board_screen_size_provider: Callable
-var value_to_vector2_provider: Callable
 var stamp_visuals_provider: Callable
 
 var pending_stamp_burn_animations: Array = []
@@ -68,9 +65,7 @@ func configure(config: Dictionary) -> void:
 	stamp_affix_reveal_tilt_peak_degrees = float(config.get("stamp_affix_reveal_tilt_peak_degrees", stamp_affix_reveal_tilt_peak_degrees))
 	stamp_affix_reveal_warp_strength = float(config.get("stamp_affix_reveal_warp_strength", stamp_affix_reveal_warp_strength))
 	color_for_player_provider = config.get("color_for_player_provider", color_for_player_provider)
-	player_id_for_color_provider = config.get("player_id_for_color_provider", player_id_for_color_provider)
 	local_view_color_provider = config.get("local_view_color_provider", local_view_color_provider)
-	is_valid_position_callback = config.get("is_valid_position_callback", is_valid_position_callback)
 	board_screen_position_provider = config.get("board_screen_position_provider", board_screen_position_provider)
 	stamp_draw_start_position_provider = config.get("stamp_draw_start_position_provider", stamp_draw_start_position_provider)
 	stamp_return_to_deck_target_position_provider = config.get("stamp_return_to_deck_target_position_provider", stamp_return_to_deck_target_position_provider)
@@ -79,7 +74,6 @@ func configure(config: Dictionary) -> void:
 	deck_visual_provider = config.get("deck_visual_provider", deck_visual_provider)
 	viewport_size_provider = config.get("viewport_size_provider", viewport_size_provider)
 	board_screen_size_provider = config.get("board_screen_size_provider", board_screen_size_provider)
-	value_to_vector2_provider = config.get("value_to_vector2_provider", value_to_vector2_provider)
 	stamp_visuals_provider = config.get("stamp_visuals_provider", stamp_visuals_provider)
 
 func has_pending_animations() -> bool:
@@ -189,8 +183,8 @@ func animate_recent_stamp_expirations(recent_stamp_expirations: Array) -> void:
 		if stamp_name.is_empty():
 			continue
 
-		var piece_pos: Vector2 = value_to_vector2(expiration.get("piece_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
-		if !is_valid_position(piece_pos):
+		var piece_pos: Vector2 = BoardConfig.value_to_vector2(expiration.get("piece_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		if !MoveRules.is_valid_position(piece_pos):
 			continue
 
 		var expired_stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
@@ -236,7 +230,7 @@ func queue_seeker_stamp_return_to_deck_animation(owner_color: int, stamp: Stamp,
 	if stamp == null:
 		return
 
-	var owner_player_id: int = get_player_id_for_color(owner_color)
+	var owner_player_id: int = BoardConfig.get_player_id_for_color(owner_color)
 	queue_stamp_return_to_deck_animation({
 		"source_player_id": owner_player_id,
 		"target_player_id": owner_player_id,
@@ -274,7 +268,7 @@ func process_stamp_burn_animation_queue() -> void:
 		elif animation_type == "return_to_deck":
 			stamp_visual = play_stamp_return_to_deck_animation(animation_data.get("transfer", {}))
 		elif animation_type == "expire":
-			var piece_position: Vector2 = value_to_vector2(animation_data.get("piece_position", INVALID_BOARD_POS), INVALID_BOARD_POS)
+			var piece_position: Vector2 = BoardConfig.value_to_vector2(animation_data.get("piece_position", INVALID_BOARD_POS), INVALID_BOARD_POS)
 			var expired_stamp: Stamp = animation_data.get("expired_stamp", null) as Stamp
 			stamp_visual = play_stamp_expire_animation(piece_position, expired_stamp)
 		if stamp_visual != null and is_instance_valid(stamp_visual):
@@ -312,7 +306,7 @@ func play_stamp_transfer_burn_animation(transfer: Dictionary) -> StampVisual:
 	return stamp_visual
 
 func play_stamp_expire_animation(piece_position: Vector2, expired_stamp: Stamp) -> StampVisual:
-	if expired_stamp == null or canvas_layer == null or stamp_visual_scene == null or !is_valid_position(piece_position):
+	if expired_stamp == null or canvas_layer == null or stamp_visual_scene == null or !MoveRules.is_valid_position(piece_position):
 		return null
 
 	var display_stamp: Stamp = expired_stamp.duplicate() as Stamp
@@ -564,17 +558,17 @@ func play_transfer_source_pulse(transfer: Dictionary) -> void:
 
 func get_stamp_transfer_source_position(transfer: Dictionary) -> Vector2:
 	if transfer.has("source_global_position"):
-		var provided_source_position: Vector2 = value_to_vector2(transfer.get("source_global_position"), INVALID_BOARD_POS)
+		var provided_source_position: Vector2 = BoardConfig.value_to_vector2(transfer.get("source_global_position"), INVALID_BOARD_POS)
 		if provided_source_position != INVALID_BOARD_POS:
 			return provided_source_position
 
 	var source_player_id: int = int(transfer.get("source_player_id", -1))
 	var source_color: int = get_color_for_player_id(source_player_id) if source_player_id >= 0 else get_local_view_color()
 	var source_zone: String = str(transfer.get("source_zone", ""))
-	var source_pos: Vector2 = value_to_vector2(transfer.get("source_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	var source_pos: Vector2 = BoardConfig.value_to_vector2(transfer.get("source_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
 
 	if source_zone == "piece":
-		if is_valid_position(source_pos):
+		if MoveRules.is_valid_position(source_pos):
 			return get_board_position_screen_position(source_pos)
 		return get_stamp_hand_source_position(source_color)
 
@@ -584,7 +578,7 @@ func get_stamp_transfer_source_position(transfer: Dictionary) -> Vector2:
 	if source_zone == "hand" or source_zone == "enemy_hand":
 		return get_stamp_hand_source_position(source_color)
 
-	if source_zone == "effect" and is_valid_position(source_pos):
+	if source_zone == "effect" and MoveRules.is_valid_position(source_pos):
 		return get_board_position_screen_position(source_pos)
 
 	return get_viewport_size() * 0.5
@@ -594,18 +588,10 @@ func get_color_for_player_id(player_id: int) -> int:
 		return int(color_for_player_provider.call(player_id))
 	return 1 if player_id == 0 else -1
 
-func get_player_id_for_color(owner_color: int) -> int:
-	if player_id_for_color_provider.is_valid():
-		return int(player_id_for_color_provider.call(owner_color))
-	return 0 if owner_color == 1 else 1
-
 func get_local_view_color() -> int:
 	if local_view_color_provider.is_valid():
 		return int(local_view_color_provider.call())
 	return 1
-
-func is_valid_position(pos: Vector2) -> bool:
-	return bool(is_valid_position_callback.call(pos)) if is_valid_position_callback.is_valid() else false
 
 func get_board_position_screen_position(board_pos: Vector2) -> Vector2:
 	if board_screen_position_provider.is_valid():
@@ -666,22 +652,3 @@ func get_viewport_size() -> Vector2:
 			return value
 	return Vector2.ZERO
 
-func value_to_vector2(value, fallback: Vector2) -> Vector2:
-	if value_to_vector2_provider.is_valid():
-		var provided_value = value_to_vector2_provider.call(value, fallback)
-		if provided_value is Vector2:
-			return provided_value
-	if value is Vector2:
-		return value
-	if value is Vector2i:
-		var vector_value: Vector2i = value
-		return Vector2(vector_value.x, vector_value.y)
-	if value is Array:
-		var array_value: Array = value
-		if array_value.size() >= 2:
-			return Vector2(float(array_value[0]), float(array_value[1]))
-	if value is Dictionary:
-		var dict_value: Dictionary = value
-		if dict_value.has("x") and dict_value.has("y"):
-			return Vector2(float(dict_value.x), float(dict_value.y))
-	return fallback

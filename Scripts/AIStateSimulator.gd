@@ -265,7 +265,7 @@ static func apply_move_action(game_state: GameStateData, player_id: int, action:
 		return
 
 	var captured_piece: Piece = game_state.get_piece(to_pos)
-	var captured_player_id: int = StampEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
+	var captured_player_id: int = BoardConfig.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
 	var captured_stamp: Stamp = captured_piece.affixed_stamp if captured_piece != null else null
 	if captured_piece != null:
 		handle_captured_piece_stamp(game_state, captured_piece, captured_player_id, to_pos)
@@ -557,7 +557,7 @@ static func respawn_captured_piece_in_pieces(pieces: Dictionary, captured_piece:
 		return false
 
 	captured_piece.has_crown = false
-	var player_id: int = StampEffectResolver.get_player_id_for_color(captured_piece.color)
+	var player_id: int = BoardConfig.get_player_id_for_color(captured_piece.color)
 	if release_pending_respawn_piece_in_pieces(pieces, player_id):
 		return true
 

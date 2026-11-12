@@ -80,9 +80,6 @@ func set_respawn_cooldown(turns: int) -> void:
 	else:
 		exhausted_this_turn = false
 
-func tick_respawn_cooldown() -> void:
-	pass
-
 func get_movement_directions() -> Array:
 	if affixed_stamp:
 		return affixed_stamp.get_directions()

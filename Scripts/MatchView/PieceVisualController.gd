@@ -175,7 +175,7 @@ func get_holder_at(pieces_node: Node, board_pos: Vector2, invalid_pos: Vector2) 
 		var holder: Sprite2D = child as Sprite2D
 		if holder == null or holder.is_queued_for_deletion():
 			continue
-		var holder_pos: Vector2 = value_to_vector2(holder.get_meta("board_pos", invalid_pos), invalid_pos)
+		var holder_pos: Vector2 = BoardConfig.value_to_vector2(holder.get_meta("board_pos", invalid_pos), invalid_pos)
 		if holder_pos == board_pos:
 			return holder
 
@@ -563,19 +563,3 @@ func get_position_local(board_pos: Vector2) -> Vector2:
 	if geometry == null:
 		return Vector2.ZERO
 	return geometry.get_position_local(board_pos)
-
-func value_to_vector2(value, fallback: Vector2) -> Vector2:
-	if value is Vector2:
-		return value
-	if value is Vector2i:
-		var vector_value: Vector2i = value
-		return Vector2(vector_value.x, vector_value.y)
-	if value is Array:
-		var array_value: Array = value
-		if array_value.size() >= 2:
-			return Vector2(float(array_value[0]), float(array_value[1]))
-	if value is Dictionary:
-		var dict_value: Dictionary = value
-		if dict_value.has("x") && dict_value.has("y"):
-			return Vector2(float(dict_value.x), float(dict_value.y))
-	return fallback

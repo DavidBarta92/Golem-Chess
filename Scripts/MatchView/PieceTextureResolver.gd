@@ -64,7 +64,7 @@ func get_piece_visual_state_snapshot() -> Dictionary:
 		return snapshot
 
 	for position_value in match_board.piece_objects:
-		var board_pos: Vector2 = match_board.value_to_vector2(position_value, invalid_board_pos)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
 		var piece: Piece = match_board.piece_objects[position_value] as Piece
 		if piece == null or piece.hidden_from_viewer:
 			continue

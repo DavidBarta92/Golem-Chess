@@ -138,7 +138,7 @@ static func get_context_player_id(context: Dictionary) -> int:
 
 	var piece: Piece = get_context_piece(context)
 	if piece != null:
-		return get_player_id_for_color(piece.color)
+		return BoardConfig.get_player_id_for_color(piece.color)
 
 	return 0
 
@@ -432,7 +432,7 @@ static func resolve_bomb(game_state: GameStateData, player_id: int, stamp: Stamp
 			positions_to_remove.append(target_pos)
 			if target_piece.affixed_stamp != null:
 				affected_stamp_names.append(target_piece.affixed_stamp.stamp_name)
-			var target_player_id: int = get_player_id_for_color(target_piece.color)
+			var target_player_id: int = BoardConfig.get_player_id_for_color(target_piece.color)
 			if target_player_id == player_id:
 				own_pieces_affected += 1
 			else:
@@ -484,7 +484,7 @@ static func resolve_self_duration_adjustment(game_state: GameStateData, player_i
 	if source_piece == null or source_piece.affixed_stamp == null:
 		return {}
 
-	var source_player_id: int = get_player_id_for_color(source_piece.color)
+	var source_player_id: int = BoardConfig.get_player_id_for_color(source_piece.color)
 	return adjust_piece_duration(game_state, player_id, source_player_id, source_pos, source_piece, delta, board_size)
 
 static func resolve_duration_adjustment(game_state: GameStateData, effect_owner_player_id: int, _stamp: Stamp, _source_piece: Piece, _source_pos: Vector2, board_size: int, target_player_id: int, delta: int) -> Dictionary:
@@ -502,7 +502,7 @@ static func resolve_duration_adjustment(game_state: GameStateData, effect_owner_
 		if piece == null or piece.affixed_stamp == null:
 			continue
 
-		var piece_player_id: int = get_player_id_for_color(piece.color)
+		var piece_player_id: int = BoardConfig.get_player_id_for_color(piece.color)
 		if piece_player_id != target_player_id:
 			continue
 
@@ -598,7 +598,7 @@ static func remove_piece_as_effect_capture(game_state: GameStateData, effect_own
 	if target_piece == null:
 		return
 
-	var target_player_id: int = get_player_id_for_color(target_piece.color)
+	var target_player_id: int = BoardConfig.get_player_id_for_color(target_piece.color)
 	var target_stamp: Stamp = target_piece.affixed_stamp
 	var target_was_seeker: bool = is_seeker_piece(target_piece)
 
@@ -852,7 +852,7 @@ static func can_player_control_piece(piece: Piece, player_id: int) -> bool:
 static func is_piece_visible_to_player(piece: Piece, viewer_player_id: int) -> bool:
 	if piece == null:
 		return false
-	var owner_player_id: int = get_player_id_for_color(piece.color)
+	var owner_player_id: int = BoardConfig.get_player_id_for_color(piece.color)
 	if owner_player_id == viewer_player_id:
 		return true
 	return !piece_has_affixed_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
@@ -881,9 +881,6 @@ static func get_base_field_for_player(game_state: GameStateData, player_id: int)
 	if game_state.player_base_fields.has(player_id):
 		return game_state.player_base_fields[player_id]
 	return BoardConfig.get_base_field_for_player_id(player_id)
-
-static func get_player_id_for_color(color: int) -> int:
-	return BoardConfig.get_player_id_for_color(color)
 
 static func get_color_for_player_id(player_id: int) -> int:
 	return BoardConfig.get_color_for_player_id(player_id)

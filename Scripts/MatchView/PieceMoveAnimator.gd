@@ -98,7 +98,7 @@ func play_move_sequence(
 	capture_impact_callback: Callable = Callable(),
 	landed_callback: Callable = Callable()
 ) -> bool:
-	if holder == null or !is_instance_valid(holder) or !_is_valid_position(from_pos) or !_is_valid_position(to_pos):
+	if holder == null or !is_instance_valid(holder) or !MoveRules.is_valid_position(from_pos) or !MoveRules.is_valid_position(to_pos):
 		return false
 	if !can_create_tween():
 		return false
@@ -477,7 +477,7 @@ func has_visible_piece_at(board_pos: Vector2, moving_holder: Sprite2D) -> bool:
 		var holder: Sprite2D = child as Sprite2D
 		if !should_consider_visible_holder(holder, moving_holder):
 			continue
-		if value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos) == board_pos:
+		if BoardConfig.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos) == board_pos:
 			return piece_exists_at(board_pos)
 	return false
 
@@ -656,9 +656,9 @@ func get_reference_step_distance(from_pos: Vector2, to_pos: Vector2) -> float:
 		step = Vector2(0.0, 1.0)
 
 	var reference_neighbor: Vector2 = from_pos + step
-	if !_is_valid_position(reference_neighbor):
+	if !MoveRules.is_valid_position(reference_neighbor):
 		reference_neighbor = to_pos - step
-	if !_is_valid_position(reference_neighbor):
+	if !MoveRules.is_valid_position(reference_neighbor):
 		var perspective_scale: float = piece_visuals.get_perspective_scale(from_pos) if piece_visuals != null else 1.0
 		return float(cell_width) * perspective_scale
 
@@ -964,7 +964,7 @@ func does_segment_touch_any_occupied_footprint(segment_start: Vector2, segment_e
 ## journey, and only went behind on the frame it landed.
 func get_z_index_for_local_position(local_pos: Vector2, moving_holder: Sprite2D = null, lift_offset: int = 0) -> int:
 	var nearest_pos: Vector2 = get_nearest_board_position_for_local_position(local_pos)
-	if !_is_valid_position(nearest_pos):
+	if !MoveRules.is_valid_position(nearest_pos):
 		return 0
 	var nearest_center: Vector2 = get_position_local(nearest_pos)
 	var front_side: bool = (local_pos.y - nearest_center.y) * float(view_color) >= 0.0
@@ -1172,8 +1172,8 @@ func should_consider_blocking_holder(holder: Sprite2D, moving_holder: Sprite2D, 
 	if !should_consider_visible_holder(holder, moving_holder):
 		return false
 
-	var holder_pos: Vector2 = value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
-	if !_is_valid_position(holder_pos) or holder_pos == from_pos or holder_pos == to_pos:
+	var holder_pos: Vector2 = BoardConfig.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
+	if !MoveRules.is_valid_position(holder_pos) or holder_pos == from_pos or holder_pos == to_pos:
 		return false
 	return piece_exists_at(holder_pos)
 
@@ -1181,8 +1181,8 @@ func should_consider_occlusion_holder(holder: Sprite2D, moving_holder: Sprite2D)
 	if !should_consider_visible_holder(holder, moving_holder):
 		return false
 
-	var holder_pos: Vector2 = value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
-	return _is_valid_position(holder_pos) and piece_exists_at(holder_pos)
+	var holder_pos: Vector2 = BoardConfig.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
+	return MoveRules.is_valid_position(holder_pos) and piece_exists_at(holder_pos)
 
 func should_consider_visible_holder(holder: Sprite2D, moving_holder: Sprite2D) -> bool:
 	if holder == null or !is_instance_valid(holder) or holder == moving_holder:
@@ -1193,22 +1193,3 @@ func piece_exists_at(board_pos: Vector2) -> bool:
 	if piece_exists_provider.is_valid():
 		return bool(piece_exists_provider.call(board_pos))
 	return true
-
-func _is_valid_position(pos: Vector2) -> bool:
-	return pos.x >= 0 and pos.x < board_size and pos.y >= 0 and pos.y < board_size
-
-func value_to_vector2(value, fallback: Vector2) -> Vector2:
-	if value is Vector2:
-		return value
-	if value is Vector2i:
-		var vector_value: Vector2i = value
-		return Vector2(vector_value.x, vector_value.y)
-	if value is Array:
-		var array_value: Array = value
-		if array_value.size() >= 2:
-			return Vector2(float(array_value[0]), float(array_value[1]))
-	if value is Dictionary:
-		var dict_value: Dictionary = value
-		if dict_value.has("x") && dict_value.has("y"):
-			return Vector2(float(dict_value.x), float(dict_value.y))
-	return fallback

@@ -33,6 +33,24 @@ static func get_color_for_player_id(player_id: int) -> int:
 static func get_player_id_for_color(player_color: int) -> int:
 	return WHITE_PLAYER_ID if player_color == WHITE_COLOR else BLACK_PLAYER_ID
 
+## A square as it comes out of a synced state or a saved step: a Vector2, a
+## Vector2i, an [x, y] array or an {x, y} dictionary. Anything else is `fallback`.
+static func value_to_vector2(value, fallback: Vector2) -> Vector2:
+	if value is Vector2:
+		return value
+	if value is Vector2i:
+		var vector_value: Vector2i = value
+		return Vector2(vector_value.x, vector_value.y)
+	if value is Array:
+		var array_value: Array = value
+		if array_value.size() >= 2:
+			return Vector2(float(array_value[0]), float(array_value[1]))
+	if value is Dictionary:
+		var dict_value: Dictionary = value
+		if dict_value.has("x") and dict_value.has("y"):
+			return Vector2(float(dict_value.x), float(dict_value.y))
+	return fallback
+
 static func get_base_field_for_player_id(player_id: int) -> Vector2:
 	return WHITE_BASE_FIELD if player_id == WHITE_PLAYER_ID else BLACK_BASE_FIELD
 

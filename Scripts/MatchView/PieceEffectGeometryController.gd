@@ -54,8 +54,8 @@ func get_piece_light_global_position_for_texture(holder: Sprite2D, texture_value
 	if match_board == null or holder == null or !is_instance_valid(holder):
 		return Vector2.ZERO
 
-	var board_pos: Vector2 = match_board.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
-	if !match_board.is_valid_position(board_pos):
+	var board_pos: Vector2 = BoardConfig.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
+	if !MoveRules.is_valid_position(board_pos):
 		return holder.to_global(holder.offset)
 
 	var visual_transform: Dictionary = match_board.get_piece_visuals().get_visual_transform_for_texture(texture_value, board_pos)

@@ -57,11 +57,11 @@ func play_state_affix_animations(animations: Array[Dictionary]) -> void:
 
 	match_board.begin_visual_process(match_board.VISUAL_PROCESS_STATE_STAMP_AFFIX)
 	for animation: Dictionary in animations:
-		var board_pos: Vector2 = match_board.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos)
 		var stamp: Stamp = animation.get("stamp", null) as Stamp
 		var start_texture: Texture2D = animation.get("start_texture", null) as Texture2D
 		var hide_after_affix: bool = bool(animation.get("hide_after_affix", false))
-		if !match_board.is_valid_position(board_pos) or stamp == null:
+		if !MoveRules.is_valid_position(board_pos) or stamp == null:
 			match_board.finish_stamp_affix_process(board_pos)
 			continue
 
@@ -115,7 +115,7 @@ func apply_visible_piece_attach_morph_result(holder: Sprite2D, piece_position: V
 func play_hidden_piece_invisibility_affix_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D, piece_color: int) -> void:
 	if match_board == null or match_board.should_skip_visual_animations() or !match_board.is_inside_tree():
 		return
-	if stamp == null or !match_board.is_valid_position(piece_position):
+	if stamp == null or !MoveRules.is_valid_position(piece_position):
 		return
 	if start_texture == null:
 		start_texture = match_board.get_piece_texture_resolver().get_default_piece_texture(piece_color)
@@ -165,7 +165,7 @@ func play_local_move_transition(move_context: Dictionary) -> void:
 	if should_play_capture_shatter:
 		var captured_piece: Piece = move_context.get("captured_piece", null) as Piece
 		var captured_color: int = captured_piece.color if captured_piece != null else 0
-		var shatter_respawn_pos: Vector2 = match_board.value_to_vector2(move_context.get("shatter_respawn_pos", invalid_board_pos), invalid_board_pos)
+		var shatter_respawn_pos: Vector2 = BoardConfig.value_to_vector2(move_context.get("shatter_respawn_pos", invalid_board_pos), invalid_board_pos)
 		var shatter_fragment_group: String = str(move_context.get("shatter_fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
 		var capturing_cast: String = get_capturing_cast_sound_name(end_pos)
 		capture_impact_callback = func() -> float:
@@ -184,8 +184,8 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 	if match_board == null:
 		return
 
-	var move_to_pos: Vector2 = match_board.value_to_vector2(state_piece_move_animation.get("to", invalid_board_pos), invalid_board_pos)
-	var move_from_pos: Vector2 = match_board.value_to_vector2(state_piece_move_animation.get("from", invalid_board_pos), invalid_board_pos)
+	var move_to_pos: Vector2 = BoardConfig.value_to_vector2(state_piece_move_animation.get("to", invalid_board_pos), invalid_board_pos)
+	var move_from_pos: Vector2 = BoardConfig.value_to_vector2(state_piece_move_animation.get("from", invalid_board_pos), invalid_board_pos)
 	var move_piece_color: int = int(state_piece_move_animation.get("piece_color", 0))
 	var captured_texture: Texture2D = state_piece_move_animation.get("captured_texture", null) as Texture2D
 	var capture_placeholder: Sprite2D = create_piece_move_capture_placeholder(move_to_pos, captured_texture)
@@ -208,7 +208,7 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 				break_callback = func() -> void:
 					match_board.get_piece_respawn_fragment_coordinator().play_capture_shatter_animation(
 						move_to_pos,
-						match_board.value_to_vector2(capture_shatter_animation.get("respawn_pos", invalid_board_pos), invalid_board_pos),
+						BoardConfig.value_to_vector2(capture_shatter_animation.get("respawn_pos", invalid_board_pos), invalid_board_pos),
 						captured_color,
 						str(capture_shatter_animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE)),
 						captured_texture,
@@ -252,7 +252,7 @@ func should_play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, visibl
 		return false
 	if !match_board.piece_move_animation_enabled or match_board.should_skip_visual_animations() or !match_board.is_inside_tree():
 		return false
-	if !match_board.is_valid_position(from_pos) or !match_board.is_valid_position(to_pos):
+	if !MoveRules.is_valid_position(from_pos) or !MoveRules.is_valid_position(to_pos):
 		return false
 	return from_pos != to_pos
 
@@ -321,7 +321,7 @@ func play_piece_move_animation(
 	match_board.finish_visual_process(match_board.VISUAL_PROCESS_PIECE_MOVE)
 
 func create_piece_move_capture_placeholder(board_pos: Vector2, texture_value: Texture2D) -> Sprite2D:
-	if match_board == null or texture_value == null or !match_board.is_valid_position(board_pos):
+	if match_board == null or texture_value == null or !MoveRules.is_valid_position(board_pos):
 		return null
 
 	var placeholder: Sprite2D = create_piece_effect_holder(board_pos, texture_value, "PieceMoveCaptureTarget")
@@ -446,7 +446,7 @@ func create_hidden_invisibility_animation_holder(piece_position: Vector2, start_
 	return create_piece_effect_holder(piece_position, start_texture, "HiddenInvisibilityPiece")
 
 func create_piece_effect_holder(piece_position: Vector2, texture_value: Texture2D, holder_name: String = "PieceEffect") -> Sprite2D:
-	if match_board == null or texture_value == null or !match_board.is_valid_position(piece_position):
+	if match_board == null or texture_value == null or !MoveRules.is_valid_position(piece_position):
 		return null
 	if match_board.piece_effects_node == null or !is_instance_valid(match_board.piece_effects_node):
 		match_board.create_piece_effects_node()
@@ -457,7 +457,7 @@ func create_piece_effect_holder(piece_position: Vector2, texture_value: Texture2
 func get_piece_shatter_animation_index_for_source(animations: Array, source_pos: Vector2) -> int:
 	for index in range(animations.size()):
 		var animation: Dictionary = animations[index]
-		var animation_source_pos: Vector2 = match_board.value_to_vector2(animation.get("source_pos", invalid_board_pos), invalid_board_pos)
+		var animation_source_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("source_pos", invalid_board_pos), invalid_board_pos)
 		if animation_source_pos != source_pos:
 			continue
 		return index

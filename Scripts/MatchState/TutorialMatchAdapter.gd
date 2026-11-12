@@ -88,11 +88,11 @@ func vector_allowed(keys: Array, candidate) -> bool:
 		return true
 	var allowed_values: Array = constraint_array(keys)
 
-	var candidate_pos: Vector2 = match_board.value_to_vector2(candidate, invalid_board_pos)
+	var candidate_pos: Vector2 = BoardConfig.value_to_vector2(candidate, invalid_board_pos)
 	if candidate_pos == invalid_board_pos:
 		return false
 	for value in allowed_values:
-		if match_board.value_to_vector2(value, invalid_board_pos) == candidate_pos:
+		if BoardConfig.value_to_vector2(value, invalid_board_pos) == candidate_pos:
 			return true
 	return false
 
@@ -169,7 +169,7 @@ func set_affixed_stamps(affixed_stamps: Array) -> void:
 			continue
 
 		var entry: Dictionary = entry_value
-		var piece_pos: Vector2 = match_board.value_to_vector2(entry.get("pos", invalid_board_pos), invalid_board_pos)
+		var piece_pos: Vector2 = BoardConfig.value_to_vector2(entry.get("pos", invalid_board_pos), invalid_board_pos)
 		if !match_board.piece_objects.has(piece_pos):
 			continue
 
@@ -186,7 +186,7 @@ func set_affixed_stamps(affixed_stamps: Array) -> void:
 func reset_turn_state() -> void:
 	for owner_color in [1, -1]:
 		match_board.affixed_stamp_this_turn[owner_color] = false
-		match_board.affixed_stamp_count_this_turn[match_board.get_player_id_for_color(owner_color)] = 0
+		match_board.affixed_stamp_count_this_turn[BoardConfig.get_player_id_for_color(owner_color)] = 0
 		match_board.moved_piece_this_turn[owner_color] = false
 		match_board.exchanged_stamp_this_turn[owner_color] = false
 		match_board.has_turned_page_this_turn[owner_color] = false

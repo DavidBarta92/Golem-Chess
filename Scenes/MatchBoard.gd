@@ -757,7 +757,7 @@ func is_end_turn_tutorial_allowed() -> bool:
 	return is_tutorial_action_allowed(TUTORIAL_ACTION_END_TURN)
 
 func should_show_first_turn_end_button() -> bool:
-	var player_id: int = get_player_id_for_color(get_current_turn_color())
+	var player_id: int = BoardConfig.get_player_id_for_color(get_current_turn_color())
 	if int(completed_turn_counts.get(player_id, 0)) == 0:
 		return true
 	return get_local_state_mutator().current_player_can_end_turn_due_to_frozen_piece()
@@ -765,7 +765,7 @@ func should_show_first_turn_end_button() -> bool:
 func can_end_first_turn() -> bool:
 	if !should_show_first_turn_end_button():
 		return false
-	var player_id: int = get_player_id_for_color(get_current_turn_color())
+	var player_id: int = BoardConfig.get_player_id_for_color(get_current_turn_color())
 	if int(completed_turn_counts.get(player_id, 0)) == 0:
 		return int(affixed_stamp_count_this_turn.get(player_id, 0)) >= 1
 	return get_local_state_mutator().current_player_can_end_turn_due_to_frozen_piece()
@@ -992,14 +992,11 @@ func get_own_color() -> int:
 		return 1
 	return 1 if side else -1
 
-func get_player_id_for_color(owner_color: int) -> int:
-	return BoardConfig.get_player_id_for_color(owner_color)
-
 func get_color_for_player_id(player_id: int) -> int:
 	return BoardConfig.get_color_for_player_id(player_id)
 
 func get_own_player_id() -> int:
-	return get_player_id_for_color(get_own_color())
+	return BoardConfig.get_player_id_for_color(get_own_color())
 
 func show_hover_stamp_description(stamp: Stamp) -> void:
 	if stamp == null:
@@ -1057,7 +1054,7 @@ func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_sta
 	return get_match_state_sync_controller().get_state_stamp_expiration_events(previous_snapshot, recent_stamp_expirations, recent_bomb_effects, piece_objects)
 
 func queue_piece_revert_animation(piece_position: Vector2, start_texture: Texture2D) -> void:
-	if start_texture == null or !is_valid_position(piece_position):
+	if start_texture == null or !MoveRules.is_valid_position(piece_position):
 		return
 
 	pending_piece_revert_animations.append({
@@ -1075,12 +1072,12 @@ func play_pending_piece_revert_animations() -> void:
 
 func play_piece_revert_animations(animations: Array[Dictionary]) -> void:
 	for animation: Dictionary in animations:
-		var board_pos: Vector2 = value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("position", INVALID_BOARD_POS), INVALID_BOARD_POS)
 		var start_texture: Texture2D = animation.get("start_texture", null) as Texture2D
 		play_piece_revert_animation(board_pos, start_texture)
 
 func play_piece_revert_animation(piece_position: Vector2, start_texture: Texture2D) -> void:
-	if should_skip_visual_animations() or start_texture == null or !is_valid_position(piece_position):
+	if should_skip_visual_animations() or start_texture == null or !MoveRules.is_valid_position(piece_position):
 		return
 
 	begin_visual_process(VISUAL_PROCESS_PIECE_REVERT)
@@ -1227,11 +1224,11 @@ func collect_bomb_warning_animations(recent_bomb_effects: Array, previous_snapsh
 
 func play_bomb_warning_animations(animations: Array[Dictionary]) -> void:
 	for animation: Dictionary in animations:
-		var target_pos: Vector2 = value_to_vector2(animation.get("target_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		var target_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("target_pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
 		play_bomb_warning_animation(target_pos)
 
 func play_bomb_warning_animation(target_pos: Vector2) -> void:
-	if !is_valid_position(target_pos):
+	if !MoveRules.is_valid_position(target_pos):
 		return
 	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
 		create_piece_effects_node()
@@ -1323,10 +1320,6 @@ func should_award_win_points(winner_color: int) -> bool:
 func show_result_message(winner_color: int):
 	get_game_result_controller().show_result_message(winner_color)
 
-func is_valid_position(pos : Vector2):
-	if pos.x >= 0 && pos.x < BOARD_SIZE && pos.y >= 0 && pos.y < BOARD_SIZE: return true
-	return false
-
 func is_empty(pos : Vector2):
 	if board[pos.x][pos.y] == 0: return true
 	return false
@@ -1384,9 +1377,6 @@ func get_board_screen_scale() -> float:
 	if camera == null:
 		return absf(global_scale.x)
 	return absf(camera.zoom.x) * absf(global_scale.x)
-
-func value_to_vector2(value, fallback: Vector2) -> Vector2:
-	return get_match_state_sync_controller().value_to_vector2(value, fallback)
 
 func update_board_markers():
 	get_board_marker_controller().update_markers()

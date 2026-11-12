@@ -43,7 +43,6 @@ var can_switch_action_provider: Callable
 var can_affix_action_provider: Callable
 var can_move_action_provider: Callable
 var current_turn_color_provider: Callable
-var player_id_for_color_provider: Callable
 var turn_timer_timeout_callback: Callable
 ## Off for a match that is not played against time at all (a puzzle): the
 ## clock stays out of sight.
@@ -126,7 +125,6 @@ func configure(config: Dictionary) -> void:
 	can_affix_action_provider = config.get("can_affix_action_provider", can_affix_action_provider)
 	can_move_action_provider = config.get("can_move_action_provider", can_move_action_provider)
 	current_turn_color_provider = config.get("current_turn_color_provider", current_turn_color_provider)
-	player_id_for_color_provider = config.get("player_id_for_color_provider", player_id_for_color_provider)
 	turn_timer_timeout_callback = config.get("turn_timer_timeout_callback", turn_timer_timeout_callback)
 	turn_changed_callback = config.get("turn_changed_callback", turn_changed_callback)
 	deck_visual_provider = config.get("deck_visual_provider", deck_visual_provider)
@@ -295,7 +293,7 @@ func announce_turn(turn_color: int) -> void:
 	if turn_color == get_own_color():
 		turn_banner.announce(tr("YOUR_TURN"))
 	else:
-		turn_banner.announce(tr("OPPONENT_TURN") % get_display_name_for_player(get_player_id_for_color(turn_color)))
+		turn_banner.announce(tr("OPPONENT_TURN") % get_display_name_for_player(BoardConfig.get_player_id_for_color(turn_color)))
 
 ## rating_change_text: an extra line under the result - the player's rating
 ## change after a rated match - or empty for none.
@@ -440,7 +438,7 @@ func update_turn_timer(delta: float) -> void:
 	# Only the player on the move loses time. The host does the same sum and
 	# its figures arrive with every state sync; this is here so the digits move
 	# smoothly between those.
-	var active_player_id: int = get_player_id_for_color(get_current_turn_color())
+	var active_player_id: int = BoardConfig.get_player_id_for_color(get_current_turn_color())
 	player_clock_seconds[active_player_id] = maxf(
 		float(player_clock_seconds.get(active_player_id, turn_timer_limit_seconds)) - maxf(delta, 0.0), 0.0)
 	update_turn_timer_label()
@@ -466,7 +464,7 @@ func _handle_turn_change() -> void:
 		turn_changed_callback.call(turn_color, had_previous)
 
 func update_turn_timer_label(animate: bool = true) -> void:
-	var own_player_id: int = get_player_id_for_color(get_own_color())
+	var own_player_id: int = BoardConfig.get_player_id_for_color(get_own_color())
 	_set_clock_digits(turn_timer_counter_key, own_player_id, animate)
 	_set_clock_digits(turn_timer_opponent_counter_key, 1 - own_player_id, animate)
 
@@ -498,7 +496,7 @@ func should_run_turn_timer() -> bool:
 	return should_show_turn_timer() and !is_game_over()
 
 func is_current_turn_human_controlled() -> bool:
-	var player_id: int = get_player_id_for_color(get_current_turn_color())
+	var player_id: int = BoardConfig.get_player_id_for_color(get_current_turn_color())
 	if GameConfig.is_singleplayer:
 		return GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN
 	return true
@@ -546,11 +544,6 @@ func is_tutorial_end_turn_allowed() -> bool:
 
 func get_current_turn_color() -> int:
 	return get_int(current_turn_color_provider, 1)
-
-func get_player_id_for_color(owner_color: int) -> int:
-	if player_id_for_color_provider.is_valid():
-		return int(player_id_for_color_provider.call(owner_color))
-	return 0
 
 func get_deck_visual(owner_color: int) -> StampVisual:
 	if deck_visual_provider.is_valid():

@@ -23,7 +23,6 @@ var can_control_current_turn_provider: Callable
 var controllable_color_provider: Callable
 var is_mouse_out_provider: Callable
 var mouse_board_position_provider: Callable
-var is_valid_position_callback: Callable
 var is_piece_owned_by_callback: Callable
 var can_affix_stamp_to_piece_callback: Callable
 var can_exchange_stamp_locally_callback: Callable
@@ -64,7 +63,6 @@ func configure(config: Dictionary) -> void:
 	controllable_color_provider = config.get("controllable_color_provider", controllable_color_provider)
 	is_mouse_out_provider = config.get("is_mouse_out_provider", is_mouse_out_provider)
 	mouse_board_position_provider = config.get("mouse_board_position_provider", mouse_board_position_provider)
-	is_valid_position_callback = config.get("is_valid_position_callback", is_valid_position_callback)
 	is_piece_owned_by_callback = config.get("is_piece_owned_by_callback", is_piece_owned_by_callback)
 	can_affix_stamp_to_piece_callback = config.get("can_affix_stamp_to_piece_callback", can_affix_stamp_to_piece_callback)
 	can_exchange_stamp_locally_callback = config.get("can_exchange_stamp_locally_callback", can_exchange_stamp_locally_callback)
@@ -178,7 +176,7 @@ func get_stamp_drop_piece_position(stamp_visual: StampVisual) -> Vector2:
 
 	var board_pos: Vector2 = get_vector2(mouse_board_position_provider, INVALID_BOARD_POS)
 	var stamp_name: String = stamp_visual.stamp.stamp_name if stamp_visual.stamp else ""
-	if is_valid_position(board_pos) and is_piece_owned_by(board_pos, stamp_visual.owner_color) and can_affix_stamp_to_piece(board_pos, stamp_name, stamp_visual.owner_color):
+	if MoveRules.is_valid_position(board_pos) and is_piece_owned_by(board_pos, stamp_visual.owner_color) and can_affix_stamp_to_piece(board_pos, stamp_name, stamp_visual.owner_color):
 		return board_pos
 
 	return INVALID_BOARD_POS
@@ -255,7 +253,7 @@ func update_stamp_affix_target_feedback(target_pos: Vector2) -> void:
 		return
 
 	clear_stamp_affix_target_feedback()
-	if target_pos == INVALID_BOARD_POS or !is_valid_position(target_pos):
+	if target_pos == INVALID_BOARD_POS or !MoveRules.is_valid_position(target_pos):
 		return
 
 	stamp_affix_target_position = target_pos
@@ -429,9 +427,6 @@ func remove_stamp_from_hand_index(owner_color: int, hand_index: int, should_draw
 func complete_stamp_exchange(owner_color: int, stamp_name: String, hand_index: int, should_record_name: bool, source_global_position = null) -> void:
 	if complete_stamp_exchange_callback.is_valid():
 		complete_stamp_exchange_callback.call(owner_color, stamp_name, hand_index, should_record_name, source_global_position)
-
-func is_valid_position(board_pos: Vector2) -> bool:
-	return bool(is_valid_position_callback.call(board_pos)) if is_valid_position_callback.is_valid() else false
 
 func is_piece_owned_by(board_pos: Vector2, owner_color: int) -> bool:
 	return bool(is_piece_owned_by_callback.call(board_pos, owner_color)) if is_piece_owned_by_callback.is_valid() else false

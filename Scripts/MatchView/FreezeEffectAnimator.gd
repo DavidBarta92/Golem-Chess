@@ -26,8 +26,6 @@ var should_skip_visual_animations_provider: Callable
 var pending_affix_positions_provider: Callable
 var piece_objects_provider: Callable
 var board_effects_provider: Callable
-var player_id_for_color_callback: Callable
-var is_valid_position_callback: Callable
 
 var piece_effect_light_receive_mask: int = 0
 
@@ -46,8 +44,6 @@ func configure(config: Dictionary) -> void:
 	pending_affix_positions_provider = config.get("pending_affix_positions_provider", pending_affix_positions_provider)
 	piece_objects_provider = config.get("piece_objects_provider", piece_objects_provider)
 	board_effects_provider = config.get("board_effects_provider", board_effects_provider)
-	player_id_for_color_callback = config.get("player_id_for_color_callback", player_id_for_color_callback)
-	is_valid_position_callback = config.get("is_valid_position_callback", is_valid_position_callback)
 
 	piece_effect_light_receive_mask = int(config.get("piece_effect_light_receive_mask", piece_effect_light_receive_mask))
 
@@ -100,7 +96,7 @@ func create_piece_overlay(holder: Sprite2D, overlay_name: String, ice_material: 
 func create_square_overlay(board_pos: Vector2, ice_material: ShaderMaterial, overlay_name: String) -> Polygon2D:
 	if board_markers_node == null or !is_instance_valid(board_markers_node):
 		return null
-	if ice_material == null or !is_valid_position(board_pos) or geometry == null:
+	if ice_material == null or !MoveRules.is_valid_position(board_pos) or geometry == null:
 		return null
 
 	var points: PackedVector2Array = geometry.get_cell_polygon_local(board_pos, 0.0)
@@ -206,7 +202,7 @@ func get_visual_signature(board_pos: Vector2) -> String:
 	if piece == null:
 		return ""
 
-	var player_id: int = get_player_id_for_color(piece.color)
+	var player_id: int = BoardConfig.get_player_id_for_color(piece.color)
 	var is_frozen_square: bool = StampEffectResolver.is_square_frozen(get_board_effects(), board_pos, player_id)
 	# Locked golems carry the flag too, for as long as they stay locked, but they
 	# are not frozen: they lie as rubble, or at half opacity without the shatter.
@@ -266,14 +262,6 @@ func get_board_effects() -> Array:
 		if value is Array:
 			return value
 	return []
-
-func get_player_id_for_color(piece_color: int) -> int:
-	if player_id_for_color_callback.is_valid():
-		return int(player_id_for_color_callback.call(piece_color))
-	return 0
-
-func is_valid_position(board_pos: Vector2) -> bool:
-	return bool(is_valid_position_callback.call(board_pos)) if is_valid_position_callback.is_valid() else false
 
 func can_create_tween() -> bool:
 	return tween_owner != null and is_instance_valid(tween_owner) and tween_owner.is_inside_tree()

@@ -249,7 +249,7 @@ func _on_game_finished(winner_color: int) -> void:
 	_fail(tr("PUZZLE_FAILED_OPPONENT_WON") if _opponent_reached_base() else tr("PUZZLE_FAILED_STUCK"))
 
 func _opponent_reached_base() -> bool:
-	var base: Vector2 = board.get_local_state_mutator().get_base_field_for_player(board.get_player_id_for_color(PLAYER_COLOR))
+	var base: Vector2 = board.get_local_state_mutator().get_base_field_for_player(BoardConfig.get_player_id_for_color(PLAYER_COLOR))
 	var piece: Piece = board.piece_objects.get(base, null) as Piece
 	return piece != null and piece.color == OPPONENT_COLOR and piece.has_crown
 
@@ -366,14 +366,14 @@ func _play_opponent_affix(script: PuzzleOpponentTurn) -> void:
 	await get_tree().create_timer(opponent_between_stamps_seconds).timeout
 
 func _opponent_moves_from(from_pos: Vector2) -> Array[Vector2]:
-	var player_id: int = board.get_player_id_for_color(OPPONENT_COLOR)
+	var player_id: int = BoardConfig.get_player_id_for_color(OPPONENT_COLOR)
 	return MoveRules.get_piece_moves_for_player(board.piece_objects, from_pos, player_id, BoardConfig.BOARD_SIZE, board.current_board_effects)
 
 ## The opponent's best chance: a crowned golem onto the player's base, or else
 ## the most valuable capture - a crowned golem, then one a goal is about, then
 ## one with moves on its stamp. Empty when it has neither.
 func _find_opponent_chance() -> Dictionary:
-	var player_base: Vector2 = board.get_local_state_mutator().get_base_field_for_player(board.get_player_id_for_color(PLAYER_COLOR))
+	var player_base: Vector2 = board.get_local_state_mutator().get_base_field_for_player(BoardConfig.get_player_id_for_color(PLAYER_COLOR))
 	var goal_pieces: Array = []
 	for goal in puzzle.goals:
 		if goal != null and !goal.piece_square.is_empty():

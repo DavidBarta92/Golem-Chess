@@ -339,7 +339,7 @@ func _is_human_color(board: Node, color: int) -> bool:
 	if board.get("side") != null:
 		return color == int(board.call("get_own_color"))
 	if GameConfig.is_singleplayer:
-		return GameConfig.get_player_controller(int(board.call("get_player_id_for_color", color))) == GameConfig.CONTROLLER_HUMAN
+		return GameConfig.get_player_controller(BoardConfig.get_player_id_for_color(color)) == GameConfig.CONTROLLER_HUMAN
 	return true
 
 func _on_scene_changed() -> void:

@@ -150,7 +150,7 @@ func update_selected_piece_glow() -> void:
 		if holder == null:
 			continue
 
-		var board_pos: Vector2 = match_board.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
 		apply_selected_piece_glow(holder, board_pos)
 
 func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool = false) -> void:
@@ -204,7 +204,7 @@ func update_piece_hover_dim() -> void:
 		if holder == null:
 			continue
 
-		var board_pos: Vector2 = match_board.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(holder.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
 		apply_piece_hover_dim(holder, board_pos, true)
 
 func apply_piece_exhausted_material(holder: Sprite2D, board_pos: Vector2) -> void:

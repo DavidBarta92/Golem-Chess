@@ -79,9 +79,6 @@ var winner_player: int = -1
 var win_condition: String = ""
 var match_logger: MatchCsvLogger = null
 
-func _init():
-	pass
-
 func get_piece(pos: Vector2) -> Piece:
 	return pieces.get(pos)
 

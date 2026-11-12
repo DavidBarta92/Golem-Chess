@@ -106,7 +106,7 @@ func resolve_local_move_capture_respawn(move_context: Dictionary) -> void:
 	var pending_respawn_arrivals: Array = move_context.get("pending_respawn_arrivals", [])
 	if captured_piece != null:
 		var shatter_respawn_info: Dictionary = match_board.get_local_state_mutator().resolve_capture_respawn(captured_piece)
-		var shatter_respawn_pos: Vector2 = match_board.value_to_vector2(shatter_respawn_info.get("respawn_pos", invalid_board_pos), invalid_board_pos)
+		var shatter_respawn_pos: Vector2 = BoardConfig.value_to_vector2(shatter_respawn_info.get("respawn_pos", invalid_board_pos), invalid_board_pos)
 		var shatter_fragment_group: String = str(shatter_respawn_info.get("fragment_group", fragment_group_none))
 		move_context["should_play_capture_shatter"] = true
 		move_context["shatter_respawn_pos"] = shatter_respawn_pos

@@ -754,10 +754,10 @@ func _on_piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int) -> vo
 
 	if !is_current_completion("piece_moved"):
 		return
-	var expected_from: Vector2 = value_to_vector2(step.get("expected_from", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	var expected_from: Vector2 = BoardConfig.value_to_vector2(step.get("expected_from", INVALID_BOARD_POS), INVALID_BOARD_POS)
 	if expected_from != INVALID_BOARD_POS and from_pos != expected_from:
 		return
-	var expected_to: Vector2 = value_to_vector2(step.get("expected_to", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	var expected_to: Vector2 = BoardConfig.value_to_vector2(step.get("expected_to", INVALID_BOARD_POS), INVALID_BOARD_POS)
 	if expected_to != INVALID_BOARD_POS and to_pos != expected_to:
 		if bool(step.get("retry_on_miss", false)):
 			pending_turn_outcome = "retry"
@@ -831,7 +831,7 @@ func punish_unsafe_move() -> bool:
 ## and a pattern changed later can quietly take the last safe square away -
 ## which leaves the step impossible. This says so in the output instead.
 func warn_if_no_safe_move() -> void:
-	var player_id: int = board.get_player_id_for_color(PLAYER_COLOR)
+	var player_id: int = BoardConfig.get_player_id_for_color(PLAYER_COLOR)
 	for position_value in board.piece_objects:
 		var piece: Piece = board.piece_objects[position_value] as Piece
 		if piece == null or piece.color != PLAYER_COLOR:
@@ -847,7 +847,7 @@ func is_square_capturable_after_move(from_pos: Vector2, target: Vector2) -> bool
 	var after: Dictionary = board.piece_objects.duplicate()
 	after[target] = after[from_pos]
 	after.erase(from_pos)
-	var opponent_id: int = board.get_player_id_for_color(OPPONENT_COLOR)
+	var opponent_id: int = BoardConfig.get_player_id_for_color(OPPONENT_COLOR)
 	for position_value in after:
 		var piece: Piece = after[position_value] as Piece
 		if piece == null or piece.color != OPPONENT_COLOR:
@@ -859,7 +859,7 @@ func is_square_capturable_after_move(from_pos: Vector2, target: Vector2) -> bool
 func find_opponent_capture(target: Vector2) -> Dictionary:
 	if !board.piece_objects.has(target):
 		return {}
-	var player_id: int = board.get_player_id_for_color(OPPONENT_COLOR)
+	var player_id: int = BoardConfig.get_player_id_for_color(OPPONENT_COLOR)
 	for position_value in board.piece_objects:
 		var piece: Piece = board.piece_objects[position_value] as Piece
 		if piece == null or piece.color != OPPONENT_COLOR:
@@ -935,7 +935,7 @@ func play_opponent_turn(script: Dictionary, token: int) -> void:
 		var entry: Dictionary = entry_value
 		var stamp_name: String = str(entry.get("stamp_name", ""))
 		var hand_index: int = board.get_stamp_names_from_hand(board.get_stamp_hand(OPPONENT_COLOR)).find(stamp_name)
-		var piece_pos: Vector2 = value_to_vector2(entry.get("pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
+		var piece_pos: Vector2 = BoardConfig.value_to_vector2(entry.get("pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
 		if hand_index < 0 or piece_pos == INVALID_BOARD_POS:
 			push_warning("Tutorial opponent cannot play %s at %s." % [stamp_name, piece_pos])
 			continue
@@ -960,9 +960,9 @@ func play_opponent_turn(script: Dictionary, token: int) -> void:
 ## The move the script asks for if Grandpa can make it, otherwise any move of
 ## his that captures nothing; empty when he has none.
 func choose_opponent_move(wanted: Dictionary) -> Dictionary:
-	var player_id: int = board.get_player_id_for_color(OPPONENT_COLOR)
-	var from_pos: Vector2 = value_to_vector2(wanted.get("from", INVALID_BOARD_POS), INVALID_BOARD_POS)
-	var to_pos: Vector2 = value_to_vector2(wanted.get("to", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	var player_id: int = BoardConfig.get_player_id_for_color(OPPONENT_COLOR)
+	var from_pos: Vector2 = BoardConfig.value_to_vector2(wanted.get("from", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	var to_pos: Vector2 = BoardConfig.value_to_vector2(wanted.get("to", INVALID_BOARD_POS), INVALID_BOARD_POS)
 	if from_pos != INVALID_BOARD_POS:
 		var targets: Array[Vector2] = MoveRules.get_piece_moves_for_player(board.piece_objects, from_pos, player_id, BoardConfig.BOARD_SIZE, board.current_board_effects)
 		if targets.has(to_pos):
@@ -1014,15 +1014,3 @@ func is_current_completion(completion_name: String) -> bool:
 
 func should_show_continue_for_step(step: Dictionary) -> bool:
 	return str(step.get("completion", "")) == "dialogue"
-
-func value_to_vector2(value, fallback: Vector2) -> Vector2:
-	if value is Vector2:
-		return value
-	if value is Vector2i:
-		var vector_value: Vector2i = value
-		return Vector2(vector_value.x, vector_value.y)
-	if value is Array:
-		var array_value: Array = value
-		if array_value.size() >= 2:
-			return Vector2(float(array_value[0]), float(array_value[1]))
-	return fallback

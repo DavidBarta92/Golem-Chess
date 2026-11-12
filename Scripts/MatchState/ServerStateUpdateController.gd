@@ -182,7 +182,7 @@ func update_from_server_state(
 	var state_duration_change_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().collect_state_duration_change_animations(
 		previous_piece_visual_state,
 		match_board.piece_objects,
-		match_board.value_to_vector2(state_piece_move_animation.get("to", match_board.INVALID_BOARD_POS), match_board.INVALID_BOARD_POS),
+		BoardConfig.value_to_vector2(state_piece_move_animation.get("to", match_board.INVALID_BOARD_POS), match_board.INVALID_BOARD_POS),
 		match_board.has_received_server_state,
 		match_board.should_skip_visual_animations()
 	)
@@ -191,8 +191,8 @@ func update_from_server_state(
 	match_board.hidden_stamp_counts = current_hidden_stamp_counts
 	var animated_affix_positions: Dictionary = match_board.get_server_state_visual_update_controller().get_affix_animation_positions(state_affix_animations)
 	for position_value in animated_affix_positions.keys():
-		var animated_affix_pos: Vector2 = match_board.value_to_vector2(position_value, match_board.INVALID_BOARD_POS)
-		if match_board.is_valid_position(animated_affix_pos):
+		var animated_affix_pos: Vector2 = BoardConfig.value_to_vector2(position_value, match_board.INVALID_BOARD_POS)
+		if MoveRules.is_valid_position(animated_affix_pos):
 			match_board.begin_stamp_affix_process(animated_affix_pos)
 	match_board.get_piece_respawn_fragment_coordinator().prepare_pending_edge_respawn_arrival_reveals(pending_respawn_arrival_animations)
 

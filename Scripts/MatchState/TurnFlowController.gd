@@ -106,12 +106,12 @@ func can_move_action_now() -> bool:
 
 func has_tutorial_allowed_piece_move(owner_color: int) -> bool:
 	for position_value in match_board.piece_objects:
-		var piece_pos: Vector2 = match_board.value_to_vector2(position_value, invalid_board_pos)
+		var piece_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
 		var piece: Piece = match_board.piece_objects[position_value] as Piece
 		if piece == null or piece.color != owner_color or !piece.can_move():
 			continue
 
-		var player_id: int = match_board.get_player_id_for_color(owner_color)
+		var player_id: int = BoardConfig.get_player_id_for_color(owner_color)
 		var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(match_board.piece_objects, piece_pos, player_id, board_size, match_board.current_board_effects)
 		for target_pos: Vector2 in valid_moves:
 			if match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
@@ -202,7 +202,7 @@ func request_end_turn(emit_tutorial_rejection: bool, expected_turn_color: int = 
 func end_current_turn_locally() -> void:
 	match_board.local_auto_end_turn_pending = false
 	var ending_color: int = match_board.get_current_turn_color()
-	var ending_player_id: int = match_board.get_player_id_for_color(ending_color)
+	var ending_player_id: int = BoardConfig.get_player_id_for_color(ending_color)
 	match_board.get_stamp_hand_state_controller().clear_exchanged_stamp_names_this_turn(ending_color)
 	match_board.get_local_state_mutator().tick_board_effects()
 	match_board.get_local_state_mutator().tick_piece_protection_windows()

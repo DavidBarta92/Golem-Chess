@@ -13,12 +13,12 @@ class_name LetterOpening
 signal closed
 signal solve_requested(puzzle: PuzzleDefinition)
 
-const PackController = preload("res://Scenes/CollectionPackController.gd")
+const PackOverlay = preload("res://Scripts/PackOpening/PackOpeningOverlay.gd")
 const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 ## The dark behind a pack being opened, and the layer it opens on, so a letter
 ## covers the screen the same way.
-const DIM_COLOR: Color = PackController.PACK_OVERLAY_DIM
-const LAYER: int = PackController.PACK_OVERLAY_LAYER
+const DIM_COLOR: Color = PackOverlay.PACK_OVERLAY_DIM
+const LAYER: int = PackOverlay.PACK_OVERLAY_LAYER
 ## The open envelope: the mock-up's 540 at 1440, on the 1280 base.
 const OPEN_WIDTH: float = 480.0
 ## The layout is the mock-up's 1280 x 720 frame, centred in the window.

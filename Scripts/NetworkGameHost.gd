@@ -287,7 +287,7 @@ func handle_move_piece(action: Dictionary):
 
 	var captured_piece = game_state.get_piece(to_pos)
 	var captured_seeker: bool = is_seeker_piece(captured_piece)
-	var captured_piece_owner_player_id: int = StampEffectResolver.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
+	var captured_piece_owner_player_id: int = BoardConfig.get_player_id_for_color(captured_piece.color) if captured_piece != null else -1
 	var move_log_context: Dictionary = create_move_log_context(player_id, from_pos, to_pos, piece, captured_piece)
 	var moving_piece_visible_to_enemy: bool = !StampEffectResolver.piece_has_affixed_effect(piece, StampEffect.TYPE_INVISIBLE_TO_ENEMY)
 
@@ -904,7 +904,7 @@ func append_hidden_stamp_data(hidden_stamps: Array, piece: Piece) -> void:
 	hidden_stamps.append({
 		"stamp_name": piece.affixed_stamp.stamp_name,
 		"turns_remaining": piece.turns_remaining,
-		"owner_player_id": StampEffectResolver.get_player_id_for_color(piece.color),
+		"owner_player_id": BoardConfig.get_player_id_for_color(piece.color),
 	})
 
 func get_viewer_player_id_for_peer(peer_id: int) -> int:

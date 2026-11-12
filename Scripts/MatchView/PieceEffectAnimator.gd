@@ -7,7 +7,6 @@ var piece_effects_node: Node
 var tween_owner: Node
 var texture_holder_scene: PackedScene
 var cell_width: int = BoardConfig.CELL_WIDTH
-var board_size: int = BoardConfig.BOARD_SIZE
 var texture_filter_value = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 var board_light_receive_mask: int = 1
 var piece_light_receive_mask: int = 2
@@ -115,7 +114,6 @@ func configure(config: Dictionary) -> void:
 	tween_owner = config.get("tween_owner", tween_owner)
 	texture_holder_scene = config.get("texture_holder_scene", texture_holder_scene)
 	cell_width = int(config.get("cell_width", cell_width))
-	board_size = int(config.get("board_size", board_size))
 	texture_filter_value = config.get("texture_filter", texture_filter_value)
 	board_light_receive_mask = int(config.get("board_light_receive_mask", board_light_receive_mask))
 	piece_light_receive_mask = int(config.get("piece_light_receive_mask", piece_light_receive_mask))
@@ -214,7 +212,7 @@ func configure(config: Dictionary) -> void:
 	sprite_bounds_provider = config.get("sprite_bounds_provider", sprite_bounds_provider)
 
 func create_effect_holder(piece_position: Vector2, texture_value: Texture2D, holder_name: String = "PieceEffect") -> Sprite2D:
-	if texture_value == null or !_is_valid_position(piece_position) or !has_effect_parent():
+	if texture_value == null or !MoveRules.is_valid_position(piece_position) or !has_effect_parent():
 		return null
 
 	var holder: Sprite2D = null
@@ -582,7 +580,7 @@ func begin_effect_occlusion_dimming(effect_holder: Sprite2D, board_pos: Vector2)
 
 func get_effect_occluding_holders(effect_holder: Sprite2D, board_pos: Vector2) -> Array[Sprite2D]:
 	var occluding_holders: Array[Sprite2D] = []
-	if effect_holder == null or !is_instance_valid(effect_holder) or pieces_node == null or !_is_valid_position(board_pos):
+	if effect_holder == null or !is_instance_valid(effect_holder) or pieces_node == null or !MoveRules.is_valid_position(board_pos):
 		return occluding_holders
 
 	var effect_bounds: Rect2 = get_sprite_texture_bounds_local(effect_holder)
@@ -599,7 +597,7 @@ func get_effect_occluding_holders(effect_holder: Sprite2D, board_pos: Vector2) -
 			continue
 
 		var holder_pos: Vector2 = get_holder_board_pos(holder)
-		if !_is_valid_position(holder_pos) or holder_pos == board_pos:
+		if !MoveRules.is_valid_position(holder_pos) or holder_pos == board_pos:
 			continue
 		if get_depth_z_index(holder_pos) <= effect_depth:
 			continue
@@ -670,7 +668,7 @@ func apply_morph_overlay_target_visual(morph_overlay: Sprite2D, holder: Sprite2D
 
 	morph_overlay.texture = target_texture
 	var board_pos: Vector2 = get_holder_board_pos(holder)
-	if !_is_valid_position(board_pos):
+	if !MoveRules.is_valid_position(board_pos):
 		return
 
 	var target_transform: Dictionary = get_piece_visual_transform(target_texture, board_pos)
@@ -1004,6 +1002,3 @@ func create_animation_tween() -> Tween:
 
 func is_tween_owner_inside_tree() -> bool:
 	return tween_owner != null and is_instance_valid(tween_owner) and tween_owner.is_inside_tree()
-
-func _is_valid_position(pos: Vector2) -> bool:
-	return pos.x >= 0 and pos.x < board_size and pos.y >= 0 and pos.y < board_size

@@ -59,7 +59,7 @@ func configure(config: Dictionary) -> void:
 func play(board_pos: Vector2, old_duration: int, new_duration: int) -> void:
 	if match_board == null or canvas_layer == null or !is_instance_valid(canvas_layer):
 		return
-	if !match_board.is_valid_position(board_pos):
+	if !MoveRules.is_valid_position(board_pos):
 		return
 
 	var screen_position: Vector2 = match_board.get_board_position_screen_position(board_pos)

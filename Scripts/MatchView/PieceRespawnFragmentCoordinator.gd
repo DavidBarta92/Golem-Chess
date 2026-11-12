@@ -9,7 +9,7 @@ func configure(config: Dictionary) -> void:
 
 func prepare_piece_shatter_respawn_reveals(animations: Array[Dictionary]) -> void:
 	for animation: Dictionary in animations:
-		var respawn_pos: Vector2 = match_board.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
+		var respawn_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
 		var fragment_group: String = str(animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
 		begin_piece_shatter_respawn_reveal(respawn_pos, fragment_group)
 
@@ -18,7 +18,7 @@ func prepare_pending_edge_respawn_arrival_reveals(animations: Array) -> void:
 		if !(animation_value is Dictionary):
 			continue
 		var animation: Dictionary = animation_value
-		var respawn_pos: Vector2 = match_board.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
+		var respawn_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
 		var fragment_group: String = str(animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM))
 		begin_piece_shatter_respawn_reveal(respawn_pos, fragment_group)
 
@@ -32,7 +32,7 @@ func should_hide_piece_for_shatter_respawn(board_pos: Vector2) -> bool:
 	return is_piece_shatter_respawn_reveal_pending(board_pos) or has_piece_shatter_respawn_fragment_markers(board_pos)
 
 func add_piece_shatter_respawn_fragment_marker(respawn_pos: Vector2, fragment: Polygon2D) -> void:
-	if !match_board.is_valid_position(respawn_pos) or fragment == null or !is_instance_valid(fragment):
+	if !MoveRules.is_valid_position(respawn_pos) or fragment == null or !is_instance_valid(fragment):
 		return
 
 	var markers: Array = []
@@ -72,7 +72,7 @@ func get_piece_shatter_return_fragment_count(fragment_group: String) -> int:
 	return mini(get_piece_shatter_fragment_cut_indices(fragment_group).size(), maxi(0, match_board.piece_shatter_returning_debris_count))
 
 func begin_piece_shatter_respawn_reveal(respawn_pos: Vector2, fragment_group: String) -> int:
-	if !match_board.is_valid_position(respawn_pos):
+	if !MoveRules.is_valid_position(respawn_pos):
 		return 0
 
 	var return_count: int = get_piece_shatter_return_fragment_count(fragment_group)
@@ -126,7 +126,7 @@ func finish_piece_shatter_respawn_fragment(respawn_pos: Vector2) -> void:
 	reveal_piece_shatter_respawn_piece(respawn_pos)
 
 func refresh_piece_shatter_respawn_piece_visibility(respawn_pos: Vector2) -> void:
-	if !match_board.is_valid_position(respawn_pos):
+	if !MoveRules.is_valid_position(respawn_pos):
 		return
 	var holder: Sprite2D = match_board.get_piece_holder_at(respawn_pos)
 	if holder != null:
@@ -135,7 +135,7 @@ func refresh_piece_shatter_respawn_piece_visibility(respawn_pos: Vector2) -> voi
 	match_board.display_board()
 
 func reveal_piece_shatter_respawn_piece(respawn_pos: Vector2) -> void:
-	if !match_board.is_valid_position(respawn_pos):
+	if !MoveRules.is_valid_position(respawn_pos):
 		return
 	var holder: Sprite2D = match_board.get_piece_holder_at(respawn_pos)
 	if holder != null:
@@ -145,8 +145,8 @@ func reveal_piece_shatter_respawn_piece(respawn_pos: Vector2) -> void:
 
 func play_piece_shatter_animations(animations: Array[Dictionary]) -> void:
 	for animation: Dictionary in animations:
-		var source_pos: Vector2 = match_board.value_to_vector2(animation.get("source_pos", invalid_board_pos), invalid_board_pos)
-		var respawn_pos: Vector2 = match_board.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
+		var source_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("source_pos", invalid_board_pos), invalid_board_pos)
+		var respawn_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
 		var piece_color: int = int(animation.get("piece_color", 0))
 		var fragment_group: String = str(animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
 		play_piece_shatter_animation(source_pos, respawn_pos, piece_color, fragment_group)
@@ -168,7 +168,7 @@ func shatter_piece(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, 
 		return
 	if piece_color == 0:
 		return
-	if !match_board.is_valid_position(source_pos):
+	if !MoveRules.is_valid_position(source_pos):
 		return
 	if match_board.piece_effects_node == null or !is_instance_valid(match_board.piece_effects_node):
 		match_board.create_piece_effects_node()
@@ -187,7 +187,7 @@ func shatter_piece(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, 
 	var fragment_polygons: Array[PackedVector2Array] = get_piece_shatter_fragment_polygons(resolved_fragment_group, golem_texture)
 	var returns_to_pending_edge: bool = resolved_fragment_group == match_board.PIECE_SHATTER_FRAGMENT_GROUP_PENDING
 	var return_count: int = get_piece_shatter_return_fragment_count(resolved_fragment_group) if returns_to_pending_edge else begin_piece_shatter_respawn_reveal(respawn_pos, resolved_fragment_group)
-	var can_return_fragments: bool = (match_board.is_valid_position(respawn_pos) or returns_to_pending_edge) and !fragment_polygons.is_empty() and return_count > 0
+	var can_return_fragments: bool = (MoveRules.is_valid_position(respawn_pos) or returns_to_pending_edge) and !fragment_polygons.is_empty() and return_count > 0
 	var debris_count: int = maxi(0, match_board.piece_shatter_debris_count)
 	if debris_count <= 0 and !can_return_fragments:
 		return
@@ -201,7 +201,7 @@ func shatter_piece(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, 
 		play_piece_shatter_return_fragments(source_pos, respawn_pos, golem_texture, fragment_polygons, resolved_fragment_group, blow_direction)
 
 func play_capture_impact_effects(board_pos: Vector2, sparkle_color: Color = Color.TRANSPARENT) -> void:
-	if !match_board.is_valid_position(board_pos):
+	if !MoveRules.is_valid_position(board_pos):
 		return
 	if match_board.piece_effects_node == null or !is_instance_valid(match_board.piece_effects_node):
 		match_board.create_piece_effects_node()
@@ -276,17 +276,17 @@ func take_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Polyg
 	return markers
 
 func get_pending_edge_respawn_key(piece_color: int) -> int:
-	return match_board.get_player_id_for_color(piece_color)
+	return BoardConfig.get_player_id_for_color(piece_color)
 
 func play_pending_edge_respawn_arrival_animations(animations: Array) -> void:
 	for animation_value in animations:
 		if !(animation_value is Dictionary):
 			continue
 		var animation: Dictionary = animation_value
-		var respawn_pos: Vector2 = match_board.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
+		var respawn_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
 		var piece_color: int = int(animation.get("piece_color", 0))
 		var fragment_group: String = str(animation.get("fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM))
-		if !match_board.is_valid_position(respawn_pos) or piece_color == 0:
+		if !MoveRules.is_valid_position(respawn_pos) or piece_color == 0:
 			continue
 
 		var fragments: Array[Polygon2D] = take_pending_edge_respawn_fragment_markers(piece_color)
@@ -317,7 +317,7 @@ func create_pending_edge_respawn_fragment_markers(piece_color: int) -> Array[Pol
 	return match_board.get_piece_shatter_animator().create_pending_edge_fragment_markers(piece_color, golem_texture, fragment_polygons)
 
 func is_piece_shatter_route_cell_blocked(board_pos: Vector2, source_pos: Vector2, respawn_pos: Vector2) -> bool:
-	if !match_board.is_valid_position(board_pos):
+	if !MoveRules.is_valid_position(board_pos):
 		return true
 	if board_pos == source_pos or board_pos == respawn_pos:
 		return false

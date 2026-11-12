@@ -194,7 +194,7 @@ way the player's turns can go, and played through in the game.
   envelope's size, where its stamp sits, the die's margins, the cut's
   tolerance, the reveal's timings)
 - the dark behind an open letter is the pack opening's
-  (`CollectionPackController.PACK_OVERLAY_DIM`), on the same layer
+  (`PackOpeningOverlay.PACK_OVERLAY_DIM`), on the same layer
 - the opponent's pace: the exports on `PuzzleController` in `PuzzleMatch.tscn`
 
 All three scenes carry the paper texture overlay (`PaperTextureLayer`, layer

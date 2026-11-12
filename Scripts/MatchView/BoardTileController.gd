@@ -198,8 +198,8 @@ func update_board_special_tiles() -> void:
 	var played_invalid_effect_sound: bool = false
 
 	for position_value in previous_types.keys():
-		var board_pos: Vector2 = match_board.value_to_vector2(position_value, invalid_board_pos)
-		if !match_board.is_valid_position(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+		if !MoveRules.is_valid_position(board_pos):
 			continue
 
 		var previous_type: String = str(previous_types[position_value])
@@ -221,8 +221,8 @@ func update_board_special_tiles() -> void:
 		match_board.board_special_tile_types.erase(board_pos)
 
 	for position_value in target_tiles.keys():
-		var board_pos: Vector2 = match_board.value_to_vector2(position_value, invalid_board_pos)
-		if !match_board.is_valid_position(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+		if !MoveRules.is_valid_position(board_pos):
 			continue
 
 		var target_type: String = str(target_tiles[position_value])
@@ -259,7 +259,7 @@ func get_board_special_tile_targets() -> Dictionary:
 	var targets: Dictionary = {}
 	for player_id in [0, 1]:
 		var base_pos: Vector2 = match_board.current_player_base_fields.get(player_id, BoardConfig.get_base_field_for_player_id(player_id))
-		if !match_board.is_valid_position(base_pos):
+		if !MoveRules.is_valid_position(base_pos):
 			continue
 		set_board_special_tile_target(
 			targets,
@@ -280,8 +280,8 @@ func get_board_special_tile_targets() -> Dictionary:
 
 		var squares: Array = effect.get("squares", [])
 		for square_value in squares:
-			var square_pos: Vector2 = match_board.value_to_vector2(square_value, invalid_board_pos)
-			if match_board.is_valid_position(square_pos):
+			var square_pos: Vector2 = BoardConfig.value_to_vector2(square_value, invalid_board_pos)
+			if MoveRules.is_valid_position(square_pos):
 				set_board_special_tile_target(targets, square_pos, tile_type)
 
 	return targets
@@ -322,9 +322,9 @@ func animate_board_tile_out(tile: Polygon2D, animate_change: bool) -> void:
 		tile.queue_free()
 		return
 
-	var board_pos: Vector2 = match_board.value_to_vector2(tile.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
+	var board_pos: Vector2 = BoardConfig.value_to_vector2(tile.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
 	var sink_offset: Vector2 = geometry.get_tile_sink_offset()
-	if match_board.is_valid_position(board_pos):
+	if MoveRules.is_valid_position(board_pos):
 		animate_board_tile_depth_wall(board_pos, sink_offset, tile_swap_duration)
 		create_temporary_board_tile_cover(geometry.get_tile_near_neighbor_position(board_pos), tile_swap_duration)
 		create_temporary_board_tile_edge_lip(board_pos, geometry.get_tile_near_edge_indices(), tile_swap_duration)
@@ -403,7 +403,7 @@ func set_board_tile_depth_wall_polygon(wall: Polygon2D, board_pos: Vector2, sink
 func create_temporary_board_tile_cover(board_pos: Vector2, duration: float) -> void:
 	if match_board.board_special_tiles_node == null or !is_instance_valid(match_board.board_special_tiles_node):
 		return
-	if !match_board.is_valid_position(board_pos):
+	if !MoveRules.is_valid_position(board_pos):
 		return
 
 	var cover := create_board_tile_polygon(board_pos, get_board_visible_tile_texture(board_pos))
@@ -420,7 +420,7 @@ func create_temporary_board_tile_cover(board_pos: Vector2, duration: float) -> v
 func create_temporary_board_tile_edge_lip(board_pos: Vector2, edge_indices: Array, duration: float) -> void:
 	if match_board.board_special_tiles_node == null or !is_instance_valid(match_board.board_special_tiles_node):
 		return
-	if !match_board.is_valid_position(board_pos) or edge_indices.size() < 2:
+	if !MoveRules.is_valid_position(board_pos) or edge_indices.size() < 2:
 		return
 
 	var polygon: PackedVector2Array = match_board.get_board_cell_polygon_local(board_pos)

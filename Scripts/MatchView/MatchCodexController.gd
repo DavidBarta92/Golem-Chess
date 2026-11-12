@@ -230,7 +230,7 @@ func on_turn_page_pressed() -> void:
 func send_turn_page_action(owner_color: int) -> bool:
 	return bool(GameController.send_action({
 		"type": "turn_page",
-		"player_id": match_board.get_player_id_for_color(owner_color),
+		"player_id": BoardConfig.get_player_id_for_color(owner_color),
 	}))
 
 func turn_page_locally(owner_color: int) -> void:

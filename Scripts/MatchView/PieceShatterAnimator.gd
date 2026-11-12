@@ -147,7 +147,6 @@ var fragment_group_bottom: String = "bottom"
 
 var route_cell_blocked_provider: Callable = Callable()
 var finish_respawn_fragment_callback: Callable = Callable()
-var player_id_for_color_provider: Callable = Callable()
 var antialias_provider: Callable = Callable()
 
 var texture_shapes: Dictionary = {}
@@ -194,7 +193,6 @@ func configure(config: Dictionary) -> void:
 
 	route_cell_blocked_provider = config.get("route_cell_blocked_provider", route_cell_blocked_provider)
 	finish_respawn_fragment_callback = config.get("finish_respawn_fragment_callback", finish_respawn_fragment_callback)
-	player_id_for_color_provider = config.get("player_id_for_color_provider", player_id_for_color_provider)
 	antialias_provider = config.get("antialias_provider", antialias_provider)
 
 ## One piece of `get_fragment_cut()` of `texture_value`, standing where the
@@ -203,7 +201,7 @@ func configure(config: Dictionary) -> void:
 func create_fragment(source_pos: Vector2, texture_value: Texture2D, cut_polygon: PackedVector2Array, fragment_index: int) -> Polygon2D:
 	if texture_value == null or cut_polygon.size() < 3 or piece_effects_node == null or !is_instance_valid(piece_effects_node):
 		return null
-	if !_is_valid_position(source_pos):
+	if !MoveRules.is_valid_position(source_pos):
 		return null
 
 	var fragment: Polygon2D = create_fragment_node(texture_value, cut_polygon)
@@ -219,7 +217,7 @@ func create_pending_edge_fragment_markers(piece_color: int, texture_value: Textu
 	if texture_value == null or piece_effects_node == null or !is_instance_valid(piece_effects_node):
 		return fragments
 
-	var home_pos: Vector2 = Vector2(BoardConfig.get_home_row_for_player_id(get_player_id_for_color(piece_color)), BoardConfig.CENTER_INDEX)
+	var home_pos: Vector2 = Vector2(BoardConfig.get_home_row_for_player_id(BoardConfig.get_player_id_for_color(piece_color)), BoardConfig.CENTER_INDEX)
 	for fragment_index in range(cut_polygons.size()):
 		if cut_polygons[fragment_index].size() < 3:
 			continue
@@ -255,7 +253,7 @@ func create_fragment_node(texture_value: Texture2D, cut_polygon: PackedVector2Ar
 	return fragment
 
 func animate_fragment(fragment: Polygon2D, scatter_target: Vector2, source_pos: Vector2, respawn_pos: Vector2, fragment_group: String, fragment_index: int) -> void:
-	if fragment == null or !is_instance_valid(fragment) or !_is_valid_position(respawn_pos):
+	if fragment == null or !is_instance_valid(fragment) or !MoveRules.is_valid_position(respawn_pos):
 		return
 
 	var rest_rotation: float = fragment.rotation
@@ -360,7 +358,7 @@ func animate_pending_edge_fragment(fragment: Polygon2D, scatter_target: Vector2,
 	)
 
 func animate_pending_edge_arrival_fragment(fragment: Polygon2D, respawn_pos: Vector2, fragment_group: String, fragment_index: int) -> void:
-	if fragment == null or !is_instance_valid(fragment) or !_is_valid_position(respawn_pos):
+	if fragment == null or !is_instance_valid(fragment) or !MoveRules.is_valid_position(respawn_pos):
 		return
 
 	var rest_rotation: float = fragment.rotation
@@ -405,7 +403,7 @@ func animate_pending_edge_arrival_fragment(fragment: Polygon2D, respawn_pos: Vec
 ## piece's; zero throws them every way), bounces and slides to rest, then
 ## fades.
 func play_debris(source_pos: Vector2, texture_value: Texture2D, chip_count: int, blow_direction: Vector2 = Vector2.ZERO) -> void:
-	if texture_value == null or chip_count <= 0 or !_is_valid_position(source_pos):
+	if texture_value == null or chip_count <= 0 or !MoveRules.is_valid_position(source_pos):
 		return
 	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
 		return
@@ -886,7 +884,7 @@ func join_cut_edges(edges: Array) -> PackedVector2Array:
 
 func get_return_route_points(source_pos: Vector2, respawn_pos: Vector2, fragment_index: int) -> Array[Vector2]:
 	var points: Array[Vector2] = []
-	if !_is_valid_position(respawn_pos):
+	if !MoveRules.is_valid_position(respawn_pos):
 		return points
 
 	var route_cells: Array[Vector2] = get_route_cells(source_pos, respawn_pos)
@@ -901,11 +899,11 @@ func get_return_route_points(source_pos: Vector2, respawn_pos: Vector2, fragment
 
 func get_route_cells(source_pos: Vector2, respawn_pos: Vector2) -> Array[Vector2]:
 	var fallback: Array[Vector2] = []
-	if _is_valid_position(source_pos):
+	if MoveRules.is_valid_position(source_pos):
 		fallback.append(source_pos)
-	if _is_valid_position(respawn_pos) and respawn_pos != source_pos:
+	if MoveRules.is_valid_position(respawn_pos) and respawn_pos != source_pos:
 		fallback.append(respawn_pos)
-	if !avoid_occupied_cells or !_is_valid_position(source_pos) or !_is_valid_position(respawn_pos):
+	if !avoid_occupied_cells or !MoveRules.is_valid_position(source_pos) or !MoveRules.is_valid_position(respawn_pos):
 		return fallback
 
 	var open_cells: Array[Vector2] = [source_pos]
@@ -936,9 +934,9 @@ func get_route_cells(source_pos: Vector2, respawn_pos: Vector2) -> Array[Vector2
 func reconstruct_route_cells(came_from: Dictionary, end_pos: Vector2) -> Array[Vector2]:
 	var route: Array[Vector2] = []
 	var current_pos: Vector2 = end_pos
-	while _is_valid_position(current_pos):
+	while MoveRules.is_valid_position(current_pos):
 		route.push_front(current_pos)
-		current_pos = value_to_vector2(came_from.get(current_pos, invalid_board_pos), invalid_board_pos)
+		current_pos = BoardConfig.value_to_vector2(came_from.get(current_pos, invalid_board_pos), invalid_board_pos)
 	return route
 
 func get_route_directions(current_pos: Vector2, target_pos: Vector2) -> Array[Vector2]:
@@ -968,7 +966,7 @@ func get_route_cell_local_point(board_pos: Vector2, fragment_index: int, route_i
 
 func get_direct_fallback_route_points(source_pos: Vector2, respawn_pos: Vector2, fragment_index: int) -> Array[Vector2]:
 	var points: Array[Vector2] = []
-	if !_is_valid_position(source_pos) or !_is_valid_position(respawn_pos) or source_pos == respawn_pos:
+	if !MoveRules.is_valid_position(source_pos) or !MoveRules.is_valid_position(respawn_pos) or source_pos == respawn_pos:
 		return points
 
 	var source_center: Vector2 = get_position_local(source_pos)
@@ -985,7 +983,7 @@ func get_direct_fallback_route_points(source_pos: Vector2, respawn_pos: Vector2,
 	return points
 
 func get_pending_respawn_edge_anchor_local(piece_color: int) -> Vector2:
-	var player_id: int = get_player_id_for_color(piece_color)
+	var player_id: int = BoardConfig.get_player_id_for_color(piece_color)
 	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
 	var home_pos: Vector2 = Vector2(home_row, BoardConfig.CENTER_INDEX)
 	var inside_row: int = clampi(home_row + (1 if home_row == 0 else -1), 0, board_size - 1)
@@ -999,7 +997,7 @@ func get_pending_respawn_edge_anchor_local(piece_color: int) -> Vector2:
 
 func get_pending_respawn_edge_fragment_target(piece_color: int, fragment_index: int) -> Vector2:
 	var anchor: Vector2 = get_pending_respawn_edge_anchor_local(piece_color)
-	var player_id: int = get_player_id_for_color(piece_color)
+	var player_id: int = BoardConfig.get_player_id_for_color(piece_color)
 	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
 	var home_center: Vector2 = get_position_local(Vector2(home_row, BoardConfig.CENTER_INDEX))
 	var outward: Vector2 = anchor - home_center
@@ -1013,7 +1011,7 @@ func get_pending_respawn_edge_fragment_target(piece_color: int, fragment_index: 
 
 func get_edge_route_points(source_pos: Vector2, target_local_pos: Vector2, fragment_index: int) -> Array[Vector2]:
 	var points: Array[Vector2] = []
-	if !_is_valid_position(source_pos):
+	if !MoveRules.is_valid_position(source_pos):
 		return points
 
 	var source_center: Vector2 = get_position_local(source_pos)
@@ -1050,7 +1048,7 @@ func get_scatter_target(source_pos: Vector2, debris_index: int, blow_direction: 
 	var source_center: Vector2 = get_position_local(source_pos)
 	var target_pos: Vector2 = source_pos + direction
 	var target_center: Vector2 = source_center
-	if _is_valid_position(target_pos):
+	if MoveRules.is_valid_position(target_pos):
 		target_center = get_position_local(target_pos)
 	else:
 		target_center = source_center + direction.normalized() * float(cell_width) * scatter_radius
@@ -1155,7 +1153,7 @@ func get_polyline_position(path_points: Array[Vector2], progress: float) -> Vect
 func get_z_index_for_local_position(local_pos: Vector2) -> int:
 	var base_z_index: int = int(pieces_node.z_index) if pieces_node != null else 0
 	var nearest_pos: Vector2 = get_nearest_board_position_for_local_position(local_pos)
-	if !_is_valid_position(nearest_pos):
+	if !MoveRules.is_valid_position(nearest_pos):
 		return base_z_index
 
 	var nearest_center: Vector2 = get_position_local(nearest_pos)
@@ -1168,13 +1166,13 @@ func get_z_index_for_local_position(local_pos: Vector2) -> int:
 func get_ground_shadow_z_index(local_pos: Vector2) -> int:
 	var base_z_index: int = int(pieces_node.z_index) if pieces_node != null else 0
 	var nearest_pos: Vector2 = get_nearest_board_position_for_local_position(local_pos)
-	if !_is_valid_position(nearest_pos):
+	if !MoveRules.is_valid_position(nearest_pos):
 		return base_z_index + DEBRIS_SHADOW_Z_OFFSET
 	return base_z_index + get_depth_z_index(nearest_pos) + DEBRIS_SHADOW_Z_OFFSET
 
 func get_respawn_z_index_for_local_position(local_pos: Vector2, respawn_pos: Vector2) -> int:
 	var base_z_index: int = int(pieces_node.z_index) if pieces_node != null else 0
-	if _is_valid_position(respawn_pos):
+	if MoveRules.is_valid_position(respawn_pos):
 		var nearest_pos: Vector2 = get_nearest_board_position_for_local_position(local_pos)
 		if nearest_pos == respawn_pos:
 			return base_z_index + get_depth_z_index(respawn_pos)
@@ -1221,14 +1219,9 @@ func get_depth_z_index(board_pos: Vector2) -> int:
 func is_route_cell_blocked(board_pos: Vector2, source_pos: Vector2, respawn_pos: Vector2) -> bool:
 	if route_cell_blocked_provider.is_valid():
 		return bool(route_cell_blocked_provider.call(board_pos, source_pos, respawn_pos))
-	if !_is_valid_position(board_pos):
+	if !MoveRules.is_valid_position(board_pos):
 		return true
 	return board_pos != source_pos and board_pos != respawn_pos
-
-func get_player_id_for_color(piece_color: int) -> int:
-	if player_id_for_color_provider.is_valid():
-		return int(player_id_for_color_provider.call(piece_color))
-	return 0 if piece_color > 0 else 1
 
 func tween_respawn_finish_callback(tween: Tween, respawn_pos: Vector2) -> void:
 	if tween != null and finish_respawn_fragment_callback.is_valid():
@@ -1242,22 +1235,3 @@ func create_animation_tween() -> Tween:
 func enable_antialiasing(canvas_item: Object) -> void:
 	if antialias_provider.is_valid():
 		antialias_provider.call(canvas_item)
-
-func _is_valid_position(pos: Vector2) -> bool:
-	return pos.x >= 0 and pos.x < board_size and pos.y >= 0 and pos.y < board_size
-
-func value_to_vector2(value, fallback: Vector2) -> Vector2:
-	if value is Vector2:
-		return value
-	if value is Vector2i:
-		var vector_value: Vector2i = value
-		return Vector2(vector_value.x, vector_value.y)
-	if value is Array:
-		var array_value: Array = value
-		if array_value.size() >= 2:
-			return Vector2(float(array_value[0]), float(array_value[1]))
-	if value is Dictionary:
-		var dict_value: Dictionary = value
-		if dict_value.has("x") && dict_value.has("y"):
-			return Vector2(float(dict_value.x), float(dict_value.y))
-	return fallback

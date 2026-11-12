@@ -1,8 +1,13 @@
 # Pack opening
 
-The overlay in `Scenes/CollectionPackController.gd`, on a CanvasLayer between the
-top bar (1200) and the paper texture (1210): over the bar, and printed on the same
-paper as the rest. The steps are `overlay_state`:
+The overlay in `Scripts/PackOpening/PackOpeningOverlay.gd`, on a CanvasLayer between
+the top bar (1200) and the paper texture (1210): over the bar, and printed on the
+same paper as the rest. The stamps out of the packs are on its `PackRewardTable`
+(same folder): building them, dealing, turning, captions, the description, and the
+flight into the album. In the collection, `Scenes/CollectionPackController.gd` ties
+both to the room (the packs lying in it, the click on them, the counters), and
+`Scenes/CollectionPackShopController.gd` is the shop window. The steps are
+`overlay_state`:
 
 | state | what happens | how it moves on |
 | --- | --- | --- |
@@ -23,7 +28,7 @@ opened pack does it.
 
 The player must never see a stop, least of all when the mouse comes down on a pack.
 
-- Stamps are built ahead and a few a frame (`_prepare_reward_stamps`), and the
+- Stamps are built ahead and a few a frame (`PackRewardTable.prepare`), and the
   selection's packs one a frame. An opened pack only gets its prints assigned.
 - `_claim_packs` saves once, however many packs it opens.
 - The room behind the overlay is refreshed once, when the stamps have landed in the
@@ -53,8 +58,10 @@ lies: a pack shows it only when something of that rarity is inside.
 
 ## Tuning
 
-- Timings and sizes: the `PACK_` constants at the top of the controller, the
-  constants of `PackTearInteraction` and `PackFullArtStage`.
+- Timings and sizes: the `PACK_` constants at the top of `PackOpeningOverlay`
+  (the packs, the tear, the light, the rise and the fall) and of `PackRewardTable`
+  (the stamps on the table: dealing, turning, captions, leaving), the constants
+  of `PackTearInteraction` and `PackFullArtStage`.
 - Colours: `FOIL_LIGHT`, `FULL_ART_LIGHT` in `Scripts/PackOpening/PackRevealFx.gd`.
 - Effects stay added light or plain flecks, in the stamp's own nodes: reading the
   screen back on a stamp gives stale pixels under the Compatibility renderer.

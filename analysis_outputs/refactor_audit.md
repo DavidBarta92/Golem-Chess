@@ -88,6 +88,37 @@ Still worth doing later:
 - Consider moving pending visual queues into a dedicated coordinator after the active-counter migration has had a smoke-test pass.
 - Consider whether the remaining MatchBoard compatibility wrappers around input/HUD/stamp hand APIs should stay as scene-level facade methods or be pruned once all collaborators use controllers directly.
 
+## Status - 2026-11-12
+
+Done in this pass (not committed yet):
+
+- One source for three board helpers. `BoardConfig.value_to_vector2` (new),
+  `MoveRules.is_valid_position` and `BoardConfig.get_player_id_for_color` replace
+  the copies in MatchBoard, TutorialController, LocalStateMutator,
+  MatchStateSyncController, BoardMarkerController, the piece animators,
+  FreezeEffectAnimator, StampAnimationController, StampInteractionController,
+  TurnHudController and StampEffectResolver. The provider/callback plumbing that
+  only pointed back at MatchBoard is gone from the controllers and the registry.
+  `PortraitConfig.value_to_vector2` stays separate on purpose: it accepts a
+  dictionary with only one of x/y.
+- Removed `GameState._init()` and `Piece.tick_respawn_cooldown()` (both only
+  `pass`); `GameController.current_game_host` now says what it really holds.
+- `Scenes/CollectionPackController.gd` (2714 lines) split into the room part (it
+  keeps the name), `Scenes/CollectionPackShopController.gd` (the shop window),
+  `Scripts/PackOpening/PackOpeningOverlay.gd` (choosing, tearing, opening, open
+  all, claiming) and `Scripts/PackOpening/PackRewardTable.gd` (the stamps on the
+  table). Code moved unchanged; node names kept. `StampVisual.STAMP_SIZE` is the
+  stamp size for the new files.
+- Checked by compiling every script headless, an AI-vs-AI match in the real
+  scene (windowed and a long headless one), and a frame-by-frame film of the
+  whole pack flow before and after, driven by real mouse input: same log, same
+  random draws, frames within run-to-run noise.
+
+Still open from the size review: AIMoveEvaluator (3909 lines), the MatchBoard
+forwarding stubs and the registry (MATCH_SCENE.md 1-2), Multiplayer.gd,
+NetworkGameHost serialization, LocalStateMutator's copies of the rules. The
+stamp size 168.7 x 229 is still written out in about ten other scripts.
+
 This is a first-pass audit focused on finding high-value cleanup and refactor targets after recent structural changes. It is intentionally conservative: items are grouped by risk so cleanup can start without destabilizing gameplay.
 
 ## Executive Summary

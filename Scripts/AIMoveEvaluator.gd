@@ -1441,7 +1441,7 @@ func score_move_fast(game_state: GameStateData, player_id: int, move: Dictionary
 		score += score_base_staging_capture(game_state, player_id, captured_piece, to_pos, board_size) * 0.9
 		score += score_captured_trigger(game_state, player_id, move, captured_piece, board_size) * 0.9
 		if MoveRules.is_se_tenant_stamp(captured_piece.affixed_stamp):
-			score -= score_se_tenant_change(game_state, StampEffectResolver.get_player_id_for_color(captured_piece.color), -1)
+			score -= score_se_tenant_change(game_state, BoardConfig.get_player_id_for_color(captured_piece.color), -1)
 	if is_se_tenant_expiring_move(moving_piece, move):
 		score += score_se_tenant_change(game_state, player_id, -1)
 
@@ -1617,7 +1617,7 @@ func score_frozen_squares_effect_fast(game_state: GameStateData, player_id: int,
 		if target_piece == null:
 			continue
 
-		var target_player_id: int = StampEffectResolver.get_player_id_for_color(target_piece.color)
+		var target_player_id: int = BoardConfig.get_player_id_for_color(target_piece.color)
 		if !stamp_effect_targets_player(stamp, target_player_id):
 			continue
 
@@ -2300,7 +2300,7 @@ func score_attack_map_pressure(game_state: GameStateData, player_id: int, board_
 		var target_piece: Piece = game_state.get_piece(to_pos)
 		if target_piece == null:
 			continue
-		var target_player_id: int = StampEffectResolver.get_player_id_for_color(target_piece.color)
+		var target_player_id: int = BoardConfig.get_player_id_for_color(target_piece.color)
 		if target_player_id != opponent_player_id:
 			continue
 		pressure += get_piece_target_score(target_piece, game_state)
@@ -2611,7 +2611,7 @@ func score_takes_enemy_crown(game_state: GameStateData, player_id: int, plan: Di
 	if move.is_empty():
 		return 0.0
 	var captured_piece: Piece = AIStateSimulator.get_captured_piece(game_state.pieces, move)
-	if captured_piece == null or !captured_piece.has_crown or StampEffectResolver.get_player_id_for_color(captured_piece.color) == player_id:
+	if captured_piece == null or !captured_piece.has_crown or BoardConfig.get_player_id_for_color(captured_piece.color) == player_id:
 		return 0.0
 	return SCORE_BEARER_SAFE_STEP
 
@@ -2662,7 +2662,7 @@ func score_defense_strategy_plan(game_state: GameStateData, player_id: int, plan
 	var move: Dictionary = plan.get("move", {})
 	if !move.is_empty():
 		var captured_piece: Piece = AIStateSimulator.get_captured_piece(game_state.pieces, move)
-		if captured_piece != null and StampEffectResolver.get_player_id_for_color(captured_piece.color) != player_id:
+		if captured_piece != null and BoardConfig.get_player_id_for_color(captured_piece.color) != player_id:
 			if captured_piece.has_crown:
 				score += SCORE_DEFENSE_CAPTURE_BEARER * urgency
 			else:
@@ -2903,7 +2903,7 @@ func score_capture_respawn_effect(game_state: GameStateData, captured_piece: Pie
 	if captured_piece.is_respawn_locked():
 		return 0.0
 
-	var victim_player_id: int = StampEffectResolver.get_player_id_for_color(captured_piece.color)
+	var victim_player_id: int = BoardConfig.get_player_id_for_color(captured_piece.color)
 	if player_has_respawn_locked_golem(game_state, victim_player_id):
 		return SCORE_CAPTURE_REMOVES_GOLEM
 
@@ -2960,7 +2960,7 @@ func score_base_staging_capture(game_state: GameStateData, player_id: int, captu
 		return 0.0
 
 	var opponent_player_id: int = 1 - player_id
-	if StampEffectResolver.get_player_id_for_color(captured_piece.color) != opponent_player_id:
+	if BoardConfig.get_player_id_for_color(captured_piece.color) != opponent_player_id:
 		return 0.0
 	if !can_crown_next_turn(game_state, opponent_player_id):
 		return 0.0
@@ -3078,7 +3078,7 @@ func score_threatened_piece_loss(piece: Piece, game_state: GameStateData = null)
 		return PENALTY_CROWN_THREATENED
 	var loss: float = score_capture_at(game_state, piece) + score_capture_respawn_effect(game_state, piece)
 	if game_state != null and MoveRules.is_se_tenant_stamp(piece.affixed_stamp):
-		loss -= score_se_tenant_change(game_state, StampEffectResolver.get_player_id_for_color(piece.color), -1)
+		loss -= score_se_tenant_change(game_state, BoardConfig.get_player_id_for_color(piece.color), -1)
 	loss -= score_on_captured_deterrent(game_state, piece)
 	return maxf(PENALTY_PIECE_THREATENED, loss)
 
@@ -3091,7 +3091,7 @@ func score_captured_trigger(game_state: GameStateData, player_id: int, move: Dic
 		return 0.0
 	if stamp.effect_type != StampEffect.TYPE_BOMB:
 		var owner_value: float = score_on_captured_effect_for_owner(game_state, captured_piece)
-		return owner_value if StampEffectResolver.get_player_id_for_color(captured_piece.color) == player_id else -owner_value
+		return owner_value if BoardConfig.get_player_id_for_color(captured_piece.color) == player_id else -owner_value
 
 	var from_pos: Vector2 = AIStateSimulator.get_move_from(move)
 	var to_pos: Vector2 = AIStateSimulator.get_move_to(move)
@@ -3105,7 +3105,7 @@ func score_captured_trigger(game_state: GameStateData, player_id: int, move: Dic
 		if target_piece == null:
 			continue
 		var target_loss: float = score_capture_at(game_state, target_piece) + score_capture_respawn_effect(game_state, target_piece)
-		if StampEffectResolver.get_player_id_for_color(target_piece.color) == player_id:
+		if BoardConfig.get_player_id_for_color(target_piece.color) == player_id:
 			score -= target_loss
 		else:
 			score += target_loss
@@ -3117,7 +3117,7 @@ func score_on_captured_effect_for_owner(game_state: GameStateData, piece: Piece)
 	var stamp: Stamp = piece.affixed_stamp if piece != null else null
 	if game_state == null or stamp == null or !stamp.has_effect() or stamp.effect_trigger != StampEffect.TRIGGER_ON_CAPTURED:
 		return 0.0
-	var owner_id: int = StampEffectResolver.get_player_id_for_color(piece.color)
+	var owner_id: int = BoardConfig.get_player_id_for_color(piece.color)
 	match stamp.effect_type:
 		StampEffect.TYPE_INCREASE_OWN_DURATIONS:
 			return score_duration_adjustment_effect(game_state, owner_id, owner_id, 1, piece)
@@ -3595,7 +3595,7 @@ func score_expiry_effect_for_owner(game_state: GameStateData, piece: Piece, piec
 		return 0.0
 	scoring_expiry_effect = true
 	var expiry_move: Dictionary = {"from": piece_pos, "to": piece_pos, "stamp": stamp, "requires_affix": false}
-	var owner_id: int = StampEffectResolver.get_player_id_for_color(piece.color)
+	var owner_id: int = BoardConfig.get_player_id_for_color(piece.color)
 	var value: float = score_effect_value(game_state, owner_id, piece, stamp, piece_pos, expiry_move, board_size)
 	scoring_expiry_effect = false
 	return value
@@ -3618,7 +3618,7 @@ func score_bomb_effect(game_state: GameStateData, player_id: int, moving_piece: 
 		if target_piece == null or (target_piece == moving_piece and target_pos != source_pos):
 			continue
 
-		var target_player_id: int = StampEffectResolver.get_player_id_for_color(target_piece.color)
+		var target_player_id: int = BoardConfig.get_player_id_for_color(target_piece.color)
 		var target_score: float = score_capture_at(game_state, target_piece) + score_capture_respawn_effect(game_state, target_piece)
 		if target_player_id == player_id:
 			score -= target_score
@@ -3639,7 +3639,7 @@ func score_frozen_squares_effect(game_state: GameStateData, player_id: int, movi
 		if target_piece == null:
 			continue
 
-		var target_player_id: int = StampEffectResolver.get_player_id_for_color(target_piece.color)
+		var target_player_id: int = BoardConfig.get_player_id_for_color(target_piece.color)
 		if !stamp_effect_targets_player(stamp, target_player_id):
 			continue
 

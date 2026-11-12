@@ -47,7 +47,7 @@ func get_move_preview_player_id(piece_position: Vector2, piece: Piece) -> int:
 	var own_player_id: int = match_board.get_own_player_id()
 	if match_board.can_control_current_turn() && match_board.can_player_control_piece_at(piece_position, own_player_id):
 		return own_player_id
-	return match_board.get_player_id_for_color(piece.color)
+	return BoardConfig.get_player_id_for_color(piece.color)
 
 func get_stamp_based_moves(piece_position: Vector2, piece: Piece, player_id: int) -> Array:
 	var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(match_board.piece_objects, piece_position, player_id, board_size, match_board.current_board_effects)

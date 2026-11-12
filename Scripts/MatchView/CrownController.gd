@@ -141,7 +141,7 @@ func _get_point_sources(recent_effect_activations: Array, owner_color: int) -> A
 		var stamp: Stamp = StampLibrary.get_stamp(str(activation.get("stamp_name", "")))
 		if stamp == null or stamp.effect_type != StampEffect.TYPE_GAIN_CROWN_POINT:
 			continue
-		var holder: Sprite2D = match_board.get_piece_holder_at(match_board.value_to_vector2(activation.get("source_pos", INVALID_BOARD_POS), INVALID_BOARD_POS))
+		var holder: Sprite2D = match_board.get_piece_holder_at(BoardConfig.value_to_vector2(activation.get("source_pos", INVALID_BOARD_POS), INVALID_BOARD_POS))
 		if holder != null and holder.texture != null:
 			sources.append(rims[owner_color].to_local(CrownMark.get_point_over_head(holder)))
 	return sources
@@ -265,7 +265,7 @@ func _on_crown_drag_released() -> void:
 		return
 	if !GameController.send_action({
 		"type": "place_crown",
-		"player_id": match_board.get_player_id_for_color(owner_color),
+		"player_id": BoardConfig.get_player_id_for_color(owner_color),
 		"piece_pos": target,
 	}):
 		own_meter.return_crown()

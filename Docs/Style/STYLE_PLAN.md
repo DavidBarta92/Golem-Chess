@@ -22,14 +22,14 @@ moves onto the shared palette and type in step 6.
 
 Styling set outside the themes:
 
-- **Scripts** calling `add_theme_*_override`: `CollectionPackController.gd` (49),
-  `TopBar/QuestPanel.gd` (21), `Collection.gd` (15), `TopBar/TopBarMenu.gd` (11),
-  `CollectionSavedDeckListController.gd` (10), `StampVisual.gd` (6), and about
-  ten more with 1–5 each.
+- **Scripts** calling `add_theme_*_override`: `TopBar/QuestPanel.gd` (21),
+  `Collection.gd` (15), `CollectionPackShopController.gd` (15),
+  `TopBar/TopBarMenu.gd` (11), `CollectionSavedDeckListController.gd` (10),
+  `StampVisual.gd` (6), and about a dozen more with 1–5 each, the pack
+  opening's `PackRewardTable.gd` and `PackOpeningOverlay.gd` among them.
 - **Scripts building their own `StyleBoxFlat`**: `TopBar/QuestPanel.gd`,
   `TopBar/TopBarMenu.gd`, `Collection.gd`, `MatchTabButton.gd`,
-  `MatchCodexController.gd`, `CollectionStampBrowserController.gd`,
-  `CollectionPackController.gd`.
+  `MatchCodexController.gd`, `CollectionStampBrowserController.gd`.
 - **Scenes with `theme_override_*`**: `main.tscn` (46), `Stackbuilder.tscn` (41),
   `Collection.tscn` (33), `StampVisual.tscn` (21), `DialoguePanel.tscn` (11),
   `MainMenu.tscn` (10), the settings sections (8–9 each).
@@ -196,7 +196,8 @@ would touch 15–20 files; after them, each is a few theme edits.
    differs from the global theme (Godot falls back to the project theme for
    anything a theme lacks — verify on the collection screen). Turn the
    scattered overrides and the directly loaded fonts into theme type
-   variations, biggest first: `CollectionPackController.gd`, `main.tscn`,
+   variations, biggest first: the pack shop and opening
+   (`CollectionPackShopController.gd`, `Scripts/PackOpening/`), `main.tscn`,
    `Stackbuilder.tscn`, `Collection.tscn`/`.gd`, the top bar scripts. Write
    down whatever has to stay an override, and why.
 3. **Type.** Add the font variations and type variations from the table,

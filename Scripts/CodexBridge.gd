@@ -135,7 +135,7 @@ func serialize_pieces(game_state: GameStateData) -> Array:
 		pieces.append({
 			"position": vector2_to_array(pos),
 			"color": piece.color,
-			"player_id": StampEffectResolver.get_player_id_for_color(piece.color),
+			"player_id": BoardConfig.get_player_id_for_color(piece.color),
 			"stamp": serialize_stamp(piece.affixed_stamp),
 			"stamp_name": piece.affixed_stamp.stamp_name if piece.affixed_stamp != null else "",
 			"turns_remaining": piece.turns_remaining,

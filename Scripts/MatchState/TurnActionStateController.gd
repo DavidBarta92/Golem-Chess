@@ -9,7 +9,7 @@ func has_affixed_stamp_this_turn(owner_color: int) -> bool:
 	return bool(match_board.affixed_stamp_this_turn.get(owner_color, false))
 
 func mark_stamp_affixed_this_turn(owner_color: int) -> void:
-	var player_id: int = match_board.get_player_id_for_color(owner_color)
+	var player_id: int = BoardConfig.get_player_id_for_color(owner_color)
 	match_board.affixed_stamp_this_turn[owner_color] = true
 	if !GameController.current_game_host:
 		match_board.affixed_stamp_count_this_turn[player_id] = int(match_board.affixed_stamp_count_this_turn.get(player_id, 0)) + 1
@@ -19,7 +19,7 @@ func mark_stamp_affixed_this_turn(owner_color: int) -> void:
 func reset_current_turn_stamp_affix() -> void:
 	var current_color: int = match_board.get_current_turn_color()
 	match_board.affixed_stamp_this_turn[current_color] = false
-	match_board.affixed_stamp_count_this_turn[match_board.get_player_id_for_color(current_color)] = 0
+	match_board.affixed_stamp_count_this_turn[BoardConfig.get_player_id_for_color(current_color)] = 0
 	match_board.moved_piece_this_turn[current_color] = false
 	match_board.exchanged_stamp_this_turn[current_color] = false
 	match_board.has_turned_page_this_turn[current_color] = false

@@ -167,8 +167,8 @@ func _collect_activated_keys(recent_effect_activations: Array) -> Dictionary:
 		if !(activation_value is Dictionary):
 			continue
 		var activation: Dictionary = activation_value
-		var source_pos: Vector2 = match_board.value_to_vector2(activation.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))
-		if match_board.is_valid_position(source_pos):
+		var source_pos: Vector2 = BoardConfig.value_to_vector2(activation.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))
+		if MoveRules.is_valid_position(source_pos):
 			keys["piece:" + str(source_pos)] = true
 	return keys
 
@@ -216,7 +216,7 @@ func compute_active_entries() -> Array:
 		if piece == null:
 			continue
 
-		var board_pos: Vector2 = match_board.value_to_vector2(pos, Vector2(-1, -1))
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(pos, Vector2(-1, -1))
 
 		if piece.hidden_from_viewer:
 			entries.append(_make_entry(pos, StampEffect.TYPE_INVISIBLE_TO_ENEMY, board_pos, true))
@@ -376,7 +376,7 @@ func _create_cell(entry: Dictionary) -> Control:
 
 func _on_cell_mouse_entered(board_pos: Vector2, cell: Control) -> void:
 	_animate_cell_opacity(cell, icon_hover_opacity)
-	if match_board == null or !match_board.is_valid_position(board_pos):
+	if match_board == null or !MoveRules.is_valid_position(board_pos):
 		return
 	match_board.show_hover_piece_details(board_pos)
 	match_board.set_hover_highlighted_piece(board_pos)
@@ -586,8 +586,8 @@ func animate_recent_effect_activations(recent_effect_activations: Array) -> void
 		if stamp_name.is_empty():
 			continue
 
-		var source_pos: Vector2 = match_board.value_to_vector2(activation.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))
-		if !match_board.is_valid_position(source_pos):
+		var source_pos: Vector2 = BoardConfig.value_to_vector2(activation.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))
+		if !MoveRules.is_valid_position(source_pos):
 			continue
 
 		var key: String = "piece:" + str(source_pos)

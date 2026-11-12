@@ -14,7 +14,6 @@ var fragment_group_bottom: String = "bottom"
 var fragment_group_top: String = "top"
 var fragment_group_pending: String = "pending"
 
-var player_id_for_color_provider: Callable
 var stamp_hand_provider: Callable
 var stamp_deck_provider: Callable
 var current_turn_color_provider: Callable
@@ -43,7 +42,6 @@ func configure(config: Dictionary) -> void:
 	fragment_group_bottom = str(config.get("fragment_group_bottom", fragment_group_bottom))
 	fragment_group_top = str(config.get("fragment_group_top", fragment_group_top))
 	fragment_group_pending = str(config.get("fragment_group_pending", fragment_group_pending))
-	player_id_for_color_provider = config.get("player_id_for_color_provider", player_id_for_color_provider)
 	stamp_hand_provider = config.get("stamp_hand_provider", stamp_hand_provider)
 	stamp_deck_provider = config.get("stamp_deck_provider", stamp_deck_provider)
 	current_turn_color_provider = config.get("current_turn_color_provider", current_turn_color_provider)
@@ -93,7 +91,7 @@ func create_last_move_record(moving_color: int, from_pos: Vector2, to_pos: Vecto
 	var last_move := {
 		"from": from_pos,
 		"to": to_pos,
-		"player_id": get_player_id_for_color(moving_color),
+		"player_id": BoardConfig.get_player_id_for_color(moving_color),
 		"piece_color": moving_color,
 		"visible_to_enemy": visible_to_enemy,
 	}
@@ -174,14 +172,14 @@ func resolve_capture_respawn(captured_piece: Piece) -> Dictionary:
 	var pending_respawn_arrivals: Array[Dictionary] = []
 	pending_respawn_arrivals.append_array(resolve_pending_respawns_for_all())
 	return {
-		"respawn_pos": value_to_vector2(respawn_info.get("respawn_pos", invalid_board_pos), invalid_board_pos),
+		"respawn_pos": BoardConfig.value_to_vector2(respawn_info.get("respawn_pos", invalid_board_pos), invalid_board_pos),
 		"fragment_group": str(respawn_info.get("fragment_group", fragment_group_none)),
 		"pending_respawn_arrivals": pending_respawn_arrivals,
 	}
 
 func release_pending_respawn_piece(owner_color: int) -> Vector2:
 	for position_value in piece_objects:
-		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
 		var piece: Piece = piece_objects[position_value] as Piece
 		if piece != null and piece.color == owner_color and piece.is_respawn_locked():
 			piece.set_respawn_cooldown(0)
@@ -234,7 +232,7 @@ func resolve_pending_respawns(owner_color: int) -> Array[Dictionary]:
 		piece_objects[respawn_pos] = piece
 		board[respawn_pos.x][respawn_pos.y] = piece.color
 		arrivals.append({
-			"player_id": get_player_id_for_color(piece.color),
+			"player_id": BoardConfig.get_player_id_for_color(piece.color),
 			"piece_color": piece.color,
 			"respawn_pos": respawn_pos,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
@@ -244,7 +242,7 @@ func resolve_pending_respawns(owner_color: int) -> Array[Dictionary]:
 	return arrivals
 
 func get_random_empty_home_position(owner_color: int) -> Vector2:
-	var player_id: int = get_player_id_for_color(owner_color)
+	var player_id: int = BoardConfig.get_player_id_for_color(owner_color)
 	var home_row: int = BoardConfig.get_home_row_for_player_id(player_id)
 	var empty_positions: Array[Vector2] = []
 	for col in BoardConfig.BOARD_SIZE:
@@ -267,8 +265,8 @@ func move_base_effect(source_pos: Vector2, piece: Piece, stamp: Stamp) -> Array[
 		return pending_respawn_arrivals
 
 	var target_pos: Vector2 = raw_target_squares[0]
-	var player_id: int = get_player_id_for_color(piece.color)
-	if !is_valid_position(target_pos):
+	var player_id: int = BoardConfig.get_player_id_for_color(piece.color)
+	if !MoveRules.is_valid_position(target_pos):
 		DebugLog.info("Local move base ignored: target outside board: %s" % target_pos)
 		return pending_respawn_arrivals
 	if is_base_field_for_other_player(target_pos, player_id):
@@ -316,7 +314,7 @@ func adjust_durations_for_color(owner_color: int, delta: int) -> void:
 		var piece: Piece = piece_objects[position_value] as Piece
 		if piece == null or piece.color != owner_color or piece.affixed_stamp == null or piece.turns_remaining == -1:
 			continue
-		var piece_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
+		var piece_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
 		var old_duration: int = piece.turns_remaining
 		if old_duration + delta > 0:
 			piece.turns_remaining = old_duration + delta
@@ -341,7 +339,7 @@ func add_board_zone_effect(source_pos: Vector2, piece: Piece, stamp: Stamp) -> v
 
 	board_effects.append({
 		"effect_type": stamp.effect_type,
-		"owner_player_id": get_player_id_for_color(piece.color),
+		"owner_player_id": BoardConfig.get_player_id_for_color(piece.color),
 		"target_player_id": int(stamp.effect_settings.get("target_player_id", -1)),
 		"squares": squares,
 		"turns_remaining": StampEffectResolver.BOARD_ZONE_EFFECT_TURNS,
@@ -408,7 +406,7 @@ func get_winner_after_move(moving_color: int, end_pos: Vector2) -> int:
 	return 0
 
 func is_opponent_base_field(moving_color: int, pos: Vector2) -> bool:
-	var owner_player_id: int = get_player_id_for_color(moving_color)
+	var owner_player_id: int = BoardConfig.get_player_id_for_color(moving_color)
 	var opponent_player_id: int = 1 - owner_player_id
 	return pos == get_base_field_for_player(opponent_player_id)
 
@@ -491,27 +489,3 @@ func can_turn_page(owner_color: int) -> bool:
 	if can_turn_page_provider.is_valid():
 		return bool(can_turn_page_provider.call(owner_color))
 	return false
-
-func get_player_id_for_color(owner_color: int) -> int:
-	if player_id_for_color_provider.is_valid():
-		return int(player_id_for_color_provider.call(owner_color))
-	return 0
-
-func is_valid_position(pos: Vector2) -> bool:
-	return pos.x >= 0 and pos.x < board_size and pos.y >= 0 and pos.y < board_size
-
-func value_to_vector2(value, fallback: Vector2) -> Vector2:
-	if value is Vector2:
-		return value
-	if value is Vector2i:
-		var vector_value: Vector2i = value
-		return Vector2(vector_value.x, vector_value.y)
-	if value is Array:
-		var array_value: Array = value
-		if array_value.size() >= 2:
-			return Vector2(float(array_value[0]), float(array_value[1]))
-	if value is Dictionary:
-		var dict_value: Dictionary = value
-		if dict_value.has("x") and dict_value.has("y"):
-			return Vector2(float(dict_value.x), float(dict_value.y))
-	return fallback

@@ -97,7 +97,7 @@ func get_next_scene_after_game(winner_color: int) -> String:
 		return ""
 
 	if GameConfig.is_ai_vs_ai_batch:
-		var winner_player_id: int = match_board.get_player_id_for_color(winner_color)
+		var winner_player_id: int = BoardConfig.get_player_id_for_color(winner_color)
 		GameConfig.record_ai_vs_ai_result(winner_player_id)
 		DebugLog.info("AI vs AI match %d/%d finished. White wins: %d, Black wins: %d" % [
 			GameConfig.ai_vs_ai_matches_played,
@@ -179,7 +179,7 @@ func should_award_win_points(winner_color: int) -> bool:
 func did_local_player_win(winner_color: int) -> bool:
 	if match_board.side == null:
 		if GameConfig.is_singleplayer:
-			var winner_player_id: int = match_board.get_player_id_for_color(winner_color)
+			var winner_player_id: int = BoardConfig.get_player_id_for_color(winner_color)
 			return GameConfig.get_player_controller(winner_player_id) == GameConfig.CONTROLLER_HUMAN
 		return true
 

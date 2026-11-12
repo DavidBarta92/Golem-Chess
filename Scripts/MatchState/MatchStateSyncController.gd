@@ -1,6 +1,5 @@
 extends RefCounted
 
-var board_size: int = BoardConfig.BOARD_SIZE
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
 var white_base_field: Vector2 = BoardConfig.WHITE_BASE_FIELD
 var black_base_field: Vector2 = BoardConfig.BLACK_BASE_FIELD
@@ -12,7 +11,6 @@ var default_piece_texture_provider: Callable
 var stamp_piece_texture_provider: Callable
 
 func configure(config: Dictionary) -> void:
-	board_size = int(config.get("board_size", board_size))
 	invalid_board_pos = config.get("invalid_board_pos", invalid_board_pos)
 	white_base_field = config.get("white_base_field", white_base_field)
 	black_base_field = config.get("black_base_field", black_base_field)
@@ -88,12 +86,12 @@ func parse_player_base_fields(player_base_fields: Dictionary) -> Dictionary:
 
 	for player_id in [0, 1]:
 		if player_base_fields.has(player_id):
-			parsed_fields[player_id] = value_to_vector2(player_base_fields[player_id], parsed_fields[player_id])
+			parsed_fields[player_id] = BoardConfig.value_to_vector2(player_base_fields[player_id], parsed_fields[player_id])
 			continue
 
 		var string_key: String = str(player_id)
 		if player_base_fields.has(string_key):
-			parsed_fields[player_id] = value_to_vector2(player_base_fields[string_key], parsed_fields[player_id])
+			parsed_fields[player_id] = BoardConfig.value_to_vector2(player_base_fields[string_key], parsed_fields[player_id])
 
 	return parsed_fields
 
@@ -104,14 +102,14 @@ func parse_board_effects(board_effects: Array) -> Array:
 		var parsed_squares: Array[Vector2] = []
 		var square_values: Array = effect.get("squares", [])
 		for square_value in square_values:
-			var square_pos: Vector2 = value_to_vector2(square_value, invalid_board_pos)
-			if is_valid_position(square_pos):
+			var square_pos: Vector2 = BoardConfig.value_to_vector2(square_value, invalid_board_pos)
+			if MoveRules.is_valid_position(square_pos):
 				parsed_squares.append(square_pos)
 
 		parsed_effects.append({
 			"effect_type": str(effect.get("effect_type", "")),
 			"squares": parsed_squares,
-			"source_pos": value_to_vector2(effect.get("source_pos", invalid_board_pos), invalid_board_pos),
+			"source_pos": BoardConfig.value_to_vector2(effect.get("source_pos", invalid_board_pos), invalid_board_pos),
 		})
 
 	return parsed_effects
@@ -120,9 +118,9 @@ func parse_last_move(last_move: Dictionary) -> Dictionary:
 	if last_move.is_empty():
 		return {}
 
-	var from_pos: Vector2 = value_to_vector2(last_move.get("from", invalid_board_pos), invalid_board_pos)
-	var to_pos: Vector2 = value_to_vector2(last_move.get("to", invalid_board_pos), invalid_board_pos)
-	if !is_valid_position(from_pos) or !is_valid_position(to_pos) or from_pos == to_pos:
+	var from_pos: Vector2 = BoardConfig.value_to_vector2(last_move.get("from", invalid_board_pos), invalid_board_pos)
+	var to_pos: Vector2 = BoardConfig.value_to_vector2(last_move.get("to", invalid_board_pos), invalid_board_pos)
+	if !MoveRules.is_valid_position(from_pos) or !MoveRules.is_valid_position(to_pos) or from_pos == to_pos:
 		return {}
 
 	return {
@@ -144,7 +142,7 @@ func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
 	for pos in pieces_data:
 		var data: Dictionary = pieces_data[pos]
 		var piece_color: int = int(data.color)
-		var piece_position: Vector2 = value_to_vector2(data.position, invalid_board_pos)
+		var piece_position: Vector2 = BoardConfig.value_to_vector2(data.position, invalid_board_pos)
 		var piece: Piece = Piece.new(piece_position, piece_color)
 		piece.hidden_from_viewer = bool(data.get("hidden_from_viewer", false))
 		var stamp_name: String = str(data.stamp_name)
@@ -161,7 +159,7 @@ func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
 		piece.has_crown = bool(data.get("has_crown", false))
 
 		parsed_piece_objects[piece_position] = piece
-		if is_valid_position(piece_position):
+		if MoveRules.is_valid_position(piece_position):
 			parsed_board[piece_position.x][piece_position.y] = piece_color
 
 	return {
@@ -186,8 +184,8 @@ func parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals: A
 			continue
 
 		var arrival: Dictionary = arrival_value
-		var respawn_pos: Vector2 = value_to_vector2(arrival.get("respawn_pos", invalid_board_pos), invalid_board_pos)
-		if !is_valid_position(respawn_pos):
+		var respawn_pos: Vector2 = BoardConfig.value_to_vector2(arrival.get("respawn_pos", invalid_board_pos), invalid_board_pos)
+		if !MoveRules.is_valid_position(respawn_pos):
 			continue
 		var piece_color: int = int(arrival.get("piece_color", 0))
 		if piece_color == 0:
@@ -210,9 +208,9 @@ func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_sta
 			continue
 
 		var expiration: Dictionary = (expiration_value as Dictionary).duplicate(true)
-		var board_pos: Vector2 = value_to_vector2(expiration.get("piece_pos", invalid_board_pos), invalid_board_pos)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(expiration.get("piece_pos", invalid_board_pos), invalid_board_pos)
 		var stamp_name: String = str(expiration.get("stamp_name", ""))
-		if !is_valid_position(board_pos) or stamp_name.is_empty():
+		if !MoveRules.is_valid_position(board_pos) or stamp_name.is_empty():
 			continue
 
 		expiration["piece_pos"] = board_pos
@@ -220,8 +218,8 @@ func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_sta
 		known_expirations[get_stamp_expiration_signature(board_pos, stamp_name, int(expiration.get("player_id", -1)))] = true
 
 	for position_value in previous_snapshot:
-		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
-		if !is_valid_position(board_pos) or !piece_objects.has(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+		if !MoveRules.is_valid_position(board_pos) or !piece_objects.has(board_pos):
 			continue
 		# A golem blown up and back on its own square lost its stamp with the rest of it.
 		if forced_capture_positions.has(board_pos):
@@ -266,8 +264,8 @@ func collect_piece_revert_animations(previous_snapshot: Dictionary, stamp_expira
 			continue
 
 		var expiration: Dictionary = expiration_value
-		var board_pos: Vector2 = value_to_vector2(expiration.get("piece_pos", invalid_board_pos), invalid_board_pos)
-		if !is_valid_position(board_pos) or !piece_objects.has(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(expiration.get("piece_pos", invalid_board_pos), invalid_board_pos)
+		if !MoveRules.is_valid_position(board_pos) or !piece_objects.has(board_pos):
 			continue
 
 		var expired_stamp_name: String = str(expiration.get("stamp_name", ""))
@@ -311,8 +309,8 @@ func collect_state_duration_change_animations(previous_snapshot: Dictionary, pie
 		return animations
 
 	for position_value in previous_snapshot:
-		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
-		if !is_valid_position(board_pos) or board_pos == moved_to:
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+		if !MoveRules.is_valid_position(board_pos) or board_pos == moved_to:
 			continue
 		var piece: Piece = piece_objects.get(board_pos, null) as Piece
 		if piece == null or piece.hidden_from_viewer or piece.affixed_stamp == null:
@@ -342,7 +340,7 @@ func find_previous_expiring_piece_state(previous_snapshot: Dictionary, used_prev
 			return preferred_state
 
 	for position_value in previous_snapshot:
-		var previous_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
+		var previous_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
 		if used_previous_positions.has(previous_pos):
 			continue
 
@@ -369,15 +367,15 @@ func collect_state_piece_move_animation(previous_snapshot: Dictionary, piece_obj
 	if !has_received_state or current_last_move.is_empty() or skip_visual_animations or !can_play_animation:
 		return {}
 
-	var from_pos: Vector2 = value_to_vector2(current_last_move.get("from", invalid_board_pos), invalid_board_pos)
-	var to_pos: Vector2 = value_to_vector2(current_last_move.get("to", invalid_board_pos), invalid_board_pos)
+	var from_pos: Vector2 = BoardConfig.value_to_vector2(current_last_move.get("from", invalid_board_pos), invalid_board_pos)
+	var to_pos: Vector2 = BoardConfig.value_to_vector2(current_last_move.get("to", invalid_board_pos), invalid_board_pos)
 	var visible_to_enemy: bool = bool(current_last_move.get("visible_to_enemy", true))
 	# The opponent's piece took one of ours and is out of sight now - either
 	# it was all along, so it was never in the snapshot to move from, or it
 	# went the moment it struck. The capture is shown all the same, once: the
 	# square it took is in the snapshot only on the sync that took it.
 	var hidden_after_capture: bool = bool(current_last_move.get("hidden_after_capture", false))
-	if !is_valid_position(from_pos) or !is_valid_position(to_pos) or from_pos == to_pos:
+	if !MoveRules.is_valid_position(from_pos) or !MoveRules.is_valid_position(to_pos) or from_pos == to_pos:
 		return {}
 	if !piece_objects.has(to_pos):
 		return {}
@@ -477,7 +475,7 @@ func collect_state_affix_animations(previous_snapshot: Dictionary, piece_objects
 
 	var animated_positions: Dictionary = {}
 	for position_value in piece_objects:
-		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
 		if !previous_snapshot.has(board_pos):
 			continue
 
@@ -550,8 +548,8 @@ func append_hidden_invisibility_affix_animations(animations: Array[Dictionary], 
 
 func find_recently_hidden_piece_position(previous_snapshot: Dictionary, piece_objects: Dictionary, used_positions: Dictionary, piece_color: int) -> Vector2:
 	for position_value in previous_snapshot:
-		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
-		if !is_valid_position(board_pos) or used_positions.has(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+		if !MoveRules.is_valid_position(board_pos) or used_positions.has(board_pos):
 			continue
 		if piece_objects.has(board_pos):
 			var current_piece: Piece = piece_objects[board_pos] as Piece
@@ -583,8 +581,8 @@ func collect_bomb_warning_animations(recent_bomb_effects: Array, previous_snapsh
 		var effect: Dictionary = effect_value
 		var affected_positions: Array = effect.get("affected_positions", [])
 		for position_value in affected_positions:
-			var target_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
-			if !is_valid_position(target_pos) or used_positions.has(target_pos):
+			var target_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+			if !MoveRules.is_valid_position(target_pos) or used_positions.has(target_pos):
 				continue
 			if !previous_snapshot.has(target_pos):
 				continue
@@ -608,8 +606,8 @@ func collect_piece_shatter_animations(previous_snapshot: Dictionary, piece_objec
 	var used_respawn_targets: Dictionary = {}
 	var used_release_targets: Dictionary = {}
 	for position_value in previous_snapshot:
-		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
-		if !is_valid_position(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+		if !MoveRules.is_valid_position(board_pos):
 			continue
 
 		var previous_state: Dictionary = previous_snapshot[position_value]
@@ -678,8 +676,8 @@ func append_hidden_capture_shatter_animation(
 ) -> void:
 	if current_last_move.is_empty():
 		return
-	var source_pos: Vector2 = value_to_vector2(current_last_move.get("to", invalid_board_pos), invalid_board_pos)
-	if !is_valid_position(source_pos) or previous_snapshot.has(source_pos):
+	var source_pos: Vector2 = BoardConfig.value_to_vector2(current_last_move.get("to", invalid_board_pos), invalid_board_pos)
+	if !MoveRules.is_valid_position(source_pos) or previous_snapshot.has(source_pos):
 		return
 
 	var captured_color: int = int(current_last_move.get("captured_piece_color", 0))
@@ -714,8 +712,8 @@ func append_hidden_capture_shatter_animation(
 func collect_new_respawn_targets_by_color(previous_snapshot: Dictionary, piece_objects: Dictionary, forced_capture_positions: Dictionary) -> Dictionary:
 	var targets_by_color: Dictionary = {}
 	for position_value in piece_objects:
-		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
-		if !is_valid_position(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+		if !MoveRules.is_valid_position(board_pos):
 			continue
 
 		var piece: Piece = piece_objects[position_value] as Piece
@@ -737,8 +735,8 @@ func collect_new_respawn_targets_by_color(previous_snapshot: Dictionary, piece_o
 func collect_released_respawn_targets_by_color(previous_snapshot: Dictionary, piece_objects: Dictionary) -> Dictionary:
 	var targets_by_color: Dictionary = {}
 	for position_value in previous_snapshot:
-		var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
-		if !is_valid_position(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+		if !MoveRules.is_valid_position(board_pos):
 			continue
 
 		var previous_state: Dictionary = previous_snapshot[position_value]
@@ -764,8 +762,8 @@ func get_pending_respawn_queue_source_positions(recent_pending_respawn_queues: A
 			continue
 
 		var queue_event: Dictionary = queue_value
-		var source_pos: Vector2 = value_to_vector2(queue_event.get("source_pos", invalid_board_pos), invalid_board_pos)
-		if is_valid_position(source_pos):
+		var source_pos: Vector2 = BoardConfig.value_to_vector2(queue_event.get("source_pos", invalid_board_pos), invalid_board_pos)
+		if MoveRules.is_valid_position(source_pos):
 			positions[source_pos] = true
 	return positions
 
@@ -778,36 +776,17 @@ func get_recent_effect_capture_positions(recent_bomb_effects: Array) -> Dictiona
 		var effect: Dictionary = effect_value
 		var affected_positions: Array = effect.get("affected_positions", [])
 		for position_value in affected_positions:
-			var board_pos: Vector2 = value_to_vector2(position_value, invalid_board_pos)
-			if is_valid_position(board_pos):
+			var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
+			if MoveRules.is_valid_position(board_pos):
 				positions[board_pos] = true
 	return positions
 
 func get_unused_respawn_target_for_color(targets_by_color: Dictionary, used_targets: Dictionary, piece_color: int) -> Vector2:
 	var targets: Array = targets_by_color.get(piece_color, [])
 	for target_value in targets:
-		var target_pos: Vector2 = value_to_vector2(target_value, invalid_board_pos)
-		if !is_valid_position(target_pos) or used_targets.has(target_pos):
+		var target_pos: Vector2 = BoardConfig.value_to_vector2(target_value, invalid_board_pos)
+		if !MoveRules.is_valid_position(target_pos) or used_targets.has(target_pos):
 			continue
 		used_targets[target_pos] = true
 		return target_pos
 	return invalid_board_pos
-
-func value_to_vector2(value, fallback: Vector2) -> Vector2:
-	if value is Vector2:
-		return value
-	if value is Vector2i:
-		var vector_value: Vector2i = value
-		return Vector2(vector_value.x, vector_value.y)
-	if value is Array:
-		var array_value: Array = value
-		if array_value.size() >= 2:
-			return Vector2(float(array_value[0]), float(array_value[1]))
-	if value is Dictionary:
-		var dict_value: Dictionary = value
-		if dict_value.has("x") and dict_value.has("y"):
-			return Vector2(float(dict_value.x), float(dict_value.y))
-	return fallback
-
-func is_valid_position(pos: Vector2) -> bool:
-	return pos.x >= 0 and pos.x < board_size and pos.y >= 0 and pos.y < board_size

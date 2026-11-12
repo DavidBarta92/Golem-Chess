@@ -41,7 +41,7 @@ func finish(visual_context: Dictionary) -> void:
 	# duration it raised or lowered shows its count change at once.
 	for animation: Dictionary in visual_context.get("state_duration_change_animations", []):
 		match_board.play_duration_change_animation(
-			match_board.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos),
+			BoardConfig.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos),
 			int(animation.get("old_duration", 0)),
 			int(animation.get("new_duration", 0))
 		)
@@ -107,20 +107,20 @@ func reveal_hidden_last_move_arrow_for_game_over() -> void:
 func get_affix_animation_positions(animations: Array[Dictionary]) -> Dictionary:
 	var positions: Dictionary = {}
 	for animation: Dictionary in animations:
-		var board_pos: Vector2 = match_board.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos)
-		if match_board.is_valid_position(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos)
+		if MoveRules.is_valid_position(board_pos):
 			positions[board_pos] = true
 	return positions
 
 func finish_resolved_pending_stamp_affix_processes(excluded_positions: Dictionary = {}) -> void:
 	for position_value in match_board.pending_stamp_affix_positions.keys():
-		var board_pos: Vector2 = match_board.value_to_vector2(position_value, invalid_board_pos)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
 		if excluded_positions.has(board_pos):
 			continue
 		match_board.finish_stamp_affix_process(position_value)
 
 func clear_resolved_pending_stamp_affix_positions() -> void:
 	for position_value in match_board.pending_stamp_affix_positions.keys():
-		var board_pos: Vector2 = match_board.value_to_vector2(position_value, invalid_board_pos)
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
 		if !match_board.piece_objects.has(board_pos):
 			match_board.finish_stamp_affix_process(position_value)

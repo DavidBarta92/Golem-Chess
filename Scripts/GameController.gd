@@ -4,7 +4,10 @@ extends Node
 signal state_updated(game_state: GameStateData)
 signal action_result(success: bool, message: String)
 
-var current_game_host = null  # LocalGameHost or NetworkGameHost
+## A NetworkGameHost when this machine runs the match (single player or hosting),
+## the Multiplayer scene when it has joined one and sends its actions on, and null
+## when the board plays without a host (the tutorial, puzzles).
+var current_game_host = null
 
 func set_game_host(host):
 	current_game_host = host

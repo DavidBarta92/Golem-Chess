@@ -317,7 +317,6 @@ func sync_match_state_sync_controller() -> void:
 	if match_state_sync_controller == null:
 		return
 	match_state_sync_controller.configure({
-		"board_size": match_board.BOARD_SIZE,
 		"invalid_board_pos": match_board.INVALID_BOARD_POS,
 		"white_base_field": match_board.WHITE_BASE_FIELD,
 		"black_base_field": match_board.BLACK_BASE_FIELD,
@@ -388,7 +387,6 @@ func sync_local_state_mutator() -> void:
 		"fragment_group_bottom": match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM,
 		"fragment_group_top": match_board.PIECE_SHATTER_FRAGMENT_GROUP_TOP,
 		"fragment_group_pending": match_board.PIECE_SHATTER_FRAGMENT_GROUP_PENDING,
-		"player_id_for_color_provider": Callable(match_board, "get_player_id_for_color"),
 		"stamp_hand_provider": Callable(match_board, "get_stamp_hand"),
 		"stamp_deck_provider": Callable(match_board, "get_stamp_deck"),
 		"current_turn_color_provider": Callable(match_board, "get_current_turn_color"),
@@ -716,7 +714,6 @@ func sync_piece_shatter_animator() -> void:
 		"fragment_group_bottom": match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM,
 		"route_cell_blocked_provider": Callable(respawn_fragment_coordinator, "is_piece_shatter_route_cell_blocked"),
 		"finish_respawn_fragment_callback": Callable(respawn_fragment_coordinator, "finish_piece_shatter_respawn_fragment"),
-		"player_id_for_color_provider": Callable(match_board, "get_player_id_for_color"),
 		"antialias_provider": Callable(get_board_visuals(), "enable_canvas_item_antialiasing"),
 	})
 
@@ -786,7 +783,6 @@ func sync_piece_effect_animator() -> void:
 		"tween_owner": match_board,
 		"texture_holder_scene": TEXTURE_HOLDER,
 		"cell_width": match_board.CELL_WIDTH,
-		"board_size": match_board.BOARD_SIZE,
 		"texture_filter": match_board.PIECE_TEXTURE_FILTER,
 		"board_light_receive_mask": match_board.BOARD_LIGHT_RECEIVE_MASK,
 		"piece_light_receive_mask": match_board.PIECE_LIGHT_RECEIVE_MASK,
@@ -923,8 +919,6 @@ func sync_freeze_effect_animator() -> void:
 		"pending_affix_positions_provider": Callable(match_board, "get_pending_stamp_affix_positions"),
 		"piece_objects_provider": Callable(match_board, "get_piece_objects"),
 		"board_effects_provider": Callable(match_board, "get_current_board_effects"),
-		"player_id_for_color_callback": Callable(match_board, "get_player_id_for_color"),
-		"is_valid_position_callback": Callable(match_board, "is_valid_position"),
 		"piece_effect_light_receive_mask": match_board.PIECE_EFFECT_LIGHT_RECEIVE_MASK,
 	})
 
@@ -1077,7 +1071,6 @@ func sync_stamp_interaction_controller() -> void:
 		"controllable_color_provider": Callable(match_board, "get_controllable_color"),
 		"is_mouse_out_provider": Callable(match_board, "is_mouse_out"),
 		"mouse_board_position_provider": Callable(match_board, "get_mouse_board_position"),
-		"is_valid_position_callback": Callable(match_board, "is_valid_position"),
 		"is_piece_owned_by_callback": Callable(match_board, "is_piece_owned_by"),
 		"can_affix_stamp_to_piece_callback": Callable(match_board, "can_affix_stamp_to_piece"),
 		"can_exchange_stamp_locally_callback": Callable(match_board, "can_exchange_stamp_locally"),
@@ -1119,9 +1112,7 @@ func sync_stamp_animation_controller() -> void:
 		"stamp_side_reveal_scale": match_board.HOVER_STAMP_PREVIEW_SCALE,
 		"stamp_side_reveal_vertical_offset": match_board.STAMP_SIDE_REVEAL_VERTICAL_OFFSET,
 		"color_for_player_provider": Callable(match_board, "get_color_for_player_id"),
-		"player_id_for_color_provider": Callable(match_board, "get_player_id_for_color"),
 		"local_view_color_provider": Callable(match_board, "get_local_view_color"),
-		"is_valid_position_callback": Callable(match_board, "is_valid_position"),
 		"board_screen_position_provider": Callable(match_board, "get_board_position_screen_position"),
 		"stamp_draw_start_position_provider": Callable(match_board, "get_stamp_draw_start_position"),
 		"stamp_return_to_deck_target_position_provider": Callable(match_board, "get_stamp_return_to_deck_target_position"),
@@ -1130,7 +1121,6 @@ func sync_stamp_animation_controller() -> void:
 		"deck_visual_provider": Callable(match_board, "get_deck_visual"),
 		"viewport_size_provider": Callable(match_board, "get_visible_viewport_size"),
 		"board_screen_size_provider": Callable(match_board, "get_board_screen_size"),
-		"value_to_vector2_provider": Callable(match_board, "value_to_vector2"),
 		"stamp_visuals_provider": Callable(match_board, "get_stamp_visuals"),
 	})
 
@@ -1216,7 +1206,6 @@ func sync_turn_hud_controller() -> void:
 		"can_affix_action_provider": Callable(match_board, "can_affix_action_now"),
 		"can_move_action_provider": Callable(match_board, "can_move_action_now"),
 		"current_turn_color_provider": Callable(match_board, "get_current_turn_color"),
-		"player_id_for_color_provider": Callable(match_board, "get_player_id_for_color"),
 		"turn_timer_timeout_callback": Callable(match_board, "defer_turn_timer_timeout"),
 		"turn_changed_callback": match_board.turn_changed.emit,
 		"deck_visual_provider": Callable(match_board, "get_deck_visual"),

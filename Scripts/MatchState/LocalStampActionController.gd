@@ -15,8 +15,8 @@ func complete_stamp_exchange(owner_color: int, stamp_name: String, hand_index: i
 	if should_record_name:
 		match_board.get_stamp_hand_state_controller().record_exchanged_stamp_name_this_turn(owner_color, stamp_name)
 		var return_animation: Dictionary = {
-			"source_player_id": match_board.get_player_id_for_color(owner_color),
-			"target_player_id": match_board.get_player_id_for_color(owner_color),
+			"source_player_id": BoardConfig.get_player_id_for_color(owner_color),
+			"target_player_id": BoardConfig.get_player_id_for_color(owner_color),
 			"stamp_name": stamp_name,
 			"source_zone": "hand",
 			"target_zone": "deck",
@@ -117,7 +117,7 @@ func affix_hand_stamp_locally(owner_color: int, hand_index: int, piece_position:
 func send_stamp_affix_action(owner_color: int, stamp_name: String, piece_position: Vector2, hand_index: int) -> bool:
 	var action: Dictionary = {
 		"type": "affix_stamp",
-		"player_id": match_board.get_player_id_for_color(owner_color),
+		"player_id": BoardConfig.get_player_id_for_color(owner_color),
 		"stamp_name": stamp_name,
 		"piece_pos": piece_position,
 		"hand_index": hand_index,
@@ -153,7 +153,7 @@ func apply_stamp_to_piece(piece_position: Vector2, stamp_name: String) -> bool:
 		push_warning("This piece cannot receive a stamp right now: %s" % piece_position)
 		return false
 
-	var owner_player_id: int = match_board.get_player_id_for_color(piece.color)
+	var owner_player_id: int = BoardConfig.get_player_id_for_color(piece.color)
 	var codex_controller = match_board.get_match_codex_controller()
 	var local_codex_page_index: int = codex_controller.get_page_index(piece.color)
 	var local_codex_page: Array = []

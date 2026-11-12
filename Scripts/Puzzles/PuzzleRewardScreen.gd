@@ -52,10 +52,10 @@ const CUT_LINE: Color = Color(0.06, 0.06, 0.08, 0.85)
 const CUT_EDGE: Color = Color(0.06, 0.06, 0.08, 0.45)
 const PIECE_SHADOW: Color = Color(0, 0, 0, 0.16)
 const PIECE_SHADOW_OFFSET: Vector2 = Vector2(5, 8)
-const PackController = preload("res://Scenes/CollectionPackController.gd")
+const PackOverlay = preload("res://Scripts/PackOpening/PackOpeningOverlay.gd")
 ## The reveal is played on the dark a pack is opened on, so a foil's glow and
 ## a full art's light show as they do there.
-const REVEAL_DIM: Color = PackController.PACK_OVERLAY_DIM
+const REVEAL_DIM: Color = PackOverlay.PACK_OVERLAY_DIM
 const REVEAL_DIM_SECONDS: float = 0.5
 const ENVELOPE_LEAVE_SECONDS: float = 0.7
 const STAMP_TO_CENTRE_SECONDS: float = 0.75

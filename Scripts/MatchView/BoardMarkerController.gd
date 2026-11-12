@@ -78,8 +78,8 @@ func show_dots(moves: Array, source_pos: Vector2 = INVALID_BOARD_POS) -> void:
 
 	var dot_material: ShaderMaterial = get_move_option_dot_material(should_pulse_move_option_dots(source_pos))
 	for move_value in moves:
-		var board_pos: Vector2 = value_to_vector2(move_value, INVALID_BOARD_POS)
-		if !is_valid_position(board_pos):
+		var board_pos: Vector2 = BoardConfig.value_to_vector2(move_value, INVALID_BOARD_POS)
+		if !MoveRules.is_valid_position(board_pos):
 			continue
 		if texture_holder_scene == null or move_option_dot_texture == null:
 			continue
@@ -132,9 +132,9 @@ func add_last_move_arrow_marker() -> void:
 	if mover_color == 0 or mover_color == get_local_view_color():
 		return
 
-	var from_pos: Vector2 = value_to_vector2(current_last_move.get("from", INVALID_BOARD_POS), INVALID_BOARD_POS)
-	var to_pos: Vector2 = value_to_vector2(current_last_move.get("to", INVALID_BOARD_POS), INVALID_BOARD_POS)
-	if !is_valid_position(from_pos) or !is_valid_position(to_pos) or from_pos == to_pos:
+	var from_pos: Vector2 = BoardConfig.value_to_vector2(current_last_move.get("from", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	var to_pos: Vector2 = BoardConfig.value_to_vector2(current_last_move.get("to", INVALID_BOARD_POS), INVALID_BOARD_POS)
+	if !MoveRules.is_valid_position(from_pos) or !MoveRules.is_valid_position(to_pos) or from_pos == to_pos:
 		return
 	if !get_piece_objects().has(to_pos):
 		return
@@ -251,22 +251,3 @@ func get_own_player_id() -> int:
 	if own_player_id_provider.is_valid():
 		return int(own_player_id_provider.call())
 	return 0
-
-func is_valid_position(pos: Vector2) -> bool:
-	return pos.x >= 0 and pos.x < board_size and pos.y >= 0 and pos.y < board_size
-
-func value_to_vector2(value, fallback: Vector2) -> Vector2:
-	if value is Vector2:
-		return value
-	if value is Vector2i:
-		var vector_value: Vector2i = value
-		return Vector2(vector_value.x, vector_value.y)
-	if value is Array:
-		var array_value: Array = value
-		if array_value.size() >= 2:
-			return Vector2(float(array_value[0]), float(array_value[1]))
-	if value is Dictionary:
-		var dict_value: Dictionary = value
-		if dict_value.has("x") and dict_value.has("y"):
-			return Vector2(float(dict_value.x), float(dict_value.y))
-	return fallback

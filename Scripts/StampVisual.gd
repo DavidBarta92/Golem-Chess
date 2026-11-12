@@ -21,6 +21,8 @@ const SHARED_TYPE_MASK_TEXTURE = preload("res://Assets/shared_mask.svg")
 const SEEKER_TYPE_MASK_TEXTURE = preload("res://Assets/seeker_mask.svg")
 const SE_TENANT_TYPE_MASK_TEXTURE = preload("res://Assets/se_tenant_mask.svg")
 const OVERSEAL_TYPE_MASK_TEXTURE = preload("res://Assets/overseal_mask.svg")
+## The size of Scenes/StampVisual.tscn at scale 1: change both together.
+const STAMP_SIZE: Vector2 = Vector2(168.7, 229.0)
 const STAMP_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR
 const STAMP_ART_TEXTURE_FILTER: TextureFilter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 const STAMP_SHIMMER_ENABLED: bool = false
