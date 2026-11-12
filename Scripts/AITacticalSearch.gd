@@ -80,7 +80,7 @@ func find_immediate_base_defense_move(
 		if !find_immediate_base_win_move(simulated_state, 1 - player_id, board_size).is_empty():
 			continue
 
-		var score: float = evaluator.score_move(game_state, player_id, move, board_size) if evaluator != null else 0.0
+		var score: float = evaluator.move_scoring.score_move(game_state, player_id, move, board_size) if evaluator != null else 0.0
 		if best_move.is_empty() or score > best_score:
 			best_move = move
 			best_score = score
@@ -129,7 +129,7 @@ func find_two_turn_base_threat_plan(
 			if can_capture_crowned_golem(simulated_state, 1 - player_id, player_id, board_size):
 				continue
 
-			var score: float = evaluator.score_move(prefix_state, player_id, move, board_size) if evaluator != null else 0.0
+			var score: float = evaluator.move_scoring.score_move(prefix_state, player_id, move, board_size) if evaluator != null else 0.0
 			if best_plan.is_empty() or score > best_score:
 				best_plan = plan
 				best_score = score
@@ -196,7 +196,7 @@ func find_base_staging_capture_move(
 		if !staging_positions.has(AIStateSimulator.get_move_to(move)):
 			continue
 
-		var score: float = evaluator.score_move(game_state, player_id, move, board_size) if evaluator != null else 0.0
+		var score: float = evaluator.move_scoring.score_move(game_state, player_id, move, board_size) if evaluator != null else 0.0
 		if best_move.is_empty() or score > best_score:
 			best_move = move
 			best_score = score
@@ -207,7 +207,7 @@ func find_base_staging_capture_move(
 ## ones a stamp from the open codex page would put within one step.
 func get_base_staging_positions(game_state: GameStateData, player_id: int, board_size: int) -> Array[Vector2]:
 	var positions: Array[Vector2] = []
-	if !AIMoveEvaluator.can_crown_next_turn(game_state, player_id):
+	if !AICrownRace.can_crown_next_turn(game_state, player_id):
 		return positions
 
 	var player_color: int = StampEffectResolver.get_color_for_player_id(player_id)

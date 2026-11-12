@@ -11,7 +11,7 @@ class_name StampValueCalculator
 #   E     effect base value × trigger factor, per effect (a stamp has at most one today)
 # All numbers come from StampValueWeights. The Stamp Value Estimator editor plugin stores
 # the total on Stamp.estimated_value; the AI reads the breakdown once per stamp
-# (AIMoveEvaluator.prepare_stamp_values).
+# (AIStampValues.prepare_stamp_values).
 
 const DEFAULT_WEIGHTS_PATH: String = "res://Data/Balance/stamp_value_weights.tres"
 const GAME_CONFIG_PATH: String = "res://GameConfig.gd"

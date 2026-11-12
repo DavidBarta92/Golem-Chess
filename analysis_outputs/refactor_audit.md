@@ -114,10 +114,36 @@ Done in this pass (not committed yet):
   whole pack flow before and after, driven by real mouse input: same log, same
   random draws, frames within run-to-run noise.
 
-Still open from the size review: AIMoveEvaluator (3909 lines), the MatchBoard
-forwarding stubs and the registry (MATCH_SCENE.md 1-2), Multiplayer.gd,
-NetworkGameHost serialization, LocalStateMutator's copies of the rules. The
-stamp size 168.7 x 229 is still written out in about ten other scripts.
+Then, also 2026-11-12 (not committed yet): `Scripts/AIMoveEvaluator.gd` (3909
+lines) split. The evaluator keeps the search (choosing a plan, the opponent's
+replies, the deep pass, the difficulty knobs and the search caches, ~1030 lines
+of which ~120 are DIFFICULTY_CONFIGS). The scoring moved to
+`Scripts/AIScoring/`, bottom to top: `AIScoringContext` (knobs the scoring reads,
+stamp and simulated-state caches, hashes), the static `AIStampValues` and
+`AIBoardMath`, then `AIReach`, `AISeTenantScoring`, `AIEffectScoring`,
+`AICrownRace`, `AIMoveScoring`, `AIStrategyScoring`, `AIPlanScoring`. A module
+only holds and calls modules below it, so no RefCounted reference cycle forms.
+Callers reach them through the evaluator (`evaluator.move_scoring.score_move`,
+`AICrownRace.get_crown_turns_to_ready`); `aggression`,
+`sees_threats_this_turn` and `strategy_context` are still evaluator
+properties. Function bodies moved unchanged; five functions and one constant
+nobody used were dropped. Checked: every script compiles; 62,524 seeded
+old-vs-new comparisons on ~190 positions (plan, move, affix and crown scores at
+three knob settings, whole decisions at five levels, three deep passes, and the
+planner's plan lists) all bit-identical; the 74 hand-built AI rule checks pass;
+four whole AI-vs-AI games finish normally; scoring speed unchanged within
+noise. Making an evaluator costs ~78 µs instead of ~25 µs (nine objects), paid
+once per plan in the parallel fast prefilter.
+
+Found while doing it, left as it was: the parallel fast prefilter (12+ plans)
+scores with throwaway evaluators at the default level 12, so its crown hold
+value uses aggression 0.55 whatever the AI's level; the sequential path (fewer
+plans) uses the real one.
+
+Still open from the size review: the MatchBoard forwarding stubs and the
+registry (MATCH_SCENE.md 1-2), Multiplayer.gd, NetworkGameHost serialization,
+LocalStateMutator's copies of the rules. The stamp size 168.7 x 229 is still
+written out in about ten other scripts.
 
 This is a first-pass audit focused on finding high-value cleanup and refactor targets after recent structural changes. It is intentionally conservative: items are grouped by risk so cleanup can start without destabilizing gameplay.
 

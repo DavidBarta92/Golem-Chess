@@ -23,7 +23,7 @@ prices stamps from it ([BOURSE.md](../Bourse/BOURSE.md)).
 ## In the AI
 
 The AI works out each stamp's parts once, when its first evaluator is made
-(`AIMoveEvaluator.prepare_stamp_values`). It uses only the part that still
+(`AIStampValues.prepare_stamp_values`, in `Scripts/AIScoring/`). It uses only the part that still
 lies ahead of a stamp on the board:
 
     remaining = M × S × T(t) + (on_move and on_capture effects) × t / D
@@ -34,13 +34,13 @@ set depend on the board and on whom they help, so the AI scores them where
 they happen instead.
 
 One estimate point is worth 5 score points
-(`AIMoveEvaluator.STAMP_ESTIMATE_POINT_SCORE`):
+(`AIStampValues.STAMP_ESTIMATE_POINT_SCORE`):
 
 - A captured stamp is worth 10 + 5 × remaining. A Seeker goes back to its
   owner's codex, so it counts at half of the 5 × remaining. At 5, an average
   fresh stamp is worth what the old flat 75 + 8 per turn was. On top comes the
   `on_expire` effect it has still to set off, scored on the board for its
-  owner (`score_expiry_at_stake`): a harmful one in full, since the owner
+  owner (`AIEffectScoring.score_expiry_at_stake`): a harmful one in full, since the owner
   either pays it or leaves the last step unused; a helpful one × 0.6 for
   each step still to make. The stamp never counts below 0, so a Ballista on
   its last step is worth only its golem.
@@ -49,14 +49,14 @@ One estimate point is worth 5 score points
 
 The estimate's fixed rates are replaced by what the board shows in two places:
 
-- **Capture chance** (`AIMoveEvaluator.get_expected_captures`). An `on_capture`
+- **Capture chance** (`AIReach.get_expected_captures`). An `on_capture`
   effect put on with a stamp counts for the captures its golem can expect
   before the stamp runs out, not at the estimate's 0.3 a turn. On each of its
   turns, every enemy golem it could take by then (on its pattern, ignoring
   what stands in the way) is a 0.4 chance, and each later turn counts 0.8 of
   the one before. A Warlord put on in the opening expects nothing; one put on
   next to two enemy golems expects about 0.6.
-- **Duration changes** (`get_duration_step_value`). A +1 or −1 counts, per
+- **Duration changes** (`AIEffectScoring.get_duration_step_value`). A +1 or −1 counts, per
   golem, as the step it adds or takes away at the end of the stamp: that
   step's part of the remaining value, × 0.6 for every step the golem has to
   make before it. A stamp on its last step also counts 15 (110 on the crowned
@@ -65,7 +65,7 @@ The estimate's fixed rates are replaced by what the board shows in two places:
   when they are fresh. A −1 that ends a stamp sets off its `on_expire`
   effect, which counts for the stamp's owner: a Black Hole step next to an
   own Nova on its last step is worth the Nova's blast.
-- **Own drain** (`score_own_drain_step`). A −1 at the far end of a stamp looks
+- **Own drain** (`AIMoveScoring.score_own_drain_step`). A −1 at the far end of a stamp looks
   cheap on each move, but a stamp that drains its own side on every plain step
   empties the board and the codex over a game. Such a step costs 120 and 60 for
   each other stamped golem on top, so the stamp captures rather than walks.
@@ -75,7 +75,7 @@ The estimate's fixed rates are replaced by what the board shows in two places:
   step from it. Its walk away from an attack costs 3000 more when the step would
   drain 3 or more other stamped golems, or when its crown can move to a golem
   that has a route and that the enemy cannot take.
-- **Se-tenant grants** (`get_se_tenant_sources`). A stamp that grants a
+- **Se-tenant grants** (`AISeTenantScoring.get_se_tenant_sources`). A stamp that grants a
   Se-tenant into its owner's codex (Advocate a Sun, Consul a Moon, Logician a
   Bicycle) counts as a Se-tenant on its way, × 0.8 for every turn it is off:
   the page turns to it, the steps until it goes off (one Se-tenant per step

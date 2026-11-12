@@ -262,7 +262,7 @@ func find_best_affix_setup(
 				continue
 
 			var affix_action: Dictionary = make_affix_action(player_id, stamp, piece_pos, hand_index)
-			var affix_score: float = evaluator.score_affix_setup(game_state, player_id, affix_action, board_size) 				+ evaluator.score_se_tenant_affix(game_state, player_id, affix_action)
+			var affix_score: float = evaluator.move_scoring.score_affix_setup(game_state, player_id, affix_action, board_size) 				+ evaluator.se_tenant_scoring.score_se_tenant_affix(game_state, player_id, affix_action)
 			increment_profile_count(profile, "evaluated_own_plans")
 			if best_action.is_empty() or affix_score > best_score:
 				best_action = affix_action
@@ -320,7 +320,7 @@ func score_best_fit_for_stamp(
 			continue
 
 		var affix_action: Dictionary = make_affix_action(player_id, stamp, piece_pos, hand_index)
-		var affix_score: float = evaluator.score_affix_setup_for_exchange(game_state, player_id, affix_action, board_size)
+		var affix_score: float = evaluator.move_scoring.score_affix_setup_for_exchange(game_state, player_id, affix_action, board_size)
 		increment_profile_count(profile, "evaluated_own_plans")
 		best_score = max(best_score, affix_score)
 
@@ -555,7 +555,7 @@ func get_ranked_affix_actions_for_state(game_state: GameStateData, player_id: in
 		if planning_evaluator != null:
 			# The Se-tenant set shows in full plan scoring only through the
 			# crown race, so the stamp that finishes it has to rank here.
-			score = planning_evaluator.score_affix_setup(game_state, player_id, affix_action, board_size) 				+ planning_evaluator.score_se_tenant_affix(game_state, player_id, affix_action)
+			score = planning_evaluator.move_scoring.score_affix_setup(game_state, player_id, affix_action, board_size) 				+ planning_evaluator.se_tenant_scoring.score_se_tenant_affix(game_state, player_id, affix_action)
 		scored_actions.append({
 			"action": affix_action,
 			"score": score,
@@ -577,9 +577,9 @@ func get_ranked_crown_actions_for_state(game_state: GameStateData, player_id: in
 			continue
 		var score: float = 0.0
 		if planning_evaluator != null:
-			if !crown_is_forced and !planning_evaluator.is_crown_move_worthwhile(game_state, player_id, piece_pos, board_size):
+			if !crown_is_forced and !planning_evaluator.crown_race.is_crown_move_worthwhile(game_state, player_id, piece_pos, board_size):
 				continue
-			score = planning_evaluator.score_crown_landing(game_state, player_id, piece_pos, board_size)
+			score = planning_evaluator.crown_race.score_crown_landing(game_state, player_id, piece_pos, board_size)
 		scored_actions.append({
 			"action": make_crown_action(player_id, piece_pos),
 			"score": score,

@@ -62,9 +62,9 @@ func evaluate_strategy(
 	context["own_resource_count"] = int(context.get("own_hand_count", 0)) + int(context.get("own_deck_count", 0))
 	# Both crown meters are open to both players, so reading the opponent's is fair.
 	context["own_crown_on_board"] = game_state.has_crown_on_board(player_id)
-	context["own_crown_turns_to_ready"] = AIMoveEvaluator.get_crown_turns_to_ready(game_state, player_id)
+	context["own_crown_turns_to_ready"] = AICrownRace.get_crown_turns_to_ready(game_state, player_id)
 	context["enemy_crown_on_board"] = game_state.has_crown_on_board(1 - player_id)
-	context["enemy_crown_turns_to_ready"] = AIMoveEvaluator.get_crown_turns_to_ready(game_state, 1 - player_id)
+	context["enemy_crown_turns_to_ready"] = AICrownRace.get_crown_turns_to_ready(game_state, 1 - player_id)
 	context["enemy_base_pressure_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_PRESSURE_RADIUS)
 	context["enemy_base_danger_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_DANGER_RADIUS)
 	context["enemy_base_staging_count"] = count_enemy_pieces_near_base(game_state, player_id, BASE_STAGING_RADIUS)
