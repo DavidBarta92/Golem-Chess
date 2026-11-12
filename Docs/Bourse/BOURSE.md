@@ -21,6 +21,7 @@ chance at the next buyer.
 | `Scripts/Bourse/BourseScreen.gd` | the screen and its four views |
 | `Scripts/Bourse/BourseUi.gd` | the pieces the screen builds from: stamp cells, the lot sheet, pills, bars |
 | `Scripts/Bourse/BourseSaleNotice.gd` | the main menu's notice of a sale |
+| `Scripts/TopBar/SaleRibbon.gd` | the top bar's notice of a sale, where the price is collected too |
 
 The story's `trade` feature opens the screen. The id stayed `trade`, so older
 saves are still valid.
@@ -182,7 +183,13 @@ English. The face comes from `portrait_seed`.
   store and opens the pick in the same frame.
 - The main menu's notice ("Kovács Anna picked from your lot: Duke") shows
   while sales are unseen and the `trade` feature is open. Opening the Bourse
-  marks them seen.
+  marks them seen; collecting the sale from the top bar takes it off too.
+- **The top bar's notice.** Each sold lot also hangs in the top bar, among the
+  quest ribbons, until it is collected: a gold ribbon like a coin quest's,
+  with a rounded foot. Clicking it opens a panel like a done quest's: the
+  buyer, the stamp they took, the price and Claim, which settles the lot as
+  the screen's Collect does. Its look and behaviour are in
+  [HANDOFF.md](../TopBar/HANDOFF.md) (Sale notices).
 
 ## Tuning
 
@@ -192,6 +199,18 @@ lots a day). The coin amounts are in `PlayerProgressStore.gd`, the packs'
 `price` and the reward scenes' `grant_points`.
 
 ## Testing
+
+The main menu's developer window (A three times, in a debug build) has a
+Bourse section for the top bar's notices:
+
+- **+ Sold lot (spare copies)** lists five copies at the builder's price and
+  sells the lot at once (`BourseStore.sell_lot_now`). It is a real sale:
+  collecting it pays the price and takes the drawn stamp out of the
+  collection, so the copies come from the prints with the most free copies,
+  never a print's last free one.
+- **Sell my oldest listed lot**: a buyer for a lot of the player's at once.
+- **Unlock Bourse**: the story's `trade` feature, without which no notice
+  shows. Sales made before it come down when it is unlocked.
 
 Run the store and the screen with `APPDATA` pointed at a scratch folder holding
 a copy of the save, as the other harnesses do. The first load under the

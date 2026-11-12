@@ -10,9 +10,14 @@ const SETTINGS_DIALOG_WIDTH: int = 540
 ## windows (canvas layer 1024), so the dialog is above it, and above the
 ## scene, so the bar stays on screen behind the dialog.
 const TOP_BAR_LAYER_UNDER_DIALOGS: int = 1000
+## The developer window: its padding round the sections, and its gap to the
+## top bar and the bottom of the screen.
+const DEV_TOOLS_PADDING: int = 18
+const DEV_TOOLS_SCREEN_MARGIN: int = 8
 const BourseSaleNotice = preload("res://Scripts/Bourse/BourseSaleNotice.gd")
 
 @onready var dev_tools_window: Window = $DevToolsWindow
+@onready var dev_tools_root: VBoxContainer = $DevToolsWindow/DevToolsRoot
 @onready var ai_match_count_field: LineEdit = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/MatchCountField
 @onready var ai_csv_log_dir_field: LineEdit = $DevToolsWindow/DevToolsRoot/AIVsAISection/CsvLogDirField
 @onready var ai_fast_mode_check: CheckBox = $DevToolsWindow/DevToolsRoot/AIVsAISection/AIVsAIControls/FastModeCheck
@@ -51,6 +56,7 @@ var ai_deck_ids: Array[String] = []
 var points_label: Label
 var next_boss_stakes_label: Label
 var quest_dev_status_label: Label
+var bourse_dev_status_label: Label
 
 func _ready():
 	if should_start_dedicated_server_from_launch():
@@ -96,6 +102,8 @@ func _ready():
 	_connect_once(reset_balance_sessions_button.pressed, Callable(self, "_on_reset_balance_sessions_button_pressed"))
 	_update_ai_vs_ai_deck_controls()
 	_build_quest_dev_tools()
+	_build_bourse_dev_tools()
+	_make_dev_tools_scrollable()
 	SFXManager.play("mainmenu_drawing")
 	_start_background_line_reveal()
 	_connect_once(street_view.opponent_arrived, Callable(self, "_on_opponent_arrived"))
@@ -251,13 +259,14 @@ func show_dev_tools_window() -> void:
 	_populate_ai_vs_ai_deck_options()
 	_update_ai_vs_ai_deck_controls()
 	ai_vs_ai_unlock_presses = 0
-	var target_size := Vector2i(760, 560)
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	# Below the top bar, which is drawn over windows, title bar and all; as tall
+	# as the sections need, as far as the screen allows - past that they scroll.
+	var top: int = TOP_BAR_HEIGHT + dev_tools_window.get_theme_constant("title_height") + DEV_TOOLS_SCREEN_MARGIN
+	var content_height: int = int(dev_tools_root.get_combined_minimum_size().y) + 2 * DEV_TOOLS_PADDING
+	var target_size := Vector2i(760, mini(content_height, int(viewport_size.y) - top - DEV_TOOLS_SCREEN_MARGIN))
 	dev_tools_window.size = target_size
-	dev_tools_window.position = Vector2i(
-		maxi(0, int((viewport_size.x - float(target_size.x)) * 0.5)),
-		maxi(0, int((viewport_size.y - float(target_size.y)) * 0.5))
-	)
+	dev_tools_window.position = Vector2i(maxi(0, int((viewport_size.x - float(target_size.x)) * 0.5)), top)
 	dev_tools_window.visible = true
 	ai_match_count_field.grab_focus()
 
@@ -274,7 +283,7 @@ func sync_dev_tools_from_config() -> void:
 func _build_quest_dev_tools() -> void:
 	if !is_dev_tools_available() or quest_dev_status_label != null:
 		return
-	var dev_root: Control = $DevToolsWindow/DevToolsRoot
+	var dev_root: Control = dev_tools_root
 	dev_root.add_child(HSeparator.new())
 	var section := VBoxContainer.new()
 	section.name = "QuestSection"
@@ -295,6 +304,9 @@ func _build_quest_dev_tools() -> void:
 		["Expire newest daily", _on_dev_quest_expire_pressed],
 		["Clear quests", _on_dev_quest_clear_pressed],
 		["Reveal draw counter", _on_dev_reveal_draw_counter_pressed],
+		["+ Generated daily", _on_dev_generated_quest_pressed.bind(true)],
+		["+ Generated regular", _on_dev_generated_quest_pressed.bind(false)],
+		["New quest day", _on_dev_new_quest_day_pressed],
 	]
 	for action in actions:
 		var button := Button.new()
@@ -340,10 +352,143 @@ func _on_dev_reveal_draw_counter_pressed() -> void:
 	StoryProgressStore.unlock_feature(StoryFeatures.DRAW_COUNTER)
 	_update_quest_dev_status()
 
+## A quest drawn from the templates as the director would hand it out, but
+## now, whatever the day (QuestDirector.issue_daily / issue_regular).
+func _on_dev_generated_quest_pressed(daily: bool) -> void:
+	QuestStore.director.start()
+	var quest_id: String = QuestStore.director.issue_daily(true) if daily else QuestStore.director.issue_regular(true)
+	if quest_id.is_empty():
+		quest_dev_status_label.text = "Nothing handed out: no room, the regular limit (%d), or no template the player can do." % QuestLibrary.get_settings().regular_max
+		return
+	_update_quest_dev_status()
+
+## Forgets what today has handed out and swapped, then hands out what is due.
+func _on_dev_new_quest_day_pressed() -> void:
+	QuestStore.director.start()
+	QuestStore.director.start_new_day()
+	_update_quest_dev_status()
+
 func _update_quest_dev_status() -> void:
 	if quest_dev_status_label == null:
 		return
-	quest_dev_status_label.text = "Active quests: %d / %d. Close this window to try the ribbons." % [QuestStore.get_active_count(), QuestStore.MAX_ACTIVE]
+	quest_dev_status_label.text = "Active quests: %d / %d, swaps left today: %d. Close this window to try the ribbons." % [QuestStore.get_active_count(), QuestStore.MAX_ACTIVE, QuestStore.director.swaps_left()]
+
+## The sections go on growing past what fits under the top bar: they scroll
+## inside the window. Moved in code, so the scene's node paths stay as they are
+## until _ready has resolved them.
+func _make_dev_tools_scrollable() -> void:
+	if dev_tools_root.get_parent() is ScrollContainer:
+		return
+	var scroll := ScrollContainer.new()
+	scroll.name = "DevToolsScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.offset_left = DEV_TOOLS_PADDING
+	scroll.offset_top = DEV_TOOLS_PADDING
+	scroll.offset_right = -DEV_TOOLS_PADDING
+	scroll.offset_bottom = -DEV_TOOLS_PADDING
+	dev_tools_window.add_child(scroll)
+	dev_tools_root.reparent(scroll, false)
+	dev_tools_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+## Buttons for trying the top bar's sale notices: a buyer for one of the
+## player's lots, now, rather than at the next two-hourly visit.
+func _build_bourse_dev_tools() -> void:
+	if !is_dev_tools_available() or bourse_dev_status_label != null:
+		return
+	var dev_root: Control = dev_tools_root
+	dev_root.add_child(HSeparator.new())
+	var section := VBoxContainer.new()
+	section.name = "BourseSection"
+	dev_root.add_child(section)
+	var title := Label.new()
+	title.text = "Bourse sales (top bar notices)"
+	section.add_child(title)
+	var buttons := HFlowContainer.new()
+	section.add_child(buttons)
+	var actions: Array = [
+		["+ Sold lot (spare copies)", _on_dev_sold_lot_pressed],
+		["Sell my oldest listed lot", _on_dev_sell_listed_lot_pressed],
+		["Unlock Bourse", _on_dev_unlock_bourse_pressed],
+	]
+	for action in actions:
+		var button := Button.new()
+		button.text = action[0]
+		button.pressed.connect(action[1])
+		buttons.add_child(button)
+	bourse_dev_status_label = Label.new()
+	bourse_dev_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	section.add_child(bourse_dev_status_label)
+	_update_bourse_dev_status()
+
+## Puts five copies up as a new lot at the builder's price and sells it at
+## once. A real sale: collecting it pays the price and takes the drawn stamp
+## out of the collection, so the copies come from the prints the player has
+## most free copies of, and never the last free copy of one.
+func _on_dev_sold_lot_pressed() -> void:
+	if BourseStore.get_free_slot_count() <= 0:
+		_update_bourse_dev_status("No free lot slot (%d at most): collect or withdraw a lot first." % BourseStore.LOT_SLOTS)
+		return
+	var spares: Array = []
+	var seen: Dictionary = {}
+	for item in PlayerCollectionStore.list_items():
+		var print_id: String = str(item.get("print_id", ""))
+		if print_id.is_empty() or seen.has(print_id):
+			continue
+		seen[print_id] = true
+		var spare: int = PlayerCollectionStore.get_free_count_for_print_id(print_id) - 1
+		if spare > 0:
+			spares.append([print_id, spare])
+	spares.sort_custom(func(a: Array, b: Array) -> bool: return int(a[1]) > int(b[1]))
+	var print_ids: Array = []
+	for entry in spares:
+		for _copy in range(int(entry[1])):
+			if print_ids.size() < BourseMarket.LOT_SIZE:
+				print_ids.append(entry[0])
+	if print_ids.size() < BourseMarket.LOT_SIZE:
+		_update_bourse_dev_status("Not enough spare copies for a lot of %d." % BourseMarket.LOT_SIZE)
+		return
+	var lot: Dictionary = BourseStore.list_lot(print_ids, BourseMarket.suggested_price(BourseMarket.values_for(print_ids)))
+	if lot.is_empty():
+		_update_bourse_dev_status("The lot could not be listed.")
+		return
+	_report_dev_sale(BourseStore.sell_lot_now(str(lot["lot_id"])))
+
+func _on_dev_sell_listed_lot_pressed() -> void:
+	for lot in BourseStore.get_lots():
+		if str(lot.get("state", "")) == BourseStore.STATE_LISTED:
+			_report_dev_sale(BourseStore.sell_lot_now(str(lot["lot_id"])))
+			return
+	_update_bourse_dev_status("No lot of yours is on the Bourse unsold.")
+
+func _on_dev_unlock_bourse_pressed() -> void:
+	StoryProgressStore.unlock_feature(StoryFeatures.TRADE)
+	_update_bourse_dev_status()
+
+func _report_dev_sale(lot: Dictionary) -> void:
+	if lot.is_empty():
+		_update_bourse_dev_status("The sale did not go through.")
+		return
+	var buyer: Dictionary = lot.get("buyer", {})
+	_update_bourse_dev_status("Sold for %d to %s, who took %s." % [
+		int(lot.get("price", 0)),
+		RandomOpponentFactory.format_name(str(buyer.get("surname", "")), str(buyer.get("given_name", ""))),
+		str(lot.get("sold_print_id", "")),
+	])
+
+func _update_bourse_dev_status(message: String = "") -> void:
+	if bourse_dev_status_label == null:
+		return
+	var lines: Array[String] = []
+	if !message.is_empty():
+		lines.append(message)
+	var lots: Array = BourseStore.get_lots()
+	lines.append("Lots: %d / %d slots, %d sold and waiting to be collected." % [lots.size(), BourseStore.LOT_SLOTS, BourseStore.get_sold_count()])
+	if StoryProgressStore.is_feature_unlocked(StoryFeatures.TRADE):
+		lines.append("Close this window to try the notices.")
+	else:
+		lines.append("The Bourse is locked in the story: the notices show once it is unlocked.")
+	bourse_dev_status_label.text = "\n".join(lines)
 
 func _on_dev_tools_window_close_requested() -> void:
 	dev_tools_window.hide()

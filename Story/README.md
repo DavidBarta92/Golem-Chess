@@ -11,7 +11,7 @@ as *the first node whose id is not in the completed set* — progress is never a
 counter, so inserting or reordering nodes does not break existing saves. Node
 ids are the save key, so **never rename an id that has shipped**.
 
-Five node types:
+Seven node types:
 
 | Node | Plays | Key fields |
 | --- | --- | --- |
@@ -21,6 +21,11 @@ Five node types:
 | `RandomMatchStoryNode` | warm-up matches against generated opponents | `match_count` |
 | `SceneStoryNode` | any other beat that is just its own scene | `scene_path` |
 | `RewardStoryNode` | the "you unlocked something" screen | `reward_scene_path` |
+| `QuestStoryNode` | a quest in the top bar; the story waits until it is claimed | `condition`, `count`, `param`, `title`, `text` |
+
+A `QuestStoryNode` is not played: while it is the current node, its quest
+hangs in the top bar, the Play window's story button is inactive (the random
+opponent button still plays), and claiming the quest completes the node. See [Docs/Quests/QUESTS.md](../Docs/Quests/QUESTS.md).
 
 Nodes name their scenes by **path** (`@export_file`), never as a
 `PackedScene`. `StoryManager` loads the whole definition at startup, and a
@@ -32,7 +37,8 @@ Flags on every node:
 
 - `auto_continue_after_completion` — finishing chains straight into the next
   node with no hub in between (comic → boss → reward). Off means finishing
-  leaves the story, and it only continues the next time Play is pressed.
+  leaves the story, and it only continues the next time the Play window's
+  story button is pressed.
 - `blocks_hub_until_completed` — launching the game jumps straight here instead
   of showing the main menu. The whole intro chapter is flagged, so the main menu
   first appears after Boss 2.
@@ -61,6 +67,38 @@ not chain. A save already past Boss 2 meets it once at the next launch, and a
 chained node would take such a player from the Main Menu button straight into
 their next fight.
 
+### The Play window
+
+The main menu's window (`Scenes/MainMenuPlayButton.gd`) is no button itself.
+Hovering it stamps three small icon buttons onto the middle of its pane one
+after the other, the way the top bar's items arrive
+(`Scripts/InkStamp/InkStampMotion.gd`), and leaving it dissolves them. They
+step up from left to right along the pane's slant (`row_slope`, centred on
+`pane_centre`). They come only once the opponent has walked up to the window:
+the walk starts a second after the menu opens
+(`MainMenuStreetView.arrival_delay`) and takes 3.2 s. Choosing one dissolves the three buttons first, then slides the
+window up and starts the match.
+
+The buttons sit in a plain Control, not a container: a container's layout
+pass sets its direct children's scale and rotation back to rest, which
+flattened the stamp into a mere fade.
+
+| Button | Look | Starts |
+| --- | --- | --- |
+| Story | burgundy, a book (the story quest ribbon's) | `StoryManager.continue_story_if_ready()`: the current node, normally the next boss fight |
+| Random opponent | ink, a person | `StoryManager.start_random_opponent_match()`: a due warm-up node, else a generated opponent outside the story |
+| Multiplayer | inactive (pink, faded), a globe | nothing yet |
+
+- The story button is inactive while the story has nothing to start
+  (`StoryManager.can_continue_story()`: all done, or a story quest waiting).
+- While a warm-up is due, both buttons start it. Which button turns off when
+  is not decided yet; `set_mode_enabled(MODE_STORY / MODE_RANDOM, false)` on
+  the window turns one off.
+- A match outside the story is against a generated opponent like a warm-up's,
+  at the level of the last boss beaten; it is not rated and ends on the
+  feedback screen like any non-story match. It replaced quick play (the AI
+  mirroring the player's codex), which nothing starts any more.
+
 ### Losing a boss fight
 
 The node never completes on a loss. What happens next is the boss node's
@@ -68,14 +106,15 @@ The node never completes on a loss. What happens next is the boss node's
 
 - `PROMPT_RETRY` (the default) — a "play again right away?" prompt
   (`Scenes/Story/RetryPromptScene.tscn`). Yes restarts the fight, no returns to
-  the hub, where Play brings it back.
+  the hub, where the Play window's story button brings it back.
 - `COMIC_THEN_RETRY` — the node's `defeat_page_paths` play, then the fight restarts
   with no way out. Only for Boss 1 and 2, which happen before the hub exists.
 
 ### Warm-up matches
 
 A `RandomMatchStoryNode` sits before a boss and needs `match_count` matches
-*started* — not won — before it completes. Each press of Play runs one:
+*started* — not won — before it completes. Each press of the Play window's
+story or random opponent button runs one:
 
 - a random opponent from `RandomOpponentFactory` — name from
   `Data/random_opponent_names.json` (surname first, Hungarian order), a
@@ -455,6 +494,8 @@ The hint then handles all three states on its own: locked → the button is
 disabled; unlocked → an ink arrow bobs next to it; clicked once → the arrow is
 gone for good. Set `lock_target_until_unlocked = false` for a button that
 should stay usable and only wants the arrow (that is how Play is set up).
+Play's hint is a glow behind the window; the window takes no clicks itself,
+so it marks the hint used when one of its buttons is chosen.
 
 ## Saves
 

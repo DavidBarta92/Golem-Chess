@@ -8,8 +8,10 @@ extends Node
 ## at once - that is the pressed style.
 ##
 ## For the buttons drawn with the theme's plain hover - Button, MenuButton,
-## OptionButton - and the match's tabs (MatchTabButton). Variations with a
-## hover of their own, and flat buttons, are left alone.
+## OptionButton - the match's tabs (MatchTabButton) and the story's burgundy
+## button (StoryButton). Variations with a hover of their own, and flat
+## buttons, are left alone. The ink is UiPalette.INK unless the button's theme
+## names another as its flood_color (StoryButton's burgundy).
 ##
 ## A popup menu's hover is a band of ink too, and its label turns to paper on
 ## it - but a popup draws a radio item's mark untinted. The theme's mark is
@@ -28,11 +30,15 @@ const FRAME_SHADER: Shader = preload("res://Shaders/ink_frame.gdshader")
 const FRONT_NOISE_PATH: String = "res://ui/themes/stamp/ink_flood_noise.png"
 const STAMP_MASK_PATH: String = "res://ui/themes/stamp/ink_stamp_mask.png"
 ## Theme types whose hover style floods.
-const FLOODED_TYPES: Array[StringName] = [&"Button", &"MatchTabButton"]
+const FLOODED_TYPES: Array[StringName] = [&"Button", &"MatchTabButton", &"StoryButton"]
+## A theme colour a flooded type may set to flood with something else than ink.
+const FLOOD_COLOR: StringName = &"flood_color"
 const FILL_SECONDS: float = 0.5
 const DRAIN_SECONDS: float = 0.25
 
 var _material: ShaderMaterial
+## The flood in another colour than ink, one material per colour.
+var _coloured_materials: Dictionary = {}
 var _frame_material: ShaderMaterial
 var _hover_styles: Array[StyleBox] = []
 ## Popup menus open now, whose radio marks follow the hover.
@@ -103,7 +109,7 @@ func _on_mouse_entered(button: Button) -> void:
 		return
 	var flood: _Flood = _flood_of(button)
 	if flood == null:
-		flood = _Flood.new(button, _material, _seed_of(button))
+		flood = _Flood.new(button, _flood_material_for(button), _seed_of(button))
 		# Internal, so scripts walking the button's children do not meet it.
 		button.add_child(flood, false, Node.INTERNAL_MODE_FRONT)
 		button.set_meta(&"ink_flood", flood)
@@ -135,6 +141,17 @@ func frame(control: Control) -> void:
 
 func _floods(button: Button) -> bool:
 	return !button.flat and _hover_styles.has(button.get_theme_stylebox(&"hover"))
+
+## The shared ink flood, or one in the button's own flood_color.
+func _flood_material_for(button: Button) -> ShaderMaterial:
+	if !button.has_theme_color(FLOOD_COLOR):
+		return _material
+	var colour: Color = button.get_theme_color(FLOOD_COLOR)
+	if !_coloured_materials.has(colour):
+		var coloured := _material.duplicate() as ShaderMaterial
+		coloured.set_shader_parameter(&"ink_color", colour)
+		_coloured_materials[colour] = coloured
+	return _coloured_materials[colour]
 
 ## A button with a hover of its own (QuestClaimButton, CodexIconButton,
 ## PackCardButton) whose print leaves the blot to it. Baked into a print, the

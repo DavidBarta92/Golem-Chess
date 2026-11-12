@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuestTemplate" format=3]
+
+[ext_resource type="Script" path="res://Scripts/Quests/QuestTemplate.gd" id="1_template"]
+
+[resource]
+script = ExtResource("1_template")
+template_id = "solve_puzzles"
+condition = 5
+pools = 2
+weight = 0.8
+per_match = 1.0
+min_count = 1
+max_count = 1
+round_to = 1
+param_pool = Array[String]([])
+requires_features = Array[String](["quests"])

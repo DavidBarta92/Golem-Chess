@@ -91,29 +91,60 @@ func finish_current_node() -> void:
 	else:
 		return_to_hub()
 
-## For the hub's "Play" button: if a story node is waiting and unlocked,
-## starts it and returns true. Otherwise returns false so the caller can
-## fall back to its normal (non-story) flow.
+## For the Play window's story button: if a story node is waiting and
+## unlocked, starts it and returns true. Otherwise returns false so the
+## caller can fall back to its normal (non-story) flow.
 func continue_story_if_ready() -> bool:
-	var node: StoryNode = get_current_node()
-	if node == null or !is_current_node_unlocked():
+	if !can_continue_story():
 		return false
 	start_current_node()
 	return true
+
+## Whether the story has something Play can start: not once it is all done,
+## nor while it waits for a story quest to be claimed.
+func can_continue_story() -> bool:
+	return get_current_node() != null and is_current_node_unlocked()
+
+## For the Play window's random opponent button: a match against a generated
+## opponent. When the story is waiting for warm-up matches, this is one of
+## them and counts towards the node; otherwise it is a match of its own,
+## outside the story, at the level of the last boss beaten.
+func start_random_opponent_match() -> void:
+	var node: StoryNode = get_current_node()
+	if node is RandomMatchStoryNode:
+		start_current_node()
+		return
+	clear_active_match()
+	_set_up_generated_opponent(_get_last_defeated_boss_level(null))
+	SceneTransition.change_scene(GAME_SCENE_PATH)
 
 func has_pending_node() -> bool:
 	return get_current_node() != null
 
 ## For the hub's boot check: true when the current node must be played
 ## before the hub itself is shown (see StoryNode.blocks_hub_until_completed).
+## Never for a story quest, which is done from the hub.
 func should_block_hub() -> bool:
 	var node: StoryNode = get_current_node()
-	return node != null and node.blocks_hub_until_completed
+	return node != null and node.blocks_hub_until_completed and !(node is QuestStoryNode)
 
-## Stub seam for future prerequisites (e.g. "only after collecting N stamps").
-## Always true for now - nothing gates story continuation yet.
+## Whether Play may start the current node. A story quest is not started: the
+## story waits until its quest is claimed (complete_quest_node), and Play
+## starts an ordinary match meanwhile.
 func is_current_node_unlocked() -> bool:
-	return true
+	return !(get_current_node() is QuestStoryNode)
+
+## A story quest was claimed (QuestDirector): its node is done. The player is
+## on the hub screens, so nothing changes scene unless the node chains into
+## the next one.
+func complete_quest_node(node_id: String) -> void:
+	var node: StoryNode = get_current_node()
+	if node == null or node.id != node_id:
+		return
+	complete_current_node()
+	story_node_finished.emit(node_id)
+	if node.auto_continue_after_completion:
+		start_current_node()
 
 func return_to_hub() -> void:
 	clear_active_match()
@@ -144,6 +175,8 @@ func start_current_node() -> void:
 		_start_reward_node(node)
 	elif node is SceneStoryNode:
 		_start_scene_node(node)
+	elif node is QuestStoryNode:
+		_start_quest_node()
 	else:
 		push_error("StoryManager: unknown story node type for id '%s'." % node.id)
 
@@ -273,8 +306,16 @@ func _start_boss_node(node: BossGameStoryNode) -> void:
 
 func _start_random_match_node(node: RandomMatchStoryNode) -> void:
 	var difficulty: int = node.difficulty_override if node.difficulty_override > 0 else _get_last_defeated_boss_level(node)
-	var opponent: Dictionary = RandomOpponentFactory.create(difficulty)
+	_set_up_generated_opponent(difficulty)
 
+	_active_match_node_id = node.id
+	_pending_boss_line = {}
+	StoryProgressStore.register_node_attempt(node.id)
+	SceneTransition.change_scene(GAME_SCENE_PATH)
+
+## A generated opponent (RandomOpponentFactory) as the AI, in the default room.
+func _set_up_generated_opponent(difficulty: int) -> void:
+	var opponent: Dictionary = RandomOpponentFactory.create(difficulty)
 	_configure_singleplayer_match(int(opponent.get("difficulty_level", difficulty)))
 	GameConfig.clear_match_room()
 	GameConfig.set_ai_opponent_override(
@@ -282,11 +323,6 @@ func _start_random_match_node(node: RandomMatchStoryNode) -> void:
 		opponent.get("portrait_data", {}),
 		opponent.get("deck_stamp_names", [])
 	)
-
-	_active_match_node_id = node.id
-	_pending_boss_line = {}
-	StoryProgressStore.register_node_attempt(node.id)
-	SceneTransition.change_scene(GAME_SCENE_PATH)
 
 func _finish_random_match(node: RandomMatchStoryNode) -> void:
 	if StoryProgressStore.get_node_attempts(node.id) >= node.match_count:
@@ -304,8 +340,8 @@ func _configure_singleplayer_match(ai_difficulty_level: int) -> void:
 	GameConfig.set_player_ai_difficulty_level(1, ai_difficulty_level)
 
 ## Difficulty a warm-up match inherits: the level of the nearest boss beaten
-## before this node in story order. Falls back to the easiest level when no
-## boss has been beaten yet.
+## before this node in story order (with no node, the last boss beaten at
+## all). Falls back to the easiest level when no boss has been beaten yet.
 func _get_last_defeated_boss_level(before_node: StoryNode) -> int:
 	var level: int = GameConfig.MIN_AI_DIFFICULTY_LEVEL
 	for candidate in _flat_nodes:
@@ -368,6 +404,12 @@ func _start_scene_node(node: SceneStoryNode) -> void:
 		finish_current_node()
 		return
 	SceneTransition.change_scene(_resolve_scene_path(node.scene_path))
+
+## Reached by chaining from the node before it: the quest goes up in the top
+## bar, and the player goes to the hub to do it.
+func _start_quest_node() -> void:
+	QuestStore.director.refresh()
+	return_to_hub()
 
 func _start_reward_node(node: RewardStoryNode) -> void:
 	if node.reward_scene_path.is_empty():

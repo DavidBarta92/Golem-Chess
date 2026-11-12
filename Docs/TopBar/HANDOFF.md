@@ -70,6 +70,35 @@ steps, a bar above) → reward, plus a **Claim** button when done. One panel at 
 time; clicking the ribbon again, clicking elsewhere or Esc closes it. If it
 does not fit on the right, it opens to the left.
 
+**Sale notices** (added after the design, by its rules; also in the design's
+tables): when a buyer picks from one of the player's lots on the Bourse
+([BOURSE.md](../Bourse/BOURSE.md)), a notice hangs among the quest ribbons
+until the price is collected — one per sold lot, so at most 4
+(`BourseStore.LOT_SLOTS`), on top of the 6 quests.
+
+- **A ribbon of its own type**: the cut tells the type, so only the cut is
+  new — a **rounded foot**, the lower half of an ellipse
+  (`TAIL_DEPTH["sale"]` in `TopBarStyle.gd`). Everything else is a quest
+  ribbon's: width, length, outline, gold for coins, the coin icon at the
+  bottom in ink, and the stitching, solid all the way down (all of it done).
+- **Behaves like a done quest**: sways, arrives and is pulled up the same way,
+  and takes its place in the same order (a new one on the left). It does not
+  hang lower as a done quest does, so its foot stays level with the others'.
+- **Its panel** is a done quest's: kicker SOLD (ELADVA) → the buyer's name as
+  the title → "*Picked from your lot:* **Lance***. The other 4 stamps go back
+  to your album.*" → "Reward +20" and **Claim**, which runs
+  `BourseStore.collect_lot` (the price comes in, the stamp leaves the
+  collection, the other four are free again) and bumps the coin counter.
+- Collected on the Bourse's own screen instead, the notice is pulled up too:
+  the bar follows `BourseStore.changed`.
+- Only while the story has the Bourse open (`StoryFeatures.TRADE`), like the
+  main menu's text notice (`BourseSaleNotice`).
+- To try them: the developer window's Bourse section (BOURSE.md, Testing).
+- Code: `Scripts/TopBar/SaleRibbon.gd` (a `QuestRibbon.gd` of kind `sale`,
+  which draws the rounded cut), `QuestPanel.show_sale` (builds a done quest
+  for `show_quest`), and `GlobalTopBar`'s "Sale notices" section. Its id among
+  the ribbons is `sale:` + the lot's id.
+
 ## Sizes: design px → Godot units
 
 The design was measured on a ~1900 px wide screenshot; the project's base
@@ -147,9 +176,13 @@ The sketches used stand-ins; the game's own versions win:
 - **Menu**: a `PanelContainer` with a `StyleBoxFlat` (ink border, radius ≈ 7.5,
   paper fill) that closes on outside click and `ui_cancel`.
 
+Where the quests come from - story nodes, the daily, the regular ones -
+and what moves them on: [Docs/Quests/QUESTS.md](../Quests/QUESTS.md). A
+regular quest's panel has a **Swap** button (outline, next to where Claim goes)
+once a day.
+
 ## Not decided yet
 
 - Which story beat reveals each counter.
-- Where quests come from: their data, assignment and the 6-quest cap.
 - The design files still show the stand-ins (Lexend, sketch coin, plain-text
   logo); in the game, use the real ones listed above.

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuestTemplate" format=3]
+
+[ext_resource type="Script" path="res://Scripts/Quests/QuestTemplate.gd" id="1_template"]
+
+[resource]
+script = ExtResource("1_template")
+template_id = "affix_stamps_of_set"
+condition = 2
+pools = 2
+weight = 1.0
+per_match = 7.0
+min_count = 5
+max_count = 30
+round_to = 5
+param_pool = Array[String](["Animals", "Flora", "Celestials", "Archetypes", "Courtyard", "Structures"])
+requires_features = Array[String]([])

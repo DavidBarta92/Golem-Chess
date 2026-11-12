@@ -10,6 +10,8 @@ extends MarginContainer
 ## top bar waits a couple of frames after show_quest() before reading it.
 
 signal claim_requested(quest_id: String)
+## The Swap button of a regular quest (QuestDirector.swap).
+signal swap_requested(quest_id: String)
 
 const TopBarStyle = preload("res://Scripts/TopBar/TopBarStyle.gd")
 const TOP_BAR_ICON_SCRIPT = preload("res://Scripts/TopBar/TopBarIcon.gd")
@@ -20,6 +22,7 @@ const KIND_KEY: Dictionary = {
 	"story": "QUEST_KIND_STORY",
 	"reward": "QUEST_KIND_REWARD",
 	"daily": "QUEST_KIND_DAILY",
+	"sale": "BOURSE_LOT_SOLD",
 }
 ## Steps up to this many show as dots, more as a bar.
 const MAX_PIPS: int = 10
@@ -69,14 +72,14 @@ func show_quest(quest: Dictionary, time_left_text: String, is_urgent: bool, open
 	_content.add_child(_build_kicker(kind, reward, time_left_text, is_urgent))
 	_add_gap(6.0)
 
-	var title: String = tr(str(quest.get("title", "")))
+	var title: String = _quest_string(quest, "title")
 	if !title.is_empty():
 		var title_label := TopBarStyle.make_label(title, &"QuestTitleLabel")
 		title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_content.add_child(title_label)
 		_add_gap(4.5)
 
-	var text: String = tr(str(quest.get("text", "")))
+	var text: String = _quest_string(quest, "text")
 	if !text.is_empty():
 		_add_text(text)
 
@@ -89,6 +92,23 @@ func show_quest(quest: Dictionary, time_left_text: String, is_urgent: bool, open
 	_content.add_child(_build_footer(quest, reward))
 	reset_size()
 	queue_redraw()
+
+## A sale on the Bourse (the top bar's SaleRibbon), laid out as a done quest by
+## the panel's rules (Docs/TopBar/design/components/QuestPanel.md): the buyer
+## as the title, the stamp they took as the text's key, the price as the
+## reward, and Claim. claim_requested carries item_id.
+func show_sale(lot: Dictionary, item_id: String, open_left: bool) -> void:
+	var buyer: Dictionary = lot.get("buyer", {})
+	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(StampPrintLibrary.get_print(str(lot.get("sold_print_id", ""))))
+	show_quest({
+		"id": item_id,
+		"kind": "sale",
+		"reward": "coin",
+		"amount": int(lot.get("price", 0)),
+		"title": RandomOpponentFactory.format_name(str(buyer.get("surname", "")), str(buyer.get("given_name", ""))),
+		"text": tr("TOPBAR_SALE_TEXT") % (stamp.stamp_name if stamp != null else "?"),
+		"done": true,
+	}, "", false, open_left)
 
 ## Moves the clock of an open daily quest on. False when the quest has just
 ## become urgent (or stopped being), which needs the panel rebuilt.
@@ -144,6 +164,19 @@ func _draw() -> void:
 	else:
 		draw_rect(Rect2(0.0, 0.0, opaque_width, size.y), fill)
 		draw_polygon(PackedVector2Array([Vector2(opaque_width, 0), Vector2(size.x, 0), Vector2(size.x, size.y), Vector2(opaque_width, size.y)]), PackedColorArray([fill, clear, clear, fill]))
+
+## A quest's title or text, translated, with {count} (its target) and {param}
+## (its XY, QuestCondition.param_label) filled in for a quest that has a
+## condition.
+func _quest_string(quest: Dictionary, field: String) -> String:
+	var value: String = tr(str(quest.get(field, "")))
+	var type: int = QuestCondition.type_from_id(str(quest.get("condition", "")))
+	if type < 0:
+		return value
+	return value.format({
+		"count": int(quest.get("target", 1)),
+		"param": tr(QuestCondition.param_label(type, str(quest.get("param", "")))),
+	})
 
 func _add_gap(height: float) -> void:
 	var gap := Control.new()
@@ -235,6 +268,8 @@ func _build_footer(quest: Dictionary, reward: String) -> HBoxContainer:
 
 	if bool(quest.get("done", false)):
 		row.add_child(_build_claim_button(reward))
+	elif QuestStore.director.can_swap(quest):
+		row.add_child(_build_swap_button())
 	return row
 
 func _reward_icon(reward: String) -> Control:
@@ -262,6 +297,18 @@ func _build_claim_button(reward: String) -> Button:
 	if reward != "story":
 		button.set_meta("sfx_click", "buy")
 	button.pressed.connect(func() -> void: claim_requested.emit(quest_id))
+	return button
+
+## A regular quest's way out, once a day: an outline button, quieter than
+## Claim.
+func _build_swap_button() -> Button:
+	var button := Button.new()
+	button.text = tr("QUEST_SWAP")
+	button.tooltip_text = tr("QUEST_SWAP_HINT")
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(0.0, 30.0)
+	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	button.pressed.connect(func() -> void: swap_requested.emit(quest_id))
 	return button
 
 ## One step of a quest up to ten steps long; an empty one is a paper-shade slot.

@@ -109,6 +109,7 @@ func list_lot(print_ids: Array, price: int) -> Dictionary:
 	(data["lots"] as Array).append(lot)
 	save()
 	PlayerCollectionStore.invalidate_reserved_copies()
+	QuestStore.record_event(QuestCondition.EVENT_LOT_LISTED)
 	changed.emit()
 	return lot.duplicate(true)
 
@@ -142,6 +143,7 @@ func collect_lot(lot_id: String) -> Dictionary:
 	PlayerCollectionStore.invalidate_reserved_copies()
 	PlayerCollectionStore.remove_free_print_copy(sold_print_id)
 	PlayerProgressStore.add_points(coins)
+	QuestStore.record_event(QuestCondition.EVENT_LOT_SOLD)
 	changed.emit()
 	return {"coins": coins, "print_id": sold_print_id}
 
@@ -200,12 +202,7 @@ func run_due_visits(now_unix: int = -1) -> Array:
 				continue
 			if _rng.randf() >= get_sale_chance(lot):
 				continue
-			var print_ids: Array = lot.get("print_ids", [])
-			lot["state"] = STATE_SOLD
-			lot["sold_at"] = visit_at
-			lot["sold_print_id"] = str(print_ids[_rng.randi_range(0, print_ids.size() - 1)])
-			lot["buyer"] = RandomOpponentFactory.create_person(_rng)
-			lot["announced"] = false
+			_mark_sold(lot, visit_at)
 			sold.append((lot as Dictionary).duplicate(true))
 	data["next_visit_at"] = next_visit + due * VISIT_SECONDS
 	save()
@@ -213,6 +210,30 @@ func run_due_visits(now_unix: int = -1) -> Array:
 		lots_sold.emit(sold)
 	changed.emit()
 	return sold
+
+## A buyer takes a listed lot at once, whatever its chance - for the main
+## menu's developer tools. Returns the sold lot, or {} for one not listed.
+func sell_lot_now(lot_id: String) -> Dictionary:
+	ensure_loaded()
+	var index: int = _find_lot_index(lot_id)
+	if index < 0 or str(data["lots"][index].get("state", "")) != STATE_LISTED:
+		return {}
+	var lot: Dictionary = data["lots"][index]
+	_mark_sold(lot, int(Time.get_unix_time_from_system()))
+	save()
+	var sold: Dictionary = lot.duplicate(true)
+	lots_sold.emit([sold])
+	changed.emit()
+	return sold
+
+## The buyer draws one of the five at random.
+func _mark_sold(lot: Dictionary, sold_at: int) -> void:
+	var print_ids: Array = lot.get("print_ids", [])
+	lot["state"] = STATE_SOLD
+	lot["sold_at"] = sold_at
+	lot["sold_print_id"] = str(print_ids[_rng.randi_range(0, print_ids.size() - 1)])
+	lot["buyer"] = RandomOpponentFactory.create_person(_rng)
+	lot["announced"] = false
 
 # --- The game's lots of the day ------------------------------------------------------
 
@@ -279,6 +300,7 @@ func finish_pick(index: int) -> String:
 			lot["picked_print_id"] = print_id
 	data.erase("pending_pick")
 	save()
+	QuestStore.record_event(QuestCondition.EVENT_LOT_BOUGHT)
 	changed.emit()
 	return print_id
 

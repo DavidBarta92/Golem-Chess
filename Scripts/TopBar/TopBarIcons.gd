@@ -75,6 +75,11 @@ static func draw_icon(canvas: CanvasItem, icon_name: String, rect: Rect2, color:
 		"book":
 			pen.closed_line(_book_page(false))
 			pen.closed_line(_book_page(true))
+		"globe":
+			# Only the equator: latitude lines would close up under the stroke.
+			pen.circle(Vector2(12, 12), 9.0)
+			pen.closed_line(_ellipse(Vector2(12, 12), Vector2(4.0, 9.0)))
+			pen.line([Vector2(3, 12), Vector2(21, 12)])
 		"hourglass":
 			pen.line([Vector2(7, 4), Vector2(17, 4)])
 			pen.line([Vector2(7, 20), Vector2(17, 20)])
@@ -93,6 +98,9 @@ static func draw_mini_ribbon(canvas: CanvasItem, kind: String, rect: Rect2, fill
 	var origin: Vector2 = rect.position + Vector2(2.0, 2.0) * scale
 	var outline: Array[Vector2]
 	match kind:
+		"sale":
+			for point in round_foot(0.0, 28.0, 0.0, 40.0, 11.0):
+				outline.append(point)
 		"story":
 			outline = [Vector2(0, 0), Vector2(28, 0), Vector2(28, 30), Vector2(0, 40)]
 		"daily":
@@ -106,6 +114,22 @@ static func draw_mini_ribbon(canvas: CanvasItem, kind: String, rect: Rect2, fill
 	points.append(points[0])
 	canvas.draw_polyline(points, ink, stroke_for(minf(rect.size.x, rect.size.y)), true)
 
+## The Bourse notice's edge: from (left, top) down the left side, round a foot
+## shaped as the lower half of an ellipse `depth` deep - its lowest point at
+## `bottom`, in the middle - and up the right side to (right, top). Open at the
+## top for its ink line; filled, it closes along the top.
+static func round_foot(left: float, right: float, top: float, bottom: float, depth: float, segments: int = 24) -> PackedVector2Array:
+	var radius_y: float = clampf(depth, 0.0, bottom - top)
+	var center := Vector2((left + right) * 0.5, bottom - radius_y)
+	var radius_x: float = (right - left) * 0.5
+	var points := PackedVector2Array([Vector2(left, top)])
+	# Screen y runs down, so 180 -> 0 degrees sweeps the lower half, left to right.
+	for step in range(segments + 1):
+		var angle: float = PI - PI * float(step) / float(segments)
+		points.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
+	points.append(Vector2(right, top))
+	return points
+
 ## The width an icon's ordinary line shows at, for an icon that size.
 static func stroke_for(icon_size: float) -> float:
 	return minf(TopBarStyle.STROKE, icon_size * MAX_STROKE_SHARE)
@@ -116,6 +140,13 @@ static func _cubic(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2) -> Array[
 		var t: float = float(index) / float(CURVE_SEGMENTS)
 		var u: float = 1.0 - t
 		points.append(p0 * u * u * u + p1 * 3.0 * u * u * t + p2 * 3.0 * u * t * t + p3 * t * t * t)
+	return points
+
+static func _ellipse(centre: Vector2, radii: Vector2, segments: int = 40) -> Array[Vector2]:
+	var points: Array[Vector2] = []
+	for index in range(segments):
+		var angle: float = TAU * float(index) / float(segments)
+		points.append(centre + Vector2(cos(angle) * radii.x, sin(angle) * radii.y))
 	return points
 
 static func _mirrored(points: Array[Vector2]) -> Array[Vector2]:

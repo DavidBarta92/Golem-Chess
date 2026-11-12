@@ -204,6 +204,7 @@ func purchase_packs(amount: int, pack_id: String = LEGACY_PACK_ID, pack_price: i
 		return false
 
 	add_unopened_packs(pack_count, pack_id)
+	QuestStore.record_event(QuestCondition.EVENT_PACKS_BOUGHT, {"count": pack_count, "pack_id": pack_id})
 	return true
 
 ## `save` off is for opening several in a row, with one save_progress() after them.

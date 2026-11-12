@@ -30,3 +30,6 @@
 - [Docs/Bourse/BOURSE.md](Docs/Bourse/BOURSE.md) — the Bourse (Börze): lots of
   five, made-up buyers and sellers, the free-copy rule for codexes, the coin
   scale, and where to tune them.
+- [Docs/Quests/QUESTS.md](Docs/Quests/QUESTS.md) — quests: story, daily and
+  regular ones, the conditions and the events behind them, the templates and
+  their sizes, swapping, and story quest nodes.

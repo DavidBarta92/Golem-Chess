@@ -20,6 +20,7 @@ A Golem felső sávja papír és tinta: krémszínű lap, sötét tintakontúr, 
 | Ferde vágás | Történet — teljesítve a sztori megy tovább | `story` (bordó), mindig |
 | V-bevágás | Jutalom | `coin` (arany) vagy `draw` (tintakék) |
 | Bástyafogak | Napi — 24 óra alatt kell teljesíteni | `coin` vagy `draw` |
+| Lekerekített | Értesítés — eladott lott a Börzén, az ára begyűjthető (a játékban került be, nem a vázlatokban) | `coin` |
 
 - Minden feladat pontosan egyféle jutalmat ad, így a szalagnak mindig egy színe van — kétszínű szalag nincs.
 - A szalag színe a számlálóé, amelyiket tölti: arany szalag → érme, kék szalag → rajzpont (a ceruzás kör is kék). A bordó csak a történeté — sehol máshol ne használd.

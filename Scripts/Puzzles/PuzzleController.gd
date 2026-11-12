@@ -411,6 +411,9 @@ func _solve() -> void:
 	over = true
 	run_token += 1
 	board.set_tutorial_constraints(NO_ACTIONS)
+	# Quests count a puzzle once, the first time it is solved.
+	if !PuzzleStore.is_solved(puzzle.puzzle_id):
+		QuestStore.record_event(QuestCondition.EVENT_PUZZLE_SOLVED, {"puzzle_id": puzzle.puzzle_id})
 	PuzzleStore.mark_solved(puzzle.puzzle_id)
 	PuzzleStore.last_reward_paid = PuzzleStore.grant_reward(puzzle)
 	hud.set_moves_text(tr("PUZZLE_STATE_SOLVED"))

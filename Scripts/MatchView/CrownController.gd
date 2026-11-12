@@ -13,6 +13,9 @@ extends RefCounted
 ## way the host would have it (begin_local_turn, place_crown_locally).
 
 signal crown_placed(piece_pos: Vector2, owner_color: int)
+## A golem of this colour was crowned: as the host's state says it, or placed
+## here in a match with no host (crown_placed comes only then).
+signal crowned(owner_color: int)
 
 const CrownMeter = preload("res://Scripts/MatchView/CrownMeter.gd")
 const CrownRim = preload("res://Scripts/MatchView/CrownRim.gd")
@@ -92,6 +95,7 @@ func apply_state_from_server(points_by_player: Dictionary, points_required: int,
 		crowned_this_turn[owner_color] = bool(crowned_by_player.get(player_id, crowned_by_player.get(str(player_id), false)))
 		if _has_state and !was_crowned and crowned_this_turn[owner_color]:
 			_crowning_due[owner_color] = true
+			crowned.emit(owner_color)
 	_has_state = true
 	refresh()
 
@@ -198,6 +202,7 @@ func place_crown_locally(owner_color: int, piece_pos: Vector2) -> void:
 	rims[owner_color].take_crown()
 	_play_crowning(owner_color)
 	crown_placed.emit(piece_pos, owner_color)
+	crowned.emit(owner_color)
 
 func has_crowned_this_turn(owner_color: int) -> bool:
 	return bool(crowned_this_turn.get(owner_color, false))

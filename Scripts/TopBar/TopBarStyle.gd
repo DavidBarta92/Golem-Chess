@@ -44,10 +44,13 @@ const RIBBON_REST: float = 72.0
 const RIBBON_LIFT: float = 4.5
 const RIBBON_DONE_DROP: float = 9.0
 const RIBBON_RETRACTED: float = 54.0
+## "sale" is the Bourse's sale notice (SaleRibbon): its foot is rounded, the
+## lower half of an ellipse this deep.
 const TAIL_DEPTH: Dictionary = {
 	"story": 15.0,
 	"reward": 13.5,
 	"daily": 9.0,
+	"sale": 16.0,
 }
 
 ## Wider than the design's 270 / 204, for the shared type sizes.

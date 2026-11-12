@@ -11,7 +11,8 @@ class_name MainMenuStreetView
 
 signal opponent_arrived
 
-@export var arrival_delay: float = 10.0
+## Seconds before the walk starts; 0 starts it as the menu opens.
+@export var arrival_delay: float = 1.0
 @export var arrival_duration: float = 3.2
 @export var start_offset: Vector2 = Vector2(-460.0, -320.0)
 @export var arrived_opacity: float = 0.5
@@ -47,6 +48,10 @@ func _ready() -> void:
 	_layout_to_artwork()
 	get_viewport().size_changed.connect(_layout_to_artwork)
 
+	# A Timer refuses a zero wait; the deferred call lets the layout settle.
+	if arrival_delay <= 0.0:
+		call_deferred("_start_arrival")
+		return
 	_arrival_timer = Timer.new()
 	_arrival_timer.one_shot = true
 	_arrival_timer.wait_time = arrival_delay

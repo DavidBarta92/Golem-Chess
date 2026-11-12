@@ -65,6 +65,7 @@ func apply_local_move_state(move_context: Dictionary) -> void:
 	var captured_piece: Piece = move_state.get("captured_piece", null) as Piece
 	var moving_piece_visible_to_enemy: bool = bool(move_state.get("moving_piece_visible_to_enemy", true))
 
+	var captured_stamp_name: String = captured_piece.affixed_stamp.stamp_name if captured_piece != null and captured_piece.affixed_stamp != null else ""
 	if bool(move_state.get("captured_seeker", false)):
 		return_captured_seeker_stamp_to_deck(captured_piece)
 	if captured_piece != null:
@@ -76,6 +77,10 @@ func apply_local_move_state(move_context: Dictionary) -> void:
 	move_context["moving_piece_visible_to_enemy"] = moving_piece_visible_to_enemy
 	move_context["winner_color"] = int(move_state.get("winner_color", 0))
 	match_board.piece_moved.emit(start_pos, end_pos, moving_color)
+	if captured_piece != null:
+		var mover: Piece = match_board.piece_objects[end_pos] as Piece if match_board.piece_objects.has(end_pos) else null
+		var mover_stamp_name: String = mover.affixed_stamp.stamp_name if mover != null and mover.affixed_stamp != null else ""
+		match_board.piece_captured.emit(moving_color, captured_piece.color, mover_stamp_name, captured_stamp_name)
 
 func finish_local_move_if_winning(move_context: Dictionary) -> bool:
 	return int(move_context.get("winner_color", 0)) != 0

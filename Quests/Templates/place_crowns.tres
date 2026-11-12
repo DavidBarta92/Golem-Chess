@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuestTemplate" format=3]
+
+[ext_resource type="Script" path="res://Scripts/Quests/QuestTemplate.gd" id="1_template"]
+
+[resource]
+script = ExtResource("1_template")
+template_id = "place_crowns"
+condition = 12
+pools = 3
+weight = 0.8
+per_match = 0.7
+min_count = 1
+max_count = 4
+round_to = 1
+param_pool = Array[String]([])
+requires_features = Array[String]([])

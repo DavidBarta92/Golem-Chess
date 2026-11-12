@@ -252,6 +252,7 @@ func save_new_deck(deck_name: String, stamps: Array) -> Dictionary:
 	decks.append(deck)
 	deck_data["decks"] = decks
 	save_decks()
+	QuestStore.record_event(QuestCondition.EVENT_CODEX_SAVED, {"stamp_names": get_stamp_names_from_deck(deck)})
 	return deck.duplicate(true)
 
 func save_existing_deck(deck_id: String, deck_name: String, stamps: Array) -> bool:
@@ -271,7 +272,10 @@ func save_existing_deck(deck_id: String, deck_name: String, stamps: Array) -> bo
 			deck["updated_at"] = Time.get_datetime_string_from_system(true)
 			decks[index] = deck
 			deck_data["decks"] = decks
-			return save_decks()
+			var saved: bool = save_decks()
+			if saved:
+				QuestStore.record_event(QuestCondition.EVENT_CODEX_SAVED, {"stamp_names": get_stamp_names_from_deck(deck)})
+			return saved
 	return false
 
 ## Counts a finished match for the codex the player used.

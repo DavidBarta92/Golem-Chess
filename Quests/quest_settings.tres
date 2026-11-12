@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="QuestSettings" format=3]
+
+[ext_resource type="Script" path="res://Scripts/Quests/QuestSettings.gd" id="1_settings"]
+
+[resource]
+script = ExtResource("1_settings")
+daily_reward = 80
+daily_reward_kind = "coin"
+daily_budget_matches = 3.0
+regular_max = 3
+regular_reward = 40
+regular_reward_kind = "coin"
+regular_budget_matches = 1.5
+regular_swaps_per_day = 1

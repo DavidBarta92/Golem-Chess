@@ -3,6 +3,10 @@ extends Sprite2D
 signal piece_selected(piece_pos: Vector2, player_id: int)
 signal stamp_affixed(piece_pos: Vector2, stamp_name: String, owner_color: int, hand_index: int)
 signal piece_moved(from_pos: Vector2, to_pos: Vector2, owner_color: int)
+## A move took a golem - in a match on the host as it arrives with the state
+## (ServerStateUpdateController), in one with no host as it is played
+## (LocalMoveFlowController). A bomb's captures are not moves and do not count.
+signal piece_captured(by_color: int, captured_color: int, capturing_stamp_name: String, captured_stamp_name: String)
 signal stamp_exchanged(stamp_name: String, owner_color: int, hand_index: int)
 signal codex_page_turned(owner_color: int, page_index: int)
 signal turn_ended(ending_color: int, next_color: int)

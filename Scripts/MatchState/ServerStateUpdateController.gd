@@ -112,7 +112,9 @@ func update_from_server_state(
 	match_board.current_board_effects = match_board.get_match_state_sync_controller().parse_board_effects(board_effects)
 	match_board.current_player_names = match_board.get_match_state_sync_controller().parse_player_names(player_names, match_board.current_player_names)
 	match_board.current_player_portraits = match_board.get_match_state_sync_controller().parse_player_portraits(player_portraits, match_board.current_player_portraits)
+	var previous_last_move: Dictionary = match_board.current_last_move
 	match_board.current_last_move = match_board.get_match_state_sync_controller().parse_last_move(last_move)
+	_report_new_capture(previous_last_move, match_board.current_last_move, previous_piece_visual_state)
 	if !apply_turn_action_state_from_server(turn_action_state):
 		apply_missing_turn_action_state_fallback()
 	var white_page_turned_this_update: bool = !previous_white_turned_page and bool(match_board.has_turned_page_this_turn.get(1, false))
@@ -222,6 +224,31 @@ func update_from_server_state(
 		return
 
 	match_board.get_server_state_visual_update_controller().finish(visual_context)
+
+## The host sends its last move with every state, so a move is new when it
+## differs from the one before; the first state may carry an old one (a
+## reconnect) and is left out. The capturing stamp is the one the mover wore
+## on its square before the update - it may run out on the very move - or else
+## the one it wears now, or what the host names for a hidden mover.
+func _report_new_capture(previous_last_move: Dictionary, current_last_move: Dictionary, previous_pieces: Dictionary) -> void:
+	if !match_board.has_received_server_state or current_last_move.is_empty() or current_last_move == previous_last_move:
+		return
+	var captured_color: int = int(current_last_move.get("captured_piece_color", 0))
+	if captured_color == 0:
+		return
+	var capturing_stamp_name: String = str((previous_pieces.get(current_last_move.get("from", Vector2(-1, -1)), {}) as Dictionary).get("stamp_name", ""))
+	if capturing_stamp_name.is_empty():
+		var mover: Piece = match_board.piece_objects.get(current_last_move.get("to", Vector2(-1, -1)), null) as Piece
+		if mover != null and mover.affixed_stamp != null:
+			capturing_stamp_name = mover.affixed_stamp.stamp_name
+		else:
+			capturing_stamp_name = str(current_last_move.get("piece_stamp_name", ""))
+	match_board.piece_captured.emit(
+		int(current_last_move.get("piece_color", 0)),
+		captured_color,
+		capturing_stamp_name,
+		str(current_last_move.get("captured_stamp_name", ""))
+	)
 
 func wait_for_active_state_visual_animations() -> void:
 	while match_board != null and match_board.is_inside_tree() and has_active_state_visual_animations():

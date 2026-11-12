@@ -862,6 +862,9 @@ RETRY_PROMPT_NO,Not now,Most nem
 STORY_MULTIPLAYER_BUTTON,Multiplayer,Többjátékos
 PUZZLES_BUTTON,Puzzles,Feladványok
 TRADE_BUTTON,Bourse,Börze
+PLAY_MODE_STORY,Story,Történet
+PLAY_MODE_RANDOM,Random opponent,Véletlen ellenfél
+PLAY_MODE_ONLINE,Multiplayer (soon),Többjátékos (hamarosan)
 STORY_MULTIPLAYER_SCREEN_TITLE,Multiplayer,Többjátékos
 PUZZLES_SCREEN_TITLE,Letters,Levelek
 PLACEHOLDER_SCREEN_NOTE,This screen is still being built.,Ez a képernyő még készül.
@@ -1032,6 +1035,89 @@ QUEST_SAMPLE_COLLECTOR_TITLE,Stamp collector,Bélyeggyűjtő
 QUEST_SAMPLE_COLLECTOR_TEXT,Every stamp has a story. <b>Stick on 40 stamps</b> in battle.,Minden bélyegnek története van. <b>Ragassz fel 40 bélyeget</b> csatában.
 QUEST_SAMPLE_QUICK_TITLE,Quick hand,Gyors kéz
 QUEST_SAMPLE_QUICK_TEXT,Fast and sure. <b>Win 2 matches</b> today.,Gyorsan és biztosan. <b>Nyerj 2 meccset</b> ma.
+QUEST_WIN_MATCHES_TITLE,Victories,Győzelmek
+QUEST_WIN_MATCHES_TITLE_ONE,A victory,Egy győzelem
+QUEST_WIN_MATCHES_TEXT,The golems remember who led them. <b>Win {count} matches</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj {count} meccset</b>."
+QUEST_WIN_MATCHES_TEXT_ONE,The golems remember who led them. <b>Win a match</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj egy meccset</b>."
+QUEST_WIN_MATCHES_PARAM_TEXT,The golems remember who led them. <b>Win {count} matches in {param}</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj {count} meccset {param}</b>."
+QUEST_WIN_MATCHES_PARAM_TEXT_ONE,The golems remember who led them. <b>Win a match in {param}</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj egy meccset {param}</b>."
+QUEST_PLAY_MATCHES_TITLE,On the board,A táblán
+QUEST_PLAY_MATCHES_TEXT,"Every match teaches something. <b>Play {count} matches</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le {count} meccset</b>, akár nyersz, akár nem."
+QUEST_PLAY_MATCHES_TEXT_ONE,"Every match teaches something. <b>Play a match</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le egy meccset</b>, akár nyersz, akár nem."
+QUEST_PLAY_MATCHES_PARAM_TEXT,"Every match teaches something. <b>Play {count} matches in {param}</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le {count} meccset {param}</b>, akár nyersz, akár nem."
+QUEST_PLAY_MATCHES_PARAM_TEXT_ONE,"Every match teaches something. <b>Play a match in {param}</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le egy meccset {param}</b>, akár nyersz, akár nem."
+QUEST_AFFIX_STAMPS_TITLE,Glue and paper,Enyv és papír
+QUEST_AFFIX_STAMPS_TEXT,Every stamp has a story. <b>Affix {count} stamps</b> in matches.,Minden bélyegnek története van. <b>Ragassz fel {count} bélyeget</b> meccseken.
+QUEST_AFFIX_STAMPS_TEXT_ONE,Every stamp has a story. <b>Affix a stamp</b> in a match.,Minden bélyegnek története van. <b>Ragassz fel egy bélyeget</b> egy meccsen.
+QUEST_AFFIX_STAMPS_PARAM_TEXT,Every stamp has a story. <b>Affix {count} stamps from this set: {param}</b>.,Minden bélyegnek története van. <b>Ragassz fel {count} bélyeget ebből a szettből: {param}</b>.
+QUEST_AFFIX_STAMPS_PARAM_TEXT_ONE,Every stamp has a story. <b>Affix a stamp from this set: {param}</b>.,Minden bélyegnek története van. <b>Ragassz fel egy bélyeget ebből a szettből: {param}</b>.
+QUEST_BUY_PACKS_TITLE,Fresh packs,Friss csomagok
+QUEST_BUY_PACKS_TITLE_ONE,A fresh pack,Friss csomag
+QUEST_BUY_PACKS_TEXT,There is always something new inside. <b>Buy {count} packs</b> in the Collection.,Mindig van benne valami új. <b>Vegyél {count} csomagot</b> a Gyűjteményben.
+QUEST_BUY_PACKS_TEXT_ONE,There is always something new inside. <b>Buy a pack</b> in the Collection.,Mindig van benne valami új. <b>Vegyél egy csomagot</b> a Gyűjteményben.
+QUEST_LIST_LOTS_TITLE,Market day,Vásárnap
+QUEST_LIST_LOTS_TEXT,The buyers are waiting. <b>Put up {count} lots</b> on the Bourse.,A vevők már várnak. <b>Tegyél ki {count} lottot</b> a Börzére.
+QUEST_LIST_LOTS_TEXT_ONE,The buyers are waiting. <b>Put up a lot</b> on the Bourse.,A vevők már várnak. <b>Tegyél ki egy lottot</b> a Börzére.
+QUEST_SOLVE_PUZZLES_TITLE,Correspondence,Levélváltás
+QUEST_SOLVE_PUZZLES_TEXT,Someone is waiting for an answer. <b>Solve {count} puzzles</b> from the letters.,Valaki választ vár. <b>Oldj meg {count} feladványt</b> a levelekből.
+QUEST_SOLVE_PUZZLES_TEXT_ONE,Someone is waiting for an answer. <b>Solve a puzzle</b> from the letters.,Valaki választ vár. <b>Oldj meg egy feladványt</b> a levelekből.
+QUEST_OPEN_SCREEN_TITLE,A new door,Új ajtó
+QUEST_OPEN_SCREEN_TEXT,<b>Open this: {param}</b>.,<b>Nyisd meg: {param}</b>.
+QUEST_SCREEN_COLLECTION,Collection,Gyűjtemény
+QUEST_SCREEN_BOURSE,Bourse,Börze
+QUEST_SCREEN_PUZZLES,Puzzles,Feladványok
+QUEST_MODE_SINGLEPLAYER,singleplayer,egyjátékos módban
+QUEST_MODE_MULTIPLAYER,multiplayer,többjátékos módban
+QUEST_SWAP,Swap,Csere
+QUEST_SWAP_HINT,You can swap one reward quest a day.,Naponta egy jutalom-feladatot cserélhetsz.
+QUEST_AFFIX_ROLE_TITLE,The right role,A megfelelő szerep
+QUEST_AFFIX_ROLE_PARAM_TEXT,A golem is what its stamp makes it. <b>Affix {count} {param} stamps</b>.,"A gólem az, amivé a bélyege teszi. <b>Ragassz fel {count} {param} bélyeget</b>."
+QUEST_AFFIX_ROLE_PARAM_TEXT_ONE,A golem is what its stamp makes it. <b>Affix one {param} stamp</b>.,"A gólem az, amivé a bélyege teszi. <b>Ragassz fel egy {param} bélyeget</b>."
+QUEST_AFFIX_EFFECT_TITLE,Tricks of the trade,A mesterség fogásai
+QUEST_AFFIX_EFFECT_PARAM_TEXT,Every stamp has its trick. <b>Affix {count} stamps with this effect: {param}</b>.,Minden bélyegnek megvan a maga trükkje. <b>Ragassz fel {count} bélyeget ezzel a hatással: {param}</b>.
+QUEST_AFFIX_EFFECT_PARAM_TEXT_ONE,Every stamp has its trick. <b>Affix a stamp with this effect: {param}</b>.,Minden bélyegnek megvan a maga trükkje. <b>Ragassz fel egy bélyeget ezzel a hatással: {param}</b>.
+QUEST_AFFIX_SPECIFIC_TITLE,An old favourite,Régi kedvenc
+QUEST_AFFIX_SPECIFIC_PARAM_TEXT,Some stamps are worth playing again and again. <b>Affix this stamp {count} times: {param}</b>.,"Van bélyeg, amit újra meg újra elő kell venni. <b>Ragaszd fel {count} alkalommal ezt a bélyeget: {param}</b>."
+QUEST_AFFIX_SPECIFIC_PARAM_TEXT_ONE,Some stamps are worth playing again and again. <b>Affix this stamp: {param}</b>.,"Van bélyeg, amit újra meg újra elő kell venni. <b>Ragaszd fel ezt a bélyeget: {param}</b>."
+QUEST_CAPTURE_PIECES_TITLE,The hunt,Vadászat
+QUEST_CAPTURE_PIECES_TEXT,Whoever hesitates loses a golem. <b>Capture {count} golems</b>.,"Aki habozik, gólemet veszít. <b>Üss le {count} gólemet</b>."
+QUEST_CAPTURE_PIECES_TEXT_ONE,Whoever hesitates loses a golem. <b>Capture a golem</b>.,"Aki habozik, gólemet veszít. <b>Üss le egy gólemet</b>."
+QUEST_CAPTURE_PIECES_PARAM_TEXT,Whoever hesitates loses a golem. <b>Capture {count} golems with this stamp: {param}</b>.,"Aki habozik, gólemet veszít. <b>Üss le {count} gólemet ezzel a bélyeggel: {param}</b>."
+QUEST_CAPTURE_PIECES_PARAM_TEXT_ONE,Whoever hesitates loses a golem. <b>Capture a golem with this stamp: {param}</b>.,"Aki habozik, gólemet veszít. <b>Üss le egy gólemet ezzel a bélyeggel: {param}</b>."
+QUEST_LOSE_PIECES_TITLE,Sacrifice,Áldozat
+QUEST_LOSE_PIECES_TEXT,Sometimes one golem falls so the rest can stand. <b>Lose {count} golems</b> in matches.,"Néha egy gólemnek el kell esnie, hogy a többi állva maradjon. <b>Veszíts el {count} gólemet</b> meccseken."
+QUEST_LOSE_PIECES_TEXT_ONE,Sometimes one golem falls so the rest can stand. <b>Lose a golem</b> in a match.,"Néha egy gólemnek el kell esnie, hogy a többi állva maradjon. <b>Veszíts el egy gólemet</b> egy meccsen."
+QUEST_PLACE_CROWNS_TITLE,Coronation,Koronázás
+QUEST_PLACE_CROWNS_TEXT,"A crown is earned first, then worn. <b>Crown {count} golems</b>.","A koronát előbb ki kell érdemelni, aztán viselni. <b>Koronázz meg {count} gólemet</b>."
+QUEST_PLACE_CROWNS_TEXT_ONE,"A crown is earned first, then worn. <b>Crown a golem</b>.","A koronát előbb ki kell érdemelni, aztán viselni. <b>Koronázz meg egy gólemet</b>."
+QUEST_WIN_WITH_STAMP_TITLE,Lucky charm,Talizmán
+QUEST_WIN_WITH_STAMP_PARAM_TEXT,They say it brings luck. <b>Win {count} matches with this stamp in your codex: {param}</b>.,"Azt mondják, szerencsét hoz. <b>Nyerj {count} meccset úgy, hogy ez a bélyeg a kódexedben van: {param}</b>."
+QUEST_WIN_WITH_STAMP_PARAM_TEXT_ONE,They say it brings luck. <b>Win a match with this stamp in your codex: {param}</b>.,"Azt mondják, szerencsét hoz. <b>Nyerj egy meccset úgy, hogy ez a bélyeg a kódexedben van: {param}</b>."
+QUEST_CODEX_WITH_STAMP_TITLE,A new page,Új lap
+QUEST_CODEX_WITH_STAMP_PARAM_TEXT,A stamp in the album is only half a stamp. <b>Save a codex with {count} copies of this stamp: {param}</b>.,"Az albumban egy bélyeg csak félig bélyeg. <b>Ments el egy kódexet, amiben {count} példány van ebből a bélyegből: {param}</b>."
+QUEST_CODEX_WITH_STAMP_PARAM_TEXT_ONE,A stamp in the album is only half a stamp. <b>Save a codex with this stamp in it: {param}</b>.,"Az albumban egy bélyeg csak félig bélyeg. <b>Ments el egy kódexet, amiben benne van ez a bélyeg: {param}</b>."
+QUEST_SELL_LOTS_TITLE,Good business,Jó üzlet
+QUEST_SELL_LOTS_TEXT,What you no longer need is a treasure to someone. <b>Sell {count} lots</b> on the Bourse.,"Ami neked már nem kell, az másnak kincs. <b>Adj el {count} lottot</b> a Börzén."
+QUEST_SELL_LOTS_TEXT_ONE,What you no longer need is a treasure to someone. <b>Sell a lot</b> on the Bourse.,"Ami neked már nem kell, az másnak kincs. <b>Adj el egy lottot</b> a Börzén."
+QUEST_BUY_LOTS_TITLE,Blind pick,Vakon választva
+QUEST_BUY_LOTS_TEXT,The surprise is part of the price. <b>Pick from {count} lots</b> on the Bourse.,A meglepetés is benne van az árban. <b>Válassz {count} lottból</b> a Börzén.
+QUEST_BUY_LOTS_TEXT_ONE,The surprise is part of the price. <b>Pick from a lot</b> on the Bourse.,A meglepetés is benne van az árban. <b>Válassz egy lottból</b> a Börzén.
+QUEST_EFFECT_STEAL_STAMP,<steal_stamp> stamp theft,<steal_stamp> bélyeglopás
+QUEST_EFFECT_GRANT_STAMP,<grant_stamp> a new stamp on a golem,<grant_stamp> új bélyeg egy gólemre
+QUEST_EFFECT_GIVE_STAMP,<give_stamp> a stamp for the opponent,<give_stamp> bélyeg az ellenfélnek
+QUEST_EFFECT_MOVE_BASE,<move_base> moving base,<move_base> vándorló bázis
+QUEST_EFFECT_INVISIBLE_TO_ENEMY,<invisible_to_enemy> invisibility,<invisible_to_enemy> láthatatlanság
+QUEST_EFFECT_INVALID_SQUARES,<invalid_squares> sealed squares,<invalid_squares> lezárt mezők
+QUEST_EFFECT_FROZEN_SQUARES,<frozen_squares> frozen squares,<frozen_squares> fagyott mezők
+QUEST_EFFECT_BOMB,<bomb> bomb,<bomb> bomba
+QUEST_EFFECT_UNCAPTURABLE,<uncapturable> uncapturable,<uncapturable> üthetetlenség
+QUEST_EFFECT_INCREASE_OWN_DURATIONS,<increase_own_durations> +1 turn for your golems,<increase_own_durations> +1 kör a gólemeidnek
+QUEST_EFFECT_INCREASE_ENEMY_DURATIONS,<increase_enemy_durations> +1 turn for the opponent's golems,<increase_enemy_durations> +1 kör az ellenfél gólemeinek
+QUEST_EFFECT_DECREASE_OWN_DURATIONS,<decrease_own_durations> -1 turn for your golems,<decrease_own_durations> -1 kör a gólemeidnek
+QUEST_EFFECT_DECREASE_ENEMY_DURATIONS,<decrease_enemy_durations> -1 turn for the opponent's golems,<decrease_enemy_durations> -1 kör az ellenfél gólemeinek
+QUEST_EFFECT_INCREASE_SELF_DURATION,<increase_self_duration> +1 turn for itself,<increase_self_duration> +1 kör önmagának
+QUEST_EFFECT_GAIN_CROWN_POINT,<gain_crown_point> +1 crown point,<gain_crown_point> +1 koronapont
+QUEST_EFFECT_REMOVE_ENEMY_CROWN_POINT,<remove_enemy_crown_point> -1 crown point for the opponent,<remove_enemy_crown_point> -1 koronapont az ellenfélnek
 CODEX_MIXED_SETS_TOOLTIP,A codex can only hold stamps of one set,Egy kódexben csak egy típus bélyegei lehetnek
 Open all,Open all,Mind megnyit
 Choose a pack to open,Choose a pack to open,Válassz egy csomagot
@@ -1090,6 +1176,7 @@ BOURSE_YOU_GOT,You got: %s,Ezt kaptad: %s
 BOURSE_PICK_DONE,Back to the Bourse,Vissza a börzére
 BOURSE_NOTICE_SOLD,%s picked from your lot: %s,%s választott a lottodból: %s
 BOURSE_NOTICE_OPEN,To the Bourse,A börzére
+TOPBAR_SALE_TEXT,Picked from your lot: <b>%s</b>. The other 4 stamps go back to your album.,Választott a lottodból: <b>%s</b>. A másik 4 bélyeg visszakerül az albumodba.
 COPIES_IN_CODEX,%s: %d,%s: %d
 COPIES_ON_BOURSE,Bourse: %d,Börze: %d
 PUZZLES_SCREEN_SUBTITLE,Every letter holds a puzzle. Click an envelope to open it.,Minden levélben egy feladvány vár. Kattints egy borítékra a megnyitáshoz.

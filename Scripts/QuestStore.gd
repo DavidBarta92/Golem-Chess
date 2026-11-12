@@ -6,7 +6,9 @@ extends Node
 ##   id        "q<n>", unique within the save
 ##   key       optional; a quest with a key can be active only once, so
 ##             whatever hands quests out can offer the same one again safely
-##   kind      "story" | "reward" | "daily" (daily runs out after a day)
+##             (a story quest's is "story:" + its node's id)
+##   kind      "story" | "reward" | "daily" (daily runs out after a day);
+##             "reward" is what the design calls a regular quest
 ##   reward    "coin" | "draw" - what claiming pays; story quests pay nothing
 ##             here (finishing one moves the story on) and keep ""
 ##   amount    how much of the reward
@@ -16,12 +18,18 @@ extends Node
 ##   progress / target   steps done / needed; done once progress reaches target
 ##   done      waiting to be claimed
 ##   created_at / expires_at   unix seconds; expires_at is 0 unless it runs out
+##   condition / param   what moves it on (QuestCondition): its id and the XY;
+##             empty for a quest that only moves when told to
+##   template  the QuestTemplate it was drawn from, if any
+##
+## Next to them the file keeps the director's schedule: which day's daily and
+## regular quest have come, and today's swaps.
 ##
 ## At most MAX_ACTIVE quests are active at once. Whatever assigns quests is
 ## expected to respect that; add_quest() refuses past it, and the bar has no
-## overflow state. Nothing here decides which quests to hand out or tracks the
-## game events that move them on yet - callers do that through add_quest(),
-## add_progress() and complete_quest().
+## overflow state. QuestDirector (a child of this node) decides what to hand
+## out; record_event() moves on the quests a game event counts for
+## (Docs/Quests/QUESTS.md).
 
 const SCHEMA_VERSION: int = 1
 const FILE_NAME: String = "quests.json"
@@ -47,10 +55,17 @@ signal quest_changed(quest: Dictionary)
 signal quest_claimed(quest: Dictionary)
 signal quest_removed(quest: Dictionary, reason: String)
 
+const QuestDirectorScript = preload("res://Scripts/Quests/QuestDirector.gd")
+
 var quest_data: Dictionary = {}
 var is_loaded: bool = false
+## Hands out the daily, regular and story quests; started by the top bar.
+var director: Node
 
 func _ready() -> void:
+	director = QuestDirectorScript.new()
+	director.name = "QuestDirector"
+	add_child(director)
 	var expiry_timer := Timer.new()
 	expiry_timer.name = "ExpiryTimer"
 	expiry_timer.wait_time = EXPIRY_CHECK_SECONDS
@@ -228,6 +243,36 @@ func expire_overdue_quests() -> void:
 	for quest_id in overdue_ids:
 		expire_quest(quest_id)
 
+## A game event (QuestCondition.EVENT_*): every active quest it counts for
+## takes its steps - or, for a level (QuestCondition.is_level), rises to the
+## level the event shows. Not on a dedicated server or in an AI batch.
+func record_event(event: String, data: Dictionary = {}) -> void:
+	if GameConfig.is_dedicated_server or GameConfig.is_ai_vs_ai_batch:
+		return
+	for quest in get_active_quests():
+		if bool(quest.get("done", false)):
+			continue
+		var type: int = QuestCondition.type_from_id(str(quest.get("condition", "")))
+		if type < 0:
+			continue
+		var steps: int = QuestCondition.progress_for(type, str(quest.get("param", "")), event, data)
+		if steps <= 0:
+			continue
+		if QuestCondition.is_level(type):
+			if steps > int(quest.get("progress", 0)):
+				set_progress(str(quest.get("id", "")), steps)
+		else:
+			add_progress(str(quest.get("id", "")), steps)
+
+func get_schedule_value(key: String, default_value: Variant = "") -> Variant:
+	ensure_loaded()
+	return _schedule().get(key, default_value)
+
+func set_schedule_values(values: Dictionary) -> void:
+	ensure_loaded()
+	_schedule().merge(values, true)
+	save_quests()
+
 ## Debug helper: drops every active quest.
 func clear_all_quests() -> void:
 	ensure_loaded()
@@ -259,6 +304,13 @@ func _remove(quest_id: String, reason: String) -> void:
 	save_quests()
 	quest_removed.emit(quest.duplicate(true), reason)
 
+func _schedule() -> Dictionary:
+	var schedule = quest_data.get("schedule", {})
+	if !(schedule is Dictionary):
+		schedule = {}
+		quest_data["schedule"] = schedule
+	return schedule
+
 func _active() -> Array:
 	var active = quest_data.get("active", [])
 	if !(active is Array):
@@ -284,6 +336,7 @@ func _create_default_data() -> Dictionary:
 		"schema_version": SCHEMA_VERSION,
 		"next_sequence": 1,
 		"active": [],
+		"schedule": {},
 	}
 
 func _normalize_data(raw_data: Dictionary) -> Dictionary:
@@ -301,10 +354,12 @@ func _normalize_data(raw_data: Dictionary) -> Dictionary:
 			seen_ids[quest["id"]] = true
 			highest_sequence = maxi(highest_sequence, int(str(quest["id"]).trim_prefix("q")))
 			active.append(quest)
+	var raw_schedule = raw_data.get("schedule", {})
 	return {
 		"schema_version": SCHEMA_VERSION,
 		"next_sequence": maxi(int(raw_data.get("next_sequence", 1)), highest_sequence + 1),
 		"active": active,
+		"schedule": (raw_schedule as Dictionary).duplicate() if raw_schedule is Dictionary else {},
 	}
 
 ## A clean copy of one quest, or {} when it cannot be one.
@@ -334,4 +389,7 @@ func _normalize_quest(raw: Dictionary) -> Dictionary:
 		"done": done,
 		"created_at": maxi(0, int(raw.get("created_at", 0))),
 		"expires_at": maxi(0, int(raw.get("expires_at", 0))) if kind == KIND_DAILY else 0,
+		"condition": str(raw.get("condition", "")).strip_edges(),
+		"param": str(raw.get("param", "")).strip_edges(),
+		"template": str(raw.get("template", "")).strip_edges(),
 	}

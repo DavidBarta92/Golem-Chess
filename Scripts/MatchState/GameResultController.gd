@@ -42,6 +42,7 @@ func finish_game(winner_color: int) -> void:
 	award_win_points_if_applicable(winner_color)
 	var rating_change_text: String = record_rated_result(winner_color)
 	record_codex_result(winner_color)
+	record_quest_result(winner_color)
 
 	var result_message_delay: float = 0.0 if match_board.should_skip_visual_animations() else RESULT_MESSAGE_DELAY_SECONDS
 	await match_board.get_tree().create_timer(result_message_delay).timeout
@@ -140,6 +141,26 @@ func record_codex_result(winner_color: int) -> void:
 			and GameConfig.get_player_controller(1) != GameConfig.CONTROLLER_HUMAN:
 		return
 	PlayerDeckStore.record_deck_result(GameConfig.get_selected_deck_id(), did_local_player_win(winner_color))
+
+## Moves on the quests that count matches (Docs/Quests/QUESTS.md): any match
+## with a player of this machine's own, the story's included - not the
+## tutorial, a puzzle board (both run in tutorial mode) or an AI batch.
+func record_quest_result(winner_color: int) -> void:
+	if match_board.tutorial_mode_active or GameConfig.is_ai_vs_ai_batch or GameConfig.is_dedicated_server:
+		return
+	var has_human: bool = GameConfig.get_player_controller(0) == GameConfig.CONTROLLER_HUMAN \
+			or GameConfig.get_player_controller(1) == GameConfig.CONTROLLER_HUMAN
+	if GameConfig.is_singleplayer and !has_human:
+		return
+	# The codex played: the one the story lent, or the player's own.
+	var codex_stamps: Array[String] = GameConfig.get_player_deck_override_stamp_names()
+	if !GameConfig.has_player_deck_override():
+		codex_stamps = PlayerDeckStore.get_deck_stamp_names(GameConfig.get_selected_deck_id())
+	QuestStore.record_event(QuestCondition.EVENT_MATCH_FINISHED, {
+		"won": did_local_player_win(winner_color),
+		"singleplayer": GameConfig.is_singleplayer,
+		"codex_stamps": codex_stamps,
+	})
 
 func should_award_win_points(winner_color: int) -> bool:
 	if match_board.tutorial_mode_active:

@@ -187,6 +187,90 @@ shape = SubResource("StyleBox_button_normal")
 stamp_name = "button_normal"
 live_blot = true
 
+[sub_resource type="StyleBoxFlat" id="StyleBox_story_button_normal"]
+content_margin_left = 18.0
+content_margin_top = 9.0
+content_margin_right = 18.0
+content_margin_bottom = 9.0
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBox" id="Stamp_story_button_normal"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 18.0
+content_margin_top = 9.0
+content_margin_right = 18.0
+content_margin_bottom = 9.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_story_button_normal")
+stamp_name = "story_button_normal"
+live_blot = true
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_story_button_hover"]
+content_margin_left = 18.0
+content_margin_top = 9.0
+content_margin_right = 18.0
+content_margin_bottom = 9.0
+draw_center = false
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBox" id="Stamp_story_button_hover"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 18.0
+content_margin_top = 9.0
+content_margin_right = 18.0
+content_margin_bottom = 9.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_story_button_hover")
+stamp_name = "story_button_hover"
+live_blot = true
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_story_button_pressed"]
+content_margin_left = 18.0
+content_margin_top = 9.0
+content_margin_right = 18.0
+content_margin_bottom = 9.0
+bg_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBox" id="Stamp_story_button_pressed"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 18.0
+content_margin_top = 9.0
+content_margin_right = 18.0
+content_margin_bottom = 9.0
+script = ExtResource("20_ink_stamp")
+shape = SubResource("StyleBox_story_button_pressed")
+stamp_name = "story_button_pressed"
+live_blot = true
+
 [sub_resource type="FontVariation" id="Font_Caption"]
 base_font = ExtResource("8_yll6c")
 
@@ -1323,6 +1407,22 @@ SpinBox/styles/up_background_pressed = SubResource("Stamp_button_pressed")
 StampDescriptionPanel/base_type = &"PanelContainer"
 StampDescriptionText/base_type = &"RichTextLabel"
 StampSlotPanel/base_type = &"PanelContainer"
+StoryButton/base_type = &"Button"
+StoryButton/colors/flood_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+StoryButton/colors/font_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+StoryButton/colors/font_focus_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+StoryButton/colors/font_hover_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+StoryButton/colors/font_hover_pressed_color = Color(0.9882353, 0.9764706, 0.9490196, 1)
+StoryButton/colors/font_pressed_color = Color(0.9882353, 0.9764706, 0.9490196, 1)
+StoryButton/colors/icon_focus_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+StoryButton/colors/icon_hover_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+StoryButton/colors/icon_hover_pressed_color = Color(0.9882353, 0.9764706, 0.9490196, 1)
+StoryButton/colors/icon_normal_color = Color(0.47843137, 0.13333334, 0.1882353, 1)
+StoryButton/colors/icon_pressed_color = Color(0.9882353, 0.9764706, 0.9490196, 1)
+StoryButton/styles/hover = SubResource("Stamp_story_button_hover")
+StoryButton/styles/hover_pressed = SubResource("Stamp_story_button_pressed")
+StoryButton/styles/normal = SubResource("Stamp_story_button_normal")
+StoryButton/styles/pressed = SubResource("Stamp_story_button_pressed")
 TabContainer/colors/drop_mark_color = Color(0.09019608, 0.17254902, 0.2627451, 1)
 TabContainer/colors/font_disabled_color = Color(0.9411765, 0.67058825, 0.7019608, 1)
 TabContainer/colors/font_hovered_color = Color(0.09019608, 0.17254902, 0.2627451, 1)

@@ -112,7 +112,6 @@ disabled = true
 texture_normal = ExtResource("7_play_btn_tex")
 script = ExtResource("6_play_btn_script")
 slide_end_offset = Vector2(-20, -60)
-metadata/sfx_click = "play_button_click"
 
 [node name="DevToolsWindow" type="Window" parent="." unique_id=91807004]
 title = "Developer Tools"

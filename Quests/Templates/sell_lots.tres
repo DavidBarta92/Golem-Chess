@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuestTemplate" format=3]
+
+[ext_resource type="Script" path="res://Scripts/Quests/QuestTemplate.gd" id="1_template"]
+
+[resource]
+script = ExtResource("1_template")
+template_id = "sell_lots"
+condition = 15
+pools = 2
+weight = 0.6
+per_match = 1.0
+min_count = 1
+max_count = 1
+round_to = 1
+param_pool = Array[String]([])
+requires_features = Array[String](["trade"])

@@ -2,9 +2,10 @@ extends BaseButton
 
 ## One active quest as a bookmark hanging from the top edge of the screen,
 ## past the bar's bottom edge. The cut at its foot tells the kind (slanted =
-## story, V-notch = reward, crenellations = daily), the fill the reward (story
-## burgundy, coin gold, draw blue), and the reward's icon sits at the bottom so
-## colour is never the only signal.
+## story, V-notch = reward, crenellations = daily, rounded = the Bourse's sale
+## notice, SaleRibbon), the fill the reward (story burgundy, coin gold, draw
+## blue), and the reward's icon sits at the bottom so colour is never the only
+## signal.
 ##
 ## The control's top is the top of the screen and its height is the ribbon's
 ## length, so hover, done, retracted and open are all just a length. The cloth
@@ -159,9 +160,14 @@ func _refresh_length() -> void:
 	_length_tween = create_tween()
 	_length_tween.tween_property(self, "length", target, TopBarStyle.RIBBON_MOVE_SECONDS).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 
-## A done ribbon sways slowly until it is claimed; open or retracted it hangs still.
+## Something to claim: a done quest (SaleRibbon always has).
+func _waits_to_be_claimed() -> bool:
+	return done
+
+## A ribbon with something to claim sways slowly until it is claimed; open or
+## retracted it hangs still.
 func _refresh_sway() -> void:
-	var should_sway: bool = done and !_open and !_retracted and !_leaving
+	var should_sway: bool = _waits_to_be_claimed() and !_open and !_retracted and !_leaving
 	if should_sway == _swaying:
 		return
 	_swaying = should_sway
@@ -231,6 +237,8 @@ func _draw_seam(x: float, top: float, bottom: float, color: Color) -> void:
 func _shape(width: float, height: float, tail: float) -> PackedVector2Array:
 	var top: float = -TopBarStyle.RIBBON_OVERHANG
 	match kind:
+		"sale":
+			return TopBarIcons.round_foot(0.0, width, top, height, tail)
 		"story":
 			return PackedVector2Array([Vector2(0, top), Vector2(width, top), Vector2(width, height - tail + 0.75), Vector2(0, height)])
 		"daily":
@@ -255,6 +263,8 @@ func _outline(width: float, height: float, tail: float) -> PackedVector2Array:
 	var bottom: float = height - inset
 	var notch: float = height - tail + inset * 0.6
 	match kind:
+		"sale":
+			return TopBarIcons.round_foot(inset, width - inset, top, bottom, tail - inset)
 		"story":
 			return PackedVector2Array([Vector2(inset, top), Vector2(inset, bottom), Vector2(width - inset, height - tail + 0.75), Vector2(width - inset, top)])
 		"daily":

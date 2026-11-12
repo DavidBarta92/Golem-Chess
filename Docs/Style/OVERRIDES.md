@@ -126,6 +126,14 @@ Packs on the collection) no longer slides in from above and out upwards.
   taken away first (`InkHoverFill.clear`).
 - **The menu button** stays on the collection, out of use, instead of
   leaving, so the counters and ribbons do not shift.
+- **Shared motion.** The stamp and the dissolve, with their timings, are
+  `Scripts/InkStamp/InkStampMotion.gd` (`stamp_in`, `dissolve_out`,
+  `settle`). The main menu's Play window uses them too: its three buttons
+  are stamped in when the window is hovered and dissolve when the pointer
+  leaves or one is chosen (Story/README.md, "The Play window"). Never stamp
+  a container's direct child: the container's layout pass resets its scale
+  and rotation, leaving only the fade. The top bar stamps the item inside
+  each slot; the Play window's buttons sit in a plain Control.
 - **The pack shop**: while it is open, Buy Packs stays pressed in ink and
   Back is out of use (`GlobalTopBar.set_window_open`).
 
@@ -155,10 +163,13 @@ the pressed style.
   bar's menu glyph is a child, not the button's icon, so `TopBarMenu.gd`
   makes it follow the button's label colour.
 - It floods the buttons drawn with the theme's plain hover - `Button`,
-  `MenuButton`, `OptionButton` - and the match's tabs (`MatchTabButton`).
-  Variations with a hover of their own (the codex rows' round buttons, pack
-  cards, the top bar's menu rows), flat buttons and disabled buttons are left
-  alone.
+  `MenuButton`, `OptionButton` - the match's tabs (`MatchTabButton`) and the
+  story's burgundy button (`StoryButton`). Variations with a hover of their
+  own (the codex rows' round buttons, pack cards, the top bar's menu rows),
+  flat buttons and disabled buttons are left alone.
+- The ink is `INK` unless the button's theme sets a `flood_color` colour:
+  `StoryButton` floods with `STORY`. Each such colour gets its own copy of
+  the flood material.
 
 ## Palette and line weight
 
@@ -363,6 +374,12 @@ Sans. The table wins for now; settle this in the plan if it matters.
   `NetworkStatusLabel`, `CodexCountLabel` (the match codex's page counts),
   `VersionLabel` (top bar), `BareButton` (a button with no frame in any state:
   stamps).
+- `StoryButton` - a Button in the story's burgundy (`STORY`) instead of ink:
+  outline, label and hover flood (`flood_color`), and a burgundy pressed
+  fill with a paper label; disabled is Button's. Its prints are
+  `story_button_*`. So far only the Play window's story button (book icon),
+  where the burgundy keeps the story quest ribbon's meaning, as the top bar
+  design asks: burgundy is the story's and nothing else's.
 - `MatchTabButton` - the match's tabs (Turn page, End turn): the Button look,
   cut as a tab rising from the screen's bottom edge (rounded top, open
   bottom, 48 at the bottom for the part below the edge). Unlike other buttons

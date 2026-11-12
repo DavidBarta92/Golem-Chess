@@ -6,7 +6,8 @@ extends CanvasLayer
 ##   * right - anchored to the right edge, right to left: menu button (out of
 ##     use off the main menu) -> counters (rank, coin, draw points, as the story reveals
 ##     them) -> quest ribbons (oldest next to the counters, each new one to its
-##     left). Nothing screen-specific ever goes in here.
+##     left), and among them the Bourse's sale notices (SaleRibbon), which
+##     open and claim the same way. Nothing screen-specific ever goes in here.
 ## The right group is laid out by hand rather than by a container, so ribbons
 ## and counters can slide to their new places and drop in or leave without a
 ## container snapping them first.
@@ -23,17 +24,10 @@ const MAIN_MENU_SCENE: String = "res://Scenes/MainMenu.tscn"
 const COLLECTION_SCENE: String = "res://Scenes/Collection.tscn"
 const BOURSE_SCENE: String = "res://Scenes/Bourse.tscn"
 const PUZZLES_SCENE: String = "res://Scenes/Puzzles.tscn"
-## Arriving, a scene's items are stamped onto the paper (_stamp_items_in).
-const STAMP_SECONDS: float = 0.42
-const STAMP_START_SCALE: float = 1.3
-## How far a stamp is turned before it lands, either way, in degrees.
-const STAMP_MIN_TILT: float = 1.5
-const STAMP_MAX_TILT: float = 6.0
-## Leaving, they dissolve into the paper (_dissolve_items_out).
-const DISSOLVE_SECONDS: float = 0.4
-const ITEM_STAGGER_SECONDS: float = 0.07
-const INK_DISSOLVE_SHADER: Shader = preload("res://Shaders/ink_dissolve.gdshader")
-const FRONT_NOISE_PATH: String = "res://ui/themes/stamp/ink_flood_noise.png"
+## Arriving, a scene's items are stamped onto the paper (_stamp_items_in);
+## leaving, they dissolve into it (_dissolve_items_out). The motion and its
+## timings are InkStampMotion's, shared with the main menu's Play window.
+const InkStampMotion = preload("res://Scripts/InkStamp/InkStampMotion.gd")
 const LOGO_REVEAL_SHADER: Shader = preload("res://Shaders/art_line_reveal.gdshader")
 ## Made by tools/generate_line_reveal_mask.py (see there) from
 ## Assets/golem_logo_reveal_source.png, the logo rasterized at half size.
@@ -51,7 +45,10 @@ const PANEL_LAYOUT_FRAMES: int = 5
 
 const TopBarStyle = preload("res://Scripts/TopBar/TopBarStyle.gd")
 const QuestRibbon = preload("res://Scripts/TopBar/QuestRibbon.gd")
+const SaleRibbon = preload("res://Scripts/TopBar/SaleRibbon.gd")
 const QuestPanel = preload("res://Scripts/TopBar/QuestPanel.gd")
+## A sale notice's id among the ribbons: this, then the lot's id.
+const SALE_PREFIX: String = "sale:"
 const TopBarCounter = preload("res://Scripts/TopBar/TopBarCounter.gd")
 const TopBarMenu = preload("res://Scripts/TopBar/TopBarMenu.gd")
 
@@ -93,17 +90,18 @@ var point_icon: Control
 var points_label: Label
 var rating_label: Label
 
+## Quest ids, and SALE_PREFIX + lot id for the sale notices.
 var _ribbons: Dictionary = {}
-## Quest ids oldest first, including ribbons still playing their way out.
+## Those ids oldest first, including ribbons still playing their way out.
 var _ribbon_order: Array[String] = []
 var _ribbons_shown: bool = false
 var _quests_synced: bool = false
+var _sale_sync_queued: bool = false
 var _open_quest_id: String = ""
 var _open_token: int = 0
 var _target_x: Dictionary = {}
 var _slide_tweens: Dictionary = {}
 var _layout_queued: bool = false
-var _dissolve_material: ShaderMaterial
 var _logo_reveal_material: ShaderMaterial
 ## The button whose window is open over its screen (set_window_open).
 var _window_opener: Button
@@ -135,6 +133,7 @@ func _ready() -> void:
 	quest_panel = QuestPanel.new()
 	quest_panel.name = "QuestPanel"
 	quest_panel.claim_requested.connect(_on_claim_requested)
+	quest_panel.swap_requested.connect(func(quest_id: String) -> void: QuestStore.director.swap(quest_id))
 	root.add_child(quest_panel)
 	# Below the ribbons, so the open ribbon is the panel's left edge.
 	root.move_child(quest_panel, right_group.get_index())
@@ -166,6 +165,7 @@ func _ready() -> void:
 	QuestStore.quest_changed.connect(_on_quest_changed)
 	QuestStore.quest_removed.connect(_on_quest_removed)
 	QuestStore.quest_claimed.connect(_on_quest_claimed)
+	BourseStore.changed.connect(_queue_sale_sync)
 	StoryProgressStore.feature_unlocked.connect(_on_feature_unlocked)
 
 	var quest_clock := Timer.new()
@@ -579,6 +579,10 @@ func _refresh_counter_visibility(animate: bool) -> void:
 
 
 func _on_feature_unlocked(feature_id: String) -> void:
+	# Sales made before the Bourse opened come down now.
+	if feature_id == StoryFeatures.TRADE:
+		_queue_sale_sync()
+		return
 	if !COUNTER_FEATURE.values().has(feature_id) or !root.visible:
 		return
 	_close_quest_panel()
@@ -589,9 +593,15 @@ func _on_feature_unlocked(feature_id: String) -> void:
 
 func _set_ribbons_shown(shown: bool) -> void:
 	if shown and !_quests_synced:
+		# Today's quests are handed out before the first sync, so they are simply
+		# there with the rest rather than dropping in.
+		QuestStore.director.start()
 		_quests_synced = true
 		QuestStore.expire_overdue_quests()
 		_sync_ribbons()
+		# Buyers who came while the game was closed are there from the start.
+		BourseStore.run_due_visits()
+		_sync_sale_ribbons(false)
 	_ribbons_shown = shown
 	if !shown:
 		_close_quest_panel(false)
@@ -611,7 +621,7 @@ func _sync_ribbons() -> void:
 		else:
 			_add_ribbon(quest, false)
 	for quest_id in _ribbon_order.duplicate():
-		if !active_ids.has(quest_id):
+		if !quest_id.begins_with(SALE_PREFIX) and !active_ids.has(quest_id):
 			_drop_ribbon(quest_id)
 
 
@@ -623,19 +633,25 @@ func _add_ribbon(quest: Dictionary, animate: bool) -> void:
 	var quest_id: String = str(quest["id"])
 	if _ribbons.has(quest_id):
 		return
-	_close_quest_panel()
 	var ribbon := QuestRibbon.new()
-	ribbon.name = "Ribbon_%s" % quest_id
+	_insert_ribbon(quest_id, ribbon, func() -> void: ribbon.configure(quest, QuestStore.is_urgent(quest)), animate)
+
+
+## Puts a new ribbon left of the others; configure runs once it is in the
+## tree, so its first length can be tweened to.
+func _insert_ribbon(item_id: String, ribbon: Control, configure: Callable, animate: bool) -> void:
+	_close_quest_panel()
+	ribbon.name = "Ribbon_%s" % item_id.validate_node_name()
 	ribbon.visible = _ribbons_shown
 	right_group.add_child(ribbon)
 	# Under the menu, so its dropdown covers the ribbons.
 	right_group.move_child(ribbon, menu.get_index())
-	ribbon.configure(quest, QuestStore.is_urgent(quest))
-	ribbon.pressed.connect(_on_ribbon_pressed.bind(quest_id))
+	configure.call()
+	ribbon.pressed.connect(_on_ribbon_pressed.bind(item_id))
 	if scene_transition_active:
 		ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ribbons[quest_id] = ribbon
-	_ribbon_order.append(quest_id)
+	_ribbons[item_id] = ribbon
+	_ribbon_order.append(item_id)
 	_layout_right_group(animate)
 	if animate:
 		ribbon.play_arrival()
@@ -700,6 +716,9 @@ func _on_quest_claimed(quest: Dictionary) -> void:
 
 
 func _on_claim_requested(quest_id: String) -> void:
+	if quest_id.begins_with(SALE_PREFIX):
+		_collect_sale(quest_id.trim_prefix(SALE_PREFIX))
+		return
 	QuestStore.claim_quest(quest_id)
 
 
@@ -718,6 +737,51 @@ func _refresh_quest_clock() -> void:
 				_open_quest_panel(quest_id, false)
 
 
+# --- Sale notices -----------------------------------------------------------------
+
+## The Bourse changed: a buyer came, or a lot was collected, here or on the
+## Bourse's own screen. Matched to the notices once a frame at most.
+func _queue_sale_sync() -> void:
+	if _sale_sync_queued or !_quests_synced:
+		return
+	_sale_sync_queued = true
+	_run_sale_sync.call_deferred()
+
+
+func _run_sale_sync() -> void:
+	_sale_sync_queued = false
+	_sync_sale_ribbons(_ribbons_on_screen())
+
+
+## One notice for each sold lot that waits to be collected, while the story
+## has the Bourse open. A new sale drops in; a collected one is pulled up like
+## a claimed quest.
+func _sync_sale_ribbons(animate: bool) -> void:
+	var sold: Dictionary = {}
+	if StoryProgressStore.is_feature_unlocked(StoryFeatures.TRADE):
+		for lot in BourseStore.get_lots():
+			if str(lot.get("state", "")) == BourseStore.STATE_SOLD:
+				sold[SALE_PREFIX + str(lot.get("lot_id", ""))] = lot
+	for item_id in _ribbon_order.duplicate():
+		if item_id.begins_with(SALE_PREFIX) and !sold.has(item_id):
+			_remove_ribbon(item_id, QuestStore.REASON_CLAIMED)
+	for item_id in sold:
+		if !_ribbons.has(item_id):
+			var ribbon := SaleRibbon.new()
+			_insert_ribbon(item_id, ribbon, ribbon.configure_sale.bind(sold[item_id], item_id), animate)
+
+
+## The price comes in like a claimed quest's coins; the store's change then
+## pulls the notice up.
+func _collect_sale(lot_id: String) -> void:
+	var result: Dictionary = BourseStore.collect_lot(lot_id)
+	if result.is_empty():
+		return
+	refresh_points()
+	if counters["coin"].visible and root.is_visible_in_tree():
+		counters["coin"].play_bump(int(result.get("coins", 0)))
+
+
 # --- Quest panel ------------------------------------------------------------------
 
 func _on_ribbon_pressed(quest_id: String) -> void:
@@ -734,8 +798,11 @@ func _on_ribbon_pressed(quest_id: String) -> void:
 ## Opens to the left when it would run off the right edge of the screen.
 func _open_quest_panel(quest_id: String, replay: bool) -> void:
 	var ribbon = _ribbons.get(quest_id, null)
-	var quest: Dictionary = QuestStore.get_quest(quest_id)
-	if ribbon == null or quest.is_empty() or ribbon.is_leaving():
+	if ribbon == null or ribbon.is_leaving():
+		return
+	var is_sale: bool = quest_id.begins_with(SALE_PREFIX)
+	var entry: Dictionary = BourseStore.get_lot(quest_id.trim_prefix(SALE_PREFIX)) if is_sale else QuestStore.get_quest(quest_id)
+	if entry.is_empty():
 		return
 	if replay:
 		menu.set_open(false)
@@ -745,7 +812,10 @@ func _open_quest_panel(quest_id: String, replay: bool) -> void:
 
 	var ribbon_x: float = _target_x.get(ribbon, ribbon.position.x)
 	var open_left: bool = ribbon_x + TopBarStyle.RIBBON_WIDTH + TopBarStyle.PANEL_WIDTH > root.size.x
-	quest_panel.show_quest(quest, QuestStore.format_time_left(quest), QuestStore.is_urgent(quest), open_left)
+	if is_sale:
+		quest_panel.show_sale(entry, quest_id, open_left)
+	else:
+		quest_panel.show_quest(entry, QuestStore.format_time_left(entry), QuestStore.is_urgent(entry), open_left)
 	quest_panel.position = Vector2(ribbon_x - TopBarStyle.PANEL_WIDTH if open_left else ribbon_x + TopBarStyle.RIBBON_WIDTH, TopBarStyle.BAR_HEIGHT)
 	for other_id in _ribbons:
 		if other_id != quest_id:
@@ -908,10 +978,6 @@ func _centre_in_slot(button: Button) -> void:
 
 
 func _build_item_materials() -> void:
-	if ResourceLoader.exists(FRONT_NOISE_PATH):
-		_dissolve_material = ShaderMaterial.new()
-		_dissolve_material.shader = INK_DISSOLVE_SHADER
-		_dissolve_material.set_shader_parameter(&"front_noise", load(FRONT_NOISE_PATH))
 	if ResourceLoader.exists(LOGO_REVEAL_MASK_PATH):
 		_logo_reveal_material = ShaderMaterial.new()
 		_logo_reveal_material.shader = LOGO_REVEAL_SHADER
@@ -930,29 +996,13 @@ func _dissolve_items_out(container: HBoxContainer, hide_shell_after: bool) -> vo
 		scene_items_tween.kill()
 
 	_set_container_items_interactive(container, false)
-	var hover_fill: Node = get_node_or_null("/root/InkHoverFill")
 	scene_items_tween = create_tween()
 	scene_items_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	scene_items_tween.set_parallel(true)
 	var animated_items := _get_animated_items(container)
 	for index in range(animated_items.size()):
-		var item := animated_items[index]
-		var delay: float = index * ITEM_STAGGER_SECONDS
-		# A clicked button still holds its hover ink, on a layer of its own.
-		if item is Button and hover_fill != null:
-			hover_fill.clear(item)
-		if _dissolve_material != null:
-			item.material = _dissolve_material
-			item.set_instance_shader_parameter(&"dissolve_seed", float(item.get_instance_id() % 997))
-			item.set_instance_shader_parameter(&"dissolve_size", item.size)
-			item.set_instance_shader_parameter(&"dissolve_progress", 0.0)
-			scene_items_tween.tween_method(_set_dissolve.bind(item), 0.0, 1.0, DISSOLVE_SECONDS).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		scene_items_tween.tween_property(item, "modulate:a", 0.0, DISSOLVE_SECONDS).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		InkStampMotion.dissolve_out(scene_items_tween, animated_items[index], index * InkStampMotion.ITEM_STAGGER_SECONDS)
 	scene_items_tween.chain().tween_callback(Callable(self, "_finish_items_out").bind(container, hide_shell_after))
-
-
-func _set_dissolve(progress: float, item: CanvasItem) -> void:
-	item.set_instance_shader_parameter(&"dissolve_progress", progress)
 
 
 func _finish_items_out(container: HBoxContainer, hide_shell_after: bool) -> void:
@@ -988,20 +1038,9 @@ func _stamp_items_in(container: HBoxContainer) -> void:
 		if item == logo and _logo_reveal_material != null:
 			_write_logo()
 			continue
-		item.modulate.a = 0.0
-		item.scale = Vector2.ONE * STAMP_START_SCALE
-		item.rotation = deg_to_rad(randf_range(STAMP_MIN_TILT, STAMP_MAX_TILT)) * (1.0 if randf() < 0.5 else -1.0)
-		# By then the item has been laid out, so its middle is known.
-		scene_items_tween.tween_callback(_centre_pivot.bind(item)).set_delay(delay)
-		scene_items_tween.tween_property(item, "scale", Vector2.ONE, STAMP_SECONDS).set_delay(delay).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
-		scene_items_tween.tween_property(item, "rotation", 0.0, STAMP_SECONDS).set_delay(delay).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
-		scene_items_tween.tween_property(item, "modulate:a", 1.0, STAMP_SECONDS * 0.5).set_delay(delay)
-		delay += ITEM_STAGGER_SECONDS
+		InkStampMotion.stamp_in(scene_items_tween, item, delay)
+		delay += InkStampMotion.ITEM_STAGGER_SECONDS
 	scene_items_tween.chain().tween_callback(Callable(self, "_finish_items_in").bind(container))
-
-
-func _centre_pivot(item: Control) -> void:
-	item.pivot_offset = item.size * 0.5
 
 
 ## The logo drawn the way the main menu's room draws itself
@@ -1029,14 +1068,7 @@ func _settle_items(container: HBoxContainer) -> void:
 
 
 func _settle_item(item: Control) -> void:
-	item.material = null
-	# A button's frame draws its ink blot live; give that back.
-	var hover_fill: Node = get_node_or_null("/root/InkHoverFill")
-	if item is Button and hover_fill != null:
-		hover_fill.frame(item)
-	item.modulate.a = 1.0
-	item.scale = Vector2.ONE
-	item.rotation = 0.0
+	InkStampMotion.settle(item)
 
 
 func _get_animated_items(container: HBoxContainer) -> Array[Control]:

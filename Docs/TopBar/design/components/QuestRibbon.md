@@ -7,6 +7,9 @@ Könyvjelzőszalag egy aktív feladathoz: a vágása a típust, a színe a jutal
 | Ferde (`tail-story`) | Történet | `story` |
 | V-bevágás (`tail-reward`) | Jutalom | `coin` vagy `draw` |
 | Bástyafogak (`tail-daily`) | Napi, 24 óra | `coin` vagy `draw` |
+| Lekerekített (a játékban `TAIL_DEPTH["sale"]`) | Értesítés: eladott lott a Börzén | `coin` |
+
+Az értesítés minden másban jutalom-szalag: érme ikon, végig folytonos varrás (minden kész), leng, amíg be nem gyűjtik, de nem lóg lejjebb.
 
 - Méret: `ribbon-width` × `ribbon-rest`, a képernyő felső élétől lóg; 1,5 px `ink` kontúr a két oldalon és a vágáson, felül nincs kontúr.
 - Alján a jutalom ikonja (`icon-ribbon`, egyszínű): könyv, érme vagy ceruzás kör, a szalag `on-…` színében.

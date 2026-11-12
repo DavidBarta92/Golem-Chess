@@ -3,8 +3,9 @@ extends PanelContainer
 ## The main menu's word that a buyer picked from one of the player's lots:
 ## "Kovács Anna picked from your lot: Duke", and a way to the Bourse. It sits
 ## above the story buttons, shows while sales wait unseen, and goes once the
-## Bourse has been opened (BourseScreen marks them seen). A sale during the
-## visit to the menu brings it up there and then.
+## Bourse has been opened (BourseScreen marks them seen) or the sale is
+## collected from its notice in the top bar (GlobalTopBar's SaleRibbon). A sale
+## during the visit to the menu brings it up there and then.
 
 const BOURSE_SCENE: String = "res://Scenes/Bourse.tscn"
 const MAX_LINES: int = 2
@@ -59,16 +60,13 @@ func _ready() -> void:
 		SceneTransition.change_scene(BOURSE_SCENE))
 	column.add_child(button)
 
-	BourseStore.lots_sold.connect(_on_lots_sold)
+	BourseStore.changed.connect(_refresh)
 	BourseStore.run_due_visits()
 	_refresh()
 
 func _exit_tree() -> void:
-	if BourseStore.lots_sold.is_connected(_on_lots_sold):
-		BourseStore.lots_sold.disconnect(_on_lots_sold)
-
-func _on_lots_sold(_lots: Array) -> void:
-	_refresh()
+	if BourseStore.changed.is_connected(_refresh):
+		BourseStore.changed.disconnect(_refresh)
 
 func _refresh() -> void:
 	var sales: Array = BourseStore.get_unannounced_sales()
