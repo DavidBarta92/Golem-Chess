@@ -1,31 +1,34 @@
 extends RefCounted
 
-var board_size: int = BoardConfig.BOARD_SIZE
-var cell_width: int = BoardConfig.CELL_WIDTH
-var perspective_enabled: bool = true
-var perspective_top_scale: float = 0.74
-var perspective_bottom_scale: float = 1.05
-var perspective_vertical_scale: float = 0.72
+# Adjust these values to tune the board-only perspective tilt.
+const BOARD_PERSPECTIVE_ENABLED: bool = true
+
+# Fitted to the grid drawn in Assets/board_grid_line.png, in the units
+# BoardCanvas sets out. That drawing is a 9x9 grid: the playable 7x7 with the
+# frame as a one-cell ring around it, and every line in it runs the full width
+# of the ring. All ten lines land within 2 px of the ink on a 1920 px wide
+# canvas, where the ink itself is 3 to 5 px thick, and the ten column lines -
+# which were not fitted - fall within 3.7 px of it.
+const BOARD_PERSPECTIVE_TOP_SCALE: float = 0.744257
+const BOARD_PERSPECTIVE_BOTTOM_SCALE: float = 1.055569
+const BOARD_PERSPECTIVE_VERTICAL_SCALE: float = 0.720724
+
 ## Pushes the whole projected board away from the camera's centre, towards the
 ## viewer. Needed because the drawn board sits lower on screen than a board
 ## centred on the camera would. It flips with view_color, so the black side -
 ## which looks at the same board through a camera turned 180 degrees - lands in
 ## the same place on screen.
-var perspective_near_offset: float = 0.0
-var tile_slide_distance_factor: float = 1.06
-var tile_sink_offset: float = 7.0
+const BOARD_PERSPECTIVE_NEAR_OFFSET: float = 0.440762
+const BOARD_TILE_SLIDE_DISTANCE_FACTOR: float = 1.06
+const BOARD_TILE_SINK_OFFSET: float = 7.0
+
+var board_size: int = BoardConfig.BOARD_SIZE
+var cell_width: int = BoardConfig.CELL_WIDTH
 var view_color: int = 1
 
 func configure(config: Dictionary) -> void:
 	board_size = int(config.get("board_size", board_size))
 	cell_width = int(config.get("cell_width", cell_width))
-	perspective_enabled = bool(config.get("perspective_enabled", perspective_enabled))
-	perspective_top_scale = float(config.get("perspective_top_scale", perspective_top_scale))
-	perspective_bottom_scale = float(config.get("perspective_bottom_scale", perspective_bottom_scale))
-	perspective_vertical_scale = float(config.get("perspective_vertical_scale", perspective_vertical_scale))
-	perspective_near_offset = float(config.get("perspective_near_offset", perspective_near_offset))
-	tile_slide_distance_factor = float(config.get("tile_slide_distance_factor", tile_slide_distance_factor))
-	tile_sink_offset = float(config.get("tile_sink_offset", tile_sink_offset))
 	view_color = int(config.get("view_color", view_color))
 
 func set_view_color(new_view_color: int) -> void:
@@ -56,7 +59,7 @@ func get_projected_board_rect_polygon(
 	])
 
 func project_point_local(point: Vector2, clamp_to_board: bool = true) -> Vector2:
-	if !perspective_enabled:
+	if !BOARD_PERSPECTIVE_ENABLED:
 		return point
 
 	var half_size: float = float(board_size * cell_width) * 0.5
@@ -67,27 +70,27 @@ func project_point_local(point: Vector2, clamp_to_board: bool = true) -> Vector2
 	var near_y: float
 	var far_direction: float
 	if view_color < 0:
-		near_y = -(half_size + perspective_near_offset)
+		near_y = -(half_size + BOARD_PERSPECTIVE_NEAR_OFFSET)
 		far_direction = 1.0
 		linear_depth_factor = (point.y + half_size) / (half_size * 2.0)
 	else:
-		near_y = half_size + perspective_near_offset
+		near_y = half_size + BOARD_PERSPECTIVE_NEAR_OFFSET
 		far_direction = -1.0
 		linear_depth_factor = (half_size - point.y) / (half_size * 2.0)
 	if clamp_to_board:
 		linear_depth_factor = clampf(linear_depth_factor, 0.0, 1.0)
 
 	var projected_depth_factor: float = get_projected_depth_factor(linear_depth_factor, clamp_to_board)
-	var horizontal_scale: float = lerpf(perspective_bottom_scale, perspective_top_scale, projected_depth_factor)
+	var horizontal_scale: float = lerpf(BOARD_PERSPECTIVE_BOTTOM_SCALE, BOARD_PERSPECTIVE_TOP_SCALE, projected_depth_factor)
 	var projected_x: float = point.x * horizontal_scale
-	var far_y: float = near_y + (far_direction * half_size * 2.0 * perspective_vertical_scale)
+	var far_y: float = near_y + (far_direction * half_size * 2.0 * BOARD_PERSPECTIVE_VERTICAL_SCALE)
 	var projected_y: float = lerpf(near_y, far_y, projected_depth_factor)
 	return Vector2(projected_x, projected_y)
 
 func get_projected_depth_factor(linear_depth_factor: float, clamp_to_board: bool = true) -> float:
 	var depth_factor: float = clampf(linear_depth_factor, 0.0, 1.0) if clamp_to_board else linear_depth_factor
-	var top_scale: float = max(perspective_top_scale, 0.001)
-	var bottom_scale: float = max(perspective_bottom_scale, 0.001)
+	var top_scale: float = max(BOARD_PERSPECTIVE_TOP_SCALE, 0.001)
+	var bottom_scale: float = max(BOARD_PERSPECTIVE_BOTTOM_SCALE, 0.001)
 	var perspective_strength: float = max((bottom_scale / top_scale) - 1.0, 0.0)
 	if perspective_strength <= 0.0001:
 		return depth_factor
@@ -144,7 +147,7 @@ func get_mouse_board_position(local_pos: Vector2, invalid_pos: Vector2) -> Vecto
 
 func get_tile_slide_offset(board_pos: Vector2) -> Vector2:
 	var bounds: Rect2 = get_cell_rect_local(board_pos)
-	var distance: float = maxf(bounds.size.x, bounds.size.y) * tile_slide_distance_factor
+	var distance: float = maxf(bounds.size.x, bounds.size.y) * BOARD_TILE_SLIDE_DISTANCE_FACTOR
 	match randi() % 4:
 		0:
 			return Vector2(distance, 0.0)
@@ -156,7 +159,7 @@ func get_tile_slide_offset(board_pos: Vector2) -> Vector2:
 			return Vector2(0.0, -distance)
 
 func get_tile_sink_offset() -> Vector2:
-	return get_near_direction_local() * tile_sink_offset
+	return get_near_direction_local() * BOARD_TILE_SINK_OFFSET
 
 func get_near_direction_local() -> Vector2:
 	return Vector2(0.0, -1.0) if view_color < 0 else Vector2(0.0, 1.0)

@@ -29,9 +29,9 @@ var connected_peer_ids = []
 var server_connected_peer_ids: Array[int] = []
 var open_lobbies: Dictionary = {}
 var peer_player_ids: Dictionary = {}
-var peer_player_names: Dictionary = {}
-var peer_player_decks: Dictionary = {}
-var peer_player_portraits: Dictionary = {}
+## What each player brought to the match (PlayerProfile). Keyed by peer id in a
+## networked match; a single-player one has no peers, so there by player id.
+var peer_profiles: Dictionary = {}
 ## Game version each connected peer announced (announce_client_version). A peer
 ## is only let into a match when it matches ours exactly.
 var peer_client_versions: Dictionary = {}
@@ -257,10 +257,7 @@ func start_singleplayer_game():
 	connected_peer_ids = [1]
 	peer_player_ids.clear()
 	peer_player_ids[1] = get_local_human_player_id()
-	peer_player_names.clear()
-	peer_player_decks.clear()
-	peer_player_portraits.clear()
-	setup_singleplayer_player_names()
+	setup_singleplayer_profiles()
 	ai_players.clear()
 
 	game_host = NetworkGameHost.new()
@@ -274,9 +271,9 @@ func start_singleplayer_game():
 	game_host.finish_if_player_has_no_valid_turn(game_host.game_state.current_turn_player)
 	game_host.broadcast_full_state()
 	if GameConfig.is_ai_vs_ai_batch:
-		$MatchBoard.set_turn(null)
+		$MatchBoard.get_match_board_lifecycle_controller().set_turn(null)
 	else:
-		$MatchBoard.set_turn(get_side_for_player_id(get_local_human_player_id()))
+		$MatchBoard.get_match_board_lifecycle_controller().set_turn(get_side_for_player_id(get_local_human_player_id()))
 
 func setup_singleplayer_ai_controllers():
 	ai_players.clear()
@@ -299,19 +296,23 @@ func setup_singleplayer_ai_controllers():
 			ai_player.planner.thinking_pause_started.connect(ai_thinking_pause_started.emit)
 			ai_players[player_id] = ai_player
 
-func setup_singleplayer_player_names() -> void:
+## The decks of a single-player match do not come from here
+## (get_starting_deck_for_player_id), only the names and portraits.
+func setup_singleplayer_profiles() -> void:
+	peer_profiles.clear()
 	for player_id in [0, 1]:
+		var profile := PlayerProfile.new()
 		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN:
-			peer_player_names[player_id] = GameConfig.get_local_player_name()
-			peer_player_portraits[player_id] = GameConfig.get_local_portrait_data()
+			profile = PlayerProfile.local()
 		elif GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_CODEX:
-			peer_player_names[player_id] = tr("Codex")
-			peer_player_portraits[player_id] = GameConfig.get_ai_portrait_data(player_id)
+			profile.player_name = tr("Codex")
+			profile.portrait = GameConfig.get_ai_portrait_data(player_id)
 		else:
 			# A story boss overrides both; without one these fall back to the
 			# generic "AI White/Black" name and generated portrait.
-			peer_player_names[player_id] = GameConfig.get_ai_opponent_name(player_id)
-			peer_player_portraits[player_id] = GameConfig.get_ai_opponent_portrait_data(player_id)
+			profile.player_name = GameConfig.get_ai_opponent_name(player_id)
+			profile.portrait = GameConfig.get_ai_opponent_portrait_data(player_id)
+		peer_profiles[player_id] = profile
 
 ## What the AI just did, in a form a listener can read without knowing
 ## anything about the AI's internals. Everything is optional: a simpler AI
@@ -408,9 +409,7 @@ func start_hosting_match() -> void:
 	game_host = NetworkGameHost.new()
 	game_host.configure(self)
 	GameController.set_game_host(game_host)
-	peer_player_names[1] = GameConfig.get_local_player_name()
-	peer_player_decks[1] = GameConfig.get_selected_deck_stamp_names()
-	peer_player_portraits[1] = GameConfig.get_local_portrait_data()
+	peer_profiles[1] = PlayerProfile.local()
 
 	_on_peer_connected(1)
 
@@ -440,9 +439,7 @@ func start_dedicated_custom_server(port: int = 9999) -> bool:
 	server_connected_peer_ids.clear()
 	open_lobbies.clear()
 	peer_player_ids.clear()
-	peer_player_names.clear()
-	peer_player_decks.clear()
-	peer_player_portraits.clear()
+	peer_profiles.clear()
 	GameController.set_game_host(null)
 
 	DebugLog.network("Dedicated custom server started on UDP port %d." % port)
@@ -668,13 +665,9 @@ func _on_peer_disconnected(peer_id):
 		remove_lobbies_for_peer(peer_id)
 		connected_peer_ids.erase(peer_id)
 		if should_close_remaining_match_peer and !connected_peer_ids.is_empty():
-			# The names stay until the forfeit is broadcast, so the result
-			# still shows who left.
 			close_remaining_match_peers_after_disconnect(peer_id, left_player_id)
 		peer_player_ids.erase(peer_id)
-		peer_player_names.erase(peer_id)
-		peer_player_decks.erase(peer_id)
-		peer_player_portraits.erase(peer_id)
+		peer_profiles.erase(peer_id)
 		if connected_peer_ids.is_empty():
 			reset_dedicated_server_room()
 		elif !should_close_remaining_match_peer:
@@ -685,9 +678,7 @@ func _on_peer_disconnected(peer_id):
 	connected_peer_ids.erase(peer_id)
 	if should_close_host_after_direct_peer_disconnect(peer_id):
 		award_match_to_remaining_player(int(peer_player_ids[peer_id]))
-	peer_player_names.erase(peer_id)
-	peer_player_decks.erase(peer_id)
-	peer_player_portraits.erase(peer_id)
+	peer_profiles.erase(peer_id)
 	# Keep what the status already says: the forfeit result, or why a peer
 	# with another game version was sent away.
 	if multiplayer_game_started or was_rejected_for_version:
@@ -710,10 +701,10 @@ func enter_match_after_version_check() -> void:
 		set_network_status(tr("Connected. Joining server room..."))
 		set_custom_lobby_status(tr("Joining server room..."))
 		set_custom_lobby_controls_enabled(false)
-		enter_custom_server_room.rpc_id(1, GameConfig.get_local_player_name(), GameConfig.get_selected_deck_stamp_names(), GameConfig.get_local_portrait_data())
+		enter_custom_server_room.rpc_id(1, PlayerProfile.local().to_dict())
 	else:
 		set_network_status(tr("Connected. Registering player..."))
-		register_player_name.rpc_id(1, multiplayer.get_unique_id(), GameConfig.get_local_player_name(), GameConfig.get_selected_deck_stamp_names(), GameConfig.get_local_portrait_data())
+		register_player_profile.rpc_id(1, PlayerProfile.local().to_dict())
 
 func _on_connection_failed():
 	if GameConfig.is_using_steam_multiplayer():
@@ -754,7 +745,7 @@ func claim_win_after_host_left() -> void:
 		return
 	set_network_status(tr("Opponent left. You win."))
 	DebugLog.network("Host left an active match; claiming the win locally.")
-	match_board.finish_game(match_board.get_own_color())
+	match_board.get_game_result_controller().finish_game(match_board.get_own_color())
 
 func close_game_connection():
 	if game_host != null:
@@ -780,14 +771,14 @@ func create_lobby_on_server() -> void:
 		report_custom_lobby_connection_problem()
 		return
 	set_custom_lobby_status(tr("Joining server room..."))
-	enter_custom_server_room.rpc_id(1, GameConfig.get_local_player_name(), GameConfig.get_selected_deck_stamp_names(), GameConfig.get_local_portrait_data())
+	enter_custom_server_room.rpc_id(1, PlayerProfile.local().to_dict())
 
 func join_lobby_on_server(lobby_id: String) -> void:
 	if !can_send_custom_lobby_request():
 		report_custom_lobby_connection_problem()
 		return
 	set_custom_lobby_status(tr("Joining room..."))
-	join_custom_lobby.rpc_id(1, lobby_id, GameConfig.get_local_player_name(), GameConfig.get_selected_deck_stamp_names(), GameConfig.get_local_portrait_data())
+	join_custom_lobby.rpc_id(1, lobby_id, PlayerProfile.local().to_dict())
 
 func can_send_custom_lobby_request() -> bool:
 	return !is_server \
@@ -845,7 +836,7 @@ func request_custom_lobby_list() -> void:
 	send_open_lobby_list_to_peer(peer_id)
 
 @rpc("any_peer", "call_remote", "reliable")
-func enter_custom_server_room(player_name: String, deck_stamp_names: Array = [], portrait_data: Dictionary = {}) -> void:
+func enter_custom_server_room(profile_data: Dictionary) -> void:
 	if !is_server or !is_dedicated_server:
 		return
 	var peer_id: int = multiplayer.get_remote_sender_id()
@@ -856,7 +847,7 @@ func enter_custom_server_room(player_name: String, deck_stamp_names: Array = [],
 		call_deferred("disconnect_dedicated_peer_after_delay", peer_id)
 		return
 
-	register_dedicated_peer_data(peer_id, player_name, deck_stamp_names, portrait_data)
+	peer_profiles[peer_id] = PlayerProfile.from_dict(profile_data)
 	if !connected_peer_ids.has(peer_id):
 		connected_peer_ids.append(peer_id)
 
@@ -869,7 +860,7 @@ func enter_custom_server_room(player_name: String, deck_stamp_names: Array = [],
 	await start_dedicated_match(int(connected_peer_ids[0]), int(connected_peer_ids[1]))
 
 @rpc("any_peer", "call_remote", "reliable")
-func create_custom_lobby(player_name: String, deck_stamp_names: Array = [], portrait_data: Dictionary = {}) -> void:
+func create_custom_lobby(profile_data: Dictionary) -> void:
 	if !is_server or !is_dedicated_server:
 		return
 	var peer_id: int = multiplayer.get_remote_sender_id()
@@ -879,13 +870,14 @@ func create_custom_lobby(player_name: String, deck_stamp_names: Array = [], port
 		send_custom_lobby_error(peer_id, "A match is already running on this alpha server.")
 		return
 	remove_lobbies_for_peer(peer_id)
-	register_dedicated_peer_data(peer_id, player_name, deck_stamp_names, portrait_data)
+	var profile: PlayerProfile = PlayerProfile.from_dict(profile_data)
+	peer_profiles[peer_id] = profile
 
 	var lobby_id: String = "custom-%d-%d" % [peer_id, Time.get_unix_time_from_system()]
 	open_lobbies[lobby_id] = {
 		"lobby_id": lobby_id,
 		"host_peer_id": peer_id,
-		"host_name": GameConfig.sanitize_player_name(player_name),
+		"host_name": profile.player_name,
 		"player_count": 1,
 		"max_players": 2,
 		"status": MultiplayerLobby.STATUS_OPEN,
@@ -898,7 +890,7 @@ func create_custom_lobby(player_name: String, deck_stamp_names: Array = [], port
 	broadcast_open_lobby_list()
 
 @rpc("any_peer", "call_remote", "reliable")
-func join_custom_lobby(lobby_id: String, player_name: String, deck_stamp_names: Array = [], portrait_data: Dictionary = {}) -> void:
+func join_custom_lobby(lobby_id: String, profile_data: Dictionary) -> void:
 	if !is_server or !is_dedicated_server:
 		return
 	var peer_id: int = multiplayer.get_remote_sender_id()
@@ -922,14 +914,9 @@ func join_custom_lobby(lobby_id: String, player_name: String, deck_stamp_names: 
 		broadcast_open_lobby_list()
 		return
 
-	register_dedicated_peer_data(peer_id, player_name, deck_stamp_names, portrait_data)
+	peer_profiles[peer_id] = PlayerProfile.from_dict(profile_data)
 	open_lobbies.erase(lobby_id)
 	await start_dedicated_match(host_peer_id, peer_id)
-
-func register_dedicated_peer_data(peer_id: int, player_name: String, deck_stamp_names: Array = [], portrait_data: Dictionary = {}) -> void:
-	peer_player_names[peer_id] = GameConfig.sanitize_player_name(player_name)
-	peer_player_decks[peer_id] = duplicate_string_array(deck_stamp_names)
-	peer_player_portraits[peer_id] = PortraitLibrary.config_from_data_or_default(portrait_data, 0).to_dict()
 
 func send_open_lobby_list_to_peer(peer_id: int) -> void:
 	if peer_id <= 0:
@@ -1114,22 +1101,22 @@ func update_custom_lobby_list_ui() -> void:
 	else:
 		set_custom_lobby_status(tr("Server room is available."))
 
-## The peer id argument is kept for older clients that still send it, but never
-## trusted: who is registering is whoever the network says sent this.
+## A client's profile (PlayerProfile.to_dict), sent once after the version
+## check. Whose it is, is whoever the network says sent it.
 @rpc("any_peer", "call_local", "reliable")
-func register_player_name(_claimed_peer_id: int, player_name: String, deck_stamp_names: Array = [], portrait_data: Dictionary = {}):
+func register_player_profile(profile_data: Dictionary):
 	if !is_server:
 		return
 	var peer_id: int = get_rpc_sender_peer_id()
 	if !ensure_peer_version_accepted(peer_id):
 		return
 
-	DebugLog.network("Registering peer %s as '%s' with %d deck stamps." % [peer_id, GameConfig.sanitize_player_name(player_name), deck_stamp_names.size()])
-	peer_player_names[peer_id] = GameConfig.sanitize_player_name(player_name)
-	peer_player_decks[peer_id] = duplicate_string_array(deck_stamp_names)
-	peer_player_portraits[peer_id] = PortraitLibrary.config_from_data_or_default(portrait_data, int(peer_player_ids.get(peer_id, 0))).to_dict()
+	var profile: PlayerProfile = PlayerProfile.from_dict(profile_data, int(peer_player_ids.get(peer_id, 0)))
+	DebugLog.network("Registering peer %s as '%s' with %d deck stamps." % [peer_id, profile.player_name, profile.deck_stamp_names.size()])
+	peer_profiles[peer_id] = profile
 	_try_start_multiplayer_game()
 	if game_host != null && game_host.game_state != null && game_host.game_state.player_hands.has(0):
+		game_host.broadcast_player_profiles()
 		game_host.broadcast_full_state()
 
 func _try_start_multiplayer_game() -> void:
@@ -1141,13 +1128,9 @@ func _try_start_multiplayer_game() -> void:
 		return
 
 	for peer_id in connected_peer_ids:
-		if !peer_player_names.has(peer_id) or !peer_player_decks.has(peer_id):
+		if !peer_profiles.has(peer_id):
 			set_network_status(tr("Waiting for peer registration..."))
-			DebugLog.network("Waiting for peer registration data. Peer=%s has_name=%s has_deck=%s" % [
-				peer_id,
-				peer_player_names.has(peer_id),
-				peer_player_decks.has(peer_id),
-			])
+			DebugLog.network("Waiting for the profile of peer %s." % peer_id)
 			return
 
 	multiplayer_game_started = true
@@ -1171,7 +1154,7 @@ func _try_start_multiplayer_game() -> void:
 	await get_tree().create_timer(0.2).timeout
 
 	if connected_peer_ids[0] == 1:
-		$MatchBoard.set_turn(server_turn)
+		$MatchBoard.get_match_board_lifecycle_controller().set_turn(server_turn)
 	else:
 		give_turn.rpc_id(connected_peer_ids[0], server_turn)
 
@@ -1265,7 +1248,13 @@ func reject_peer_version(peer_id: int, client_version: String) -> void:
 func give_turn(turn):
 	DebugLog.info("Assigned side: %s" % ("White" if turn else "Black"))
 	hide_custom_lobby_panel()
-	$MatchBoard.set_turn(turn)
+	$MatchBoard.get_match_board_lifecycle_controller().set_turn(turn)
+
+## Both players' public profiles, once as the match starts
+## (NetworkGameHost.broadcast_player_profiles).
+@rpc("authority", "call_remote", "reliable")
+func receive_player_profiles(profiles: Dictionary):
+	$MatchBoard.get_server_state_update_controller().apply_player_profiles(profiles)
 
 @rpc("authority", "call_remote", "reliable")
 func receive_game_state(state_data: Dictionary):
@@ -1277,39 +1266,27 @@ func apply_game_state(state_data: Dictionary):
 		int(state_data.get("viewer_player_id", -1)),
 		str(state_data.get("current_turn", "?")),
 	])
-	$MatchBoard.apply_server_state_data(state_data)
+	$MatchBoard.get_server_state_update_controller().apply_state_data(state_data)
 
-func get_player_names_by_id() -> Dictionary:
-	if GameConfig.is_singleplayer:
-		return {
-			0: str(peer_player_names.get(0, tr("AI %s") % tr("White"))),
-			1: str(peer_player_names.get(1, tr("AI %s") % tr("Black"))),
-		}
-
-	var player_names: Dictionary = {
-		0: tr("Player"),
-		1: tr("Player"),
+## Both players' public profiles by player id (PlayerProfile.to_public_dict),
+## for NetworkGameHost to send to the boards. A side with no profile yet gets
+## the defaults.
+func get_public_player_profiles() -> Dictionary:
+	var profiles: Dictionary = {
+		0: PlayerProfile.default_public_dict(0),
+		1: PlayerProfile.default_public_dict(1),
 	}
+	if GameConfig.is_singleplayer:
+		for player_id in [0, 1]:
+			if peer_profiles.has(player_id):
+				profiles[player_id] = (peer_profiles[player_id] as PlayerProfile).to_public_dict(player_id)
+		return profiles
+
 	for peer_id in peer_player_ids:
 		var player_id: int = int(peer_player_ids[peer_id])
-		player_names[player_id] = str(peer_player_names.get(peer_id, "Player"))
-	return player_names
-
-func get_player_portraits_by_id() -> Dictionary:
-	if GameConfig.is_singleplayer:
-		return {
-			0: PortraitLibrary.config_from_data_or_default(peer_player_portraits.get(0, {}), 0).to_dict(),
-			1: PortraitLibrary.config_from_data_or_default(peer_player_portraits.get(1, {}), 1).to_dict(),
-		}
-
-	var player_portraits: Dictionary = {
-		0: PortraitLibrary.get_default_portrait_for_player_id(0).to_dict(),
-		1: PortraitLibrary.get_default_portrait_for_player_id(1).to_dict(),
-	}
-	for peer_id in peer_player_ids:
-		var player_id: int = int(peer_player_ids[peer_id])
-		player_portraits[player_id] = PortraitLibrary.config_from_data_or_default(peer_player_portraits.get(peer_id, {}), player_id).to_dict()
-	return player_portraits
+		if peer_profiles.has(peer_id):
+			profiles[player_id] = (peer_profiles[peer_id] as PlayerProfile).to_public_dict(player_id)
+	return profiles
 
 func get_starting_deck_for_player_id(player_id: int) -> Array[String]:
 	if GameConfig.is_singleplayer:
@@ -1326,8 +1303,8 @@ func get_starting_deck_for_player_id(player_id: int) -> Array[String]:
 		return GameConfig.get_selected_ai_deck_stamp_names()
 
 	for peer_id in peer_player_ids:
-		if int(peer_player_ids[peer_id]) == player_id:
-			return duplicate_string_array(peer_player_decks.get(peer_id, []))
+		if int(peer_player_ids[peer_id]) == player_id and peer_profiles.has(peer_id):
+			return duplicate_string_array((peer_profiles[peer_id] as PlayerProfile).deck_stamp_names)
 	var empty_deck: Array[String] = []
 	return empty_deck
 

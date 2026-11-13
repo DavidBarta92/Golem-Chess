@@ -25,7 +25,7 @@ func select_piece_for_action(piece_pos: Vector2) -> bool:
 	var player_id: int = match_board.get_own_player_id()
 	if !match_board.can_player_control_piece_at(piece_pos, player_id):
 		return false
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_SELECT_PIECE, {
+	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_SELECT_PIECE, {
 		"owner_color": match_board.get_controllable_color(),
 		"player_id": player_id,
 		"piece_pos": piece_pos,
@@ -41,7 +41,7 @@ func select_piece_for_action(piece_pos: Vector2) -> bool:
 func try_move_selected_piece(target_pos: Vector2) -> bool:
 	if !match_board.state or !match_board.moves.has(target_pos):
 		return false
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
+	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
 		"owner_color": match_board.get_controllable_color(),
 		"player_id": match_board.get_own_player_id(),
 		"from_pos": match_board.selected_piece,
@@ -92,7 +92,7 @@ func _clear_pending_move() -> void:
 func clear_piece_selection() -> void:
 	delete_dots()
 	match_board.state = false
-	match_board.update_selected_piece_glow()
+	match_board.get_piece_display_controller().update_selected_piece_glow()
 	match_board.hovered_piece = Vector2(-1, -1)
 	hide_hover_piece_details()
 	match_board.clear_hover_highlighted_piece()
@@ -137,7 +137,7 @@ func handle_input(event: InputEvent) -> void:
 						clear_piece_selection()
 
 func send_move_action(from_pos: Vector2, to_pos: Vector2) -> void:
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
+	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
 		"owner_color": match_board.get_controllable_color(),
 		"player_id": match_board.get_own_player_id(),
 		"from_pos": from_pos,
@@ -145,17 +145,12 @@ func send_move_action(from_pos: Vector2, to_pos: Vector2) -> void:
 	}, true):
 		return
 
-	if GameController.current_game_host:
-		var action: Dictionary = {
-			"type": "move_piece",
-			"player_id": match_board.get_own_player_id(),
-			"from": from_pos,
-			"to": to_pos,
-		}
-		GameController.send_action(action)
-		return
-
-	match_board.set_move(from_pos, to_pos)
+	GameController.send_action({
+		"type": "move_piece",
+		"player_id": match_board.get_own_player_id(),
+		"from": from_pos,
+		"to": to_pos,
+	})
 
 func is_mouse_out() -> bool:
 	return match_board.get_mouse_board_position() == invalid_board_pos
@@ -241,12 +236,12 @@ func show_options() -> void:
 	match_board.moves = match_board.get_local_gameplay_controller().get_moves(match_board.selected_piece)
 	if match_board.moves == []:
 		match_board.state = false
-		match_board.update_selected_piece_glow()
+		match_board.get_piece_display_controller().update_selected_piece_glow()
 		match_board.clear_hover_highlighted_piece()
 		return
 	delete_dots()
 	show_dots(match_board.selected_piece)
-	match_board.update_selected_piece_glow()
+	match_board.get_piece_display_controller().update_selected_piece_glow()
 	match_board.set_hover_highlighted_piece(match_board.selected_piece)
 	show_hover_piece_details(match_board.selected_piece)
 

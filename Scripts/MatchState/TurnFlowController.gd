@@ -11,9 +11,8 @@ func configure(config: Dictionary) -> void:
 
 func has_pending_visual_processes() -> bool:
 	return (
-		match_board.has_active_visual_processes()
+		match_board.get_visual_process_tracker().has_any_active()
 		or match_board.get_stamp_animation_controller().has_pending_animations()
-		or !match_board.pending_piece_revert_animations.is_empty()
 	)
 
 func wait_for_pending_visual_processes() -> void:
@@ -52,11 +51,11 @@ func has_tutorial_allowed_exchange_stamp(owner_color: int) -> bool:
 	if !match_board.tutorial_constraints_enabled:
 		return true
 
-	var hand_stamps: Array[Stamp] = match_board.get_stamp_hand(owner_color)
+	var hand_stamps: Array[Stamp] = match_board.get_stamp_hand_state_controller().get_stamp_hand(owner_color)
 	for stamp: Stamp in hand_stamps:
 		if stamp == null:
 			continue
-		if match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_EXCHANGE_STAMP, {
+		if match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_EXCHANGE_STAMP, {
 			"owner_color": owner_color,
 			"stamp_name": stamp.stamp_name,
 		}):
@@ -66,11 +65,11 @@ func has_tutorial_allowed_exchange_stamp(owner_color: int) -> bool:
 func can_affix_action_now() -> bool:
 	if !match_board.can_control_current_turn():
 		return false
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP):
+	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP):
 		return false
 
 	var owner_color: int = match_board.get_controllable_color()
-	var hand_stamps: Array[Stamp] = match_board.get_stamp_hand(owner_color)
+	var hand_stamps: Array[Stamp] = match_board.get_stamp_hand_state_controller().get_stamp_hand(owner_color)
 	if hand_stamps.is_empty():
 		return false
 
@@ -82,7 +81,7 @@ func can_affix_action_now() -> bool:
 		for stamp: Stamp in hand_stamps:
 			if !MoveRules.stamp_can_be_used(stamp) or !piece.can_receive_stamp(stamp):
 				continue
-			if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, {
+			if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, {
 				"owner_color": owner_color,
 				"piece_pos": position_value,
 				"stamp_name": stamp.stamp_name,
@@ -96,7 +95,7 @@ func can_affix_action_now() -> bool:
 func can_move_action_now() -> bool:
 	if !match_board.can_control_current_turn():
 		return false
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE):
+	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE):
 		return false
 
 	var owner_color: int = match_board.get_controllable_color()
@@ -114,7 +113,7 @@ func has_tutorial_allowed_piece_move(owner_color: int) -> bool:
 		var player_id: int = BoardConfig.get_player_id_for_color(owner_color)
 		var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(match_board.piece_objects, piece_pos, player_id, board_size, match_board.current_board_effects)
 		for target_pos: Vector2 in valid_moves:
-			if match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
+			if match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
 				"owner_color": owner_color,
 				"from_pos": piece_pos,
 				"to_pos": target_pos,
@@ -122,41 +121,12 @@ func has_tutorial_allowed_piece_move(owner_color: int) -> bool:
 				return true
 	return false
 
-func has_remaining_turn_action_now() -> bool:
-	return can_switch_action_now() or can_affix_action_now() or can_move_action_now()
-
 func on_turn_timer_timeout(expected_turn_color: int) -> void:
 	if !match_board.is_inside_tree():
 		return
 	await request_end_turn(false, expected_turn_color)
 	if !match_board.is_inside_tree() or match_board.get_current_turn_color() != expected_turn_color:
 		return
-	if GameController.current_game_host == null:
-		match_board.get_turn_hud_controller().clear_turn_timer_timeout_pending()
-
-func maybe_auto_end_turn_locally() -> void:
-	if GameController.current_game_host:
-		return
-	if !match_board.can_auto_end_turn_now():
-		return
-	if match_board.local_auto_end_turn_pending or match_board.game_over or !match_board.can_control_current_turn():
-		return
-	if has_remaining_turn_action_now():
-		return
-
-	match_board.local_auto_end_turn_pending = true
-	match_board.call_deferred("_auto_end_turn_locally_if_still_needed")
-
-func auto_end_turn_locally_if_still_needed() -> void:
-	match_board.local_auto_end_turn_pending = false
-	if GameController.current_game_host or match_board.game_over or !match_board.can_control_current_turn():
-		return
-	await wait_for_pending_visual_processes()
-	if match_board.game_over or !match_board.can_control_current_turn():
-		return
-	if has_remaining_turn_action_now():
-		return
-	end_current_turn_locally()
 
 func on_end_turn_pressed() -> void:
 	await request_end_turn(true)
@@ -178,7 +148,7 @@ func request_end_turn(emit_tutorial_rejection: bool, expected_turn_color: int = 
 		return
 	if expected_turn_color != 0 and match_board.get_current_turn_color() != expected_turn_color:
 		return
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_END_TURN, {
+	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_END_TURN, {
 		"owner_color": match_board.get_controllable_color(),
 		"player_id": match_board.get_own_player_id(),
 	}, emit_tutorial_rejection):
@@ -190,31 +160,8 @@ func request_end_turn(emit_tutorial_rejection: bool, expected_turn_color: int = 
 	if expected_turn_color != 0 and match_board.get_current_turn_color() != expected_turn_color:
 		return
 
-	if GameController.current_game_host:
-		GameController.send_action({
-			"type": "end_turn",
-			"player_id": match_board.get_own_player_id(),
-		})
-		return
+	GameController.send_action({
+		"type": "end_turn",
+		"player_id": match_board.get_own_player_id(),
+	})
 
-	end_current_turn_locally()
-
-func end_current_turn_locally() -> void:
-	match_board.local_auto_end_turn_pending = false
-	var ending_color: int = match_board.get_current_turn_color()
-	var ending_player_id: int = BoardConfig.get_player_id_for_color(ending_color)
-	match_board.get_stamp_hand_state_controller().clear_exchanged_stamp_names_this_turn(ending_color)
-	match_board.get_local_state_mutator().tick_board_effects()
-	match_board.get_local_state_mutator().tick_piece_protection_windows()
-	match_board.get_local_state_mutator().clear_piece_exhaustion_for_color(ending_color)
-	match_board.completed_turn_counts[ending_player_id] = int(match_board.completed_turn_counts.get(ending_player_id, 0)) + 1
-	match_board.white = !match_board.white
-	match_board.get_crown_controller().begin_local_turn(match_board.get_current_turn_color())
-	match_board.get_turn_action_state_controller().reset_current_turn_stamp_affix()
-	match_board.state = false
-	match_board.delete_dots()
-	match_board.hide_hover_piece_details()
-	match_board.update_stamp_presentation()
-	match_board.display_board()
-	match_board.turn_ended.emit(ending_color, match_board.get_current_turn_color())
-	match_board.finish_if_current_player_has_no_valid_turn()

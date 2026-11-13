@@ -5,17 +5,18 @@ const STAMP_MOVES_MIN_VOLUME_DB: float = -40.0
 const STAMP_MOVES_MAX_VOLUME_DB: float = 0.0
 const STAMP_MOVES_REFERENCE_SPEED: float = 600.0
 
+const STAMP_AFFIX_TARGET_FILL_COLOR: Color = Color(1.0, 0.92, 0.58, 0.24)
+const STAMP_AFFIX_TARGET_FILL_INSET: float = 1.0
+const STAMP_AFFIX_TARGET_WIGGLE_RISE: float = 2.2
+const STAMP_AFFIX_TARGET_WIGGLE_ROTATION_DEGREES: float = 2.2
+const STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION: float = 0.105
+
 var _stamp_moves_player: AudioStreamPlayer
 
 var tween_owner: Node
 var geometry
 var visuals
 var board_markers_node: Node2D
-var stamp_affix_target_fill_color: Color = Color(1.0, 0.92, 0.58, 0.24)
-var stamp_affix_target_fill_inset: float = 1.0
-var stamp_affix_target_wiggle_rise: float = 2.2
-var stamp_affix_target_wiggle_rotation_degrees: float = 2.2
-var stamp_affix_target_wiggle_step_duration: float = 0.105
 
 var hide_hover_callback: Callable
 var show_hover_stamp_description_callback: Callable
@@ -51,11 +52,6 @@ func configure(config: Dictionary) -> void:
 	geometry = config.get("geometry", geometry)
 	visuals = config.get("visuals", visuals)
 	board_markers_node = config.get("board_markers_node", board_markers_node)
-	stamp_affix_target_fill_color = config.get("stamp_affix_target_fill_color", stamp_affix_target_fill_color)
-	stamp_affix_target_fill_inset = float(config.get("stamp_affix_target_fill_inset", stamp_affix_target_fill_inset))
-	stamp_affix_target_wiggle_rise = float(config.get("stamp_affix_target_wiggle_rise", stamp_affix_target_wiggle_rise))
-	stamp_affix_target_wiggle_rotation_degrees = float(config.get("stamp_affix_target_wiggle_rotation_degrees", stamp_affix_target_wiggle_rotation_degrees))
-	stamp_affix_target_wiggle_step_duration = float(config.get("stamp_affix_target_wiggle_step_duration", stamp_affix_target_wiggle_step_duration))
 
 	hide_hover_callback = config.get("hide_hover_callback", hide_hover_callback)
 	show_hover_stamp_description_callback = config.get("show_hover_stamp_description_callback", show_hover_stamp_description_callback)
@@ -269,8 +265,8 @@ func create_stamp_affix_target_marker(target_pos: Vector2) -> Node2D:
 	marker_group.z_index = 0
 	var marker := Polygon2D.new()
 	marker.name = "Fill"
-	marker.color = stamp_affix_target_fill_color
-	marker.polygon = geometry.get_cell_polygon_local(target_pos, stamp_affix_target_fill_inset)
+	marker.color = STAMP_AFFIX_TARGET_FILL_COLOR
+	marker.polygon = geometry.get_cell_polygon_local(target_pos, STAMP_AFFIX_TARGET_FILL_INSET)
 	if visuals != null:
 		visuals.enable_canvas_item_antialiasing(marker)
 	marker_group.add_child(marker)
@@ -287,16 +283,16 @@ func start_stamp_affix_target_piece_wiggle(target_pos: Vector2) -> void:
 	stamp_affix_target_piece = holder
 	stamp_affix_target_piece_base_position = holder.position
 	stamp_affix_target_piece_base_rotation = holder.rotation
-	var lift: Vector2 = Vector2(0.0, -stamp_affix_target_wiggle_rise)
-	var tilt: float = deg_to_rad(stamp_affix_target_wiggle_rotation_degrees)
+	var lift: Vector2 = Vector2(0.0, -STAMP_AFFIX_TARGET_WIGGLE_RISE)
+	var tilt: float = deg_to_rad(STAMP_AFFIX_TARGET_WIGGLE_ROTATION_DEGREES)
 	stamp_affix_target_piece_tween = tween_owner.create_tween().set_loops().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position + lift, stamp_affix_target_wiggle_step_duration)
-	stamp_affix_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_affix_target_piece_base_rotation + tilt, stamp_affix_target_wiggle_step_duration)
-	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position, stamp_affix_target_wiggle_step_duration)
-	stamp_affix_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_affix_target_piece_base_rotation - tilt, stamp_affix_target_wiggle_step_duration)
-	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position + lift * 0.55, stamp_affix_target_wiggle_step_duration)
-	stamp_affix_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_affix_target_piece_base_rotation, stamp_affix_target_wiggle_step_duration)
-	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position, stamp_affix_target_wiggle_step_duration)
+	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position + lift, STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION)
+	stamp_affix_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_affix_target_piece_base_rotation + tilt, STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION)
+	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position, STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION)
+	stamp_affix_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_affix_target_piece_base_rotation - tilt, STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION)
+	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position + lift * 0.55, STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION)
+	stamp_affix_target_piece_tween.parallel().tween_property(holder, "rotation", stamp_affix_target_piece_base_rotation, STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION)
+	stamp_affix_target_piece_tween.tween_property(holder, "position", stamp_affix_target_piece_base_position, STAMP_AFFIX_TARGET_WIGGLE_STEP_DURATION)
 
 func clear_stamp_affix_target_feedback() -> void:
 	if stamp_affix_target_marker != null and is_instance_valid(stamp_affix_target_marker):

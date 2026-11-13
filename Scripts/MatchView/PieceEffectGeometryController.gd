@@ -1,40 +1,36 @@
 extends RefCounted
 
+const ATTACH_POINT_LIGHT_TEXTURE_SIZE: int = 256
+const LIGHT_TEXTURE_GRAIN_STRENGTH: float = 0.12
+const LIGHT_TEXTURE_FINE_GRAIN_STRENGTH: float = 0.045
+const LIGHT_TEXTURE_GRAIN_FREQUENCY: float = 0.085
+const LIGHT_TEXTURE_FINE_GRAIN_FREQUENCY: float = 0.31
+
 var match_board
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
-var attach_point_light_texture_size: int = 256
-var light_texture_grain_strength: float = 0.12
-var light_texture_fine_grain_strength: float = 0.045
-var light_texture_grain_frequency: float = 0.085
-var light_texture_fine_grain_frequency: float = 0.31
 
 var attach_point_light_texture: Texture2D
 
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
 	invalid_board_pos = config.get("invalid_board_pos", invalid_board_pos)
-	attach_point_light_texture_size = int(config.get("attach_point_light_texture_size", attach_point_light_texture_size))
-	light_texture_grain_strength = float(config.get("light_texture_grain_strength", light_texture_grain_strength))
-	light_texture_fine_grain_strength = float(config.get("light_texture_fine_grain_strength", light_texture_fine_grain_strength))
-	light_texture_grain_frequency = float(config.get("light_texture_grain_frequency", light_texture_grain_frequency))
-	light_texture_fine_grain_frequency = float(config.get("light_texture_fine_grain_frequency", light_texture_fine_grain_frequency))
 
 func get_attach_point_light_texture() -> Texture2D:
 	if attach_point_light_texture != null:
 		return attach_point_light_texture
 
-	var texture_size: int = attach_point_light_texture_size
+	var texture_size: int = ATTACH_POINT_LIGHT_TEXTURE_SIZE
 	var image := Image.create(texture_size, texture_size, false, Image.FORMAT_RGBA8)
 	var center := Vector2(float(texture_size) * 0.5, float(texture_size) * 0.5)
 	var radius: float = float(texture_size) * 0.5
 	var grain_noise := FastNoiseLite.new()
 	grain_noise.seed = 91357
-	grain_noise.frequency = light_texture_grain_frequency
+	grain_noise.frequency = LIGHT_TEXTURE_GRAIN_FREQUENCY
 	grain_noise.fractal_octaves = 3
 	grain_noise.fractal_gain = 0.52
 	var fine_grain_noise := FastNoiseLite.new()
 	fine_grain_noise.seed = 24731
-	fine_grain_noise.frequency = light_texture_fine_grain_frequency
+	fine_grain_noise.frequency = LIGHT_TEXTURE_FINE_GRAIN_FREQUENCY
 	fine_grain_noise.fractal_octaves = 2
 	fine_grain_noise.fractal_gain = 0.44
 	for y in texture_size:
@@ -42,8 +38,8 @@ func get_attach_point_light_texture() -> Texture2D:
 			var pixel_pos := Vector2(float(x) + 0.5, float(y) + 0.5)
 			var distance_ratio: float = clampf(pixel_pos.distance_to(center) / radius, 0.0, 1.0)
 			var alpha: float = pow(1.0 - distance_ratio, 1.85)
-			var grain: float = grain_noise.get_noise_2d(float(x), float(y)) * light_texture_grain_strength
-			grain += fine_grain_noise.get_noise_2d(float(x), float(y)) * light_texture_fine_grain_strength
+			var grain: float = grain_noise.get_noise_2d(float(x), float(y)) * LIGHT_TEXTURE_GRAIN_STRENGTH
+			grain += fine_grain_noise.get_noise_2d(float(x), float(y)) * LIGHT_TEXTURE_FINE_GRAIN_STRENGTH
 			alpha = clampf(alpha * (1.0 + grain), 0.0, 1.0)
 			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
 
@@ -91,4 +87,4 @@ func get_sprite_texture_bounds_local(sprite: Sprite2D) -> Rect2:
 	for corner: Vector2 in corners:
 		board_points.append(match_board.to_local(sprite.to_global(corner)))
 
-	return match_board.get_points_bounds_local(board_points)
+	return match_board.get_board_geometry().get_points_bounds_local(board_points)

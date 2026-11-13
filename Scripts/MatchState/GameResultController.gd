@@ -2,28 +2,14 @@ extends RefCounted
 
 const RESULT_MESSAGE_DELAY_SECONDS: float = 0.25
 
+const MATCH_END_FEEDBACK_SCENE: String = "res://Scenes/MatchEndFeedback.tscn"
+
 var match_board
 var main_menu_scene: String = "res://Scenes/MainMenu.tscn"
-var match_end_feedback_scene: String = "res://Scenes/MatchEndFeedback.tscn"
 
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
 	main_menu_scene = str(config.get("main_menu_scene", main_menu_scene))
-	match_end_feedback_scene = str(config.get("match_end_feedback_scene", match_end_feedback_scene))
-
-func finish_if_current_player_has_no_valid_turn() -> bool:
-	if match_board.game_over:
-		return false
-	if match_board.scripted_turn_colors.has(match_board.get_current_turn_color()):
-		return false
-	if match_board.get_local_state_mutator().current_player_has_valid_turn_action():
-		return false
-
-	var losing_color: int = match_board.get_current_turn_color()
-	var winner_color: int = -losing_color
-	DebugLog.info("No valid moves for player: %s. Winner: %s" % [losing_color, winner_color])
-	match_board.finish_game(winner_color)
-	return true
 
 func finish_game(winner_color: int) -> void:
 	if match_board == null or !is_instance_valid(match_board):
@@ -35,10 +21,10 @@ func finish_game(winner_color: int) -> void:
 	AmbienceManager.set_muffled(true, 2.0)
 	match_board.state = false
 	match_board.hovered_piece = Vector2(-1, -1)
-	match_board.delete_dots()
+	match_board.get_match_input_controller().delete_dots()
 	match_board.hide_hover_piece_details()
-	match_board.update_stamp_drag_permissions()
-	match_board.update_end_turn_button()
+	match_board.get_stamp_hand_state_controller().update_stamp_drag_permissions()
+	match_board.get_turn_hud_controller().update_end_turn_button()
 	award_win_points_if_applicable(winner_color)
 	var rating_change_text: String = record_rated_result(winner_color)
 	record_codex_result(winner_color)
@@ -112,7 +98,7 @@ func get_next_scene_after_game(winner_color: int) -> String:
 		GameConfig.stop_ai_vs_ai_batch()
 		return main_menu_scene
 
-	return match_end_feedback_scene
+	return MATCH_END_FEEDBACK_SCENE
 
 func award_win_points_if_applicable(winner_color: int) -> void:
 	if !should_award_win_points(winner_color):

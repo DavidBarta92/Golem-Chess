@@ -838,7 +838,7 @@ the drawings and the board now grow and shrink together. `MatchCamera` applies t
 
 Two things follow, and breaking either pulls the board off the drawn table:
 
-- **`BOARD_VISUAL_SCALE` must stay 1.0.** The board's size comes from the
+- **`BOARD_VISUAL_SCALE` (in `MatchBoardLifecycleController`) must stay 1.0.** The board's size comes from the
   perspective constants, which are fitted in these units. A scale on the node
   multiplies the board *and its grid* without touching the art behind them —
   which is exactly the bug that made the board eight percent too big and the
@@ -873,11 +873,12 @@ canvas:
   Fading `BoardTiles` fades all of it, since `modulate` propagates.
 
 The board's perspective is **fitted to the drawing**, not the other way round.
-The constants in `Scenes/MatchBoard.gd` —
+These constants were solved against the ink in `Assets/board_grid_line.png`:
 `BOARD_PERSPECTIVE_TOP_SCALE` / `_BOTTOM_SCALE` / `_VERTICAL_SCALE` /
-`_NEAR_OFFSET`, `BOARD_FRAME_WIDTH`, `BOARD_FRAME_VERTICAL_EXTENSION`,
-`BOARD_SIDE_THICKNESS` — were solved against the ink in
-`Assets/board_grid_line.png`.
+`_NEAR_OFFSET` in `Scripts/MatchView/BoardGeometry.gd`, `BOARD_FRAME_WIDTH`
+and `BOARD_FRAME_VERTICAL_EXTENSION` in `Scenes/MatchBoard.gd` (several
+controllers read them), and `BOARD_SIDE_THICKNESS` in
+`Scripts/MatchView/BoardTileController.gd`.
 
 **What that drawing actually is matters, and it is easy to get wrong: it is a
 9x9 grid, not a 7x7 one.** The playable board is the inner 7x7; the outer ring

@@ -3,21 +3,25 @@ extends RefCounted
 const INVALID_BOARD_POS = Vector2(-1, -1)
 const STAMP_TILT_SHADER = preload("res://Shaders/stamp_tilt.gdshader")
 
+const STAMP_BURN_SEQUENCE_GAP: float = 0.08
+const STAMP_RETURN_TO_DECK_START_SCALE: float = 0.74 * 0.75
+const STAMP_RETURN_TO_DECK_DURATION: float = 0.62
+
+## Lifts the big stamp that appears at the side when one is played, so it
+## clears the clock below it.
+const STAMP_SIDE_REVEAL_VERTICAL_OFFSET: float = -28.0
+
 var canvas_layer: CanvasLayer
 var tween_owner: Node
 var stamp_visual_scene: PackedScene
 var stamp_ui_size: Vector2 = Vector2(168.7, 229)
-var stamp_burn_sequence_gap: float = 0.08
-var return_to_deck_start_scale: float = 0.555
 var return_to_deck_end_scale: float = 0.324
-var return_to_deck_duration: float = 0.62
 ## A stamp leaving a piece - a seeker that ran out or was taken - is quicker
 ## about it than one handed back from the hand, and fades on the way, so it
 ## reads as going home rather than as something to follow.
 var piece_stamp_return_duration: float = 0.4
 var stamp_side_reveal_scale: float = 0.82
 var stamp_side_reveal_z_index: int = 905
-var stamp_side_reveal_vertical_offset: float = -14.0
 var stamp_affix_reveal_grow_duration: float = 0.16
 var stamp_affix_reveal_settle_duration: float = 0.36
 var stamp_affix_reveal_overshoot_ratio: float = 1.22
@@ -49,13 +53,9 @@ func configure(config: Dictionary) -> void:
 	tween_owner = config.get("tween_owner", tween_owner)
 	stamp_visual_scene = config.get("stamp_visual_scene", stamp_visual_scene)
 	stamp_ui_size = config.get("stamp_ui_size", stamp_ui_size)
-	stamp_burn_sequence_gap = float(config.get("stamp_burn_sequence_gap", stamp_burn_sequence_gap))
-	return_to_deck_start_scale = float(config.get("return_to_deck_start_scale", return_to_deck_start_scale))
 	return_to_deck_end_scale = float(config.get("return_to_deck_end_scale", return_to_deck_end_scale))
-	return_to_deck_duration = float(config.get("return_to_deck_duration", return_to_deck_duration))
 	stamp_side_reveal_scale = float(config.get("stamp_side_reveal_scale", stamp_side_reveal_scale))
 	stamp_side_reveal_z_index = int(config.get("stamp_side_reveal_z_index", stamp_side_reveal_z_index))
-	stamp_side_reveal_vertical_offset = float(config.get("stamp_side_reveal_vertical_offset", stamp_side_reveal_vertical_offset))
 	stamp_affix_reveal_grow_duration = float(config.get("stamp_affix_reveal_grow_duration", stamp_affix_reveal_grow_duration))
 	stamp_affix_reveal_settle_duration = float(config.get("stamp_affix_reveal_settle_duration", stamp_affix_reveal_settle_duration))
 	stamp_affix_reveal_overshoot_ratio = float(config.get("stamp_affix_reveal_overshoot_ratio", stamp_affix_reveal_overshoot_ratio))
@@ -226,20 +226,6 @@ func queue_stamp_return_to_deck_animation(transfer: Dictionary) -> void:
 	})
 	process_stamp_burn_animation_queue()
 
-func queue_seeker_stamp_return_to_deck_animation(owner_color: int, stamp: Stamp, piece_pos: Vector2) -> void:
-	if stamp == null:
-		return
-
-	var owner_player_id: int = BoardConfig.get_player_id_for_color(owner_color)
-	queue_stamp_return_to_deck_animation({
-		"source_player_id": owner_player_id,
-		"target_player_id": owner_player_id,
-		"stamp_name": stamp.stamp_name,
-		"source_zone": "piece",
-		"target_zone": "deck",
-		"source_pos": [piece_pos.x, piece_pos.y],
-	})
-
 func queue_stamp_expire_animation(piece_position: Vector2, expired_stamp: Stamp) -> void:
 	if expired_stamp == null:
 		return
@@ -274,7 +260,7 @@ func process_stamp_burn_animation_queue() -> void:
 		if stamp_visual != null and is_instance_valid(stamp_visual):
 			await stamp_visual.burn_finished
 		if !pending_stamp_burn_animations.is_empty() and tween_owner != null and is_instance_valid(tween_owner) and tween_owner.get_tree() != null:
-			await tween_owner.get_tree().create_timer(stamp_burn_sequence_gap).timeout
+			await tween_owner.get_tree().create_timer(STAMP_BURN_SEQUENCE_GAP).timeout
 
 	stamp_burn_animation_sequence_running = false
 
@@ -343,7 +329,7 @@ func play_stamp_return_to_deck_animation(transfer: Dictionary) -> StampVisual:
 
 	var target_player_id: int = int(transfer.get("target_player_id", transfer.get("source_player_id", -1)))
 	var owner_color: int = get_color_for_player_id(target_player_id) if target_player_id >= 0 else get_local_view_color()
-	var animation_scale: float = return_to_deck_start_scale
+	var animation_scale: float = STAMP_RETURN_TO_DECK_START_SCALE
 	var visual_size: Vector2 = stamp_ui_size * animation_scale
 	var source_position: Vector2 = get_stamp_transfer_source_position(transfer)
 
@@ -371,7 +357,7 @@ func play_stamp_return_to_deck_animation(transfer: Dictionary) -> StampVisual:
 	if from_piece:
 		stamp_visual.play_return_to_deck_and_free(target_position, target_scale, piece_stamp_return_duration, true)
 	else:
-		stamp_visual.play_return_to_deck_and_free(target_position, target_scale, return_to_deck_duration)
+		stamp_visual.play_return_to_deck_and_free(target_position, target_scale, STAMP_RETURN_TO_DECK_DURATION)
 	return stamp_visual
 
 func _create_reveal_stamp_visual(stamp: Stamp) -> StampVisual:
@@ -532,7 +518,7 @@ func get_stamp_side_reveal_position(scale: float) -> Vector2:
 	var offset_from_right_edge: float = maxf((viewport_size.x - board_screen_size) * 0.25, 0.0)
 	var center: Vector2 = Vector2(
 		viewport_size.x - offset_from_right_edge,
-		viewport_size.y * 0.5 + stamp_side_reveal_vertical_offset)
+		viewport_size.y * 0.5 + STAMP_SIDE_REVEAL_VERTICAL_OFFSET)
 	var visual_size: Vector2 = stamp_ui_size * scale
 	return center - visual_size * 0.5
 

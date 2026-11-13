@@ -1,7 +1,6 @@
 extends RefCounted
 
 var match_board
-
 var white_page_index: int = 0
 var black_page_index: int = 0
 var white_page_counts: Array[int] = [0, 0, 0, 0, 0]
@@ -192,7 +191,7 @@ func can_turn_page_locally(owner_color: int) -> bool:
 		return false
 	if owner_color != match_board.get_controllable_color():
 		return false
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_TURN_PAGE, {
+	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_TURN_PAGE, {
 		"owner_color": owner_color,
 	}):
 		return false
@@ -213,7 +212,7 @@ func count_non_empty_pages(owner_color: int) -> int:
 
 func on_turn_page_pressed() -> void:
 	var owner_color: int = match_board.get_controllable_color()
-	if !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_TURN_PAGE, {
+	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_TURN_PAGE, {
 		"owner_color": owner_color,
 	}, true):
 		update_ui()
@@ -222,33 +221,17 @@ func on_turn_page_pressed() -> void:
 		update_ui()
 		return
 	match_board.play_codex_page_turn_animation()
-	if GameController.current_game_host:
-		send_turn_page_action(owner_color)
-		return
-	turn_page_locally(owner_color)
+	var next_page_index: int = find_next_non_empty_page(owner_color, get_page_index(owner_color))
+	if send_turn_page_action(owner_color):
+		# The page the host turns to, as stamp_affixed says a stamp went on: a
+		# scene that teaches the page turn listens to this.
+		match_board.codex_page_turned.emit(owner_color, next_page_index)
 
 func send_turn_page_action(owner_color: int) -> bool:
 	return bool(GameController.send_action({
 		"type": "turn_page",
 		"player_id": BoardConfig.get_player_id_for_color(owner_color),
 	}))
-
-func turn_page_locally(owner_color: int) -> void:
-	var next_page_index: int = find_next_non_empty_page(owner_color, get_page_index(owner_color))
-	if next_page_index == -1:
-		return
-	set_page_index(owner_color, next_page_index)
-	match_board.has_turned_page_this_turn[owner_color] = true
-	match_board.codex_page_turned.emit(owner_color, next_page_index)
-	match_board.update_stamp_presentation()
-	# Swap the visible cards only once the codex has actually left the
-	# screen, not right away -- otherwise the old->new hand change would be
-	# visible while it's still sliding down.
-	match_board.run_when_codex_off_screen(Callable(self, "finish_turn_page_locally").bind(owner_color))
-
-func finish_turn_page_locally(owner_color: int) -> void:
-	sync_hand_from_local_codex(owner_color)
-	match_board.update_stamp_presentation()
 
 func find_next_non_empty_page(owner_color: int, start_index: int) -> int:
 	var counts: Array[int] = get_page_counts(owner_color)
@@ -282,43 +265,21 @@ func remove_local_stamp(owner_color: int, stamp_index: int) -> void:
 	set_pages(owner_color, pages)
 	update_ui()
 
-func return_local_seeker_stamp(owner_color: int, stamp: Stamp) -> void:
-	if stamp == null:
-		return
-	var pages: Array = get_pages(owner_color)
-	var page_index: int = int(stamp.get_meta("codex_page_index", get_page_index(owner_color)))
-	var stamp_index: int = int(stamp.get_meta("codex_stamp_index", -1))
-	page_index = clampi(page_index, 0, DeckManager.CODEX_PAGE_COUNT - 1)
-	while pages.size() < DeckManager.CODEX_PAGE_COUNT:
-		pages.append([])
-	var page = pages[page_index]
-	if !(page is Array):
-		page = []
-	var stamps: Array = page
-	var insert_index: int = clampi(stamp_index, 0, stamps.size()) if stamp_index >= 0 else stamps.size()
-	stamps.insert(insert_index, stamp.stamp_name)
-	pages[page_index] = stamps
-	set_pages(owner_color, pages)
-	if page_index == get_page_index(owner_color):
-		sync_hand_from_local_codex(owner_color)
-	else:
-		update_ui()
-
 func sync_hand_from_local_codex(owner_color: int) -> void:
 	var pages: Array = get_pages(owner_color)
 	var page_index: int = get_page_index(owner_color)
 	var page_names: Array = []
 	if page_index >= 0 and page_index < pages.size() and pages[page_index] is Array:
 		page_names = pages[page_index]
-	var stamps: Array[Stamp] = match_board.create_stamp_hand_from_names(page_names)
+	var stamps: Array[Stamp] = match_board.get_stamp_hand_state_controller().create_stamp_hand_from_names(page_names)
 	if owner_color == 1:
 		match_board.white_stamp_hand = stamps
-		match_board.white_stamp_visuals = match_board.populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
+		match_board.white_stamp_visuals = match_board.get_stamp_hand_state_controller().populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
 	else:
 		match_board.black_stamp_hand = stamps
-		match_board.black_stamp_visuals = match_board.populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
+		match_board.black_stamp_visuals = match_board.get_stamp_hand_state_controller().populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
 	sync_deck_from_local_codex(owner_color)
-	match_board.setup_deck_visuals()
+	match_board.get_stamp_hand_state_controller().setup_deck_visuals()
 
 func sync_deck_from_local_codex(owner_color: int) -> void:
 	var pages: Array = get_pages(owner_color)

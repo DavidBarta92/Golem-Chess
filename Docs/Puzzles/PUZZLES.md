@@ -132,7 +132,7 @@ Captures count when the player's move takes a golem; a bomb's do not.
   (`affix_stamp`, `affix_square`), then optionally a move (`move_from`,
   `move_to`). A move that is no longer possible is skipped with a warning;
   once the script runs out the opponent passes. Having nothing to do never
-  loses it the game (`MatchBoard.scripted_turn_colors`).
+  loses it the game (`NetworkGameHost.scripted_player_ids`).
 
 The letter should tell the player what to expect of the opponent: Grandpa's
 says his golem "never passes up a capture", Jakub's that his golems will not
@@ -141,22 +141,23 @@ stir.
 ## How the board plays it
 
 `Scenes/PuzzleMatch.tscn` is the tutorial's scene without the tutorial:
-the board runs locally, with no host, in tutorial mode (`hold_after_result`,
+the board runs on a host of its own, with no network
+(`TutorialMatchAdapter.start_local_host`), in tutorial mode (`hold_after_result`,
 no rating, no story), on the plain white `MatchBackgroundController.Variant.PLAIN`
 room, with no clock (`TurnHudController.clock_enabled`), no opponent codex and
 no vignette. During the player's turns nothing is constrained; during the
 opponent's, nothing may be touched. Restart sets the position up again in
 place, or reloads the scene if the game is over or something is still moving.
 
-**The local engine knows fewer stamp effects than the host does.** On the
-puzzle board (and in the tutorial) these work: moving the base, forbidden and
-frozen squares, invisibility, uncapturable, a stamp's own +1, and every
-golem's +1/−1 (own or enemy - the War Drummer, the Warlord), on affix, on
-move and on capture. These do **not** happen yet: stealing, granting or giving
-stamps, bombs, crown points from effects, and the on-captured, on-expire,
-symbol-count and crown-condition triggers. Build puzzles around the first
-list, or add the effect to `LocalStateMutator.apply_stamp_effect_trigger`
-first (`StampEffectResolver` has the host's version to follow).
+**Every rule of the game holds, the host's own.** The board plays on a
+`NetworkGameHost`, as a match against the computer does, so every stamp effect
+works on the puzzle board and in the tutorial - stealing and giving stamps,
+bombs and crown points included. The position is the host's
+(`NetworkGameHost.apply_setup`), the opponent's turns go to it as a player's
+would (`TutorialMatchAdapter.play_scripted_affix`, `play_scripted_move`,
+`pass_scripted_turn`), and the goals are judged on its state
+(`PuzzleController._state()`), whose golems stay the same objects through every
+move, capture and return - the board's are rebuilt with each state.
 
 ## The three puzzles
 

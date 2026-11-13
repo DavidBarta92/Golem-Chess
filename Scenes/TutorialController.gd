@@ -84,9 +84,8 @@ func begin_tutorial() -> void:
 		push_error("TutorialController could not find the board or dialogue panel.")
 		return
 
-	GameController.set_game_host(null)
-	if board.has_method("set_tutorial_mode_active"):
-		board.set_tutorial_mode_active(true)
+	if board.has_method("get_tutorial_match_adapter"):
+		board.get_tutorial_match_adapter().set_mode_active(true)
 	connect_board_signals()
 	connect_dialogue_signals()
 	prepare_outro()
@@ -95,17 +94,19 @@ func begin_tutorial() -> void:
 	match_intro = get_node_or_null(match_intro_path) as MatchIntroController
 
 	var intro: TutorialIntro = get_node_or_null(intro_path) as TutorialIntro
+	# The player sits on white, as in a match against the computer: they act
+	# on their own turns only, and Grandpa's turns are his - a script plays
+	# them, on the same host and by the same rules (start_local_host).
+	board.get_match_board_lifecycle_controller().set_turn(true)
+	# Nothing on the board may be touched while Grandpa is talking.
+	board.get_tutorial_match_adapter().set_constraints(no_actions())
+	# The crown waits until Grandpa explains it (the court step's setup).
+	board.get_crown_controller().hold_back_meters(true)
+	var first_page: Array[String] = intro.codex_stamp_names if intro != null else grandpa_first_page()
+	board.get_tutorial_match_adapter().start_local_host(grandpa_codex_setup(first_page), [OPPONENT_COLOR])
 	if intro == null or match_intro == null:
 		begin_match_scene()
 		return
-	# The player sits on white, as in a match against the computer: they act
-	# on their own turns only, and Grandpa's turns are his.
-	board.set_turn(true)
-	# Nothing on the board may be touched while Grandpa is talking.
-	if board.has_method("set_tutorial_constraints"):
-		board.set_tutorial_constraints(no_actions())
-	if board.has_method("apply_tutorial_setup"):
-		board.apply_tutorial_setup(grandpa_codex_setup(intro.codex_stamp_names))
 	match_intro.hide_everything()
 	intro.finished.connect(_on_intro_finished, CONNECT_ONE_SHOT)
 	intro.play(get_speaker_name(GRANDPA_SPEAKER), board, match_intro, dialogue_panel)
@@ -625,13 +626,15 @@ func start_step(step_index: int) -> void:
 	clear_step_glow()
 
 	var step: Dictionary = steps[current_step_index]
-	if step.has("setup") and board.has_method("apply_tutorial_setup"):
-		board.apply_tutorial_setup(step.get("setup", {}))
+	if step.has("setup") and board.has_method("get_tutorial_match_adapter"):
+		board.get_tutorial_match_adapter().apply_setup(step.get("setup", {}))
+		if (step.get("setup", {}) as Dictionary).has("crown_points"):
+			board.get_crown_controller().hold_back_meters(false)
 	refresh_opponent_positions()
 
 	var constraints: Dictionary = step.get("constraints", {}).duplicate(true)
-	if board.has_method("set_tutorial_constraints"):
-		board.set_tutorial_constraints(constraints)
+	if board.has_method("get_tutorial_match_adapter"):
+		board.get_tutorial_match_adapter().set_constraints(constraints)
 
 	var reveal_names: Array[String] = []
 	reveal_names.assign(step.get("reveal_hud", []))
@@ -660,10 +663,10 @@ func show_step_line(step: Dictionary, text_key: String, allow_continue: bool) ->
 func retry_current_step() -> void:
 	step_token += 1
 	var token: int = step_token
-	if board.has_method("set_tutorial_constraints"):
-		board.set_tutorial_constraints(no_actions())
-	if board.has_method("wait_for_pending_visual_processes"):
-		await board.wait_for_pending_visual_processes()
+	if board.has_method("get_tutorial_match_adapter"):
+		board.get_tutorial_match_adapter().set_constraints(no_actions())
+	if board.has_method("get_turn_flow_controller"):
+		await board.get_turn_flow_controller().wait_for_pending_visual_processes()
 	if token != step_token:
 		return
 	start_step(current_step_index)
@@ -672,8 +675,8 @@ func retry_current_step() -> void:
 ## stays on, because it is a won game that completes the tutorial in the
 ## story (GameResultController hands that to StoryManager).
 func finish_tutorial() -> void:
-	if board != null and board.has_method("clear_tutorial_constraints"):
-		board.clear_tutorial_constraints()
+	if board != null and board.has_method("get_tutorial_match_adapter"):
+		board.get_tutorial_match_adapter().clear_constraints()
 	current_step_index = -1
 	clear_step_glow()
 	# Nothing left to say; an empty box would only show its placeholder name.
@@ -901,11 +904,11 @@ func complete_current_action_step() -> void:
 	var step: Dictionary = get_current_step()
 	step_token += 1
 	var token: int = step_token
-	if board != null and board.has_method("set_tutorial_constraints"):
-		board.set_tutorial_constraints(no_actions())
+	if board != null and board.has_method("get_tutorial_match_adapter"):
+		board.get_tutorial_match_adapter().set_constraints(no_actions())
 	clear_step_glow()
-	if board != null and board.has_method("wait_for_pending_visual_processes"):
-		await board.wait_for_pending_visual_processes()
+	if board != null and board.has_method("get_turn_flow_controller"):
+		await board.get_turn_flow_controller().wait_for_pending_visual_processes()
 	if token != step_token:
 		return
 
@@ -934,12 +937,11 @@ func play_opponent_turn(script: Dictionary, token: int) -> void:
 			return
 		var entry: Dictionary = entry_value
 		var stamp_name: String = str(entry.get("stamp_name", ""))
-		var hand_index: int = board.get_stamp_names_from_hand(board.get_stamp_hand(OPPONENT_COLOR)).find(stamp_name)
 		var piece_pos: Vector2 = BoardConfig.value_to_vector2(entry.get("pos", INVALID_BOARD_POS), INVALID_BOARD_POS)
-		if hand_index < 0 or piece_pos == INVALID_BOARD_POS:
+		if piece_pos == INVALID_BOARD_POS:
 			push_warning("Tutorial opponent cannot play %s at %s." % [stamp_name, piece_pos])
 			continue
-		await board.affix_hand_stamp_locally(OPPONENT_COLOR, hand_index, piece_pos)
+		await board.get_tutorial_match_adapter().play_scripted_affix(OPPONENT_COLOR, stamp_name, piece_pos)
 		await get_tree().create_timer(opponent_between_stamps_seconds).timeout
 	if token != step_token:
 		return
@@ -949,13 +951,13 @@ func play_opponent_turn(script: Dictionary, token: int) -> void:
 	if move.is_empty():
 		await get_tree().create_timer(opponent_end_turn_delay).timeout
 		if token == step_token:
-			board.end_current_turn_locally()
+			board.get_tutorial_match_adapter().pass_scripted_turn(OPPONENT_COLOR)
 		return
 
 	var step: Dictionary = get_current_step()
 	if bool(step.get("text_on_opponent_move", false)) and step.has("text"):
 		show_step_line(step, str(step.get("text", "")), should_show_continue_for_step(step))
-	board.set_move(move["from"], move["to"])
+	board.get_tutorial_match_adapter().play_scripted_move(OPPONENT_COLOR, move["from"], move["to"])
 
 ## The move the script asks for if Grandpa can make it, otherwise any move of
 ## his that captures nothing; empty when he has none.

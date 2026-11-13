@@ -512,7 +512,7 @@ func _screen_position(board_pos: Vector2) -> Vector2:
 ## reference picture.
 func _place_pointer(board_pos: Vector2) -> void:
 	var to_screen: Transform2D = _board.get_global_transform_with_canvas()
-	var cell_points: PackedVector2Array = _board.get_board_cell_polygon_local(board_pos)
+	var cell_points: PackedVector2Array = _board.get_board_geometry().get_cell_polygon_local(board_pos)
 	var cell := Rect2(to_screen * cell_points[0], Vector2.ZERO)
 	for point in cell_points:
 		cell = cell.expand(to_screen * point)

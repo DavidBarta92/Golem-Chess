@@ -80,13 +80,13 @@ func begin_piece_shatter_respawn_reveal(respawn_pos: Vector2, fragment_group: St
 		return 0
 
 	if !match_board.pending_piece_shatter_respawn_reveal_counts.has(respawn_pos):
-		match_board.begin_visual_process(match_board.VISUAL_PROCESS_PIECE_SHATTER)
+		match_board.get_visual_process_tracker().begin(match_board.VISUAL_PROCESS_PIECE_SHATTER)
 	match_board.pending_piece_shatter_respawn_reveal_counts[respawn_pos] = maxi(return_count, int(match_board.pending_piece_shatter_respawn_reveal_counts.get(respawn_pos, 0)))
 	match_board.pending_piece_shatter_respawn_reveal_groups[respawn_pos] = fragment_group
 
 	var holder: Sprite2D = match_board.get_piece_holder_at(respawn_pos)
 	if holder != null:
-		match_board.refresh_piece_holder_visual(holder, respawn_pos)
+		match_board.get_piece_display_controller().refresh_piece_holder_visual(holder, respawn_pos)
 	return return_count
 
 func adjust_piece_shatter_respawn_reveal_count(respawn_pos: Vector2, fragment_count: int) -> void:
@@ -101,7 +101,7 @@ func cancel_piece_shatter_respawn_reveal(respawn_pos: Vector2) -> void:
 	if match_board.pending_piece_shatter_respawn_reveal_counts.has(respawn_pos):
 		match_board.pending_piece_shatter_respawn_reveal_counts.erase(respawn_pos)
 		match_board.pending_piece_shatter_respawn_reveal_groups.erase(respawn_pos)
-		match_board.finish_visual_process(match_board.VISUAL_PROCESS_PIECE_SHATTER)
+		match_board.get_visual_process_tracker().finish(match_board.VISUAL_PROCESS_PIECE_SHATTER)
 	refresh_piece_shatter_respawn_piece_visibility(respawn_pos)
 
 func finish_piece_shatter_respawn_fragment(respawn_pos: Vector2) -> void:
@@ -116,7 +116,7 @@ func finish_piece_shatter_respawn_fragment(respawn_pos: Vector2) -> void:
 
 	match_board.pending_piece_shatter_respawn_reveal_counts.erase(respawn_pos)
 	match_board.pending_piece_shatter_respawn_reveal_groups.erase(respawn_pos)
-	match_board.finish_visual_process(match_board.VISUAL_PROCESS_PIECE_SHATTER)
+	match_board.get_visual_process_tracker().finish(match_board.VISUAL_PROCESS_PIECE_SHATTER)
 	if fragment_group == match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM:
 		refresh_piece_shatter_respawn_piece_visibility(respawn_pos)
 		return
@@ -130,18 +130,18 @@ func refresh_piece_shatter_respawn_piece_visibility(respawn_pos: Vector2) -> voi
 		return
 	var holder: Sprite2D = match_board.get_piece_holder_at(respawn_pos)
 	if holder != null:
-		match_board.refresh_piece_holder_visual(holder, respawn_pos)
+		match_board.get_piece_display_controller().refresh_piece_holder_visual(holder, respawn_pos)
 		return
-	match_board.display_board()
+	match_board.get_piece_display_controller().display_board()
 
 func reveal_piece_shatter_respawn_piece(respawn_pos: Vector2) -> void:
 	if !MoveRules.is_valid_position(respawn_pos):
 		return
 	var holder: Sprite2D = match_board.get_piece_holder_at(respawn_pos)
 	if holder != null:
-		match_board.refresh_piece_holder_visual(holder, respawn_pos)
+		match_board.get_piece_display_controller().refresh_piece_holder_visual(holder, respawn_pos)
 		return
-	match_board.display_board()
+	match_board.get_piece_display_controller().display_board()
 
 func play_piece_shatter_animations(animations: Array[Dictionary]) -> void:
 	for animation: Dictionary in animations:

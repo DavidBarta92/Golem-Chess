@@ -1,26 +1,27 @@
 extends RefCounted
 
+const DECK_COUNT_LABEL_SIZE: Vector2 = Vector2(88, 28)
+const DECK_COUNT_LABEL_GAP: float = 8
+const DECK_COUNTER_ROLL_DURATION: float = 0.34
+const DECK_COUNTER_MOTION_BLUR: float = 1.0
+const DECK_COUNTER_OFFSET: Vector2 = Vector2(0.0, 0.0)
+const DECK_COUNTER_Z_INDEX: int = 952
+const DECK_COUNTER_DIGITS_TEXTURE: Texture2D = preload("res://Assets/deck_counter_digits.png")
+const DECK_COUNTER_BACKGROUND_TEXTURE: Texture2D = preload("res://Assets/counter_backround.png")
+const DECK_COUNTER_FRAME_TEXTURE: Texture2D = preload("res://Assets/counter_frame.png")
+const DECK_COUNTER_SHADOW_TEXTURE: Texture2D = preload("res://Assets/counter_shadow.png")
+const DECK_COUNTER_DIGIT_SHADER: Shader = preload("res://Shaders/deck_counter_digit.gdshader")
+
 var canvas_layer: CanvasLayer
 var tween_owner: Node
 
-var deck_count_label_size: Vector2 = Vector2(88, 28)
-var deck_count_label_gap: float = 8.0
 var deck_counter_background_size: Vector2 = Vector2(38, 38)
 var deck_counter_digit_size: Vector2 = Vector2(38, 38)
 var deck_counter_digit_gap: float = 0.0
 var deck_counter_frame_size: Vector2 = Vector2(82, 42)
 var deck_counter_content_offset: Vector2 = Vector2(3, 2)
 var deck_counter_size: Vector2 = Vector2(82, 42)
-var deck_counter_roll_duration: float = 0.34
-var deck_counter_motion_blur: float = 1.0
-var deck_counter_offset: Vector2 = Vector2.ZERO
-var deck_counter_z_index: int = 952
 
-var deck_counter_digits_texture: Texture2D
-var deck_counter_background_texture: Texture2D
-var deck_counter_frame_texture: Texture2D
-var deck_counter_shadow_texture: Texture2D
-var deck_counter_digit_shader: Shader
 
 var deck_visual_provider: Callable
 var stamp_deck_count_provider: Callable
@@ -40,23 +41,12 @@ var deck_counter_tweens: Dictionary = {}
 func configure(config: Dictionary) -> void:
 	canvas_layer = config.get("canvas_layer", canvas_layer)
 	tween_owner = config.get("tween_owner", tween_owner)
-	deck_count_label_size = config.get("deck_count_label_size", deck_count_label_size)
-	deck_count_label_gap = float(config.get("deck_count_label_gap", deck_count_label_gap))
 	deck_counter_background_size = config.get("deck_counter_background_size", deck_counter_background_size)
 	deck_counter_digit_size = config.get("deck_counter_digit_size", deck_counter_digit_size)
 	deck_counter_digit_gap = float(config.get("deck_counter_digit_gap", deck_counter_digit_gap))
 	deck_counter_frame_size = config.get("deck_counter_frame_size", deck_counter_frame_size)
 	deck_counter_content_offset = config.get("deck_counter_content_offset", deck_counter_content_offset)
 	deck_counter_size = config.get("deck_counter_size", deck_counter_size)
-	deck_counter_roll_duration = float(config.get("deck_counter_roll_duration", deck_counter_roll_duration))
-	deck_counter_motion_blur = float(config.get("deck_counter_motion_blur", deck_counter_motion_blur))
-	deck_counter_offset = config.get("deck_counter_offset", deck_counter_offset)
-	deck_counter_z_index = int(config.get("deck_counter_z_index", deck_counter_z_index))
-	deck_counter_digits_texture = config.get("deck_counter_digits_texture", deck_counter_digits_texture)
-	deck_counter_background_texture = config.get("deck_counter_background_texture", deck_counter_background_texture)
-	deck_counter_frame_texture = config.get("deck_counter_frame_texture", deck_counter_frame_texture)
-	deck_counter_shadow_texture = config.get("deck_counter_shadow_texture", deck_counter_shadow_texture)
-	deck_counter_digit_shader = config.get("deck_counter_digit_shader", deck_counter_digit_shader)
 	deck_visual_provider = config.get("deck_visual_provider", deck_visual_provider)
 	stamp_deck_count_provider = config.get("stamp_deck_count_provider", stamp_deck_count_provider)
 	game_over_provider = config.get("game_over_provider", game_over_provider)
@@ -68,7 +58,7 @@ func create_deck_count_ui() -> void:
 	deck_count_label = Label.new()
 	canvas_layer.add_child(deck_count_label)
 	deck_count_label.visible = false
-	deck_count_label.size = deck_count_label_size
+	deck_count_label.size = DECK_COUNT_LABEL_SIZE
 	deck_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	deck_count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	deck_count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -121,7 +111,7 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int, 
 	counter_container.visible = false
 	counter_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	counter_container.size = counter_frame_size
-	counter_container.z_index = deck_counter_z_index
+	counter_container.z_index = DECK_COUNTER_Z_INDEX
 
 	if show_frame:
 		_add_counter_frame(counter_container, counter_frame_size)
@@ -134,7 +124,7 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int, 
 		counter_container.add_child(background_rect)
 		background_rect.name = "Background%d" % digit_index
 		background_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		background_rect.texture = deck_counter_background_texture
+		background_rect.texture = DECK_COUNTER_BACKGROUND_TEXTURE
 		background_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		background_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		background_rect.stretch_mode = TextureRect.STRETCH_SCALE
@@ -146,7 +136,7 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int, 
 		counter_container.add_child(digit_rect)
 		digit_rect.name = "Digit%d" % digit_index
 		digit_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		digit_rect.texture = deck_counter_digits_texture
+		digit_rect.texture = DECK_COUNTER_DIGITS_TEXTURE
 		digit_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		digit_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		digit_rect.stretch_mode = TextureRect.STRETCH_SCALE
@@ -155,8 +145,8 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int, 
 		digit_rect.z_index = 2
 
 		var digit_material := ShaderMaterial.new()
-		digit_material.shader = deck_counter_digit_shader
-		digit_material.set_shader_parameter("digit_atlas", deck_counter_digits_texture)
+		digit_material.shader = DECK_COUNTER_DIGIT_SHADER
+		digit_material.set_shader_parameter("digit_atlas", DECK_COUNTER_DIGITS_TEXTURE)
 		digit_material.set_shader_parameter("roll_value", 0.0)
 		digit_material.set_shader_parameter("roll_direction", 1.0)
 		digit_material.set_shader_parameter("motion_blur", 0.0)
@@ -172,7 +162,7 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int, 
 		counter_container.add_child(shadow_rect)
 		shadow_rect.name = "Shadow%d" % digit_index
 		shadow_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		shadow_rect.texture = deck_counter_shadow_texture
+		shadow_rect.texture = DECK_COUNTER_SHADOW_TEXTURE
 		shadow_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		shadow_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		shadow_rect.stretch_mode = TextureRect.STRETCH_SCALE
@@ -189,8 +179,8 @@ func create_digit_counter_container(counter_name: String, digit_owner_key: int, 
 			deck_counter_background_size.x * 2.0 + deck_counter_digit_gap * 2.0, 0.0)
 		var gap_size := Vector2(separator_width, deck_counter_background_size.y)
 		for part in [
-			{"name": "SeparatorBackground", "texture": deck_counter_background_texture, "z": 1},
-			{"name": "SeparatorShadow", "texture": deck_counter_shadow_texture, "z": 3},
+			{"name": "SeparatorBackground", "texture": DECK_COUNTER_BACKGROUND_TEXTURE, "z": 1},
+			{"name": "SeparatorShadow", "texture": DECK_COUNTER_SHADOW_TEXTURE, "z": 3},
 		]:
 			var slice := TextureRect.new()
 			counter_container.add_child(slice)
@@ -229,7 +219,7 @@ func _add_counter_frame(counter_container: Control, counter_frame_size: Vector2)
 	counter_container.add_child(frame_rect)
 	frame_rect.name = "Frame"
 	frame_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame_rect.texture = deck_counter_frame_texture
+	frame_rect.texture = DECK_COUNTER_FRAME_TEXTURE
 	frame_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	frame_rect.stretch_mode = TextureRect.STRETCH_SCALE
@@ -249,7 +239,7 @@ func update_deck_counter_ui(animate: bool = true) -> void:
 			continue
 
 		var deck_rect: Rect2 = deck_visual.get_global_rect()
-		counter_container.global_position = deck_rect.get_center() - deck_counter_size * 0.5 + deck_counter_offset
+		counter_container.global_position = deck_rect.get_center() - deck_counter_size * 0.5 + DECK_COUNTER_OFFSET
 		counter_container.visible = true
 		set_deck_counter_value(owner_color, get_stamp_deck_count(owner_color), animate)
 
@@ -302,7 +292,7 @@ func update_deck_counter_digit(owner_color: int, digit_index: int, target_digit:
 		digit_material.set_shader_parameter("motion_blur", 0.0)
 		return
 
-	digit_material.set_shader_parameter("motion_blur", deck_counter_motion_blur)
+	digit_material.set_shader_parameter("motion_blur", DECK_COUNTER_MOTION_BLUR)
 	var tween: Tween = null
 	if tween_owner != null and is_instance_valid(tween_owner):
 		tween = tween_owner.create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
@@ -312,8 +302,8 @@ func update_deck_counter_digit(owner_color: int, digit_index: int, target_digit:
 		return
 
 	deck_counter_tweens[digit_key] = tween
-	tween.tween_property(digit_material, "shader_parameter/roll_value", target_roll, deck_counter_roll_duration)
-	tween.parallel().tween_property(digit_material, "shader_parameter/motion_blur", 0.0, deck_counter_roll_duration)
+	tween.tween_property(digit_material, "shader_parameter/roll_value", target_roll, DECK_COUNTER_ROLL_DURATION)
+	tween.parallel().tween_property(digit_material, "shader_parameter/motion_blur", 0.0, DECK_COUNTER_ROLL_DURATION)
 	tween.finished.connect(func():
 		if deck_counter_tweens.get(digit_key, null) == tween:
 			deck_counter_tweens.erase(digit_key)
@@ -337,9 +327,9 @@ func update_deck_count_hover() -> void:
 		return
 
 	var deck_rect: Rect2 = deck_visual.get_global_rect()
-	var label_y: float = deck_rect.position.y - deck_count_label.size.y - deck_count_label_gap
+	var label_y: float = deck_rect.position.y - deck_count_label.size.y - DECK_COUNT_LABEL_GAP
 	if label_y < 0.0:
-		label_y = deck_rect.end.y + deck_count_label_gap
+		label_y = deck_rect.end.y + DECK_COUNT_LABEL_GAP
 
 	deck_count_label.text = tr("%d stamps") % get_stamp_deck_count(hovered_deck_color)
 	deck_count_label.global_position = Vector2(

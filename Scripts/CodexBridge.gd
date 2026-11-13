@@ -120,8 +120,8 @@ func build_codex_state(host, event_type: String) -> Dictionary:
 		"player_decks": serialize_player_stamp_lists(game_state.player_decks, false),
 		"player_codexes": serialize_player_codexes(game_state),
 		"turn_flags": serialize_turn_flags(game_state),
-		"board_effects": host.serialize_board_effects(),
-		"last_move": host.serialize_last_move_for_player(-1),
+		"board_effects": GameStateSerializer.serialize_board_effects(game_state),
+		"last_move": GameStateSerializer.serialize_last_move_for_player(game_state, -1),
 		"legal_actions": serialize_legal_actions(host),
 	}
 

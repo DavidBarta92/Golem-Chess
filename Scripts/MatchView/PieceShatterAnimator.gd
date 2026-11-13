@@ -79,6 +79,10 @@ const FRAGMENT_CUT_HEIGHT: float = 0.5
 ## How far the cut lines zigzag, as a share of the drawing's size.
 const FRAGMENT_CUT_JAG: float = 0.07
 
+const PIECE_SHATTER_FRAGMENT_LANDING_HOLD_DURATION: float = 0.08
+const PIECE_SHATTER_ROUTE_DIRECT_FALLBACK_OFFSET: float = 0.72
+const PIECE_SHATTER_RETURN_ACCELERATION_PROGRESS: float = 0.5
+
 class DebrisChip:
 	var node: Polygon2D
 	var shadow: Polygon2D
@@ -138,11 +142,8 @@ var max_chip_size: float = 0.26
 var debris_linger_duration: float = 2.4
 var avoid_occupied_cells: bool = true
 var route_jitter_ratio: float = 0.12
-var fragment_landing_hold_duration: float = 0.08
 var route_z_front_offset: int = 2
 var route_z_back_offset: int = -1
-var route_direct_fallback_offset: float = 0.72
-var return_acceleration_progress: float = 0.5
 var fragment_group_bottom: String = "bottom"
 
 var route_cell_blocked_provider: Callable = Callable()
@@ -184,11 +185,8 @@ func configure(config: Dictionary) -> void:
 	debris_linger_duration = float(config.get("debris_linger_duration", debris_linger_duration))
 	avoid_occupied_cells = bool(config.get("avoid_occupied_cells", avoid_occupied_cells))
 	route_jitter_ratio = float(config.get("route_jitter_ratio", route_jitter_ratio))
-	fragment_landing_hold_duration = float(config.get("fragment_landing_hold_duration", fragment_landing_hold_duration))
 	route_z_front_offset = int(config.get("route_z_front_offset", route_z_front_offset))
 	route_z_back_offset = int(config.get("route_z_back_offset", route_z_back_offset))
-	route_direct_fallback_offset = float(config.get("route_direct_fallback_offset", route_direct_fallback_offset))
-	return_acceleration_progress = float(config.get("return_acceleration_progress", return_acceleration_progress))
 	fragment_group_bottom = str(config.get("fragment_group_bottom", fragment_group_bottom))
 
 	route_cell_blocked_provider = config.get("route_cell_blocked_provider", route_cell_blocked_provider)
@@ -304,7 +302,7 @@ func animate_fragment(fragment: Polygon2D, scatter_target: Vector2, source_pos: 
 	if fragment_group == fragment_group_bottom:
 		return
 
-	tween.tween_interval(fragment_landing_hold_duration)
+	tween.tween_interval(PIECE_SHATTER_FRAGMENT_LANDING_HOLD_DURATION)
 	tween.tween_property(fragment, "self_modulate:a", 0.0, return_fade_duration)
 	tween.finished.connect(func():
 		if is_instance_valid(fragment):
@@ -390,7 +388,7 @@ func animate_pending_edge_arrival_fragment(fragment: Polygon2D, respawn_pos: Vec
 	if fragment_group == fragment_group_bottom:
 		return
 
-	tween.tween_interval(fragment_landing_hold_duration)
+	tween.tween_interval(PIECE_SHATTER_FRAGMENT_LANDING_HOLD_DURATION)
 	tween.tween_property(fragment, "self_modulate:a", 0.0, return_fade_duration)
 	tween.finished.connect(func():
 		if is_instance_valid(fragment):
@@ -977,7 +975,7 @@ func get_direct_fallback_route_points(source_pos: Vector2, respawn_pos: Vector2,
 
 	var side_sign: float = 1.0 if fragment_index % 2 == 0 else -1.0
 	var perpendicular: Vector2 = Vector2(-travel.y, travel.x).normalized() * side_sign
-	var route_offset: Vector2 = perpendicular * float(cell_width) * route_direct_fallback_offset
+	var route_offset: Vector2 = perpendicular * float(cell_width) * PIECE_SHATTER_ROUTE_DIRECT_FALLBACK_OFFSET
 	points.append(source_center.lerp(target_center, 0.36) + route_offset)
 	points.append(source_center.lerp(target_center, 0.68) + route_offset * 0.58)
 	return points
@@ -1021,7 +1019,7 @@ func get_edge_route_points(source_pos: Vector2, target_local_pos: Vector2, fragm
 
 	var side_sign: float = 1.0 if fragment_index % 2 == 0 else -1.0
 	var perpendicular: Vector2 = Vector2(-travel.y, travel.x).normalized() * side_sign
-	var route_offset: Vector2 = perpendicular * float(cell_width) * route_direct_fallback_offset
+	var route_offset: Vector2 = perpendicular * float(cell_width) * PIECE_SHATTER_ROUTE_DIRECT_FALLBACK_OFFSET
 	points.append(source_center.lerp(target_local_pos, 0.42) + route_offset)
 	points.append(source_center.lerp(target_local_pos, 0.72) + route_offset * 0.48)
 	return points
@@ -1102,7 +1100,7 @@ func update_respawn_item_motion(item: Node2D, local_pos: Vector2, respawn_pos: V
 
 func get_return_motion_progress(progress: float) -> float:
 	var clamped_progress: float = clampf(progress, 0.0, 1.0)
-	var split_progress: float = clampf(return_acceleration_progress, 0.05, 0.95)
+	var split_progress: float = clampf(PIECE_SHATTER_RETURN_ACCELERATION_PROGRESS, 0.05, 0.95)
 	if clamped_progress <= split_progress:
 		var acceleration_progress: float = clamped_progress / split_progress
 		return split_progress * get_exponential_ease_in_progress(acceleration_progress)

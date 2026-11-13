@@ -1,5 +1,70 @@
 extends RefCounted
 
+const PIECE_CAPTURE_SPARKLE_SHADER: Shader = preload("res://Shaders/piece_capture_sparkle.gdshader")
+const BOMB_WARNING_TEXTURE: Texture2D = preload("res://Assets/stamp_pattern_bomb.svg")
+const BOMB_WARNING_Z_OFFSET: int = 7
+const PIECE_EXPIRE_DISSOLVE_SHADER: Shader = preload("res://Shaders/piece_expire_dissolve.gdshader")
+const PIECE_EXPIRE_DISSOLVE_DURATION: float = 1.62
+const PIECE_EXPIRE_DISSOLVE_BEAM_SIZE: float = 0.05
+const PIECE_EXPIRE_DISSOLVE_NOISE_DENSITY: float = 60.0
+const PIECE_EXPIRE_DISSOLVE_COLOR: Color = Color(1.0, 0.42, 0.02, 1.0)
+const PIECE_INVISIBILITY_REFRACT_SHADER: Shader = preload("res://Shaders/piece_invisibility_refract.gdshader")
+const PIECE_INVISIBILITY_VISIBLE_HOLD_DURATION: float = 0.50
+const PIECE_INVISIBILITY_REFRACT_IN_DURATION: float = 0.42
+const PIECE_INVISIBILITY_FADE_OUT_DURATION: float = 1.48
+const PIECE_INVISIBILITY_REFRACT_DISTANCE: float = 16.0
+const ATTACH_POINT_LIGHT_NAME: String = "AttachPointLight"
+const ATTACH_PIECE_LIGHT_NAME: String = "AttachPieceLight"
+const ATTACH_POINT_LIGHT_TEXTURE_SCALE: float = 0.92
+const ATTACH_POINT_LIGHT_COLOR: Color = Color(1.0, 0.74, 0.24, 1.0)
+const ATTACH_POINT_LIGHT_SHADOW_COLOR: Color = Color(0.0, 0.0, 0.0, 0.52)
+const ATTACH_POINT_LIGHT_SHADOW_SMOOTH: float = 2.5
+const ATTACH_PIECE_LIGHT_TEXTURE_SCALE: float = 1.08
+const ATTACH_PIECE_LIGHT_COLOR: Color = Color(1.0, 0.84, 0.36, 1.0)
+const ATTACH_POINT_LIGHT_ENERGY: float = 1.25
+const ATTACH_PIECE_LIGHT_ENERGY: float = 0.62
+const PIECE_ATTACH_GLOW_NAME: String = "PieceAttachGlow"
+const PIECE_ATTACH_TARGET_GLOW_NAME: String = "PieceAttachTargetGlow"
+const PIECE_ATTACH_RAYS_NAME: String = "PieceAttachRays"
+const PIECE_ATTACH_MORPH_NAME: String = "PieceAttachMorph"
+const PIECE_EFFECT_OCCLUSION_DIM_NAME: String = "PieceEffectOcclusionDim"
+const PIECE_ATTACH_GLOW_Z_INDEX: int = 26
+const PIECE_ATTACH_RAYS_Z_INDEX: int = 25
+const PIECE_ATTACH_MORPH_Z_INDEX: int = 1
+const PIECE_EFFECT_OCCLUSION_DIM_Z_INDEX: int = 0
+const PIECE_ATTACH_GLOW_SHADER: Shader = preload("res://Shaders/piece_attach_glow.gdshader")
+const PIECE_ATTACH_RAYS_SHADER: Shader = preload("res://Shaders/piece_attach_rays.gdshader")
+const PIECE_TEXTURE_MORPH_SHADER: Shader = preload("res://Shaders/piece_texture_morph.gdshader")
+const PIECE_ATTACH_GLOW_COLOR: Color = Color(1.0, 0.82, 0.28, 1.0)
+const PIECE_ATTACH_GLOW_SIZE: float = 4.8
+const PIECE_ATTACH_GLOW_FILL_STRENGTH: float = 0.30
+const PIECE_ATTACH_GLOW_BASE_STRENGTH: float = 1.0
+const PIECE_ATTACH_GLOW_SWITCH_STRENGTH: float = 4.0
+const PIECE_ATTACH_GLOW_SWITCH_DURATION: float = 0.06
+const PIECE_ATTACH_IN_DURATION: float = 0.32
+const PIECE_ATTACH_PRE_SWITCH_HOLD_DURATION: float = 0.14
+const PIECE_ATTACH_MORPH_DURATION: float = 1.00
+const PIECE_ATTACH_TARGET_APPEAR_DURATION: float = 0.50
+const PIECE_ATTACH_POST_SWITCH_HOLD_DURATION: float = 0.20
+const PIECE_ATTACH_MORPH_NOISE_STRENGTH: float = 0.14
+const PIECE_ATTACH_MORPH_SHINE_STRENGTH: float = 0.34
+const PIECE_ATTACH_OUT_DURATION: float = 0.32
+const PIECE_ATTACH_RAYS_START_SIZE: float = 10.0
+const PIECE_ATTACH_RAYS_SWITCH_SIZE: float = 1.0
+const PIECE_ATTACH_RAYS_TEXTURE_SIZE: int = 256
+const PIECE_ATTACH_RAYS_OVERLAY_SCALE: float = 2.65
+const PIECE_ATTACH_RAYS_LOCAL_OFFSET: Vector2 = Vector2.ZERO
+const PIECE_ATTACH_RAYS_SPREAD: float = 0.5
+const PIECE_ATTACH_RAYS_CUTOFF: float = 0.39
+const PIECE_ATTACH_RAYS_SPEED: float = 1.4
+const PIECE_ATTACH_RAYS_RAY1_DENSITY: float = 8.0
+const PIECE_ATTACH_RAYS_RAY2_DENSITY: float = 10.0
+const PIECE_ATTACH_RAYS_RAY2_INTENSITY: float = 0.3
+const PIECE_ATTACH_RAYS_CORE_INTENSITY: float = 2.0
+const PIECE_ATTACH_RAYS_SEED: float = 5.0
+const PIECE_ATTACH_RAYS_FADE_IN_DELAY_RATIO: float = 0.0
+const PIECE_ATTACH_RAYS_FADE_IN_DURATION_RATIO: float = 1.0
+
 var geometry
 var piece_visuals
 var pieces_node: Node
@@ -16,7 +81,6 @@ var flipped_view: bool = false
 
 var default_piece_visual_height: float = 24.0
 
-var piece_capture_sparkle_shader: Shader
 var capture_sparkle_color: Color = Color(1.0, 0.95, 0.78, 1.0)
 var capture_sparkle_duration: float = 0.85
 var capture_sparkle_fade_out_ratio: float = 0.6
@@ -29,78 +93,14 @@ var capture_sparkle_frequency_base: float = 1.0
 var capture_sparkle_frequency_disturbance_scale: float = 0.4
 var capture_sparkle_circle_ratio: float = 0.0
 
-var bomb_warning_texture: Texture2D
 var bomb_warning_color: Color = Color(1.0, 0.56, 0.56, 1.0)
 var bomb_warning_duration: float = 1.5
 var bomb_warning_rise_distance: float = 7.0
 var bomb_warning_size_ratio: float = 1.15
 var bomb_warning_target_y_offset: float = -6.0
-var bomb_warning_z_offset: int = 7
 
-var piece_expire_dissolve_shader: Shader
-var piece_expire_dissolve_duration: float = 1.62
-var piece_expire_dissolve_beam_size: float = 0.05
-var piece_expire_dissolve_noise_density: float = 60.0
-var piece_expire_dissolve_color: Color = Color(1.0, 0.42, 0.02, 1.0)
 
-var piece_invisibility_refract_shader: Shader
-var piece_invisibility_visible_hold_duration: float = 0.50
-var piece_invisibility_refract_in_duration: float = 0.42
-var piece_invisibility_fade_out_duration: float = 1.48
-var piece_invisibility_refract_distance: float = 16.0
-
-var attach_point_light_name: String = "AttachPointLight"
-var attach_piece_light_name: String = "AttachPieceLight"
-var attach_point_light_texture_scale: float = 0.92
-var attach_point_light_color: Color = Color(1.0, 0.74, 0.24, 1.0)
-var attach_point_light_shadow_color: Color = Color(0.0, 0.0, 0.0, 0.52)
-var attach_point_light_shadow_smooth: float = 2.5
-var attach_piece_light_texture_scale: float = 1.08
-var attach_piece_light_color: Color = Color(1.0, 0.84, 0.36, 1.0)
-var attach_point_light_energy: float = 1.25
-var attach_piece_light_energy: float = 0.62
-var piece_attach_glow_name: String = "PieceAttachGlow"
-var piece_attach_target_glow_name: String = "PieceAttachTargetGlow"
-var piece_attach_rays_name: String = "PieceAttachRays"
-var piece_attach_morph_name: String = "PieceAttachMorph"
-var piece_effect_occlusion_dim_name: String = "PieceEffectOcclusionDim"
-var piece_attach_glow_z_index: int = 26
-var piece_attach_rays_z_index: int = 25
-var piece_attach_morph_z_index: int = 1
-var piece_effect_occlusion_dim_z_index: int = 0
-var piece_attach_glow_shader: Shader
-var piece_attach_rays_shader: Shader
-var piece_texture_morph_shader: Shader
-var piece_attach_glow_color: Color = Color(1.0, 0.82, 0.28, 1.0)
 var occluded_piece_effect_dim_color: Color = Color(0.0, 0.0, 0.0, 0.34)
-var piece_attach_glow_size: float = 4.8
-var piece_attach_glow_fill_strength: float = 0.30
-var piece_attach_glow_base_strength: float = 1.0
-var piece_attach_glow_switch_strength: float = 4.0
-var piece_attach_glow_switch_duration: float = 0.06
-var piece_attach_in_duration: float = 0.32
-var piece_attach_pre_switch_hold_duration: float = 0.14
-var piece_attach_morph_duration: float = 1.00
-var piece_attach_target_appear_duration: float = 0.50
-var piece_attach_post_switch_hold_duration: float = 0.20
-var piece_attach_morph_noise_strength: float = 0.14
-var piece_attach_morph_shine_strength: float = 0.34
-var piece_attach_out_duration: float = 0.32
-var piece_attach_rays_start_size: float = 10.0
-var piece_attach_rays_switch_size: float = 1.0
-var piece_attach_rays_texture_size: int = 256
-var piece_attach_rays_overlay_scale: float = 2.65
-var piece_attach_rays_local_offset: Vector2 = Vector2.ZERO
-var piece_attach_rays_spread: float = 0.5
-var piece_attach_rays_cutoff: float = 0.39
-var piece_attach_rays_speed: float = 1.4
-var piece_attach_rays_ray1_density: float = 8.0
-var piece_attach_rays_ray2_density: float = 10.0
-var piece_attach_rays_ray2_intensity: float = 0.3
-var piece_attach_rays_core_intensity: float = 2.0
-var piece_attach_rays_seed: float = 5.0
-var piece_attach_rays_fade_in_delay_ratio: float = 0.0
-var piece_attach_rays_fade_in_duration_ratio: float = 1.0
 var attach_point_light_texture_provider: Callable = Callable()
 var piece_light_global_position_provider: Callable = Callable()
 var sprite_bounds_provider: Callable = Callable()
@@ -122,7 +122,6 @@ func configure(config: Dictionary) -> void:
 	flipped_view = bool(config.get("flipped_view", flipped_view))
 	default_piece_visual_height = float(config.get("default_piece_visual_height", default_piece_visual_height))
 
-	piece_capture_sparkle_shader = config.get("piece_capture_sparkle_shader", piece_capture_sparkle_shader)
 	capture_sparkle_color = config.get("capture_sparkle_color", capture_sparkle_color)
 	capture_sparkle_duration = float(config.get("capture_sparkle_duration", capture_sparkle_duration))
 	capture_sparkle_fade_out_ratio = float(config.get("capture_sparkle_fade_out_ratio", capture_sparkle_fade_out_ratio))
@@ -135,78 +134,14 @@ func configure(config: Dictionary) -> void:
 	capture_sparkle_frequency_disturbance_scale = float(config.get("capture_sparkle_frequency_disturbance_scale", capture_sparkle_frequency_disturbance_scale))
 	capture_sparkle_circle_ratio = float(config.get("capture_sparkle_circle_ratio", capture_sparkle_circle_ratio))
 
-	bomb_warning_texture = config.get("bomb_warning_texture", bomb_warning_texture)
 	bomb_warning_color = config.get("bomb_warning_color", bomb_warning_color)
 	bomb_warning_duration = float(config.get("bomb_warning_duration", bomb_warning_duration))
 	bomb_warning_rise_distance = float(config.get("bomb_warning_rise_distance", bomb_warning_rise_distance))
 	bomb_warning_size_ratio = float(config.get("bomb_warning_size_ratio", bomb_warning_size_ratio))
 	bomb_warning_target_y_offset = float(config.get("bomb_warning_target_y_offset", bomb_warning_target_y_offset))
-	bomb_warning_z_offset = int(config.get("bomb_warning_z_offset", bomb_warning_z_offset))
 
-	piece_expire_dissolve_shader = config.get("piece_expire_dissolve_shader", piece_expire_dissolve_shader)
-	piece_expire_dissolve_duration = float(config.get("piece_expire_dissolve_duration", piece_expire_dissolve_duration))
-	piece_expire_dissolve_beam_size = float(config.get("piece_expire_dissolve_beam_size", piece_expire_dissolve_beam_size))
-	piece_expire_dissolve_noise_density = float(config.get("piece_expire_dissolve_noise_density", piece_expire_dissolve_noise_density))
-	piece_expire_dissolve_color = config.get("piece_expire_dissolve_color", piece_expire_dissolve_color)
 
-	piece_invisibility_refract_shader = config.get("piece_invisibility_refract_shader", piece_invisibility_refract_shader)
-	piece_invisibility_visible_hold_duration = float(config.get("piece_invisibility_visible_hold_duration", piece_invisibility_visible_hold_duration))
-	piece_invisibility_refract_in_duration = float(config.get("piece_invisibility_refract_in_duration", piece_invisibility_refract_in_duration))
-	piece_invisibility_fade_out_duration = float(config.get("piece_invisibility_fade_out_duration", piece_invisibility_fade_out_duration))
-	piece_invisibility_refract_distance = float(config.get("piece_invisibility_refract_distance", piece_invisibility_refract_distance))
-
-	attach_point_light_name = str(config.get("attach_point_light_name", attach_point_light_name))
-	attach_piece_light_name = str(config.get("attach_piece_light_name", attach_piece_light_name))
-	attach_point_light_texture_scale = float(config.get("attach_point_light_texture_scale", attach_point_light_texture_scale))
-	attach_point_light_color = config.get("attach_point_light_color", attach_point_light_color)
-	attach_point_light_shadow_color = config.get("attach_point_light_shadow_color", attach_point_light_shadow_color)
-	attach_point_light_shadow_smooth = float(config.get("attach_point_light_shadow_smooth", attach_point_light_shadow_smooth))
-	attach_piece_light_texture_scale = float(config.get("attach_piece_light_texture_scale", attach_piece_light_texture_scale))
-	attach_piece_light_color = config.get("attach_piece_light_color", attach_piece_light_color)
-	attach_point_light_energy = float(config.get("attach_point_light_energy", attach_point_light_energy))
-	attach_piece_light_energy = float(config.get("attach_piece_light_energy", attach_piece_light_energy))
-	piece_attach_glow_name = str(config.get("piece_attach_glow_name", piece_attach_glow_name))
-	piece_attach_target_glow_name = str(config.get("piece_attach_target_glow_name", piece_attach_target_glow_name))
-	piece_attach_rays_name = str(config.get("piece_attach_rays_name", piece_attach_rays_name))
-	piece_attach_morph_name = str(config.get("piece_attach_morph_name", piece_attach_morph_name))
-	piece_effect_occlusion_dim_name = str(config.get("piece_effect_occlusion_dim_name", piece_effect_occlusion_dim_name))
-	piece_attach_glow_z_index = int(config.get("piece_attach_glow_z_index", piece_attach_glow_z_index))
-	piece_attach_rays_z_index = int(config.get("piece_attach_rays_z_index", piece_attach_rays_z_index))
-	piece_attach_morph_z_index = int(config.get("piece_attach_morph_z_index", piece_attach_morph_z_index))
-	piece_effect_occlusion_dim_z_index = int(config.get("piece_effect_occlusion_dim_z_index", piece_effect_occlusion_dim_z_index))
-	piece_attach_glow_shader = config.get("piece_attach_glow_shader", piece_attach_glow_shader)
-	piece_attach_rays_shader = config.get("piece_attach_rays_shader", piece_attach_rays_shader)
-	piece_texture_morph_shader = config.get("piece_texture_morph_shader", piece_texture_morph_shader)
-	piece_attach_glow_color = config.get("piece_attach_glow_color", piece_attach_glow_color)
 	occluded_piece_effect_dim_color = config.get("occluded_piece_effect_dim_color", occluded_piece_effect_dim_color)
-	piece_attach_glow_size = float(config.get("piece_attach_glow_size", piece_attach_glow_size))
-	piece_attach_glow_fill_strength = float(config.get("piece_attach_glow_fill_strength", piece_attach_glow_fill_strength))
-	piece_attach_glow_base_strength = float(config.get("piece_attach_glow_base_strength", piece_attach_glow_base_strength))
-	piece_attach_glow_switch_strength = float(config.get("piece_attach_glow_switch_strength", piece_attach_glow_switch_strength))
-	piece_attach_glow_switch_duration = float(config.get("piece_attach_glow_switch_duration", piece_attach_glow_switch_duration))
-	piece_attach_in_duration = float(config.get("piece_attach_in_duration", piece_attach_in_duration))
-	piece_attach_pre_switch_hold_duration = float(config.get("piece_attach_pre_switch_hold_duration", piece_attach_pre_switch_hold_duration))
-	piece_attach_morph_duration = float(config.get("piece_attach_morph_duration", piece_attach_morph_duration))
-	piece_attach_target_appear_duration = float(config.get("piece_attach_target_appear_duration", piece_attach_target_appear_duration))
-	piece_attach_post_switch_hold_duration = float(config.get("piece_attach_post_switch_hold_duration", piece_attach_post_switch_hold_duration))
-	piece_attach_morph_noise_strength = float(config.get("piece_attach_morph_noise_strength", piece_attach_morph_noise_strength))
-	piece_attach_morph_shine_strength = float(config.get("piece_attach_morph_shine_strength", piece_attach_morph_shine_strength))
-	piece_attach_out_duration = float(config.get("piece_attach_out_duration", piece_attach_out_duration))
-	piece_attach_rays_start_size = float(config.get("piece_attach_rays_start_size", piece_attach_rays_start_size))
-	piece_attach_rays_switch_size = float(config.get("piece_attach_rays_switch_size", piece_attach_rays_switch_size))
-	piece_attach_rays_texture_size = int(config.get("piece_attach_rays_texture_size", piece_attach_rays_texture_size))
-	piece_attach_rays_overlay_scale = float(config.get("piece_attach_rays_overlay_scale", piece_attach_rays_overlay_scale))
-	piece_attach_rays_local_offset = config.get("piece_attach_rays_local_offset", piece_attach_rays_local_offset)
-	piece_attach_rays_spread = float(config.get("piece_attach_rays_spread", piece_attach_rays_spread))
-	piece_attach_rays_cutoff = float(config.get("piece_attach_rays_cutoff", piece_attach_rays_cutoff))
-	piece_attach_rays_speed = float(config.get("piece_attach_rays_speed", piece_attach_rays_speed))
-	piece_attach_rays_ray1_density = float(config.get("piece_attach_rays_ray1_density", piece_attach_rays_ray1_density))
-	piece_attach_rays_ray2_density = float(config.get("piece_attach_rays_ray2_density", piece_attach_rays_ray2_density))
-	piece_attach_rays_ray2_intensity = float(config.get("piece_attach_rays_ray2_intensity", piece_attach_rays_ray2_intensity))
-	piece_attach_rays_core_intensity = float(config.get("piece_attach_rays_core_intensity", piece_attach_rays_core_intensity))
-	piece_attach_rays_seed = float(config.get("piece_attach_rays_seed", piece_attach_rays_seed))
-	piece_attach_rays_fade_in_delay_ratio = float(config.get("piece_attach_rays_fade_in_delay_ratio", piece_attach_rays_fade_in_delay_ratio))
-	piece_attach_rays_fade_in_duration_ratio = float(config.get("piece_attach_rays_fade_in_duration_ratio", piece_attach_rays_fade_in_duration_ratio))
 	attach_point_light_texture_provider = config.get("attach_point_light_texture_provider", attach_point_light_texture_provider)
 	piece_light_global_position_provider = config.get("piece_light_global_position_provider", piece_light_global_position_provider)
 	sprite_bounds_provider = config.get("sprite_bounds_provider", sprite_bounds_provider)
@@ -247,16 +182,16 @@ func create_attach_point_light(holder: Sprite2D) -> PointLight2D:
 		return null
 
 	var point_light := PointLight2D.new()
-	point_light.name = attach_point_light_name
+	point_light.name = ATTACH_POINT_LIGHT_NAME
 	point_light.texture = get_attach_point_light_texture()
-	point_light.texture_scale = attach_point_light_texture_scale
-	point_light.color = attach_point_light_color
+	point_light.texture_scale = ATTACH_POINT_LIGHT_TEXTURE_SCALE
+	point_light.color = ATTACH_POINT_LIGHT_COLOR
 	point_light.energy = 0.0
 	point_light.range_item_cull_mask = board_light_receive_mask
 	point_light.shadow_enabled = true
-	point_light.shadow_color = attach_point_light_shadow_color
+	point_light.shadow_color = ATTACH_POINT_LIGHT_SHADOW_COLOR
 	point_light.shadow_filter = Light2D.SHADOW_FILTER_PCF5
-	point_light.shadow_filter_smooth = attach_point_light_shadow_smooth
+	point_light.shadow_filter_smooth = ATTACH_POINT_LIGHT_SHADOW_SMOOTH
 	point_light.shadow_item_cull_mask = piece_light_occluder_mask
 	parent_node.add_child(point_light)
 	point_light.global_position = get_piece_light_global_position(holder, holder.texture)
@@ -271,10 +206,10 @@ func create_affix_sprite_light(holder: Sprite2D) -> PointLight2D:
 		return null
 
 	var piece_light := PointLight2D.new()
-	piece_light.name = attach_piece_light_name
+	piece_light.name = ATTACH_PIECE_LIGHT_NAME
 	piece_light.texture = get_attach_point_light_texture()
-	piece_light.texture_scale = attach_piece_light_texture_scale
-	piece_light.color = attach_piece_light_color
+	piece_light.texture_scale = ATTACH_PIECE_LIGHT_TEXTURE_SCALE
+	piece_light.color = ATTACH_PIECE_LIGHT_COLOR
 	piece_light.energy = 0.0
 	piece_light.range_item_cull_mask = piece_light_receive_mask
 	piece_light.shadow_enabled = false
@@ -306,15 +241,15 @@ func cleanup_affix_animation_layers(holder, point_light, piece_light, occlusion_
 	remove_attach_effects_if_holder_valid(holder)
 
 func create_affix_glow_overlay(holder: Sprite2D) -> Sprite2D:
-	return create_glow_overlay(holder, piece_attach_glow_name, piece_attach_glow_z_index, 0.0)
+	return create_glow_overlay(holder, PIECE_ATTACH_GLOW_NAME, PIECE_ATTACH_GLOW_Z_INDEX, 0.0)
 
 func create_affix_target_glow_overlay(holder: Sprite2D, target_texture: Texture2D, glow_material: ShaderMaterial) -> Sprite2D:
 	if holder == null or !is_instance_valid(holder) or target_texture == null or glow_material == null:
 		return null
 
 	var overlay := Sprite2D.new()
-	overlay.name = piece_attach_target_glow_name
-	overlay.z_index = piece_attach_glow_z_index
+	overlay.name = PIECE_ATTACH_TARGET_GLOW_NAME
+	overlay.z_index = PIECE_ATTACH_GLOW_Z_INDEX
 	overlay.z_as_relative = true
 	sync_sprite_overlay_to_holder(overlay, holder)
 	apply_morph_overlay_target_visual(overlay, holder, target_texture)
@@ -334,11 +269,11 @@ func create_glow_overlay(holder: Sprite2D, effect_name: String, z_index: int, gl
 	sync_sprite_overlay_to_holder(overlay, holder)
 
 	var material := ShaderMaterial.new()
-	material.shader = piece_attach_glow_shader
-	material.set_shader_parameter("glow_color", piece_attach_glow_color)
+	material.shader = PIECE_ATTACH_GLOW_SHADER
+	material.set_shader_parameter("glow_color", PIECE_ATTACH_GLOW_COLOR)
 	material.set_shader_parameter("glow_strength", glow_strength)
-	material.set_shader_parameter("glow_size", piece_attach_glow_size)
-	material.set_shader_parameter("fill_strength", piece_attach_glow_fill_strength)
+	material.set_shader_parameter("glow_size", PIECE_ATTACH_GLOW_SIZE)
+	material.set_shader_parameter("fill_strength", PIECE_ATTACH_GLOW_FILL_STRENGTH)
 	overlay.material = material
 
 	holder.add_child(overlay)
@@ -349,24 +284,24 @@ func create_affix_rays_overlay(holder: Sprite2D) -> Sprite2D:
 		return null
 
 	var overlay := Sprite2D.new()
-	overlay.name = piece_attach_rays_name
-	overlay.z_index = piece_attach_rays_z_index
+	overlay.name = PIECE_ATTACH_RAYS_NAME
+	overlay.z_index = PIECE_ATTACH_RAYS_Z_INDEX
 	overlay.z_as_relative = true
 	apply_affix_rays_overlay_transform(overlay, holder)
 
 	var material := ShaderMaterial.new()
-	material.shader = piece_attach_rays_shader
+	material.shader = PIECE_ATTACH_RAYS_SHADER
 	material.set_shader_parameter("gradient", create_affix_rays_gradient_texture())
-	material.set_shader_parameter("spread", piece_attach_rays_spread)
-	material.set_shader_parameter("cutoff", piece_attach_rays_cutoff)
-	material.set_shader_parameter("speed", piece_attach_rays_speed)
-	material.set_shader_parameter("ray1_density", piece_attach_rays_ray1_density)
-	material.set_shader_parameter("ray2_density", piece_attach_rays_ray2_density)
-	material.set_shader_parameter("ray2_intensity", piece_attach_rays_ray2_intensity)
-	material.set_shader_parameter("core_intensity", piece_attach_rays_core_intensity)
-	material.set_shader_parameter("size", piece_attach_rays_start_size)
+	material.set_shader_parameter("spread", PIECE_ATTACH_RAYS_SPREAD)
+	material.set_shader_parameter("cutoff", PIECE_ATTACH_RAYS_CUTOFF)
+	material.set_shader_parameter("speed", PIECE_ATTACH_RAYS_SPEED)
+	material.set_shader_parameter("ray1_density", PIECE_ATTACH_RAYS_RAY1_DENSITY)
+	material.set_shader_parameter("ray2_density", PIECE_ATTACH_RAYS_RAY2_DENSITY)
+	material.set_shader_parameter("ray2_intensity", PIECE_ATTACH_RAYS_RAY2_INTENSITY)
+	material.set_shader_parameter("core_intensity", PIECE_ATTACH_RAYS_CORE_INTENSITY)
+	material.set_shader_parameter("size", PIECE_ATTACH_RAYS_START_SIZE)
 	material.set_shader_parameter("alpha_strength", 0.0)
-	material.set_shader_parameter("seed", piece_attach_rays_seed)
+	material.set_shader_parameter("seed", PIECE_ATTACH_RAYS_SEED)
 	overlay.material = material
 
 	holder.add_child(overlay)
@@ -393,17 +328,17 @@ func apply_affix_rays_overlay_transform(overlay, holder) -> void:
 	overlay_sprite.light_mask = piece_effect_light_receive_mask
 	overlay_sprite.texture_filter = texture_filter_value
 
-	var holder_texture_size: Vector2 = holder_sprite.texture.get_size() if holder_sprite.texture != null else Vector2.ONE * piece_attach_rays_texture_size
+	var holder_texture_size: Vector2 = holder_sprite.texture.get_size() if holder_sprite.texture != null else Vector2.ONE * PIECE_ATTACH_RAYS_TEXTURE_SIZE
 	var square_side: float = maxf(holder_texture_size.x, holder_texture_size.y)
-	var overlay_scale_value: float = (square_side / float(piece_attach_rays_texture_size)) * piece_attach_rays_overlay_scale
+	var overlay_scale_value: float = (square_side / float(PIECE_ATTACH_RAYS_TEXTURE_SIZE)) * PIECE_ATTACH_RAYS_OVERLAY_SCALE
 	overlay_sprite.scale = Vector2.ONE * overlay_scale_value
-	overlay_sprite.position = holder_sprite.offset + piece_attach_rays_local_offset
+	overlay_sprite.position = holder_sprite.offset + PIECE_ATTACH_RAYS_LOCAL_OFFSET
 
 func get_attach_rays_square_texture() -> Texture2D:
 	if piece_attach_rays_square_texture != null:
 		return piece_attach_rays_square_texture
 
-	var image := Image.create(piece_attach_rays_texture_size, piece_attach_rays_texture_size, false, Image.FORMAT_RGBA8)
+	var image := Image.create(PIECE_ATTACH_RAYS_TEXTURE_SIZE, PIECE_ATTACH_RAYS_TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
 	image.fill(Color.WHITE)
 	piece_attach_rays_square_texture = ImageTexture.create_from_image(image)
 	return piece_attach_rays_square_texture
@@ -479,21 +414,21 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 	in_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
-	in_tween.tween_property(glow_material, "shader_parameter/glow_strength", piece_attach_glow_base_strength, piece_attach_in_duration)
-	in_tween.parallel().tween_property(rays_material, "shader_parameter/size", piece_attach_rays_switch_size, piece_attach_in_duration)
-	in_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 1.0, piece_attach_in_duration * piece_attach_rays_fade_in_duration_ratio).set_delay(piece_attach_in_duration * piece_attach_rays_fade_in_delay_ratio)
-	tween_effect_occlusion_dimming(in_tween, occlusion_dimmers, occluded_piece_effect_dim_color.a, piece_attach_in_duration)
+	in_tween.tween_property(glow_material, "shader_parameter/glow_strength", PIECE_ATTACH_GLOW_BASE_STRENGTH, PIECE_ATTACH_IN_DURATION)
+	in_tween.parallel().tween_property(rays_material, "shader_parameter/size", PIECE_ATTACH_RAYS_SWITCH_SIZE, PIECE_ATTACH_IN_DURATION)
+	in_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 1.0, PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DURATION_RATIO).set_delay(PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DELAY_RATIO)
+	tween_effect_occlusion_dimming(in_tween, occlusion_dimmers, occluded_piece_effect_dim_color.a, PIECE_ATTACH_IN_DURATION)
 	if attach_point_light != null:
-		in_tween.parallel().tween_property(attach_point_light, "energy", attach_point_light_energy, piece_attach_in_duration)
+		in_tween.parallel().tween_property(attach_point_light, "energy", ATTACH_POINT_LIGHT_ENERGY, PIECE_ATTACH_IN_DURATION)
 	if attach_piece_light != null:
-		in_tween.parallel().tween_property(attach_piece_light, "energy", attach_piece_light_energy, piece_attach_in_duration)
+		in_tween.parallel().tween_property(attach_piece_light, "energy", ATTACH_PIECE_LIGHT_ENERGY, PIECE_ATTACH_IN_DURATION)
 	await in_tween.finished
 
 	if !is_affix_holder_active(holder):
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
-	var pre_switch_hold_completed: bool = await await_affix_interval(piece_attach_pre_switch_hold_duration)
+	var pre_switch_hold_completed: bool = await await_affix_interval(PIECE_ATTACH_PRE_SWITCH_HOLD_DURATION)
 	if !pre_switch_hold_completed:
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
@@ -506,13 +441,13 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 	switch_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	switch_tween.tween_property(glow_material, "shader_parameter/glow_strength", piece_attach_glow_switch_strength, piece_attach_glow_switch_duration)
+	switch_tween.tween_property(glow_material, "shader_parameter/glow_strength", PIECE_ATTACH_GLOW_SWITCH_STRENGTH, PIECE_ATTACH_GLOW_SWITCH_DURATION)
 	await switch_tween.finished
 	if !is_affix_holder_active(holder):
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
-	await play_texture_morph(holder, target_texture, piece_attach_morph_duration, attach_point_light, attach_piece_light, target_glow_overlay)
+	await play_texture_morph(holder, target_texture, PIECE_ATTACH_MORPH_DURATION, attach_point_light, attach_piece_light, target_glow_overlay)
 	if !is_affix_holder_active(holder):
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
@@ -523,7 +458,7 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 		holder.texture = target_texture
 		apply_piece_visual_size(holder, board_pos)
 
-	var morph_overlay: Node = holder.get_node_or_null(piece_attach_morph_name)
+	var morph_overlay: Node = holder.get_node_or_null(PIECE_ATTACH_MORPH_NAME)
 	if morph_overlay != null:
 		morph_overlay.queue_free()
 	if is_instance_valid(target_glow_overlay):
@@ -535,7 +470,7 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 	sync_sprite_overlay_to_holder(glow_overlay, holder)
 	apply_affix_rays_overlay_transform(rays_overlay, holder)
 
-	var post_switch_hold_completed: bool = await await_affix_interval(piece_attach_post_switch_hold_duration)
+	var post_switch_hold_completed: bool = await await_affix_interval(PIECE_ATTACH_POST_SWITCH_HOLD_DURATION)
 	if !post_switch_hold_completed:
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
@@ -548,14 +483,14 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 	out_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
-	out_tween.tween_property(glow_material, "shader_parameter/glow_strength", 0.0, piece_attach_out_duration)
-	out_tween.parallel().tween_property(rays_material, "shader_parameter/size", piece_attach_rays_start_size, piece_attach_out_duration)
-	out_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 0.0, piece_attach_out_duration)
-	tween_effect_occlusion_dimming(out_tween, occlusion_dimmers, 0.0, piece_attach_out_duration)
+	out_tween.tween_property(glow_material, "shader_parameter/glow_strength", 0.0, PIECE_ATTACH_OUT_DURATION)
+	out_tween.parallel().tween_property(rays_material, "shader_parameter/size", PIECE_ATTACH_RAYS_START_SIZE, PIECE_ATTACH_OUT_DURATION)
+	out_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 0.0, PIECE_ATTACH_OUT_DURATION)
+	tween_effect_occlusion_dimming(out_tween, occlusion_dimmers, 0.0, PIECE_ATTACH_OUT_DURATION)
 	if attach_point_light != null:
-		out_tween.parallel().tween_property(attach_point_light, "energy", 0.0, piece_attach_out_duration)
+		out_tween.parallel().tween_property(attach_point_light, "energy", 0.0, PIECE_ATTACH_OUT_DURATION)
 	if attach_piece_light != null:
-		out_tween.parallel().tween_property(attach_piece_light, "energy", 0.0, piece_attach_out_duration)
+		out_tween.parallel().tween_property(attach_piece_light, "energy", 0.0, PIECE_ATTACH_OUT_DURATION)
 	await out_tween.finished
 
 	if is_instance_valid(glow_overlay):
@@ -614,12 +549,12 @@ func create_effect_occlusion_dim_overlay(holder: Sprite2D) -> Sprite2D:
 	if holder == null or !is_instance_valid(holder) or holder.texture == null:
 		return null
 
-	var dimmer: Sprite2D = holder.get_node_or_null(piece_effect_occlusion_dim_name) as Sprite2D
+	var dimmer: Sprite2D = holder.get_node_or_null(PIECE_EFFECT_OCCLUSION_DIM_NAME) as Sprite2D
 	var current_alpha: float = 0.0
 	if dimmer == null:
 		dimmer = Sprite2D.new()
-		dimmer.name = piece_effect_occlusion_dim_name
-		dimmer.z_index = piece_effect_occlusion_dim_z_index
+		dimmer.name = PIECE_EFFECT_OCCLUSION_DIM_NAME
+		dimmer.z_index = PIECE_EFFECT_OCCLUSION_DIM_Z_INDEX
 		dimmer.z_as_relative = true
 		holder.add_child(dimmer)
 	else:
@@ -656,7 +591,7 @@ func end_effect_occlusion_dimming(dimmers: Array[Sprite2D]) -> void:
 			dimmer.queue_free()
 			continue
 		tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
-		tween.tween_property(dimmer, "self_modulate:a", 0.0, piece_attach_out_duration)
+		tween.tween_property(dimmer, "self_modulate:a", 0.0, PIECE_ATTACH_OUT_DURATION)
 		tween.finished.connect(func():
 			if is_instance_valid(dimmer):
 				dimmer.queue_free()
@@ -682,27 +617,27 @@ func apply_morph_overlay_target_visual(morph_overlay: Sprite2D, holder: Sprite2D
 func play_texture_morph(holder: Sprite2D, target_texture: Texture2D, duration: float, point_light: PointLight2D = null, piece_light: PointLight2D = null, target_glow_overlay: Sprite2D = null) -> void:
 	if holder == null or !is_instance_valid(holder) or target_texture == null:
 		return
-	if duration <= 0.0 or piece_texture_morph_shader == null:
+	if duration <= 0.0 or PIECE_TEXTURE_MORPH_SHADER == null:
 		return
 
-	var existing_morph: Node = holder.get_node_or_null(piece_attach_morph_name)
+	var existing_morph: Node = holder.get_node_or_null(PIECE_ATTACH_MORPH_NAME)
 	if existing_morph != null:
 		existing_morph.free()
 
 	var morph_overlay := Sprite2D.new()
-	morph_overlay.name = piece_attach_morph_name
-	morph_overlay.z_index = piece_attach_morph_z_index
+	morph_overlay.name = PIECE_ATTACH_MORPH_NAME
+	morph_overlay.z_index = PIECE_ATTACH_MORPH_Z_INDEX
 	morph_overlay.z_as_relative = true
 	sync_sprite_overlay_to_holder(morph_overlay, holder)
 	apply_morph_overlay_target_visual(morph_overlay, holder, target_texture)
 	morph_overlay.light_mask = piece_light_receive_mask
 
 	var morph_material := ShaderMaterial.new()
-	morph_material.shader = piece_texture_morph_shader
+	morph_material.shader = PIECE_TEXTURE_MORPH_SHADER
 	morph_material.set_shader_parameter("morph_progress", 0.0)
-	morph_material.set_shader_parameter("noise_strength", piece_attach_morph_noise_strength)
-	morph_material.set_shader_parameter("shine_strength", piece_attach_morph_shine_strength)
-	morph_material.set_shader_parameter("shine_color", piece_attach_glow_color)
+	morph_material.set_shader_parameter("noise_strength", PIECE_ATTACH_MORPH_NOISE_STRENGTH)
+	morph_material.set_shader_parameter("shine_strength", PIECE_ATTACH_MORPH_SHINE_STRENGTH)
+	morph_material.set_shader_parameter("shine_color", PIECE_ATTACH_GLOW_COLOR)
 	morph_overlay.material = morph_material
 	holder.add_child(morph_overlay)
 
@@ -711,7 +646,7 @@ func play_texture_morph(holder: Sprite2D, target_texture: Texture2D, duration: f
 	if morph_tween == null:
 		return
 	morph_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	var target_appear_duration: float = clampf(piece_attach_target_appear_duration, 0.0, duration)
+	var target_appear_duration: float = clampf(PIECE_ATTACH_TARGET_APPEAR_DURATION, 0.0, duration)
 	if target_appear_duration <= 0.0:
 		morph_material.set_shader_parameter("morph_progress", 1.0)
 		if target_glow_overlay != null and is_instance_valid(target_glow_overlay):
@@ -727,7 +662,7 @@ func play_texture_morph(holder: Sprite2D, target_texture: Texture2D, duration: f
 	await morph_tween.finished
 
 func play_piece_revert(piece_position: Vector2, start_texture: Texture2D) -> void:
-	if start_texture == null or piece_expire_dissolve_shader == null:
+	if start_texture == null or PIECE_EXPIRE_DISSOLVE_SHADER == null:
 		return
 
 	var overlay: Sprite2D = create_effect_holder(piece_position, start_texture, "PieceExpireDissolve")
@@ -735,11 +670,11 @@ func play_piece_revert(piece_position: Vector2, start_texture: Texture2D) -> voi
 		return
 
 	var material := ShaderMaterial.new()
-	material.shader = piece_expire_dissolve_shader
+	material.shader = PIECE_EXPIRE_DISSOLVE_SHADER
 	material.set_shader_parameter("progress", 0.0)
-	material.set_shader_parameter("beam_size", piece_expire_dissolve_beam_size)
-	material.set_shader_parameter("noise_density", piece_expire_dissolve_noise_density)
-	material.set_shader_parameter("color", piece_expire_dissolve_color)
+	material.set_shader_parameter("beam_size", PIECE_EXPIRE_DISSOLVE_BEAM_SIZE)
+	material.set_shader_parameter("noise_density", PIECE_EXPIRE_DISSOLVE_NOISE_DENSITY)
+	material.set_shader_parameter("color", PIECE_EXPIRE_DISSOLVE_COLOR)
 	overlay.material = material
 
 	var tween: Tween = create_animation_tween()
@@ -748,13 +683,13 @@ func play_piece_revert(piece_position: Vector2, start_texture: Texture2D) -> voi
 			overlay.queue_free()
 		return
 	tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	tween.tween_property(material, "shader_parameter/progress", 1.0, piece_expire_dissolve_duration)
+	tween.tween_property(material, "shader_parameter/progress", 1.0, PIECE_EXPIRE_DISSOLVE_DURATION)
 	await tween.finished
 	if is_instance_valid(overlay):
 		overlay.queue_free()
 
 func play_invisibility_exit(holder: Sprite2D) -> void:
-	if holder == null or !is_instance_valid(holder) or piece_invisibility_refract_shader == null:
+	if holder == null or !is_instance_valid(holder) or PIECE_INVISIBILITY_REFRACT_SHADER == null:
 		return
 	if !is_tween_owner_inside_tree():
 		return
@@ -762,13 +697,13 @@ func play_invisibility_exit(holder: Sprite2D) -> void:
 	var scene_tree: SceneTree = tween_owner.get_tree()
 	if scene_tree == null:
 		return
-	await scene_tree.create_timer(piece_invisibility_visible_hold_duration).timeout
+	await scene_tree.create_timer(PIECE_INVISIBILITY_VISIBLE_HOLD_DURATION).timeout
 	if !is_tween_owner_inside_tree() or !is_instance_valid(holder):
 		return
 
 	var refract_material := ShaderMaterial.new()
-	refract_material.shader = piece_invisibility_refract_shader
-	refract_material.set_shader_parameter("dist", piece_invisibility_refract_distance)
+	refract_material.shader = PIECE_INVISIBILITY_REFRACT_SHADER
+	refract_material.set_shader_parameter("dist", PIECE_INVISIBILITY_REFRACT_DISTANCE)
 	refract_material.set_shader_parameter("alpha", 0.0)
 	holder.material = refract_material
 
@@ -776,7 +711,7 @@ func play_invisibility_exit(holder: Sprite2D) -> void:
 	if refract_tween == null:
 		return
 	refract_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	refract_tween.tween_property(refract_material, "shader_parameter/alpha", 1.0, piece_invisibility_refract_in_duration)
+	refract_tween.tween_property(refract_material, "shader_parameter/alpha", 1.0, PIECE_INVISIBILITY_REFRACT_IN_DURATION)
 	await refract_tween.finished
 	if !is_tween_owner_inside_tree() or !is_instance_valid(holder):
 		return
@@ -785,21 +720,21 @@ func play_invisibility_exit(holder: Sprite2D) -> void:
 	if fade_tween == null:
 		return
 	fade_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
-	fade_tween.tween_property(holder, "self_modulate:a", 0.0, piece_invisibility_fade_out_duration)
+	fade_tween.tween_property(holder, "self_modulate:a", 0.0, PIECE_INVISIBILITY_FADE_OUT_DURATION)
 	await fade_tween.finished
 	if is_instance_valid(holder):
 		holder.queue_free()
 
 func play_invisibility_reveal(holder: Sprite2D) -> void:
-	if holder == null or !is_instance_valid(holder) or piece_invisibility_refract_shader == null:
+	if holder == null or !is_instance_valid(holder) or PIECE_INVISIBILITY_REFRACT_SHADER == null:
 		return
 	if !is_tween_owner_inside_tree():
 		return
 
 	holder.self_modulate.a = 0.0
 	var refract_material := ShaderMaterial.new()
-	refract_material.shader = piece_invisibility_refract_shader
-	refract_material.set_shader_parameter("dist", piece_invisibility_refract_distance)
+	refract_material.shader = PIECE_INVISIBILITY_REFRACT_SHADER
+	refract_material.set_shader_parameter("dist", PIECE_INVISIBILITY_REFRACT_DISTANCE)
 	refract_material.set_shader_parameter("alpha", 1.0)
 	holder.material = refract_material
 
@@ -809,8 +744,8 @@ func play_invisibility_reveal(holder: Sprite2D) -> void:
 		holder.material = null
 		return
 	reveal_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	reveal_tween.tween_property(holder, "self_modulate:a", 1.0, piece_invisibility_refract_in_duration)
-	reveal_tween.parallel().tween_property(refract_material, "shader_parameter/alpha", 0.0, piece_invisibility_refract_in_duration)
+	reveal_tween.tween_property(holder, "self_modulate:a", 1.0, PIECE_INVISIBILITY_REFRACT_IN_DURATION)
+	reveal_tween.parallel().tween_property(refract_material, "shader_parameter/alpha", 0.0, PIECE_INVISIBILITY_REFRACT_IN_DURATION)
 	await reveal_tween.finished
 	if is_instance_valid(holder):
 		holder.material = null
@@ -818,7 +753,7 @@ func play_invisibility_reveal(holder: Sprite2D) -> void:
 
 ## `color` stands in for `capture_sparkle_color` when it is not transparent.
 func play_capture_sparkle(board_pos: Vector2, color: Color = Color.TRANSPARENT) -> void:
-	if piece_capture_sparkle_shader == null or !has_effect_parent():
+	if PIECE_CAPTURE_SPARKLE_SHADER == null or !has_effect_parent():
 		return
 
 	var sparkle := Sprite2D.new()
@@ -837,7 +772,7 @@ func play_capture_sparkle(board_pos: Vector2, color: Color = Color.TRANSPARENT) 
 	sparkle.z_index = get_piece_effect_z_index(board_pos)
 
 	var material := ShaderMaterial.new()
-	material.shader = piece_capture_sparkle_shader
+	material.shader = PIECE_CAPTURE_SPARKLE_SHADER
 	material.set_shader_parameter("color", color if color.a > 0.0 else capture_sparkle_color)
 	material.set_shader_parameter("scale", capture_sparkle_shader_scale)
 	material.set_shader_parameter("circle_ratio", capture_sparkle_circle_ratio)
@@ -868,7 +803,7 @@ func play_capture_sparkle(board_pos: Vector2, color: Color = Color.TRANSPARENT) 
 	)
 
 func play_bomb_warning(target_pos: Vector2) -> void:
-	if bomb_warning_texture == null or !has_effect_parent():
+	if BOMB_WARNING_TEXTURE == null or !has_effect_parent():
 		return
 
 	var marker := Sprite2D.new()
@@ -878,15 +813,15 @@ func play_bomb_warning(target_pos: Vector2) -> void:
 	marker.name = "BombWarning"
 	marker.light_mask = piece_effect_light_receive_mask
 	marker.texture_filter = texture_filter_value
-	marker.texture = bomb_warning_texture
+	marker.texture = BOMB_WARNING_TEXTURE
 	marker.z_as_relative = false
-	marker.z_index = get_piece_effect_z_index(target_pos) + bomb_warning_z_offset
+	marker.z_index = get_piece_effect_z_index(target_pos) + BOMB_WARNING_Z_OFFSET
 	marker.self_modulate = Color(bomb_warning_color.r, bomb_warning_color.g, bomb_warning_color.b, 0.0)
 
 	var target_position: Vector2 = get_bomb_warning_target_position(target_pos)
 	marker.position = target_position + Vector2(0.0, bomb_warning_rise_distance * get_perspective_scale(target_pos))
 
-	var texture_size: Vector2 = bomb_warning_texture.get_size()
+	var texture_size: Vector2 = BOMB_WARNING_TEXTURE.get_size()
 	var texture_extent: float = maxf(texture_size.x, texture_size.y)
 	if texture_extent > 0.0:
 		var target_size: float = float(cell_width) * bomb_warning_size_ratio * get_perspective_scale(target_pos)

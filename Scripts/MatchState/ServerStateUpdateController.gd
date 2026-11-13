@@ -1,11 +1,10 @@
 extends RefCounted
 
 var match_board
-
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
 
-## Applies one state as NetworkGameHost.serialize_state_for_player() builds it.
+## Applies one state as GameStateSerializer.serialize_for_player() builds it.
 ## The host's own board and a remote client's board both come through here, so
 ## a field the host adds to the state reaches both views or neither.
 func apply_state_data(state_data: Dictionary) -> void:
@@ -41,19 +40,35 @@ func apply_state_data(state_data: Dictionary) -> void:
 		state_data.get("hidden_stamps", []),
 		state_data.get("player_base_fields", {}),
 		state_data.get("board_effects", []),
-		state_data.get("player_names", {}),
 		state_data.get("recent_stamp_transfers", []),
 		state_data.get("recent_stamp_expirations", []),
 		state_data.get("recent_bomb_effects", []),
 		state_data.get("recent_pending_respawn_queues", []),
 		state_data.get("recent_pending_respawn_arrivals", []),
 		state_data.get("last_move", {}),
-		state_data.get("player_portraits", {}),
 		int(state_data.get("viewer_player_id", -1)),
 		state_data.get("turn_action_state", {}),
 		state_data.get("player_clock_seconds", {}),
 		state_data.get("recent_effect_activations", [])
 	)
+
+## The players' names and portraits, as NetworkGameHost.broadcast_player_profiles
+## sends them once when a match starts: {player_id: {"name", "portrait"}}
+## (PlayerProfile.to_public_dict).
+func apply_player_profiles(profiles: Dictionary) -> void:
+	var names: Dictionary = {}
+	var portraits: Dictionary = {}
+	for player_id in [0, 1]:
+		var profile_value = profiles.get(player_id, profiles.get(str(player_id), null))
+		if !(profile_value is Dictionary):
+			continue
+		names[player_id] = str((profile_value as Dictionary).get("name", ""))
+		portraits[player_id] = (profile_value as Dictionary).get("portrait", {})
+	var state_sync = match_board.get_match_state_sync_controller()
+	match_board.current_player_names = state_sync.parse_player_names(names, match_board.current_player_names)
+	match_board.current_player_portraits = state_sync.parse_player_portraits(portraits, match_board.current_player_portraits)
+	match_board.get_turn_hud_controller().update_player_name_labels()
+	match_board.get_turn_hud_controller().update_player_portrait_views()
 
 func update_from_server_state(
 	pieces_data: Dictionary,
@@ -66,14 +81,12 @@ func update_from_server_state(
 	hidden_stamps: Array = [],
 	player_base_fields: Dictionary = {},
 	board_effects: Array = [],
-	player_names: Dictionary = {},
 	recent_stamp_transfers: Array = [],
 	recent_stamp_expirations: Array = [],
 	recent_bomb_effects: Array = [],
 	recent_pending_respawn_queues: Array = [],
 	recent_pending_respawn_arrivals: Array = [],
 	last_move: Dictionary = {},
-	player_portraits: Dictionary = {},
 	viewer_player_id: int = -1,
 	turn_action_state: Dictionary = {},
 	player_clock_seconds: Dictionary = {},
@@ -84,8 +97,8 @@ func update_from_server_state(
 	var previous_piece_visual_state: Dictionary = match_board.get_piece_texture_resolver().get_piece_visual_state_snapshot()
 	var previous_hidden_stamp_counts: Dictionary = match_board.hidden_stamp_counts.duplicate()
 	var current_hidden_stamp_counts: Dictionary = match_board.get_match_state_sync_controller().get_hidden_stamp_counts_from_state(hidden_stamps)
-	var previous_white_hand_names: Array[String] = match_board.get_stamp_names_from_hand(match_board.white_stamp_hand)
-	var previous_black_hand_names: Array[String] = match_board.get_stamp_names_from_hand(match_board.black_stamp_hand)
+	var previous_white_hand_names: Array[String] = match_board.get_match_state_sync_controller().get_stamp_names_from_hand(match_board.white_stamp_hand)
+	var previous_black_hand_names: Array[String] = match_board.get_match_state_sync_controller().get_stamp_names_from_hand(match_board.black_stamp_hand)
 	var previous_white_turned_page: bool = bool(match_board.has_turned_page_this_turn.get(1, false))
 	var previous_black_turned_page: bool = bool(match_board.has_turned_page_this_turn.get(-1, false))
 
@@ -110,8 +123,6 @@ func update_from_server_state(
 		match_board.get_match_codex_controller().apply_state_from_server(player_codex_state)
 	match_board.current_player_base_fields = match_board.get_match_state_sync_controller().parse_player_base_fields(player_base_fields)
 	match_board.current_board_effects = match_board.get_match_state_sync_controller().parse_board_effects(board_effects)
-	match_board.current_player_names = match_board.get_match_state_sync_controller().parse_player_names(player_names, match_board.current_player_names)
-	match_board.current_player_portraits = match_board.get_match_state_sync_controller().parse_player_portraits(player_portraits, match_board.current_player_portraits)
 	var previous_last_move: Dictionary = match_board.current_last_move
 	match_board.current_last_move = match_board.get_match_state_sync_controller().parse_last_move(last_move)
 	_report_new_capture(previous_last_move, match_board.current_last_move, previous_piece_visual_state)
@@ -120,9 +131,9 @@ func update_from_server_state(
 	var white_page_turned_this_update: bool = !previous_white_turned_page and bool(match_board.has_turned_page_this_turn.get(1, false))
 	var black_page_turned_this_update: bool = !previous_black_turned_page and bool(match_board.has_turned_page_this_turn.get(-1, false))
 	match_board.get_turn_hud_controller().sync_player_clocks(player_clock_seconds)
-	match_board.update_end_turn_button()
-	match_board.white_stamp_hand = match_board.create_stamp_hand_from_names(current_white_hand_names)
-	match_board.black_stamp_hand = match_board.create_stamp_hand_from_names(current_black_hand_names)
+	match_board.get_turn_hud_controller().update_end_turn_button()
+	match_board.white_stamp_hand = match_board.get_stamp_hand_state_controller().create_stamp_hand_from_names(current_white_hand_names)
+	match_board.black_stamp_hand = match_board.get_stamp_hand_state_controller().create_stamp_hand_from_names(current_black_hand_names)
 
 	# The hand that just turned a page swaps its cards only once our own
 	# codex has actually left the screen (its slide animation was already
@@ -135,16 +146,16 @@ func update_from_server_state(
 	if white_page_turned_this_update and own_color == 1:
 		match_board.run_when_codex_off_screen(Callable(match_board, "refresh_stamp_hand_visuals").bind(1))
 	else:
-		match_board.white_stamp_visuals = match_board.populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
+		match_board.white_stamp_visuals = match_board.get_stamp_hand_state_controller().populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
 	if black_page_turned_this_update and own_color == -1:
 		match_board.run_when_codex_off_screen(Callable(match_board, "refresh_stamp_hand_visuals").bind(-1))
 	else:
-		match_board.black_stamp_visuals = match_board.populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
-	match_board.setup_deck_visuals()
+		match_board.black_stamp_visuals = match_board.get_stamp_hand_state_controller().populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
+	match_board.get_stamp_hand_state_controller().setup_deck_visuals()
 
-	match_board.delete_dots()
+	match_board.get_match_input_controller().delete_dots()
 	match_board.hide_hover_piece_details()
-	match_board.update_stamp_presentation()
+	match_board.get_stamp_hand_state_controller().update_stamp_presentation()
 	var stamp_expiration_events: Array[Dictionary] = match_board.get_state_stamp_expiration_events(previous_piece_visual_state, recent_stamp_expirations, recent_bomb_effects)
 	var state_affix_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().collect_state_affix_animations(
 		previous_piece_visual_state,
@@ -187,7 +198,7 @@ func update_from_server_state(
 		match_board.should_skip_visual_animations()
 	)
 	var bomb_warning_animations: Array[Dictionary] = match_board.collect_bomb_warning_animations(recent_bomb_effects, previous_piece_visual_state)
-	var pending_respawn_arrival_animations: Array[Dictionary] = match_board.parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals)
+	var pending_respawn_arrival_animations: Array[Dictionary] = match_board.get_match_state_sync_controller().parse_pending_respawn_arrival_animations(recent_pending_respawn_arrivals)
 	match_board.hidden_stamp_counts = current_hidden_stamp_counts
 	var animated_affix_positions: Dictionary = match_board.get_server_state_visual_update_controller().get_affix_animation_positions(state_affix_animations)
 	for position_value in animated_affix_positions.keys():
@@ -255,7 +266,7 @@ func wait_for_active_state_visual_animations() -> void:
 		await match_board.get_tree().process_frame
 
 func has_active_state_visual_animations() -> bool:
-	return match_board.has_active_visual_processes([
+	return match_board.get_visual_process_tracker().has_any_active([
 		match_board.VISUAL_PROCESS_PIECE_MOVE,
 		match_board.VISUAL_PROCESS_STATE_STAMP_AFFIX,
 	])

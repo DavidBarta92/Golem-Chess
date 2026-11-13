@@ -55,7 +55,7 @@ func play_state_affix_animations(animations: Array[Dictionary]) -> void:
 	if match_board == null:
 		return
 
-	match_board.begin_visual_process(match_board.VISUAL_PROCESS_STATE_STAMP_AFFIX)
+	match_board.get_visual_process_tracker().begin(match_board.VISUAL_PROCESS_STATE_STAMP_AFFIX)
 	for animation: Dictionary in animations:
 		var board_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos)
 		var stamp: Stamp = animation.get("stamp", null) as Stamp
@@ -73,7 +73,7 @@ func play_state_affix_animations(animations: Array[Dictionary]) -> void:
 		else:
 			await play_piece_stamp_affix_animation(board_pos, stamp, start_texture)
 		match_board.finish_stamp_affix_process(board_pos)
-	match_board.finish_visual_process(match_board.VISUAL_PROCESS_STATE_STAMP_AFFIX)
+	match_board.get_visual_process_tracker().finish(match_board.VISUAL_PROCESS_STATE_STAMP_AFFIX)
 
 func play_piece_stamp_affix_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D = null) -> void:
 	if match_board == null or match_board.should_skip_visual_animations() or !match_board.is_inside_tree():
@@ -95,7 +95,7 @@ func play_piece_stamp_affix_animation(piece_position: Vector2, stamp: Stamp, sta
 
 	if start_texture != null and holder.texture != start_texture:
 		holder.texture = start_texture
-		match_board.refresh_piece_holder_visual(holder, piece_position)
+		match_board.get_piece_display_controller().refresh_piece_holder_visual(holder, piece_position)
 
 	SFXManager.play("attach_stamp")
 	var reveal_visual: StampVisual = match_board.get_stamp_animation_controller().play_stamp_affix_reveal(stamp, piece.color)
@@ -110,7 +110,7 @@ func apply_visible_piece_attach_morph_result(holder: Sprite2D, piece_position: V
 		return
 
 	holder.texture = affixed_texture
-	match_board.refresh_piece_holder_visual(holder, piece_position)
+	match_board.get_piece_display_controller().refresh_piece_holder_visual(holder, piece_position)
 
 func play_hidden_piece_invisibility_affix_animation(piece_position: Vector2, stamp: Stamp, start_texture: Texture2D, piece_color: int) -> void:
 	if match_board == null or match_board.should_skip_visual_animations() or !match_board.is_inside_tree():
@@ -147,38 +147,6 @@ func apply_hidden_piece_attach_morph_result(holder: Sprite2D, piece_position: Ve
 
 	holder.texture = affixed_texture
 	match_board.get_piece_visuals().apply_visual_size(holder, piece_position)
-
-func play_local_move_transition(move_context: Dictionary) -> void:
-	if match_board == null:
-		return
-
-	var start_pos: Vector2 = move_context.get("start_pos", invalid_board_pos)
-	var end_pos: Vector2 = move_context.get("end_pos", invalid_board_pos)
-	var moving_start_texture: Texture2D = move_context.get("moving_start_texture", null) as Texture2D
-	var moving_piece_visible_to_enemy: bool = bool(move_context.get("moving_piece_visible_to_enemy", true))
-	var should_play_capture_shatter: bool = bool(move_context.get("should_play_capture_shatter", false))
-	var captured_start_texture: Texture2D = move_context.get("captured_start_texture", null) as Texture2D
-
-	match_board.display_board()
-	var capture_placeholder: Sprite2D = create_piece_move_capture_placeholder(end_pos, captured_start_texture) if should_play_capture_shatter else null
-	var capture_impact_callback: Callable = Callable()
-	if should_play_capture_shatter:
-		var captured_piece: Piece = move_context.get("captured_piece", null) as Piece
-		var captured_color: int = captured_piece.color if captured_piece != null else 0
-		var shatter_respawn_pos: Vector2 = BoardConfig.value_to_vector2(move_context.get("shatter_respawn_pos", invalid_board_pos), invalid_board_pos)
-		var shatter_fragment_group: String = str(move_context.get("shatter_fragment_group", match_board.PIECE_SHATTER_FRAGMENT_GROUP_NONE))
-		var capturing_cast: String = get_capturing_cast_sound_name(end_pos)
-		capture_impact_callback = func() -> float:
-			return play_capture_contact(captured_color, start_pos, end_pos, capturing_cast, capture_placeholder, func() -> void:
-				match_board.get_piece_respawn_fragment_coordinator().play_capture_shatter_animation(end_pos, shatter_respawn_pos, captured_color, shatter_fragment_group, captured_start_texture, end_pos - start_pos)
-			)
-	await play_piece_move_animation(start_pos, end_pos, moving_start_texture, moving_piece_visible_to_enemy, capture_impact_callback)
-	if is_instance_valid(capture_placeholder):
-		capture_placeholder.queue_free()
-	var pending_respawn_arrivals: Array = move_context.get("pending_respawn_arrivals", [])
-	if !pending_respawn_arrivals.is_empty():
-		match_board.get_piece_respawn_fragment_coordinator().play_pending_edge_respawn_arrival_animations(pending_respawn_arrivals)
-	match_board.call_deferred("play_pending_piece_revert_animations")
 
 func play_state_piece_move_animation(state_piece_move_animation: Dictionary, state_piece_shatter_animations: Array) -> void:
 	if match_board == null:
@@ -237,15 +205,14 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 
 	# A stamp that expired as part of this move (turns_remaining hit 0) gets
 	# its own expire animation elsewhere instead -- only a genuine decrement
-	# that the piece is still carrying afterward gets this one, same as the
-	# local-move path in LocalMoveFlowController.consume_moved_piece_duration_locally().
+	# that the piece is still carrying afterward gets this one.
 	if state_piece_move_animation.has("old_duration"):
 		var old_duration: int = int(state_piece_move_animation.get("old_duration", 0))
 		var new_duration: int = int(state_piece_move_animation.get("new_duration", 0))
 		if old_duration != new_duration:
 			var moved_piece: Piece = match_board.piece_objects.get(move_to_pos, null) as Piece
 			if moved_piece != null and moved_piece.affixed_stamp != null:
-				match_board.play_duration_change_animation(move_to_pos, old_duration, new_duration)
+				match_board.get_piece_duration_change_animator().play(move_to_pos, old_duration, new_duration)
 
 func should_play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool = true) -> bool:
 	if match_board == null:
@@ -276,7 +243,7 @@ func play_piece_move_animation(
 	if holder.texture == null and !(hidden_at_end and start_texture != null):
 		return
 
-	match_board.begin_visual_process(match_board.VISUAL_PROCESS_PIECE_MOVE)
+	match_board.get_visual_process_tracker().begin(match_board.VISUAL_PROCESS_PIECE_MOVE)
 	# Whatever the last blow left lying about soaks away as the next move begins.
 	match_board.get_piece_shatter_animator().soak_away_debris()
 	var end_texture: Texture2D = holder.texture
@@ -295,7 +262,7 @@ func play_piece_move_animation(
 	var end_offset: Vector2 = end_transform.get("offset", holder.offset)
 
 	holder.texture = display_texture
-	holder.position = match_board.get_board_position_local_position(from_pos)
+	holder.position = match_board.get_board_geometry().get_position_local(from_pos)
 	holder.scale = start_scale
 	holder.offset = start_offset
 	match_board.get_piece_visuals().remove_shadow(holder)
@@ -317,8 +284,8 @@ func play_piece_move_animation(
 
 	if is_instance_valid(holder):
 		holder.texture = end_texture
-		match_board.refresh_piece_holder_visual(holder, to_pos)
-	match_board.finish_visual_process(match_board.VISUAL_PROCESS_PIECE_MOVE)
+		match_board.get_piece_display_controller().refresh_piece_holder_visual(holder, to_pos)
+	match_board.get_visual_process_tracker().finish(match_board.VISUAL_PROCESS_PIECE_MOVE)
 
 func create_piece_move_capture_placeholder(board_pos: Vector2, texture_value: Texture2D) -> Sprite2D:
 	if match_board == null or texture_value == null or !MoveRules.is_valid_position(board_pos):
@@ -342,7 +309,7 @@ func play_capture_contact(captured_color: int, from_pos: Vector2, to_pos: Vector
 	var light: Color = feel.light if feel.light.a > 0.0 else match_board.capture_sparkle_color
 	# Shaking and flashing are for those who have not turned them off.
 	var calm: bool = !SettingsDataManager.is_screen_shake_enabled()
-	var blow: Vector2 = (match_board.get_board_position_local_position(to_pos) - match_board.get_board_position_local_position(from_pos)).normalized()
+	var blow: Vector2 = (match_board.get_board_geometry().get_position_local(to_pos) - match_board.get_board_geometry().get_position_local(from_pos)).normalized()
 
 	if captured_color != 0:
 		match_board.get_piece_respawn_fragment_coordinator().play_capture_impact_effects(to_pos, light)

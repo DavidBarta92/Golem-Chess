@@ -8,13 +8,11 @@ extends RefCounted
 ## the rim shows them once that state's pieces are in place and its move has been
 ## played (show_state_points), so that a point won by a move comes off the golem
 ## after it has landed.
-## The tutorial plays without a host, so there it keeps the points itself: it
-## sets them (set_local_points), and each turn and crowning after that goes the
-## way the host would have it (begin_local_turn, place_crown_locally).
 
+## The player put the crown on a golem (sent to the host, which has the last
+## word); a scene that teaches or judges the crowning listens to this.
 signal crown_placed(piece_pos: Vector2, owner_color: int)
-## A golem of this colour was crowned: as the host's state says it, or placed
-## here in a match with no host (crown_placed comes only then).
+## A golem of this colour was crowned, as the host's state says it.
 signal crowned(owner_color: int)
 
 const CrownMeter = preload("res://Scripts/MatchView/CrownMeter.gd")
@@ -25,7 +23,6 @@ const CROWN_MARK_NAME: String = "CrownMark"
 const INVALID_BOARD_POS: Vector2 = Vector2(-1, -1)
 
 var match_board
-
 ## By colour (1 white, -1 black), as the rest of the match view keys things.
 var crown_points: Dictionary = {1: 0, -1: 0}
 var crown_points_required: int = 5
@@ -36,6 +33,9 @@ var opponent_meter: Control
 ## By colour: the rims stay where they are on the board whoever is playing.
 var rims: Dictionary = {}
 var _has_state: bool = false
+## The tutorial keeps the meters off the board until it explains them
+## (hold_back_meters); the points still follow the host meanwhile.
+var _held_back: bool = false
 ## Crowned in a state that the rim has not shown yet, by colour.
 var _crowning_due: Dictionary = {1: false, -1: false}
 
@@ -111,7 +111,7 @@ func follow_turn(turn_color: int, animate: bool) -> void:
 ## The rims catch up with the last state. `animate` is false for what should
 ## simply be there: the first state, and matches nobody is watching.
 func show_state_points(recent_effect_activations: Array, animate: bool) -> void:
-	if rims.is_empty():
+	if rims.is_empty() or _held_back:
 		return
 	for owner_color in rims:
 		var points: int = int(crown_points.get(owner_color, 0))
@@ -166,53 +166,16 @@ func _play_crowning(owner_color: int) -> void:
 			CrownMark.play_crowning(match_board, board_pos)
 			return
 
-## The points by colour, for a match with no host to report them. Also what
-## brings the meters up: until a host or this says something, there are none.
-func set_local_points(points_by_color: Dictionary, points_required: int) -> void:
-	crown_points_required = maxi(1, points_required)
-	for owner_color in [1, -1]:
-		crown_points[owner_color] = int(points_by_color.get(owner_color, 0))
-		crowned_this_turn[owner_color] = false
-		rims[owner_color].set_points_at_once(crown_points[owner_color], crown_points_required)
-	_has_state = true
-	refresh()
-
-## The point at the start of a turn, for a match with no host. A match that
-## shows no meters keeps no points.
-func begin_local_turn(owner_color: int) -> void:
-	if !_has_state or GameController.current_game_host != null:
-		return
-	crowned_this_turn[owner_color] = false
-	crown_points[owner_color] = mini(crown_points_required, int(crown_points.get(owner_color, 0)) + 1)
-	rims[owner_color].show_points(crown_points[owner_color])
-	refresh()
-
-## GameStateData.place_crown, for a match with no host.
-func place_crown_locally(owner_color: int, piece_pos: Vector2) -> void:
-	for position_value in match_board.piece_objects:
-		var worn_by: Piece = match_board.piece_objects[position_value] as Piece
-		if worn_by != null and worn_by.color == owner_color:
-			worn_by.has_crown = false
-	var piece: Piece = match_board.piece_objects[piece_pos] as Piece
-	piece.has_crown = true
-	piece.exhausted_this_turn = true
-	crown_points[owner_color] = 0
-	crowned_this_turn[owner_color] = true
-	match_board.display_board()
-	rims[owner_color].take_crown()
-	_play_crowning(owner_color)
-	crown_placed.emit(piece_pos, owner_color)
-	crowned.emit(owner_color)
-
 func has_crowned_this_turn(owner_color: int) -> bool:
 	return bool(crowned_this_turn.get(owner_color, false))
 
 func refresh() -> void:
 	if own_meter == null or !is_instance_valid(own_meter):
 		return
-	own_meter.visible = _has_state
-	opponent_meter.visible = _has_state
-	if _has_state:
+	var shown: bool = _has_state and !_held_back
+	own_meter.visible = shown
+	opponent_meter.visible = shown
+	if shown:
 		for owner_color in rims:
 			rims[owner_color].show_rim()
 	place_meters()
@@ -224,12 +187,21 @@ func refresh() -> void:
 ## Mirrors GameStateData.can_place_crown on the view's side; the host has the
 ## last word. Whether an animation is still playing changes too often to keep
 ## the meter's look in step with, so only the drop itself waits for it.
+## Off the board until `held` goes false again: the rims, the meters and the
+## crown to drag. Let go, they come up holding the points as they stand.
+func hold_back_meters(held: bool) -> void:
+	_held_back = held
+	if !held:
+		for owner_color in rims:
+			rims[owner_color].set_points_at_once(int(crown_points.get(owner_color, 0)), crown_points_required)
+	refresh()
+
 func can_place_crown_locally(owner_color: int, require_action_ready: bool = true) -> bool:
-	if !_has_state or !match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_PLACE_CROWN):
+	if !_has_state or _held_back or !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_PLACE_CROWN):
 		return false
 	if owner_color != match_board.get_controllable_color() or !match_board.can_control_current_turn():
 		return false
-	if require_action_ready and match_board.has_pending_visual_processes():
+	if require_action_ready and match_board.get_turn_flow_controller().has_pending_visual_processes():
 		return false
 	if bool(match_board.moved_piece_this_turn.get(owner_color, false)):
 		return false
@@ -239,10 +211,10 @@ func can_crown_piece_locally(owner_color: int, board_pos: Vector2) -> bool:
 	var piece: Piece = match_board.piece_objects.get(board_pos, null) as Piece
 	if piece == null or piece.color != owner_color or piece.is_respawn_locked() or piece.has_crown:
 		return false
-	return match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_PLACE_CROWN, {"piece_pos": board_pos})
+	return match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_PLACE_CROWN, {"piece_pos": board_pos})
 
 func get_drop_target(owner_color: int) -> Vector2:
-	if match_board.is_mouse_out():
+	if match_board.get_match_input_controller().is_mouse_out():
 		return INVALID_BOARD_POS
 	var board_pos: Vector2 = match_board.get_mouse_board_position()
 	if board_pos == INVALID_BOARD_POS or !can_crown_piece_locally(owner_color, board_pos):
@@ -260,15 +232,14 @@ func _on_crown_drag_released() -> void:
 		own_meter.return_crown()
 		return
 	SFXManager.play("stamp_glue")
-	if GameController.current_game_host == null:
-		place_crown_locally(owner_color, target)
-		return
 	if !GameController.send_action({
 		"type": "place_crown",
 		"player_id": BoardConfig.get_player_id_for_color(owner_color),
 		"piece_pos": target,
 	}):
 		own_meter.return_crown()
+		return
+	crown_placed.emit(target, owner_color)
 
 ## Puts the crown on a crowned golem's head, or takes it off one that lost it.
 ## Called whenever a holder is drawn or redrawn.

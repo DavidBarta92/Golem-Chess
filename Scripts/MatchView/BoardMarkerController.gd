@@ -2,27 +2,28 @@ extends RefCounted
 
 const INVALID_BOARD_POS = Vector2(-1, -1)
 
+const MOVE_OPTION_DOT_TEXTURE: Texture2D = preload("res://Assets/dot.svg")
+const MOVE_OPTION_DOT_SHADER: Shader = preload("res://Shaders/move_option_dot.gdshader")
+const MOVE_OPTION_DOT_CELL_WIDTH_RATIO: float = 0.58
+const MOVE_OPTION_DOT_SHADER_SPEED: float = 0.24
+const MOVE_OPTION_DOT_SHADER_GLOW_STRENGTH: float = 2.0
+const MOVE_OPTION_DOT_SHADER_EDGE_SOFTNESS: float = 0.85
+const MOVE_OPTION_DOT_SHADER_PULSE_MIN_SCALE: float = 0.88
+const MOVE_OPTION_DOT_SHADER_PULSE_MAX_SCALE: float = 1.18
+const MOVE_OPTION_DOT_SHADER_COLOR: Color = Color(1.0, 0.94, 0.78, 1.0)
+const LAST_MOVE_ARROW_COLOR: Color = Color(1.0, 0.88, 0.18, 1.0)
+const LAST_MOVE_ARROW_WIDTH: float = 3.0
+const LAST_MOVE_ARROW_ENDPOINT_INSET: float = 6.0
+const LAST_MOVE_ARROW_HEAD_LENGTH: float = 8.0
+const LAST_MOVE_ARROW_HEAD_HALF_WIDTH: float = 5.0
+
 var geometry
 var visuals
 var dots_node: Node
 var board_markers_node: Node2D
 var texture_holder_scene: PackedScene
-var move_option_dot_texture: Texture2D
-var move_option_dot_shader: Shader
 var cell_width: float = 36.0
 var board_size: int = 9
-var move_option_dot_cell_width_ratio: float = 0.58
-var move_option_dot_shader_speed: float = 0.24
-var move_option_dot_shader_glow_strength: float = 2.0
-var move_option_dot_shader_edge_softness: float = 0.85
-var move_option_dot_shader_pulse_min_scale: float = 0.88
-var move_option_dot_shader_pulse_max_scale: float = 1.18
-var move_option_dot_shader_color: Color = Color(1.0, 0.94, 0.78, 1.0)
-var last_move_arrow_color: Color = Color(1.0, 0.88, 0.18, 1.0)
-var last_move_arrow_width: float = 3.0
-var last_move_arrow_endpoint_inset: float = 6.0
-var last_move_arrow_head_length: float = 8.0
-var last_move_arrow_head_half_width: float = 5.0
 var enemy_attack_marker_color: Color = Color(1.0, 0.05, 0.03, 0.105)
 
 var piece_objects_provider: Callable
@@ -44,22 +45,8 @@ func configure(config: Dictionary) -> void:
 	dots_node = config.get("dots_node", dots_node)
 	board_markers_node = config.get("board_markers_node", board_markers_node)
 	texture_holder_scene = config.get("texture_holder_scene", texture_holder_scene)
-	move_option_dot_texture = config.get("move_option_dot_texture", move_option_dot_texture)
-	move_option_dot_shader = config.get("move_option_dot_shader", move_option_dot_shader)
 	cell_width = float(config.get("cell_width", cell_width))
 	board_size = int(config.get("board_size", board_size))
-	move_option_dot_cell_width_ratio = float(config.get("move_option_dot_cell_width_ratio", move_option_dot_cell_width_ratio))
-	move_option_dot_shader_speed = float(config.get("move_option_dot_shader_speed", move_option_dot_shader_speed))
-	move_option_dot_shader_glow_strength = float(config.get("move_option_dot_shader_glow_strength", move_option_dot_shader_glow_strength))
-	move_option_dot_shader_edge_softness = float(config.get("move_option_dot_shader_edge_softness", move_option_dot_shader_edge_softness))
-	move_option_dot_shader_pulse_min_scale = float(config.get("move_option_dot_shader_pulse_min_scale", move_option_dot_shader_pulse_min_scale))
-	move_option_dot_shader_pulse_max_scale = float(config.get("move_option_dot_shader_pulse_max_scale", move_option_dot_shader_pulse_max_scale))
-	move_option_dot_shader_color = config.get("move_option_dot_shader_color", move_option_dot_shader_color)
-	last_move_arrow_color = config.get("last_move_arrow_color", last_move_arrow_color)
-	last_move_arrow_width = float(config.get("last_move_arrow_width", last_move_arrow_width))
-	last_move_arrow_endpoint_inset = float(config.get("last_move_arrow_endpoint_inset", last_move_arrow_endpoint_inset))
-	last_move_arrow_head_length = float(config.get("last_move_arrow_head_length", last_move_arrow_head_length))
-	last_move_arrow_head_half_width = float(config.get("last_move_arrow_head_half_width", last_move_arrow_head_half_width))
 	enemy_attack_marker_color = config.get("enemy_attack_marker_color", enemy_attack_marker_color)
 
 	piece_objects_provider = config.get("piece_objects_provider", piece_objects_provider)
@@ -81,12 +68,12 @@ func show_dots(moves: Array, source_pos: Vector2 = INVALID_BOARD_POS) -> void:
 		var board_pos: Vector2 = BoardConfig.value_to_vector2(move_value, INVALID_BOARD_POS)
 		if !MoveRules.is_valid_position(board_pos):
 			continue
-		if texture_holder_scene == null or move_option_dot_texture == null:
+		if texture_holder_scene == null or MOVE_OPTION_DOT_TEXTURE == null:
 			continue
 
 		var holder = texture_holder_scene.instantiate()
 		dots_node.add_child(holder)
-		holder.texture = move_option_dot_texture
+		holder.texture = MOVE_OPTION_DOT_TEXTURE
 		holder.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		holder.material = dot_material
 		holder.scale = get_move_option_dot_scale(board_pos)
@@ -139,7 +126,7 @@ func add_last_move_arrow_marker() -> void:
 	if !get_piece_objects().has(to_pos):
 		return
 
-	add_board_arrow(from_pos, to_pos, last_move_arrow_color, last_move_arrow_width)
+	add_board_arrow(from_pos, to_pos, LAST_MOVE_ARROW_COLOR, LAST_MOVE_ARROW_WIDTH)
 
 func add_board_square_fill(board_pos: Vector2, marker_color: Color):
 	if visuals == null:
@@ -160,9 +147,9 @@ func add_board_arrow(from_pos: Vector2, to_pos: Vector2, arrow_color: Color, lin
 		to_pos,
 		arrow_color,
 		line_width,
-		last_move_arrow_endpoint_inset,
-		last_move_arrow_head_length,
-		last_move_arrow_head_half_width
+		LAST_MOVE_ARROW_ENDPOINT_INSET,
+		LAST_MOVE_ARROW_HEAD_LENGTH,
+		LAST_MOVE_ARROW_HEAD_HALF_WIDTH
 	)
 
 func get_move_option_dot_material(should_pulse: bool) -> ShaderMaterial:
@@ -177,28 +164,28 @@ func get_move_option_dot_material(should_pulse: bool) -> ShaderMaterial:
 
 func create_move_option_dot_material(pulse_strength: float) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
-	material.shader = move_option_dot_shader
-	material.set_shader_parameter("speed", move_option_dot_shader_speed)
-	material.set_shader_parameter("glow_strength", move_option_dot_shader_glow_strength)
-	material.set_shader_parameter("edge_softness", move_option_dot_shader_edge_softness)
-	material.set_shader_parameter("pulse_min_scale", move_option_dot_shader_pulse_min_scale)
-	material.set_shader_parameter("pulse_max_scale", move_option_dot_shader_pulse_max_scale)
-	material.set_shader_parameter("color", move_option_dot_shader_color)
+	material.shader = MOVE_OPTION_DOT_SHADER
+	material.set_shader_parameter("speed", MOVE_OPTION_DOT_SHADER_SPEED)
+	material.set_shader_parameter("glow_strength", MOVE_OPTION_DOT_SHADER_GLOW_STRENGTH)
+	material.set_shader_parameter("edge_softness", MOVE_OPTION_DOT_SHADER_EDGE_SOFTNESS)
+	material.set_shader_parameter("pulse_min_scale", MOVE_OPTION_DOT_SHADER_PULSE_MIN_SCALE)
+	material.set_shader_parameter("pulse_max_scale", MOVE_OPTION_DOT_SHADER_PULSE_MAX_SCALE)
+	material.set_shader_parameter("color", MOVE_OPTION_DOT_SHADER_COLOR)
 	material.set_shader_parameter("pulse_strength", pulse_strength)
 	return material
 
 func get_move_option_dot_scale(board_pos: Vector2) -> Vector2:
-	if move_option_dot_texture == null:
+	if MOVE_OPTION_DOT_TEXTURE == null:
 		return Vector2.ONE
-	var texture_size: Vector2 = move_option_dot_texture.get_size()
+	var texture_size: Vector2 = MOVE_OPTION_DOT_TEXTURE.get_size()
 	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
 		return Vector2.ONE
 	if geometry == null:
-		var fallback_scale: float = (cell_width * move_option_dot_cell_width_ratio) / texture_size.x
+		var fallback_scale: float = (cell_width * MOVE_OPTION_DOT_CELL_WIDTH_RATIO) / texture_size.x
 		return Vector2(fallback_scale, fallback_scale)
 
 	var cell_bounds: Rect2 = geometry.get_points_bounds_local(geometry.get_cell_polygon_local(board_pos))
-	var target_width: float = cell_width * move_option_dot_cell_width_ratio
+	var target_width: float = cell_width * MOVE_OPTION_DOT_CELL_WIDTH_RATIO
 	if cell_bounds.size.x <= 0.0 or cell_bounds.size.y <= 0.0:
 		var fallback_scale: float = target_width / texture_size.x
 		return Vector2(fallback_scale, fallback_scale)

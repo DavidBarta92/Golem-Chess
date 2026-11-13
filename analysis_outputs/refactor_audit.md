@@ -140,10 +140,130 @@ scores with throwaway evaluators at the default level 12, so its crown hold
 value uses aggression 0.55 whatever the AI's level; the sequential path (fewer
 plans) uses the real one.
 
-Still open from the size review: the MatchBoard forwarding stubs and the
-registry (MATCH_SCENE.md 1-2), Multiplayer.gd, NetworkGameHost serialization,
-LocalStateMutator's copies of the rules. The stamp size 168.7 x 229 is still
-written out in about ten other scripts.
+Then, also 2026-11-12 (not committed yet): the MatchBoard forwarding stubs
+(MATCH_SCENE.md item 1). 103 one-line forwarders removed from
+`Scenes/MatchBoard.gd` (1382 -> 1073 lines, 218 -> 115 functions); callers in 28
+files now call the controller through its getter. The registry's 31
+`Callable(match_board, "...")` entries now point at the controller itself,
+through `_created()` (makes the controller without syncing its config, so two
+configs never ask for each other). One deliberate behaviour fix: the registry's
+`create_board_tiles_callback` named a MatchBoard function that did not exist, so
+the local move-base effect never redrew the tiles; it now calls
+`BoardTileController.create_board_tiles`. TutorialController asks for
+`get_tutorial_match_adapter` / `get_turn_flow_controller` instead of the old
+method names. Checked: every script compiles; four puzzle plans (two winning,
+one wrong, one long) and the tutorial's first eight steps give identical logs
+on the old and new code at a fixed frame rate (past that the driver makes a move
+the step refuses, and the AI's thread timing takes over); an AI-vs-AI match in the real scene
+runs four minutes without an error.
+
+Then, also 2026-11-12 (not committed yet): the registry (MATCH_SCENE.md item 2).
+(a) 187 MatchBoard constants that only one controller read became that
+controller's constants, under their old names and with their comments; the
+controller's var, its configure line and the registry key went (the var
+defaults were often a second, wrong copy: ambient light energy 0.32 vs the real
+0.70, turn timer 300 vs 600). Registry 548 -> 361 config entries, MatchBoard 262
+-> 75 constants; the 19 files 10 316 -> 9 869 lines. Kept on the board: values
+several controllers share, values read off the board elsewhere, and the
+`@export` vars. The four attach-effect node names PieceVisualController removes
+now come from PieceEffectAnimator's constants. Story/README.md says where the
+board-fit constants are now. (b) A getter no longer reconfigures its
+controller: until the board's `_ready` ends every ask still syncs (the board
+makes the marker and effect nodes halfway through it); after `settle()` each
+controller is configured once, and the values that change mid-match are
+refreshed where they change - `MatchBoard.side`'s setter calls `apply_view()`
+(view colour and flipped view for geometry, piece visuals and the move,
+shatter and effect animators), the turn HUD's getter applies
+`_turn_hud_live_config()`, LocalStateMutator's getter keeps its explicit sync,
+and `create_piece_effects_node()` / `create_board_markers_node()` call
+`reconfigure_all()`. `get_controller_registry()` configures the registry only
+when it makes it. Measured in an AI-vs-AI match: about 10 configure() runs a
+frame -> 0, getter time ~0.40 -> ~0.13 ms a frame (debug build,
+instrumented).
+
+Checked: every script compiles; the 187 values identical with their types
+(old MatchBoard constant after configure()'s conversion vs the new controller
+constant); four puzzle plans give the old logs at a fixed frame rate (one
+jakub_01 run put a respawn on b7 instead of e7, five reruns on both trees all
+gave e7 - the same timing noise seen for item 1); two puzzles seen from black
+give the old logs and, on the board, the old screenshots (on the old code the
+move and shatter animators kept the old view until a move asked for them; now
+they turn at once); the tutorial's first eight steps as before; an AI-vs-AI
+match without an error. A first try missed one constant read inside a list in
+the registry (`[match_board.PIECE_ATTACH_GLOW_NAME, ...]`): it compiled and
+then threw ~1600 errors a puzzle, so check moves of names by grepping `.NAME`
+everywhere and by counting SCRIPT ERRORs, not by the compile and the logs.
+
+2026-11-13 (not committed yet): Multiplayer.gd and NetworkGameHost
+serialization, aimed at the per-player data planned next (Steam, print
+variants, own drawings). See Docs/Networking/NETWORKING.md.
+- `Scripts/Networking/PlayerProfile.gd`: name, codex and portrait in one
+  object, replacing `peer_player_names/decks/portraits` and the three loose
+  RPC arguments of `register_player_name` (now `register_player_profile`),
+  `enter_custom_server_room`, `create_custom_lobby` and `join_custom_lobby`.
+  `to_dict()` goes to the host; `to_public_dict()` (name, portrait) to boards.
+- Names and portraits no longer ride in every state: the host sends the public
+  profiles once from `initialize_game()` (`broadcast_player_profiles`, RPC
+  `receive_player_profiles`, `ServerStateUpdateController.apply_player_profiles`).
+  `get_player_names_by_id` / `get_player_portraits_by_id` became
+  `get_public_player_profiles`.
+- `Scripts/Networking/GameStateSerializer.gd` (static): the 16 serialize
+  functions moved out of NetworkGameHost (1161 -> 893 lines), bodies unchanged;
+  the unused `serialize_state()` and MatchBoard's unused 26-line
+  `update_from_server_state` forwarder dropped. CodexBridge calls the
+  serializer.
+- Checked: every script compiles; old (pre-change copy) vs new serialization
+  over 12 seeded random games, 3 600 legal actions (affix, move, page, end
+  turn), every viewer after every action: 10 836 states identical apart from
+  the dropped names and portraits (respawn queues never came up); a windowed
+  host + client match on localhost and a dedicated single-room server with two
+  clients, two turns each - both boards show both names and portraits and agree
+  after every action, the remaining player wins when the other leaves, no
+  errors; an AI-vs-AI match shows the AI names and portraits; two puzzles give
+  the old logs.
+- Needs a new `application/config/version` before release (RPCs added, renamed
+  and re-signed), and the dedicated server redeployed.
+- Found, left as it was: both hands and both codexes go to both boards.
+
+2026-11-13 (not committed yet): the local engine is gone. The tutorial and the
+puzzles played on a copy of the rules of their own (LocalStateMutator,
+LocalMoveFlowController and local branches in a dozen controllers), which knew
+fewer effects than the host. Now every board plays on a NetworkGameHost: the
+tutorial and a puzzle on one of their own with no network.
+- `TutorialMatchAdapter.start_local_host(setup, scripted_colors)` makes the
+  host with `Scripts/MatchState/LocalMatchLink.gd` in the Multiplayer node's
+  place; `apply_setup` puts a position on the host
+  (`NetworkGameHost.apply_setup`, `initialize_from_setup`) and the board shows
+  it without animating (the next state counts as the first).
+- Scripted sides (Grandpa, a puzzle's opponent) send their stamps and moves to
+  the host (`play_scripted_affix`, `play_scripted_move`) and may pass
+  (`pass_scripted_turn`, `NetworkGameHost.scripted_player_ids`, which also
+  keeps "no valid action" from losing them the game).
+- Puzzles judge their goals on the host's state, whose golems stay the same
+  objects through moves, captures and returns.
+- `CrownController.hold_back_meters`: the tutorial keeps the crown off the board
+  until its court step, as before. `crown_placed` and `codex_page_turned` now
+  come with a host too (only the tutorial and the puzzles listen).
+- Removed: LocalStateMutator (491 lines), LocalMoveFlowController (170), the
+  local branches and every function only they reached; the hand-slot
+  bookkeeping moved to StampHandStateController and the frozen-piece end-turn
+  check to MatchBoard. The touched files went from 23 918 to 22 980 lines, plus
+  the 40-line LocalMatchLink.
+- Checked: every script compiles; no removed name is named anywhere; the four
+  puzzle plans give the old logs (jakub_01 apart from where a captured golem
+  comes back, a random square drawn by the host instead); a puzzle restarted
+  in place sets up again and is solved; the tutorial driven through all 16
+  steps on the old and new code shows the same board at every step and ends
+  in the same win - the only difference the crown points before the court
+  step, which the host counts out of sight (the old meters did not exist yet);
+  screenshots of every step alike apart from animation timing and the active
+  effects grid, which now shows (as in a match) the War Drummer's icon; an
+  AI-vs-AI match and a networked host + client match without an error.
+
+Still open from the size review: turn changes found by polling
+(MATCH_SCENE.md item 4); AIStateSimulator is still the AI's own copy of the
+rules. The stamp size 168.7 x 229 is still written
+out in about ten other scripts.
 
 This is a first-pass audit focused on finding high-value cleanup and refactor targets after recent structural changes. It is intentionally conservative: items are grouped by risk so cleanup can start without destabilizing gameplay.
 

@@ -9,6 +9,10 @@ var codex_bridge = null
 ## Goes up with every broadcast. An action that leaves it unchanged was
 ## rejected, which is how the multiplayer node knows to resync the sender.
 var state_revision: int = 0
+## Players whose turns a script plays: the tutorial's Grandpa, a puzzle's
+## opponent. Having nothing to do does not lose them the game; the script hands
+## the turn back itself (pass_turn).
+var scripted_player_ids: Array[int] = []
 
 func _init(mp_node = null):
 	configure(mp_node)
@@ -22,7 +26,20 @@ func configure(mp_node = null) -> void:
 ## hands included, to user://codex_bridge and plays actions from a command file
 ## for either player. That has no place in a networked match or a release build.
 func should_use_codex_bridge() -> bool:
-	return OS.is_debug_build() and GameConfig.is_singleplayer
+	return OS.is_debug_build() and GameConfig.is_singleplayer and !is_local_scripted_match()
+
+## A board played with no network and no opponent of its own - the tutorial, a
+## puzzle (LocalMatchLink). It keeps no match log and no Codex bridge.
+func is_local_scripted_match() -> bool:
+	return multiplayer_node != null and multiplayer_node.has_method("is_local_scripted_match") and bool(multiplayer_node.is_local_scripted_match())
+
+## The board on this machine that shows the match, if there is one.
+func get_match_board():
+	if multiplayer_node == null or !is_instance_valid(multiplayer_node):
+		return null
+	if multiplayer_node.has_method("get_match_board"):
+		return multiplayer_node.get_match_board()
+	return multiplayer_node.get_node_or_null("MatchBoard")
 
 func initialize_game(board_data: Array):
 	for i in range(board_data.size()):
@@ -46,7 +63,123 @@ func initialize_game(board_data: Array):
 
 	DebugLog.info("NetworkGameHost: game state initialized")
 
+	broadcast_player_profiles()
 	broadcast_full_state()
+
+## A match that starts from a position rather than a deal: the tutorial, a
+## puzzle. Nothing is dealt and nothing goes over a network; the position, the
+## codexes and whose turn it is all come from `setup` (apply_setup).
+func initialize_from_setup(setup: Dictionary) -> void:
+	game_state.begin_crown_points(GameConfig.crown_points_required, GameConfig.crown_second_player_head_start)
+	broadcast_player_profiles()
+	apply_setup(setup)
+
+## Puts a position in place and sends it. The keys speak in colours, as a board
+## does (1 white, -1 black):
+##   "board"              rows of 1, -1 and 0: the golems, all bare; replaces
+##                        every golem, and with them the board's effects, the
+##                        last move and anyone waiting to come back
+##   "affixed_stamps"     [{"pos", "stamp_name", "turns_remaining", "exhausted"}]
+##   "crowned"            [pos]: golems that wear the crown
+##   "exhausted"          [pos]: golems that have done their part this turn
+##   "white_pages"        the codex page by page, empty slots and all, open on
+##                        the first; or "white_hand" (the open page) and
+##                        "white_deck" (the pages after it, three to a page)
+##   "black_pages" ...    the same for black
+##   "turn_color"         whose turn it is
+##   "crown_points"       {colour: points}
+##   "completed_turns"    {colour: turns played}, which decides whether the
+##                        first-turn rules still apply
+##   "reset_turn_state"   false keeps what this turn has seen so far
+## What it leaves out stays as it is. A game that was over is on again.
+func apply_setup(setup: Dictionary) -> void:
+	if setup.has("board"):
+		game_state.pieces.clear()
+		var rows: Array = setup.get("board", [])
+		for row in range(mini(rows.size(), BoardConfig.BOARD_SIZE)):
+			var row_data: Array = rows[row] if rows[row] is Array else []
+			for col in range(mini(row_data.size(), BoardConfig.BOARD_SIZE)):
+				var value: int = int(row_data[col])
+				if value != 0:
+					var pos := Vector2(row, col)
+					game_state.set_piece(pos, Piece.new(pos, 1 if value > 0 else -1))
+		game_state.pending_respawns = {0: [], 1: []}
+		game_state.board_effects.clear()
+		game_state.last_move = {}
+	for entry_value in setup.get("affixed_stamps", []):
+		var entry: Dictionary = entry_value
+		var pos: Vector2 = StampEffectResolver.as_vector2(entry.get("pos", Vector2(-1, -1)), Vector2(-1, -1))
+		var piece: Piece = game_state.get_piece(pos)
+		var stamp: Stamp = StampLibrary.duplicate_stamp(str(entry.get("stamp_name", "")))
+		if piece == null or stamp == null:
+			push_warning("Setup: no stamp %s for a golem on %s." % [entry.get("stamp_name", ""), pos])
+			continue
+		piece.affix_stamp(stamp, bool(entry.get("exhausted", false)))
+		piece.turns_remaining = int(entry.get("turns_remaining", stamp.duration))
+	for pos_value in setup.get("crowned", []):
+		var piece: Piece = game_state.get_piece(StampEffectResolver.as_vector2(pos_value, Vector2(-1, -1)))
+		if piece != null:
+			piece.has_crown = true
+	for pos_value in setup.get("exhausted", []):
+		var piece: Piece = game_state.get_piece(StampEffectResolver.as_vector2(pos_value, Vector2(-1, -1)))
+		if piece != null:
+			piece.exhausted_this_turn = true
+	for owner_color in [1, -1]:
+		var prefix: String = "white" if owner_color == 1 else "black"
+		var player_id: int = BoardConfig.get_player_id_for_color(owner_color)
+		if setup.has(prefix + "_pages"):
+			set_codex_pages(player_id, setup.get(prefix + "_pages", []))
+		elif setup.has(prefix + "_hand") or setup.has(prefix + "_deck"):
+			var pages: Array = DeckManager.create_codex_pages(setup.get(prefix + "_hand", game_state.player_hands.get(player_id, [])))
+			if setup.has(prefix + "_deck"):
+				var deck_pages: Array = DeckManager.create_codex_pages(setup.get(prefix + "_deck", []))
+				for page_index in range(1, DeckManager.CODEX_PAGE_COUNT):
+					pages[page_index] = deck_pages[page_index - 1] if page_index - 1 < deck_pages.size() else []
+			set_codex_pages(player_id, pages)
+	if setup.has("turn_color"):
+		game_state.current_turn_player = BoardConfig.get_player_id_for_color(int(setup.get("turn_color", 1)))
+	var crown_points: Dictionary = setup.get("crown_points", {})
+	for color_value in crown_points:
+		game_state.crown_points[BoardConfig.get_player_id_for_color(int(color_value))] = mini(int(crown_points[color_value]), game_state.crown_points_required)
+	var completed_turns: Dictionary = setup.get("completed_turns", {})
+	for color_value in completed_turns:
+		game_state.completed_turn_counts[BoardConfig.get_player_id_for_color(int(color_value))] = int(completed_turns[color_value])
+	if bool(setup.get("reset_turn_state", true)):
+		for player_id in [0, 1]:
+			game_state.affixed_stamp_this_turn[player_id] = false
+			game_state.affixed_stamp_count_this_turn[player_id] = 0
+			game_state.moved_piece_this_turn[player_id] = false
+			game_state.exchanged_stamp_this_turn[player_id] = false
+			game_state.played_stamp_hand_slots_this_turn[player_id] = []
+			game_state.exchanged_stamp_names_this_turn[player_id] = []
+			game_state.crowned_this_turn[player_id] = false
+			game_state.has_turned_page_this_turn[player_id] = false
+	game_state.game_over = false
+	game_state.winner_player = -1
+	game_state.win_condition = ""
+	game_state.recent_stamp_transfers.clear()
+	game_state.recent_stamp_expirations.clear()
+	game_state.recent_bomb_effects.clear()
+	game_state.recent_effect_activations.clear()
+	game_state.recent_pending_respawn_queues.clear()
+	game_state.recent_pending_respawn_arrivals.clear()
+	broadcast_full_state()
+
+## A codex exactly as given, open on its first page.
+func set_codex_pages(player_id: int, pages: Array) -> void:
+	var copied: Array = []
+	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
+		var page: Array[String] = []
+		if page_index < pages.size() and pages[page_index] is Array:
+			for stamp_name_value in pages[page_index]:
+				page.append(str(stamp_name_value))
+		copied.append(page)
+	game_state.player_codex_pages[player_id] = copied
+	game_state.player_initial_decks[player_id] = DeckManager.flatten_codex_pages(copied)
+	game_state.current_page_index[player_id] = 0
+	game_state.has_turned_page_this_turn[player_id] = false
+	game_state.spent_stamps[player_id] = []
+	game_state.sync_player_stamp_zones_from_codex(player_id)
 
 func process_codex_bridge_commands() -> bool:
 	if codex_bridge == null:
@@ -96,6 +229,8 @@ func setup_match_logging() -> void:
 	game_state.match_logger.start_match(game_state)
 
 func should_log_match() -> bool:
+	if is_local_scripted_match():
+		return false
 	if GameConfig.is_dedicated_server:
 		return true
 	if GameConfig.is_ai_vs_ai_batch:
@@ -404,6 +539,14 @@ func force_end_turn_for_ai(player_id: int) -> bool:
 	end_current_turn()
 	return true
 
+## A scripted player's turn handed back with nothing done - which the rules
+## let nobody else do (handle_end_turn).
+func pass_turn(player_id: int) -> bool:
+	if game_state.game_over or game_state.current_turn_player != player_id or !scripted_player_ids.has(player_id):
+		return false
+	end_current_turn()
+	return true
+
 func end_current_turn():
 	if game_state.game_over:
 		return
@@ -521,6 +664,8 @@ func finish_game(winner_player: int, win_condition: String = "unknown"):
 func finish_if_player_has_no_valid_turn(player_id: int) -> bool:
 	if game_state.game_over:
 		return false
+	if scripted_player_ids.has(player_id):
+		return false
 	if player_has_valid_turn_action(player_id):
 		return false
 
@@ -629,13 +774,13 @@ func broadcast_full_state():
 		DebugLog.info("State broadcast skipped: multiplayer node is no longer available")
 		return
 
-	var match_board = multiplayer_node.get_node_or_null("MatchBoard")
+	var match_board = get_match_board()
 	# A dedicated server has nobody at its own board. Playing the match out on
 	# it would also run the match-end flow there, which closes the connection
 	# and leaves the server sitting on the result screen.
 	if match_board != null and !GameConfig.is_dedicated_server:
 		var local_viewer_player_id: int = get_viewer_player_id_for_peer(1)
-		match_board.apply_server_state_data(serialize_state_for_player(local_viewer_player_id))
+		match_board.get_server_state_update_controller().apply_state_data(GameStateSerializer.serialize_for_player(game_state, local_viewer_player_id))
 
 	for peer_id in multiplayer_node.connected_peer_ids:
 		if peer_id != 1:
@@ -662,250 +807,28 @@ func send_state_to_peer(peer_id: int) -> void:
 	if multiplayer_node == null or !is_instance_valid(multiplayer_node):
 		return
 	var viewer_player_id: int = get_viewer_player_id_for_peer(peer_id)
-	multiplayer_node.receive_game_state.rpc_id(peer_id, serialize_state_for_player(viewer_player_id))
+	multiplayer_node.receive_game_state.rpc_id(peer_id, GameStateSerializer.serialize_for_player(game_state, viewer_player_id))
 
-func serialize_state() -> Dictionary:
-	return serialize_state_for_player(-1)
-
-func serialize_state_for_player(viewer_player_id: int) -> Dictionary:
-	var data = {
-		"viewer_player_id": viewer_player_id,
-		"pieces": [],
-		"hidden_stamps": [],
-		"player_hands": game_state.player_hands,
-		"player_decks_size": {
-			0: game_state.get_remaining_codex_stamp_count(0),
-			1: game_state.get_remaining_codex_stamp_count(1)
-		},
-		"player_codex_state": serialize_player_codex_state(),
-		"current_turn": game_state.current_turn_player,
-		"game_over": game_state.game_over,
-		"winner_player": game_state.winner_player,
-		"player_base_fields": serialize_player_base_fields(),
-		"board_effects": serialize_board_effects(),
-		"player_names": get_serialized_player_names(),
-		"player_portraits": get_serialized_player_portraits(),
-		"recent_stamp_transfers": serialize_recent_stamp_transfers(viewer_player_id),
-		"recent_stamp_expirations": serialize_recent_stamp_expirations(),
-		"recent_bomb_effects": serialize_recent_bomb_effects(),
-		"recent_effect_activations": serialize_recent_effect_activations(),
-		"recent_pending_respawn_queues": serialize_recent_pending_respawn_queues(),
-		"recent_pending_respawn_arrivals": serialize_recent_pending_respawn_arrivals(),
-		"last_move": serialize_last_move_for_player(viewer_player_id),
-		"turn_action_state": serialize_turn_action_state(),
-		"player_clock_seconds": game_state.player_clock_seconds.duplicate(),
-		# Both players' points are open information; where a crown is, is not
-		# when its golem is hidden from the viewer (has_crown below).
-		"crown_points": game_state.crown_points.duplicate(),
-		"crown_points_required": game_state.crown_points_required,
-	}
-
-	for pos in game_state.pieces:
-		var piece: Piece = game_state.pieces[pos]
-		var hidden_from_viewer: bool = viewer_player_id != -1 && !StampEffectResolver.is_piece_visible_to_player(piece, viewer_player_id)
-		if hidden_from_viewer:
-			append_hidden_stamp_data(data["hidden_stamps"], piece)
-		data.pieces.append({
-			"position": [pos.x, pos.y],
-			"color": piece.color,
-			"stamp_name": "" if hidden_from_viewer else (piece.affixed_stamp.stamp_name if piece.affixed_stamp else ""),
-			"turns_remaining": 0 if hidden_from_viewer else piece.turns_remaining,
-			"exhausted_this_turn": true if hidden_from_viewer else piece.exhausted_this_turn,
-			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
-			"hidden_from_viewer": hidden_from_viewer,
-			"protection_turns_remaining": -1 if hidden_from_viewer else piece.protection_turns_remaining,
-			"has_crown": false if hidden_from_viewer else piece.has_crown,
-		})
-
-	return data
-
-func serialize_turn_action_state() -> Dictionary:
-	return {
-		"affixed_stamp_this_turn": duplicate_bool_dictionary(game_state.affixed_stamp_this_turn),
-		"moved_piece_this_turn": duplicate_bool_dictionary(game_state.moved_piece_this_turn),
-		"exchanged_stamp_this_turn": duplicate_bool_dictionary(game_state.exchanged_stamp_this_turn),
-		"has_turned_page_this_turn": duplicate_bool_dictionary(game_state.has_turned_page_this_turn),
-		"affixed_stamp_count_this_turn": game_state.affixed_stamp_count_this_turn.duplicate(),
-		"completed_turn_counts": game_state.completed_turn_counts.duplicate(),
-		"crowned_this_turn": duplicate_bool_dictionary(game_state.crowned_this_turn),
-	}
-
-func serialize_player_codex_state() -> Dictionary:
-	return {
-		0: {
-			"current_page_index": game_state.get_current_page_index(0),
-			"page_counts": game_state.get_page_stamp_counts(0),
-			"pages": serialize_codex_pages_for_player(0),
-			"has_turned_page_this_turn": bool(game_state.has_turned_page_this_turn.get(0, false)),
-		},
-		1: {
-			"current_page_index": game_state.get_current_page_index(1),
-			"page_counts": game_state.get_page_stamp_counts(1),
-			"pages": serialize_codex_pages_for_player(1),
-			"has_turned_page_this_turn": bool(game_state.has_turned_page_this_turn.get(1, false)),
-		},
-	}
-
-func serialize_codex_pages_for_player(player_id: int) -> Array:
-	var serialized_pages: Array = []
-	var pages: Array = game_state.get_codex_pages(player_id)
-	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
-		var serialized_page: Array[String] = []
-		if page_index < pages.size() and pages[page_index] is Array:
-			for stamp_name_value in pages[page_index]:
-				serialized_page.append(str(stamp_name_value))
-		serialized_pages.append(serialized_page)
-	return serialized_pages
-
-func duplicate_bool_dictionary(source: Dictionary) -> Dictionary:
-	var output: Dictionary = {}
-	for key in source:
-		output[key] = bool(source[key])
-	return output
-
-func serialize_recent_stamp_transfers(_viewer_player_id: int) -> Array:
-	var serialized_transfers: Array = []
-	for transfer_value in game_state.recent_stamp_transfers:
-		var transfer: Dictionary = transfer_value
-		var source_pos: Vector2 = StampEffectResolver.as_vector2(transfer.get("source_pos", [-1, -1]), Vector2(-1, -1))
-		serialized_transfers.append({
-			"source_player_id": int(transfer.get("source_player_id", -1)),
-			"target_player_id": int(transfer.get("target_player_id", -1)),
-			"stamp_name": str(transfer.get("stamp_name", "")),
-			"source_zone": str(transfer.get("source_zone", "")),
-			"target_zone": str(transfer.get("target_zone", "")),
-			"source_pos": vector2_to_array(source_pos),
-		})
-
-	return serialized_transfers
-
-func serialize_recent_stamp_expirations() -> Array:
-	var serialized_expirations: Array = []
-	for expiration_value in game_state.recent_stamp_expirations:
-		var expiration: Dictionary = expiration_value
-		var piece_pos: Vector2 = StampEffectResolver.as_vector2(expiration.get("piece_pos", [-1, -1]), Vector2(-1, -1))
-		serialized_expirations.append({
-			"player_id": int(expiration.get("player_id", -1)),
-			"stamp_name": str(expiration.get("stamp_name", "")),
-			"piece_pos": vector2_to_array(piece_pos),
-		})
-
-	return serialized_expirations
-
-func serialize_recent_bomb_effects() -> Array:
-	var serialized_effects: Array = []
-	for effect_value in game_state.recent_bomb_effects:
-		var effect: Dictionary = effect_value
-		var serialized_squares: Array = []
-		var squares: Array = effect.get("squares", [])
-		for square_value in squares:
-			serialized_squares.append(vector2_to_array(StampEffectResolver.as_vector2(square_value, Vector2(-1, -1))))
-
-		var serialized_affected_positions: Array = []
-		var affected_positions: Array = effect.get("affected_positions", [])
-		for position_value in affected_positions:
-			serialized_affected_positions.append(vector2_to_array(StampEffectResolver.as_vector2(position_value, Vector2(-1, -1))))
-
-		serialized_effects.append({
-			"player_id": int(effect.get("player_id", -1)),
-			"stamp_name": str(effect.get("stamp_name", "")),
-			"source_pos": vector2_to_array(StampEffectResolver.as_vector2(effect.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
-			"squares": serialized_squares,
-			"affected_positions": serialized_affected_positions,
-		})
-
-	return serialized_effects
-
-func serialize_recent_effect_activations() -> Array:
-	var serialized_activations: Array = []
-	for activation_value in game_state.recent_effect_activations:
-		var activation: Dictionary = activation_value
-		serialized_activations.append({
-			"player_id": int(activation.get("player_id", -1)),
-			"stamp_name": str(activation.get("stamp_name", "")),
-			"source_pos": vector2_to_array(StampEffectResolver.as_vector2(activation.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
-		})
-
-	return serialized_activations
-
-func serialize_recent_pending_respawn_queues() -> Array:
-	var serialized_queues: Array = []
-	for queue_value in game_state.recent_pending_respawn_queues:
-		var queue_event: Dictionary = queue_value
-		serialized_queues.append({
-			"player_id": int(queue_event.get("player_id", -1)),
-			"piece_color": int(queue_event.get("piece_color", 0)),
-			"source_pos": vector2_to_array(StampEffectResolver.as_vector2(queue_event.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
-		})
-
-	return serialized_queues
-
-func serialize_recent_pending_respawn_arrivals() -> Array:
-	var serialized_arrivals: Array = []
-	for arrival_value in game_state.recent_pending_respawn_arrivals:
-		var arrival: Dictionary = arrival_value
-		serialized_arrivals.append({
-			"player_id": int(arrival.get("player_id", -1)),
-			"piece_color": int(arrival.get("piece_color", 0)),
-			"respawn_pos": vector2_to_array(StampEffectResolver.as_vector2(arrival.get("respawn_pos", Vector2(-1, -1)), Vector2(-1, -1))),
-			"respawn_cooldown_turns": int(arrival.get("respawn_cooldown_turns", 0)),
-		})
-
-	return serialized_arrivals
-
-func serialize_last_move_for_player(viewer_player_id: int) -> Dictionary:
-	if game_state.last_move.is_empty():
-		return {}
-
-	var mover_player_id: int = int(game_state.last_move.get("player_id", -1))
-	var is_mover_viewer: bool = viewer_player_id != -1 && mover_player_id == viewer_player_id
-	var from_pos: Vector2 = StampEffectResolver.as_vector2(game_state.last_move.get("from", Vector2(-1, -1)), Vector2(-1, -1))
-	var to_pos: Vector2 = StampEffectResolver.as_vector2(game_state.last_move.get("to", Vector2(-1, -1)), Vector2(-1, -1))
-	if from_pos == Vector2(-1, -1) or to_pos == Vector2(-1, -1) or from_pos == to_pos:
-		return {}
-
-	var moving_piece: Piece = game_state.get_piece(to_pos)
-	if moving_piece == null:
-		return {}
-
-	# A piece the viewer cannot see keeps its moves to itself - except the one
-	# that takes a piece of theirs. That capture happens in plain view, so the
-	# viewer is shown it: the attacker coming in and striking, then going out
-	# of sight again where it stands. Never with an arrow, which would go on
-	# pointing at it long after it had vanished.
-	var hidden_after_capture: bool = false
-	if viewer_player_id != -1 && !is_mover_viewer:
-		var visible_now: bool = StampEffectResolver.is_piece_visible_to_player(moving_piece, viewer_player_id)
-		if !visible_now or !bool(game_state.last_move.get("visible_to_enemy", true)):
-			if visible_now or int(game_state.last_move.get("captured_piece_color", 0)) == 0:
-				return {}
-			hidden_after_capture = true
-
-	var serialized_last_move := {
-		"from": vector2_to_array(from_pos),
-		"to": vector2_to_array(to_pos),
-		"player_id": mover_player_id,
-		"piece_color": int(game_state.last_move.get("piece_color", StampEffectResolver.get_color_for_player_id(mover_player_id))),
-		"visible_to_enemy": bool(game_state.last_move.get("visible_to_enemy", true)),
-		"show_arrow": !is_mover_viewer and !hidden_after_capture,
-	}
-	if hidden_after_capture:
-		serialized_last_move["hidden_after_capture"] = true
-		serialized_last_move["piece_stamp_name"] = moving_piece.affixed_stamp.stamp_name if moving_piece.affixed_stamp != null else ""
-	if int(game_state.last_move.get("captured_piece_color", 0)) != 0:
-		serialized_last_move["captured_piece_color"] = int(game_state.last_move.get("captured_piece_color", 0))
-		serialized_last_move["captured_stamp_name"] = str(game_state.last_move.get("captured_stamp_name", ""))
-	return serialized_last_move
-
-func append_hidden_stamp_data(hidden_stamps: Array, piece: Piece) -> void:
-	if piece == null or piece.affixed_stamp == null:
+## Sends both players' public profiles (PlayerProfile.to_public_dict: the name
+## and the portrait) to every board, this machine's included. Once, as the
+## match starts: they do not change, so they stay out of the state that goes
+## out after every action. A board keeps them to the end, so the result still
+## names a player who left.
+func broadcast_player_profiles() -> void:
+	if multiplayer_node == null or !is_instance_valid(multiplayer_node):
 		return
-
-	hidden_stamps.append({
-		"stamp_name": piece.affixed_stamp.stamp_name,
-		"turns_remaining": piece.turns_remaining,
-		"owner_player_id": BoardConfig.get_player_id_for_color(piece.color),
-	})
+	var profiles: Dictionary = {
+		0: PlayerProfile.default_public_dict(0),
+		1: PlayerProfile.default_public_dict(1),
+	}
+	if multiplayer_node.has_method("get_public_player_profiles"):
+		profiles = multiplayer_node.get_public_player_profiles()
+	var match_board = get_match_board()
+	if match_board != null and !GameConfig.is_dedicated_server:
+		match_board.get_server_state_update_controller().apply_player_profiles(profiles)
+	for peer_id in multiplayer_node.connected_peer_ids:
+		if peer_id != 1:
+			multiplayer_node.receive_player_profiles.rpc_id(peer_id, profiles)
 
 func get_viewer_player_id_for_peer(peer_id: int) -> int:
 	if multiplayer_node == null or !is_instance_valid(multiplayer_node):
@@ -913,53 +836,6 @@ func get_viewer_player_id_for_peer(peer_id: int) -> int:
 	if multiplayer_node.peer_player_ids.has(peer_id):
 		return int(multiplayer_node.peer_player_ids[peer_id])
 	return 0
-
-func serialize_player_base_fields() -> Dictionary:
-	return {
-		0: vector2_to_array(StampEffectResolver.get_base_field_for_player(game_state, 0)),
-		1: vector2_to_array(StampEffectResolver.get_base_field_for_player(game_state, 1)),
-	}
-
-func serialize_board_effects() -> Array:
-	var serialized_effects: Array = []
-	for effect_value in game_state.board_effects:
-		var effect: Dictionary = effect_value
-		var serialized_squares: Array = []
-		var squares: Array = effect.get("squares", [])
-		for square_value in squares:
-			serialized_squares.append(vector2_to_array(StampEffectResolver.as_vector2(square_value, Vector2(-1, -1))))
-
-		serialized_effects.append({
-			"effect_type": str(effect.get("effect_type", "")),
-			"owner_player_id": int(effect.get("owner_player_id", -1)),
-			"target_player_id": int(effect.get("target_player_id", -1)),
-			"squares": serialized_squares,
-			"turns_remaining": int(effect.get("turns_remaining", -1)),
-			"source_pos": vector2_to_array(StampEffectResolver.as_vector2(effect.get("source_pos", Vector2(-1, -1)), Vector2(-1, -1))),
-		})
-
-	return serialized_effects
-
-func vector2_to_array(value: Vector2) -> Array:
-	return [value.x, value.y]
-
-func get_serialized_player_names() -> Dictionary:
-	if multiplayer_node != null && multiplayer_node.has_method("get_player_names_by_id"):
-		return multiplayer_node.get_player_names_by_id()
-
-	return {
-		0: "Player",
-		1: "Player",
-	}
-
-func get_serialized_player_portraits() -> Dictionary:
-	if multiplayer_node != null && multiplayer_node.has_method("get_player_portraits_by_id"):
-		return multiplayer_node.get_player_portraits_by_id()
-
-	return {
-		0: PortraitLibrary.get_default_portrait_for_player_id(0).to_dict(),
-		1: PortraitLibrary.get_default_portrait_for_player_id(1).to_dict(),
-	}
 
 func duplicate_player_stamp_list(source) -> Array:
 	var output: Array = []

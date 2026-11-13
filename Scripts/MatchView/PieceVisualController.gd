@@ -8,6 +8,25 @@ const CONTACT_SHADOW_Z_INDEX: int = BoardGridOverlay.Z_INDEX - 1
 ## shows in front of the feet is what stands the piece on the board.
 const CONTACT_SHADOW_DROP: float = 0.45
 
+const DEFAULT_PIECE_BOTTOM_INSET: float = 1.5
+const PIECE_PERSPECTIVE_SCALE_VARIATION: float = 0.10
+const PIECE_SHADOW_NAME: String = "PieceShadow"
+const PIECE_SHADOW_LIGHT_TEXTURE_SCALE: float = 0.22
+const PIECE_SHADOW_LIGHT_SOURCE_OFFSET: float = 8.0
+const PIECE_SHADOW_LIGHT_COLOR: Color = Color(1.0, 0.92, 0.72, 1.0)
+const PIECE_SHADOW_LIGHT_SHADOW_COLOR: Color = Color(0.0, 0.0, 0.0, 0.88)
+const PIECE_SHADOW_LIGHT_SHADOW_SMOOTH: float = 0.0
+const PIECE_LIGHT_OCCLUDER_NAME: String = "PieceLightOccluder"
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_WIDTH_FACTOR: float = 0.68
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_BOTTOM_INSET_FACTOR: float = 0.05
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET: Vector2 = Vector2.ZERO
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_SEGMENTS: int = 18
+const PIECE_FOOTPRINT_ALPHA_THRESHOLD: float = 0.04
+const PIECE_FOOTPRINT_WIDTH_SCAN_START_RATIO: float = 0.6666667
+const PIECE_FOOTPRINT_STABLE_WIDTH_BAND_RATIO: float = 0.25
+const PIECE_FOOTPRINT_STABLE_ROW_SAMPLE_COUNT: int = 8
+const PIECE_LIGHT_OCCLUDER_FOOTPRINT_MIN_RADIUS_BOUNDS_FACTOR: float = 0.22
+
 var geometry
 var board_size: int = BoardConfig.BOARD_SIZE
 var cell_width: int = BoardConfig.CELL_WIDTH
@@ -18,16 +37,8 @@ var default_piece_texture: Texture2D
 var own_default_piece_texture: Texture2D
 var default_piece_visual_height: float = 24.0
 var piece_auto_fit_height_threshold: float = 48.0
-var default_piece_bottom_inset: float = 1.5
-var piece_perspective_scale_variation: float = 0.10
 
-var piece_shadow_name: String = "PieceShadow"
-var piece_shadow_light_texture_scale: float = 0.22
-var piece_shadow_light_source_offset: float = 8.0
 var piece_shadow_light_energy: float = 0.30
-var piece_shadow_light_color: Color = Color(1.0, 0.92, 0.72, 1.0)
-var piece_shadow_light_shadow_color: Color = Color(0.0, 0.0, 0.0, 0.88)
-var piece_shadow_light_shadow_smooth: float = 0.0
 var piece_ground_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.30)
 var piece_ground_shadow_radius_scale: Vector2 = Vector2(0.92, 0.72)
 var piece_ground_shadow_edge_softness: float = 0.10
@@ -36,17 +47,7 @@ var contact_shadow_material: ShaderMaterial
 var board_light_receive_mask: int = 1
 var piece_light_occluder_mask: int = 1
 
-var piece_light_occluder_name: String = "PieceLightOccluder"
-var piece_light_occluder_footprint_width_factor: float = 0.68
 var piece_light_occluder_footprint_fixed_radius_y: float = 3.0
-var piece_light_occluder_footprint_bottom_inset_factor: float = 0.05
-var piece_light_occluder_footprint_offset: Vector2 = Vector2.ZERO
-var piece_light_occluder_footprint_segments: int = 18
-var piece_footprint_alpha_threshold: float = 0.04
-var piece_footprint_width_scan_start_ratio: float = 0.6666667
-var piece_footprint_stable_width_band_ratio: float = 0.25
-var piece_footprint_stable_row_sample_count: int = 8
-var piece_light_occluder_footprint_min_radius_bounds_factor: float = 0.22
 
 var piece_footprint_metrics_cache: Dictionary = {}
 
@@ -65,16 +66,8 @@ func configure(config: Dictionary) -> void:
 	own_default_piece_texture = config.get("own_default_piece_texture", own_default_piece_texture)
 	default_piece_visual_height = float(config.get("default_piece_visual_height", default_piece_visual_height))
 	piece_auto_fit_height_threshold = float(config.get("piece_auto_fit_height_threshold", piece_auto_fit_height_threshold))
-	default_piece_bottom_inset = float(config.get("default_piece_bottom_inset", default_piece_bottom_inset))
-	piece_perspective_scale_variation = float(config.get("piece_perspective_scale_variation", piece_perspective_scale_variation))
 
-	piece_shadow_name = str(config.get("piece_shadow_name", piece_shadow_name))
-	piece_shadow_light_texture_scale = float(config.get("piece_shadow_light_texture_scale", piece_shadow_light_texture_scale))
-	piece_shadow_light_source_offset = float(config.get("piece_shadow_light_source_offset", piece_shadow_light_source_offset))
 	piece_shadow_light_energy = float(config.get("piece_shadow_light_energy", piece_shadow_light_energy))
-	piece_shadow_light_color = config.get("piece_shadow_light_color", piece_shadow_light_color)
-	piece_shadow_light_shadow_color = config.get("piece_shadow_light_shadow_color", piece_shadow_light_shadow_color)
-	piece_shadow_light_shadow_smooth = float(config.get("piece_shadow_light_shadow_smooth", piece_shadow_light_shadow_smooth))
 	piece_ground_shadow_color = config.get("piece_ground_shadow_color", piece_ground_shadow_color)
 	piece_ground_shadow_radius_scale = config.get("piece_ground_shadow_radius_scale", piece_ground_shadow_radius_scale)
 	piece_ground_shadow_edge_softness = float(config.get("piece_ground_shadow_edge_softness", piece_ground_shadow_edge_softness))
@@ -83,17 +76,7 @@ func configure(config: Dictionary) -> void:
 	piece_light_receive_mask = int(config.get("piece_light_receive_mask", piece_light_receive_mask))
 	piece_effect_light_receive_mask = int(config.get("piece_effect_light_receive_mask", piece_effect_light_receive_mask))
 
-	piece_light_occluder_name = str(config.get("piece_light_occluder_name", piece_light_occluder_name))
-	piece_light_occluder_footprint_width_factor = float(config.get("piece_light_occluder_footprint_width_factor", piece_light_occluder_footprint_width_factor))
 	piece_light_occluder_footprint_fixed_radius_y = float(config.get("piece_light_occluder_footprint_fixed_radius_y", piece_light_occluder_footprint_fixed_radius_y))
-	piece_light_occluder_footprint_bottom_inset_factor = float(config.get("piece_light_occluder_footprint_bottom_inset_factor", piece_light_occluder_footprint_bottom_inset_factor))
-	piece_light_occluder_footprint_offset = config.get("piece_light_occluder_footprint_offset", piece_light_occluder_footprint_offset)
-	piece_light_occluder_footprint_segments = int(config.get("piece_light_occluder_footprint_segments", piece_light_occluder_footprint_segments))
-	piece_footprint_alpha_threshold = float(config.get("piece_footprint_alpha_threshold", piece_footprint_alpha_threshold))
-	piece_footprint_width_scan_start_ratio = float(config.get("piece_footprint_width_scan_start_ratio", piece_footprint_width_scan_start_ratio))
-	piece_footprint_stable_width_band_ratio = float(config.get("piece_footprint_stable_width_band_ratio", piece_footprint_stable_width_band_ratio))
-	piece_footprint_stable_row_sample_count = int(config.get("piece_footprint_stable_row_sample_count", piece_footprint_stable_row_sample_count))
-	piece_light_occluder_footprint_min_radius_bounds_factor = float(config.get("piece_light_occluder_footprint_min_radius_bounds_factor", piece_light_occluder_footprint_min_radius_bounds_factor))
 	if config.has("attach_effect_names"):
 		attach_effect_names.clear()
 		for effect_name_value in config.get("attach_effect_names", []):
@@ -127,7 +110,7 @@ func get_visual_transform_for_texture(texture_value: Texture2D, board_pos: Vecto
 			var cell_bounds: Rect2 = geometry.get_cell_rect_local(board_pos) if geometry != null else Rect2()
 			var cell_bottom_offset: float = cell_bounds.end.y - get_position_local(board_pos).y
 			visual_transform["scale"] = Vector2.ONE * visual_scale
-			visual_transform["offset"] = Vector2(0.0, (cell_bottom_offset - default_piece_bottom_inset) / visual_scale - (texture_size.y * 0.5))
+			visual_transform["offset"] = Vector2(0.0, (cell_bottom_offset - DEFAULT_PIECE_BOTTOM_INSET) / visual_scale - (texture_size.y * 0.5))
 		return visual_transform
 
 	visual_transform["scale"] = Vector2.ONE * perspective_scale
@@ -157,7 +140,7 @@ func get_perspective_scale(board_pos: Vector2) -> float:
 
 	var row_delta_from_center: float = (center_row - board_pos.x) * float(view_color)
 	var normalized_distance: float = clampf(row_delta_from_center / center_row, -1.0, 1.0)
-	return 1.0 + normalized_distance * piece_perspective_scale_variation
+	return 1.0 + normalized_distance * PIECE_PERSPECTIVE_SCALE_VARIATION
 
 ## Where a square sits in the drawing order: the nearer the viewer, the higher.
 ## Ranks are spaced `BoardConfig.DEPTH_Z_STRIDE` apart rather than one, so there
@@ -220,24 +203,24 @@ func apply_shadow(
 		return
 
 	var shadow := PointLight2D.new()
-	shadow.name = piece_shadow_name
+	shadow.name = PIECE_SHADOW_NAME
 	shadow.top_level = true
 	shadow.texture = shadow_texture
-	shadow.texture_scale = piece_shadow_light_texture_scale
-	shadow.color = piece_shadow_light_color
+	shadow.texture_scale = PIECE_SHADOW_LIGHT_TEXTURE_SCALE
+	shadow.color = PIECE_SHADOW_LIGHT_COLOR
 	shadow.energy = piece_shadow_light_energy
 	shadow.range_item_cull_mask = board_light_receive_mask
 	shadow.shadow_enabled = true
-	shadow.shadow_color = piece_shadow_light_shadow_color
+	shadow.shadow_color = PIECE_SHADOW_LIGHT_SHADOW_COLOR
 	shadow.shadow_filter = Light2D.SHADOW_FILTER_NONE
-	shadow.shadow_filter_smooth = piece_shadow_light_shadow_smooth
+	shadow.shadow_filter_smooth = PIECE_SHADOW_LIGHT_SHADOW_SMOOTH
 	shadow.shadow_item_cull_mask = piece_light_occluder_mask
 	holder.add_child(shadow)
 
 	var light_source_y_direction: float = -float(view_color)
 	if piece_color * own_color < 0:
 		light_source_y_direction *= -1.0
-	shadow.global_position = holder.to_global(footprint_center) + Vector2(0.0, piece_shadow_light_source_offset * light_source_y_direction)
+	shadow.global_position = holder.to_global(footprint_center) + Vector2(0.0, PIECE_SHADOW_LIGHT_SOURCE_OFFSET * light_source_y_direction)
 	add_contact_shadow(holder, footprint)
 
 ## The dark rim on the board around a piece's feet. The cast shadow above is too
@@ -279,7 +262,7 @@ func remove_shadow(holder: Sprite2D) -> void:
 	if holder == null or !is_instance_valid(holder):
 		return
 
-	var existing_shadow: Node = holder.get_node_or_null(piece_shadow_name)
+	var existing_shadow: Node = holder.get_node_or_null(PIECE_SHADOW_NAME)
 	if existing_shadow != null:
 		existing_shadow.free()
 	var existing_contact: Node = holder.get_node_or_null(CONTACT_SHADOW_NAME)
@@ -289,7 +272,7 @@ func remove_shadow(holder: Sprite2D) -> void:
 func get_shadow_light(holder: Sprite2D) -> PointLight2D:
 	if holder == null or !is_instance_valid(holder):
 		return null
-	return holder.get_node_or_null(piece_shadow_name) as PointLight2D
+	return holder.get_node_or_null(PIECE_SHADOW_NAME) as PointLight2D
 
 func apply_light_occluder(holder: Sprite2D, has_piece: bool) -> void:
 	remove_light_occluder(holder)
@@ -304,10 +287,10 @@ func apply_light_occluder(holder: Sprite2D, has_piece: bool) -> void:
 		return
 
 	var occluder := LightOccluder2D.new()
-	occluder.name = piece_light_occluder_name
+	occluder.name = PIECE_LIGHT_OCCLUDER_NAME
 	occluder.occluder_light_mask = piece_light_occluder_mask
 
-	var segments: int = maxi(8, piece_light_occluder_footprint_segments)
+	var segments: int = maxi(8, PIECE_LIGHT_OCCLUDER_FOOTPRINT_SEGMENTS)
 	var footprint_polygon := PackedVector2Array()
 	for point_index in segments:
 		var angle: float = TAU * float(point_index) / float(segments)
@@ -323,7 +306,7 @@ func remove_light_occluder(holder: Sprite2D) -> void:
 	if holder == null or !is_instance_valid(holder):
 		return
 
-	var existing_occluder: Node = holder.get_node_or_null(piece_light_occluder_name)
+	var existing_occluder: Node = holder.get_node_or_null(PIECE_LIGHT_OCCLUDER_NAME)
 	if existing_occluder != null:
 		existing_occluder.free()
 
@@ -344,13 +327,13 @@ func get_footprint_geometry(holder: Sprite2D) -> Dictionary:
 	var bottom_y: float = float(metrics.get("bottom_y", texture_size.y - 1.0))
 	var bounds_width: float = maxf(1.0, float(metrics.get("right_x", texture_size.x - 1.0)) - float(metrics.get("left_x", 0.0)) + 1.0)
 	var radius_x: float = maxf(
-		lower_width * piece_light_occluder_footprint_width_factor * 0.5,
-		bounds_width * piece_light_occluder_footprint_min_radius_bounds_factor
+		lower_width * PIECE_LIGHT_OCCLUDER_FOOTPRINT_WIDTH_FACTOR * 0.5,
+		bounds_width * PIECE_LIGHT_OCCLUDER_FOOTPRINT_MIN_RADIUS_BOUNDS_FACTOR
 	)
 	var radius_y: float = get_footprint_fixed_radius_y(holder)
 	var center := Vector2(
-		holder.offset.x + lower_center_x - texture_size.x * 0.5 + piece_light_occluder_footprint_offset.x,
-		holder.offset.y + bottom_y - texture_size.y * 0.5 - radius_y + piece_light_occluder_footprint_offset.y
+		holder.offset.x + lower_center_x - texture_size.x * 0.5 + PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET.x,
+		holder.offset.y + bottom_y - texture_size.y * 0.5 - radius_y + PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET.y
 	)
 
 	return {
@@ -367,17 +350,17 @@ func get_footprint_fixed_radius_y(holder: Sprite2D) -> float:
 	return piece_light_occluder_footprint_fixed_radius_y / scale_y
 
 func get_fallback_footprint_geometry(holder: Sprite2D, texture_size: Vector2) -> Dictionary:
-	var radius_x: float = texture_size.x * piece_light_occluder_footprint_width_factor * 0.5
+	var radius_x: float = texture_size.x * PIECE_LIGHT_OCCLUDER_FOOTPRINT_WIDTH_FACTOR * 0.5
 	var radius_y: float = get_footprint_fixed_radius_y(holder)
 	if radius_x <= 0.0 or radius_y <= 0.0:
 		return {"empty": true}
 
-	var visual_bottom_y: float = holder.offset.y + texture_size.y * (0.5 - piece_light_occluder_footprint_bottom_inset_factor)
+	var visual_bottom_y: float = holder.offset.y + texture_size.y * (0.5 - PIECE_LIGHT_OCCLUDER_FOOTPRINT_BOTTOM_INSET_FACTOR)
 	return {
 		"empty": false,
 		"center": Vector2(
-			holder.offset.x + piece_light_occluder_footprint_offset.x,
-			visual_bottom_y - radius_y + piece_light_occluder_footprint_offset.y
+			holder.offset.x + PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET.x,
+			visual_bottom_y - radius_y + PIECE_LIGHT_OCCLUDER_FOOTPRINT_OFFSET.y
 		),
 		"radius_x": radius_x,
 		"radius_y": radius_y,
@@ -424,14 +407,14 @@ func measure_footprint_metrics(texture_value: Texture2D) -> Dictionary:
 	var fallback_widest_max_x: int = -1
 	var fallback_widest_y: int = 0
 	var fallback_widest_width: int = 0
-	var lower_scan_start_y: int = clampi(int(floor(float(image_height) * piece_footprint_width_scan_start_ratio)), 0, image_height - 1)
+	var lower_scan_start_y: int = clampi(int(floor(float(image_height) * PIECE_FOOTPRINT_WIDTH_SCAN_START_RATIO)), 0, image_height - 1)
 	var visible_rows: Array[Dictionary] = []
 
 	for y in range(image_height - 1, -1, -1):
 		var row_min_x: int = image_width
 		var row_max_x: int = -1
 		for x in range(image_width):
-			if image.get_pixel(x, y).a <= piece_footprint_alpha_threshold:
+			if image.get_pixel(x, y).a <= PIECE_FOOTPRINT_ALPHA_THRESHOLD:
 				continue
 
 			row_min_x = mini(row_min_x, x)
@@ -475,7 +458,7 @@ func measure_footprint_metrics(texture_value: Texture2D) -> Dictionary:
 	var alpha_height: int = max_y - min_y + 1
 	var stable_band_start_y: int = maxi(
 		lower_scan_start_y,
-		clampi(int(floor(float(max_y) - float(alpha_height) * piece_footprint_stable_width_band_ratio)), min_y, max_y)
+		clampi(int(floor(float(max_y) - float(alpha_height) * PIECE_FOOTPRINT_STABLE_WIDTH_BAND_RATIO)), min_y, max_y)
 	)
 	for row: Dictionary in visible_rows:
 		if int(row.get("y", 0)) >= stable_band_start_y:
@@ -492,7 +475,7 @@ func measure_footprint_metrics(texture_value: Texture2D) -> Dictionary:
 		return width_a > width_b
 	)
 
-	var sample_count: int = mini(piece_footprint_stable_row_sample_count, stable_rows.size())
+	var sample_count: int = mini(PIECE_FOOTPRINT_STABLE_ROW_SAMPLE_COUNT, stable_rows.size())
 	var width_sum: float = 0.0
 	var weighted_center_sum: float = 0.0
 	var weight_sum: float = 0.0
@@ -523,7 +506,7 @@ func set_light_occluder_enabled(holder: Sprite2D, is_enabled: bool) -> void:
 	if holder == null or !is_instance_valid(holder):
 		return
 
-	var occluder: LightOccluder2D = holder.get_node_or_null(piece_light_occluder_name) as LightOccluder2D
+	var occluder: LightOccluder2D = holder.get_node_or_null(PIECE_LIGHT_OCCLUDER_NAME) as LightOccluder2D
 	if occluder != null:
 		occluder.occluder_light_mask = piece_light_occluder_mask if is_enabled else 0
 

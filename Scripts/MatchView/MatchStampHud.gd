@@ -1,13 +1,14 @@
 extends RefCounted
 
+const DECK_EXTRA_LEFT_OFFSET: float = 200.0
+const TOP_STAMP_HAND_MARGIN: float = -28
+
 var stamp_visual_scene: PackedScene
 var stamp_ui_size: Vector2 = Vector2(168.7, 229)
 var player_hand_size: int = DeckManager.HAND_SIZE
 var stamp_hand_scale: float = 0.648
 var deck_stamp_scale: float = 0.648
-var deck_extra_left_offset: float = 200.0
 var stamp_ui_gap: float = 10.0
-var top_stamp_hand_margin: float = -28.0
 var bottom_stamp_hand_margin: float = 34.0
 var codex_hand_vertical_nudge: float = 24.0
 
@@ -17,9 +18,7 @@ func configure(config: Dictionary) -> void:
 	player_hand_size = int(config.get("player_hand_size", player_hand_size))
 	stamp_hand_scale = float(config.get("stamp_hand_scale", stamp_hand_scale))
 	deck_stamp_scale = float(config.get("deck_stamp_scale", deck_stamp_scale))
-	deck_extra_left_offset = float(config.get("deck_extra_left_offset", deck_extra_left_offset))
 	stamp_ui_gap = float(config.get("stamp_ui_gap", stamp_ui_gap))
-	top_stamp_hand_margin = float(config.get("top_stamp_hand_margin", top_stamp_hand_margin))
 	bottom_stamp_hand_margin = float(config.get("bottom_stamp_hand_margin", bottom_stamp_hand_margin))
 
 func get_hand_layout_size() -> Vector2:
@@ -32,7 +31,7 @@ func get_stamp_home_position(index: int) -> Vector2:
 	return Vector2(index * get_hand_step(), 0)
 
 func get_deck_home_position() -> Vector2:
-	return Vector2(-(stamp_ui_size.x * deck_stamp_scale) - (stamp_ui_gap * 2.0) - deck_extra_left_offset, 0)
+	return Vector2(-(stamp_ui_size.x * deck_stamp_scale) - (stamp_ui_gap * 2.0) - DECK_EXTRA_LEFT_OFFSET, 0)
 
 func configure_hand_container(hand_node: Control, is_top: bool) -> void:
 	if hand_node == null or !is_instance_valid(hand_node):
@@ -54,8 +53,8 @@ func configure_hand_container(hand_node: Control, is_top: bool) -> void:
 	if is_top:
 		hand_node.anchor_top = 0.0
 		hand_node.anchor_bottom = 0.0
-		hand_node.offset_top = top_stamp_hand_margin
-		hand_node.offset_bottom = top_stamp_hand_margin + scaled_stamp_size.y
+		hand_node.offset_top = TOP_STAMP_HAND_MARGIN
+		hand_node.offset_bottom = TOP_STAMP_HAND_MARGIN + scaled_stamp_size.y
 	else:
 		hand_node.anchor_top = 1.0
 		hand_node.anchor_bottom = 1.0

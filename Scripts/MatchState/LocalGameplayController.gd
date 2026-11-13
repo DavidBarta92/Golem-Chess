@@ -7,27 +7,6 @@ func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
 	board_size = int(config.get("board_size", board_size))
 
-func refill_played_stamps_locally(owner_color: int) -> void:
-	if match_board == null:
-		return
-
-	var played_slots: Array = match_board.played_stamp_hand_slots_this_turn.get(owner_color, [])
-	if played_slots.is_empty():
-		return
-
-	played_slots.sort()
-	for slot_value in played_slots:
-		var hand: Array[Stamp] = match_board.get_stamp_hand(owner_color)
-		if hand.size() >= DeckManager.HAND_SIZE:
-			break
-
-		var stamp_name: String = match_board.get_stamp_hand_state_controller().draw_refill_stamp_name(owner_color)
-		if stamp_name.is_empty():
-			break
-		match_board.insert_drawn_stamp(owner_color, int(slot_value), stamp_name)
-
-	match_board.played_stamp_hand_slots_this_turn[owner_color] = []
-
 func get_moves(selected: Vector2) -> Array:
 	if match_board == null:
 		return []
@@ -61,7 +40,7 @@ func filter_tutorial_move_targets(from_pos: Vector2, candidate_moves: Array[Vect
 
 	var filtered_moves: Array[Vector2] = []
 	for to_pos: Vector2 in candidate_moves:
-		if match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
+		if match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
 			"owner_color": owner_color,
 			"from_pos": from_pos,
 			"to_pos": to_pos,

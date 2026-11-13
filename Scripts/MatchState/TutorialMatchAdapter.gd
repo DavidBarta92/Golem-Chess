@@ -1,5 +1,7 @@
 extends RefCounted
 
+const LOCAL_MATCH_LINK_SCRIPT = preload("res://Scripts/MatchState/LocalMatchLink.gd")
+
 var match_board
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
 var board_size: int = BoardConfig.BOARD_SIZE
@@ -23,13 +25,13 @@ func clear_constraints() -> void:
 	refresh_dependent_ui()
 
 func refresh_dependent_ui() -> void:
-	match_board.update_stamp_drag_permissions()
-	match_board.update_end_turn_button()
+	match_board.get_stamp_hand_state_controller().update_stamp_drag_permissions()
+	match_board.get_turn_hud_controller().update_end_turn_button()
 	# The page-turn tab rises and sinks with whether turning is allowed.
 	match_board.get_match_codex_controller().update_ui()
 	match_board.get_crown_controller().refresh()
 	if match_board.state:
-		match_board.show_options()
+		match_board.get_match_input_controller().show_options()
 
 func is_action_allowed(action_name: String, context: Dictionary = {}, emit_rejection: bool = false) -> bool:
 	if !match_board.tutorial_constraints_enabled:
@@ -112,132 +114,83 @@ func has_constraint(keys: Array) -> bool:
 			return true
 	return false
 
-func can_auto_end_turn_now() -> bool:
-	if !match_board.tutorial_constraints_enabled:
-		return true
-	return bool(match_board.tutorial_constraints.get("allow_auto_end_turn", false))
+## The board plays on a host of its own, with no network: every rule is the
+## host's, as in a match against the computer. `scripted_colors` are the sides a
+## script plays (play_scripted_affix, play_scripted_move, pass_scripted_turn);
+## having nothing to do does not lose them the game. The match starts from
+## `setup` (NetworkGameHost.apply_setup has the keys).
+func start_local_host(setup: Dictionary, scripted_colors: Array) -> void:
+	var host := NetworkGameHost.new(LOCAL_MATCH_LINK_SCRIPT.new(match_board))
+	for owner_color in scripted_colors:
+		host.scripted_player_ids.append(BoardConfig.get_player_id_for_color(int(owner_color)))
+	GameController.set_game_host(host)
+	# Leaving the scene leaves no host behind for the next one to find.
+	match_board.tree_exiting.connect(func() -> void:
+		if GameController.current_game_host == host:
+			GameController.set_game_host(null)
+	, CONNECT_ONE_SHOT)
+	prepare_board_for_setup()
+	host.initialize_from_setup(setup)
 
+## Puts a position in place, and the board shows it at once rather than playing
+## the change.
 func apply_setup(setup: Dictionary) -> void:
-	if setup.has("board"):
-		set_board_from_array(setup.get("board", []))
-	if setup.has("affixed_stamps"):
-		set_affixed_stamps(setup.get("affixed_stamps", []))
-	if setup.has("white_hand"):
-		set_stamp_hand(1, setup.get("white_hand", []))
-	if setup.has("black_hand"):
-		set_stamp_hand(-1, setup.get("black_hand", []))
-	if setup.has("white_deck"):
-		set_stamp_deck(1, setup.get("white_deck", []))
-	if setup.has("black_deck"):
-		set_stamp_deck(-1, setup.get("black_deck", []))
-	if setup.has("turn_color"):
-		set_turn(int(setup.get("turn_color", 1)))
-	if setup.has("crown_points"):
-		match_board.get_crown_controller().set_local_points(setup.get("crown_points", {}), GameConfig.crown_points_required)
-	if bool(setup.get("reset_turn_state", true)):
-		reset_turn_state()
-
-	match_board.update_stamp_presentation()
-	match_board.display_board()
-
-func set_board_from_array(board_data: Array) -> void:
-	if board_data.is_empty():
+	var host = GameController.current_game_host
+	if host == null or !host.has_method("apply_setup"):
+		push_error("A setup needs the board's own host (start_local_host).")
 		return
+	prepare_board_for_setup()
+	host.apply_setup(setup)
 
-	match_board.board = BoardConfig.create_empty_board()
-	for row in range(mini(board_data.size(), board_size)):
-		var row_data: Array = board_data[row] if board_data[row] is Array else []
-		for col in range(mini(row_data.size(), board_size)):
-			match_board.board[row][col] = int(row_data[col])
-
-	match_board.piece_objects.clear()
-	# Captured pieces still waiting for a free square to come back on belong
-	# to the board being replaced. Emptied in place: the state mutator holds
-	# the same dictionary.
-	for owner_color in [1, -1]:
-		match_board.local_pending_respawns[owner_color] = []
+## Clears what only the board knows of the position it is about to leave -
+## fragments of golems still to come back, a selection, the codex slots this
+## turn has emptied - and makes the next state count as the first, which is
+## shown as it is.
+func prepare_board_for_setup() -> void:
 	match_board.get_piece_respawn_fragment_coordinator().clear_all_fragment_markers()
-	match_board.create_pieces_from_board()
-	match_board.current_board_effects.clear()
-	match_board.current_last_move.clear()
 	match_board.state = false
-	match_board.delete_dots()
-
-func set_affixed_stamps(affixed_stamps: Array) -> void:
-	for entry_value in affixed_stamps:
-		if !(entry_value is Dictionary):
-			continue
-
-		var entry: Dictionary = entry_value
-		var piece_pos: Vector2 = BoardConfig.value_to_vector2(entry.get("pos", invalid_board_pos), invalid_board_pos)
-		if !match_board.piece_objects.has(piece_pos):
-			continue
-
-		var stamp_name: String = str(entry.get("stamp_name", ""))
-		var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
-		if stamp == null:
-			push_warning("Tutorial affixed stamp not found: %s" % stamp_name)
-			continue
-
-		var piece: Piece = match_board.piece_objects[piece_pos] as Piece
-		piece.affix_stamp(stamp, bool(entry.get("exhausted", false)))
-		piece.turns_remaining = int(entry.get("turns_remaining", stamp.duration))
-
-func reset_turn_state() -> void:
+	match_board.get_match_input_controller().delete_dots()
 	for owner_color in [1, -1]:
-		match_board.affixed_stamp_this_turn[owner_color] = false
-		match_board.affixed_stamp_count_this_turn[BoardConfig.get_player_id_for_color(owner_color)] = 0
-		match_board.moved_piece_this_turn[owner_color] = false
-		match_board.exchanged_stamp_this_turn[owner_color] = false
-		match_board.has_turned_page_this_turn[owner_color] = false
 		match_board.played_stamp_hand_slots_this_turn[owner_color] = []
 		match_board.exchanged_stamp_names_this_turn[owner_color] = []
-	match_board.local_auto_end_turn_pending = false
-	match_board.state = false
-	match_board.delete_dots()
+	match_board.has_received_server_state = false
 
-func set_stamp_hand(owner_color: int, stamp_names: Array) -> void:
-	var stamps: Array[Stamp] = match_board.create_stamp_hand_from_names(stamp_names)
-	if owner_color == 1:
-		match_board.white_stamp_hand = stamps
-		match_board.white_stamp_visuals = match_board.populate_stamp_hand(match_board.white_pieces, match_board.white_stamp_hand, 1)
-		match_board.get_match_codex_controller().set_page_index(1, 0)
-		match_board.get_match_codex_controller().set_pages(1, DeckManager.create_codex_pages(stamp_names))
-	else:
-		match_board.black_stamp_hand = stamps
-		match_board.black_stamp_visuals = match_board.populate_stamp_hand(match_board.black_pieces, match_board.black_stamp_hand, -1)
-		match_board.get_match_codex_controller().set_page_index(-1, 0)
-		match_board.get_match_codex_controller().set_pages(-1, DeckManager.create_codex_pages(stamp_names))
-	match_board.setup_deck_visuals()
+## A stamp from a scripted side's open codex page onto one of its golems, sent
+## to the host as a player's would be. Returns once the board has shown it.
+func play_scripted_affix(owner_color: int, stamp_name: String, piece_pos: Vector2) -> void:
+	var hand_names: Array = match_board.get_match_state_sync_controller().get_stamp_names_from_hand(match_board.get_stamp_hand_state_controller().get_stamp_hand(owner_color))
+	var hand_index: int = hand_names.find(stamp_name)
+	if hand_index < 0:
+		push_warning("Scripted side cannot play %s at %s: it is not on the open page." % [stamp_name, piece_pos])
+		return
+	GameController.send_action({
+		"type": "affix_stamp",
+		"player_id": BoardConfig.get_player_id_for_color(owner_color),
+		"stamp_name": stamp_name,
+		"hand_index": hand_index,
+		"piece_pos": piece_pos,
+	})
+	await wait_for_board()
 
-func set_stamp_deck(owner_color: int, stamp_names: Array) -> void:
-	var deck_names: Array[String] = []
-	for stamp_name_value in stamp_names:
-		deck_names.append(str(stamp_name_value))
+## A scripted side's move, sent to the host. A move ends the turn.
+func play_scripted_move(owner_color: int, from_pos: Vector2, to_pos: Vector2) -> void:
+	GameController.send_action({
+		"type": "move_piece",
+		"player_id": BoardConfig.get_player_id_for_color(owner_color),
+		"from": from_pos,
+		"to": to_pos,
+	})
 
-	var pages: Array = match_board.get_match_codex_controller().get_pages(owner_color)
-	while pages.size() < DeckManager.CODEX_PAGE_COUNT:
-		pages.append([])
-	var stamp_index: int = 0
-	for page_index in range(1, DeckManager.CODEX_PAGE_COUNT):
-		var page: Array[String] = []
-		for _slot_index in range(DeckManager.CODEX_STAMPS_PER_PAGE):
-			if stamp_index >= deck_names.size():
-				break
-			page.append(deck_names[stamp_index])
-			stamp_index += 1
-		pages[page_index] = page
+## A scripted side's turn handed back with nothing more done.
+func pass_scripted_turn(owner_color: int) -> void:
+	var host = GameController.current_game_host
+	if host != null and host.has_method("pass_turn"):
+		host.pass_turn(BoardConfig.get_player_id_for_color(owner_color))
 
-	if owner_color == 1:
-		match_board.get_match_codex_controller().set_pages(1, pages)
-		match_board.white_deck_count_override = -1
-	else:
-		match_board.get_match_codex_controller().set_pages(-1, pages)
-		match_board.black_deck_count_override = -1
-	match_board.setup_deck_visuals()
-
-func set_turn(owner_color: int) -> void:
-	var was_white_turn: bool = match_board.white
-	match_board.white = owner_color == 1
-	if was_white_turn != match_board.white:
-		match_board.get_turn_action_state_controller().reset_current_turn_stamp_affix()
+## Until the board has shown what the host just sent: a frame for the state to
+## start, then whatever it set playing.
+func wait_for_board() -> void:
+	if !match_board.is_inside_tree():
+		return
+	await match_board.get_tree().process_frame
+	await match_board.get_turn_flow_controller().wait_for_pending_visual_processes()

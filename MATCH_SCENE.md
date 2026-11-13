@@ -8,9 +8,9 @@ is worth untangling later, and what each one costs.
 
 | | |
 | --- | --- |
-| `Scenes/MatchBoard.gd` | 1339 lines, 214 functions |
-| `Scripts/MatchView/MatchBoardControllerRegistry.gd` | 1266 lines, 338 config keys |
-| `Scripts/MatchView/` + `Scripts/MatchState/` | 15 600 lines across 50 files |
+| `Scenes/MatchBoard.gd` | 878 lines, 115 functions, 75 constants |
+| `Scripts/MatchView/MatchBoardControllerRegistry.gd` | 1166 lines, 361 config entries |
+| `Scripts/MatchView/` + `Scripts/MatchState/` | 18 608 lines across 62 files |
 
 The work is split across controllers that each own one job. They are
 `RefCounted`, built and configured by the registry, and they reach each other
@@ -21,29 +21,51 @@ not paying that toll when it buys nothing.
 
 ## Adding things without the line count growing
 
-**Do not add a forwarding stub to `MatchBoard.gd`.** 147 of its 214 functions
-are one line that forwards to a controller. Call through the accessor at the
-call site instead:
+**Do not add a forwarding stub to `MatchBoard.gd`.** The hundred or so it had
+were taken out on 2026-11-12: every caller now goes through the controller's
+accessor. Call through the accessor at the call site:
 
 ```gdscript
 match_board.get_match_codex_controller().update_ui()   # yes
 match_board.update_codex_ui()                          # no: another stub
 ```
 
-The layer is there for historical reasons and should shrink as code moves, not
-grow. Thirteen of these were deleted recently because nothing called them at
-all.
+What is left of one-line functions on the board is meant to be there: the
+accessors themselves, Godot's own `_ready`, `_process` and `_input`, and a few
+adapters that hand the controller something of the board's own
+(`get_piece_holder_at` passes `pieces_node`). A controller that needs another
+one's method as a `Callable` in its config gets it from the registry's
+`_created()`, not from the board.
 
-**Only put a tuning number through the registry if someone will tune it.** A
-value that goes `MatchBoard` const → registry key → controller var costs three
-lines in three files and a name repeated four times. Pay that for things an
-artist or designer will actually reach for. For a number that only one class
-uses, make it a constant on that class:
+**A number that only one class uses is a constant on that class**, not a
+`MatchBoard` const sent through a registry key into a controller var. That
+route costs three lines in three files and a name repeated four times, and the
+controller's var default ends up a second, wrong copy of the number. On
+2026-11-12, 187 such numbers were moved onto the controller that reads them,
+under their old names (`AMBIENT_BOARD_LIGHT_ENERGY` is now in
+`BoardEnvironmentController`, the perspective fit in `BoardGeometry`). So look
+for a tuning number in the controller that uses it first:
 
 ```gdscript
 # MatchClock.gd
 const ART_SIZE: Vector2 = Vector2(1211.0, 431.0)
 ```
+
+What still goes through the registry: values several controllers share
+(`CELL_WIDTH`, `INVALID_BOARD_POS`, the fragment groups), the board's `@export`
+vars that are tuned in the inspector, node and controller references, and the
+`Callable`s.
+
+**A config value that changes during a match needs a refresh.** Once the
+board's `_ready` is over, each controller is configured once, the first time it
+is asked for, not again on every ask. What changes after that is refreshed
+where it changes: the view by `MatchBoard.side`'s setter
+(`MatchBoardControllerRegistry.apply_view()`), the turn HUD's names, portraits
+and portrait spot by its getter (`_turn_hud_live_config()`), and a node the
+board makes again by `reconfigure_all()`. A new value of that kind goes into one of these, or the
+controller keeps the first one it got. The same holds for an inspector value
+changed on the running game: it reaches the controllers only at the next match.
+Better still, let the controller read it off `match_board` when it needs it.
 
 **Put behaviour on the thing it belongs to.** `MatchClock` used to know only
 how it moved, while the HUD held four constants describing the artwork and a
@@ -98,7 +120,11 @@ rather than at a number typed in by hand.
 **The scenes share the interface, not the sequencing.** The tutorial, a
 puzzle (`Scenes/PuzzleMatch.tscn`, [Docs/Puzzles/PUZZLES.md](Docs/Puzzles/PUZZLES.md))
 and a match build the same HUD from the same controllers and carry the same
-nodes, so they look alike without any copying another. What differs is
+nodes, so they look alike without any copying another. They share the rules
+too: every board plays on a `NetworkGameHost` - the tutorial and a puzzle on one
+of their own, with no network (`TutorialMatchAdapter.start_local_host`) - and
+a board never changes the match itself, it sends the host an action and shows
+the state that comes back. What differs is
 when each piece arrives: `TurnHudController.set_hud_element_visible()` takes
 `codex`, `opponent_codex`, `page_counter`, `turn_page`, `end_turn`, `clock` or
 `opponent_panel`, and the tutorial uses it to bring them in one at a time. A
@@ -114,19 +140,28 @@ scene.
 
 Ordered by what they cost to live with, not by effort.
 
-**1. The 147 forwarding stubs in `MatchBoard.gd`.** The one real structural
-smell. Removing them means rewriting every `match_board.x()` call as
-`match_board.get_y_controller().x()` across roughly twenty files. Mechanical,
-testable, and worth about 150 lines plus the clarity of seeing which controller
-owns what. No behaviour changes, so it is safe — but it touches everything, so
-it wants a quiet week, not an afternoon between visual tweaks.
+**1. The forwarding stubs in `MatchBoard.gd`.** Done on 2026-11-12: 103
+stubs gone, callers in 28 files rewritten, the registry's Callables pointed at
+the controllers. Checked by playing four puzzles and the tutorial's first eight
+steps on the code before and after (same board, step for step, at a fixed frame
+rate) and an AI-vs-AI match.
 
-**2. The registry's 338 config keys.** Every controller gets a dictionary
-copied out of `MatchBoard`'s constants. It works and nothing in it is stale
-(all 338 are read), but it is 1266 lines of transcription. The honest options
-are to let controllers read the constants off `match_board` directly, or to
-move the tuning surface into a `Resource` that the editor can show. Either is a
-bigger change than (1) and should follow it, not precede it.
+**2. The registry's config keys.** Done on 2026-11-12, in two parts. The 187
+numbers that only one controller read are now that controller's constants (the
+rule above): the registry went from 548 config entries to 361 and `MatchBoard`
+from 262 constants to 75. And a getter no longer reconfigures its controller:
+before, every `get_*()` re-ran the whole configure() with a freshly built
+dictionary, about ten times a frame in a running match (the deck counter alone
+six), and `get_controller_registry()` reconfigured the registry too. Now it is
+none a frame once the board is ready, with the live values refreshed as the
+rule above says. Checked: all 187 values identical, type included; four puzzles
+(and two of them seen from black, screenshots too) and the tutorial's first
+eight steps the same as before, step for step, at a fixed frame rate; an
+AI-vs-AI match without an error.
+
+What is left is wiring: references, `Callable`s, shared values and the
+inspector-tuned exports. Letting controllers read those off `match_board`, or
+a tuning `Resource`, is still possible, but no longer pays for itself.
 
 **3. The opponent's codex is positioned in viewport coordinates**, not canvas
 ones, so it drifts across the drawn room as the window changes shape. Fixing it
@@ -137,8 +172,8 @@ that drive its page-turn animation.
 colour every frame to drive the clock's knock, the rocker and the end-of-turn
 sound, and raises `MatchBoard.turn_changed` for what else follows the turn: the
 board's light, the vignette, the player's crown. It works and costs nothing
-measurable, but the state sync could raise that signal itself. Do this while
-doing (1); it is the same kind of work.
+measurable, but the state sync could raise that signal itself. Still open: it
+was left out of (1) so that (1) stayed a rewrite with nothing new in it.
 
 **5. The tutorial is reached by a path that skips
 `_configure_singleplayer_match`**, which is why `GameConfig.is_singleplayer` is

@@ -33,3 +33,7 @@
 - [Docs/Quests/QUESTS.md](Docs/Quests/QUESTS.md) — quests: story, daily and
   regular ones, the conditions and the events behind them, the templates and
   their sizes, swapping, and story quest nodes.
+- [Docs/Networking/NETWORKING.md](Docs/Networking/NETWORKING.md) — networked
+  matches: the player profile sent once and the state sent after every action,
+  where new per-player or per-stamp data belongs, the RPC and version rules,
+  and how to test with several instances.

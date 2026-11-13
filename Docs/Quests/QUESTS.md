@@ -90,13 +90,13 @@ anything):
   when a new last move with a captured colour arrives
   (`ServerStateUpdateController._report_new_capture`; not on the first state,
   which may carry an old move). The capturing stamp is read from the board
-  before the update, since a stamp can run out on the very move. Without a
-  host (tutorial, puzzles) `LocalMoveFlowController` emits it as the move is
-  played. Checked against the match log over four AI matches: the same
-  captures, sides and stamps.
+  before the update, since a stamp can run out on the very move. The tutorial
+  and the puzzles play on a host of their own, so it comes the same way there.
+  Checked against the match log over four AI matches: the same captures, sides
+  and stamps.
 - `CrownController.crowned(owner_color)`: when the host's state shows a colour
-  has crowned this turn, or when a crown is placed in a match without a host
-  (`crown_placed` comes only then).
+  has crowned this turn - in every match, the tutorial and the puzzles
+  included.
 
 **Adding a condition**: a value in `QuestCondition.Type` and `IDS`, its event
 in `progress_for`, what it needs in `is_available`, its XY values in

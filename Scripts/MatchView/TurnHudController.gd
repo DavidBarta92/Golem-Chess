@@ -2,34 +2,41 @@ extends RefCounted
 
 const DIALOGUE_PANEL = preload("res://Scenes/DialoguePanel.tscn")
 
+const TURN_TIMER_LIMIT_SECONDS: int = 600
+
+# Two clocks now, one per player. The deck counters key themselves by owner
+# colour (1 and -1), so these stay clear of those.
+const TURN_TIMER_COUNTER_KEY: int = 0
+const TURN_TIMER_OPPONENT_COUNTER_KEY: int = 2
+const CLOCK_FRAME_TEXTURE: Texture2D = preload("res://Assets/clock_frame_double.png")
+const CLOCK_BUTTON_TEXTURE: Texture2D = preload("res://Assets/clock_frame_button.png")
+const CLOCK_BACK_TEXTURE: Texture2D = preload("res://Assets/clock_frame_back.png")
+const TURN_TIMER_GAP: float = 8.0
+
+# Under the stamp previews and the flash a played stamp makes, which run from
+# 899 up to 980 - those always read over the clock.
+const TURN_TIMER_Z_INDEX: int = 890
+const PLAYER_NAME_LABEL_SIZE: Vector2 = Vector2(180, 28)
+const PLAYER_NAME_LABEL_GAP: float = 8
+const PLAYER_PORTRAIT_MARGIN: float = 22
+const PLAYER_PORTRAIT_Z_INDEX: int = 928
+
 var canvas_layer: CanvasLayer
 var tween_owner: Node
 
-var turn_timer_limit_seconds: int = 300
-var turn_timer_counter_key: int = 0
-var turn_timer_opponent_counter_key: int = 2
 var _last_knocked_turn_color: int = 0
-var clock_frame_texture: Texture2D
-var clock_button_texture: Texture2D
-var clock_back_texture: Texture2D
 ## Hands back the match background, for the pieces of interface that live
 ## inside it rather than in the HUD's own layer.
 var match_background_provider: Callable
 
-var turn_timer_gap: float = 8.0
-var turn_timer_z_index: int = 961
 var deck_counter_size: Vector2 = Vector2(82, 42)
 ## Where the two tabs stand on the 1920x1080 canvas the room is drawn on, so
 ## they stay under the board's near corners whatever shape the window is. The
 ## Turn Page tab's twin is set on the node in main.tscn.
 const END_TURN_TAB_CANVAS_X: float = 1125.0
 
-var player_name_label_size: Vector2 = Vector2(180, 28)
-var player_name_label_gap: float = 8.0
 var player_portrait_size: Vector2 = Vector2(224, 89)
-var player_portrait_margin: float = 22.0
 var player_portrait_top_position: Vector2 = Vector2(70, 4)
-var player_portrait_z_index: int = 928
 
 var create_digit_counter_callback: Callable
 var set_digit_counter_value_callback: Callable
@@ -94,22 +101,10 @@ var current_player_portraits: Dictionary = {
 func configure(config: Dictionary) -> void:
 	canvas_layer = config.get("canvas_layer", canvas_layer)
 	tween_owner = config.get("tween_owner", tween_owner)
-	turn_timer_limit_seconds = int(config.get("turn_timer_limit_seconds", turn_timer_limit_seconds))
-	turn_timer_counter_key = int(config.get("turn_timer_counter_key", turn_timer_counter_key))
-	turn_timer_opponent_counter_key = int(config.get("turn_timer_opponent_counter_key", turn_timer_opponent_counter_key))
-	clock_frame_texture = config.get("clock_frame_texture", clock_frame_texture)
-	clock_button_texture = config.get("clock_button_texture", clock_button_texture)
-	clock_back_texture = config.get("clock_back_texture", clock_back_texture)
 	match_background_provider = config.get("match_background_provider", match_background_provider)
-	turn_timer_gap = float(config.get("turn_timer_gap", turn_timer_gap))
-	turn_timer_z_index = int(config.get("turn_timer_z_index", turn_timer_z_index))
 	deck_counter_size = config.get("deck_counter_size", deck_counter_size)
-	player_name_label_size = config.get("player_name_label_size", player_name_label_size)
-	player_name_label_gap = float(config.get("player_name_label_gap", player_name_label_gap))
 	player_portrait_size = config.get("player_portrait_size", player_portrait_size)
-	player_portrait_margin = float(config.get("player_portrait_margin", player_portrait_margin))
 	player_portrait_top_position = config.get("player_portrait_top_position", player_portrait_top_position)
-	player_portrait_z_index = int(config.get("player_portrait_z_index", player_portrait_z_index))
 	current_player_names = config.get("current_player_names", current_player_names)
 	current_player_portraits = config.get("current_player_portraits", current_player_portraits)
 
@@ -165,16 +160,16 @@ func create_turn_timer_ui() -> void:
 	turn_timer_counter_container = clock
 	canvas_layer.add_child(clock)
 	clock.name = "ChessClock"
-	clock.z_index = turn_timer_z_index
+	clock.z_index = TURN_TIMER_Z_INDEX
 	clock.modulate = MatchBackgroundController.PAPER_TINT
 	clock.build(
-		clock_back_texture,
-		clock_frame_texture,
-		clock_button_texture,
+		CLOCK_BACK_TEXTURE,
+		CLOCK_FRAME_TEXTURE,
+		CLOCK_BUTTON_TEXTURE,
 		Callable(self, "_make_clock_counter"),
 		deck_counter_size.y,
-		turn_timer_opponent_counter_key,
-		turn_timer_counter_key
+		TURN_TIMER_OPPONENT_COUNTER_KEY,
+		TURN_TIMER_COUNTER_KEY
 	)
 
 	reset_turn_timer()
@@ -352,7 +347,7 @@ func ensure_opponent_panel() -> void:
 
 	opponent_panel = DIALOGUE_PANEL.instantiate() as DialoguePanel
 	opponent_panel.name = "OpponentPanel"
-	opponent_panel.z_index = player_portrait_z_index
+	opponent_panel.z_index = PLAYER_PORTRAIT_Z_INDEX
 	canvas_layer.add_child(opponent_panel)
 	opponent_panel_managed_by_hud = true
 	opponent_panel.set_portrait_background_color(OPPONENT_PORTRAIT_BACKGROUND)
@@ -412,7 +407,7 @@ func update_end_turn_button() -> void:
 	end_turn_button.disabled = !can_control_current_turn() or !get_bool(can_end_first_turn_provider, false) or !is_tutorial_end_turn_allowed()
 
 func reset_turn_timer() -> void:
-	player_clock_seconds = {0: float(turn_timer_limit_seconds), 1: float(turn_timer_limit_seconds)}
+	player_clock_seconds = {0: float(TURN_TIMER_LIMIT_SECONDS), 1: float(TURN_TIMER_LIMIT_SECONDS)}
 	update_turn_timer_label()
 	update_turn_timer_visibility()
 
@@ -420,7 +415,7 @@ func sync_player_clocks(clock_state: Dictionary) -> void:
 	if clock_state.is_empty():
 		return
 	for player_id in [0, 1]:
-		var value = clock_state.get(player_id, clock_state.get(str(player_id), turn_timer_limit_seconds))
+		var value = clock_state.get(player_id, clock_state.get(str(player_id), TURN_TIMER_LIMIT_SECONDS))
 		player_clock_seconds[player_id] = maxf(float(value), 0.0)
 	update_turn_timer_label()
 
@@ -440,7 +435,7 @@ func update_turn_timer(delta: float) -> void:
 	# smoothly between those.
 	var active_player_id: int = BoardConfig.get_player_id_for_color(get_current_turn_color())
 	player_clock_seconds[active_player_id] = maxf(
-		float(player_clock_seconds.get(active_player_id, turn_timer_limit_seconds)) - maxf(delta, 0.0), 0.0)
+		float(player_clock_seconds.get(active_player_id, TURN_TIMER_LIMIT_SECONDS)) - maxf(delta, 0.0), 0.0)
 	update_turn_timer_label()
 
 ## Everything that happens when the turn passes: the hanging clocks take a push
@@ -465,11 +460,11 @@ func _handle_turn_change() -> void:
 
 func update_turn_timer_label(animate: bool = true) -> void:
 	var own_player_id: int = BoardConfig.get_player_id_for_color(get_own_color())
-	_set_clock_digits(turn_timer_counter_key, own_player_id, animate)
-	_set_clock_digits(turn_timer_opponent_counter_key, 1 - own_player_id, animate)
+	_set_clock_digits(TURN_TIMER_COUNTER_KEY, own_player_id, animate)
+	_set_clock_digits(TURN_TIMER_OPPONENT_COUNTER_KEY, 1 - own_player_id, animate)
 
 func _set_clock_digits(counter_key: int, player_id: int, animate: bool) -> void:
-	var total_seconds: int = maxi(ceili(float(player_clock_seconds.get(player_id, turn_timer_limit_seconds))), 0)
+	var total_seconds: int = maxi(ceili(float(player_clock_seconds.get(player_id, TURN_TIMER_LIMIT_SECONDS))), 0)
 	var timer_digits: int = floori(float(total_seconds) / 60.0) * 100 + total_seconds % 60
 	set_digit_counter_value(counter_key, timer_digits, animate)
 
@@ -477,9 +472,6 @@ func update_turn_timer_visibility() -> void:
 	if turn_timer_counter_container == null:
 		return
 	turn_timer_counter_container.visible = !is_game_over() and should_show_turn_timer()
-
-func clear_turn_timer_timeout_pending() -> void:
-	pass
 
 ## Shown in a single player match as well as a networked one. Whoever is on
 ## the move loses time, an AI included: its clock runs while it thinks, the same
@@ -520,7 +512,7 @@ func arrange_turn_timer_ui() -> void:
 	var box: Vector2 = turn_timer_counter_container.size
 	if box.x <= 0.0 or box.y <= 0.0:
 		box = turn_timer_counter_container.get_combined_minimum_size()
-	var top_left := Vector2(centre_x - clock.face_offset().x, turn_timer_gap)
+	var top_left := Vector2(centre_x - clock.face_offset().x, TURN_TIMER_GAP)
 	turn_timer_counter_container.anchor_left = 0.0
 	turn_timer_counter_container.anchor_right = 0.0
 	turn_timer_counter_container.anchor_top = 0.0

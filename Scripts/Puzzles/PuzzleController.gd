@@ -72,12 +72,10 @@ func begin() -> void:
 		SceneTransition.change_scene(PUZZLES_SCENE)
 		return
 
-	GameController.set_game_host(null)
-	board.set_tutorial_mode_active(true)
+	board.get_tutorial_match_adapter().set_mode_active(true)
 	board.hold_after_result = true
-	board.scripted_turn_colors.assign([OPPONENT_COLOR])
-	board.set_turn(true)
-	board.set_tutorial_constraints(NO_ACTIONS)
+	board.get_match_board_lifecycle_controller().set_turn(true)
+	board.get_tutorial_match_adapter().set_constraints(NO_ACTIONS)
 	# A puzzle is not played against the clock.
 	board.get_turn_hud_controller().clock_enabled = false
 	_connect_board()
@@ -116,7 +114,8 @@ func _connect_board() -> void:
 # --- The board ------------------------------------------------------------------
 
 ## The puzzle's position, as a board in the middle of a game: both sides have
-## played a turn, so the first-turn rules do not apply.
+## played a turn, so the first-turn rules do not apply. The board plays it on a
+## host of its own, by every rule of the game, the opponent's side by script.
 func _set_up_board() -> void:
 	var rows: Array = []
 	for _row in range(BoardConfig.BOARD_SIZE):
@@ -125,11 +124,17 @@ func _set_up_board() -> void:
 		row.fill(0)
 		rows.append(row)
 	var affixed: Array = []
+	var crowned_squares: Array = []
+	var exhausted_squares: Array = []
 	for piece in puzzle.pieces:
 		if piece == null:
 			continue
 		var pos: Vector2 = piece.get_board_position()
 		rows[int(pos.x)][int(pos.y)] = piece.get_color()
+		if piece.crowned:
+			crowned_squares.append(pos)
+		if piece.exhausted:
+			exhausted_squares.append(pos)
 		if piece.stamp != null:
 			affixed.append({
 				"pos": pos,
@@ -138,54 +143,51 @@ func _set_up_board() -> void:
 				"exhausted": piece.exhausted,
 			})
 
-	var player_pages: Array = puzzle.get_player_pages()
-	var opponent_pages: Array = puzzle.get_opponent_pages()
-	board.apply_tutorial_setup({
+	var setup: Dictionary = {
 		"board": rows,
 		"affixed_stamps": affixed,
-		"white_hand": player_pages[0],
-		"white_deck": DeckManager.flatten_codex_pages(player_pages, 0),
-		"black_hand": opponent_pages[0],
-		"black_deck": DeckManager.flatten_codex_pages(opponent_pages, 0),
+		"crowned": crowned_squares,
+		"exhausted": exhausted_squares,
+		# The pages exactly as written, empty slots and all.
+		"white_pages": puzzle.get_player_pages(),
+		"black_pages": puzzle.get_opponent_pages(),
 		"turn_color": PLAYER_COLOR,
 		"crown_points": {
 			PLAYER_COLOR: puzzle.player_crown_points,
 			OPPONENT_COLOR: puzzle.opponent_crown_points,
 		},
-	})
-	# The pages exactly as written, empty slots and all.
-	var codex = board.get_match_codex_controller()
-	codex.set_pages(PLAYER_COLOR, player_pages)
-	codex.set_pages(OPPONENT_COLOR, opponent_pages)
-	board.setup_deck_visuals()
+		"completed_turns": {PLAYER_COLOR: 1, OPPONENT_COLOR: 1},
+	}
+	if GameController.current_game_host == null:
+		board.get_tutorial_match_adapter().start_local_host(setup, [OPPONENT_COLOR])
+	else:
+		board.get_tutorial_match_adapter().apply_setup(setup)
 
+	# The golems as the host keeps them, which stay the same objects through
+	# every move, capture and return - the board's are rebuilt with each state.
 	tracked.clear()
 	for piece in puzzle.pieces:
 		if piece == null:
 			continue
-		var on_board: Piece = board.piece_objects.get(piece.get_board_position(), null) as Piece
-		if on_board == null:
-			continue
-		tracked[piece.square] = on_board
-		on_board.has_crown = piece.crowned
-		if piece.exhausted:
-			on_board.exhausted_this_turn = true
-	for player_id in [0, 1]:
-		board.completed_turn_counts[player_id] = 1
-	board.display_board()
-	board.update_stamp_presentation()
-	board.update_end_turn_button()
+		var in_play: Piece = _state().get_piece(piece.get_board_position())
+		if in_play != null:
+			tracked[piece.square] = in_play
 	_note_occupants()
 
+## The match as the host has it: the puzzle is judged on that, not on the
+## board's picture of it.
+func _state() -> GameStateData:
+	return GameController.current_game_host.game_state
+
 func _note_occupants() -> void:
-	occupants = board.piece_objects.duplicate()
+	occupants = _state().pieces.duplicate()
 
 ## The player's turn: the whole game is theirs to play.
 func _begin_player_turn() -> void:
 	if over:
 		return
 	_note_occupants()
-	board.clear_tutorial_constraints()
+	board.get_tutorial_match_adapter().clear_constraints()
 	hud.set_moves(turns_used, puzzle.turn_limit)
 	_check_goals()
 
@@ -194,13 +196,13 @@ func _begin_player_turn() -> void:
 func _on_stamp_affixed(piece_pos: Vector2, stamp_name: String, owner_color: int, _hand_index: int) -> void:
 	if owner_color != PLAYER_COLOR or over:
 		return
-	affixes.append({"stamp_name": stamp_name, "piece": board.piece_objects.get(piece_pos, null)})
+	affixes.append({"stamp_name": stamp_name, "piece": _state().get_piece(piece_pos)})
 	_check_goals_after_visuals()
 
 func _on_crown_placed(piece_pos: Vector2, owner_color: int) -> void:
 	if owner_color != PLAYER_COLOR or over:
 		return
-	var piece: Piece = board.piece_objects.get(piece_pos, null) as Piece
+	var piece: Piece = _state().get_piece(piece_pos)
 	if piece != null:
 		crowned.append(piece)
 	_check_goals_after_visuals()
@@ -217,7 +219,7 @@ func _on_turn_ended(ending_color: int, _next_color: int) -> void:
 	if over:
 		return
 	var token: int = run_token
-	await board.wait_for_pending_visual_processes()
+	await board.get_turn_flow_controller().wait_for_pending_visual_processes()
 	if token != run_token or over:
 		return
 	if ending_color == PLAYER_COLOR:
@@ -249,15 +251,15 @@ func _on_game_finished(winner_color: int) -> void:
 	_fail(tr("PUZZLE_FAILED_OPPONENT_WON") if _opponent_reached_base() else tr("PUZZLE_FAILED_STUCK"))
 
 func _opponent_reached_base() -> bool:
-	var base: Vector2 = board.get_local_state_mutator().get_base_field_for_player(BoardConfig.get_player_id_for_color(PLAYER_COLOR))
-	var piece: Piece = board.piece_objects.get(base, null) as Piece
+	var base: Vector2 = StampEffectResolver.get_base_field_for_player(_state(), BoardConfig.get_player_id_for_color(PLAYER_COLOR))
+	var piece: Piece = _state().get_piece(base)
 	return piece != null and piece.color == OPPONENT_COLOR and piece.has_crown
 
 # --- Goals ----------------------------------------------------------------------
 
 func _check_goals_after_visuals() -> void:
 	var token: int = run_token
-	await board.wait_for_pending_visual_processes()
+	await board.get_turn_flow_controller().wait_for_pending_visual_processes()
 	if token == run_token:
 		_check_goals()
 
@@ -281,11 +283,11 @@ func _is_goal_met(goal: PuzzleGoal) -> bool:
 		PuzzleGoal.Kind.CAPTURE_COUNT:
 			return captured.size() >= goal.count
 		PuzzleGoal.Kind.REACH_SQUARE:
-			var piece: Piece = board.piece_objects.get(PuzzleSquares.to_board(goal.target_square), null) as Piece
+			var piece: Piece = _state().get_piece(PuzzleSquares.to_board(goal.target_square))
 			return _is_goal_piece(goal, piece)
 		PuzzleGoal.Kind.STAMP_DURATION:
-			for position_value in board.piece_objects:
-				var piece: Piece = board.piece_objects[position_value] as Piece
+			for position_value in _state().pieces:
+				var piece: Piece = _state().pieces[position_value] as Piece
 				if _is_goal_piece(goal, piece) and piece.affixed_stamp != null and goal.compare(piece.turns_remaining):
 					return true
 			return false
@@ -322,7 +324,7 @@ func _is_goal_piece(goal: PuzzleGoal, piece: Piece) -> bool:
 ## has one, otherwise the script's stamp and move; a turn without a move ends
 ## on its own.
 func _play_opponent_turn(token: int) -> void:
-	board.set_tutorial_constraints(NO_ACTIONS)
+	board.get_tutorial_match_adapter().set_constraints(NO_ACTIONS)
 	await get_tree().create_timer(opponent_think_seconds).timeout
 	if token != run_token or over:
 		return
@@ -334,7 +336,7 @@ func _play_opponent_turn(token: int) -> void:
 	if puzzle.opponent_takes_chances:
 		var chance: Dictionary = _find_opponent_chance()
 		if !chance.is_empty():
-			board.set_move(chance["from"], chance["to"])
+			board.get_tutorial_match_adapter().play_scripted_move(OPPONENT_COLOR, chance["from"], chance["to"])
 			return
 
 	if script != null and script.has_affix():
@@ -346,51 +348,50 @@ func _play_opponent_turn(token: int) -> void:
 		var from_pos: Vector2 = PuzzleSquares.to_board(script.move_from)
 		var to_pos: Vector2 = PuzzleSquares.to_board(script.move_to)
 		if _opponent_moves_from(from_pos).has(to_pos):
-			board.set_move(from_pos, to_pos)
+			board.get_tutorial_match_adapter().play_scripted_move(OPPONENT_COLOR, from_pos, to_pos)
 			return
 		push_warning("Puzzle %s: the opponent cannot move %s-%s; it passes." % [puzzle.puzzle_id, script.move_from, script.move_to])
 
 	await get_tree().create_timer(opponent_end_turn_delay).timeout
 	if token == run_token and !over and !board.game_over:
-		board.end_current_turn_locally()
+		board.get_tutorial_match_adapter().pass_scripted_turn(OPPONENT_COLOR)
 
 func _play_opponent_affix(script: PuzzleOpponentTurn) -> void:
 	var stamp_name: String = script.affix_stamp.stamp_name
-	var hand_index: int = board.get_stamp_names_from_hand(board.get_stamp_hand(OPPONENT_COLOR)).find(stamp_name)
 	var piece_pos: Vector2 = PuzzleSquares.to_board(script.affix_square)
-	var piece: Piece = board.piece_objects.get(piece_pos, null) as Piece
-	if hand_index < 0 or piece == null or piece.color != OPPONENT_COLOR or !piece.can_receive_stamp(script.affix_stamp):
+	var piece: Piece = _state().get_piece(piece_pos)
+	if !_state().player_hands.get(BoardConfig.get_player_id_for_color(OPPONENT_COLOR), []).has(stamp_name) or piece == null or piece.color != OPPONENT_COLOR or !piece.can_receive_stamp(script.affix_stamp):
 		push_warning("Puzzle %s: the opponent cannot affix %s on %s." % [puzzle.puzzle_id, stamp_name, script.affix_square])
 		return
-	await board.affix_hand_stamp_locally(OPPONENT_COLOR, hand_index, piece_pos)
+	await board.get_tutorial_match_adapter().play_scripted_affix(OPPONENT_COLOR, stamp_name, piece_pos)
 	await get_tree().create_timer(opponent_between_stamps_seconds).timeout
 
 func _opponent_moves_from(from_pos: Vector2) -> Array[Vector2]:
 	var player_id: int = BoardConfig.get_player_id_for_color(OPPONENT_COLOR)
-	return MoveRules.get_piece_moves_for_player(board.piece_objects, from_pos, player_id, BoardConfig.BOARD_SIZE, board.current_board_effects)
+	return MoveRules.get_piece_moves_for_player(_state().pieces, from_pos, player_id, BoardConfig.BOARD_SIZE, _state().board_effects)
 
 ## The opponent's best chance: a crowned golem onto the player's base, or else
 ## the most valuable capture - a crowned golem, then one a goal is about, then
 ## one with moves on its stamp. Empty when it has neither.
 func _find_opponent_chance() -> Dictionary:
-	var player_base: Vector2 = board.get_local_state_mutator().get_base_field_for_player(BoardConfig.get_player_id_for_color(PLAYER_COLOR))
+	var player_base: Vector2 = StampEffectResolver.get_base_field_for_player(_state(), BoardConfig.get_player_id_for_color(PLAYER_COLOR))
 	var goal_pieces: Array = []
 	for goal in puzzle.goals:
 		if goal != null and !goal.piece_square.is_empty():
 			goal_pieces.append(tracked.get(goal.piece_square, null))
 	var best: Dictionary = {}
 	var best_score: int = -1
-	var positions: Array = board.piece_objects.keys()
+	var positions: Array = _state().pieces.keys()
 	positions.sort()
 	for position_value in positions:
-		var piece: Piece = board.piece_objects[position_value] as Piece
+		var piece: Piece = _state().pieces[position_value] as Piece
 		if piece == null or piece.color != OPPONENT_COLOR:
 			continue
 		for target: Vector2 in _opponent_moves_from(position_value):
 			var score: int = -1
 			if target == player_base and piece.has_crown:
 				score = 10000
-			var victim: Piece = board.piece_objects.get(target, null) as Piece
+			var victim: Piece = _state().get_piece(target)
 			if victim != null and victim.color == PLAYER_COLOR:
 				var value: int = 100
 				if victim.has_crown:
@@ -410,14 +411,14 @@ func _find_opponent_chance() -> Dictionary:
 func _solve() -> void:
 	over = true
 	run_token += 1
-	board.set_tutorial_constraints(NO_ACTIONS)
+	board.get_tutorial_match_adapter().set_constraints(NO_ACTIONS)
 	# Quests count a puzzle once, the first time it is solved.
 	if !PuzzleStore.is_solved(puzzle.puzzle_id):
 		QuestStore.record_event(QuestCondition.EVENT_PUZZLE_SOLVED, {"puzzle_id": puzzle.puzzle_id})
 	PuzzleStore.mark_solved(puzzle.puzzle_id)
 	PuzzleStore.last_reward_paid = PuzzleStore.grant_reward(puzzle)
 	hud.set_moves_text(tr("PUZZLE_STATE_SOLVED"))
-	await board.wait_for_pending_visual_processes()
+	await board.get_turn_flow_controller().wait_for_pending_visual_processes()
 	if !game_ended:
 		SFXManager.play("win")
 	# The board stays in view a moment; the reward has a scene of its own.
@@ -427,8 +428,8 @@ func _solve() -> void:
 func _fail(reason: String) -> void:
 	over = true
 	run_token += 1
-	board.set_tutorial_constraints(NO_ACTIONS)
-	await board.wait_for_pending_visual_processes()
+	board.get_tutorial_match_adapter().set_constraints(NO_ACTIONS)
+	await board.get_turn_flow_controller().wait_for_pending_visual_processes()
 	await get_tree().create_timer(result_delay_seconds).timeout
 	if !game_ended:
 		SFXManager.play("lose")
@@ -437,7 +438,7 @@ func _fail(reason: String) -> void:
 ## From the top: the same position on a fresh board, in place when the board
 ## is at rest. A finished game, or a move still under way, reloads the scene.
 func restart() -> void:
-	if board.game_over or board.has_pending_visual_processes():
+	if board.game_over or board.get_turn_flow_controller().has_pending_visual_processes():
 		run_token += 1
 		SceneTransition.change_scene(PUZZLE_SCENE)
 		return
@@ -451,7 +452,7 @@ func restart() -> void:
 	crowned.clear()
 	player_won = false
 	hud.hide_result()
-	board.set_tutorial_constraints(NO_ACTIONS)
+	board.get_tutorial_match_adapter().set_constraints(NO_ACTIONS)
 	_set_up_board()
 	_begin_player_turn()
 

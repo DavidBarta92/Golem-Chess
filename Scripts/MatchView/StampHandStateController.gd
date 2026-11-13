@@ -136,7 +136,7 @@ func update_stamp_presentation() -> void:
 	update_stamp_drag_permissions()
 	match_board.get_turn_hud_controller().update_player_name_labels()
 	match_board.get_turn_hud_controller().update_player_portrait_views()
-	match_board.update_end_turn_button()
+	match_board.get_turn_hud_controller().update_end_turn_button()
 	match_board.get_match_codex_controller().update_ui()
 
 func update_stamp_drag_permissions() -> void:
@@ -158,12 +158,9 @@ func can_drag_stamp_visual_now(stamp_visual: StampVisual, active_color: int, can
 	var context: Dictionary = {
 		"owner_color": stamp_visual.owner_color,
 		"stamp_name": stamp_visual.stamp.stamp_name,
-		"hand_index": match_board.get_stamp_visual_index(stamp_visual),
+		"hand_index": get_stamp_visual_index(stamp_visual),
 	}
-	return match_board.is_tutorial_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, context)
-
-func remove_stamp_from_hand(stamp_visual: StampVisual) -> String:
-	return remove_stamp_from_hand_index(stamp_visual.owner_color, get_stamp_visual_index(stamp_visual), false)
+	return match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, context)
 
 func get_stamp_visual_index(stamp_visual: StampVisual) -> int:
 	if stamp_visual.owner_color == 1:
@@ -195,9 +192,9 @@ func remove_stamp_from_hand_index(owner_color: int, hand_index: int, should_draw
 		if !drawn_stamp_name.is_empty():
 			insert_drawn_stamp(owner_color, hand_index, drawn_stamp_name)
 		else:
-			match_board.arrange_stamp_visuals(visuals, true)
+			match_board.get_stamp_interaction_controller().arrange_stamp_visuals(visuals, true)
 	else:
-		match_board.arrange_stamp_visuals(visuals, true)
+		match_board.get_stamp_interaction_controller().arrange_stamp_visuals(visuals, true)
 
 	update_stamp_presentation()
 	return drawn_stamp_name
@@ -225,13 +222,8 @@ func insert_drawn_stamp(owner_color: int, hand_index: int, stamp_name: String) -
 
 	stamp_visual.global_position = get_stamp_draw_start_position(owner_color)
 	stamp_visual.scale = Vector2.ONE * stamp_hand_scale
-	match_board.arrange_stamp_visuals(visuals, true)
+	match_board.get_stamp_interaction_controller().arrange_stamp_visuals(visuals, true)
 	match_board.get_stamp_animation_controller().animate_stamp_draw(owner_color, stamp_visual)
-
-func draw_refill_stamp_name(owner_color: int) -> String:
-	var deck: Array[String] = get_stamp_deck(owner_color)
-	var protected_names: Array = match_board.exchanged_stamp_names_this_turn.get(owner_color, [])
-	return draw_stamp_from_deck_avoiding_names(deck, protected_names)
 
 func draw_stamp_from_deck_avoiding_names(deck: Array, avoided_stamp_names: Array) -> String:
 	if deck.is_empty():
@@ -249,6 +241,28 @@ func draw_stamp_from_deck_avoiding_names(deck: Array, avoided_stamp_names: Array
 	var drawn_stamp_name: String = str(deck[draw_index])
 	deck.remove_at(draw_index)
 	return drawn_stamp_name
+
+## Which codex slot the stamp at `current_hand_index` came from, kept for the
+## rest of the turn: the hand closes up as stamps go, the slots do not.
+func record_played_stamp_hand_slot(owner_color: int, current_hand_index: int) -> void:
+	if current_hand_index < 0:
+		return
+	var played_slots: Array = match_board.played_stamp_hand_slots_this_turn.get(owner_color, [])
+	played_slots.append(get_original_hand_slot_for_play(owner_color, current_hand_index))
+	match_board.played_stamp_hand_slots_this_turn[owner_color] = played_slots
+
+func get_original_hand_slot_for_play(owner_color: int, current_hand_index: int) -> int:
+	var played_slots: Array = match_board.played_stamp_hand_slots_this_turn.get(owner_color, [])
+	for candidate in range(current_hand_index, DeckManager.HAND_SIZE):
+		if played_slots.has(candidate):
+			continue
+		var previous_slots_before_candidate: int = 0
+		for slot_value in played_slots:
+			if int(slot_value) < candidate:
+				previous_slots_before_candidate += 1
+		if candidate - previous_slots_before_candidate == current_hand_index:
+			return candidate
+	return clampi(current_hand_index, 0, DeckManager.HAND_SIZE - 1)
 
 func record_exchanged_stamp_name_this_turn(owner_color: int, stamp_name: String) -> void:
 	var exchanged_names: Array = match_board.exchanged_stamp_names_this_turn.get(owner_color, [])

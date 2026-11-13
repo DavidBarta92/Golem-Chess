@@ -5,7 +5,6 @@ const GLOW_SHADER = preload("res://Shaders/piece_attach_glow.gdshader")
 const InkStampMaterial = preload("res://Scripts/InkStamp/InkStampMaterial.gd")
 
 var match_board
-
 var canvas_layer: CanvasLayer
 var cell_size: Vector2 = Vector2(42.0, 42.0)
 var cell_gap: float = 6.0
@@ -378,7 +377,7 @@ func _on_cell_mouse_entered(board_pos: Vector2, cell: Control) -> void:
 	_animate_cell_opacity(cell, icon_hover_opacity)
 	if match_board == null or !MoveRules.is_valid_position(board_pos):
 		return
-	match_board.show_hover_piece_details(board_pos)
+	match_board.get_match_input_controller().show_hover_piece_details(board_pos)
 	match_board.set_hover_highlighted_piece(board_pos)
 
 func _on_cell_mouse_exited(cell: Control) -> void:

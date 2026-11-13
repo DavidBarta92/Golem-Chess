@@ -8,14 +8,14 @@ func configure(config: Dictionary) -> void:
 	invalid_board_pos = config.get("invalid_board_pos", invalid_board_pos)
 
 func defer_for_bomb_warning(bomb_warning_animations: Array[Dictionary], visual_context: Dictionary) -> void:
-	match_board.begin_visual_process(match_board.VISUAL_PROCESS_BOMB_WARNING)
+	match_board.get_visual_process_tracker().begin(match_board.VISUAL_PROCESS_BOMB_WARNING)
 	match_board.play_bomb_warning_animations(bomb_warning_animations)
 
 	var tween: Tween = match_board.create_tween()
 	tween.tween_interval(match_board.bomb_warning_duration)
 	tween.tween_callback(Callable(self, "finish").bind(visual_context))
 	tween.finished.connect(func():
-		match_board.finish_visual_process(match_board.VISUAL_PROCESS_BOMB_WARNING)
+		match_board.get_visual_process_tracker().finish(match_board.VISUAL_PROCESS_BOMB_WARNING)
 	)
 
 func finish(visual_context: Dictionary) -> void:
@@ -23,7 +23,7 @@ func finish(visual_context: Dictionary) -> void:
 	# Not before the bomb warning: a golem blown up onto its own square has to stand
 	# there for the warning to play over.
 	match_board.get_piece_respawn_fragment_coordinator().prepare_piece_shatter_respawn_reveals(state_piece_shatter_animations)
-	match_board.display_board()
+	match_board.get_piece_display_controller().display_board()
 
 	var state_piece_move_animation: Dictionary = visual_context.get("state_piece_move_animation", {})
 	if !state_piece_move_animation.is_empty():
@@ -40,7 +40,7 @@ func finish(visual_context: Dictionary) -> void:
 	# After the move and the stamp that set an effect off, every piece whose
 	# duration it raised or lowered shows its count change at once.
 	for animation: Dictionary in visual_context.get("state_duration_change_animations", []):
-		match_board.play_duration_change_animation(
+		match_board.get_piece_duration_change_animator().play(
 			BoardConfig.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos),
 			int(animation.get("old_duration", 0)),
 			int(animation.get("new_duration", 0))
@@ -73,7 +73,7 @@ func finish(visual_context: Dictionary) -> void:
 
 	if bool(visual_context.get("server_game_over", false)) && int(visual_context.get("winner_player", -1)) != -1:
 		reveal_hidden_last_move_arrow_for_game_over()
-		match_board.finish_game(match_board.get_color_for_player_id(int(visual_context.get("winner_player", -1))))
+		match_board.get_game_result_controller().finish_game(match_board.get_color_for_player_id(int(visual_context.get("winner_player", -1))))
 
 func play_post_state_stamp_animations(visual_context: Dictionary) -> void:
 	var recent_stamp_transfers: Array = visual_context.get("recent_stamp_transfers", [])
@@ -102,7 +102,7 @@ func reveal_hidden_last_move_arrow_for_game_over() -> void:
 	var revealed_last_move: Dictionary = match_board.current_last_move.duplicate()
 	revealed_last_move["visible_to_enemy"] = true
 	match_board.current_last_move = revealed_last_move
-	match_board.update_board_markers()
+	match_board.get_board_marker_controller().update_markers()
 
 func get_affix_animation_positions(animations: Array[Dictionary]) -> Dictionary:
 	var positions: Dictionary = {}

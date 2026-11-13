@@ -1,16 +1,17 @@
 extends RefCounted
 
+const SELECTED_PIECE_GLOW_NAME: String = "SelectedPieceGlow"
+const SELECTED_PIECE_GLOW_Z_INDEX: int = 24
+const SELECTED_PIECE_GLOW_STRENGTH: float = 1.0
+const PIECE_HOVER_DIM_COLOR: Color = Color(0.68, 0.68, 0.68, 1.0)
+const PIECE_HOVER_DIM_TWEEN_DURATION: float = 0.18
+
 var match_board
 var piece_visuals
 var texture_resolver
 var texture_holder_scene: PackedScene
 var board_size: int = BoardConfig.BOARD_SIZE
 var piece_light_receive_mask: int = 2
-var selected_piece_glow_name: String = "SelectedPieceGlow"
-var selected_piece_glow_z_index: int = 24
-var selected_piece_glow_strength: float = 1.0
-var piece_hover_dim_color: Color = Color(0.68, 0.68, 0.68, 1.0)
-var piece_hover_dim_tween_duration: float = 0.18
 var piece_shadow_light_energy: float = 0.30
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
 
@@ -23,11 +24,6 @@ func configure(config: Dictionary) -> void:
 	texture_holder_scene = config.get("texture_holder_scene", texture_holder_scene)
 	board_size = int(config.get("board_size", board_size))
 	piece_light_receive_mask = int(config.get("piece_light_receive_mask", piece_light_receive_mask))
-	selected_piece_glow_name = str(config.get("selected_piece_glow_name", selected_piece_glow_name))
-	selected_piece_glow_z_index = int(config.get("selected_piece_glow_z_index", selected_piece_glow_z_index))
-	selected_piece_glow_strength = float(config.get("selected_piece_glow_strength", selected_piece_glow_strength))
-	piece_hover_dim_color = config.get("piece_hover_dim_color", piece_hover_dim_color)
-	piece_hover_dim_tween_duration = float(config.get("piece_hover_dim_tween_duration", piece_hover_dim_tween_duration))
 	piece_shadow_light_energy = float(config.get("piece_shadow_light_energy", piece_shadow_light_energy))
 	invalid_board_pos = config.get("invalid_board_pos", invalid_board_pos)
 
@@ -36,8 +32,8 @@ func display_board() -> void:
 		return
 	DebugLog.info("display_board() called: white=%s side=%s" % [match_board.white, match_board.side])
 	match_board.get_stamp_interaction_controller().clear_stamp_affix_target_feedback()
-	match_board.clear_resolved_pending_stamp_affix_positions()
-	match_board.update_board_markers()
+	match_board.get_server_state_visual_update_controller().clear_resolved_pending_stamp_affix_positions()
+	match_board.get_board_marker_controller().update_markers()
 	for child in match_board.pieces_node.get_children():
 		child.queue_free()
 
@@ -50,7 +46,7 @@ func display_board() -> void:
 				match_board.get_node("../Camera2D").global_rotation_degrees = 180
 			match_board.pieces_node.add_child(holder)
 			holder.light_mask = piece_light_receive_mask
-			holder.position = match_board.get_board_position_local_position(board_pos)
+			holder.position = match_board.get_board_geometry().get_position_local(board_pos)
 			holder.set_meta("board_pos", board_pos)
 			holder.z_index = piece_visuals.get_depth_z_index(board_pos) if piece_visuals != null else 0
 			holder.texture = texture_resolver.get_piece_texture_for_position(board_pos, int(match_board.board[i][j])) if texture_resolver != null else null
@@ -134,10 +130,10 @@ func apply_selected_piece_glow(holder: Sprite2D, board_pos: Vector2) -> void:
 	if !match_board.piece_objects.has(board_pos):
 		return
 
-	match_board.get_piece_effect_animator().create_glow_overlay(holder, selected_piece_glow_name, selected_piece_glow_z_index, selected_piece_glow_strength)
+	match_board.get_piece_effect_animator().create_glow_overlay(holder, SELECTED_PIECE_GLOW_NAME, SELECTED_PIECE_GLOW_Z_INDEX, SELECTED_PIECE_GLOW_STRENGTH)
 
 func remove_selected_piece_glow(holder: Sprite2D) -> void:
-	var existing_glow: Node = holder.get_node_or_null(selected_piece_glow_name)
+	var existing_glow: Node = holder.get_node_or_null(SELECTED_PIECE_GLOW_NAME)
 	if existing_glow != null:
 		existing_glow.free()
 
@@ -159,7 +155,7 @@ func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool =
 
 	var highlighted_pos: Vector2 = match_board.hover_highlighted_piece
 	var should_dim: bool = highlighted_pos != invalid_board_pos and board_pos != highlighted_pos
-	var tint: Color = piece_hover_dim_color if should_dim else Color(1.0, 1.0, 1.0)
+	var tint: Color = PIECE_HOVER_DIM_COLOR if should_dim else Color(1.0, 1.0, 1.0)
 	var shadow_light: PointLight2D = piece_visuals.get_shadow_light(holder) if piece_visuals != null else null
 	var target_shadow_energy: float = 0.0 if should_dim else piece_shadow_light_energy
 	var ice: Sprite2D = match_board.get_freeze_effect_animator().get_overlay(holder)
@@ -184,15 +180,15 @@ func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool =
 	# this fade from fighting whatever last set the holder's alpha.
 	var tween: Tween = holder.create_tween().set_parallel(true)
 	tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
-	tween.tween_property(holder, "self_modulate:r", tint.r, piece_hover_dim_tween_duration)
-	tween.tween_property(holder, "self_modulate:g", tint.g, piece_hover_dim_tween_duration)
-	tween.tween_property(holder, "self_modulate:b", tint.b, piece_hover_dim_tween_duration)
+	tween.tween_property(holder, "self_modulate:r", tint.r, PIECE_HOVER_DIM_TWEEN_DURATION)
+	tween.tween_property(holder, "self_modulate:g", tint.g, PIECE_HOVER_DIM_TWEEN_DURATION)
+	tween.tween_property(holder, "self_modulate:b", tint.b, PIECE_HOVER_DIM_TWEEN_DURATION)
 	if ice != null:
-		tween.tween_property(ice, "self_modulate:r", tint.r, piece_hover_dim_tween_duration)
-		tween.tween_property(ice, "self_modulate:g", tint.g, piece_hover_dim_tween_duration)
-		tween.tween_property(ice, "self_modulate:b", tint.b, piece_hover_dim_tween_duration)
+		tween.tween_property(ice, "self_modulate:r", tint.r, PIECE_HOVER_DIM_TWEEN_DURATION)
+		tween.tween_property(ice, "self_modulate:g", tint.g, PIECE_HOVER_DIM_TWEEN_DURATION)
+		tween.tween_property(ice, "self_modulate:b", tint.b, PIECE_HOVER_DIM_TWEEN_DURATION)
 	if shadow_light != null:
-		tween.tween_property(shadow_light, "energy", target_shadow_energy, piece_hover_dim_tween_duration)
+		tween.tween_property(shadow_light, "energy", target_shadow_energy, PIECE_HOVER_DIM_TWEEN_DURATION)
 	holder.set_meta(PIECE_HOVER_DIM_TWEEN_META, tween)
 
 func update_piece_hover_dim() -> void:

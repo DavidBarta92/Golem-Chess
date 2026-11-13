@@ -1,35 +1,34 @@
 extends RefCounted
 
+const BOARD_TILE_TEXTURE: Texture2D = preload("res://Assets/board_tile.svg")
+const BOARD_TILE_BASE_WHITE_TEXTURE: Texture2D = preload("res://Assets/board_tile_base_white.svg")
+const BOARD_TILE_BASE_BLACK_TEXTURE: Texture2D = preload("res://Assets/board_tile_base_black.svg")
+const BOARD_TILE_FREEZE_TEXTURE: Texture2D = preload("res://Assets/board_tile_freeze.svg")
+const BOARD_TILE_DISABLED_TEXTURE: Texture2D = preload("res://Assets/board_tile_disabled.svg")
+const BOARD_SPECIAL_TILE_NONE: String = ""
+const BOARD_SPECIAL_TILE_BASE_WHITE: String = "base_white"
+const BOARD_SPECIAL_TILE_BASE_BLACK: String = "base_black"
+const BOARD_SPECIAL_TILE_FREEZE: String = "freeze"
+const BOARD_SPECIAL_TILE_DISABLED: String = "disabled"
+const BOARD_SPECIAL_TILE_Z_INDEX: int = 1
+const BOARD_TILE_SWAP_DURATION: float = 0.26
+const BOARD_TILE_SUNK_ALPHA: float = 0.32
+const BOARD_TILE_DEPTH_WALL_COLOR: Color = Color(0.07, 0.065, 0.055, 0.86)
+const BOARD_TILE_OCCLUSION_LIP_COLOR: Color = Color(0.0, 0.0, 0.0, 0.30)
+const BOARD_TILE_OCCLUSION_LIP_INSET_FACTOR: float = 0.18
+const BOARD_TILE_TRANSITION_COVER_Z_INDEX: int = 5
+const BOARD_SIDE_THICKNESS: float = 10.4061
+
 var match_board
 var visuals
 var geometry
 var board_size: int = 0
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
 
-var board_tile_texture: Texture2D
-var board_tile_base_white_texture: Texture2D
-var board_tile_base_black_texture: Texture2D
-var board_tile_freeze_texture: Texture2D
-var board_tile_disabled_texture: Texture2D
-
-var special_tile_none: String = ""
-var special_tile_base_white: String = "base_white"
-var special_tile_base_black: String = "base_black"
-var special_tile_freeze: String = "freeze"
-var special_tile_disabled: String = "disabled"
-var special_tile_z_index: int = 1
-
-var tile_swap_duration: float = 0.26
-var tile_sunk_alpha: float = 0.32
-var tile_depth_wall_color: Color = Color(0.07, 0.065, 0.055, 0.86)
-var tile_occlusion_lip_color: Color = Color(0.0, 0.0, 0.0, 0.30)
-var tile_occlusion_lip_inset_factor: float = 0.18
-var tile_transition_cover_z_index: int = 5
 
 var frame_width: float = 0.0
 var frame_vertical_extension: float = 0.0
 var frame_color: Color = Color.WHITE
-var side_thickness: float = 0.0
 var side_color: Color = Color.WHITE
 
 var shadow_enabled: bool = true
@@ -45,30 +44,10 @@ func configure(config: Dictionary) -> void:
 	board_size = int(config.get("board_size", board_size))
 	invalid_board_pos = config.get("invalid_board_pos", invalid_board_pos)
 
-	board_tile_texture = config.get("board_tile_texture", board_tile_texture)
-	board_tile_base_white_texture = config.get("board_tile_base_white_texture", board_tile_base_white_texture)
-	board_tile_base_black_texture = config.get("board_tile_base_black_texture", board_tile_base_black_texture)
-	board_tile_freeze_texture = config.get("board_tile_freeze_texture", board_tile_freeze_texture)
-	board_tile_disabled_texture = config.get("board_tile_disabled_texture", board_tile_disabled_texture)
-
-	special_tile_none = str(config.get("special_tile_none", special_tile_none))
-	special_tile_base_white = str(config.get("special_tile_base_white", special_tile_base_white))
-	special_tile_base_black = str(config.get("special_tile_base_black", special_tile_base_black))
-	special_tile_freeze = str(config.get("special_tile_freeze", special_tile_freeze))
-	special_tile_disabled = str(config.get("special_tile_disabled", special_tile_disabled))
-	special_tile_z_index = int(config.get("special_tile_z_index", special_tile_z_index))
-
-	tile_swap_duration = float(config.get("tile_swap_duration", tile_swap_duration))
-	tile_sunk_alpha = float(config.get("tile_sunk_alpha", tile_sunk_alpha))
-	tile_depth_wall_color = config.get("tile_depth_wall_color", tile_depth_wall_color)
-	tile_occlusion_lip_color = config.get("tile_occlusion_lip_color", tile_occlusion_lip_color)
-	tile_occlusion_lip_inset_factor = float(config.get("tile_occlusion_lip_inset_factor", tile_occlusion_lip_inset_factor))
-	tile_transition_cover_z_index = int(config.get("tile_transition_cover_z_index", tile_transition_cover_z_index))
 
 	frame_width = float(config.get("frame_width", frame_width))
 	frame_vertical_extension = float(config.get("frame_vertical_extension", frame_vertical_extension))
 	frame_color = config.get("frame_color", frame_color)
-	side_thickness = float(config.get("side_thickness", side_thickness))
 	side_color = config.get("side_color", side_color)
 
 	shadow_enabled = bool(config.get("shadow_enabled", shadow_enabled))
@@ -116,7 +95,7 @@ func create_board_tiles() -> void:
 	for row in board_size:
 		for col in board_size:
 			var board_pos := Vector2(row, col)
-			var tile := create_board_tile_polygon(board_pos, board_tile_texture)
+			var tile := create_board_tile_polygon(board_pos, BOARD_TILE_TEXTURE)
 			tile.name = "BoardTile_%d_%d" % [row, col]
 			match_board.board_base_tiles_node.add_child(tile)
 
@@ -133,7 +112,7 @@ func create_board_shadow_visuals() -> void:
 	if !shadow_enabled:
 		return
 
-	var outer_polygon: PackedVector2Array = match_board.get_projected_board_rect_polygon(
+	var outer_polygon: PackedVector2Array = match_board.get_board_geometry().get_projected_board_rect_polygon(
 		frame_width,
 		frame_vertical_extension,
 		false
@@ -180,12 +159,12 @@ func create_board_frame_visuals() -> void:
 		frame_width,
 		frame_vertical_extension,
 		frame_color,
-		side_thickness,
+		BOARD_SIDE_THICKNESS,
 		side_color
 	)
 
 func create_board_side_visual(outer_polygon: PackedVector2Array) -> void:
-	visuals.create_side_visual(match_board.board_frame_node, outer_polygon, side_thickness, side_color)
+	visuals.create_side_visual(match_board.board_frame_node, outer_polygon, BOARD_SIDE_THICKNESS, side_color)
 
 func update_board_special_tiles() -> void:
 	if match_board.board_special_tiles_node == null or !is_instance_valid(match_board.board_special_tiles_node):
@@ -203,7 +182,7 @@ func update_board_special_tiles() -> void:
 			continue
 
 		var previous_type: String = str(previous_types[position_value])
-		var target_type: String = str(target_tiles.get(board_pos, special_tile_none))
+		var target_type: String = str(target_tiles.get(board_pos, BOARD_SPECIAL_TILE_NONE))
 		if previous_type == target_type:
 			var existing_tile: Polygon2D = match_board.board_special_tile_nodes.get(board_pos, null) as Polygon2D
 			if existing_tile != null and is_instance_valid(existing_tile):
@@ -227,28 +206,28 @@ func update_board_special_tiles() -> void:
 
 		var target_type: String = str(target_tiles[position_value])
 		var existing_tile: Polygon2D = match_board.board_special_tile_nodes.get(board_pos, null) as Polygon2D
-		if str(previous_types.get(board_pos, special_tile_none)) == target_type and existing_tile != null and is_instance_valid(existing_tile):
+		if str(previous_types.get(board_pos, BOARD_SPECIAL_TILE_NONE)) == target_type and existing_tile != null and is_instance_valid(existing_tile):
 			continue
 
 		if animate_changes and !previous_types.has(board_pos):
-			var base_clone := create_board_tile_polygon(board_pos, board_tile_texture)
+			var base_clone := create_board_tile_polygon(board_pos, BOARD_TILE_TEXTURE)
 			base_clone.name = "BoardTileSink_%d_%d" % [int(board_pos.x), int(board_pos.y)]
-			base_clone.z_index = special_tile_z_index
+			base_clone.z_index = BOARD_SPECIAL_TILE_Z_INDEX
 			match_board.board_special_tiles_node.add_child(base_clone)
 			animate_board_tile_out(base_clone, true)
 
 		var new_tile := create_board_tile_polygon(board_pos, get_board_special_tile_texture(target_type))
 		new_tile.name = "BoardSpecialTile_%s_%d_%d" % [target_type, int(board_pos.x), int(board_pos.y)]
-		new_tile.z_index = special_tile_z_index + 2
+		new_tile.z_index = BOARD_SPECIAL_TILE_Z_INDEX + 2
 		match_board.board_special_tiles_node.add_child(new_tile)
 		match_board.board_special_tile_nodes[board_pos] = new_tile
 		match_board.board_special_tile_types[board_pos] = target_type
 		if animate_changes and !match_board.should_skip_visual_animations():
 			SFXManager.play("field_slips")
-			if target_type == special_tile_freeze and !played_frozen_effect_sound:
+			if target_type == BOARD_SPECIAL_TILE_FREEZE and !played_frozen_effect_sound:
 				played_frozen_effect_sound = true
 				SFXManager.play("frozen_squares_effect")
-			elif target_type == special_tile_disabled and !played_invalid_effect_sound:
+			elif target_type == BOARD_SPECIAL_TILE_DISABLED and !played_invalid_effect_sound:
 				played_invalid_effect_sound = true
 				SFXManager.play("invalid_squares_effect")
 		animate_board_tile_in(new_tile, board_pos, animate_changes)
@@ -264,18 +243,18 @@ func get_board_special_tile_targets() -> Dictionary:
 		set_board_special_tile_target(
 			targets,
 			base_pos,
-			special_tile_base_white if player_id == 0 else special_tile_base_black
+			BOARD_SPECIAL_TILE_BASE_WHITE if player_id == 0 else BOARD_SPECIAL_TILE_BASE_BLACK
 		)
 
 	for effect_value in match_board.current_board_effects:
 		var effect: Dictionary = effect_value
 		var effect_type: String = str(effect.get("effect_type", ""))
-		var tile_type: String = special_tile_none
+		var tile_type: String = BOARD_SPECIAL_TILE_NONE
 		if effect_type == StampEffect.TYPE_INVALID_SQUARES:
-			tile_type = special_tile_disabled
+			tile_type = BOARD_SPECIAL_TILE_DISABLED
 		elif effect_type == StampEffect.TYPE_FROZEN_SQUARES:
-			tile_type = special_tile_freeze
-		if tile_type == special_tile_none:
+			tile_type = BOARD_SPECIAL_TILE_FREEZE
+		if tile_type == BOARD_SPECIAL_TILE_NONE:
 			continue
 
 		var squares: Array = effect.get("squares", [])
@@ -287,33 +266,33 @@ func get_board_special_tile_targets() -> Dictionary:
 	return targets
 
 func set_board_special_tile_target(targets: Dictionary, board_pos: Vector2, tile_type: String) -> void:
-	var current_type: String = str(targets.get(board_pos, special_tile_none))
+	var current_type: String = str(targets.get(board_pos, BOARD_SPECIAL_TILE_NONE))
 	if get_board_special_tile_priority(tile_type) >= get_board_special_tile_priority(current_type):
 		targets[board_pos] = tile_type
 
 func get_board_special_tile_priority(tile_type: String) -> int:
 	match tile_type:
-		special_tile_base_white, special_tile_base_black:
+		BOARD_SPECIAL_TILE_BASE_WHITE, BOARD_SPECIAL_TILE_BASE_BLACK:
 			return 1
-		special_tile_freeze:
+		BOARD_SPECIAL_TILE_FREEZE:
 			return 2
-		special_tile_disabled:
+		BOARD_SPECIAL_TILE_DISABLED:
 			return 3
 		_:
 			return 0
 
 func get_board_special_tile_texture(tile_type: String) -> Texture2D:
 	match tile_type:
-		special_tile_base_white:
-			return board_tile_base_white_texture
-		special_tile_base_black:
-			return board_tile_base_black_texture
-		special_tile_freeze:
-			return board_tile_freeze_texture
-		special_tile_disabled:
-			return board_tile_disabled_texture
+		BOARD_SPECIAL_TILE_BASE_WHITE:
+			return BOARD_TILE_BASE_WHITE_TEXTURE
+		BOARD_SPECIAL_TILE_BASE_BLACK:
+			return BOARD_TILE_BASE_BLACK_TEXTURE
+		BOARD_SPECIAL_TILE_FREEZE:
+			return BOARD_TILE_FREEZE_TEXTURE
+		BOARD_SPECIAL_TILE_DISABLED:
+			return BOARD_TILE_DISABLED_TEXTURE
 		_:
-			return board_tile_texture
+			return BOARD_TILE_TEXTURE
 
 func animate_board_tile_out(tile: Polygon2D, animate_change: bool) -> void:
 	if tile == null or !is_instance_valid(tile):
@@ -325,16 +304,16 @@ func animate_board_tile_out(tile: Polygon2D, animate_change: bool) -> void:
 	var board_pos: Vector2 = BoardConfig.value_to_vector2(tile.get_meta("board_pos", invalid_board_pos), invalid_board_pos)
 	var sink_offset: Vector2 = geometry.get_tile_sink_offset()
 	if MoveRules.is_valid_position(board_pos):
-		animate_board_tile_depth_wall(board_pos, sink_offset, tile_swap_duration)
-		create_temporary_board_tile_cover(geometry.get_tile_near_neighbor_position(board_pos), tile_swap_duration)
-		create_temporary_board_tile_edge_lip(board_pos, geometry.get_tile_near_edge_indices(), tile_swap_duration)
+		animate_board_tile_depth_wall(board_pos, sink_offset, BOARD_TILE_SWAP_DURATION)
+		create_temporary_board_tile_cover(geometry.get_tile_near_neighbor_position(board_pos), BOARD_TILE_SWAP_DURATION)
+		create_temporary_board_tile_edge_lip(board_pos, geometry.get_tile_near_edge_indices(), BOARD_TILE_SWAP_DURATION)
 
-	tile.z_index = special_tile_z_index + 1
+	tile.z_index = BOARD_SPECIAL_TILE_Z_INDEX + 1
 	tile.position = Vector2.ZERO
 	tile.modulate = Color.WHITE
 	var tween: Tween = match_board.create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
-	tween.tween_property(tile, "position", sink_offset, tile_swap_duration)
-	tween.parallel().tween_property(tile, "modulate:a", tile_sunk_alpha, tile_swap_duration)
+	tween.tween_property(tile, "position", sink_offset, BOARD_TILE_SWAP_DURATION)
+	tween.parallel().tween_property(tile, "modulate:a", BOARD_TILE_SUNK_ALPHA, BOARD_TILE_SWAP_DURATION)
 	tween.finished.connect(func():
 		if is_instance_valid(tile):
 			tile.queue_free()
@@ -349,13 +328,13 @@ func animate_board_tile_in(tile: Polygon2D, board_pos: Vector2, animate_change: 
 		return
 
 	var slide_offset: Vector2 = geometry.get_tile_slide_offset(board_pos)
-	create_temporary_board_tile_cover(geometry.get_tile_slide_cover_position(board_pos, slide_offset), tile_swap_duration)
-	create_temporary_board_tile_edge_lip(board_pos, geometry.get_tile_entry_edge_indices(slide_offset), tile_swap_duration)
+	create_temporary_board_tile_cover(geometry.get_tile_slide_cover_position(board_pos, slide_offset), BOARD_TILE_SWAP_DURATION)
+	create_temporary_board_tile_edge_lip(board_pos, geometry.get_tile_entry_edge_indices(slide_offset), BOARD_TILE_SWAP_DURATION)
 
 	tile.position = slide_offset
 	tile.modulate = Color.WHITE
 	var tween: Tween = match_board.create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
-	tween.tween_property(tile, "position", Vector2.ZERO, tile_swap_duration)
+	tween.tween_property(tile, "position", Vector2.ZERO, BOARD_TILE_SWAP_DURATION)
 
 func animate_board_tile_depth_wall(board_pos: Vector2, sink_offset: Vector2, duration: float) -> void:
 	if match_board.board_special_tiles_node == null or !is_instance_valid(match_board.board_special_tiles_node):
@@ -363,8 +342,8 @@ func animate_board_tile_depth_wall(board_pos: Vector2, sink_offset: Vector2, dur
 
 	var wall := Polygon2D.new()
 	wall.name = "BoardTileDepthWall_%d_%d" % [int(board_pos.x), int(board_pos.y)]
-	wall.color = tile_depth_wall_color
-	wall.z_index = special_tile_z_index + tile_transition_cover_z_index - 1
+	wall.color = BOARD_TILE_DEPTH_WALL_COLOR
+	wall.z_index = BOARD_SPECIAL_TILE_Z_INDEX + BOARD_TILE_TRANSITION_COVER_Z_INDEX - 1
 	visuals.enable_canvas_item_antialiasing(wall)
 	match_board.board_special_tiles_node.add_child(wall)
 	set_board_tile_depth_wall_polygon(wall, board_pos, sink_offset, 0.0)
@@ -384,7 +363,7 @@ func set_board_tile_depth_wall_polygon(wall: Polygon2D, board_pos: Vector2, sink
 	if wall == null or !is_instance_valid(wall):
 		return
 
-	var polygon: PackedVector2Array = match_board.get_board_cell_polygon_local(board_pos)
+	var polygon: PackedVector2Array = match_board.get_board_geometry().get_cell_polygon_local(board_pos)
 	if polygon.size() < 4:
 		return
 
@@ -408,7 +387,7 @@ func create_temporary_board_tile_cover(board_pos: Vector2, duration: float) -> v
 
 	var cover := create_board_tile_polygon(board_pos, get_board_visible_tile_texture(board_pos))
 	cover.name = "BoardTileTransitionCover_%d_%d" % [int(board_pos.x), int(board_pos.y)]
-	cover.z_index = special_tile_z_index + tile_transition_cover_z_index
+	cover.z_index = BOARD_SPECIAL_TILE_Z_INDEX + BOARD_TILE_TRANSITION_COVER_Z_INDEX
 	match_board.board_special_tiles_node.add_child(cover)
 	var tween: Tween = match_board.create_tween()
 	tween.tween_interval(duration)
@@ -423,22 +402,22 @@ func create_temporary_board_tile_edge_lip(board_pos: Vector2, edge_indices: Arra
 	if !MoveRules.is_valid_position(board_pos) or edge_indices.size() < 2:
 		return
 
-	var polygon: PackedVector2Array = match_board.get_board_cell_polygon_local(board_pos)
+	var polygon: PackedVector2Array = match_board.get_board_geometry().get_cell_polygon_local(board_pos)
 	if polygon.size() < 4:
 		return
 
-	var center: Vector2 = match_board.get_board_position_local_position(board_pos)
+	var center: Vector2 = match_board.get_board_geometry().get_position_local(board_pos)
 	var edge_a: Vector2 = polygon[int(edge_indices[0])]
 	var edge_b: Vector2 = polygon[int(edge_indices[1])]
 	var lip := Polygon2D.new()
 	lip.name = "BoardTileTransitionLip_%d_%d" % [int(board_pos.x), int(board_pos.y)]
-	lip.color = tile_occlusion_lip_color
-	lip.z_index = special_tile_z_index + tile_transition_cover_z_index + 1
+	lip.color = BOARD_TILE_OCCLUSION_LIP_COLOR
+	lip.z_index = BOARD_SPECIAL_TILE_Z_INDEX + BOARD_TILE_TRANSITION_COVER_Z_INDEX + 1
 	lip.polygon = PackedVector2Array([
 		edge_a,
 		edge_b,
-		edge_b.lerp(center, tile_occlusion_lip_inset_factor),
-		edge_a.lerp(center, tile_occlusion_lip_inset_factor),
+		edge_b.lerp(center, BOARD_TILE_OCCLUSION_LIP_INSET_FACTOR),
+		edge_a.lerp(center, BOARD_TILE_OCCLUSION_LIP_INSET_FACTOR),
 	])
 	visuals.enable_canvas_item_antialiasing(lip)
 	match_board.board_special_tiles_node.add_child(lip)
@@ -451,5 +430,5 @@ func create_temporary_board_tile_edge_lip(board_pos: Vector2, edge_indices: Arra
 	)
 
 func get_board_visible_tile_texture(board_pos: Vector2) -> Texture2D:
-	var tile_type: String = str(match_board.board_special_tile_types.get(board_pos, special_tile_none))
+	var tile_type: String = str(match_board.board_special_tile_types.get(board_pos, BOARD_SPECIAL_TILE_NONE))
 	return get_board_special_tile_texture(tile_type)

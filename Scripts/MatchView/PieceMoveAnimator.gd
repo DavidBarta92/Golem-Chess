@@ -2,6 +2,9 @@ extends RefCounted
 
 const PIECE_MOVE_SHADOW_SHADER = preload("res://Shaders/piece_move_shadow.gdshader")
 
+const PIECE_MOVE_ROUTE_CORNER_ROUNDING_RATIO: float = 0.28
+const PIECE_MOVE_ROUTE_CORNER_SAMPLE_COUNT: int = 4
+
 var geometry
 var piece_visuals
 var tween_owner: Node
@@ -31,8 +34,6 @@ var movement_shadow_z_offset: int = -2
 ## `route_z_front_offset` together must stay below `BoardConfig.DEPTH_Z_STRIDE`,
 ## or a piece flying over one rank outranks a piece resting on the next one in.
 var lifted_z_offset: int = 2
-var corner_rounding_ratio: float = 0.28
-var corner_sample_count: int = 4
 var pieces_node: Node
 var local_space_node: Node2D
 var avoid_occupied_footprints: bool = true
@@ -73,8 +74,6 @@ func configure(config: Dictionary) -> void:
 	movement_shadow_lifted_alpha = float(config.get("movement_shadow_lifted_alpha", movement_shadow_lifted_alpha))
 	movement_shadow_z_offset = int(config.get("movement_shadow_z_offset", movement_shadow_z_offset))
 	lifted_z_offset = int(config.get("lifted_z_offset", lifted_z_offset))
-	corner_rounding_ratio = float(config.get("corner_rounding_ratio", corner_rounding_ratio))
-	corner_sample_count = int(config.get("corner_sample_count", corner_sample_count))
 	pieces_node = config.get("pieces_node", pieces_node)
 	local_space_node = config.get("local_space_node", local_space_node)
 	avoid_occupied_footprints = bool(config.get("avoid_occupied_footprints", avoid_occupied_footprints))
@@ -592,13 +591,13 @@ func get_smoothed_route_points(route_points: Array[Vector2]) -> Array[Vector2]:
 			append_route_point(smoothed_points, corner_point)
 			continue
 
-		var corner_radius: float = minf(incoming_length, outgoing_length) * corner_rounding_ratio
+		var corner_radius: float = minf(incoming_length, outgoing_length) * PIECE_MOVE_ROUTE_CORNER_ROUNDING_RATIO
 		corner_radius = minf(corner_radius, float(cell_width) * 0.46)
 		var entry_point: Vector2 = corner_point - incoming.normalized() * corner_radius
 		var exit_point: Vector2 = corner_point + outgoing.normalized() * corner_radius
 		append_route_point(smoothed_points, entry_point)
-		for sample_index in range(1, corner_sample_count + 1):
-			var sample_progress: float = float(sample_index) / float(corner_sample_count + 1)
+		for sample_index in range(1, PIECE_MOVE_ROUTE_CORNER_SAMPLE_COUNT + 1):
+			var sample_progress: float = float(sample_index) / float(PIECE_MOVE_ROUTE_CORNER_SAMPLE_COUNT + 1)
 			append_route_point(smoothed_points, get_quadratic_curve_point(entry_point, corner_point, exit_point, sample_progress))
 		append_route_point(smoothed_points, exit_point)
 

@@ -1,20 +1,24 @@
 extends RefCounted
 
+# The board carries no scale of its own: its size comes from the perspective
+# constants in BoardGeometry, which are fitted to the ink in
+# Assets/board_grid_line.png in world units. Scaling the node here would move the board off the drawn table
+# without moving the drawing with it. See Scripts/MatchView/BoardCanvas.gd.
+const BOARD_VISUAL_SCALE: float = 1.0
+
 var match_board
-var board_visual_scale: float = 1.0
 
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
-	board_visual_scale = float(config.get("board_visual_scale", board_visual_scale))
 
 func set_turn(turn_value) -> void:
 	match_board.side = turn_value
 	match_board.get_turn_action_state_controller().reset_current_turn_stamp_affix()
-	match_board.update_stamp_presentation()
+	match_board.get_stamp_hand_state_controller().update_stamp_presentation()
 	match_board.get_board_tile_controller().create_board_tiles()
-	match_board.display_board()
+	match_board.get_piece_display_controller().display_board()
 	match_board.get_board_environment_controller().create_board_shader_overlay()
-	match_board.update_end_turn_button()
+	match_board.get_turn_hud_controller().update_end_turn_button()
 	if match_board.side != null and !match_board.side:
 		match_board.get_node("../Camera2D").global_rotation_degrees = 180
 	else:
@@ -36,7 +40,7 @@ func ready() -> void:
 
 	match_board.create_pieces_from_board()
 	match_board.get_board_environment_controller().create_board_shader_overlay()
-	match_board.setup_player_stamp_hands()
+	match_board.get_stamp_hand_state_controller().setup_player_stamp_hands()
 	match_board.create_hover_piece_ui()
 	match_board.get_board_effect_icon_grid_controller().create_ui()
 	match_board.get_turn_hud_controller().create_result_ui()
@@ -70,6 +74,9 @@ func ready() -> void:
 		match_board.get_viewport().size_changed.connect(resize_callable)
 	hud_controller.update_player_name_labels()
 	hud_controller.update_player_portrait_views()
+	# Every node the controllers' configs point at exists now: from here on each
+	# controller is configured once (see MatchBoardControllerRegistry._needs_sync).
+	match_board.get_controller_registry().settle()
 
 func on_viewport_size_changed() -> void:
 	match_board.get_controller_registry().sync_turn_hud_controller()
@@ -77,4 +84,4 @@ func on_viewport_size_changed() -> void:
 	match_board.get_turn_hud_controller().update_player_portrait_views()
 
 func apply_board_visual_scale() -> void:
-	match_board.scale = Vector2.ONE * board_visual_scale
+	match_board.scale = Vector2.ONE * BOARD_VISUAL_SCALE
