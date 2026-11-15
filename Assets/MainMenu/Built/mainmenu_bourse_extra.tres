@@ -1,0 +1,10 @@
+[gd_resource type="AtlasTexture" format=3 uid="uid://8yae9msgmb0o"]
+
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_bourse_extra.png" id="1_art"]
+
+[resource]
+resource_name = "mainmenu_bourse_extra"
+atlas = ExtResource("1_art")
+region = Rect2(0, 0, 145, 368)
+margin = Rect2(0, 263, 1774, 709)
+filter_clip = true

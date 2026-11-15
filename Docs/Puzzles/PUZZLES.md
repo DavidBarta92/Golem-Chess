@@ -1,7 +1,8 @@
 # Puzzles
 
-Every puzzle arrives as a letter. The main menu's Puzzles button (the story
-feature `quests`, `StoryFeatures.PUZZLES`) opens the letters; clicking an
+Every puzzle arrives as a letter. The parcel in the main menu's shelf (the
+Puzzles button, story feature `quests`, `StoryFeatures.PUZZLES`, see
+[Docs/MainMenu/MAIN_MENU.md](../MainMenu/MAIN_MENU.md)) opens the letters; clicking an
 envelope opens it, and the letter's button puts the puzzle's position on a
 board. The look follows the mock-ups in [Docs/Letters](../Letters) (also as
 `Golem – Bélyegbörze layoutok.pdf`).

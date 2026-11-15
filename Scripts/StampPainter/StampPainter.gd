@@ -18,6 +18,9 @@ const Palette = preload("res://Scripts/StampPainter/StampPainterPalette.gd")
 const GUIDE_SHADER = preload("res://Shaders/stamp_painter_guide.gdshader")
 const STAMP_VISUAL_SCENE = preload("res://Scenes/StampVisual.tscn")
 
+## The main menu's drawing things open this screen once Boss 12 is beaten;
+## its Főmenü button returns there.
+const MAIN_MENU_SCENE: String = "res://Scenes/MainMenu.tscn"
 const DRAWINGS_FOLDER: String = "Golem Chess/Drawings"
 const DRAWINGS_DIR_ARGUMENT: String = "--drawings-dir="
 const PREVIEW_SCALE: float = 1.15
@@ -41,6 +44,7 @@ const TOOLS: Array = [
 
 @onready var canvas: PaintCanvas = %Canvas
 @onready var stamp_picker: OptionButton = %StampPicker
+@onready var back_button: Button = %BackButton
 @onready var new_button: Button = %NewButton
 @onready var original_button: Button = %OriginalButton
 @onready var open_button: Button = %OpenButton
@@ -73,6 +77,8 @@ var tool_buttons: Dictionary = {}  # tool -> Button
 var current_file: String = ""
 var current_file_stamp: String = ""
 var unsaved: bool = false
+## Back was pressed once over an unsaved drawing: the next press leaves anyway.
+var leave_armed: bool = false
 var cursor_text: String = ""
 var message: String = ""
 var open_dialog: FileDialog
@@ -106,6 +112,7 @@ func _connect_controls() -> void:
 	canvas.cursor_moved.connect(_on_cursor_moved)
 	canvas.overlay_root.resized.connect(_layout_markings)
 	stamp_picker.item_selected.connect(_on_stamp_selected)
+	back_button.pressed.connect(_on_back_pressed)
 	new_button.pressed.connect(_on_new_pressed)
 	original_button.pressed.connect(_on_original_pressed)
 	open_button.pressed.connect(_on_open_pressed)
@@ -300,6 +307,7 @@ func _on_brush_size_changed(new_size: int) -> void:
 
 func _on_image_changed() -> void:
 	unsaved = true
+	leave_armed = false
 	_update_history_buttons()
 	_update_status()
 
@@ -350,6 +358,16 @@ func _drawings_dir() -> String:
 	if documents.is_empty():
 		return ProjectSettings.globalize_path("user://drawings")
 	return documents.path_join(DRAWINGS_FOLDER)
+
+## An unsaved drawing is not thrown away on one press: the first one only
+## says so.
+func _on_back_pressed() -> void:
+	if unsaved and !leave_armed:
+		leave_armed = true
+		message = "A rajz nincs elmentve. Kilépéshez nyomd meg még egyszer a Főmenü gombot."
+		_update_status()
+		return
+	SceneTransition.change_scene(MAIN_MENU_SCENE)
 
 func _on_new_pressed() -> void:
 	canvas.clear_canvas()

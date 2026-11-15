@@ -129,6 +129,21 @@ func play_in() -> void:
 	_fade_tween.tween_property(self, "modulate:a", 1.0, TopBarStyle.PANEL_IN_SECONDS).set_delay(TopBarStyle.PANEL_IN_DELAY_SECONDS).set_ease(Tween.EASE_OUT)
 	_fade_tween.tween_property(self, "position:x", _rest_x, TopBarStyle.PANEL_IN_SECONDS).set_delay(TopBarStyle.PANEL_IN_DELAY_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 
+## Its ribbon has moved (another ribbon came or went): the panel goes along,
+## sliding as the ribbons slide. A fade-in still under way is finished at once
+## so the two slides do not pull against each other.
+func follow_to(x: float, animate: bool) -> void:
+	if !is_open() or is_equal_approx(x, _rest_x):
+		return
+	if _fade_tween != null and _fade_tween.is_valid():
+		_fade_tween.kill()
+		modulate.a = 1.0
+	_rest_x = x
+	if !animate:
+		position.x = x
+		return
+	create_tween().tween_property(self, "position:x", x, TopBarStyle.SLIDE_SECONDS).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+
 func play_out() -> void:
 	quest_id = ""
 	if !visible:

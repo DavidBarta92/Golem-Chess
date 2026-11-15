@@ -18,14 +18,17 @@ Seven node types:
 | `ComicStoryNode` | a run of comic pages | `page_paths: Array[String]` |
 | `TutorialStoryNode` | the scripted tutorial match | `tutorial_scene_path` |
 | `BossGameStoryNode` | a match against an authored opponent | `boss`, `defeat_behavior`, `defeat_page_paths` |
-| `RandomMatchStoryNode` | warm-up matches against generated opponents | `match_count` |
 | `SceneStoryNode` | any other beat that is just its own scene | `scene_path` |
 | `RewardStoryNode` | the "you unlocked something" screen | `reward_scene_path` |
 | `QuestStoryNode` | a quest in the top bar; the story waits until it is claimed | `condition`, `count`, `param`, `title`, `text` |
 
 A `QuestStoryNode` is not played: while it is the current node, its quest
 hangs in the top bar, the Play window's story button is inactive (the random
-opponent button still plays), and claiming the quest completes the node. See [Docs/Quests/QUESTS.md](../Docs/Quests/QUESTS.md).
+opponent button still plays), and claiming the quest completes the node. Most
+chapters from Boss 2 to Boss 11 end with one - opening the Collection, buying a
+pack, matches against random opponents, a puzzle, a lot on the Bourse; the
+list is in [Docs/Quests/QUESTS.md](../Docs/Quests/QUESTS.md) (*The story's
+quests*). A save already past such a quest is not sent back to it.
 
 Nodes name their scenes by **path** (`@export_file`), never as a
 `PackedScene`. `StoryManager` loads the whole definition at startup, and a
@@ -86,18 +89,21 @@ flattened the stamp into a mere fade.
 | Button | Look | Starts |
 | --- | --- | --- |
 | Story | burgundy, a book (the story quest ribbon's) | `StoryManager.continue_story_if_ready()`: the current node, normally the next boss fight |
-| Random opponent | ink, a person | `StoryManager.start_random_opponent_match()`: a due warm-up node, else a generated opponent outside the story |
+| Random opponent | ink, a person | `StoryManager.start_random_opponent_match()`: a generated opponent, outside the story |
 | Multiplayer | inactive (pink, faded), a globe | nothing yet |
 
 - The story button is inactive while the story has nothing to start
   (`StoryManager.can_continue_story()`: all done, or a story quest waiting).
-- While a warm-up is due, both buttons start it. Which button turns off when
-  is not decided yet; `set_mode_enabled(MODE_STORY / MODE_RANDOM, false)` on
-  the window turns one off.
-- A match outside the story is against a generated opponent like a warm-up's,
-  at the level of the last boss beaten; it is not rated and ends on the
-  feedback screen like any non-story match. It replaced quick play (the AI
-  mirroring the player's codex), which nothing starts any more.
+- **The two buttons are independent.** The story button only ever brings up
+  the next authored beat - a boss, a comic, a reward - and the random button
+  only ever starts a match of its own. The story used to carry blocks of
+  generated-opponent matches that *either* button would run, which is why the
+  two once had to agree; those are gone.
+  `set_mode_enabled(MODE_STORY / MODE_RANDOM, false)` still turns one off.
+- A random match is against a generated opponent at the level of the last boss
+  beaten; it is not rated and ends on the feedback screen like any non-story
+  match. It replaced quick play (the AI mirroring the player's codex), which
+  nothing starts any more.
 
 ### Losing a boss fight
 
@@ -110,19 +116,12 @@ The node never completes on a loss. What happens next is the boss node's
 - `COMIC_THEN_RETRY` — the node's `defeat_page_paths` play, then the fight restarts
   with no way out. Only for Boss 1 and 2, which happen before the hub exists.
 
-### Warm-up matches
+### The generated opponents' decks
 
-A `RandomMatchStoryNode` sits before a boss and needs `match_count` matches
-*started* — not won — before it completes. Each press of the Play window's
-story or random opponent button runs one:
-
-- a random opponent from `RandomOpponentFactory` — name from
-  `Data/random_opponent_names.json` (surname first, Hungarian order), a
-  generated portrait, and a random deck from `Decks/`;
-- difficulty is the level of the last boss beaten (`difficulty_override` on
-  the node pins it instead);
-- win or lose, the match ends at the hub. The count is the node's attempt
-  counter in the save, so this needs no state of its own.
+A random match's opponent comes from `RandomOpponentFactory`: a name from
+`Data/random_opponent_names.json` (surname first, Hungarian order), a
+generated portrait, and a random deck from `Decks/`. The difficulty is the
+level of the last boss beaten.
 
 `Decks/` holds `DeckDefinition` resources (`deck_id`, `set_name`, `stamps`),
 loaded by the `DeckDefinitionLibrary` autoload. The thirty there are
@@ -480,7 +479,7 @@ where that point of the story would have left it.
 ## Unlocking and introducing a menu button
 
 A "feature" is a button the story unlocks and then points at. Ids live in
-`Scripts/Story/StoryFeatures.gd` (`play`, `collection`, `buy_packs`, `multiplayer`, `quests`, `trade`). The last three open screens from plain buttons in the main menu's `StoryButtons` box. `trade` opens the Bourse (`Scenes/Bourse.tscn`, see [Docs/Bourse/BOURSE.md](../Docs/Bourse/BOURSE.md)) and `quests` (`StoryFeatures.PUZZLES`) the puzzles' letters (`Scenes/Puzzles.tscn`, see [Docs/Puzzles/PUZZLES.md](../Docs/Puzzles/PUZZLES.md)); both features keep their old ids so saves stay valid. `StoryMultiplayer.tscn` is still a placeholder (a title and a Back button); replace the buttons with artwork and the screen with a real one when they are designed.
+`Scripts/Story/StoryFeatures.gd` (`play`, `collection`, `buy_packs`, `multiplayer`, `quests`, `trade`, `draw`). Apart from `buy_packs` (the top bar's), each is a drawing in the main menu's room; [Docs/MainMenu/MAIN_MENU.md](../Docs/MainMenu/MAIN_MENU.md) lists them, what each looks like before the story gets there, and what unlocks it. `trade` opens the Bourse (`Scenes/Bourse.tscn`, see [Docs/Bourse/BOURSE.md](../Docs/Bourse/BOURSE.md)) and `quests` (`StoryFeatures.PUZZLES`) the puzzles' letters (`Scenes/Puzzles.tscn`, see [Docs/Puzzles/PUZZLES.md](../Docs/Puzzles/PUZZLES.md)); both features keep their old ids so saves stay valid. `multiplayer` uncovers the phone, which takes no clicks until matches with friends are built; `StoryMultiplayer.tscn`, the placeholder screen the old text button opened, is no longer reachable.
 
 To gate and introduce a new button:
 
@@ -488,12 +487,14 @@ To gate and introduce a new button:
 2. Add a `FeatureHint` node to the scene that owns the button, set
    `feature_id` and `target_path` (or `top_bar_button_id` for a
    `GlobalTopBar` button), and pick `arrow_side` / `arrow_offset`.
-3. Put the feature id in some reward scene's `unlocks_features`.
+3. Put the feature id in some reward scene's `unlocks_features`, or on a
+   story node's `unlocks_feature` (Boss 12's unlocks `draw`).
 
 The hint then handles all three states on its own: locked → the button is
 disabled; unlocked → an ink arrow bobs next to it; clicked once → the arrow is
 gone for good. Set `lock_target_until_unlocked = false` for a button that
-should stay usable and only wants the arrow (that is how Play is set up).
+should stay usable and only wants the arrow (that is how Play is set up), or
+that locks itself: the main menu's drawn buttons do (`MainMenuFeatureButton`).
 Play's hint is a glow behind the window; the window takes no clicks itself,
 so it marks the hint used when one of its buttons is chosen.
 
@@ -728,7 +729,7 @@ Two details worth knowing:
   swallowing a click meant for a square.
 
 The opponent's face now appears *only* when something speaks through this
-panel. A match with no dialogue behind it — multiplayer, a random warm-up
+panel. A match with no dialogue behind it — multiplayer, a generated
 opponent — therefore shows no opponent name or portrait at all.
 
 ## How a match comes on screen
@@ -751,7 +752,7 @@ A boss chooses its own room. `BossDefinition.room_variant` and
 `show_opponent_codex` travel through `GameConfig.set_match_room()` and are
 applied by `MatchIntroController._dress_the_room()` before the room draws
 itself. Both Grandpa matches are played in MEMORY, and the first of them has
-no opponent codex on the table yet. A warm-up match clears the setting and
+no opponent codex on the table yet. A random match clears the setting and
 gets the kiosk.
 
 Pick one with the `variant` switch on the node; the editor draws whichever is

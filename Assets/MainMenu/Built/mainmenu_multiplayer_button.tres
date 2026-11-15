@@ -1,0 +1,10 @@
+[gd_resource type="AtlasTexture" format=3 uid="uid://hj1e7mtw1cu7"]
+
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_multiplayer_button.png" id="1_art"]
+
+[resource]
+resource_name = "mainmenu_multiplayer_button"
+atlas = ExtResource("1_art")
+region = Rect2(0, 0, 204, 184)
+margin = Rect2(206, 871, 1715, 893)
+filter_clip = true

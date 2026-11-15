@@ -190,6 +190,8 @@ func animate_recent_stamp_expirations(recent_stamp_expirations: Array) -> void:
 		var expired_stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
 		if expired_stamp == null:
 			continue
+		if !str(expiration.get("print_id", "")).is_empty():
+			expired_stamp.set_meta("print_id", str(expiration.get("print_id", "")))
 		if MoveRules.is_seeker_stamp(expired_stamp):
 			continue
 		if expired_stamp.effect_type == StampEffect.TYPE_GIVE_STAMP && expired_stamp.effect_trigger == StampEffect.TRIGGER_ON_EXPIRE:

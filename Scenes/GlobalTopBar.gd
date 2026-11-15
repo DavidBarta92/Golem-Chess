@@ -511,9 +511,19 @@ func _layout_right_group(animate: bool) -> void:
 			left_edge = cursor - TopBarStyle.RIBBON_WIDTH
 			_place(ribbon, Vector2(left_edge, 0.0), animate, false)
 			cursor = left_edge - TopBarStyle.RIBBON_GAP
+		_follow_open_ribbon(animate)
 
 	var clip_right: float = left_edge - TopBarStyle.GROUP_GAP if left_edge < bar_width - TopBarStyle.BAR_MARGIN else bar_width - TopBarStyle.BAR_MARGIN
 	scene_items_clip.offset_right = clip_right - bar_width
+
+
+## An open panel stays beside its ribbon when the ribbons change places.
+func _follow_open_ribbon(animate: bool) -> void:
+	var ribbon = _ribbons.get(_open_quest_id, null)
+	if ribbon == null:
+		return
+	var ribbon_x: float = _target_x.get(ribbon, ribbon.position.x)
+	quest_panel.follow_to(ribbon_x - TopBarStyle.PANEL_WIDTH if quest_panel.opens_left else ribbon_x + TopBarStyle.RIBBON_WIDTH, animate)
 
 
 ## Moves an item of the right group to its place; x slides when animated, y

@@ -209,6 +209,23 @@ func get_deck_stamp_names(deck_id: String) -> Array[String]:
 		return empty_stamp_names
 	return get_stamp_names_from_deck(deck)
 
+## The print of each stamp get_deck_stamp_names lists, in the same order.
+func get_deck_print_ids(deck_id: String) -> Array[String]:
+	var print_ids: Array[String] = []
+	var deck: Dictionary = get_deck(deck_id)
+	var stamps = deck.get("stamps", [])
+	if !(stamps is Array):
+		return print_ids
+	# One entry for every stamp the names list keeps, so the two stay in step.
+	for deck_stamp in stamps:
+		var single: Dictionary = {"stamps": [deck_stamp]}
+		if get_stamp_names_from_deck(single).is_empty():
+			continue
+		var print_id: String = str(deck_stamp.get("print_id", "")) if deck_stamp is Dictionary else ""
+		var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
+		print_ids.append(stamp_print.print_id if stamp_print != null else "")
+	return print_ids
+
 func get_stamp_names_from_deck(deck: Dictionary) -> Array[String]:
 	var stamp_names: Array[String] = []
 	var stamps = deck.get("stamps", [])

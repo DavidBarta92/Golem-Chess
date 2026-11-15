@@ -131,6 +131,10 @@ const PLACEHOLDER_UNREVEALED_ALPHA: float = 0.18
 	get:
 		return _fill_color
 @export_range(0.0, 1.0, 0.01) var fill_fade_start_ratio: float = 1.0
+## On for a fill that is a picture of a thing rather than a wash under the ink
+## (the tutorial's hand): it is drawn as painted, without the washes' ink blot,
+## which would thin it out and bend its edge.
+@export var plain_fill: bool = false
 
 @export_group("Flow")
 ## When on, this panel is revealed together with the one before it instead of
@@ -572,7 +576,7 @@ func _build_layers() -> void:
 		layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		layer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	if _fill_rect.material == null:
+	if _fill_rect.material == null and !plain_fill:
 		_fill_rect.material = FILL_MATERIAL
 
 	# Each panel animates on its own clock, so it needs its own material - a

@@ -1,15 +1,20 @@
 # Stamp painter (trial)
 
-A standalone scene for drawing a stamp's art in the game, MS Paint style.
-Not reachable from the menus yet: open `Scenes/StampPainter/StampPainter.tscn`
-and run it with F6. The texts are Hungarian only for now and move to
-`Localization/translations.csv` when the painter joins the game.
+A scene for drawing a stamp's art in the game, MS Paint style. The main
+menu's drawing things open it once Boss 12 is beaten (the `draw` feature, see
+[Docs/MainMenu/MAIN_MENU.md](../MainMenu/MAIN_MENU.md)); its Főmenü button goes
+back, and over an unsaved drawing only says so the first time. To try it
+without that save, open `Scenes/StampPainter/StampPainter.tscn` and run it
+with F6. The texts are Hungarian only for now and move to
+`Localization/translations.csv` when the painter joins the game for good.
 
 ## What a drawing is
 
 Another art for an existing stamp, not a new stamp: the rules, name and
-pattern stay the stamp's own. In a match only its owner sees it; the opponent
-sees the stamp's original art.
+pattern stay the stamp's own. In a match both players see it: the newest
+drawing saved for a stamp is used on every copy of that stamp in the player's
+codex, and its picture is sent to the opponent's game once, by hash
+([Docs/Networking/NETWORKING.md](../Networking/NETWORKING.md), "Drawings").
 
 ## Files
 
@@ -71,7 +76,10 @@ circles; Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z, Ctrl+S, Ctrl+O, Ctrl+N.
 
 ## Not done yet
 
-- Using a drawing in the game: the collection, a print in the save, codexes.
+- Choosing a drawing in the game: the collection, a print in the save,
+  codexes. For now a match takes the newest drawing of each stamp from the
+  folder; there is no way yet to switch one off short of moving the file.
+- A say over whose drawings a player sees (friends only, nobody).
 - A mask of the drawing's own, for parts that reach past the frame.
 - The texts in the translations, and a way to reach the scene from the menus.
 - Tablet pressure.

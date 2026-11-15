@@ -8,12 +8,13 @@ class_name QuestCondition
 ## many it takes.
 ##
 ##   type              event            param
-##   WIN_MATCHES       match_finished   "singleplayer" / "multiplayer"; empty: any
+##   WIN_MATCHES       match_finished   "singleplayer" / "multiplayer" / "random"; empty: any
 ##   PLAY_MATCHES      match_finished   the same
 ##   AFFIX_STAMPS      stamp_affixed    a set ("Animals", ...); empty: any
 ##   BUY_PACKS         packs_bought     a pack id; empty: any
 ##   LIST_LOTS         lot_listed       -
-##   SOLVE_PUZZLES     puzzle_solved    -  (first solves only)
+##   SOLVE_PUZZLES     puzzle_solved    -  (a new puzzle; a solved one again only
+##                                         once every puzzle is solved)
 ##   OPEN_SCREEN       screen_opened    "collection" / "bourse" / "puzzles"
 ##   AFFIX_ROLE        stamp_affixed    a role ("Seeker", ...)
 ##   AFFIX_EFFECT      stamp_affixed    an effect type ("bomb", ...)
@@ -74,14 +75,16 @@ const IDS: Dictionary = {
 	Type.BUY_LOTS: "buy_lots",
 }
 
-## {"won": bool, "singleplayer": bool, "codex_stamps": Array of stamp names}
+## {"won": bool, "singleplayer": bool, "random_opponent": bool,
+##  "codex_stamps": Array of stamp names}
 const EVENT_MATCH_FINISHED: String = "match_finished"
 ## {"stamp_name": String} - one the player put on a golem of theirs.
 const EVENT_STAMP_AFFIXED: String = "stamp_affixed"
 ## {"count": int, "pack_id": String}
 const EVENT_PACKS_BOUGHT: String = "packs_bought"
 const EVENT_LOT_LISTED: String = "lot_listed"
-## {"puzzle_id": String} - the first time a puzzle is solved.
+## {"puzzle_id": String, "first_solve": bool, "unsolved_left": int} - every
+## solve; unsolved_left is counted after this one.
 const EVENT_PUZZLE_SOLVED: String = "puzzle_solved"
 ## {"scene_path": String}
 const EVENT_SCREEN_OPENED: String = "screen_opened"
@@ -99,6 +102,8 @@ const EVENT_LOT_BOUGHT: String = "lot_bought"
 
 const MODE_SINGLEPLAYER: String = "singleplayer"
 const MODE_MULTIPLAYER: String = "multiplayer"
+## A match against a generated opponent: the Play window's Random opponent.
+const MODE_RANDOM: String = "random"
 const SETS: Array[String] = ["Animals", "Flora", "Celestials", "Archetypes", "Courtyard", "Structures"]
 ## Stamp.role, by its number. Unit is every plain stamp: a quest asks for the others.
 const ROLES: Array[String] = ["Unit", "Seeker", "Shared", "Se-tenant", "Overseal"]
@@ -123,6 +128,7 @@ const SCREEN_LABELS: Dictionary = {
 const MODE_LABELS: Dictionary = {
 	MODE_SINGLEPLAYER: "QUEST_MODE_SINGLEPLAYER",
 	MODE_MULTIPLAYER: "QUEST_MODE_MULTIPLAYER",
+	MODE_RANDOM: "QUEST_MODE_RANDOM",
 }
 
 static func id_of(type: int) -> String:
@@ -157,7 +163,7 @@ static func is_level(type: int) -> bool:
 static func param_options(type: int) -> Array[String]:
 	match type:
 		Type.WIN_MATCHES, Type.PLAY_MATCHES:
-			return [MODE_SINGLEPLAYER, MODE_MULTIPLAYER]
+			return [MODE_SINGLEPLAYER, MODE_MULTIPLAYER, MODE_RANDOM]
 		Type.AFFIX_STAMPS:
 			return SETS.duplicate()
 		Type.AFFIX_ROLE:
@@ -200,7 +206,9 @@ static func progress_for(type: int, param: String, event: String, data: Dictiona
 			if event == EVENT_LOT_LISTED:
 				return 1
 		Type.SOLVE_PUZZLES:
-			if event == EVENT_PUZZLE_SOLVED:
+			# A new puzzle; one solved before counts only when none is left
+			# unsolved, so a quest that asks for one can always be done.
+			if event == EVENT_PUZZLE_SOLVED and (bool(data.get("first_solve", true)) or int(data.get("unsolved_left", 1)) == 0):
 				return 1
 		Type.OPEN_SCREEN:
 			if event == EVENT_SCREEN_OPENED and str(data.get("scene_path", "")) == str(SCREEN_SCENES.get(param, "-")):
@@ -326,6 +334,8 @@ static func _mode_matches(param: String, data: Dictionary) -> bool:
 			return bool(data.get("singleplayer", false))
 		MODE_MULTIPLAYER:
 			return !bool(data.get("singleplayer", false))
+		MODE_RANDOM:
+			return bool(data.get("random_opponent", false))
 	return true
 
 static func _stamp(data: Dictionary) -> Stamp:

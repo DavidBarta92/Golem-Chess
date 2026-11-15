@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://obqpbm4obapb"]
 
 [ext_resource type="Script" uid="uid://bfim74wdakklh" path="res://Scenes/MainMenuStreetView.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://dryrfr017ahnj" path="res://Assets/mainmenu_opponent.png" id="2_opponent_tex"]
+[ext_resource type="Texture2D" uid="uid://dryrfr017ahnj" path="res://Assets/MainMenu/mainmenu_opponent.png" id="2_opponent_tex"]
 [ext_resource type="Shader" uid="uid://cmkkk0ywmxdf7" path="res://Shaders/mainmenu_opponent_arrival.gdshader" id="3_arrival_shader"]
-[ext_resource type="Texture2D" path="res://Assets/mainmenu_bg_2.png" id="4_bg_2_tex"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/mainmenu_bg_2.png" id="4_bg_2_tex"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_opponent_arrival"]
 shader = ExtResource("3_arrival_shader")

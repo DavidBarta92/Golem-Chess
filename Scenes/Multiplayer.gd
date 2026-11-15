@@ -61,6 +61,8 @@ func _ready():
 		await get_tree().create_timer(0.1).timeout
 
 	apply_command_line_network_overrides()
+	DrawingStore.instance().drawing_wanted.connect(_on_drawing_wanted)
+	tree_exiting.connect(func() -> void: DrawingStore.instance().drawing_wanted.disconnect(_on_drawing_wanted))
 	if !GameConfig.is_singleplayer:
 		ensure_network_status_label()
 		set_network_status(tr("Starting network..."))
@@ -848,6 +850,7 @@ func enter_custom_server_room(profile_data: Dictionary) -> void:
 		return
 
 	peer_profiles[peer_id] = PlayerProfile.from_dict(profile_data)
+	request_missing_drawings_from(peer_id, peer_profiles[peer_id])
 	if !connected_peer_ids.has(peer_id):
 		connected_peer_ids.append(peer_id)
 
@@ -872,6 +875,7 @@ func create_custom_lobby(profile_data: Dictionary) -> void:
 	remove_lobbies_for_peer(peer_id)
 	var profile: PlayerProfile = PlayerProfile.from_dict(profile_data)
 	peer_profiles[peer_id] = profile
+	request_missing_drawings_from(peer_id, profile)
 
 	var lobby_id: String = "custom-%d-%d" % [peer_id, Time.get_unix_time_from_system()]
 	open_lobbies[lobby_id] = {
@@ -915,6 +919,7 @@ func join_custom_lobby(lobby_id: String, profile_data: Dictionary) -> void:
 		return
 
 	peer_profiles[peer_id] = PlayerProfile.from_dict(profile_data)
+	request_missing_drawings_from(peer_id, peer_profiles[peer_id])
 	open_lobbies.erase(lobby_id)
 	await start_dedicated_match(host_peer_id, peer_id)
 
@@ -1114,6 +1119,7 @@ func register_player_profile(profile_data: Dictionary):
 	var profile: PlayerProfile = PlayerProfile.from_dict(profile_data, int(peer_player_ids.get(peer_id, 0)))
 	DebugLog.network("Registering peer %s as '%s' with %d deck stamps." % [peer_id, profile.player_name, profile.deck_stamp_names.size()])
 	peer_profiles[peer_id] = profile
+	request_missing_drawings_from(peer_id, profile)
 	_try_start_multiplayer_game()
 	if game_host != null && game_host.game_state != null && game_host.game_state.player_hands.has(0):
 		game_host.broadcast_player_profiles()
@@ -1250,6 +1256,51 @@ func give_turn(turn):
 	hide_custom_lobby_panel()
 	$MatchBoard.get_match_board_lifecycle_controller().set_turn(turn)
 
+#region Drawings
+# A player's own drawings (DrawingStore) travel by hash: the profile names
+# them, the host asks their owner for the ones it has not got, and a board
+# that has to show one asks the host. Each picture goes in pieces, and is
+# kept on disk by whoever receives it, so it travels to a machine once.
+
+## The host asks a player for the pictures their profile names.
+func request_missing_drawings_from(peer_id: int, profile: PlayerProfile) -> void:
+	if !is_server or peer_id == multiplayer.get_unique_id():
+		return
+	for drawing_hash in profile.get_drawing_hashes():
+		if !DrawingStore.instance().has_drawing(drawing_hash):
+			send_drawing_request.rpc_id(peer_id, drawing_hash)
+
+## A board wants a picture it has not got: it asks the host.
+func _on_drawing_wanted(drawing_hash: String) -> void:
+	if is_server or multiplayer.multiplayer_peer == null or multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return
+	send_drawing_request.rpc_id(1, drawing_hash)
+
+## "Send me this picture": from the host to the player who drew it, or from a
+## board to the host. Whoever has it answers with its pieces.
+@rpc("any_peer", "call_remote", "reliable")
+func send_drawing_request(drawing_hash: String) -> void:
+	var peer_id: int = multiplayer.get_remote_sender_id()
+	if is_server and !is_peer_version_accepted(peer_id):
+		return
+	if !is_server and peer_id != 1:
+		return
+	for chunk in DrawingStore.instance().get_chunks(drawing_hash):
+		send_drawing_chunk.rpc_id(peer_id, drawing_hash, int(chunk[0]), int(chunk[1]), chunk[2])
+
+## One piece of a picture. A client takes them from the host only; the host
+## from a player in the match, and only pictures that player's profile names.
+@rpc("any_peer", "call_remote", "reliable")
+func send_drawing_chunk(drawing_hash: String, index: int, total: int, chunk: PackedByteArray) -> void:
+	var peer_id: int = multiplayer.get_remote_sender_id()
+	if is_server:
+		if !is_peer_version_accepted(peer_id) or !peer_profiles.has(peer_id) or !(peer_profiles[peer_id] as PlayerProfile).get_drawing_hashes().has(drawing_hash):
+			return
+	elif peer_id != 1:
+		return
+	DrawingStore.instance().receive_chunk(drawing_hash, index, total, chunk)
+#endregion
+
 ## Both players' public profiles, once as the match starts
 ## (NetworkGameHost.broadcast_player_profiles).
 @rpc("authority", "call_remote", "reliable")
@@ -1307,6 +1358,20 @@ func get_starting_deck_for_player_id(player_id: int) -> Array[String]:
 			return duplicate_string_array((peer_profiles[peer_id] as PlayerProfile).deck_stamp_names)
 	var empty_deck: Array[String] = []
 	return empty_deck
+
+## The prints of the codex get_starting_deck_for_player_id gives, alongside it;
+## empty when that codex is not a player's own (an AI's, a story override).
+func get_starting_deck_print_ids_for_player_id(player_id: int) -> Array:
+	if GameConfig.is_singleplayer:
+		if GameConfig.should_ai_vs_ai_use_random_database_decks() or GameConfig.is_ai_vs_ai_batch:
+			return []
+		if GameConfig.get_player_controller(player_id) == GameConfig.CONTROLLER_HUMAN and !GameConfig.has_player_deck_override():
+			return PlayerProfile.with_local_drawings(GameConfig.get_selected_deck_stamp_names(), GameConfig.get_selected_deck_print_ids())
+		return []
+	for peer_id in peer_player_ids:
+		if int(peer_player_ids[peer_id]) == player_id and peer_profiles.has(peer_id):
+			return (peer_profiles[peer_id] as PlayerProfile).deck_print_ids.duplicate()
+	return []
 
 func duplicate_string_array(source) -> Array[String]:
 	var output: Array[String] = []

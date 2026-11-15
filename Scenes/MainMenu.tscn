@@ -1,27 +1,36 @@
 [gd_scene format=3 uid="uid://b2oed0tahffou"]
 
 [ext_resource type="Script" uid="uid://cef2ndnwft8t1" path="res://Scenes/MainMenu.gd" id="1_tt5f1"]
-[ext_resource type="Script" uid="uid://di8xqok5t4n0p" path="res://Scenes/MainMenuCollectionButton.gd" id="2_collection_btn_script"]
-[ext_resource type="Texture2D" uid="uid://cwqu0csyfsbt7" path="res://Assets/mainmenu_bg_1_reveal_mask.png" id="3_bg_mask"]
+[ext_resource type="Script" path="res://Scenes/MainMenuFeatureButton.gd" id="2_feature_btn_script"]
+[ext_resource type="Texture2D" uid="uid://cwqu0csyfsbt7" path="res://Assets/MainMenu/mainmenu_bg_1_reveal_mask.png" id="3_bg_mask"]
 [ext_resource type="Shader" uid="uid://dl2w4peyk1os1" path="res://Shaders/mainmenu_line_reveal.gdshader" id="4_bg_line_shader"]
 [ext_resource type="Shader" uid="uid://cq2wpk53gbihw" path="res://Shaders/paper_texture.gdshader" id="5_paper_texture_shader"]
 [ext_resource type="Script" uid="uid://dsac0eb8ca2uh" path="res://Scenes/MainMenuPlayButton.gd" id="6_play_btn_script"]
-[ext_resource type="Texture2D" uid="uid://d0rd00i8edmtp" path="res://Assets/mainmenu_play_button.png" id="7_play_btn_tex"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_play_button.tres" id="7_play_btn_tex"]
 [ext_resource type="PackedScene" uid="uid://obqpbm4obapb" path="res://Scenes/MainMenuStreetView.tscn" id="8_street_view"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/VideoSection.tscn" id="10_video_section"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/ControlsSection.tscn" id="11_controls_section"]
-[ext_resource type="Texture2D" uid="uid://f7p0f8bwycyl" path="res://Assets/mainmenu_collection_button.png" id="11_if7li"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_collection_button.tres" id="11_if7li"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/AudioSection.tscn" id="12_audio_section"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/InputRebindDialog.tscn" id="13_input_rebind_dialog"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/GeneralSection.tscn" id="14_general_section"]
 [ext_resource type="PackedScene" path="res://Scenes/SettingsSections/UISection.tscn" id="15_ui_section"]
 [ext_resource type="Script" uid="uid://dta7wq16l8wau" path="res://Scripts/Story/FeatureHint.gd" id="17_feature_hint"]
-[ext_resource type="Script" uid="uid://e2vu03ic5b55" path="res://Scripts/Story/SceneLinkButton.gd" id="18_scene_link_button"]
+[ext_resource type="Texture2D" uid="uid://dxb1pgk1qk1y5" path="res://Assets/MainMenu/mainmenu_bg_1color.png" id="18_bg_colour"]
+[ext_resource type="Material" path="res://Shaders/ink_blot_washes.tres" id="19_washes"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_puzzles_button.tres" id="20_puzzles_tex"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_bourse_button.tres" id="21_bourse_tex"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_bourse_extra.tres" id="22_bourse_extra_tex"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_multiplayer_button.tres" id="23_multiplayer_tex"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_multiplayer_cover.tres" id="24_multiplayer_cover_tex"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_draw_button.tres" id="25_draw_tex"]
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_draw_cover.tres" id="26_draw_cover_tex"]
 [ext_resource type="Material" path="res://Shaders/vignette_material.tres" id="90_vignette_material"]
 [ext_resource type="Script" uid="uid://boksbytph4vh4" path="res://Scripts/Audio/MusicCue.gd" id="91_music_cue"]
 [ext_resource type="Script" uid="uid://ejdsaop7goq5" path="res://Scripts/Audio/MusicStemFade.gd" id="92_music_stem_fade"]
 [ext_resource type="Script" uid="uid://grtkbcln0pvh" path="res://Scripts/Audio/SceneMusicCue.gd" id="93_scene_music_cue"]
 [ext_resource type="Script" uid="uid://blivqay078t0e" path="res://Scripts/Audio/MusicStemCycle.gd" id="94_music_stem_cycle"]
+[ext_resource type="PackedScene" uid="uid://bannamenu1scn" path="res://Scenes/MainMenuAnna.tscn" id="95_anna"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_lines"]
 shader = ExtResource("4_bg_line_shader")
@@ -87,6 +96,19 @@ mouse_filter = 2
 [node name="MainMenuStreetView" parent="." unique_id=1088058937 instance=ExtResource("8_street_view")]
 layout_mode = 1
 
+[node name="BackgroundColour" type="TextureRect" parent="."]
+material = ExtResource("19_washes")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("18_bg_colour")
+expand_mode = 1
+stretch_mode = 6
+
 [node name="BackgroundLines" type="TextureRect" parent="." unique_id=1578044602]
 material = SubResource("ShaderMaterial_bg_lines")
 layout_mode = 1
@@ -103,8 +125,39 @@ stretch_mode = 6
 [node name="CollectionButton" type="TextureButton" parent="." unique_id=1578044637]
 layout_mode = 1
 texture_normal = ExtResource("11_if7li")
-script = ExtResource("2_collection_btn_script")
+script = ExtResource("2_feature_btn_script")
+feature_id = "collection"
+target_scene_path = "res://Scenes/Collection.tscn"
 metadata/sfx_click = "collection_button_click"
+
+[node name="PuzzlesButton" type="TextureButton" parent="."]
+layout_mode = 1
+texture_normal = ExtResource("20_puzzles_tex")
+script = ExtResource("2_feature_btn_script")
+feature_id = "quests"
+locked_look = 1
+target_scene_path = "res://Scenes/Puzzles.tscn"
+
+[node name="BourseExtra" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("22_bourse_extra_tex")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="BourseButton" type="TextureButton" parent="."]
+layout_mode = 1
+texture_normal = ExtResource("21_bourse_tex")
+script = ExtResource("2_feature_btn_script")
+feature_id = "trade"
+locked_look = 1
+extra_paths = Array[NodePath]([NodePath("../BourseExtra")])
+target_scene_path = "res://Scenes/Bourse.tscn"
 
 [node name="PlayButton" type="TextureButton" parent="." unique_id=1578044638]
 layout_mode = 1
@@ -112,6 +165,51 @@ disabled = true
 texture_normal = ExtResource("7_play_btn_tex")
 script = ExtResource("6_play_btn_script")
 slide_end_offset = Vector2(-20, -60)
+
+[node name="MultiplayerButton" type="TextureButton" parent="."]
+layout_mode = 1
+texture_normal = ExtResource("23_multiplayer_tex")
+script = ExtResource("2_feature_btn_script")
+feature_id = "multiplayer"
+locked_look = 2
+cover_path = NodePath("../MultiplayerCover")
+available = false
+
+[node name="MultiplayerCover" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("24_multiplayer_cover_tex")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="DrawButton" type="TextureButton" parent="."]
+layout_mode = 1
+texture_normal = ExtResource("25_draw_tex")
+script = ExtResource("2_feature_btn_script")
+feature_id = "draw"
+locked_look = 2
+cover_path = NodePath("../DrawCover")
+target_scene_path = "res://Scenes/StampPainter/StampPainter.tscn"
+
+[node name="DrawCover" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("26_draw_cover_tex")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="MainMenuAnna" parent="." instance=ExtResource("95_anna")]
+layout_mode = 1
 
 [node name="DevToolsWindow" type="Window" parent="." unique_id=91807004]
 title = "Developer Tools"
@@ -291,6 +389,7 @@ mouse_filter = 2
 script = ExtResource("17_feature_hint")
 feature_id = "collection"
 target_path = NodePath("../CollectionButton")
+lock_target_until_unlocked = false
 hint_style = 1
 arrow_side = 1
 
@@ -304,59 +403,37 @@ arrow_side = 1
 glow_spread = Vector2(1.6, 1.6)
 glow_behind_path = NodePath("../MainMenuStreetView")
 
-[node name="StoryButtons" type="VBoxContainer" parent="." unique_id=405665921]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -216.0
-offset_top = -196.0
-offset_right = -24.0
-offset_bottom = -24.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_constants/separation = 12
-
-[node name="MultiplayerButton" type="Button" parent="StoryButtons" unique_id=1484885820]
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-text = "STORY_MULTIPLAYER_BUTTON"
-script = ExtResource("18_scene_link_button")
-target_scene_path = "res://Scenes/StoryMultiplayer.tscn"
-
-[node name="PuzzlesButton" type="Button" parent="StoryButtons" unique_id=1577467532]
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-text = "PUZZLES_BUTTON"
-script = ExtResource("18_scene_link_button")
-target_scene_path = "res://Scenes/Puzzles.tscn"
-
-[node name="TradeButton" type="Button" parent="StoryButtons" unique_id=53472299]
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-text = "TRADE_BUTTON"
-script = ExtResource("18_scene_link_button")
-target_scene_path = "res://Scenes/Bourse.tscn"
-
 [node name="MultiplayerFeatureHint" type="Node" parent="." unique_id=326675959]
 script = ExtResource("17_feature_hint")
 feature_id = "multiplayer"
-target_path = NodePath("../StoryButtons/MultiplayerButton")
+target_path = NodePath("../MultiplayerButton")
+lock_target_until_unlocked = false
 hint_style = 1
+glow_spread = Vector2(2.2, 2.2)
 
 [node name="PuzzlesFeatureHint" type="Node" parent="." unique_id=140696544]
 script = ExtResource("17_feature_hint")
 feature_id = "quests"
-target_path = NodePath("../StoryButtons/PuzzlesButton")
+target_path = NodePath("../PuzzlesButton")
+lock_target_until_unlocked = false
 hint_style = 1
+glow_spread = Vector2(2.8, 3.2)
 
 [node name="TradeFeatureHint" type="Node" parent="." unique_id=1180891715]
 script = ExtResource("17_feature_hint")
 feature_id = "trade"
-target_path = NodePath("../StoryButtons/TradeButton")
+target_path = NodePath("../BourseButton")
+lock_target_until_unlocked = false
 hint_style = 1
+glow_spread = Vector2(2.2, 2.2)
+
+[node name="DrawFeatureHint" type="Node" parent="."]
+script = ExtResource("17_feature_hint")
+feature_id = "draw"
+target_path = NodePath("../DrawButton")
+lock_target_until_unlocked = false
+hint_style = 1
+glow_spread = Vector2(2.2, 2.8)
 
 [node name="MenuMusic" type="Node" parent="." unique_id=196379361]
 script = ExtResource("93_scene_music_cue")
@@ -367,6 +444,5 @@ play_on_ready = false
 script = ExtResource("94_music_stem_cycle")
 autostart = false
 
-[connection signal="pressed" from="CollectionButton" to="." method="_on_collection_button_pressed"]
 [connection signal="canceled" from="SettingsDialog" to="." method="_on_settings_canceled"]
 [connection signal="confirmed" from="SettingsDialog" to="." method="_on_settings_confirmed"]

@@ -149,6 +149,8 @@ func build_piece_state_from_server(pieces_data: Dictionary) -> Dictionary:
 		if !stamp_name.is_empty():
 			var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
 			if stamp:
+				if !str(data.get("print_id", "")).is_empty():
+					stamp.set_meta("print_id", str(data.get("print_id", "")))
 				piece.affix_stamp(stamp)
 				piece.turns_remaining = int(data.turns_remaining)
 				piece.protection_turns_remaining = int(data.get("protection_turns_remaining", -1))
@@ -244,6 +246,7 @@ func get_state_stamp_expiration_events(previous_snapshot: Dictionary, recent_sta
 		expiration_events.append({
 			"player_id": player_id,
 			"stamp_name": expired_stamp_name,
+			"print_id": str(previous_state.get("print_id", "")),
 			"piece_pos": board_pos,
 		})
 		known_expirations[signature] = true

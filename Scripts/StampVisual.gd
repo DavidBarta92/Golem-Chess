@@ -336,11 +336,43 @@ func _input(event: InputEvent) -> void:
 			finish_drag()
 			accept_event()
 
+## A stamp that says which print it is in (meta "print_id", as a match's
+## stamps do) is shown in that print.
 func set_stamp(value: Stamp) -> void:
 	stamp = value
 	stamp_print = null
+	_disconnect_drawing_wait()
+	if value != null and value.has_meta("print_id"):
+		var print_id: String = str(value.get_meta("print_id"))
+		if DrawingStore.is_drawing_print_id(print_id):
+			# A player's own drawing; until its picture is here, the standard
+			# print, and this stamp redraws when it arrives.
+			stamp_print = DrawingStore.instance().get_print(print_id, value.stamp_code)
+			if stamp_print == null:
+				_awaited_drawing_hash = DrawingStore.hash_of_print_id(print_id)
+				DrawingStore.instance().drawing_ready.connect(_on_drawing_ready)
+		else:
+			var named_print: StampPrint = StampPrintLibrary.get_print(print_id)
+			if named_print != null and named_print.stamp_code == value.stamp_code:
+				stamp_print = named_print
 	if is_node_ready():
 		_apply_stamp()
+
+var _awaited_drawing_hash: String = ""
+
+func _disconnect_drawing_wait() -> void:
+	if _awaited_drawing_hash.is_empty():
+		return
+	_awaited_drawing_hash = ""
+	if DrawingStore.instance().drawing_ready.is_connected(_on_drawing_ready):
+		DrawingStore.instance().drawing_ready.disconnect(_on_drawing_ready)
+
+func _on_drawing_ready(drawing_hash: String) -> void:
+	if drawing_hash == _awaited_drawing_hash and stamp != null:
+		set_stamp(stamp)
+
+func _exit_tree() -> void:
+	_disconnect_drawing_wait()
 
 func set_stamp_print(value: StampPrint) -> void:
 	stamp_print = value

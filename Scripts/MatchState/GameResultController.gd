@@ -145,6 +145,8 @@ func record_quest_result(winner_color: int) -> void:
 	QuestStore.record_event(QuestCondition.EVENT_MATCH_FINISHED, {
 		"won": did_local_player_win(winner_color),
 		"singleplayer": GameConfig.is_singleplayer,
+		# A generated opponent outside the story: the Play window's Random opponent.
+		"random_opponent": GameConfig.is_singleplayer and GameConfig.has_ai_opponent_override() and !StoryManager.is_story_match_active(),
 		"codex_stamps": codex_stamps,
 	})
 

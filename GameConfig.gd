@@ -328,6 +328,14 @@ func select_first_available_deck() -> void:
 func has_selected_deck() -> bool:
 	return !get_selected_deck_id().is_empty()
 
+## The print of each stamp get_selected_deck_stamp_names lists.
+func get_selected_deck_print_ids() -> Array[String]:
+	var deck_id: String = get_selected_deck_id()
+	if deck_id.is_empty():
+		var empty_print_ids: Array[String] = []
+		return empty_print_ids
+	return PlayerDeckStore.get_deck_print_ids(deck_id)
+
 func get_selected_deck_stamp_names() -> Array[String]:
 	var deck_id: String = get_selected_deck_id()
 	if deck_id.is_empty():

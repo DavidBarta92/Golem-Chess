@@ -7,8 +7,8 @@
 [ext_resource type="Script" uid="uid://b2ivqbdnliwd4" path="res://Scripts/Story/ComicStoryNode.gd" id="6_comic_node"]
 [ext_resource type="Script" uid="uid://dxdfiynkc40le" path="res://Scripts/Story/BossGameStoryNode.gd" id="7_boss_node"]
 [ext_resource type="Script" uid="uid://c41dn4dlhhctg" path="res://Scripts/Story/RewardStoryNode.gd" id="8_reward_node"]
-[ext_resource type="Script" path="res://Scripts/Story/RandomMatchStoryNode.gd" id="9_random_node"]
 [ext_resource type="Script" path="res://Scripts/Story/SceneStoryNode.gd" id="12_scene_node"]
+[ext_resource type="Script" uid="uid://ytckio4b0xpf" path="res://Scripts/Story/QuestStoryNode.gd" id="13_quest_node"]
 [ext_resource type="Resource" path="res://Story/Bosses/boss_01.tres" id="30_boss_01"]
 [ext_resource type="Resource" path="res://Story/Bosses/boss_02.tres" id="30_boss_02"]
 [ext_resource type="Resource" path="res://Story/Bosses/boss_03.tres" id="30_boss_03"]
@@ -104,11 +104,21 @@ id = "feedback_after_boss_02"
 display_name = "Köszönet és kérdőív"
 blocks_hub_until_completed = true
 
+[sub_resource type="Resource" id="Resource_quest_ch00_open_collection"]
+script = ExtResource("13_quest_node")
+condition = 6
+count = 1
+param = "collection"
+title = "STORY_QUEST_CH00_OPEN_COLLECTION_TITLE"
+text = "STORY_QUEST_CH00_OPEN_COLLECTION_TEXT"
+id = "quest_ch00_open_collection"
+display_name = "Quest: a Gyűjtemény megnyitása"
+
 [sub_resource type="Resource" id="Resource_chapter_00"]
 script = ExtResource("1_story_chapter")
 id = "chapter_00"
 title = "Bevezetés"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_first_run_language"), SubResource("Resource_comic_ch00_intro"), SubResource("Resource_comic_ch00_memory"), SubResource("Resource_tutorial_basics"), SubResource("Resource_boss_01_match"), SubResource("Resource_reward_01_grandpa_deck"), SubResource("Resource_comic_ch00_bridge"), SubResource("Resource_boss_02_match"), SubResource("Resource_comic_ch00_collection"), SubResource("Resource_feedback_after_boss_02")])
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_first_run_language"), SubResource("Resource_comic_ch00_intro"), SubResource("Resource_comic_ch00_memory"), SubResource("Resource_tutorial_basics"), SubResource("Resource_boss_01_match"), SubResource("Resource_reward_01_grandpa_deck"), SubResource("Resource_comic_ch00_bridge"), SubResource("Resource_boss_02_match"), SubResource("Resource_comic_ch00_collection"), SubResource("Resource_feedback_after_boss_02"), SubResource("Resource_quest_ch00_open_collection")])
 
 [sub_resource type="Resource" id="Resource_comic_ch01_intro"]
 script = ExtResource("6_comic_node")
@@ -131,11 +141,20 @@ completion_scene_path = "res://Scenes/Collection.tscn"
 unlocks_feature = "buy_packs"
 unlocks_packs = Array[String](["citadel_guard"])
 
+[sub_resource type="Resource" id="Resource_quest_ch01_buy_pack"]
+script = ExtResource("13_quest_node")
+condition = 3
+count = 1
+title = "STORY_QUEST_CH01_BUY_PACK_TITLE"
+text = "STORY_QUEST_CH01_BUY_PACK_TEXT"
+id = "quest_ch01_buy_pack"
+display_name = "Quest: egy csomag vásárlása"
+
 [sub_resource type="Resource" id="Resource_chapter_01"]
 script = ExtResource("1_story_chapter")
 id = "chapter_01"
 title = "Boss 3"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch01_intro"), SubResource("Resource_boss_03_match"), SubResource("Resource_comic_ch01_buy_packs")])
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch01_intro"), SubResource("Resource_boss_03_match"), SubResource("Resource_comic_ch01_buy_packs"), SubResource("Resource_quest_ch01_buy_pack")])
 
 [sub_resource type="Resource" id="Resource_comic_ch02_intro"]
 script = ExtResource("6_comic_node")
@@ -157,16 +176,21 @@ id = "reward_04_coins"
 display_name = "30 coin"
 unlocks_packs = Array[String](["hunters_pack", "beast_engines"])
 
+[sub_resource type="Resource" id="Resource_quest_ch02_random_match"]
+script = ExtResource("13_quest_node")
+condition = 1
+count = 1
+param = "random"
+title = "STORY_QUEST_CH02_RANDOM_MATCH_TITLE"
+text = "STORY_QUEST_CH02_RANDOM_MATCH_TEXT"
+id = "quest_ch02_random_match"
+display_name = "Quest: 1 meccs véletlen ellenféllel"
+
 [sub_resource type="Resource" id="Resource_chapter_02"]
 script = ExtResource("1_story_chapter")
 id = "chapter_02"
 title = "Boss 4"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch02_intro"), SubResource("Resource_boss_04_match"), SubResource("Resource_reward_04_coins")])
-
-[sub_resource type="Resource" id="Resource_random_ch03"]
-script = ExtResource("9_random_node")
-id = "random_ch03"
-display_name = "Bemelegítő meccs"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch02_intro"), SubResource("Resource_boss_04_match"), SubResource("Resource_reward_04_coins"), SubResource("Resource_quest_ch02_random_match")])
 
 [sub_resource type="Resource" id="Resource_comic_ch03_intro"]
 script = ExtResource("6_comic_node")
@@ -188,16 +212,21 @@ id = "reward_05_stamp"
 display_name = "Bélyeg"
 unlocks_packs = Array[String](["forest_fortress", "overgrown_defense", "deep_in_the_wild"])
 
+[sub_resource type="Resource" id="Resource_quest_ch03_random_matches"]
+script = ExtResource("13_quest_node")
+condition = 1
+count = 2
+param = "random"
+title = "STORY_QUEST_CH03_RANDOM_MATCHES_TITLE"
+text = "STORY_QUEST_CH03_RANDOM_MATCHES_TEXT"
+id = "quest_ch03_random_matches"
+display_name = "Quest: 2 meccs véletlen ellenfelekkel"
+
 [sub_resource type="Resource" id="Resource_chapter_03"]
 script = ExtResource("1_story_chapter")
 id = "chapter_03"
 title = "Boss 5"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch03"), SubResource("Resource_comic_ch03_intro"), SubResource("Resource_boss_05_match"), SubResource("Resource_reward_05_stamp")])
-
-[sub_resource type="Resource" id="Resource_random_ch04"]
-script = ExtResource("9_random_node")
-id = "random_ch04"
-display_name = "Bemelegítő meccs"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch03_intro"), SubResource("Resource_boss_05_match"), SubResource("Resource_reward_05_stamp"), SubResource("Resource_quest_ch03_random_matches")])
 
 [sub_resource type="Resource" id="Resource_comic_ch04_intro"]
 script = ExtResource("6_comic_node")
@@ -218,17 +247,21 @@ id = "comic_ch04_phone_call"
 display_name = "Telefonhívás - multiplayer"
 unlocks_feature = "multiplayer"
 
+[sub_resource type="Resource" id="Resource_quest_ch04_random_matches"]
+script = ExtResource("13_quest_node")
+condition = 1
+count = 2
+param = "random"
+title = "STORY_QUEST_CH04_RANDOM_MATCHES_TITLE"
+text = "STORY_QUEST_CH04_RANDOM_MATCHES_TEXT"
+id = "quest_ch04_random_matches"
+display_name = "Quest: 2 meccs véletlen ellenfelekkel"
+
 [sub_resource type="Resource" id="Resource_chapter_04"]
 script = ExtResource("1_story_chapter")
 id = "chapter_04"
 title = "Boss 6"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch04"), SubResource("Resource_comic_ch04_intro"), SubResource("Resource_boss_06_match"), SubResource("Resource_comic_ch04_phone_call")])
-
-[sub_resource type="Resource" id="Resource_random_ch05"]
-script = ExtResource("9_random_node")
-match_count = 2
-id = "random_ch05"
-display_name = "Bemelegítő meccsek"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch04_intro"), SubResource("Resource_boss_06_match"), SubResource("Resource_comic_ch04_phone_call"), SubResource("Resource_quest_ch04_random_matches")])
 
 [sub_resource type="Resource" id="Resource_comic_ch05_intro"]
 script = ExtResource("6_comic_node")
@@ -250,17 +283,21 @@ id = "reward_07_stamp"
 display_name = "Bélyeg"
 unlocks_packs = Array[String](["masked_council", "runeworks", "inner_instinct", "se-tenant_harmony"])
 
+[sub_resource type="Resource" id="Resource_quest_ch05_random_wins"]
+script = ExtResource("13_quest_node")
+condition = 0
+count = 2
+param = "random"
+title = "STORY_QUEST_CH05_RANDOM_WINS_TITLE"
+text = "STORY_QUEST_CH05_RANDOM_WINS_TEXT"
+id = "quest_ch05_random_wins"
+display_name = "Quest: 2 győzelem véletlen ellenfelek ellen"
+
 [sub_resource type="Resource" id="Resource_chapter_05"]
 script = ExtResource("1_story_chapter")
 id = "chapter_05"
 title = "Boss 7"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch05"), SubResource("Resource_comic_ch05_intro"), SubResource("Resource_boss_07_match"), SubResource("Resource_reward_07_stamp")])
-
-[sub_resource type="Resource" id="Resource_random_ch06"]
-script = ExtResource("9_random_node")
-match_count = 2
-id = "random_ch06"
-display_name = "Bemelegítő meccsek"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch05_intro"), SubResource("Resource_boss_07_match"), SubResource("Resource_reward_07_stamp"), SubResource("Resource_quest_ch05_random_wins")])
 
 [sub_resource type="Resource" id="Resource_comic_ch06_intro"]
 script = ExtResource("6_comic_node")
@@ -281,17 +318,30 @@ id = "comic_ch06_letter"
 display_name = "A levél - quests"
 unlocks_feature = "quests"
 
+[sub_resource type="Resource" id="Resource_quest_ch06_puzzle"]
+script = ExtResource("13_quest_node")
+condition = 5
+count = 1
+title = "STORY_QUEST_CH06_PUZZLE_TITLE"
+text = "STORY_QUEST_CH06_PUZZLE_TEXT"
+id = "quest_ch06_puzzle"
+display_name = "Quest: egy feladvány megoldása"
+
+[sub_resource type="Resource" id="Resource_quest_ch06_random_matches"]
+script = ExtResource("13_quest_node")
+condition = 1
+count = 3
+param = "random"
+title = "STORY_QUEST_CH06_RANDOM_MATCHES_TITLE"
+text = "STORY_QUEST_CH06_RANDOM_MATCHES_TEXT"
+id = "quest_ch06_random_matches"
+display_name = "Quest: 3 meccs véletlen ellenfelekkel"
+
 [sub_resource type="Resource" id="Resource_chapter_06"]
 script = ExtResource("1_story_chapter")
 id = "chapter_06"
 title = "Boss 8"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch06"), SubResource("Resource_comic_ch06_intro"), SubResource("Resource_boss_08_match"), SubResource("Resource_comic_ch06_letter")])
-
-[sub_resource type="Resource" id="Resource_random_ch07"]
-script = ExtResource("9_random_node")
-match_count = 3
-id = "random_ch07"
-display_name = "Bemelegítő meccsek"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch06_intro"), SubResource("Resource_boss_08_match"), SubResource("Resource_comic_ch06_letter"), SubResource("Resource_quest_ch06_puzzle"), SubResource("Resource_quest_ch06_random_matches")])
 
 [sub_resource type="Resource" id="Resource_comic_ch07_intro"]
 script = ExtResource("6_comic_node")
@@ -313,17 +363,21 @@ id = "reward_09_stamp"
 display_name = "Bélyeg"
 unlocks_packs = Array[String](["march_of_mars", "heavenly_bastion", "zodiac_stew"])
 
+[sub_resource type="Resource" id="Resource_quest_ch07_random_match"]
+script = ExtResource("13_quest_node")
+condition = 1
+count = 1
+param = "random"
+title = "STORY_QUEST_CH07_RANDOM_MATCH_TITLE"
+text = "STORY_QUEST_CH07_RANDOM_MATCH_TEXT"
+id = "quest_ch07_random_match"
+display_name = "Quest: 1 meccs véletlen ellenféllel"
+
 [sub_resource type="Resource" id="Resource_chapter_07"]
 script = ExtResource("1_story_chapter")
 id = "chapter_07"
 title = "Boss 9"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch07"), SubResource("Resource_comic_ch07_intro"), SubResource("Resource_boss_09_match"), SubResource("Resource_reward_09_stamp")])
-
-[sub_resource type="Resource" id="Resource_random_ch08"]
-script = ExtResource("9_random_node")
-match_count = 3
-id = "random_ch08"
-display_name = "Bemelegítő meccsek"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch07_intro"), SubResource("Resource_boss_09_match"), SubResource("Resource_reward_09_stamp"), SubResource("Resource_quest_ch07_random_match")])
 
 [sub_resource type="Resource" id="Resource_comic_ch08_intro"]
 script = ExtResource("6_comic_node")
@@ -344,16 +398,20 @@ id = "comic_ch08_trade"
 display_name = "Trade bemutatása"
 unlocks_feature = "trade"
 
+[sub_resource type="Resource" id="Resource_quest_ch08_list_lot"]
+script = ExtResource("13_quest_node")
+condition = 4
+count = 1
+title = "STORY_QUEST_CH08_LIST_LOT_TITLE"
+text = "STORY_QUEST_CH08_LIST_LOT_TEXT"
+id = "quest_ch08_list_lot"
+display_name = "Quest: egy lott kitétele a Börzére"
+
 [sub_resource type="Resource" id="Resource_chapter_08"]
 script = ExtResource("1_story_chapter")
 id = "chapter_08"
 title = "Boss 10"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch08"), SubResource("Resource_comic_ch08_intro"), SubResource("Resource_boss_10_match"), SubResource("Resource_comic_ch08_trade")])
-
-[sub_resource type="Resource" id="Resource_random_ch09"]
-script = ExtResource("9_random_node")
-id = "random_ch09"
-display_name = "Bemelegítő meccs"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch08_intro"), SubResource("Resource_boss_10_match"), SubResource("Resource_comic_ch08_trade"), SubResource("Resource_quest_ch08_list_lot")])
 
 [sub_resource type="Resource" id="Resource_comic_ch09_intro"]
 script = ExtResource("6_comic_node")
@@ -375,16 +433,20 @@ id = "reward_11_coins"
 display_name = "Sok coin"
 unlocks_packs = Array[String](["moonlight_garden", "cosmic_oracle"])
 
+[sub_resource type="Resource" id="Resource_quest_ch09_puzzle"]
+script = ExtResource("13_quest_node")
+condition = 5
+count = 1
+title = "STORY_QUEST_CH09_PUZZLE_TITLE"
+text = "STORY_QUEST_CH09_PUZZLE_TEXT"
+id = "quest_ch09_puzzle"
+display_name = "Quest: egy feladvány megoldása"
+
 [sub_resource type="Resource" id="Resource_chapter_09"]
 script = ExtResource("1_story_chapter")
 id = "chapter_09"
 title = "Boss 11"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch09"), SubResource("Resource_comic_ch09_intro"), SubResource("Resource_boss_11_match"), SubResource("Resource_reward_11_coins")])
-
-[sub_resource type="Resource" id="Resource_random_ch10"]
-script = ExtResource("9_random_node")
-id = "random_ch10"
-display_name = "Bemelegítő meccs"
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch09_intro"), SubResource("Resource_boss_11_match"), SubResource("Resource_reward_11_coins"), SubResource("Resource_quest_ch09_puzzle")])
 
 [sub_resource type="Resource" id="Resource_comic_ch10_intro"]
 script = ExtResource("6_comic_node")
@@ -398,6 +460,7 @@ boss = ExtResource("30_boss_12")
 id = "boss_12_match"
 display_name = "Boss 12"
 auto_continue_after_completion = true
+unlocks_feature = "draw"
 
 [sub_resource type="Resource" id="Resource_reward_12_final"]
 script = ExtResource("8_reward_node")
@@ -415,7 +478,7 @@ display_name = "Lezáró comic"
 script = ExtResource("1_story_chapter")
 id = "chapter_10"
 title = "Boss 12"
-nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_random_ch10"), SubResource("Resource_comic_ch10_intro"), SubResource("Resource_boss_12_match"), SubResource("Resource_reward_12_final"), SubResource("Resource_comic_ch10_ending")])
+nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch10_intro"), SubResource("Resource_boss_12_match"), SubResource("Resource_reward_12_final"), SubResource("Resource_comic_ch10_ending")])
 
 [resource]
 script = ExtResource("5_story_definition")

@@ -158,7 +158,8 @@ func prepare_board_for_setup() -> void:
 ## A stamp from a scripted side's open codex page onto one of its golems, sent
 ## to the host as a player's would be. Returns once the board has shown it.
 func play_scripted_affix(owner_color: int, stamp_name: String, piece_pos: Vector2) -> void:
-	var hand_names: Array = match_board.get_match_state_sync_controller().get_stamp_names_from_hand(match_board.get_stamp_hand_state_controller().get_stamp_hand(owner_color))
+	# From the host: a board is not told what the other side holds.
+	var hand_names: Array = GameController.current_game_host.game_state.player_hands.get(BoardConfig.get_player_id_for_color(owner_color), [])
 	var hand_index: int = hand_names.find(stamp_name)
 	if hand_index < 0:
 		push_warning("Scripted side cannot play %s at %s: it is not on the open page." % [stamp_name, piece_pos])

@@ -33,12 +33,14 @@ func draw_starting_stamps_from_deck(owner_color: int) -> Array[Stamp]:
 	DeckManager.draw_starting_hand(deck, hand_names)
 	return create_stamp_hand_from_names(hand_names)
 
-func create_stamp_hand_from_names(stamp_names: Array) -> Array[Stamp]:
+## `print_ids` runs alongside the names: the print each stamp is in.
+func create_stamp_hand_from_names(stamp_names: Array, print_ids: Array = []) -> Array[Stamp]:
 	var hand: Array[Stamp] = []
-	for stamp_name_value in stamp_names:
-		var stamp_name: String = str(stamp_name_value)
-		var stamp: Stamp = StampLibrary.duplicate_stamp(stamp_name)
+	for index in range(stamp_names.size()):
+		var stamp: Stamp = StampLibrary.duplicate_stamp(str(stamp_names[index]))
 		if stamp:
+			if index < print_ids.size() and !str(print_ids[index]).is_empty():
+				stamp.set_meta("print_id", str(print_ids[index]))
 			hand.append(stamp)
 	return hand
 

@@ -38,11 +38,24 @@ func reload_definition() -> void:
 	story_definition = loaded if loaded is StoryDefinition else StoryDefinition.new()
 	_rebuild_flat_nodes()
 
+## The first node not completed - leaving out a story quest the player has
+## already passed (a node after it is completed): a save from before the quest
+## was added must not be sent back to it.
 func get_current_node() -> StoryNode:
-	for node in _flat_nodes:
-		if !is_node_completed(node.id):
-			return node
+	for index in range(_flat_nodes.size()):
+		var node: StoryNode = _flat_nodes[index]
+		if is_node_completed(node.id):
+			continue
+		if node is QuestStoryNode and _is_passed(index):
+			continue
+		return node
 	return null
+
+func _is_passed(index: int) -> bool:
+	for later in range(index + 1, _flat_nodes.size()):
+		if is_node_completed(_flat_nodes[later].id):
+			return true
+	return false
 
 func get_current_node_id() -> String:
 	var node: StoryNode = get_current_node()
@@ -105,15 +118,11 @@ func continue_story_if_ready() -> bool:
 func can_continue_story() -> bool:
 	return get_current_node() != null and is_current_node_unlocked()
 
-## For the Play window's random opponent button: a match against a generated
-## opponent. When the story is waiting for warm-up matches, this is one of
-## them and counts towards the node; otherwise it is a match of its own,
-## outside the story, at the level of the last boss beaten.
+## For the Play window's random opponent button: a match of its own, outside
+## the story, against a generated opponent at the level of the last boss
+## beaten. It runs alongside the story rather than through it - the story's
+## own button only ever brings up the next authored beat.
 func start_random_opponent_match() -> void:
-	var node: StoryNode = get_current_node()
-	if node is RandomMatchStoryNode:
-		start_current_node()
-		return
 	clear_active_match()
 	_set_up_generated_opponent(_get_last_defeated_boss_level(null))
 	SceneTransition.change_scene(GAME_SCENE_PATH)
@@ -165,8 +174,6 @@ func start_current_node() -> void:
 
 	if node is BossGameStoryNode:
 		_start_boss_node(node)
-	elif node is RandomMatchStoryNode:
-		_start_random_match_node(node)
 	elif node is TutorialStoryNode:
 		_start_tutorial_node(node)
 	elif node is ComicStoryNode:
@@ -254,10 +261,6 @@ func report_story_match_result(player_won: bool) -> bool:
 	var match_node: StoryNode = get_active_match_node()
 	clear_active_match()
 
-	if match_node is RandomMatchStoryNode:
-		_finish_random_match(match_node)
-		return true
-
 	var boss_node: BossGameStoryNode = match_node as BossGameStoryNode
 	if player_won:
 		finish_current_node()
@@ -304,15 +307,6 @@ func _start_boss_node(node: BossGameStoryNode) -> void:
 	PlayerProgressStore.begin_rated_match(node.boss.boss_id, float(node.boss.rating))
 	SceneTransition.change_scene(GAME_SCENE_PATH)
 
-func _start_random_match_node(node: RandomMatchStoryNode) -> void:
-	var difficulty: int = node.difficulty_override if node.difficulty_override > 0 else _get_last_defeated_boss_level(node)
-	_set_up_generated_opponent(difficulty)
-
-	_active_match_node_id = node.id
-	_pending_boss_line = {}
-	StoryProgressStore.register_node_attempt(node.id)
-	SceneTransition.change_scene(GAME_SCENE_PATH)
-
 ## A generated opponent (RandomOpponentFactory) as the AI, in the default room.
 func _set_up_generated_opponent(difficulty: int) -> void:
 	var opponent: Dictionary = RandomOpponentFactory.create(difficulty)
@@ -323,12 +317,6 @@ func _set_up_generated_opponent(difficulty: int) -> void:
 		opponent.get("portrait_data", {}),
 		opponent.get("deck_stamp_names", [])
 	)
-
-func _finish_random_match(node: RandomMatchStoryNode) -> void:
-	if StoryProgressStore.get_node_attempts(node.id) >= node.match_count:
-		finish_current_node()
-	else:
-		return_to_hub()
 
 func _configure_singleplayer_match(ai_difficulty_level: int) -> void:
 	GameConfig.stop_ai_vs_ai_batch()

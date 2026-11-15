@@ -42,6 +42,12 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="BackButton" type="Button" parent="Margin/Rows/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Vissza a főmenübe"
+text = "Főmenü"
+
 [node name="Title" type="Label" parent="Margin/Rows/TopRow"]
 layout_mode = 2
 theme_type_variation = &"TitleLabel"

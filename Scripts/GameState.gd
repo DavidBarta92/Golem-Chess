@@ -21,6 +21,17 @@ var spent_stamps: Dictionary = {
 	0: [],
 	1: [],
 }
+## Which print each stamp in a codex is in: the same shape as
+## player_codex_pages, a print id per stamp ("" is the stamp's standard
+## print). Every function that moves a stamp in or out of a page moves its
+## print with it (_print_page).
+var player_codex_print_pages: Dictionary = {
+	0: [],
+	1: [],
+}
+## The print of the stamp the last remove_* call took out, for whoever puts
+## that stamp somewhere else.
+var last_removed_print_id: String = ""
 var current_turn_player: int = 0  # 0 = white, 1 = black
 var completed_turn_counts: Dictionary = {0: 0, 1: 0}
 var player_clock_seconds: Dictionary = {0: 600.0, 1: 600.0}
@@ -196,21 +207,73 @@ func place_crown(player_id: int, piece_pos: Vector2) -> bool:
 	crowned_this_turn[player_id] = true
 	return true
 
-func initialize_player_codex(player_id: int, stamp_names: Array) -> void:
+## `print_ids` runs alongside `stamp_names`; a missing or unknown one, or one
+## of another stamp, leaves that stamp in its standard print.
+func initialize_player_codex(player_id: int, stamp_names: Array, print_ids: Array = []) -> void:
 	var normalized_names: Array[String] = []
-	for stamp_name_value in stamp_names:
+	var normalized_prints: Array[String] = []
+	for index in range(stamp_names.size()):
 		if normalized_names.size() >= DeckManager.DECK_SIZE:
 			break
-		var stamp_name: String = str(stamp_name_value)
+		var stamp_name: String = str(stamp_names[index])
 		if !stamp_name.is_empty():
 			normalized_names.append(stamp_name)
+			normalized_prints.append(_checked_print_id(stamp_name, str(print_ids[index]) if index < print_ids.size() else ""))
 
 	player_initial_decks[player_id] = normalized_names.duplicate()
 	player_codex_pages[player_id] = DeckManager.create_codex_pages(normalized_names)
+	var print_pages: Array = []
+	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
+		print_pages.append(normalized_prints.slice(page_index * DeckManager.CODEX_STAMPS_PER_PAGE, (page_index + 1) * DeckManager.CODEX_STAMPS_PER_PAGE))
+	player_codex_print_pages[player_id] = print_pages
 	current_page_index[player_id] = 0
 	has_turned_page_this_turn[player_id] = false
 	spent_stamps[player_id] = []
 	sync_player_stamp_zones_from_codex(player_id)
+
+## The print id if it is a print of that stamp, else "".
+func _checked_print_id(stamp_name: String, print_id: String) -> String:
+	if print_id.is_empty():
+		return ""
+	# A player's own drawing (DrawingStore): any stamp can wear one.
+	if DrawingStore.is_drawing_print_id(print_id):
+		return print_id
+	var stamp_print: StampPrint = StampPrintLibrary.get_print(print_id)
+	if stamp_print == null:
+		return ""
+	var stamp: Stamp = StampPrintLibrary.get_stamp_for_print(stamp_print)
+	return stamp_print.print_id if stamp != null and stamp.stamp_name == stamp_name else ""
+
+## The prints of one page, in step with its stamps as they are now - so ask
+## for it before changing the page, then make the same change to it.
+func _print_page(player_id: int, page_index: int) -> Array:
+	var print_pages: Array = player_codex_print_pages.get(player_id, [])
+	while print_pages.size() < DeckManager.CODEX_PAGE_COUNT:
+		print_pages.append([])
+	player_codex_print_pages[player_id] = print_pages
+	var pages: Array = get_codex_pages(player_id)
+	var stamp_count: int = (pages[page_index] as Array).size() if page_index >= 0 and page_index < pages.size() and pages[page_index] is Array else 0
+	var prints: Array = print_pages[page_index]
+	while prints.size() < stamp_count:
+		prints.append("")
+	if prints.size() > stamp_count:
+		prints.resize(stamp_count)
+	return prints
+
+## The prints of the open page, alongside player_hands.
+func get_hand_print_ids(player_id: int) -> Array:
+	return _print_page(player_id, get_current_page_index(player_id)).duplicate()
+
+## The prints of the whole codex, alongside get_codex_pages.
+func get_codex_print_pages(player_id: int) -> Array:
+	var output: Array = []
+	for page_index in range(DeckManager.CODEX_PAGE_COUNT):
+		output.append(_print_page(player_id, page_index).duplicate())
+	return output
+
+## Forgets every print: for a codex put in place by hand (a setup).
+func clear_codex_prints(player_id: int) -> void:
+	player_codex_print_pages[player_id] = []
 
 func has_codex_for_player(player_id: int) -> bool:
 	return player_codex_pages.has(player_id) and player_codex_pages[player_id] is Array and !(player_codex_pages[player_id] as Array).is_empty()
@@ -294,6 +357,9 @@ func consume_stamp(player_id: int, page_index: int, stamp_index: int) -> Diction
 		return {}
 
 	var stamp_name: String = str(stamps[stamp_index])
+	var prints: Array = _print_page(player_id, page_index)
+	last_removed_print_id = str(prints[stamp_index])
+	prints.remove_at(stamp_index)
 	stamps.remove_at(stamp_index)
 	pages[page_index] = stamps
 	player_codex_pages[player_id] = pages
@@ -301,6 +367,7 @@ func consume_stamp(player_id: int, page_index: int, stamp_index: int) -> Diction
 		"stamp_name": stamp_name,
 		"page_index": page_index,
 		"stamp_index": stamp_index,
+		"print_id": last_removed_print_id,
 	}
 	var player_spent_stamps: Array = spent_stamps.get(player_id, [])
 	player_spent_stamps.append(spent_record)
@@ -348,6 +415,9 @@ func remove_stamp_from_codex_zone(player_id: int, stamp_name: String = "", inclu
 	var selected_stamp_index: int = int(selected.get("stamp_index", -1))
 	var selected_stamp_name: String = str(selected.get("stamp_name", ""))
 	var selected_page: Array = pages[selected_page_index]
+	var selected_prints: Array = _print_page(player_id, selected_page_index)
+	last_removed_print_id = str(selected_prints[selected_stamp_index])
+	selected_prints.remove_at(selected_stamp_index)
 	selected_page.remove_at(selected_stamp_index)
 	pages[selected_page_index] = selected_page
 	player_codex_pages[player_id] = pages
@@ -370,13 +440,16 @@ func remove_stamp_from_current_page(player_id: int, stamp_name: String = "") -> 
 	if stamp_index == -1:
 		return ""
 	var removed_stamp_name: String = str(page[stamp_index])
+	var page_prints: Array = _print_page(player_id, page_index)
+	last_removed_print_id = str(page_prints[stamp_index])
+	page_prints.remove_at(stamp_index)
 	page.remove_at(stamp_index)
 	pages[page_index] = page
 	player_codex_pages[player_id] = pages
 	sync_player_stamp_zones_from_codex(player_id)
 	return removed_stamp_name
 
-func add_stamp_to_current_page(player_id: int, stamp_name: String, max_page_size: int = DeckManager.CODEX_STAMPS_PER_PAGE) -> bool:
+func add_stamp_to_current_page(player_id: int, stamp_name: String, max_page_size: int = DeckManager.CODEX_STAMPS_PER_PAGE, print_id: String = "") -> bool:
 	if stamp_name.is_empty():
 		return false
 	var pages: Array = get_codex_pages(player_id)
@@ -389,6 +462,7 @@ func add_stamp_to_current_page(player_id: int, stamp_name: String, max_page_size
 	var stamps: Array = page
 	if stamps.size() >= max_page_size:
 		return false
+	_print_page(player_id, page_index).append(_checked_print_id(stamp_name, print_id))
 	stamps.append(stamp_name)
 	pages[page_index] = stamps
 	player_codex_pages[player_id] = pages
@@ -398,7 +472,7 @@ func add_stamp_to_current_page(player_id: int, stamp_name: String, max_page_size
 ## Puts the stamp into the nearest free slot: on the open page if it has one,
 ## else on the pages after it, in the order they come up. Returns the page
 ## index, or -1 when the codex is full.
-func add_stamp_to_nearest_free_slot(player_id: int, stamp_name: String) -> int:
+func add_stamp_to_nearest_free_slot(player_id: int, stamp_name: String, print_id: String = "") -> int:
 	if stamp_name.is_empty():
 		return -1
 	var pages: Array = get_codex_pages(player_id)
@@ -410,6 +484,7 @@ func add_stamp_to_nearest_free_slot(player_id: int, stamp_name: String) -> int:
 		var stamps: Array = pages[page_index] if pages[page_index] is Array else []
 		if stamps.size() >= DeckManager.CODEX_STAMPS_PER_PAGE:
 			continue
+		_print_page(player_id, page_index).append(_checked_print_id(stamp_name, print_id))
 		stamps.append(stamp_name)
 		pages[page_index] = stamps
 		player_codex_pages[player_id] = pages
@@ -426,13 +501,15 @@ func count_free_codex_slots(player_id: int) -> int:
 		free_slots += maxi(0, DeckManager.CODEX_STAMPS_PER_PAGE - page_size)
 	return free_slots
 
-func return_stamp_to_codex_page(player_id: int, stamp_name: String, preferred_page_index: int = -1, preferred_stamp_index: int = -1) -> bool:
+func return_stamp_to_codex_page(player_id: int, stamp_name: String, preferred_page_index: int = -1, preferred_stamp_index: int = -1, print_id: String = "") -> bool:
 	if stamp_name.is_empty():
 		return false
 	var target_page_index: int = preferred_page_index
 	var target_stamp_index: int = preferred_stamp_index
 	if target_page_index < 0 or target_page_index >= DeckManager.CODEX_PAGE_COUNT:
 		var spent_record: Dictionary = pop_spent_stamp_record(player_id, stamp_name)
+		if print_id.is_empty():
+			print_id = str(spent_record.get("print_id", ""))
 		target_page_index = int(spent_record.get("page_index", get_current_page_index(player_id)))
 		target_stamp_index = int(spent_record.get("stamp_index", -1))
 	else:
@@ -446,6 +523,7 @@ func return_stamp_to_codex_page(player_id: int, stamp_name: String, preferred_pa
 		page = []
 	var stamps: Array = page
 	var insert_index: int = clampi(target_stamp_index, 0, stamps.size()) if target_stamp_index >= 0 else stamps.size()
+	_print_page(player_id, target_page_index).insert(insert_index, _checked_print_id(stamp_name, print_id))
 	stamps.insert(insert_index, stamp_name)
 	pages[target_page_index] = stamps
 	player_codex_pages[player_id] = pages

@@ -1039,13 +1039,13 @@ QUEST_WIN_MATCHES_TITLE,Victories,Győzelmek
 QUEST_WIN_MATCHES_TITLE_ONE,A victory,Egy győzelem
 QUEST_WIN_MATCHES_TEXT,The golems remember who led them. <b>Win {count} matches</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj {count} meccset</b>."
 QUEST_WIN_MATCHES_TEXT_ONE,The golems remember who led them. <b>Win a match</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj egy meccset</b>."
-QUEST_WIN_MATCHES_PARAM_TEXT,The golems remember who led them. <b>Win {count} matches in {param}</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj {count} meccset {param}</b>."
-QUEST_WIN_MATCHES_PARAM_TEXT_ONE,The golems remember who led them. <b>Win a match in {param}</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj egy meccset {param}</b>."
+QUEST_WIN_MATCHES_PARAM_TEXT,The golems remember who led them. <b>Win {count} matches {param}</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj {count} meccset {param}</b>."
+QUEST_WIN_MATCHES_PARAM_TEXT_ONE,The golems remember who led them. <b>Win a match {param}</b>.,"A gólemek emlékeznek, ki vezette őket. <b>Nyerj egy meccset {param}</b>."
 QUEST_PLAY_MATCHES_TITLE,On the board,A táblán
 QUEST_PLAY_MATCHES_TEXT,"Every match teaches something. <b>Play {count} matches</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le {count} meccset</b>, akár nyersz, akár nem."
 QUEST_PLAY_MATCHES_TEXT_ONE,"Every match teaches something. <b>Play a match</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le egy meccset</b>, akár nyersz, akár nem."
-QUEST_PLAY_MATCHES_PARAM_TEXT,"Every match teaches something. <b>Play {count} matches in {param}</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le {count} meccset {param}</b>, akár nyersz, akár nem."
-QUEST_PLAY_MATCHES_PARAM_TEXT_ONE,"Every match teaches something. <b>Play a match in {param}</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le egy meccset {param}</b>, akár nyersz, akár nem."
+QUEST_PLAY_MATCHES_PARAM_TEXT,"Every match teaches something. <b>Play {count} matches {param}</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le {count} meccset {param}</b>, akár nyersz, akár nem."
+QUEST_PLAY_MATCHES_PARAM_TEXT_ONE,"Every match teaches something. <b>Play a match {param}</b>, win or lose.","Minden meccs tanít valamit. <b>Játssz le egy meccset {param}</b>, akár nyersz, akár nem."
 QUEST_AFFIX_STAMPS_TITLE,Glue and paper,Enyv és papír
 QUEST_AFFIX_STAMPS_TEXT,Every stamp has a story. <b>Affix {count} stamps</b> in matches.,Minden bélyegnek története van. <b>Ragassz fel {count} bélyeget</b> meccseken.
 QUEST_AFFIX_STAMPS_TEXT_ONE,Every stamp has a story. <b>Affix a stamp</b> in a match.,Minden bélyegnek története van. <b>Ragassz fel egy bélyeget</b> egy meccsen.
@@ -1066,8 +1066,31 @@ QUEST_OPEN_SCREEN_TEXT,<b>Open this: {param}</b>.,<b>Nyisd meg: {param}</b>.
 QUEST_SCREEN_COLLECTION,Collection,Gyűjtemény
 QUEST_SCREEN_BOURSE,Bourse,Börze
 QUEST_SCREEN_PUZZLES,Puzzles,Feladványok
-QUEST_MODE_SINGLEPLAYER,singleplayer,egyjátékos módban
-QUEST_MODE_MULTIPLAYER,multiplayer,többjátékos módban
+QUEST_MODE_SINGLEPLAYER,in singleplayer,egyjátékos módban
+QUEST_MODE_MULTIPLAYER,in multiplayer,többjátékos módban
+STORY_QUEST_CH00_OPEN_COLLECTION_TITLE,The collection,A gyűjtemény
+STORY_QUEST_CH00_OPEN_COLLECTION_TEXT,The albums are waiting on the shelf. <b>Open the Collection</b>.,Az albumok a polcon várnak. <b>Nyisd meg a Gyűjteményt</b>.
+STORY_QUEST_CH01_BUY_PACK_TITLE,The first pack,Az első csomag
+STORY_QUEST_CH01_BUY_PACK_TEXT,Something new always comes in handy. <b>Open Buy packs and buy a pack</b>.,"Valami új mindig jól jön. <b>Nyisd meg a Csomagvásárlást, és vegyél egy csomagot</b>."
+STORY_QUEST_CH02_RANDOM_MATCH_TITLE,A practice round,Gyakorlókör
+STORY_QUEST_CH02_RANDOM_MATCH_TEXT,"A stranger can always show you something new. <b>Play a match against a random opponent</b>, win or lose.","Egy idegen mindig tud újat mutatni. <b>Játssz egy meccset egy véletlen ellenféllel</b>, akár nyersz, akár nem."
+STORY_QUEST_CH03_RANDOM_MATCHES_TITLE,Warming up,Bemelegítés
+STORY_QUEST_CH03_RANDOM_MATCHES_TEXT,"Before you move on, practise a little more. <b>Play two matches against random opponents</b>, win or lose.","Mielőtt továbbmész, gyakorolj még egy kicsit. <b>Játssz két meccset véletlen ellenfelekkel</b>, akár nyersz, akár nem."
+STORY_QUEST_CH04_RANDOM_MATCHES_TITLE,Strangers,Ismeretlenek
+STORY_QUEST_CH04_RANDOM_MATCHES_TEXT,"The phone is quiet, but the board is not. <b>Play two matches against random opponents</b>, win or lose.","A telefon hallgat, de a tábla nem. <b>Játssz két meccset véletlen ellenfelekkel</b>, akár nyersz, akár nem."
+STORY_QUEST_CH05_RANDOM_WINS_TITLE,Two victories,Két győzelem
+STORY_QUEST_CH05_RANDOM_WINS_TEXT,Taking part is no longer enough. <b>Win two matches against random opponents</b>.,Most már nem elég részt venni. <b>Nyerj két meccset véletlen ellenfelek ellen</b>.
+STORY_QUEST_CH06_PUZZLE_TITLE,The first letter,Az első levél
+STORY_QUEST_CH06_PUZZLE_TEXT,"There is a letter in the parcel, with a puzzle in it. <b>Solve a puzzle</b> from the letters.","A csomagban egy levél lapul, benne egy feladvány. <b>Oldj meg egy feladványt</b> a levelekből."
+STORY_QUEST_CH06_RANDOM_MATCHES_TITLE,Back to the board,Vissza a táblához
+STORY_QUEST_CH06_RANDOM_MATCHES_TEXT,"The puzzle is solved; now for practice. <b>Play three matches against random opponents</b>, win or lose.","A feladvány megvan, most jöhet a gyakorlás. <b>Játssz három meccset véletlen ellenfelekkel</b>, akár nyersz, akár nem."
+STORY_QUEST_CH07_RANDOM_MATCH_TITLE,One more round,Még egy kör
+STORY_QUEST_CH07_RANDOM_MATCH_TEXT,"One match before the next big fight. <b>Play a match against a random opponent</b>, win or lose.","Egy meccs a következő nagy csata előtt. <b>Játssz egy meccset egy véletlen ellenféllel</b>, akár nyersz, akár nem."
+STORY_QUEST_CH08_LIST_LOT_TITLE,Your first lot,Az első lott
+STORY_QUEST_CH08_LIST_LOT_TEXT,Everyone finds something at the Bourse. <b>Put a lot up for sale</b> on the Bourse.,A börzén mindenki talál magának valamit. <b>Tegyél ki egy lottot eladásra</b> a Börzén.
+STORY_QUEST_CH09_PUZZLE_TITLE,Another letter,Újabb levél
+STORY_QUEST_CH09_PUZZLE_TEXT,Someone is waiting for an answer again. <b>Solve a puzzle</b> from the letters.,Valaki megint választ vár. <b>Oldj meg egy feladványt</b> a levelekből.
+QUEST_MODE_RANDOM,against random opponents,véletlen ellenfelek ellen
 QUEST_SWAP,Swap,Csere
 QUEST_SWAP_HINT,You can swap one reward quest a day.,Naponta egy jutalom-feladatot cserélhetsz.
 QUEST_AFFIX_ROLE_TITLE,The right role,A megfelelő szerep

@@ -18,7 +18,7 @@ Feed the output into Shaders/mainmenu_line_reveal.gdshader as the texture of
 a TextureRect placed over a static (line-free) background.
 
 Usage:
-    python tools/generate_line_reveal_mask.py Assets/mainmenu_bg_1.png
+    python tools/generate_line_reveal_mask.py Assets/MainMenu/mainmenu_bg_1.png
 
 For painted, coloured art (the logo) rather than black line art, add
 --ink-from-alpha: every opaque pixel counts as ink, whatever its colour. Add

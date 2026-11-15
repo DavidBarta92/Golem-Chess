@@ -412,10 +412,14 @@ func _solve() -> void:
 	over = true
 	run_token += 1
 	board.get_tutorial_match_adapter().set_constraints(NO_ACTIONS)
-	# Quests count a puzzle once, the first time it is solved.
-	if !PuzzleStore.is_solved(puzzle.puzzle_id):
-		QuestStore.record_event(QuestCondition.EVENT_PUZZLE_SOLVED, {"puzzle_id": puzzle.puzzle_id})
+	# Quests count a new puzzle, or a solved one again once none is left unsolved.
+	var first_solve: bool = !PuzzleStore.is_solved(puzzle.puzzle_id)
 	PuzzleStore.mark_solved(puzzle.puzzle_id)
+	var unsolved_left: int = 0
+	for other in PuzzleLibrary.get_puzzles():
+		if !PuzzleStore.is_solved(other.puzzle_id):
+			unsolved_left += 1
+	QuestStore.record_event(QuestCondition.EVENT_PUZZLE_SOLVED, {"puzzle_id": puzzle.puzzle_id, "first_solve": first_solve, "unsolved_left": unsolved_left})
 	PuzzleStore.last_reward_paid = PuzzleStore.grant_reward(puzzle)
 	hud.set_moves_text(tr("PUZZLE_STATE_SOLVED"))
 	await board.get_turn_flow_controller().wait_for_pending_visual_processes()

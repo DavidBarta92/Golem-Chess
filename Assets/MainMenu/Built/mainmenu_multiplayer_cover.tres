@@ -1,0 +1,10 @@
+[gd_resource type="AtlasTexture" format=3 uid="uid://5thqbwnmmdf"]
+
+[ext_resource type="Texture2D" path="res://Assets/MainMenu/Built/mainmenu_multiplayer_cover.png" id="1_art"]
+
+[resource]
+resource_name = "mainmenu_multiplayer_cover"
+atlas = ExtResource("1_art")
+region = Rect2(0, 0, 432, 283)
+margin = Rect2(0, 794, 1487, 794)
+filter_clip = true

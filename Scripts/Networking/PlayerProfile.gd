@@ -26,6 +26,10 @@ const PUBLIC_DEFAULT_NAME: String = "Player"
 
 var player_name: String = ""
 var deck_stamp_names: Array[String] = []
+## The print each of those stamps is in, alongside deck_stamp_names ("" or a
+## short list: the standard print). For the host only: it puts a stamp's print
+## into the state when the stamp shows, so the opponent never gets the list.
+var deck_print_ids: Array[String] = []
 ## A PortraitConfig as a dictionary: the ids of the parts it is built from.
 var portrait: Dictionary = {}
 
@@ -34,8 +38,29 @@ static func local() -> PlayerProfile:
 	var profile := PlayerProfile.new()
 	profile.player_name = GameConfig.get_local_player_name()
 	profile.deck_stamp_names = GameConfig.get_selected_deck_stamp_names()
+	profile.deck_print_ids = with_local_drawings(profile.deck_stamp_names, GameConfig.get_selected_deck_print_ids())
 	profile.portrait = GameConfig.get_local_portrait_data()
 	return profile
+
+## The prints with this player's own drawing in place of the print, for every
+## stamp they have drawn one for (DrawingStore).
+static func with_local_drawings(stamp_names: Array, print_ids: Array) -> Array[String]:
+	var output: Array[String] = []
+	for index in range(stamp_names.size()):
+		var print_id: String = str(print_ids[index]) if index < print_ids.size() else ""
+		var stamp: Stamp = StampLibrary.get_stamp(str(stamp_names[index]))
+		var drawing_print_id: String = DrawingStore.instance().get_local_print_id(stamp.stamp_code) if stamp != null else ""
+		output.append(drawing_print_id if !drawing_print_id.is_empty() else print_id)
+	return output
+
+## The hashes of the drawings among the prints.
+func get_drawing_hashes() -> Array[String]:
+	var hashes: Array[String] = []
+	for print_id in deck_print_ids:
+		var drawing_hash: String = DrawingStore.hash_of_print_id(print_id)
+		if !drawing_hash.is_empty() and !hashes.has(drawing_hash):
+			hashes.append(drawing_hash)
+	return hashes
 
 ## A profile as it arrived over the network. Whatever is missing or malformed
 ## falls back to a default, so a peer's profile is always usable; the portrait
@@ -48,6 +73,10 @@ static func from_dict(data, fallback_player_id: int = 0) -> PlayerProfile:
 	if deck_value is Array:
 		for stamp_name_value in deck_value:
 			profile.deck_stamp_names.append(str(stamp_name_value))
+	var prints_value = source.get("deck_prints", [])
+	if prints_value is Array:
+		for print_id_value in prints_value:
+			profile.deck_print_ids.append(str(print_id_value))
 	profile.portrait = PortraitLibrary.config_from_data_or_default(source.get("portrait", {}), fallback_player_id).to_dict()
 	return profile
 
@@ -62,6 +91,7 @@ func to_dict() -> Dictionary:
 	return {
 		"name": player_name,
 		"deck": deck_stamp_names.duplicate(),
+		"deck_prints": deck_print_ids.duplicate(),
 		"portrait": portrait.duplicate(true),
 	}
 

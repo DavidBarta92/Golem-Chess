@@ -52,7 +52,7 @@ Each group has four values:
 | | every other framed control's print: sliders' grabbers, fields, tabs, panels, windows, popups, progress bars | baked into the prints, density and edge |
 | | the hover's ink, Display and Title text, the top bar's drawn items | `ink_flood.gdshader`, `ink_stamp.gdshader`, density only |
 | Scene lines | all line art drawn by `mainmenu_line_reveal.gdshader`: the main menu, the match's room, the board's grid, the portrait frame, the comics, the tutorial, the collection's opening | in that shader |
-| Scene washes | the grey washes under the line art: the match room's table and the memory room, every comic and tutorial panel's fill (`ComicPanelView`), the tutorial's figure, the collection's background | `ink_blot_washes.tres` |
+| Scene washes | the grey washes under the line art: the match room's table and the memory room, every comic and tutorial panel's fill (`ComicPanelView`), the collection's background | `ink_blot_washes.tres` |
 | | the collection's book and magnifier case, pictures on their own paper: ink is taken away towards that paper's white | `ink_blot_pictures.tres` |
 | Stamps | the coloured square: density, and an edge that only bites in, so the ink never spreads past the square | `stamp_square_gradient.gdshader` |
 | | the art and the role frame: lightened towards the stamp's white paper, not let through to the square beneath | `stamp_art_mask.gdshader` |
@@ -64,6 +64,9 @@ Left out on purpose:
   easy to read.
 - In the match's room, the opponent's body and the two window frames, line
   and wash alike.
+- In the tutorial's intro, the figure's colour and the hand's fill: pictures
+  of things, which the blot thinned out and bent at the edge
+  (`ComicPanelView.plain_fill` turns it off for a panel's fill).
 - Paper: the stamp's face, the match room's sheet and table base, the scenes'
   paper overlay.
 - Text with no stamp of its own (Body, Button labels and so on), as with the

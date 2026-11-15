@@ -179,7 +179,9 @@ The sketches used stand-ins; the game's own versions win:
 Where the quests come from - story nodes, the daily, the regular ones -
 and what moves them on: [Docs/Quests/QUESTS.md](../Quests/QUESTS.md). A
 regular quest's panel has a **Swap** button (outline, next to where Claim goes)
-once a day.
+once a day. An open panel slides along with its ribbon when the ribbons change
+places (`QuestPanel.follow_to`), as when a claimed ribbon leaves and the next
+story quest drops in.
 
 ## Not decided yet
 

@@ -10,7 +10,8 @@ that break builds when they are forgotten.
 | `Scenes/Multiplayer.gd` | Root of the match scene. Connects (direct ENet, the dedicated server's room, Steam), keeps who plays which side (`peer_player_ids`) and what each player brought (`peer_profiles`), and holds every RPC. |
 | `Scripts/NetworkGameHost.gd` | The rules, on the machine that hosts (single player included). Applies actions, then sends the state. |
 | `Scripts/Networking/GameStateSerializer.gd` | The state after every action, cut to what each player may know. |
-| `Scripts/Networking/PlayerProfile.gd` | What a player brings to a match: name, codex, portrait. |
+| `Scripts/Networking/PlayerProfile.gd` | What a player brings to a match: name, codex, the print of each stamp in it, portrait. |
+| `Scripts/Networking/DrawingStore.gd` | The players' own drawings: this player's from the drawings folder, the others' by hash, cached on disk. |
 | `Scripts/MatchState/ServerStateUpdateController.gd` | The board's end of both: `apply_state_data()` and `apply_player_profiles()`. |
 | `Scripts/MatchState/LocalMatchLink.gd` | Stands in for the Multiplayer scene when the tutorial or a puzzle plays on a host of its own, with no network. |
 
@@ -39,13 +40,58 @@ the profiles to the end, so the result still names a player who left.
   in `apply_player_profiles()`.
 - **Per player, only the host needs it:** a field in `to_dict()` and
   `from_dict()` only.
-- **Per stamp, and the opponent may learn it only once the stamp shows** (the
-  print a stamp is in): the player's choices travel to the host in the profile;
-  `GameStateSerializer` puts the value next to the stamp wherever it writes a
-  visible one. In the public profile it would list the whole codex.
-- **An image** (a player's own drawing): only its hash goes into the profile or
-  next to the stamp. The image needs a transfer of its own - asked for by hash,
-  cached, sent in pieces if large - and never rides in the state.
+- **Per stamp, and the opponent may learn it only once the stamp shows:** as
+  the print is (below). In the public profile it would list the whole codex.
+- **An image:** only its hash travels with the data; the picture goes as the
+  drawings do (below), never in the state.
+
+## Prints
+
+Which print a stamp is in (`StampPrint`: standard, foil, full art) is the
+player's own choice per codex slot. It goes to the host in the profile
+(`deck_print_ids`, alongside the stamp names) and from there travels with the
+stamp: `GameStateData.player_codex_print_pages` has the same shape as the
+codex pages, and every function that moves a stamp in or out of a page moves
+its print too (`_print_page`); a stamp on a golem carries it as the meta
+`print_id`; a stolen or given stamp keeps it (`last_removed_print_id`). The
+state names it next to each stamp the viewer may see (`print_id` on a piece
+and on an expiration, `player_hand_prints` for the viewer's own hand), the
+board puts it on the `Stamp` it makes, and `StampVisual.set_stamp` shows a
+stamp that names its print in that print. `""` is the standard print. The host
+checks that a print is one of that stamp's; whether the player owns it is not
+checked - it changes nothing but the look.
+
+Not carried yet: the stamp flying back to a codex or between players
+(`recent_stamp_transfers`) is drawn in its standard print.
+
+## Drawings
+
+A player's own drawing (`Docs/StampPainter/STAMP_PAINTER.md`) rides in the print
+slot as `drawing:<sha-256 of the PNG>`, so it goes wherever a print goes. For
+each stamp the newest proper drawing in the drawings folder is used
+(`DrawingStore.get_local_print_id`), on every copy in the codex.
+
+The picture itself travels once per machine, by hash: the host asks a
+registering player for the pictures their profile names
+(`request_missing_drawings_from`), and a board that has to show one it has not
+got asks the host (`DrawingStore.drawing_wanted` -> `send_drawing_request`).
+The answer comes in pieces of 30 kB (`send_drawing_chunk`); the receiver puts
+them together, takes the result only if it is a PNG of the art's size, under
+1.5 MB, with that very hash, and keeps it in `user://drawing_cache`. Until
+then the stamp shows in its standard print and redraws when the picture lands
+(`DrawingStore.drawing_ready`). The host takes pictures only from a player in
+the match and only ones that player's profile names; a client only from the
+host.
+
+## Hidden information
+
+A viewer's state holds their own hand and codex pages only. Of the other
+player's it holds the page counts and the open page's index
+(`GameStateSerializer.can_view_codex`). So nothing on a board may ask what the
+other side holds: a scripted opponent's hand is read from the host
+(`TutorialMatchAdapter.play_scripted_affix`). Still sent: the name of a stamp
+on a golem hidden from the viewer (`hidden_stamps`), which the board uses to
+show that stamp going on before the golem vanishes.
 
 ## Rules that bite
 
@@ -58,9 +104,6 @@ the profiles to the end, so the result still names a player who left.
   same number misreads it. The profile change of 2026-11-13 added, renamed and
   re-signed RPCs, so it needs one.
 - **The dedicated server** has to be redeployed whenever the version changes.
-- **Hidden information.** Both players' hands and codex pages go to both boards
-  (`player_hands`, `player_codex_state`). A board shows only its own, but a
-  modified client could read the other's. Worth closing before public matches.
 
 ## Testing
 

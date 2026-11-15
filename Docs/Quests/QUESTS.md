@@ -29,8 +29,8 @@ Every quest that moves on by itself has a **condition** (what), a **param**
 
 | condition | moved on by | param (empty: any) |
 | --- | --- | --- |
-| `WIN_MATCHES` | a match won | `singleplayer` / `multiplayer` |
-| `PLAY_MATCHES` | a match finished, won or lost | `singleplayer` / `multiplayer` |
+| `WIN_MATCHES` | a match won | `singleplayer` / `multiplayer` / `random` |
+| `PLAY_MATCHES` | a match finished, won or lost | `singleplayer` / `multiplayer` / `random` |
 | `AFFIX_STAMPS` | a stamp the player puts on a golem of theirs | a set: `Animals`, `Flora`, … |
 | `AFFIX_ROLE` | the same, of a role | a role: `Seeker`, `Shared`, `Se-tenant`, `Overseal` (needed) |
 | `AFFIX_EFFECT` | the same, with an effect | an effect type: `bomb`, `frozen_squares`, … (needed) |
@@ -44,11 +44,15 @@ Every quest that moves on by itself has a **condition** (what), a **param**
 | `LIST_LOTS` | a lot put up on the Bourse | — |
 | `SELL_LOTS` | the price of a sold lot collected | — |
 | `BUY_LOTS` | a stamp picked from one of the day's lots | — |
-| `SOLVE_PUZZLES` | a puzzle solved for the first time | — |
+| `SOLVE_PUZZLES` | a new puzzle solved; a solved one again only once every puzzle is solved | — |
 | `OPEN_SCREEN` | a screen opened | `collection` / `bourse` / `puzzles` (needed) |
 
 A match counts when a player of this machine's own plays it, the story's
-included, but never the tutorial, a puzzle board or an AI batch. Captures and
+included, but never the tutorial, a puzzle board or an AI batch. `random` is a
+match against a generated opponent outside the story: the Play window's Random
+opponent (`random_opponent` in the event: singleplayer, an AI opponent
+override, and no story match running). A puzzle solved again counts only when
+none is left unsolved, so a quest asking for one can always be done. Captures and
 losses are a move's: a bomb's do not count, as in the puzzles. The codex of
 `WIN_WITH_STAMP` is the one played: the player's own, or the one the story lent.
 `CODEX_WITH_STAMP` is a level, not a sum: its progress is the most copies a
@@ -215,6 +219,33 @@ A `QuestStoryNode` is a node in `Story/story_definition.tres` like the others
 
 Example: "Open the Collection" is `OPEN_SCREEN` with param `collection`. The
 node before it has to unlock the `collection` feature, so the button works.
+
+**A save from before a story quest was added** is not sent back to it: a
+`QuestStoryNode` with a completed node after it counts as passed
+(`StoryManager.get_current_node`). Other new nodes still become current when
+they are the first not completed.
+
+### The story's quests
+
+Each closes its chapter, after the beat that unlocks something (the user's list
+of 2026-11-15). Their texts are `STORY_QUEST_<ID>_TITLE` / `_TEXT`.
+
+| after | node | asks for |
+| --- | --- | --- |
+| Boss 2 (the Collection comic and the feedback screen) | `quest_ch00_open_collection` | open the Collection |
+| Boss 3 (the Buy Pack comic) | `quest_ch01_buy_pack` | buy a pack (in Buy packs) |
+| Boss 4 | `quest_ch02_random_match` | 1 match against a random opponent, won or lost |
+| Boss 5 | `quest_ch03_random_matches` | 2 such matches |
+| Boss 6 (the phone call) | `quest_ch04_random_matches` | 2 such matches |
+| Boss 7 | `quest_ch05_random_wins` | 2 wins against random opponents |
+| Boss 8 (the letter) | `quest_ch06_puzzle` | solve a puzzle |
+| that puzzle | `quest_ch06_random_matches` | 3 matches against random opponents |
+| Boss 9 | `quest_ch07_random_match` | 1 match against a random opponent |
+| Boss 10 (the Bourse) | `quest_ch08_list_lot` | put a lot up on the Bourse |
+| Boss 11 | `quest_ch09_puzzle` | solve a puzzle |
+
+The pack after Boss 3: until then only the boss wins pay coins (3 × 50), and a
+pack costs 150 - just enough, with nothing else to spend on before it.
 
 ## The save
 

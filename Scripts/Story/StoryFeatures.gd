@@ -24,6 +24,9 @@ const MULTIPLAYER: String = "multiplayer"
 ## before it was built; the id stays, so saves that unlocked it keep it.
 const PUZZLES: String = "quests"
 const TRADE: String = "trade"
+## The main menu's drawing things: the stamp painter, once the last boss
+## (Boss 12) is beaten.
+const DRAW: String = "draw"
 ## The top bar's counters, revealed one by one in this order. Rank and coin
 ## are there from the start for now; the story beat that brings each in is
 ## still to be decided - put the id on that node's unlocks_feature.
@@ -46,6 +49,7 @@ const ALL_FEATURE_IDS: Array[String] = [
 	MULTIPLAYER,
 	PUZZLES,
 	TRADE,
+	DRAW,
 	RANK_COUNTER,
 	COIN_COUNTER,
 	DRAW_COUNTER,

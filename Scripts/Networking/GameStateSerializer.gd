@@ -10,20 +10,23 @@ class_name GameStateSerializer
 ## name, portrait, and later the prints and drawings - travels once, as their
 ## PlayerProfile (NetworkGameHost.broadcast_player_profiles).
 ##
-## Both players' hands and codex pages go to both boards. A board shows only
-## its own player's, but a modified client could read the other's.
+## A viewer gets their own hand and codex pages only; of the other player's
+## they get the page counts and which page is open, which the table shows
+## anyway. A stamp's print (StampPrint) goes next to the stamp wherever the
+## viewer may see the stamp: "" is its standard print.
 
 static func serialize_for_player(game_state: GameStateData, viewer_player_id: int) -> Dictionary:
 	var data = {
 		"viewer_player_id": viewer_player_id,
 		"pieces": [],
 		"hidden_stamps": [],
-		"player_hands": game_state.player_hands,
+		"player_hands": serialize_hands_for_player(game_state, viewer_player_id),
+		"player_hand_prints": serialize_hand_prints_for_player(game_state, viewer_player_id),
 		"player_decks_size": {
 			0: game_state.get_remaining_codex_stamp_count(0),
 			1: game_state.get_remaining_codex_stamp_count(1)
 		},
-		"player_codex_state": serialize_player_codex_state(game_state),
+		"player_codex_state": serialize_player_codex_state(game_state, viewer_player_id),
 		"current_turn": game_state.current_turn_player,
 		"game_over": game_state.game_over,
 		"winner_player": game_state.winner_player,
@@ -53,6 +56,7 @@ static func serialize_for_player(game_state: GameStateData, viewer_player_id: in
 			"position": [pos.x, pos.y],
 			"color": piece.color,
 			"stamp_name": "" if hidden_from_viewer else (piece.affixed_stamp.stamp_name if piece.affixed_stamp else ""),
+			"print_id": "" if hidden_from_viewer or piece.affixed_stamp == null else str(piece.affixed_stamp.get_meta("print_id", "")),
 			"turns_remaining": 0 if hidden_from_viewer else piece.turns_remaining,
 			"exhausted_this_turn": true if hidden_from_viewer else piece.exhausted_this_turn,
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
@@ -74,21 +78,34 @@ static func serialize_turn_action_state(game_state: GameStateData) -> Dictionary
 		"crowned_this_turn": duplicate_bool_dictionary(game_state.crowned_this_turn),
 	}
 
-static func serialize_player_codex_state(game_state: GameStateData) -> Dictionary:
-	return {
-		0: {
-			"current_page_index": game_state.get_current_page_index(0),
-			"page_counts": game_state.get_page_stamp_counts(0),
-			"pages": serialize_codex_pages_for_player(game_state, 0),
-			"has_turned_page_this_turn": bool(game_state.has_turned_page_this_turn.get(0, false)),
-		},
-		1: {
-			"current_page_index": game_state.get_current_page_index(1),
-			"page_counts": game_state.get_page_stamp_counts(1),
-			"pages": serialize_codex_pages_for_player(game_state, 1),
-			"has_turned_page_this_turn": bool(game_state.has_turned_page_this_turn.get(1, false)),
-		},
-	}
+## Whether `viewer_player_id` may see what `player_id` holds in hand and
+## codex: their own, or everything for a viewer that is nobody's (-1).
+static func can_view_codex(viewer_player_id: int, player_id: int) -> bool:
+	return viewer_player_id == -1 or viewer_player_id == player_id
+
+static func serialize_hands_for_player(game_state: GameStateData, viewer_player_id: int) -> Dictionary:
+	var hands: Dictionary = {}
+	for player_id in [0, 1]:
+		hands[player_id] = game_state.player_hands.get(player_id, []).duplicate() if can_view_codex(viewer_player_id, player_id) else []
+	return hands
+
+static func serialize_hand_prints_for_player(game_state: GameStateData, viewer_player_id: int) -> Dictionary:
+	var prints: Dictionary = {}
+	for player_id in [0, 1]:
+		prints[player_id] = game_state.get_hand_print_ids(player_id) if can_view_codex(viewer_player_id, player_id) else []
+	return prints
+
+static func serialize_player_codex_state(game_state: GameStateData, viewer_player_id: int = -1) -> Dictionary:
+	var state: Dictionary = {}
+	for player_id in [0, 1]:
+		var visible: bool = can_view_codex(viewer_player_id, player_id)
+		state[player_id] = {
+			"current_page_index": game_state.get_current_page_index(player_id),
+			"page_counts": game_state.get_page_stamp_counts(player_id),
+			"pages": serialize_codex_pages_for_player(game_state, player_id) if visible else [],
+			"has_turned_page_this_turn": bool(game_state.has_turned_page_this_turn.get(player_id, false)),
+		}
+	return state
 
 static func serialize_codex_pages_for_player(game_state: GameStateData, player_id: int) -> Array:
 	var serialized_pages: Array = []
@@ -131,6 +148,7 @@ static func serialize_recent_stamp_expirations(game_state: GameStateData) -> Arr
 		serialized_expirations.append({
 			"player_id": int(expiration.get("player_id", -1)),
 			"stamp_name": str(expiration.get("stamp_name", "")),
+			"print_id": str(expiration.get("print_id", "")),
 			"piece_pos": vector2_to_array(piece_pos),
 		})
 

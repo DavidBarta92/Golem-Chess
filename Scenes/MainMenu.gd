@@ -40,12 +40,22 @@ const BourseSaleNotice = preload("res://Scripts/Bourse/BourseSaleNotice.gd")
 @onready var rebind_keys_button: Button = $SettingsDialog/Root/Tabs/Controls/Scroll/Content/RebindKeysButton
 @onready var input_rebind_dialog: InputRebindDialog = $InputRebindDialog
 @onready var background_lines: TextureRect = $BackgroundLines
+@onready var background_colour: TextureRect = $BackgroundColour
 @onready var street_view: MainMenuStreetView = $MainMenuStreetView
 @onready var play_button: TextureButton = $PlayButton
 
 const BACKGROUND_LINES_FALLBACK_BASE_DURATION: float = 1.6
 const BACKGROUND_LINES_FALLBACK_MAX_DELAY: float = 1.8
 const NEXT_BOSS_STAKES_GAP: float = 6.0
+
+@export_group("Arriving")
+## The buttons (and covers) fade in while the room draws itself: from this
+## long after the menu opens, over this long.
+@export_range(0.0, 4.0, 0.05) var buttons_fade_delay: float = 0.4
+@export_range(0.05, 4.0, 0.05) var buttons_fade_seconds: float = 1.4
+## Once the last line has landed, the colour fades in under the lines, as on a
+## comic page (ComicPanelView.fill_fade_duration).
+@export_range(0.05, 4.0, 0.05) var colour_fade_seconds: float = 1.5
 
 var ai_vs_ai_unlock_presses: int = 0
 var background_lines_animating: bool = false
@@ -132,6 +142,20 @@ func _start_background_line_reveal() -> void:
 	line_material.set_shader_parameter("time", 0.0)
 	background_lines_animating = true
 	set_process(true)
+	_fade_in_colour(background_lines_total_duration)
+	_fade_in_buttons()
+
+func _fade_in_colour(delay: float) -> void:
+	background_colour.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_interval(delay)
+	tween.tween_property(background_colour, "modulate:a", 1.0, colour_fade_seconds)
+
+## Every artwork button, with its cover or its extras (MainMenuFeatureButton).
+func _fade_in_buttons() -> void:
+	for child in get_children():
+		if child is ArtworkCroppedButton:
+			child.play_intro(buttons_fade_delay, buttons_fade_seconds)
 
 func _on_opponent_arrived() -> void:
 	play_button.disabled = false
@@ -618,9 +642,6 @@ func _update_ai_vs_ai_deck_controls() -> void:
 
 func _on_multiplayer_button_pressed():
 	SceneTransition.change_scene("res://Scenes/MultiplayerMenu.tscn")
-
-func _on_collection_button_pressed():
-	SceneTransition.change_scene("res://Scenes/Collection.tscn")
 
 func _on_exit_button_pressed():
 	get_tree().quit()

@@ -6,6 +6,10 @@ class_name ArtworkCroppedButton
 ## artwork when exported). Crops down to just the icon (plus padding) and
 ## positions/sizes the control to land exactly on top of the artwork, using
 ## the same "keep aspect covered" math as the BackgroundLines shader.
+## The texture can be the full image itself or, better, the layer as
+## tools/build_main_menu_art.py builds it: the drawing trimmed, in an
+## AtlasTexture whose margin puts it back in place on the full canvas, so the
+## button holds only its drawing in video memory.
 ## Subclasses can override _on_hover() / _on_pressed() to add behavior on
 ## top of (or instead of) the pop animation.
 
@@ -20,25 +24,20 @@ var _full_texture: Texture2D
 var _padded_rect: Rect2
 var _base_position: Vector2
 var _pop_tween: Tween
+var _intro_tween: Tween
 
 func _ready() -> void:
 	_full_texture = texture_normal
 	if _full_texture == null:
 		return
-	var image: Image = _full_texture.get_image()
-	if image == null:
+	var drawn: Rect2 = drawn_rect_of(_full_texture)
+	if drawn.size.x <= 0.0 or drawn.size.y <= 0.0:
 		return
 
-	var used_rect: Rect2i = image.get_used_rect()
-	_padded_rect = Rect2(Vector2(used_rect.position), Vector2(used_rect.size)).grow(hit_padding)
-	_padded_rect = _padded_rect.intersection(Rect2(Vector2.ZERO, _full_texture.get_size()))
-
-	var atlas := AtlasTexture.new()
-	atlas.atlas = _full_texture
-	atlas.region = _padded_rect
-	texture_normal = atlas
+	_padded_rect = drawn.grow(hit_padding).intersection(Rect2(Vector2.ZERO, _full_texture.get_size()))
+	texture_normal = _cropped_texture(_full_texture, drawn, _padded_rect)
 	ignore_texture_size = true
-	stretch_mode = 0 # STRETCH_SCALE; control rect already matches the atlas region 1:1
+	stretch_mode = 0 # STRETCH_SCALE; control rect already matches the cropped texture 1:1
 
 	set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_layout_to_artwork()
@@ -46,6 +45,32 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_layout_to_artwork)
 	mouse_entered.connect(_on_hover)
 	pressed.connect(_on_pressed)
+
+## Where the drawing sits on the full canvas. A built layer says so itself;
+## a full-size image is searched for its drawn pixels.
+static func drawn_rect_of(texture: Texture2D) -> Rect2:
+	var built := texture as AtlasTexture
+	if built != null and built.region.size != Vector2.ZERO:
+		return Rect2(built.margin.position, built.region.size)
+	var image: Image = texture.get_image()
+	if image == null:
+		return Rect2()
+	var used: Rect2i = image.get_used_rect()
+	return Rect2(Vector2(used.position), Vector2(used.size))
+
+## The padded rect of the canvas alone, drawn over the control 1:1.
+static func _cropped_texture(texture: Texture2D, drawn: Rect2, padded: Rect2) -> Texture2D:
+	var cropped := AtlasTexture.new()
+	cropped.filter_clip = true
+	var built := texture as AtlasTexture
+	if built != null and built.region.size != Vector2.ZERO:
+		cropped.atlas = built.atlas
+		cropped.region = built.region
+		cropped.margin = Rect2(drawn.position - padded.position, padded.size - drawn.size)
+	else:
+		cropped.atlas = texture
+		cropped.region = padded
+	return cropped
 
 func _layout_to_artwork() -> void:
 	var parent_control := get_parent() as Control
@@ -62,7 +87,26 @@ func _layout_to_artwork() -> void:
 	size = _padded_rect.size * cover_scale
 	pivot_offset = size * 0.5
 
+## Fades the button in from nothing after delay: the menu's buttons arriving
+## while the room draws itself (MainMenu).
+func play_intro(delay: float, seconds: float) -> void:
+	_intro_tween = _fade_in([self], delay, seconds)
+
+## Fades the given items in together, from nothing.
+func _fade_in(items: Array, delay: float, seconds: float) -> Tween:
+	if _intro_tween != null and _intro_tween.is_valid():
+		_intro_tween.kill()
+	var tween := create_tween()
+	tween.set_parallel(true)
+	for item in items:
+		item.modulate.a = 0.0
+		tween.tween_property(item, "modulate:a", 1.0, maxf(0.05, seconds)).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	return tween
+
+## A button that cannot be pressed does not answer the pointer either.
 func _on_hover() -> void:
+	if disabled:
+		return
 	_play_pop_animation()
 
 func _on_pressed() -> void:

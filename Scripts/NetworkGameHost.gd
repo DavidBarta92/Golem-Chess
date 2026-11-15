@@ -53,8 +53,8 @@ func initialize_game(board_data: Array):
 
 	var white_codex_stamps: Array[String] = create_starting_deck_for_player_id(0)
 	var black_codex_stamps: Array[String] = create_starting_deck_for_player_id(1)
-	game_state.initialize_player_codex(0, white_codex_stamps)
-	game_state.initialize_player_codex(1, black_codex_stamps)
+	game_state.initialize_player_codex(0, white_codex_stamps, get_starting_deck_print_ids(0, white_codex_stamps))
+	game_state.initialize_player_codex(1, black_codex_stamps, get_starting_deck_print_ids(1, black_codex_stamps))
 	# Both clocks start full when the match does, however long the host waited
 	# for its opponent before this.
 	game_state.player_clock_seconds = {0: CHESS_CLOCK_SECONDS, 1: CHESS_CLOCK_SECONDS}
@@ -176,6 +176,7 @@ func set_codex_pages(player_id: int, pages: Array) -> void:
 		copied.append(page)
 	game_state.player_codex_pages[player_id] = copied
 	game_state.player_initial_decks[player_id] = DeckManager.flatten_codex_pages(copied)
+	game_state.clear_codex_prints(player_id)
 	game_state.current_page_index[player_id] = 0
 	game_state.has_turned_page_this_turn[player_id] = false
 	game_state.spent_stamps[player_id] = []
@@ -217,6 +218,15 @@ func create_starting_deck_for_player_id(player_id: int) -> Array[String]:
 			return selected_deck
 
 	return DeckManager.create_starting_deck()
+
+## The print of each stamp in the player's starting codex, when the player
+## brought any (PlayerProfile.deck_print_ids) and they still run alongside the
+## codex that is dealt.
+func get_starting_deck_print_ids(player_id: int, dealt_stamp_names: Array) -> Array:
+	if multiplayer_node == null or !multiplayer_node.has_method("get_starting_deck_print_ids_for_player_id"):
+		return []
+	var print_ids: Array = multiplayer_node.get_starting_deck_print_ids_for_player_id(player_id)
+	return print_ids if print_ids.size() == dealt_stamp_names.size() else []
 
 func setup_match_logging() -> void:
 	if !should_log_match():
@@ -309,6 +319,7 @@ func handle_affix_stamp(action: Dictionary):
 		stamp.set_meta("codex_owner_player_id", player_id)
 		stamp.set_meta("codex_page_index", int(consumed_stamp.get("page_index", game_state.get_current_page_index(player_id))))
 		stamp.set_meta("codex_stamp_index", int(consumed_stamp.get("stamp_index", hand_index)))
+		stamp.set_meta("print_id", str(consumed_stamp.get("print_id", "")))
 		StampEffectResolver.cover_piece_stamp(game_state, player_id, piece, piece_pos)
 		piece.affix_stamp(stamp, true)
 		game_state.affixed_stamp_this_turn[player_id] = true
@@ -1013,6 +1024,7 @@ func register_stamp_expiration(player_id: int, stamp: Stamp, piece_pos: Vector2)
 	game_state.recent_stamp_expirations.append({
 		"player_id": player_id,
 		"stamp_name": stamp.stamp_name,
+		"print_id": str(stamp.get_meta("print_id", "")),
 		"piece_pos": piece_pos,
 	})
 

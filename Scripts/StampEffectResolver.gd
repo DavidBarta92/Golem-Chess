@@ -276,6 +276,8 @@ static func build_stamp_transfer_result(source_player_id: int, target_player_id:
 	}
 
 static func take_stamp_from_player_zone(game_state: GameStateData, source_player_id: int, source: String) -> String:
+	if game_state != null:
+		game_state.last_removed_print_id = ""
 	if game_state != null and game_state.has_codex_for_player(source_player_id):
 		var from_deck_zone: bool = source == "enemy_deck" or source == "deck"
 		if from_deck_zone:
@@ -304,7 +306,9 @@ static func take_stamp_from_player_zone(game_state: GameStateData, source_player
 
 static func give_stamp_to_player(game_state: GameStateData, player_id: int, stamp_name: String, max_hand_size: int) -> String:
 	if game_state != null and game_state.has_codex_for_player(player_id):
-		if game_state.add_stamp_to_current_page(player_id, stamp_name, max_hand_size):
+		# A stamp that changes hands keeps its print (take_stamp_from_player_zone
+		# took it out just before).
+		if game_state.add_stamp_to_current_page(player_id, stamp_name, max_hand_size, game_state.last_removed_print_id):
 			return "hand"
 		return "deleted"
 
@@ -761,7 +765,8 @@ static func return_stamp_to_owner_deck(game_state: GameStateData, owner_player_i
 	if game_state != null and game_state.has_codex_for_player(owner_player_id):
 		var page_index: int = int(stamp.get_meta("codex_page_index", -1)) if stamp != null else -1
 		var stamp_index: int = int(stamp.get_meta("codex_stamp_index", -1)) if stamp != null else -1
-		game_state.return_stamp_to_codex_page(owner_player_id, stamp_name, page_index, stamp_index)
+		var print_id: String = str(stamp.get_meta("print_id", "")) if stamp != null else ""
+		game_state.return_stamp_to_codex_page(owner_player_id, stamp_name, page_index, stamp_index, print_id)
 		register_stamp_transfer(game_state, owner_player_id, owner_player_id, stamp_name, "piece", "codex", source_pos)
 		if game_state.match_logger != null:
 			game_state.match_logger.log_stamp_event(game_state, "return_to_deck", {

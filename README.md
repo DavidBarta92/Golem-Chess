@@ -37,3 +37,9 @@
   matches: the player profile sent once and the state sent after every action,
   where new per-player or per-stamp data belongs, the RPC and version rules,
   and how to test with several instances.
+- [Docs/MainMenu/MAIN_MENU.md](Docs/MainMenu/MAIN_MENU.md) — the main menu: its
+  art layers and the build that trims them, how the room and its buttons
+  arrive, which button the story unlocks when, and covers.
+- [Docs/MainMenu/ANNA.md](Docs/MainMenu/ANNA.md) — Anna on the main menu: her
+  drawn layers, rebuilding the rig after a redraw, the bones and what each
+  moves, and where to tune her idle motion.

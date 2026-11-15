@@ -16,6 +16,7 @@ func apply_state_data(state_data: Dictionary) -> void:
 			"position": pos,
 			"color": piece_data.color,
 			"stamp_name": piece_data.stamp_name,
+			"print_id": str(piece_data.get("print_id", "")),
 			"turns_remaining": piece_data.turns_remaining,
 			"exhausted_this_turn": bool(piece_data.get("exhausted_this_turn", false)),
 			"respawn_cooldown_turns": int(piece_data.get("respawn_cooldown_turns", 0)),
@@ -49,7 +50,8 @@ func apply_state_data(state_data: Dictionary) -> void:
 		int(state_data.get("viewer_player_id", -1)),
 		state_data.get("turn_action_state", {}),
 		state_data.get("player_clock_seconds", {}),
-		state_data.get("recent_effect_activations", [])
+		state_data.get("recent_effect_activations", []),
+		state_data.get("player_hand_prints", {})
 	)
 
 ## The players' names and portraits, as NetworkGameHost.broadcast_player_profiles
@@ -90,7 +92,8 @@ func update_from_server_state(
 	viewer_player_id: int = -1,
 	turn_action_state: Dictionary = {},
 	player_clock_seconds: Dictionary = {},
-	recent_effect_activations: Array = []
+	recent_effect_activations: Array = [],
+	player_hand_prints: Dictionary = {}
 ) -> void:
 	await wait_for_active_state_visual_animations()
 
@@ -132,8 +135,9 @@ func update_from_server_state(
 	var black_page_turned_this_update: bool = !previous_black_turned_page and bool(match_board.has_turned_page_this_turn.get(-1, false))
 	match_board.get_turn_hud_controller().sync_player_clocks(player_clock_seconds)
 	match_board.get_turn_hud_controller().update_end_turn_button()
-	match_board.white_stamp_hand = match_board.get_stamp_hand_state_controller().create_stamp_hand_from_names(current_white_hand_names)
-	match_board.black_stamp_hand = match_board.get_stamp_hand_state_controller().create_stamp_hand_from_names(current_black_hand_names)
+	var state_sync = match_board.get_match_state_sync_controller()
+	match_board.white_stamp_hand = match_board.get_stamp_hand_state_controller().create_stamp_hand_from_names(current_white_hand_names, state_sync.get_hand_names_from_state(player_hand_prints, 0))
+	match_board.black_stamp_hand = match_board.get_stamp_hand_state_controller().create_stamp_hand_from_names(current_black_hand_names, state_sync.get_hand_names_from_state(player_hand_prints, 1))
 
 	# The hand that just turned a page swaps its cards only once our own
 	# codex has actually left the screen (its slide animation was already
