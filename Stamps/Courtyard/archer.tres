@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="3_stamp"]
 [ext_resource type="Texture2D" uid="uid://csmy4rqbl4lxi" path="res://Assets/Stamps/Courtyard/archer_1.png" id="3_u33tx"]
 [ext_resource type="Texture2D" uid="uid://cn7qcds185qgs" path="res://Assets/Stamps/Courtyard/archer_1_mask.png" id="4_ypgqs"]
+[ext_resource type="Resource" uid="uid://aw8f3kjqd26m" path="res://PieceVisualSets/Courtyard/archer.tres" id="9_pvis"]
 
 [resource]
 script = ExtResource("3_stamp")
@@ -15,6 +16,7 @@ duration = 1
 estimated_value = 10.45
 stamp_art = ExtResource("3_u33tx")
 stamp_art_mask = ExtResource("4_ypgqs")
+piece_visuals = ExtResource("9_pvis")
 white_piece_texture = ExtResource("1_white")
 black_piece_texture = ExtResource("2_black")
 description = "No special effect."

@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://d1nudyefuo4c4" path="res://Assets/Stamps/Courtyard/goldgeneral_1.png" id="3_dvfe8"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_ubhqc"]
 [ext_resource type="Texture2D" uid="uid://ck1hbbdd1apxd" path="res://Assets/Stamps/Courtyard/goldgeneral_1_mask.png" id="4_ubhqc"]
+[ext_resource type="Resource" uid="uid://y4b8xmlbfjspc" path="res://PieceVisualSets/Courtyard/gold_general.tres" id="9_pvis"]
 
 [resource]
 script = ExtResource("2_dvfe8")
@@ -16,6 +17,7 @@ duration = 2
 estimated_value = 33.2
 stamp_art = ExtResource("3_dvfe8")
 stamp_art_mask = ExtResource("4_ubhqc")
+piece_visuals = ExtResource("9_pvis")
 white_piece_texture = ExtResource("3_ubhqc")
 black_piece_texture = ExtResource("1_dmw0c")
 description = "No special effect."

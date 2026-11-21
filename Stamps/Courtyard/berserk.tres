@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="4_nyud8"]
 [ext_resource type="Texture2D" uid="uid://dud0kn0ci4j77" path="res://Assets/Stamps/Courtyard/berserk_1.png" id="4_omue0"]
 [ext_resource type="Texture2D" uid="uid://crbfhk5qpqbmo" path="res://Assets/10w.png" id="5_d7ph4"]
+[ext_resource type="Resource" uid="uid://xll6vcxfeaee" path="res://PieceVisualSets/Courtyard/berserk.tres" id="9_pvis"]
 
 [resource]
 script = ExtResource("4_nyud8")
@@ -13,6 +14,7 @@ Set = "Courtyard"
 duration = 1
 estimated_value = 13.86
 stamp_art = ExtResource("4_omue0")
+piece_visuals = ExtResource("9_pvis")
 white_piece_texture = ExtResource("5_d7ph4")
 black_piece_texture = ExtResource("1_3ead7")
 description = "No special effect."

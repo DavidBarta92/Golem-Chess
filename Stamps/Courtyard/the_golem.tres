@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_vk3nj"]
 [ext_resource type="Texture2D" uid="uid://cnprg3jn1vupt" path="res://Assets/Stamps/Courtyard/golem_1.png" id="3_ms5ay"]
 [ext_resource type="Texture2D" uid="uid://cci8as7fs46ah" path="res://Assets/white_rook.png" id="3_v3e3h"]
+[ext_resource type="Resource" uid="uid://1lgjjrtr5jo2d" path="res://PieceVisualSets/Courtyard/the_golem.tres" id="9_pvis"]
 
 [resource]
 script = ExtResource("2_vk3nj")
@@ -13,6 +14,7 @@ Set = "Courtyard"
 duration = 2
 estimated_value = 12.91
 stamp_art = ExtResource("3_ms5ay")
+piece_visuals = ExtResource("9_pvis")
 white_piece_texture = ExtResource("3_v3e3h")
 black_piece_texture = ExtResource("1_eaqrh")
 description = "No special effect."

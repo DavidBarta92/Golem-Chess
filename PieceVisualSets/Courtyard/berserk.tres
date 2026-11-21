@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PieceVisualSet" format=3 uid="uid://xll6vcxfeaee"]
+
+[ext_resource type="Script" uid="uid://brv1p4k8s2mty" path="res://Scripts/PieceVisualSet.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://ddvy2cls6j37u" path="res://Assets/pieces/SVG/berserk_front.svg" id="2_front"]
+[ext_resource type="Texture2D" uid="uid://5y5fghjdvogw" path="res://Assets/pieces/SVG/berserk_back.svg" id="3_back"]
+[ext_resource type="Texture2D" uid="uid://ucnyoy8k4l3k" path="res://Assets/pieces/SVG/berserk.svg" id="4_preview"]
+
+[resource]
+script = ExtResource("1_script")
+white_front = ExtResource("2_front")
+white_back = ExtResource("3_back")
+white_preview = ExtResource("4_preview")
+black_front = ExtResource("2_front")
+black_back = ExtResource("3_back")
+black_preview = ExtResource("4_preview")

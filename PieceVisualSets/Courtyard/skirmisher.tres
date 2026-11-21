@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PieceVisualSet" format=3 uid="uid://l3xrg8e3lqfsd"]
+
+[ext_resource type="Script" uid="uid://brv1p4k8s2mty" path="res://Scripts/PieceVisualSet.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://ojed4dr4kkea" path="res://Assets/pieces/SVG/skirmisher_front.svg" id="2_front"]
+[ext_resource type="Texture2D" uid="uid://b2n5p74ay07ps" path="res://Assets/pieces/SVG/skirmisher_back.svg" id="3_back"]
+[ext_resource type="Texture2D" uid="uid://er318vr4twec" path="res://Assets/pieces/SVG/skirmisher.svg" id="4_preview"]
+
+[resource]
+script = ExtResource("1_script")
+white_front = ExtResource("2_front")
+white_back = ExtResource("3_back")
+white_preview = ExtResource("4_preview")
+black_front = ExtResource("2_front")
+black_back = ExtResource("3_back")
+black_preview = ExtResource("4_preview")

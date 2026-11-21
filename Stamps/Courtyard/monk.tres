@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_dhmt0"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_0ixt7"]
 [ext_resource type="Texture2D" uid="uid://d1mjta0sm8u5o" path="res://Assets/Stamps/Courtyard/monk_1.png" id="3_dhmt0"]
+[ext_resource type="Resource" uid="uid://4klwfqdw2vlgb" path="res://PieceVisualSets/Courtyard/monk.tres" id="9_pvis"]
 
 [resource]
 script = ExtResource("2_dhmt0")
@@ -13,6 +14,7 @@ Set = "Courtyard"
 duration = 1
 estimated_value = 11.15
 stamp_art = ExtResource("3_dhmt0")
+piece_visuals = ExtResource("9_pvis")
 white_piece_texture = ExtResource("3_0ixt7")
 black_piece_texture = ExtResource("1_thdmx")
 description = "No special effect."

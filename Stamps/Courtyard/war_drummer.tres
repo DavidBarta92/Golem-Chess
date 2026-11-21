@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://ceu346mj3mqc5" path="res://Scripts/Stamp.gd" id="2_stamp"]
 [ext_resource type="Texture2D" uid="uid://bkmfcu7ay8wvw" path="res://Assets/Stamps/Courtyard/wardrummer_1.png" id="3_al1pk"]
 [ext_resource type="Texture2D" uid="uid://5kvvotqdusmh" path="res://Assets/white_knight.png" id="3_white"]
+[ext_resource type="Resource" uid="uid://bgb1463vhjmbb" path="res://PieceVisualSets/Courtyard/war_drummer.tres" id="9_pvis"]
 
 [resource]
 script = ExtResource("2_stamp")
@@ -12,6 +13,7 @@ stamp_code = "war_drummer"
 Set = "Courtyard"
 estimated_value = 11.01
 stamp_art = ExtResource("3_al1pk")
+piece_visuals = ExtResource("9_pvis")
 white_piece_texture = ExtResource("3_white")
 black_piece_texture = ExtResource("1_black")
 description = "No special effect."
