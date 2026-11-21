@@ -16,11 +16,15 @@ const KEY_SEEN_HINTS: String = "seen_feature_hints"
 const KEY_GRANTED_REWARDS: String = "granted_reward_ids"
 const KEY_NODE_ATTEMPTS: String = "node_attempts"
 const KEY_UNLOCKED_PACKS: String = "unlocked_pack_ids"
+## True once the unlock code was typed: this version's story lock
+## (StoryDefinition.locked_from_node_id) holds no more for this save.
+const KEY_STORY_LOCK_LIFTED: String = "story_lock_lifted"
 
 signal node_completed(node_id: String)
 signal feature_unlocked(feature_id: String)
 signal feature_hint_seen(feature_id: String)
 signal pack_unlocked(pack_id: String)
+signal story_lock_changed(lifted: bool)
 
 var progress_data: Dictionary = {}
 var is_loaded: bool = false
@@ -132,6 +136,21 @@ func get_unlocked_pack_ids() -> Array[String]:
 	ensure_loaded()
 	return _get_id_list(KEY_UNLOCKED_PACKS).duplicate()
 
+# --- The version's story lock ----------------------------------------------
+
+func is_story_lock_lifted() -> bool:
+	ensure_loaded()
+	return _is_true(progress_data.get(KEY_STORY_LOCK_LIFTED, false))
+
+## Lifted by the unlock code (StoryManager.lift_story_lock), it stays lifted
+## in every later version too. The developer window can put it back.
+func set_story_lock_lifted(lifted: bool) -> void:
+	if is_story_lock_lifted() == lifted:
+		return
+	progress_data[KEY_STORY_LOCK_LIFTED] = lifted
+	save_progress()
+	story_lock_changed.emit(lifted)
+
 # --- Reward payouts ---------------------------------------------------------
 
 ## Rewards must only ever pay out once. A reward scene can be re-entered after
@@ -174,6 +193,7 @@ func _create_default_progress() -> Dictionary:
 		KEY_GRANTED_REWARDS: empty_rewards,
 		KEY_NODE_ATTEMPTS: {},
 		KEY_UNLOCKED_PACKS: empty_packs,
+		KEY_STORY_LOCK_LIFTED: false,
 	}
 
 func _normalize_progress(raw_data: Dictionary) -> Dictionary:
@@ -185,6 +205,7 @@ func _normalize_progress(raw_data: Dictionary) -> Dictionary:
 		KEY_GRANTED_REWARDS: _normalize_id_list(raw_data.get(KEY_GRANTED_REWARDS, [])),
 		KEY_NODE_ATTEMPTS: _normalize_attempts(raw_data.get(KEY_NODE_ATTEMPTS, {})),
 		KEY_UNLOCKED_PACKS: _normalize_id_list(raw_data.get(KEY_UNLOCKED_PACKS, [])),
+		KEY_STORY_LOCK_LIFTED: _is_true(raw_data.get(KEY_STORY_LOCK_LIFTED, false)),
 	}
 
 	# Schema 1 had no feature list at all; anything saved before features
@@ -194,6 +215,9 @@ func _normalize_progress(raw_data: Dictionary) -> Dictionary:
 		if !unlocked.has(feature_id):
 			unlocked.append(feature_id)
 	return normalized
+
+func _is_true(raw_value) -> bool:
+	return raw_value is bool and raw_value
 
 func _normalize_id_list(raw_value) -> Array[String]:
 	var ids: Array[String] = []

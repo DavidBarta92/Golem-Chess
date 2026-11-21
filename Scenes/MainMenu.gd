@@ -58,6 +58,8 @@ const NEXT_BOSS_STAKES_GAP: float = 6.0
 @export_range(0.05, 4.0, 0.05) var colour_fade_seconds: float = 1.5
 
 var ai_vs_ai_unlock_presses: int = 0
+## The letters typed last on the menu, as many as the unlock code has.
+var typed_letters: String = ""
 var background_lines_animating: bool = false
 var background_lines_elapsed: float = 0.0
 var background_lines_total_duration: float = 0.0
@@ -67,6 +69,7 @@ var points_label: Label
 var next_boss_stakes_label: Label
 var quest_dev_status_label: Label
 var bourse_dev_status_label: Label
+var story_lock_dev_button: Button
 
 func _ready():
 	if should_start_dedicated_server_from_launch():
@@ -112,6 +115,7 @@ func _ready():
 	_connect_once(reset_balance_sessions_button.pressed, Callable(self, "_on_reset_balance_sessions_button_pressed"))
 	_update_ai_vs_ai_deck_controls()
 	_build_quest_dev_tools()
+	_build_story_lock_dev_tools()
 	_build_bourse_dev_tools()
 	_make_dev_tools_scrollable()
 	SFXManager.play("mainmenu_drawing")
@@ -255,6 +259,7 @@ func update_points_hud() -> void:
 	GlobalTopBar.refresh_points()
 
 func _input(event):
+	_listen_for_unlock_code(event)
 	if !is_dev_tools_available():
 		return
 	if dev_tools_window.visible:
@@ -274,6 +279,27 @@ func _input(event):
 			show_dev_tools_window()
 	else:
 		ai_vs_ai_unlock_presses = 0
+
+## Typing the unlock code (StoryDefinition.unlock_code) on the menu lifts this
+## version's story lock for the save, in every build. The menu then opens
+## again, so the Play window, the next boss's stakes and the story quest all
+## take it in.
+func _listen_for_unlock_code(event: InputEvent) -> void:
+	var key_event: InputEventKey = event as InputEventKey
+	if key_event == null or !key_event.pressed or key_event.echo or key_event.unicode <= 0:
+		return
+	if input_rebind_dialog.visible or get_viewport().gui_get_focus_owner() is LineEdit:
+		return
+	var code: String = StoryManager.get_unlock_code()
+	if code.is_empty() or !StoryManager.is_story_locked():
+		return
+	typed_letters = (typed_letters + String.chr(key_event.unicode).to_lower()).right(code.length())
+	if typed_letters != code:
+		return
+	typed_letters = ""
+	StoryManager.lift_story_lock()
+	SFXManager.play("stamp_glue")
+	SceneTransition.change_scene(StoryManager.HUB_SCENE_PATH)
 
 func is_dev_tools_available() -> bool:
 	return OS.is_debug_build()
@@ -340,6 +366,31 @@ func _build_quest_dev_tools() -> void:
 	quest_dev_status_label = Label.new()
 	section.add_child(quest_dev_status_label)
 	_update_quest_dev_status()
+
+## Lifts this version's story lock or puts it back, to try the unlock code
+## again.
+func _build_story_lock_dev_tools() -> void:
+	if !is_dev_tools_available() or story_lock_dev_button != null:
+		return
+	dev_tools_root.add_child(HSeparator.new())
+	var section := VBoxContainer.new()
+	section.name = "StoryLockSection"
+	dev_tools_root.add_child(section)
+	var title := Label.new()
+	title.text = "Story lock (story_definition.tres: from '%s', code '%s')" % [StoryManager.story_definition.locked_from_node_id, StoryManager.get_unlock_code()]
+	section.add_child(title)
+	story_lock_dev_button = Button.new()
+	story_lock_dev_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	story_lock_dev_button.pressed.connect(_on_story_lock_dev_button_pressed)
+	section.add_child(story_lock_dev_button)
+	_update_story_lock_dev_button()
+
+func _on_story_lock_dev_button_pressed() -> void:
+	StoryProgressStore.set_story_lock_lifted(!StoryProgressStore.is_story_lock_lifted())
+	_update_story_lock_dev_button()
+
+func _update_story_lock_dev_button() -> void:
+	story_lock_dev_button.text = "Lock again (lifted on this save)" if StoryProgressStore.is_story_lock_lifted() else "Lift (locked on this save)"
 
 func _add_dev_quest(spec: Dictionary) -> void:
 	if QuestStore.add_quest(spec).is_empty():

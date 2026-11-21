@@ -50,6 +50,8 @@ func start() -> void:
 	QuestStore.quest_removed.connect(_on_quest_removed)
 	StoryManager.story_node_finished.connect(_on_story_moved)
 	StoryProgressStore.feature_unlocked.connect(_on_story_moved)
+	# The unlock code lifts the version's lock: the quest behind it is due.
+	StoryProgressStore.story_lock_changed.connect(queue_refresh.unbind(1))
 	get_tree().node_added.connect(_on_node_added)
 	if get_tree().has_signal("scene_changed"):
 		get_tree().connect("scene_changed", _on_scene_changed)

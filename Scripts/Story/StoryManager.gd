@@ -27,6 +27,8 @@ var _debug_completed_override_ids: Dictionary = {}
 var _pending_comic_request: Dictionary = {}
 var _pending_boss_line: Dictionary = {}
 var _active_match_node_id: String = ""
+## Index in _flat_nodes of this version's first locked node; -1 for none.
+var _lock_index: int = -1
 
 func _ready() -> void:
 	reload_definition()
@@ -38,18 +40,48 @@ func reload_definition() -> void:
 	story_definition = loaded if loaded is StoryDefinition else StoryDefinition.new()
 	_rebuild_flat_nodes()
 
-## The first node not completed - leaving out a story quest the player has
-## already passed (a node after it is completed): a save from before the quest
-## was added must not be sent back to it.
+## The node the player plays next, or null when there is none: the story is
+## over, or it has reached this version's lock (StoryDefinition.
+## locked_from_node_id). Every caller treats the lock as the end of the story
+## for now, until the unlock code lifts it.
 func get_current_node() -> StoryNode:
+	var index: int = _get_next_index()
+	if index < 0 or _is_locked_at(index):
+		return null
+	return _flat_nodes[index]
+
+## Where the player is, the lock aside: the first node not completed - leaving
+## out a story quest the player has already passed (a node after it is
+## completed): a save from before the quest was added must not be sent back
+## to it. -1 once everything is done.
+func _get_next_index() -> int:
 	for index in range(_flat_nodes.size()):
 		var node: StoryNode = _flat_nodes[index]
 		if is_node_completed(node.id):
 			continue
 		if node is QuestStoryNode and _is_passed(index):
 			continue
-		return node
-	return null
+		return index
+	return -1
+
+## Whether the story waits at this version's lock right now: the player has
+## played up to it, and the unlock code has not been typed on this save.
+func is_story_locked() -> bool:
+	var index: int = _get_next_index()
+	return index >= 0 and _is_locked_at(index)
+
+## The unlock code the main menu listens for, in lower case; empty when the
+## lock cannot be lifted.
+func get_unlock_code() -> String:
+	return story_definition.unlock_code.strip_edges().to_lower()
+
+## The unlock code was typed: this save plays past the lock, in this version
+## and every later one.
+func lift_story_lock() -> void:
+	StoryProgressStore.set_story_lock_lifted(true)
+
+func _is_locked_at(index: int) -> bool:
+	return _lock_index >= 0 and index >= _lock_index and !StoryProgressStore.is_story_lock_lifted()
 
 func _is_passed(index: int) -> bool:
 	for later in range(index + 1, _flat_nodes.size()):
@@ -79,6 +111,9 @@ func complete_current_node() -> void:
 	var node: StoryNode = get_current_node()
 	if node == null:
 		return
+	_complete_node(node)
+
+func _complete_node(node: StoryNode) -> void:
 	_apply_node_unlocks(node)
 	StoryProgressStore.mark_node_completed(node.id)
 
@@ -97,7 +132,8 @@ func finish_current_node() -> void:
 	complete_current_node()
 	story_node_finished.emit(finished_node_id)
 
-	if finished_node.auto_continue_after_completion:
+	# A chain stops at the lock: the next node is not there to start.
+	if finished_node.auto_continue_after_completion and has_pending_node():
 		start_current_node()
 	elif !finished_node.completion_scene_path.is_empty():
 		SceneTransition.change_scene(_resolve_scene_path(finished_node.completion_scene_path))
@@ -114,7 +150,8 @@ func continue_story_if_ready() -> bool:
 	return true
 
 ## Whether the story has something Play can start: not once it is all done,
-## nor while it waits for a story quest to be claimed.
+## nor at this version's lock, nor while it waits for a story quest to be
+## claimed.
 func can_continue_story() -> bool:
 	return get_current_node() != null and is_current_node_unlocked()
 
@@ -146,13 +183,18 @@ func is_current_node_unlocked() -> bool:
 ## A story quest was claimed (QuestDirector): its node is done. The player is
 ## on the hub screens, so nothing changes scene unless the node chains into
 ## the next one.
+##
+## The lock aside: a quest posted before the lock was put in front of it
+## still completes its node when claimed, or it would come again, reward and
+## all, once the lock moves past it.
 func complete_quest_node(node_id: String) -> void:
-	var node: StoryNode = get_current_node()
-	if node == null or node.id != node_id:
+	var index: int = _get_next_index()
+	if index < 0 or _flat_nodes[index].id != node_id:
 		return
-	complete_current_node()
+	var node: StoryNode = _flat_nodes[index]
+	_complete_node(node)
 	story_node_finished.emit(node_id)
-	if node.auto_continue_after_completion:
+	if node.auto_continue_after_completion and has_pending_node():
 		start_current_node()
 
 func return_to_hub() -> void:
@@ -474,6 +516,16 @@ func _rebuild_flat_nodes() -> void:
 			if node == null or node.id.strip_edges().is_empty():
 				continue
 			_flat_nodes.append(node)
+
+	_lock_index = -1
+	var locked_from_id: String = story_definition.locked_from_node_id.strip_edges()
+	if !locked_from_id.is_empty():
+		for index in range(_flat_nodes.size()):
+			if _flat_nodes[index].id == locked_from_id:
+				_lock_index = index
+				break
+		if _lock_index < 0:
+			push_error("StoryManager: locked_from_node_id '%s' names no story node, so the story is not locked." % locked_from_id)
 
 	if !OS.is_debug_build():
 		return

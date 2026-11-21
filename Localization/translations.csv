@@ -865,6 +865,7 @@ TRADE_BUTTON,Bourse,Börze
 PLAY_MODE_STORY,Story,Történet
 PLAY_MODE_RANDOM,Random opponent,Véletlen ellenfél
 PLAY_MODE_ONLINE,Multiplayer (soon),Többjátékos (hamarosan)
+PLAY_MODE_STORY_LOCKED,Story (continues in a later version),Történet (egy későbbi verzióban folytatódik)
 STORY_MULTIPLAYER_SCREEN_TITLE,Multiplayer,Többjátékos
 PUZZLES_SCREEN_TITLE,Letters,Levelek
 PLACEHOLDER_SCREEN_NOTE,This screen is still being built.,Ez a képernyő még készül.

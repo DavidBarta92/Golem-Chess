@@ -483,3 +483,5 @@ nodes = Array[ExtResource("2_story_node")]([SubResource("Resource_comic_ch10_int
 [resource]
 script = ExtResource("5_story_definition")
 chapters = Array[ExtResource("1_story_chapter")]([SubResource("Resource_chapter_00"), SubResource("Resource_chapter_01"), SubResource("Resource_chapter_02"), SubResource("Resource_chapter_03"), SubResource("Resource_chapter_04"), SubResource("Resource_chapter_05"), SubResource("Resource_chapter_06"), SubResource("Resource_chapter_07"), SubResource("Resource_chapter_08"), SubResource("Resource_chapter_09"), SubResource("Resource_chapter_10")])
+locked_from_node_id = "quest_ch00_open_collection"
+unlock_code = "nagypapa"

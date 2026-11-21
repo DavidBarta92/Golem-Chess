@@ -503,7 +503,7 @@ so it marks the hint used when one of its buttons is chosen.
 `user://story_progress.json`, schema 3, written through `Scripts/SaveIO.gd`:
 
 - `completed_node_ids`, `unlocked_features`, `seen_feature_hints`,
-  `granted_reward_ids`, `node_attempts`, `unlocked_pack_ids`
+  `granted_reward_ids`, `node_attempts`, `unlocked_pack_ids`, `story_lock_lifted`
 
 All four save files (story, player progress, collection, decks) go through
 `SaveIO`, which writes atomically (temp file, verify, swap) and stamps
@@ -513,6 +513,30 @@ and device id are there for its conflict resolution.
 
 Note for existing saves: features are unlocked by the story, so a save made
 before this existed starts with only `play` unlocked and has to earn the rest.
+
+## How far a version's story goes
+
+`story_definition.tres` has a **Release** group, and unlike the Debug group
+below it holds in every build, the editor included:
+
+- `locked_from_node_id` — this node and every node after it are locked. Empty
+  opens the whole story. Move it on before an export to open more.
+- `unlock_code` — letters that, typed on the main menu, lift the lock for that
+  save, for good (case does not matter, other keys in between break it).
+
+At the lock the story behaves as if it had ended: `StoryManager.get_current_node()`
+returns null, so the Play window's story button is inactive (its tooltip says
+the story continues in a later version), the story quest there is not posted,
+the hub is never blocked, and a chained node stops at the lock and goes to the
+hub instead of starting the next one. Random opponents, daily and regular
+quests carry on. A save already past the lock stops where it is. A story quest
+posted before the lock was put in front of it still completes its node when
+claimed.
+
+The lifted lock is `story_lock_lifted` in `story_progress.json`; the developer
+window (A three times, debug builds) has a button that lifts it or puts it back,
+to try the code again. `debug_jump_to_node_id` past the lock still stops at the
+lock until the code is typed.
 
 ## Testing without playing through
 

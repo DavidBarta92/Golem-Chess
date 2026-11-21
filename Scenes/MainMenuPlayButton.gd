@@ -119,6 +119,8 @@ func _refresh_mode_buttons() -> void:
 		var enabled: bool = _mode_enabled.get(mode, false)
 		if mode == MODE_STORY:
 			enabled = enabled and StoryManager.can_continue_story()
+			# At this version's lock the inactive button says why.
+			(_mode_buttons[mode] as Button).tooltip_text = "PLAY_MODE_STORY_LOCKED" if StoryManager.is_story_locked() else "PLAY_MODE_STORY"
 		(_mode_buttons[mode] as Button).disabled = !enabled
 
 ## The glyph is a child, not the button's icon, so it follows the label's
