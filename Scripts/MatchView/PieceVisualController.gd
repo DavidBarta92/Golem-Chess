@@ -1,21 +1,9 @@
 extends RefCounted
 
-const GROUND_SHADOW_SHADER = preload("res://Shaders/piece_move_shadow.gdshader")
-const CONTACT_SHADOW_NAME: String = "PieceContactShadow"
-## Under the drawn grid, so its ink stays on top and every piece stands in front.
-const CONTACT_SHADOW_Z_INDEX: int = BoardGridOverlay.Z_INDEX - 1
-## How far below the footprint it lies, as a share of its height: the rim that
-## shows in front of the feet is what stands the piece on the board.
-const CONTACT_SHADOW_DROP: float = 0.45
+const PIECE_GROUNDING_SCRIPT = preload("res://Scripts/MatchView/PieceGrounding.gd")
 
 const DEFAULT_PIECE_BOTTOM_INSET: float = 1.5
 const PIECE_PERSPECTIVE_SCALE_VARIATION: float = 0.10
-const PIECE_SHADOW_NAME: String = "PieceShadow"
-const PIECE_SHADOW_LIGHT_TEXTURE_SCALE: float = 0.22
-const PIECE_SHADOW_LIGHT_SOURCE_OFFSET: float = 8.0
-const PIECE_SHADOW_LIGHT_COLOR: Color = Color(1.0, 0.92, 0.72, 1.0)
-const PIECE_SHADOW_LIGHT_SHADOW_COLOR: Color = Color(0.0, 0.0, 0.0, 0.88)
-const PIECE_SHADOW_LIGHT_SHADOW_SMOOTH: float = 0.0
 const PIECE_LIGHT_OCCLUDER_NAME: String = "PieceLightOccluder"
 const PIECE_LIGHT_OCCLUDER_FOOTPRINT_WIDTH_FACTOR: float = 0.68
 const PIECE_LIGHT_OCCLUDER_FOOTPRINT_BOTTOM_INSET_FACTOR: float = 0.05
@@ -26,6 +14,14 @@ const PIECE_FOOTPRINT_WIDTH_SCAN_START_RATIO: float = 0.6666667
 const PIECE_FOOTPRINT_STABLE_WIDTH_BAND_RATIO: float = 0.25
 const PIECE_FOOTPRINT_STABLE_ROW_SAMPLE_COUNT: int = 8
 const PIECE_LIGHT_OCCLUDER_FOOTPRINT_MIN_RADIUS_BOUNDS_FACTOR: float = 0.22
+## A figure's base, for `base_round_depth`: the bottom share of its height it
+## is looked for in, how far up (a share of the height) each row is compared
+## with, and how much wider that row may be for the base to have stopped
+## widening. Not the widest row near the bottom: a golem's hands hang down
+## close to it.
+const PIECE_FOOTPRINT_BASE_WINDOW_RATIO: float = 0.15
+const PIECE_FOOTPRINT_BASE_STEP_RATIO: float = 0.03
+const PIECE_FOOTPRINT_BASE_PLATEAU_GROWTH: float = 1.04
 
 var geometry
 var board_size: int = BoardConfig.BOARD_SIZE
@@ -38,12 +34,6 @@ var own_default_piece_texture: Texture2D
 var default_piece_visual_height: float = 24.0
 var piece_auto_fit_height_threshold: float = 48.0
 
-var piece_shadow_light_energy: float = 0.30
-var piece_ground_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.30)
-var piece_ground_shadow_radius_scale: Vector2 = Vector2(0.92, 0.72)
-var piece_ground_shadow_edge_softness: float = 0.10
-var ground_shadow_texture: Texture2D
-var contact_shadow_material: ShaderMaterial
 var board_light_receive_mask: int = 1
 var piece_light_occluder_mask: int = 1
 
@@ -67,10 +57,6 @@ func configure(config: Dictionary) -> void:
 	default_piece_visual_height = float(config.get("default_piece_visual_height", default_piece_visual_height))
 	piece_auto_fit_height_threshold = float(config.get("piece_auto_fit_height_threshold", piece_auto_fit_height_threshold))
 
-	piece_shadow_light_energy = float(config.get("piece_shadow_light_energy", piece_shadow_light_energy))
-	piece_ground_shadow_color = config.get("piece_ground_shadow_color", piece_ground_shadow_color)
-	piece_ground_shadow_radius_scale = config.get("piece_ground_shadow_radius_scale", piece_ground_shadow_radius_scale)
-	piece_ground_shadow_edge_softness = float(config.get("piece_ground_shadow_edge_softness", piece_ground_shadow_edge_softness))
 	board_light_receive_mask = int(config.get("board_light_receive_mask", board_light_receive_mask))
 	piece_light_occluder_mask = int(config.get("piece_light_occluder_mask", piece_light_occluder_mask))
 	piece_light_receive_mask = int(config.get("piece_light_receive_mask", piece_light_receive_mask))
@@ -186,93 +172,75 @@ func apply_respawn_lock_opacity(holder: Sprite2D, is_hidden_for_respawn: bool, i
 	tint.a = alpha
 	holder.self_modulate = tint
 
-func apply_shadow(
-	holder: Sprite2D,
-	board_pos: Vector2,
-	piece_color: int,
-	own_color: int,
-	shadow_texture: Texture2D
-) -> void:
-	remove_shadow(holder)
-	if holder == null or !is_instance_valid(holder) or holder.texture == null or piece_color == 0:
-		return
-
-	var footprint: Dictionary = get_footprint_geometry(holder)
-	var footprint_center: Vector2 = footprint.get("center", Vector2.ZERO)
-	if bool(footprint.get("empty", true)):
-		return
-
-	var shadow := PointLight2D.new()
-	shadow.name = PIECE_SHADOW_NAME
-	shadow.top_level = true
-	shadow.texture = shadow_texture
-	shadow.texture_scale = PIECE_SHADOW_LIGHT_TEXTURE_SCALE
-	shadow.color = PIECE_SHADOW_LIGHT_COLOR
-	shadow.energy = piece_shadow_light_energy
-	shadow.range_item_cull_mask = board_light_receive_mask
-	shadow.shadow_enabled = true
-	shadow.shadow_color = PIECE_SHADOW_LIGHT_SHADOW_COLOR
-	shadow.shadow_filter = Light2D.SHADOW_FILTER_NONE
-	shadow.shadow_filter_smooth = PIECE_SHADOW_LIGHT_SHADOW_SMOOTH
-	shadow.shadow_item_cull_mask = piece_light_occluder_mask
-	holder.add_child(shadow)
-
-	var light_source_y_direction: float = -float(view_color)
-	if piece_color * own_color < 0:
-		light_source_y_direction *= -1.0
-	shadow.global_position = holder.to_global(footprint_center) + Vector2(0.0, PIECE_SHADOW_LIGHT_SOURCE_OFFSET * light_source_y_direction)
-	add_contact_shadow(holder, footprint)
-
-## The dark rim on the board around a piece's feet. The cast shadow above is too
-## faint and too long to do this: without it a piece looks laid on the board
-## rather than standing on it.
-func add_contact_shadow(holder: Sprite2D, footprint: Dictionary) -> void:
-	var radius: Vector2 = Vector2(float(footprint.get("radius_x", 0.0)), float(footprint.get("radius_y", 0.0))) * piece_ground_shadow_radius_scale
-	if radius.x <= 0.0 or radius.y <= 0.0:
-		return
-	var contact := Sprite2D.new()
-	contact.name = CONTACT_SHADOW_NAME
-	contact.z_as_relative = false
-	contact.z_index = CONTACT_SHADOW_Z_INDEX
-	contact.light_mask = 0
-	contact.texture = get_ground_shadow_texture()
-	contact.scale = radius * 2.0 / contact.texture.get_size()
-	contact.material = get_contact_shadow_material()
-	holder.add_child(contact)
-	contact.position = footprint.get("center", Vector2.ZERO) + Vector2(0.0, radius.y * CONTACT_SHADOW_DROP)
-
-func get_contact_shadow_material() -> ShaderMaterial:
-	if contact_shadow_material == null:
-		contact_shadow_material = ShaderMaterial.new()
-		contact_shadow_material.shader = GROUND_SHADOW_SHADER
-		contact_shadow_material.set_shader_parameter("alpha_strength", 1.0)
-	contact_shadow_material.set_shader_parameter("shadow_color", piece_ground_shadow_color)
-	contact_shadow_material.set_shader_parameter("edge_softness", piece_ground_shadow_edge_softness)
-	return contact_shadow_material
-
-## A blank square for the ground shadows' shader to cut the ellipse out of.
-func get_ground_shadow_texture() -> Texture2D:
-	if ground_shadow_texture == null:
-		var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
-		image.fill(Color.WHITE)
-		ground_shadow_texture = ImageTexture.create_from_image(image)
-	return ground_shadow_texture
-
-func remove_shadow(holder: Sprite2D) -> void:
+## Stands a piece on the board (PieceGrounding). A piece of the other side
+## is seen from the front, lit from ours, so nothing falls in front of it.
+## A shadow already there for the same side is kept: it fits itself to a new
+## picture, and making it anew would cut short a fade it is in.
+func apply_shadow(holder: Sprite2D, piece_color: int, own_color: int) -> void:
 	if holder == null or !is_instance_valid(holder):
 		return
+	var seen_from_front: bool = piece_color * own_color < 0
+	var existing = get_shadow(holder)
+	if existing != null and piece_color != 0 and existing.is_seen_from_front() == seen_from_front:
+		return
+	remove_shadow(holder)
+	if holder.texture == null or piece_color == 0:
+		return
+	add_shadow(holder, seen_from_front)
 
-	var existing_shadow: Node = holder.get_node_or_null(PIECE_SHADOW_NAME)
-	if existing_shadow != null:
-		existing_shadow.free()
-	var existing_contact: Node = holder.get_node_or_null(CONTACT_SHADOW_NAME)
-	if existing_contact != null:
-		existing_contact.free()
+func add_shadow(holder: Sprite2D, seen_from_front: bool, with_foot_shade: bool = true) -> Node2D:
+	var grounding: Node2D = PIECE_GROUNDING_SCRIPT.new(Callable(self, "get_footprint_metrics"), Callable(self, "get_footprint_geometry"), seen_from_front, with_foot_shade)
+	holder.add_child(grounding)
+	return grounding
 
-func get_shadow_light(holder: Sprite2D) -> PointLight2D:
+func get_shadow(holder: Sprite2D) -> Node2D:
 	if holder == null or !is_instance_valid(holder):
 		return null
-	return holder.get_node_or_null(PIECE_SHADOW_NAME) as PointLight2D
+	return holder.get_node_or_null(PIECE_GROUNDING_SCRIPT.NODE_NAME) as Node2D
+
+func remove_shadow(holder: Sprite2D) -> void:
+	var existing: Node = get_shadow(holder)
+	if existing != null:
+		existing.free()
+
+## A stamp's flash and the like: the shadow fades to `alpha` over `seconds`.
+func fade_shadow(holder: Sprite2D, alpha: float, seconds: float) -> void:
+	var existing = get_shadow(holder)
+	if existing != null:
+		existing.fade_to(alpha, seconds)
+
+## One picture of a piece giving way to another on its square - its stamp
+## running out, the old picture burning away in `leaving` over the piece's
+## holder `staying` - and the old picture's shadow giving way to the new one's
+## over `seconds`.
+func cross_fade_shadow(leaving: Sprite2D, staying: Sprite2D, seconds: float) -> void:
+	var staying_shadow = get_shadow(staying)
+	if staying_shadow == null or leaving == null or !is_instance_valid(leaving) or leaving.texture == null:
+		return
+	var leaving_shadow = add_shadow(leaving, staying_shadow.is_seen_from_front(), false)
+	leaving_shadow.fade_to(0.0, seconds)
+	staying_shadow.fade_to(0.0, 0.0)
+	staying_shadow.fade_to(1.0, seconds)
+
+## The piece goes up off the board: its shadow stays where it stood and fades
+## over `seconds`. Answers which side it was for - 1 seen from the front, 0
+## from behind, -1 none - so that `land_shadow` can bring the same back.
+func lift_shadow(holder: Sprite2D, seconds: float) -> int:
+	var existing = get_shadow(holder)
+	if existing == null:
+		return -1
+	var side: int = 1 if existing.is_seen_from_front() else 0
+	existing.lift_off(seconds)
+	return side
+
+## The piece is dropping onto its square from `lift_height` above it: its
+## shadow comes in on the ground under it over `seconds`.
+func land_shadow(holder: Sprite2D, side: int, seconds: float, lift_height: float) -> void:
+	if side < 0 or holder == null or !is_instance_valid(holder) or holder.texture == null:
+		return
+	remove_shadow(holder)
+	var grounding = add_shadow(holder, side == 1)
+	grounding.settle_in(seconds, lift_height)
 
 func apply_light_occluder(holder: Sprite2D, has_piece: bool) -> void:
 	remove_light_occluder(holder)
@@ -490,6 +458,23 @@ func measure_footprint_metrics(texture_value: Texture2D) -> Dictionary:
 	var lower_width: float = width_sum / float(sample_count) if sample_count > 0 else float(widest_width)
 	var lower_center_x: float = weighted_center_sum / weight_sum if weight_sum > 0.0 else (float(widest_min_x) + float(widest_max_x)) * 0.5
 
+	# How far up from its lowest pixel the bottom of the figure stops widening:
+	# little for flat feet, most of the depth of the ellipse a round base is
+	# drawn as; none if it is still widening at the top of the window.
+	# `visible_rows` runs from the bottom up.
+	var base_window: float = float(alpha_height) * PIECE_FOOTPRINT_BASE_WINDOW_RATIO
+	var base_step: int = maxi(1, int(round(float(alpha_height) * PIECE_FOOTPRINT_BASE_STEP_RATIO)))
+	var base_round_depth: float = 0.0
+	for row_index in range(visible_rows.size() - base_step):
+		var row: Dictionary = visible_rows[row_index]
+		var depth: float = float(max_y - int(row.get("y", max_y)))
+		if depth > base_window:
+			break
+		var row_above: Dictionary = visible_rows[row_index + base_step]
+		if float(row_above.get("width", 0)) <= float(row.get("width", 0)) * PIECE_FOOTPRINT_BASE_PLATEAU_GROWTH:
+			base_round_depth = depth
+			break
+
 	return {
 		"left_x": float(min_x),
 		"right_x": float(max_x),
@@ -500,6 +485,7 @@ func measure_footprint_metrics(texture_value: Texture2D) -> Dictionary:
 		"widest_y": float(widest_y),
 		"lower_width": lower_width,
 		"lower_center_x": lower_center_x,
+		"base_round_depth": base_round_depth,
 	}
 
 func set_light_occluder_enabled(holder: Sprite2D, is_enabled: bool) -> void:

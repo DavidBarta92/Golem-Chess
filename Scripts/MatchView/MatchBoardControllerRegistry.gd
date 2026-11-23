@@ -293,6 +293,7 @@ func sync_board_marker_controller() -> void:
 		"own_player_id_provider": Callable(match_board, "get_own_player_id"),
 		"can_move_action_now_provider": Callable(_created("turn_flow_controller", TURN_FLOW_CONTROLLER_SCRIPT), "can_move_action_now"),
 		"can_player_control_piece_at_provider": Callable(match_board, "can_player_control_piece_at"),
+		"piece_holder_provider": Callable(match_board, "get_piece_holder_at"),
 		"update_special_tiles_callback": Callable(get_board_tile_controller(), "update_board_special_tiles"),
 	})
 
@@ -507,10 +508,6 @@ func sync_piece_visual_controller() -> void:
 		"own_default_piece_texture": match_board.OWN_DEFAULT_PIECE_TEXTURE,
 		"default_piece_visual_height": match_board.DEFAULT_PIECE_VISUAL_HEIGHT,
 		"piece_auto_fit_height_threshold": match_board.PIECE_AUTO_FIT_HEIGHT_THRESHOLD,
-		"piece_shadow_light_energy": match_board.PIECE_SHADOW_LIGHT_ENERGY,
-		"piece_ground_shadow_color": match_board.piece_move_shadow_color,
-		"piece_ground_shadow_radius_scale": match_board.piece_move_shadow_radius_scale,
-		"piece_ground_shadow_edge_softness": match_board.piece_move_shadow_ground_edge_softness,
 		"board_light_receive_mask": match_board.BOARD_LIGHT_RECEIVE_MASK,
 		"piece_light_occluder_mask": match_board.PIECE_LIGHT_OCCLUDER_MASK,
 		"piece_light_receive_mask": match_board.PIECE_LIGHT_RECEIVE_MASK,
@@ -675,7 +672,6 @@ func sync_piece_display_controller() -> void:
 		"texture_holder_scene": TEXTURE_HOLDER,
 		"board_size": match_board.BOARD_SIZE,
 		"piece_light_receive_mask": match_board.PIECE_LIGHT_RECEIVE_MASK,
-		"piece_shadow_light_energy": match_board.PIECE_SHADOW_LIGHT_ENERGY,
 		"invalid_board_pos": match_board.INVALID_BOARD_POS,
 	})
 
@@ -1021,6 +1017,7 @@ func sync_turn_hud_controller() -> void:
 		"canvas_layer": match_board.canvas_layer,
 		"tween_owner": match_board,
 		"match_background_provider": Callable(match_board, "get_match_background"),
+		"result_rays_material_provider": Callable(_created("piece_effect_animator", PIECE_EFFECT_ANIMATOR_SCRIPT), "create_affix_rays_material"),
 		"deck_counter_size": match_board.DECK_COUNTER_SIZE,
 		"create_digit_counter_callback": Callable(get_deck_counter_controller(), "create_digit_counter_container"),
 		"set_digit_counter_value_callback": Callable(get_deck_counter_controller(), "set_deck_counter_value"),

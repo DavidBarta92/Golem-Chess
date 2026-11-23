@@ -28,6 +28,7 @@ var _last_knocked_turn_color: int = 0
 ## Hands back the match background, for the pieces of interface that live
 ## inside it rather than in the HUD's own layer.
 var match_background_provider: Callable
+var result_rays_material_provider: Callable
 
 var deck_counter_size: Vector2 = Vector2(82, 42)
 ## Where the two tabs stand on the 1920x1080 canvas the room is drawn on, so
@@ -67,8 +68,33 @@ var game_result_context_provider: Callable
 var end_turn_button: Button
 var turn_timer_counter_container: Control
 var player_clock_seconds: Dictionary = {0: 300.0, 1: 300.0}
+const INK_WRITE_SHADER = preload("res://Shaders/ink_write_reveal.gdshader")
+const RESULT_RAYS_NAME: String = "ResultRays"
+# The result screen's moods. Shades are the picture darkening behind the words;
+# inks are the words' colour.
+const RESULT_NEUTRAL_SHADE: Color = Color(0.0, 0.0, 0.0, 0.62)
+const RESULT_NEUTRAL_INK: Color = Color(1.0, 1.0, 1.0)
+const RESULT_WIN_SHADE: Color = Color(0.14, 0.08, 0.02, 0.56)
+const RESULT_WIN_INK: Color = Color(1.0, 0.93, 0.72)
+const RESULT_LOSS_SHADE: Color = Color(0.02, 0.04, 0.08, 0.72)
+const RESULT_LOSS_INK: Color = Color(0.76, 0.82, 0.9)
+const RESULT_SHADE_SECONDS: float = 0.5
+const RESULT_WRITE_DELAY: float = 0.15
+const RESULT_WRITE_SECONDS: float = 0.75
+const RESULT_WIN_SWELL: float = 1.5
+const RESULT_WIN_SWELL_SECONDS: float = 0.6
+## How far above its place a loss's words start, in pixels, and how slowly they sink.
+const RESULT_LOSS_SINK: float = 46.0
+const RESULT_LOSS_SINK_SECONDS: float = 1.2
+const RESULT_RAYS_SIZE: float = 640.0
+const RESULT_RAYS_END_SIZE: float = 1.8
+const RESULT_RAYS_ALPHA: float = 0.6
+const RESULT_RAYS_BURST_SECONDS: float = 0.8
+const RESULT_RAYS_TURN_SECONDS: float = 40.0
+
 var result_overlay: ColorRect
 var result_label: Label
+var result_tween: Tween
 var turn_banner: TurnBanner
 ## Over the whole interface, under the result's overlay.
 const TURN_BANNER_Z_INDEX: int = 1900
@@ -102,6 +128,7 @@ func configure(config: Dictionary) -> void:
 	canvas_layer = config.get("canvas_layer", canvas_layer)
 	tween_owner = config.get("tween_owner", tween_owner)
 	match_background_provider = config.get("match_background_provider", match_background_provider)
+	result_rays_material_provider = config.get("result_rays_material_provider", result_rays_material_provider)
 	deck_counter_size = config.get("deck_counter_size", deck_counter_size)
 	player_portrait_size = config.get("player_portrait_size", player_portrait_size)
 	player_portrait_top_position = config.get("player_portrait_top_position", player_portrait_top_position)
@@ -295,6 +322,7 @@ func announce_turn(turn_color: int) -> void:
 func show_result_message(winner_color: int, rating_change_text: String = "") -> void:
 	if result_label == null or result_overlay == null:
 		return
+	var mood: int = 0
 	if turn_banner != null and is_instance_valid(turn_banner):
 		turn_banner.dismiss()
 
@@ -311,9 +339,83 @@ func show_result_message(winner_color: int, rating_change_text: String = "") -> 
 		var won: bool = winner_color == get_own_color()
 		result_label.text = tr("YOU WON!") if won else tr("YOU LOST!")
 		SFXManager.play("win" if won else "lose")
+		mood = 1 if won else -1
 	if !rating_change_text.is_empty():
 		result_label.text += "\n" + rating_change_text
 	result_overlay.visible = true
+	play_result_reveal(mood)
+
+## The result comes on like the drawn world it ends: the picture darkens, warm
+## for a win and cold for a loss, and the words are written in, in ink - a
+## win's swelling up out of a blaze of gold, a loss's sinking into place.
+## `mood` is 1 for the player's win, -1 for their loss, 0 for a match they
+## only watched.
+func play_result_reveal(mood: int) -> void:
+	if result_tween != null and result_tween.is_valid():
+		result_tween.kill()
+	var old_rays: Node = result_overlay.get_node_or_null(RESULT_RAYS_NAME)
+	if old_rays != null:
+		old_rays.queue_free()
+
+	var shade: Color = RESULT_NEUTRAL_SHADE
+	var ink: Color = RESULT_NEUTRAL_INK
+	if mood > 0:
+		shade = RESULT_WIN_SHADE
+		ink = RESULT_WIN_INK
+	elif mood < 0:
+		shade = RESULT_LOSS_SHADE
+		ink = RESULT_LOSS_INK
+	result_overlay.color = Color(shade, 0.0)
+	result_label.label_settings.font_color = ink
+
+	# The ink runs across the words only, not the whole width of the screen.
+	var font: Font = result_label.get_theme_font(&"font")
+	var text_width: float = font.get_multiline_string_size(result_label.text, HORIZONTAL_ALIGNMENT_CENTER, -1.0, result_label.label_settings.font_size).x if font != null else result_label.size.x
+	var writing := ShaderMaterial.new()
+	writing.shader = INK_WRITE_SHADER
+	writing.set_shader_parameter(&"progress", 0.0)
+	writing.set_shader_parameter(&"write_from", (result_label.size.x - text_width) * 0.5)
+	writing.set_shader_parameter(&"write_to", (result_label.size.x + text_width) * 0.5)
+	# The title's own stamp comes back once the words are written.
+	var title_material: Material = result_label.material
+	result_label.material = writing
+	result_label.pivot_offset = result_label.size * 0.5
+	result_label.scale = Vector2.ONE * (RESULT_WIN_SWELL if mood > 0 else 1.0)
+	result_label.position.y = -RESULT_LOSS_SINK if mood < 0 else 0.0
+
+	result_tween = result_overlay.create_tween()
+	result_tween.tween_property(result_overlay, "color", shade, RESULT_SHADE_SECONDS)
+	result_tween.parallel().tween_property(writing, "shader_parameter/progress", 1.0, RESULT_WRITE_SECONDS).set_delay(RESULT_WRITE_DELAY).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	if mood > 0:
+		result_tween.parallel().tween_property(result_label, "scale", Vector2.ONE, RESULT_WIN_SWELL_SECONDS).set_delay(RESULT_WRITE_DELAY).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		add_result_rays()
+	elif mood < 0:
+		result_tween.parallel().tween_property(result_label, "position:y", 0.0, RESULT_LOSS_SINK_SECONDS).set_delay(RESULT_WRITE_DELAY).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	result_tween.tween_callback(func(): result_label.material = title_material)
+
+## The win's gold blaze behind the words: the stamp affix's rays, bursting out
+## and then turning slowly for as long as the result stays up.
+func add_result_rays() -> void:
+	if !result_rays_material_provider.is_valid():
+		return
+	var rays_material: ShaderMaterial = result_rays_material_provider.call() as ShaderMaterial
+	if rays_material == null:
+		return
+	var rays := ColorRect.new()
+	rays.name = RESULT_RAYS_NAME
+	rays.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rays.material = rays_material
+	rays.size = Vector2.ONE * RESULT_RAYS_SIZE
+	rays.pivot_offset = rays.size * 0.5
+	rays.position = result_overlay.size * 0.5 - rays.pivot_offset
+	result_overlay.add_child(rays)
+	result_overlay.move_child(rays, 0)
+
+	var burst: Tween = rays.create_tween()
+	burst.tween_property(rays_material, "shader_parameter/size", RESULT_RAYS_END_SIZE, RESULT_RAYS_BURST_SECONDS).set_delay(RESULT_WRITE_DELAY).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	burst.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", RESULT_RAYS_ALPHA, RESULT_RAYS_BURST_SECONDS * 0.5).set_delay(RESULT_WRITE_DELAY)
+	var turn: Tween = rays.create_tween().set_loops()
+	turn.tween_property(rays, "rotation", TAU, RESULT_RAYS_TURN_SECONDS).from(0.0)
 
 func initialize_player_portraits() -> void:
 	current_player_portraits = {

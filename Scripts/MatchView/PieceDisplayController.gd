@@ -12,7 +12,6 @@ var texture_resolver
 var texture_holder_scene: PackedScene
 var board_size: int = BoardConfig.BOARD_SIZE
 var piece_light_receive_mask: int = 2
-var piece_shadow_light_energy: float = 0.30
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
 
 const PIECE_HOVER_DIM_TWEEN_META: String = "hover_dim_tween"
@@ -24,7 +23,6 @@ func configure(config: Dictionary) -> void:
 	texture_holder_scene = config.get("texture_holder_scene", texture_holder_scene)
 	board_size = int(config.get("board_size", board_size))
 	piece_light_receive_mask = int(config.get("piece_light_receive_mask", piece_light_receive_mask))
-	piece_shadow_light_energy = float(config.get("piece_shadow_light_energy", piece_shadow_light_energy))
 	invalid_board_pos = config.get("invalid_board_pos", invalid_board_pos)
 
 func display_board() -> void:
@@ -103,7 +101,7 @@ func apply_piece_respawn_lock_opacity(holder: Sprite2D, board_pos: Vector2) -> v
 func apply_piece_shadow(holder: Sprite2D, board_pos: Vector2) -> void:
 	if piece_visuals == null:
 		return
-	piece_visuals.apply_shadow(holder, board_pos, get_piece_color_at(board_pos), match_board.get_own_color(), match_board.get_piece_effect_geometry_controller().get_attach_point_light_texture())
+	piece_visuals.apply_shadow(holder, get_piece_color_at(board_pos), match_board.get_own_color())
 
 func remove_piece_shadow(holder: Sprite2D) -> void:
 	if piece_visuals != null:
@@ -156,8 +154,6 @@ func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool =
 	var highlighted_pos: Vector2 = match_board.hover_highlighted_piece
 	var should_dim: bool = highlighted_pos != invalid_board_pos and board_pos != highlighted_pos
 	var tint: Color = PIECE_HOVER_DIM_COLOR if should_dim else Color(1.0, 1.0, 1.0)
-	var shadow_light: PointLight2D = piece_visuals.get_shadow_light(holder) if piece_visuals != null else null
-	var target_shadow_energy: float = 0.0 if should_dim else piece_shadow_light_energy
 	var ice: Sprite2D = match_board.get_freeze_effect_animator().get_overlay(holder)
 
 	# get_meta() reads a null default as "no default" and reports the key as
@@ -171,8 +167,6 @@ func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool =
 		holder.self_modulate = Color(tint.r, tint.g, tint.b, current.a)
 		if ice != null:
 			ice.self_modulate = holder.self_modulate
-		if shadow_light != null:
-			shadow_light.energy = target_shadow_energy
 		return
 
 	# Alpha (respawn-lock opacity, hidden-for-shatter, etc.) is driven
@@ -187,8 +181,6 @@ func apply_piece_hover_dim(holder: Sprite2D, board_pos: Vector2, animate: bool =
 		tween.tween_property(ice, "self_modulate:r", tint.r, PIECE_HOVER_DIM_TWEEN_DURATION)
 		tween.tween_property(ice, "self_modulate:g", tint.g, PIECE_HOVER_DIM_TWEEN_DURATION)
 		tween.tween_property(ice, "self_modulate:b", tint.b, PIECE_HOVER_DIM_TWEEN_DURATION)
-	if shadow_light != null:
-		tween.tween_property(shadow_light, "energy", target_shadow_energy, PIECE_HOVER_DIM_TWEEN_DURATION)
 	holder.set_meta(PIECE_HOVER_DIM_TWEEN_META, tween)
 
 func update_piece_hover_dim() -> void:

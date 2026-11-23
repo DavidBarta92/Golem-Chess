@@ -1,6 +1,21 @@
 extends RefCounted
 
 const PIECE_MOVE_SHADOW_SHADER = preload("res://Shaders/piece_move_shadow.gdshader")
+## How far in front of the footprint the shadow of a piece in flight starts and
+## ends, as a share of its depth: where the darkening under a standing piece
+## (PieceGrounding) is, so the one takes over from the other.
+const MOVEMENT_SHADOW_DROP: float = 0.45
+# A piece crouches before it goes up, stretches as it rises and squashes as it
+# lands, always about its feet. Squash is (width, height) against its size.
+const MOVE_CROUCH_SQUASH: Vector2 = Vector2(1.06, 0.91)
+const MOVE_CROUCH_DURATION: float = 0.07
+const MOVE_LIFT_STRETCH: Vector2 = Vector2(0.95, 1.06)
+const MOVE_LANDING_SQUASH: Vector2 = Vector2(1.09, 0.89)
+const MOVE_LANDING_SQUASH_DURATION: float = 0.05
+const MOVE_LANDING_RECOVER_DURATION: float = 0.18
+## A golem standing up again hops this high, as a share of a square.
+const WAKE_HOP_RATIO: float = 0.22
+const WAKE_HOP_DURATION: float = 0.26
 
 const PIECE_MOVE_ROUTE_CORNER_ROUNDING_RATIO: float = 0.28
 const PIECE_MOVE_ROUTE_CORNER_SAMPLE_COUNT: int = 4
@@ -23,6 +38,7 @@ var capture_push_duration: float = 0.14
 var capture_recoil_duration: float = 0.12
 var capture_center_settle_duration: float = 0.24
 var capture_push_rotation_degrees: float = 8.0
+var movement_shadow_texture: Texture2D
 var movement_shadow_color: Color = Color(0.03, 0.025, 0.02, 0.30)
 var movement_shadow_radius_scale: Vector2 = Vector2(0.92, 0.72)
 var movement_shadow_ground_edge_softness: float = 0.10
@@ -95,7 +111,8 @@ func play_move_sequence(
 	start_offset: Vector2,
 	end_offset: Vector2,
 	capture_impact_callback: Callable = Callable(),
-	landed_callback: Callable = Callable()
+	landed_callback: Callable = Callable(),
+	pace: float = 1.0
 ) -> bool:
 	if holder == null or !is_instance_valid(holder) or !MoveRules.is_valid_position(from_pos) or !MoveRules.is_valid_position(to_pos):
 		return false
@@ -111,25 +128,41 @@ func play_move_sequence(
 	if has_capture_impact:
 		capture_approach_ground_pos = get_capture_approach_ground_position(route_points, end_ground_pos, perspective_scale)
 	var travel_route_points: Array[Vector2] = get_capture_approach_route_points(route_points, capture_approach_ground_pos) if has_capture_impact else route_points
-	var travel_duration: float = get_animation_duration(travel_route_points, from_pos, to_pos)
+	# `pace` stretches every step but the hitstop: 2 plays the move at half speed.
+	pace = maxf(pace, 0.01)
+	var travel_duration: float = get_animation_duration(travel_route_points, from_pos, to_pos) * pace
 	var lift_height: float = float(cell_width) * move_lift_ratio * perspective_scale
 	var resting_rotation: float = holder.rotation
 	var movement_shadow: Sprite2D = create_movement_shadow(holder, from_pos)
 
 	holder.position = start_ground_pos
 	holder.z_index = get_z_index_for_local_position(start_ground_pos, holder, lifted_z_offset)
+	# The piece's shadow stays on the board as it goes up, fading while it
+	# rises, and comes in under it again as it drops.
+	var shadow_side: int = piece_visuals.lift_shadow(holder, (MOVE_CROUCH_DURATION + lift_duration) * pace) if piece_visuals != null else -1
+	var crouch_tween: Tween = create_animation_tween()
+	if crouch_tween == null:
+		cleanup_movement_shadow(movement_shadow)
+		return false
+	crouch_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	crouch_tween.tween_method(func(progress: float): set_squash(holder, start_scale, start_ground_pos, Vector2.ONE.lerp(MOVE_CROUCH_SQUASH, progress)), 0.0, 1.0, MOVE_CROUCH_DURATION * pace)
+	await crouch_tween.finished
+	if !is_move_holder_active(holder):
+		cleanup_movement_shadow(movement_shadow)
+		return false
+
 	var lift_tween: Tween = create_animation_tween()
 	if lift_tween == null:
 		cleanup_movement_shadow(movement_shadow)
 		return false
-	lift_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	lift_tween.tween_property(holder, "position:y", start_ground_pos.y - lift_height, lift_duration)
+	var lift_duration_paced: float = lift_duration * pace
+	lift_tween.tween_method(func(progress: float): update_holder_lift(holder, start_ground_pos, lift_height, start_scale, progress), 0.0, 1.0, lift_duration_paced)
 	var shadow_material: ShaderMaterial = movement_shadow.material as ShaderMaterial if movement_shadow != null else null
 	var shadow_ground_scale: Vector2 = movement_shadow.scale if movement_shadow != null else Vector2.ONE
 	if shadow_material != null:
-		lift_tween.parallel().tween_property(movement_shadow, "scale", shadow_ground_scale * movement_shadow_lifted_scale, lift_duration)
-		lift_tween.parallel().tween_property(shadow_material, "shader_parameter/alpha_strength", movement_shadow_lifted_alpha, lift_duration)
-		lift_tween.parallel().tween_property(shadow_material, "shader_parameter/edge_softness", movement_shadow_lifted_edge_softness, lift_duration)
+		lift_tween.parallel().tween_property(movement_shadow, "scale", shadow_ground_scale * movement_shadow_lifted_scale, lift_duration_paced)
+		lift_tween.parallel().tween_property(shadow_material, "shader_parameter/alpha_strength", movement_shadow_lifted_alpha, lift_duration_paced)
+		lift_tween.parallel().tween_property(shadow_material, "shader_parameter/edge_softness", movement_shadow_lifted_edge_softness, lift_duration_paced)
 	await lift_tween.finished
 	if !is_move_holder_active(holder):
 		cleanup_movement_shadow(movement_shadow)
@@ -171,7 +204,8 @@ func play_move_sequence(
 			lift_height,
 			movement_shadow,
 			resting_rotation,
-			capture_impact_callback
+			capture_impact_callback,
+			pace
 		)
 		if !capture_result:
 			cleanup_movement_shadow(movement_shadow)
@@ -182,12 +216,15 @@ func play_move_sequence(
 		cleanup_movement_shadow(movement_shadow)
 		return false
 	drop_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	drop_tween.tween_property(holder, "position:y", end_ground_pos.y, drop_duration)
-	drop_tween.parallel().tween_property(holder, "rotation", resting_rotation, drop_duration)
+	var drop_duration_paced: float = drop_duration * pace
+	if piece_visuals != null:
+		piece_visuals.land_shadow(holder, shadow_side, drop_duration_paced, lift_height)
+	drop_tween.tween_property(holder, "position:y", end_ground_pos.y, drop_duration_paced)
+	drop_tween.parallel().tween_property(holder, "rotation", resting_rotation, drop_duration_paced)
 	if shadow_material != null:
-		drop_tween.parallel().tween_property(movement_shadow, "scale", shadow_ground_scale, drop_duration)
-		drop_tween.parallel().tween_property(shadow_material, "shader_parameter/alpha_strength", 1.0, drop_duration)
-		drop_tween.parallel().tween_property(shadow_material, "shader_parameter/edge_softness", movement_shadow_ground_edge_softness, drop_duration)
+		drop_tween.parallel().tween_property(movement_shadow, "scale", shadow_ground_scale, drop_duration_paced)
+		drop_tween.parallel().tween_property(shadow_material, "shader_parameter/alpha_strength", 0.0, drop_duration_paced)
+		drop_tween.parallel().tween_property(shadow_material, "shader_parameter/edge_softness", movement_shadow_ground_edge_softness, drop_duration_paced)
 	await drop_tween.finished
 	if !is_move_holder_active(holder):
 		cleanup_movement_shadow(movement_shadow)
@@ -197,6 +234,7 @@ func play_move_sequence(
 	holder.z_index = get_depth_z_index(to_pos)
 	if landed_callback.is_valid():
 		landed_callback.call()
+	play_landing_squash(holder, end_scale, end_ground_pos, pace)
 	var wobble_tween: Tween = create_animation_tween()
 	if wobble_tween == null:
 		holder.rotation = resting_rotation
@@ -213,7 +251,7 @@ func play_move_sequence(
 			holder,
 			"rotation",
 			resting_rotation + wobble_angle * float(wobble_angles[index]),
-			wobble_step_duration * duration_scale
+			wobble_step_duration * duration_scale * pace
 		)
 	await wobble_tween.finished
 	cleanup_movement_shadow(movement_shadow)
@@ -228,7 +266,8 @@ func play_capture_impact_sequence(
 	lift_height: float,
 	movement_shadow: Sprite2D,
 	resting_rotation: float,
-	capture_impact_callback: Callable
+	capture_impact_callback: Callable,
+	pace: float = 1.0
 ) -> bool:
 	if !is_move_holder_active(holder):
 		return false
@@ -241,7 +280,7 @@ func play_capture_impact_sequence(
 		var hold_tween: Tween = create_animation_tween()
 		if hold_tween == null:
 			return false
-		hold_tween.tween_interval(capture_approach_hold_duration)
+		hold_tween.tween_interval(capture_approach_hold_duration * pace)
 		await hold_tween.finished
 		if !is_move_holder_active(holder):
 			return false
@@ -267,7 +306,7 @@ func play_capture_impact_sequence(
 		),
 		0.0,
 		1.0,
-		capture_push_duration
+		capture_push_duration * pace
 	)
 	await push_tween.finished
 	if !is_move_holder_active(holder):
@@ -304,7 +343,7 @@ func play_capture_impact_sequence(
 		),
 		0.0,
 		1.0,
-		capture_recoil_duration
+		capture_recoil_duration * pace
 	)
 	await recoil_tween.finished
 	if !is_move_holder_active(holder):
@@ -325,12 +364,55 @@ func play_capture_impact_sequence(
 		),
 		0.0,
 		1.0,
-		capture_center_settle_duration
+		capture_center_settle_duration * pace
 	)
 	await settle_tween.finished
 	if is_instance_valid(holder):
 		holder.rotation = resting_rotation
 	return is_move_holder_active(holder)
+
+## Squashes or stretches a piece about its feet - the bottom of its picture -
+## so that they stay where `base_position` puts them.
+func set_squash(holder: Sprite2D, base_scale: Vector2, base_position: Vector2, squash: Vector2) -> void:
+	if holder == null or !is_instance_valid(holder):
+		return
+	var feet := Vector2(0.0, holder.offset.y + (holder.texture.get_size().y * 0.5 if holder.texture != null else 0.0))
+	holder.scale = base_scale * squash
+	holder.position = base_position + (feet * base_scale - feet * base_scale * squash).rotated(holder.rotation)
+
+## Going up out of the crouch: it rises on an easing-out curve, stretching on
+## the way and settling to its own shape by the top.
+func update_holder_lift(holder: Sprite2D, ground_pos: Vector2, lift_height: float, base_scale: Vector2, progress: float) -> void:
+	var rise: float = 1.0 - pow(1.0 - progress, 2.0)
+	var squash: Vector2 = MOVE_CROUCH_SQUASH.lerp(MOVE_LIFT_STRETCH, smoothstep(0.0, 0.4, progress)).lerp(Vector2.ONE, smoothstep(0.4, 1.0, progress))
+	set_squash(holder, base_scale, ground_pos + Vector2(0.0, -lift_height * rise), squash)
+
+## Squashed by the landing, then springing back past its shape and settling.
+## Runs beside the wobble, on the holder, so a redraw of the board stops it.
+func play_landing_squash(holder: Sprite2D, base_scale: Vector2, ground_pos: Vector2, pace: float = 1.0) -> void:
+	if holder == null or !is_instance_valid(holder):
+		return
+	var tween: Tween = holder.create_tween()
+	tween.tween_method(func(progress: float): set_squash(holder, base_scale, ground_pos, Vector2.ONE.lerp(MOVE_LANDING_SQUASH, progress)), 0.0, 1.0, MOVE_LANDING_SQUASH_DURATION * pace)
+	tween.tween_method(func(progress: float): set_squash(holder, base_scale, ground_pos, MOVE_LANDING_SQUASH.lerp(Vector2.ONE, progress)), 0.0, 1.0, MOVE_LANDING_RECOVER_DURATION * pace).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+## A golem standing up again where its pieces came together: a crouch, a small
+## hop and a landing.
+func play_wake_hop(holder: Sprite2D, board_pos: Vector2) -> void:
+	if holder == null or !is_instance_valid(holder) or holder.texture == null:
+		return
+	var ground_pos: Vector2 = get_position_local(board_pos)
+	var base_scale: Vector2 = holder.scale
+	var hop_height: float = float(cell_width) * WAKE_HOP_RATIO * (piece_visuals.get_perspective_scale(board_pos) if piece_visuals != null else 1.0)
+	var tween: Tween = holder.create_tween()
+	tween.tween_method(func(progress: float): set_squash(holder, base_scale, ground_pos, Vector2.ONE.lerp(MOVE_CROUCH_SQUASH, progress)), 0.0, 1.0, MOVE_CROUCH_DURATION)
+	tween.tween_method(func(progress: float): set_squash(
+		holder,
+		base_scale,
+		ground_pos + Vector2(0.0, -hop_height * sin(progress * PI)),
+		MOVE_CROUCH_SQUASH.lerp(MOVE_LIFT_STRETCH, smoothstep(0.0, 0.3, progress)).lerp(Vector2.ONE, smoothstep(0.3, 1.0, progress))
+	), 0.0, 1.0, WAKE_HOP_DURATION)
+	tween.tween_callback(play_landing_squash.bind(holder, base_scale, ground_pos))
 
 func update_capture_impact_motion(
 	holder: Sprite2D,
@@ -370,14 +452,14 @@ func create_movement_shadow(holder: Sprite2D, from_pos: Vector2) -> Sprite2D:
 	shadow.name = "PieceMoveGroundShadow"
 	shadow.z_index = get_depth_z_index(from_pos) + movement_shadow_z_offset
 	shadow.light_mask = 0
-	shadow.texture = piece_visuals.get_ground_shadow_texture()
+	shadow.texture = get_movement_shadow_texture()
 	shadow.scale = Vector2(radius_x * 2.0 / float(shadow.texture.get_width()), radius_y * 2.0 / float(shadow.texture.get_height()))
 	var shadow_material := ShaderMaterial.new()
 	shadow_material.shader = PIECE_MOVE_SHADOW_SHADER
 	shadow_material.set_shader_parameter("shadow_color", movement_shadow_color)
-	# Takes over from the shadow the piece stood on, so it does not go out as the
-	# piece leaves the board.
-	shadow_material.set_shader_parameter("alpha_strength", 1.0)
+	# Comes in as the shadow the piece stood on fades (PieceGrounding.lift_off),
+	# and goes as the one it lands on comes in, so the two hand over.
+	shadow_material.set_shader_parameter("alpha_strength", 0.0)
 	shadow_material.set_shader_parameter("edge_softness", movement_shadow_ground_edge_softness)
 	shadow.material = shadow_material
 	pieces_node.add_child(shadow)
@@ -389,11 +471,19 @@ func create_movement_shadow(holder: Sprite2D, from_pos: Vector2) -> Sprite2D:
 		shadow.position = footprint_center
 	return shadow
 
-## Where a resting piece's contact shadow lies, so this one takes over from it and
-## hands back to it without a jump. Board space turns over with the view.
+## Where a standing piece is darkened at its feet, so this one takes over from
+## it and hands back to it without a jump. Board space turns over with the view.
 func get_ground_shadow_center(footprint: Dictionary, fallback: Vector2) -> Vector2:
-	var drop: float = float(footprint.get("radius_y", 0.0)) * movement_shadow_radius_scale.y * piece_visuals.CONTACT_SHADOW_DROP
+	var drop: float = float(footprint.get("radius_y", 0.0)) * movement_shadow_radius_scale.y * MOVEMENT_SHADOW_DROP
 	return footprint.get("center", fallback) + Vector2(0.0, drop * float(piece_visuals.view_color))
+
+## A blank square for the shadow's shader to cut its ellipse out of.
+func get_movement_shadow_texture() -> Texture2D:
+	if movement_shadow_texture == null:
+		var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+		image.fill(Color.WHITE)
+		movement_shadow_texture = ImageTexture.create_from_image(image)
+	return movement_shadow_texture
 
 func get_random_wobble_variant() -> Dictionary:
 	var variants: Array[Dictionary] = [

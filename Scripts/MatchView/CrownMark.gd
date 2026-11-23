@@ -31,6 +31,18 @@ const FLASH_IN_SECONDS: float = 0.08
 const FLASH_OUT_SECONDS: float = 0.75
 const FLASH_BOARD_ENERGY: float = 1.3
 const FLASH_PIECE_ENERGY: float = 0.6
+# The winning step: the ring swells and springs back, a star of gold breaks
+# out around it, and the crowning's light comes on brighter and stays longer.
+const VICTORY_SWELL: float = 1.45
+const VICTORY_SWELL_SECONDS: float = 0.14
+const VICTORY_SETTLE_SECONDS: float = 0.6
+const VICTORY_FLASH_BOARD_ENERGY: float = 1.3
+const VICTORY_FLASH_PIECE_ENERGY: float = 0.6
+const VICTORY_FLASH_OUT_SECONDS: float = 1.4
+const VICTORY_SPARKLE_COLOR: Color = Color(1.0, 0.82, 0.36, 1.0)
+## The star's size, in shares of the ring's width.
+const VICTORY_SPARKLE_SIZE: float = 5.5
+const VICTORY_SPARKLE_SECONDS: float = 1.1
 
 ## The centre of the head and the figure's first row, by texture.
 static var _heads: Dictionary = {}
@@ -143,7 +155,27 @@ static func play_crowning(match_board, board_pos: Vector2) -> void:
 		mark.create_tween().tween_property(mark, "_drop_height", 0.0, DROP_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	match_board.get_tree().create_timer(DROP_SECONDS).timeout.connect(_flash.bind(match_board, board_pos))
 
-static func _flash(match_board, board_pos: Vector2) -> void:
+## The crowned golem has made its winning step. Nothing happens on a golem
+## without a crown.
+static func play_victory_flare(match_board, board_pos: Vector2) -> void:
+	var holder: Sprite2D = match_board.get_piece_holder_at(board_pos)
+	if holder == null:
+		return
+	var mark = holder.get_node_or_null(MARK_NODE_NAME)
+	if mark == null:
+		return
+	var swell: Tween = mark.create_tween()
+	swell.tween_property(mark, "scale", Vector2.ONE * VICTORY_SWELL, VICTORY_SWELL_SECONDS).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	swell.tween_property(mark, "scale", Vector2.ONE, VICTORY_SETTLE_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	var animator = match_board.get_piece_effect_animator()
+	var effects: Node2D = match_board.piece_effects_node
+	if effects != null and is_instance_valid(effects):
+		# The ring's width is in its golem's picture pixels; the star is drawn in board units.
+		var ring_width: float = mark._width * absf(holder.scale.x)
+		animator.play_sparkle_at(effects.to_local(mark.global_position), animator.get_piece_effect_z_index(board_pos) + 3, ring_width * VICTORY_SPARKLE_SIZE, VICTORY_SPARKLE_COLOR, VICTORY_SPARKLE_SECONDS)
+	_flash(match_board, board_pos, VICTORY_FLASH_BOARD_ENERGY, VICTORY_FLASH_PIECE_ENERGY, VICTORY_FLASH_OUT_SECONDS)
+
+static func _flash(match_board, board_pos: Vector2, board_energy: float = FLASH_BOARD_ENERGY, piece_energy: float = FLASH_PIECE_ENERGY, out_seconds: float = FLASH_OUT_SECONDS) -> void:
 	if !is_instance_valid(match_board):
 		return
 	var holder: Sprite2D = match_board.get_piece_holder_at(board_pos)
@@ -157,8 +189,8 @@ static func _flash(match_board, board_pos: Vector2) -> void:
 		return
 	animator.set_holder_light_occluder_enabled(holder, false)
 	var tween: Tween = match_board.create_tween()
-	tween.tween_property(board_light, "energy", FLASH_BOARD_ENERGY, FLASH_IN_SECONDS)
-	tween.parallel().tween_property(piece_light, "energy", FLASH_PIECE_ENERGY, FLASH_IN_SECONDS)
-	tween.tween_property(board_light, "energy", 0.0, FLASH_OUT_SECONDS).set_trans(Tween.TRANS_SINE)
-	tween.parallel().tween_property(piece_light, "energy", 0.0, FLASH_OUT_SECONDS).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(board_light, "energy", board_energy, FLASH_IN_SECONDS)
+	tween.parallel().tween_property(piece_light, "energy", piece_energy, FLASH_IN_SECONDS)
+	tween.tween_property(board_light, "energy", 0.0, out_seconds).set_trans(Tween.TRANS_SINE)
+	tween.parallel().tween_property(piece_light, "energy", 0.0, out_seconds).set_trans(Tween.TRANS_SINE)
 	tween.finished.connect(animator.cleanup_attach_point_light.bind(holder, board_light, piece_light))

@@ -7,6 +7,9 @@ uniform float pulse_strength : hint_range(0.0, 1.0) = 1.0;
 uniform float pulse_min_scale : hint_range(0.5, 1.5) = 0.88;
 uniform float pulse_max_scale : hint_range(0.5, 1.5) = 1.18;
 uniform vec4 color : source_color = vec4(1.0, 0.94, 0.78, 1.0);
+// 1 for a square the piece can take on: the glow becomes a four-pointed star,
+// reaching its full size along the axes and pulled in between them.
+uniform float star : hint_range(0.0, 1.0) = 0.0;
 
 float get_pulse_wave() {
 	return 0.5 + 0.5 * sin(TIME * speed * 6.0);
@@ -20,6 +23,8 @@ void vertex() {
 void fragment() {
 	vec2 uv = UV - vec2(0.5);
 	float dist = length(uv);
+	float angle = atan(uv.y, uv.x);
+	dist /= mix(1.0, mix(0.28, 1.0, pow(abs(cos(2.0 * angle)), 6.0)), star);
 
 	float fade = smoothstep(0.8, 0.2, dist);
 	float edge = smoothstep(0.5, 0.5 - edge_softness, dist);

@@ -27,6 +27,8 @@ func finish(visual_context: Dictionary) -> void:
 
 	var state_piece_move_animation: Dictionary = visual_context.get("state_piece_move_animation", {})
 	if !state_piece_move_animation.is_empty():
+		# The step that ends the match gets played as such.
+		state_piece_move_animation["decisive"] = bool(visual_context.get("server_game_over", false)) and int(visual_context.get("winner_player", -1)) != -1
 		await match_board.get_piece_effect_flow_controller().play_state_piece_move_animation(state_piece_move_animation, state_piece_shatter_animations)
 
 	var animated_affix_positions: Dictionary = visual_context.get("animated_affix_positions", {})

@@ -11,6 +11,17 @@ const MOVE_OPTION_DOT_SHADER_EDGE_SOFTNESS: float = 0.85
 const MOVE_OPTION_DOT_SHADER_PULSE_MIN_SCALE: float = 0.88
 const MOVE_OPTION_DOT_SHADER_PULSE_MAX_SCALE: float = 1.18
 const MOVE_OPTION_DOT_SHADER_COLOR: Color = Color(1.0, 0.94, 0.78, 1.0)
+# The dots come up in a wave out from the piece, each popping up a moment
+# after the one a square nearer.
+const MOVE_OPTION_WAVE_SECONDS_PER_SQUARE: float = 0.035
+const MOVE_OPTION_POP_SECONDS: float = 0.18
+# Where one of the player's own pieces could take: a bigger, warmer star, and
+# the piece standing there trembles as the wave reaches it.
+const CAPTURE_TARGET_STAR_SCALE: float = 1.75
+const CAPTURE_TARGET_STAR_COLOR: Color = Color(1.0, 0.8, 0.42, 1.0)
+const CAPTURE_TARGET_TREMBLE_DISTANCE: float = 0.7
+const CAPTURE_TARGET_TREMBLE_SECONDS: float = 0.26
+const CAPTURE_TARGET_TREMBLE_SWINGS: float = 3.0
 const LAST_MOVE_ARROW_COLOR: Color = Color(1.0, 0.88, 0.18, 1.0)
 const LAST_MOVE_ARROW_WIDTH: float = 3.0
 const LAST_MOVE_ARROW_ENDPOINT_INSET: float = 6.0
@@ -34,10 +45,12 @@ var local_view_ready_provider: Callable
 var own_player_id_provider: Callable
 var can_move_action_now_provider: Callable
 var can_player_control_piece_at_provider: Callable
+var piece_holder_provider: Callable
 var update_special_tiles_callback: Callable
 
 var move_option_dot_pulse_material: ShaderMaterial
 var move_option_dot_static_material: ShaderMaterial
+var capture_target_star_material: ShaderMaterial
 
 func configure(config: Dictionary) -> void:
 	geometry = config.get("geometry", geometry)
@@ -57,13 +70,15 @@ func configure(config: Dictionary) -> void:
 	own_player_id_provider = config.get("own_player_id_provider", own_player_id_provider)
 	can_move_action_now_provider = config.get("can_move_action_now_provider", can_move_action_now_provider)
 	can_player_control_piece_at_provider = config.get("can_player_control_piece_at_provider", can_player_control_piece_at_provider)
+	piece_holder_provider = config.get("piece_holder_provider", piece_holder_provider)
 	update_special_tiles_callback = config.get("update_special_tiles_callback", update_special_tiles_callback)
 
 func show_dots(moves: Array, source_pos: Vector2 = INVALID_BOARD_POS) -> void:
 	if dots_node == null or !is_instance_valid(dots_node):
 		return
 
-	var dot_material: ShaderMaterial = get_move_option_dot_material(should_pulse_move_option_dots(source_pos))
+	var own_move: bool = should_pulse_move_option_dots(source_pos)
+	var dot_material: ShaderMaterial = get_move_option_dot_material(own_move)
 	for move_value in moves:
 		var board_pos: Vector2 = BoardConfig.value_to_vector2(move_value, INVALID_BOARD_POS)
 		if !MoveRules.is_valid_position(board_pos):
@@ -71,13 +86,54 @@ func show_dots(moves: Array, source_pos: Vector2 = INVALID_BOARD_POS) -> void:
 		if texture_holder_scene == null or MOVE_OPTION_DOT_TEXTURE == null:
 			continue
 
+		var takes: bool = own_move and is_visible_capture_target(source_pos, board_pos)
 		var holder = texture_holder_scene.instantiate()
 		dots_node.add_child(holder)
 		holder.texture = MOVE_OPTION_DOT_TEXTURE
 		holder.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		holder.material = dot_material
-		holder.scale = get_move_option_dot_scale(board_pos)
+		holder.material = get_capture_target_star_material() if takes else dot_material
 		holder.position = geometry.get_position_local(board_pos) if geometry != null else Vector2.ZERO
+		var dot_scale: Vector2 = get_move_option_dot_scale(board_pos) * (CAPTURE_TARGET_STAR_SCALE if takes else 1.0)
+		pop_move_option_dot(holder, dot_scale, source_pos, board_pos, takes)
+
+## The dot pops up once the wave from `source_pos` has come this far, and a
+## piece that could be taken here trembles as it does.
+func pop_move_option_dot(holder: Sprite2D, dot_scale: Vector2, source_pos: Vector2, board_pos: Vector2, takes: bool) -> void:
+	var delay: float = 0.0
+	if MoveRules.is_valid_position(source_pos):
+		delay = (board_pos - source_pos).length() * MOVE_OPTION_WAVE_SECONDS_PER_SQUARE
+	holder.scale = dot_scale * 0.01
+	var tween: Tween = holder.create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	tween.tween_property(holder, "scale", dot_scale, MOVE_OPTION_POP_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	if takes:
+		tween.parallel().tween_callback(tremble_piece_at.bind(board_pos))
+
+## Whether the piece at `target_pos` is one the player can see belonging to the
+## other side from the piece at `source_pos`. A piece hidden from the viewer
+## gets a plain dot, as it would have before: the dots must not give it away.
+func is_visible_capture_target(source_pos: Vector2, target_pos: Vector2) -> bool:
+	var piece_objects: Dictionary = get_piece_objects()
+	var source_piece: Piece = piece_objects.get(source_pos, null) as Piece
+	var target_piece: Piece = piece_objects.get(target_pos, null) as Piece
+	if source_piece == null or target_piece == null or target_piece.hidden_from_viewer:
+		return false
+	return target_piece.color != source_piece.color
+
+func tremble_piece_at(board_pos: Vector2) -> void:
+	if !piece_holder_provider.is_valid() or geometry == null:
+		return
+	var holder: Sprite2D = piece_holder_provider.call(board_pos) as Sprite2D
+	if holder == null or !is_instance_valid(holder) or holder.texture == null:
+		return
+	# From where it stands, not from where a tremble still running left it.
+	var rest_position: Vector2 = geometry.get_position_local(board_pos)
+	var tween: Tween = holder.create_tween()
+	tween.tween_method(func(progress: float):
+		holder.position = rest_position + Vector2(CAPTURE_TARGET_TREMBLE_DISTANCE * sin(progress * TAU * CAPTURE_TARGET_TREMBLE_SWINGS) * (1.0 - progress), 0.0)
+	, 0.0, 1.0, CAPTURE_TARGET_TREMBLE_SECONDS)
+	tween.tween_callback(func(): holder.position = rest_position)
 
 func delete_dots() -> void:
 	if dots_node == null or !is_instance_valid(dots_node):
@@ -161,6 +217,13 @@ func get_move_option_dot_material(should_pulse: bool) -> ShaderMaterial:
 	if move_option_dot_static_material == null:
 		move_option_dot_static_material = create_move_option_dot_material(0.0)
 	return move_option_dot_static_material
+
+func get_capture_target_star_material() -> ShaderMaterial:
+	if capture_target_star_material == null:
+		capture_target_star_material = create_move_option_dot_material(1.0)
+		capture_target_star_material.set_shader_parameter("star", 1.0)
+		capture_target_star_material.set_shader_parameter("color", CAPTURE_TARGET_STAR_COLOR)
+	return capture_target_star_material
 
 func create_move_option_dot_material(pulse_strength: float) -> ShaderMaterial:
 	var material := ShaderMaterial.new()

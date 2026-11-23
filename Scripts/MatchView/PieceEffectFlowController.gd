@@ -1,6 +1,7 @@
 extends RefCounted
 
 const CaptureFeelLayer = preload("res://Scripts/MatchView/CaptureFeelLayer.gd")
+const CrownMark = preload("res://Scripts/MatchView/CrownMark.gd")
 const PIECE_HIT_REACTION_SHADER = preload("res://Shaders/piece_hit_reaction.gdshader")
 ## How far the struck piece's flash has faded back toward its drawing by the
 ## time it breaks.
@@ -42,6 +43,24 @@ const CAPTURE_LOSS_WASH_FADE_DURATION: float = 0.65
 ## How far the CRT pass's colour fringes swing either way while the board
 ## jolts under one of the player's own pieces breaking.
 const CAPTURE_LOSS_ABERRATION: float = 0.01
+
+# Every landing puffs a little ink at the piece's feet; a piece carrying a
+# stamp or the crown lands heavily enough to nudge the board. Jolts are in
+# screen pixels.
+const LANDING_HEAVY_JOLT_DISTANCE: float = 1.0
+const LANDING_HEAVY_JOLT_DURATION: float = 0.14
+const LANDING_HEAVY_JOLT_SWINGS: float = 1.5
+# The step that ends the match plays at half speed and comes down hard: a
+# big puff, the board jumps, the crown flares. For the player who lost it
+# also gets the cold of one of their pieces breaking.
+const DECISIVE_MOVE_PACE: float = 2.0
+const DECISIVE_JOLT_DISTANCE: float = 7.0
+const DECISIVE_JOLT_DURATION: float = 0.6
+const DECISIVE_JOLT_SWINGS: float = 2.5
+const DECISIVE_PUFF_RADIUS: float = 0.45
+const DECISIVE_PUFF_SOAK_DURATION: float = 2.2
+const DECISIVE_LANDING_PITCH: float = 0.72
+const DECISIVE_LANDING_VOLUME_DB: float = 3.0
 
 var match_board
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
@@ -192,7 +211,8 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 		move_start_texture,
 		bool(state_piece_move_animation.get("visible_to_enemy", true)),
 		capture_impact_callback,
-		hide_after_move
+		hide_after_move,
+		bool(state_piece_move_animation.get("decisive", false))
 	)
 	if is_instance_valid(capture_placeholder):
 		capture_placeholder.queue_free()
@@ -226,13 +246,15 @@ func should_play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, visibl
 ## `hidden_at_end` is for a piece the viewer cannot see once it lands: its
 ## square's holder has nothing to draw, so the move is drawn with
 ## `start_texture` and the holder is left empty again when it is over.
+## `decisive` is the step that ends the match.
 func play_piece_move_animation(
 	from_pos: Vector2,
 	to_pos: Vector2,
 	start_texture: Texture2D = null,
 	visible_to_enemy: bool = true,
 	capture_impact_callback: Callable = Callable(),
-	hidden_at_end: bool = false
+	hidden_at_end: bool = false,
+	decisive: bool = false
 ) -> void:
 	if !should_play_piece_move_animation(from_pos, to_pos, visible_to_enemy):
 		return
@@ -265,11 +287,14 @@ func play_piece_move_animation(
 	holder.position = match_board.get_board_geometry().get_position_local(from_pos)
 	holder.scale = start_scale
 	holder.offset = start_offset
-	match_board.get_piece_visuals().remove_shadow(holder)
 	match_board.get_piece_visuals().remove_light_occluder(holder)
 	SFXManager.play("piece_lifted")
 	var landed_callback: Callable = func() -> void:
-		SFXManager.play("piece_placed")
+		if decisive:
+			play_decisive_landing(to_pos, display_texture)
+		else:
+			SFXManager.play("piece_placed")
+			play_landing_feel(to_pos, display_texture)
 	await match_board.get_piece_move_animator().play_move_sequence(
 		holder,
 		from_pos,
@@ -279,13 +304,42 @@ func play_piece_move_animation(
 		start_offset,
 		end_offset,
 		capture_impact_callback,
-		landed_callback
+		landed_callback,
+		DECISIVE_MOVE_PACE if decisive else 1.0
 	)
 
 	if is_instance_valid(holder):
 		holder.texture = end_texture
 		match_board.get_piece_display_controller().refresh_piece_holder_visual(holder, to_pos)
 	match_board.get_visual_process_tracker().finish(match_board.VISUAL_PROCESS_PIECE_MOVE)
+
+## A puff of ink at the feet of a piece coming down, and for a heavy one - a
+## stamp or the crown on it - a nudge of the board.
+func play_landing_feel(board_pos: Vector2, texture_value: Texture2D) -> void:
+	match_board.get_piece_shatter_animator().play_ground_puff(board_pos, texture_value)
+	var piece: Piece = match_board.piece_objects.get(board_pos, null) as Piece
+	var heavy: bool = piece != null and (piece.affixed_stamp != null or piece.has_crown)
+	if heavy and SettingsDataManager.is_screen_shake_enabled():
+		var camera: MatchCamera = match_board.get_viewport().get_camera_2d() as MatchCamera
+		if camera != null:
+			camera.jolt(Vector2.DOWN, LANDING_HEAVY_JOLT_DISTANCE, LANDING_HEAVY_JOLT_DURATION, LANDING_HEAVY_JOLT_SWINGS)
+
+## The match's last step coming down: a low thud, a big puff, the board
+## jumping and the crown flaring. Seen by the side that lost, the cold wash and
+## the CRT's shudder come with it, as when one of their pieces breaks.
+func play_decisive_landing(board_pos: Vector2, texture_value: Texture2D) -> void:
+	SFXManager.play_pitched("piece_placed", DECISIVE_LANDING_PITCH, DECISIVE_LANDING_VOLUME_DB)
+	match_board.get_piece_shatter_animator().play_ground_puff(board_pos, texture_value, DECISIVE_PUFF_RADIUS, 1.0, DECISIVE_PUFF_SOAK_DURATION)
+	CrownMark.play_victory_flare(match_board, board_pos)
+	if !SettingsDataManager.is_screen_shake_enabled():
+		return
+	var camera: MatchCamera = match_board.get_viewport().get_camera_2d() as MatchCamera
+	if camera != null:
+		camera.jolt(Vector2.DOWN, DECISIVE_JOLT_DISTANCE, DECISIVE_JOLT_DURATION, DECISIVE_JOLT_SWINGS)
+	var piece: Piece = match_board.piece_objects.get(board_pos, null) as Piece
+	if piece != null and piece.color != match_board.get_own_color():
+		get_capture_feel_layer().wash_from_own_side(CAPTURE_LOSS_WASH_COLOR, CAPTURE_LOSS_WASH_RISE_DURATION, CAPTURE_LOSS_WASH_FADE_DURATION)
+		SettingsDataManager.wobble_crt_aberration(CAPTURE_LOSS_ABERRATION, DECISIVE_JOLT_DURATION, DECISIVE_JOLT_SWINGS)
 
 func create_piece_move_capture_placeholder(board_pos: Vector2, texture_value: Texture2D) -> Sprite2D:
 	if match_board == null or texture_value == null or !MoveRules.is_valid_position(board_pos):

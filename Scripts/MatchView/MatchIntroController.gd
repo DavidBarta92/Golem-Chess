@@ -40,10 +40,6 @@ signal interface_revealed
 ## the tutorial opens on Grandpa's pictures before the room draws.
 @export var auto_begin: bool = true
 
-## The name `MatchBoard` gives a piece's shadow - kept in step with its
-## `PIECE_SHADOW_NAME`, which cannot be referenced from here because that
-## script has no class_name.
-const PIECE_SHADOW_NAME: String = "PieceShadow"
 const DECK_CHOICE_PANEL_SCRIPT = preload("res://Scripts/MatchView/DeckChoicePanel.gd")
 
 @export_group("Timing")
@@ -97,7 +93,6 @@ func begin() -> void:
 
 	_set_board_alpha(0.0)
 	_set_pieces_alpha(0.0)
-	_quench_piece_shadows()
 	_set_hud_alpha(0.0)
 
 	_lines_pending = 0
@@ -227,17 +222,16 @@ func hide_everything() -> void:
 	_has_begun = true
 	_set_board_alpha(0.0)
 	_set_pieces_alpha(0.0)
-	_quench_piece_shadows()
 	_set_hud_alpha(0.0)
 
 ## The pieces standing on the board, as their holders.
 func get_piece_nodes() -> Array[CanvasItem]:
 	return _get_piece_nodes()
 
-## One piece, shadow and all.
+## One piece, shadow and all: its shadow is drawn as a child of it
+## (PieceGrounding), so it fades with it.
 func reveal_piece(piece: CanvasItem, seconds: float, delay: float = 0.0) -> void:
 	_fade_in([piece], seconds, delay)
-	_raise_piece_shadow(piece, seconds, delay)
 	_let_pieces_through()
 
 func reveal_pieces(pieces: Array[CanvasItem]) -> void:
@@ -403,42 +397,7 @@ func _fade_in_staggered(nodes: Array[CanvasItem], seconds: float, stagger: float
 	for index in range(nodes.size()):
 		var delay: float = index * stagger
 		_fade_in([nodes[index]], seconds, delay)
-		_raise_piece_shadow(nodes[index], seconds, delay)
 	_let_pieces_through()
-
-# --- Piece shadows ------------------------------------------------------------
-#
-# A piece's shadow is not drawn, it is cast: a PointLight2D parented to the
-# piece, throwing the piece's own occluder onto the board. A light pays no
-# attention to modulate, so fading a piece in leaves its shadow burning at full
-# strength from the moment the scene opens - twelve dark ovals sitting on an
-# empty board. Its energy has to be taken down and brought back up by hand, in
-# step with the piece it belongs to.
-
-func _get_piece_shadow(piece: CanvasItem) -> Light2D:
-	if !is_instance_valid(piece):
-		return null
-	return piece.get_node_or_null(NodePath(PIECE_SHADOW_NAME)) as Light2D
-
-## Switches the shadows off without touching their energy, so the authored
-## value is still there to be read when each one is brought back.
-func _quench_piece_shadows() -> void:
-	for piece in _get_piece_nodes():
-		var shadow: Light2D = _get_piece_shadow(piece)
-		if shadow != null:
-			shadow.enabled = false
-
-func _raise_piece_shadow(piece: CanvasItem, seconds: float, delay: float) -> void:
-	var shadow: Light2D = _get_piece_shadow(piece)
-	if shadow == null:
-		return
-	var target: float = shadow.energy
-	shadow.energy = 0.0
-	shadow.enabled = true
-	var tween := shadow.create_tween()
-	if delay > 0.0:
-		tween.tween_interval(delay)
-	tween.tween_property(shadow, "energy", target, seconds)
 
 func _set_board_alpha(alpha: float) -> void:
 	_set_alpha(_get_board_nodes(), alpha)

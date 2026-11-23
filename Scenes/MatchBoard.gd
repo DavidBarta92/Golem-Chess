@@ -46,7 +46,6 @@ const BOARD_FRAME_COLOR = Color(0.40, 0.32, 0.30, 1.0)
 const BOARD_SIDE_COLOR = Color(0.02, 0.12, 0.16, 1.0)
 const DEFAULT_PIECE_VISUAL_HEIGHT: float = 24.0
 const PIECE_AUTO_FIT_HEIGHT_THRESHOLD: float = DEFAULT_PIECE_VISUAL_HEIGHT * 2.0
-const PIECE_SHADOW_LIGHT_ENERGY: float = 0.30
 const PIECE_LIGHT_OCCLUDER_FOOTPRINT_FIXED_RADIUS_Y: float = 3.0
 const BOARD_LIGHT_RECEIVE_MASK: int = 1
 const PIECE_LIGHT_OCCLUDER_MASK: int = 1
@@ -688,7 +687,7 @@ func play_piece_revert_animation(piece_position: Vector2, start_texture: Texture
 
 	get_visual_process_tracker().begin(VISUAL_PROCESS_PIECE_REVERT)
 	SFXManager.play("stamp_duration_over")
-	await get_piece_effect_animator().play_piece_revert(piece_position, start_texture)
+	await get_piece_effect_animator().play_piece_revert(piece_position, start_texture, get_piece_holder_at(piece_position))
 	get_visual_process_tracker().finish(VISUAL_PROCESS_PIECE_REVERT)
 
 func get_stamp_hand_source_position(owner_color: int) -> Vector2:

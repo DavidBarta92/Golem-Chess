@@ -62,6 +62,10 @@ const STAIN_SPREAD_DURATION: float = 0.35
 const STAIN_SOAK_DURATION: float = 3.6
 const STAIN_TEXTURE_SIZE: int = 128
 const STAIN_BLOT_SIZE: float = 22.0
+# The puff where a piece comes down: the same blot, small, faint and quick.
+const PUFF_RADIUS: float = 0.26
+const PUFF_ALPHA: float = 1.0
+const PUFF_SOAK_DURATION: float = 0.9
 ## Where its soaking starts: a little ink is already gone, so the blot's edge
 ## is ragged from the first.
 const STAIN_FIRST_SOAK: float = 0.18
@@ -70,6 +74,31 @@ const STAIN_FIRST_SOAK: float = 0.18
 const SHAPE_SAMPLE_COLUMNS: int = 12
 const SHAPE_SAMPLE_ROWS: int = 20
 const SHAPE_OPAQUE_ALPHA: float = 0.5
+# Its width, row by row, for the broken top of a half golem: this many rows,
+# read every few pixels across.
+const SHAPE_SPAN_ROWS: int = 48
+const SHAPE_SPAN_STEP: int = 4
+
+# The top a half golem shows while it waits for its other half: the broken
+# face of what it is made of, seen from a little above, as the whole board is.
+# Its near edge is the cut, so it sits on the bottom fragments exactly; how
+# deep it looks, its far edge and the cracks across it are new every time.
+## How deep the face looks, as a share of its width.
+const BROKEN_TOP_DEPTH: float = 0.22
+const BROKEN_TOP_NEAR_COLOR: Color = Color(0.8, 0.55, 0.52, 1.0)
+const BROKEN_TOP_FAR_COLOR: Color = Color(0.96, 0.86, 0.78, 1.0)
+const BROKEN_TOP_RIM_COLOR: Color = Color(1.0, 0.97, 0.9, 0.75)
+const BROKEN_TOP_CRACK_COLOR: Color = Color(0.42, 0.25, 0.25, 0.9)
+## Line widths, as shares of the drawing's height.
+const BROKEN_TOP_RIM_WIDTH: float = 0.008
+const BROKEN_TOP_CRACK_WIDTH: float = 0.014
+const BROKEN_TOP_FADE_SECONDS: float = 0.15
+# A fragment coming home clicks into place and puffs up a little.
+const FRAGMENT_CLICK_SOUND: String = "piece_placed"
+const FRAGMENT_CLICK_PITCH: float = 1.55
+const FRAGMENT_CLICK_VOLUME_DB: float = -6.0
+const FRAGMENT_CLICK_SWELL: float = 1.06
+const FRAGMENT_CLICK_SECONDS: float = 0.14
 
 # The returning fragments are a fixed cut of the drawing, top and bottom
 # halves in three pieces each, the same every time so that two halves broken
@@ -228,6 +257,129 @@ func create_pending_edge_fragment_markers(piece_color: int, texture_value: Textu
 		fragments.append(fragment)
 	return fragments
 
+## A fragment come home: a click, and a swell that settles.
+func click_fragment_into_place(fragment: Polygon2D, rest_scale: Vector2) -> void:
+	if fragment == null or !is_instance_valid(fragment):
+		return
+	SFXManager.play_pitched(FRAGMENT_CLICK_SOUND, FRAGMENT_CLICK_PITCH, FRAGMENT_CLICK_VOLUME_DB)
+	fragment.scale = rest_scale * FRAGMENT_CLICK_SWELL
+	fragment.create_tween().tween_property(fragment, "scale", rest_scale, FRAGMENT_CLICK_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+## The broken top of the half golem waiting on `respawn_pos`, drawn as
+## `texture_value` would be there. Null when the drawing cannot be read.
+func create_broken_top(respawn_pos: Vector2, texture_value: Texture2D) -> Polygon2D:
+	if texture_value == null or !MoveRules.is_valid_position(respawn_pos):
+		return null
+	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
+		return null
+	get_fragment_cut(texture_value)
+	var cut_line: PackedVector2Array = fragment_cuts[texture_value].middle_line
+	var shape: Dictionary = get_texture_shape(texture_value)
+	var used_rect: Rect2 = shape.used_rect
+	var row_spans: PackedVector2Array = shape.row_spans
+	if cut_line.size() < 2 or row_spans.is_empty():
+		return null
+
+	var cut_y: float = 0.0
+	for point: Vector2 in cut_line:
+		cut_y += point.y
+	cut_y /= float(cut_line.size())
+	var row: int = clampi(int((cut_y - used_rect.position.y) / used_rect.size.y * float(row_spans.size())), 0, row_spans.size() - 1)
+	var span: Vector2 = row_spans[row]
+	if span.x < 0.0 or span.y <= span.x:
+		return null
+	var inset: float = (span.y - span.x) * 0.02
+	var left: float = span.x + inset
+	var right: float = span.y - inset
+
+	# The near edge: the cut between the drawing's sides, its own kinks kept.
+	var near_edge := PackedVector2Array([Vector2(left, get_line_y_at(cut_line, left))])
+	for point: Vector2 in cut_line:
+		if point.x > left and point.x < right:
+			near_edge.append(point)
+	near_edge.append(Vector2(right, get_line_y_at(cut_line, right)))
+
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var depth: float = (right - left) * BROKEN_TOP_DEPTH * rng.randf_range(0.85, 1.15)
+	var far_edge := PackedVector2Array()
+	var far_point_count: int = 9
+	for index in range(1, far_point_count):
+		var t: float = (float(index) + rng.randf_range(-0.3, 0.3)) / float(far_point_count)
+		var x: float = lerpf(right, left, t)
+		far_edge.append(Vector2(x, get_line_y_at(cut_line, x) - depth * pow(sin(PI * t), 0.7) + depth * rng.randf_range(-0.14, 0.14)))
+
+	var half_size: Vector2 = texture_value.get_size() * 0.5
+	var points := PackedVector2Array()
+	var colors := PackedColorArray()
+	for point: Vector2 in near_edge:
+		points.append(point - half_size)
+		colors.append(BROKEN_TOP_NEAR_COLOR)
+	for point: Vector2 in far_edge:
+		points.append(point - half_size)
+		colors.append(BROKEN_TOP_FAR_COLOR)
+
+	var top := Polygon2D.new()
+	top.name = "BrokenTop"
+	if flipped_view:
+		top.global_rotation_degrees = 180
+	piece_effects_node.add_child(top)
+	top.light_mask = piece_effect_light_receive_mask
+	top.polygon = points
+	top.vertex_colors = colors
+	top.z_as_relative = false
+	top.position = get_position_local(respawn_pos)
+	top.z_index = get_respawn_z_index_for_local_position(top.position, respawn_pos)
+	var visual_transform: Dictionary = get_visual_transform_for_texture(texture_value, respawn_pos)
+	top.scale = visual_transform.get("scale", Vector2.ONE)
+	top.offset = visual_transform.get("offset", Vector2.ZERO)
+
+	# The far rim catches the light; cracks run back from the near edge.
+	var rim_points := PackedVector2Array([near_edge[near_edge.size() - 1] - half_size])
+	for point: Vector2 in far_edge:
+		rim_points.append(point - half_size)
+	rim_points.append(near_edge[0] - half_size)
+	add_broken_top_line(top, rim_points, BROKEN_TOP_RIM_COLOR, used_rect.size.y * BROKEN_TOP_RIM_WIDTH)
+	for crack_index in range(rng.randi_range(2, 3)):
+		var start: Vector2 = Vector2(lerpf(left, right, rng.randf_range(0.15, 0.85)), 0.0)
+		start.y = get_line_y_at(cut_line, start.x)
+		var reach: float = depth * rng.randf_range(0.4, 0.85)
+		var kink: Vector2 = start + Vector2(rng.randf_range(-0.25, 0.25) * reach, -reach * 0.5)
+		var end: Vector2 = kink + Vector2(rng.randf_range(-0.3, 0.3) * reach, -reach * 0.5)
+		add_broken_top_line(top, PackedVector2Array([start - half_size, kink - half_size, end - half_size]), BROKEN_TOP_CRACK_COLOR, used_rect.size.y * BROKEN_TOP_CRACK_WIDTH)
+
+	top.modulate.a = 0.0
+	top.create_tween().tween_property(top, "modulate:a", 1.0, BROKEN_TOP_FADE_SECONDS)
+	return top
+
+## A line on the broken top, in the top's own units. The polygon's offset does
+## not reach its children, so the line carries it itself.
+func add_broken_top_line(top: Polygon2D, points: PackedVector2Array, color: Color, width: float) -> void:
+	var line := Line2D.new()
+	line.points = points
+	line.default_color = color
+	line.width = width
+	line.antialiased = true
+	line.joint_mode = Line2D.LINE_JOINT_ROUND
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.position = top.offset
+	line.light_mask = top.light_mask
+	top.add_child(line)
+
+## The height of a left-to-right line at `x`, between its points.
+func get_line_y_at(line: PackedVector2Array, x: float) -> float:
+	if line.is_empty():
+		return 0.0
+	if x <= line[0].x:
+		return line[0].y
+	for index in range(line.size() - 1):
+		var from: Vector2 = line[index]
+		var to: Vector2 = line[index + 1]
+		if x <= to.x:
+			return lerpf(from.y, to.y, (x - from.x) / maxf(to.x - from.x, 0.001))
+	return line[line.size() - 1].y
+
 func create_fragment_node(texture_value: Texture2D, cut_polygon: PackedVector2Array) -> Polygon2D:
 	var fragment := Polygon2D.new()
 	if flipped_view:
@@ -298,6 +450,7 @@ func animate_fragment(fragment: Polygon2D, scatter_target: Vector2, source_pos: 
 		if rolling_player != null:
 			rolling_player.stop()
 	)
+	tween.tween_callback(click_fragment_into_place.bind(fragment, target_scale))
 	tween_respawn_finish_callback(tween, respawn_pos)
 	if fragment_group == fragment_group_bottom:
 		return
@@ -384,6 +537,7 @@ func animate_pending_edge_arrival_fragment(fragment: Polygon2D, respawn_pos: Vec
 		if rolling_player != null:
 			rolling_player.stop()
 	)
+	tween.tween_callback(click_fragment_into_place.bind(fragment, target_scale))
 	tween_respawn_finish_callback(tween, respawn_pos)
 	if fragment_group == fragment_group_bottom:
 		return
@@ -537,13 +691,15 @@ func get_debris_material() -> ShaderMaterial:
 	return debris_material
 
 ## The blot on the square under the broken piece, stretched along the blow on
-## the board's plane: it spreads out quickly, then soaks in.
-func play_stain(ground_origin: Vector2, plane: Transform2D, flat_blow: Vector2) -> void:
+## the board's plane: it spreads out quickly, then soaks in. `radius_share` is
+## its half-width across the blow in squares, `alpha` how much of
+## `STAIN_COLOR`'s ink it has.
+func play_stain(ground_origin: Vector2, plane: Transform2D, flat_blow: Vector2, radius_share: float = STAIN_RADIUS, stretch: float = STAIN_STRETCH, alpha: float = 1.0, soak_duration: float = STAIN_SOAK_DURATION) -> void:
 	var along: Vector2 = flat_blow if flat_blow != Vector2.ZERO else Vector2.RIGHT.rotated(randf() * TAU)
 	along = along.rotated(randf_range(-0.3, 0.3))
-	var radius: float = float(cell_width) * STAIN_RADIUS
+	var radius: float = float(cell_width) * radius_share
 	var half_texture: float = float(STAIN_TEXTURE_SIZE) * 0.5
-	var x_axis: Vector2 = plane.basis_xform(along) * radius * STAIN_STRETCH / half_texture
+	var x_axis: Vector2 = plane.basis_xform(along) * radius * stretch / half_texture
 	var y_axis: Vector2 = plane.basis_xform(along.orthogonal()) * radius / half_texture
 	# Leaning the way the blow sent the pieces.
 	var center: Vector2 = ground_origin + plane.basis_xform(along * radius * 0.35 if flat_blow != Vector2.ZERO else Vector2.ZERO)
@@ -552,7 +708,7 @@ func play_stain(ground_origin: Vector2, plane: Transform2D, flat_blow: Vector2) 
 	stain.name = "PieceShatterStain"
 	stain.texture = get_stain_texture()
 	stain.material = get_stain_material()
-	stain.self_modulate = STAIN_COLOR
+	stain.self_modulate = Color(STAIN_COLOR, STAIN_COLOR.a * alpha)
 	stain.modulate.a = 0.0
 	stain.light_mask = 0
 	stain.z_as_relative = false
@@ -568,12 +724,28 @@ func play_stain(ground_origin: Vector2, plane: Transform2D, flat_blow: Vector2) 
 	var tween: Tween = stain.create_tween()
 	tween.tween_method(func(spread: float): set_stain_spread(stain, x_axis, y_axis, center, spread), 0.7, 1.0, STAIN_SPREAD_DURATION).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tween.parallel().tween_property(stain, "modulate:a", 1.0, STAIN_SPREAD_DURATION * 0.3)
-	tween.tween_method(func(soak: float): set_stain_soak(stain, soak), STAIN_FIRST_SOAK, 1.0, STAIN_SOAK_DURATION).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_method(func(soak: float): set_stain_soak(stain, soak), STAIN_FIRST_SOAK, 1.0, soak_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	tween.tween_callback(func():
 		stains.erase(stain)
 		if is_instance_valid(stain):
 			stain.queue_free()
 	)
+
+## A puff of ink where a piece comes down on `board_pos`, at its feet.
+func play_ground_puff(board_pos: Vector2, texture_value: Texture2D, radius_share: float = PUFF_RADIUS, alpha: float = PUFF_ALPHA, soak_duration: float = PUFF_SOAK_DURATION) -> void:
+	if texture_value == null or !MoveRules.is_valid_position(board_pos):
+		return
+	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
+		return
+	play_stain(get_feet_ground_point(board_pos, texture_value), get_board_plane_transform(board_pos), Vector2.ZERO, radius_share, 1.0, alpha, soak_duration)
+
+## The point on the board under the feet of `texture_value`'s drawing, stood
+## on `board_pos`.
+func get_feet_ground_point(board_pos: Vector2, texture_value: Texture2D) -> Vector2:
+	var used_rect: Rect2 = get_texture_shape(texture_value).get("used_rect", Rect2(Vector2.ZERO, texture_value.get_size()))
+	var visual_transform: Dictionary = get_visual_transform_for_texture(texture_value, board_pos)
+	var feet_point := Vector2(used_rect.get_center().x, used_rect.end.y)
+	return get_position_local(board_pos) + get_texture_point_local(feet_point, texture_value, visual_transform.get("scale", Vector2.ONE), visual_transform.get("offset", Vector2.ZERO), PI if flipped_view else 0.0)
 
 func set_stain_spread(stain: Sprite2D, x_axis: Vector2, y_axis: Vector2, center: Vector2, spread: float) -> void:
 	if is_instance_valid(stain):
@@ -766,9 +938,23 @@ func get_texture_shape(texture_value: Texture2D) -> Dictionary:
 			if !can_read or image.get_pixelv(Vector2i(point)).a >= SHAPE_OPAQUE_ALPHA:
 				opaque_points.append(point)
 
+	var row_spans := PackedVector2Array()
+	for row in range(SHAPE_SPAN_ROWS):
+		var y: int = int(used_rect.position.y + used_rect.size.y * (float(row) + 0.5) / SHAPE_SPAN_ROWS)
+		var span := Vector2(used_rect.position.x, used_rect.end.x)
+		if can_read:
+			span = Vector2(-1.0, -1.0)
+			for x in range(int(used_rect.position.x), int(used_rect.end.x), SHAPE_SPAN_STEP):
+				if image.get_pixel(x, y).a >= SHAPE_OPAQUE_ALPHA:
+					if span.x < 0.0:
+						span.x = float(x)
+					span.y = float(x)
+		row_spans.append(span)
+
 	var shape := {
 		"used_rect": used_rect,
 		"opaque_points": opaque_points,
+		"row_spans": row_spans,
 	}
 	texture_shapes[texture_value] = shape
 	return shape
@@ -847,9 +1033,11 @@ func build_fragment_cut(texture_value: Texture2D) -> Dictionary:
 		var to: Vector2 = (from + heading * area.size.y * rng.randf_range(0.05, 0.09)).clamp(area.position, area.end)
 		crack_lines.append(PackedVector2Array([from, to]))
 
+	var middle_line: PackedVector2Array = join_cut_edges([across_0, across_1, across_2])
 	return {
 		"polygons": cut,
 		"crack_lines": crack_lines,
+		"middle_line": middle_line,
 	}
 
 ## A cut line from `from` to `to` with two kinks, pushed at most `amount`

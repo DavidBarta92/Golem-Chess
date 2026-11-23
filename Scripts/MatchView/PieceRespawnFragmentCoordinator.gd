@@ -119,11 +119,39 @@ func finish_piece_shatter_respawn_fragment(respawn_pos: Vector2) -> void:
 	match_board.get_visual_process_tracker().finish(match_board.VISUAL_PROCESS_PIECE_SHATTER)
 	if fragment_group == match_board.PIECE_SHATTER_FRAGMENT_GROUP_BOTTOM:
 		refresh_piece_shatter_respawn_piece_visibility(respawn_pos)
+		add_broken_top(respawn_pos)
 		return
 
 	if fragment_group == match_board.PIECE_SHATTER_FRAGMENT_GROUP_TOP:
 		clear_piece_shatter_respawn_fragment_markers(respawn_pos)
 	reveal_piece_shatter_respawn_piece(respawn_pos)
+	wake_respawned_piece(respawn_pos)
+
+## The bottom half waiting on `respawn_pos` is all there: it gets its broken
+## top, kept with its fragments so that it goes when they do.
+func add_broken_top(respawn_pos: Vector2) -> void:
+	var texture_value: Texture2D = null
+	for marker in match_board.respawn_piece_shatter_fragment_markers.get(respawn_pos, []):
+		var fragment: Polygon2D = marker as Polygon2D
+		if fragment != null and is_instance_valid(fragment) and fragment.texture != null:
+			texture_value = fragment.texture
+			break
+	if texture_value == null:
+		return
+	var top: Polygon2D = match_board.get_piece_shatter_animator().create_broken_top(respawn_pos, texture_value)
+	if top != null:
+		add_piece_shatter_respawn_fragment_marker(respawn_pos, top)
+
+## The golem whole again: it stands up with a little hop and a puff.
+func wake_respawned_piece(respawn_pos: Vector2) -> void:
+	if match_board.should_skip_visual_animations():
+		return
+	var holder: Sprite2D = match_board.get_piece_holder_at(respawn_pos)
+	if holder == null or holder.texture == null:
+		return
+	SFXManager.play("piece_placed")
+	match_board.get_piece_move_animator().play_wake_hop(holder, respawn_pos)
+	match_board.get_piece_shatter_animator().play_ground_puff(respawn_pos, holder.texture)
 
 func refresh_piece_shatter_respawn_piece_visibility(respawn_pos: Vector2) -> void:
 	if !MoveRules.is_valid_position(respawn_pos):

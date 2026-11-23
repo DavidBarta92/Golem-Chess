@@ -8,6 +8,10 @@ const PIECE_EXPIRE_DISSOLVE_DURATION: float = 1.62
 const PIECE_EXPIRE_DISSOLVE_BEAM_SIZE: float = 0.05
 const PIECE_EXPIRE_DISSOLVE_NOISE_DENSITY: float = 60.0
 const PIECE_EXPIRE_DISSOLVE_COLOR: Color = Color(1.0, 0.42, 0.02, 1.0)
+## The share of the dissolve over which the old picture's shadow gives way to
+## the new one's: by then the burn has reached the feet - the shader burns the
+## bottom of the picture last, at about two thirds of its progress.
+const PIECE_EXPIRE_SHADOW_SHARE: float = 0.6
 const PIECE_INVISIBILITY_REFRACT_SHADER: Shader = preload("res://Shaders/piece_invisibility_refract.gdshader")
 const PIECE_INVISIBILITY_VISIBLE_HOLD_DURATION: float = 0.50
 const PIECE_INVISIBILITY_REFRACT_IN_DURATION: float = 0.42
@@ -236,6 +240,9 @@ func cleanup_attach_point_light(holder, point_light, piece_light = null) -> void
 	set_holder_light_occluder_enabled(holder, true)
 
 func cleanup_affix_animation_layers(holder, point_light, piece_light, occlusion_dimmers: Array[Sprite2D]) -> void:
+	# Its shadow back however the flash ended; at the end of it, it is back already.
+	if piece_visuals != null and holder is Sprite2D and is_instance_valid(holder):
+		piece_visuals.fade_shadow(holder, 1.0, 0.0)
 	cleanup_attach_point_light(holder, point_light, piece_light)
 	end_effect_occlusion_dimming(occlusion_dimmers)
 	remove_attach_effects_if_holder_valid(holder)
@@ -289,6 +296,13 @@ func create_affix_rays_overlay(holder: Sprite2D) -> Sprite2D:
 	overlay.z_as_relative = true
 	apply_affix_rays_overlay_transform(overlay, holder)
 
+	overlay.material = create_affix_rays_material()
+	holder.add_child(overlay)
+	return overlay
+
+## The affix's rays, at their starting size and not yet showing. The match's
+## result blazes with the same rays.
+func create_affix_rays_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = PIECE_ATTACH_RAYS_SHADER
 	material.set_shader_parameter("gradient", create_affix_rays_gradient_texture())
@@ -302,10 +316,7 @@ func create_affix_rays_overlay(holder: Sprite2D) -> Sprite2D:
 	material.set_shader_parameter("size", PIECE_ATTACH_RAYS_START_SIZE)
 	material.set_shader_parameter("alpha_strength", 0.0)
 	material.set_shader_parameter("seed", PIECE_ATTACH_RAYS_SEED)
-	overlay.material = material
-
-	holder.add_child(overlay)
-	return overlay
+	return material
 
 func apply_affix_rays_overlay_transform(overlay, holder) -> void:
 	if overlay == null or !is_instance_valid(overlay) or !(overlay is Sprite2D):
@@ -414,6 +425,10 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 	in_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	# The flash outshines the piece's shadow: it fades as the flash comes up and
+	# comes back as it dies down.
+	if piece_visuals != null:
+		piece_visuals.fade_shadow(holder, 0.0, PIECE_ATTACH_IN_DURATION)
 	in_tween.tween_property(glow_material, "shader_parameter/glow_strength", PIECE_ATTACH_GLOW_BASE_STRENGTH, PIECE_ATTACH_IN_DURATION)
 	in_tween.parallel().tween_property(rays_material, "shader_parameter/size", PIECE_ATTACH_RAYS_SWITCH_SIZE, PIECE_ATTACH_IN_DURATION)
 	in_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 1.0, PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DURATION_RATIO).set_delay(PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DELAY_RATIO)
@@ -483,6 +498,8 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 	out_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	if piece_visuals != null:
+		piece_visuals.fade_shadow(holder, 1.0, PIECE_ATTACH_OUT_DURATION)
 	out_tween.tween_property(glow_material, "shader_parameter/glow_strength", 0.0, PIECE_ATTACH_OUT_DURATION)
 	out_tween.parallel().tween_property(rays_material, "shader_parameter/size", PIECE_ATTACH_RAYS_START_SIZE, PIECE_ATTACH_OUT_DURATION)
 	out_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 0.0, PIECE_ATTACH_OUT_DURATION)
@@ -661,7 +678,8 @@ func play_texture_morph(holder: Sprite2D, target_texture: Texture2D, duration: f
 		morph_tween.parallel().tween_property(piece_light, "global_position", target_light_position, duration)
 	await morph_tween.finished
 
-func play_piece_revert(piece_position: Vector2, start_texture: Texture2D) -> void:
+## `holder` is the piece's own, already showing the picture it is left with.
+func play_piece_revert(piece_position: Vector2, start_texture: Texture2D, holder: Sprite2D = null) -> void:
 	if start_texture == null or PIECE_EXPIRE_DISSOLVE_SHADER == null:
 		return
 
@@ -684,6 +702,8 @@ func play_piece_revert(piece_position: Vector2, start_texture: Texture2D) -> voi
 		return
 	tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(material, "shader_parameter/progress", 1.0, PIECE_EXPIRE_DISSOLVE_DURATION)
+	if piece_visuals != null and holder != null and is_instance_valid(holder):
+		piece_visuals.cross_fade_shadow(overlay, holder, PIECE_EXPIRE_DISSOLVE_DURATION * PIECE_EXPIRE_SHADOW_SHARE)
 	await tween.finished
 	if is_instance_valid(overlay):
 		overlay.queue_free()
@@ -753,8 +773,20 @@ func play_invisibility_reveal(holder: Sprite2D) -> void:
 
 ## `color` stands in for `capture_sparkle_color` when it is not transparent.
 func play_capture_sparkle(board_pos: Vector2, color: Color = Color.TRANSPARENT) -> void:
+	var position: Vector2 = get_position_local(board_pos) + Vector2(
+		0.0,
+		-default_piece_visual_height * 0.18 * get_perspective_scale(board_pos)
+	)
+	var size: float = float(cell_width) * capture_sparkle_size_ratio * get_perspective_scale(board_pos)
+	play_sparkle_at(position, get_piece_effect_z_index(board_pos), size, color, capture_sparkle_duration)
+
+## The capture's star of light at any point of the effects' space, `size`
+## board units across, gone over `duration`.
+func play_sparkle_at(position: Vector2, z_index: int, size: float, color: Color = Color.TRANSPARENT, duration: float = -1.0) -> void:
 	if PIECE_CAPTURE_SPARKLE_SHADER == null or !has_effect_parent():
 		return
+	if duration <= 0.0:
+		duration = capture_sparkle_duration
 
 	var sparkle := Sprite2D.new()
 	if flipped_view:
@@ -764,12 +796,9 @@ func play_capture_sparkle(board_pos: Vector2, color: Color = Color.TRANSPARENT) 
 	sparkle.light_mask = piece_effect_light_receive_mask
 	sparkle.texture_filter = texture_filter_value
 	sparkle.texture = get_attach_rays_square_texture()
-	sparkle.position = get_position_local(board_pos) + Vector2(
-		0.0,
-		-default_piece_visual_height * 0.18 * get_perspective_scale(board_pos)
-	)
+	sparkle.position = position
 	sparkle.z_as_relative = false
-	sparkle.z_index = get_piece_effect_z_index(board_pos)
+	sparkle.z_index = z_index
 
 	var material := ShaderMaterial.new()
 	material.shader = PIECE_CAPTURE_SPARKLE_SHADER
@@ -787,16 +816,15 @@ func play_capture_sparkle(board_pos: Vector2, color: Color = Color.TRANSPARENT) 
 	var texture_size: Vector2 = sparkle.texture.get_size()
 	var texture_extent: float = maxf(texture_size.x, texture_size.y)
 	if texture_extent > 0.0:
-		var target_size: float = float(cell_width) * capture_sparkle_size_ratio * get_perspective_scale(board_pos)
-		sparkle.scale = Vector2.ONE * (target_size / texture_extent)
+		sparkle.scale = Vector2.ONE * (size / texture_extent)
 
 	var fade_tween: Tween = create_animation_tween()
 	if fade_tween == null:
 		sparkle.queue_free()
 		return
 	fade_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	fade_tween.tween_interval(capture_sparkle_duration * (1.0 - capture_sparkle_fade_out_ratio))
-	fade_tween.tween_property(material, "shader_parameter/alpha_strength", 0.0, capture_sparkle_duration * capture_sparkle_fade_out_ratio)
+	fade_tween.tween_interval(duration * (1.0 - capture_sparkle_fade_out_ratio))
+	fade_tween.tween_property(material, "shader_parameter/alpha_strength", 0.0, duration * capture_sparkle_fade_out_ratio)
 	fade_tween.finished.connect(func():
 		if is_instance_valid(sparkle):
 			sparkle.queue_free()
