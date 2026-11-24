@@ -373,7 +373,7 @@ func play_capture_impact_sequence(
 
 ## Squashes or stretches a piece about its feet - the bottom of its picture -
 ## so that they stay where `base_position` puts them.
-func set_squash(holder: Sprite2D, base_scale: Vector2, base_position: Vector2, squash: Vector2) -> void:
+static func set_squash(holder: Sprite2D, base_scale: Vector2, base_position: Vector2, squash: Vector2) -> void:
 	if holder == null or !is_instance_valid(holder):
 		return
 	var feet := Vector2(0.0, holder.offset.y + (holder.texture.get_size().y * 0.5 if holder.texture != null else 0.0))

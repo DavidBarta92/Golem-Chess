@@ -5,6 +5,7 @@ extends RefCounted
 # Assets/board_grid_line.png in world units. Scaling the node here would move the board off the drawn table
 # without moving the drawing with it. See Scripts/MatchView/BoardCanvas.gd.
 const BOARD_VISUAL_SCALE: float = 1.0
+const TURN_REMINDER_SCRIPT = preload("res://Scripts/MatchView/TurnReminder.gd")
 
 var match_board
 
@@ -74,6 +75,8 @@ func ready() -> void:
 		match_board.get_viewport().size_changed.connect(resize_callable)
 	hud_controller.update_player_name_labels()
 	hud_controller.update_player_portrait_views()
+	# Lights up what the player can still do when their turn has stood idle.
+	match_board.add_child(TURN_REMINDER_SCRIPT.new(match_board))
 	# Every node the controllers' configs point at exists now: from here on each
 	# controller is configured once (see MatchBoardControllerRegistry._needs_sync).
 	match_board.get_controller_registry().settle()

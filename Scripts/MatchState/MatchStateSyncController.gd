@@ -404,14 +404,19 @@ func collect_state_piece_move_animation(previous_snapshot: Dictionary, piece_obj
 		"hide_after_move": hidden_after_capture and current_piece.hidden_from_viewer,
 		"visible_to_enemy": visible_to_enemy,
 		"piece_color": current_piece.color,
-		"old_duration": int(previous_state.get("turns_remaining", current_piece.turns_remaining)),
-		"new_duration": current_piece.turns_remaining,
 	}
+	# Only a count seen before the move can be shown changing: a piece that
+	# was out of sight until it struck has none to start from.
+	if previous_state.has("turns_remaining"):
+		move_animation["old_duration"] = int(previous_state["turns_remaining"])
+		move_animation["new_duration"] = current_piece.turns_remaining
 	if previous_snapshot.has(to_pos):
 		var captured_state: Dictionary = previous_snapshot[to_pos]
 		var captured_color: int = int(captured_state.get("color", 0))
 		if captured_color != 0 and captured_color != previous_color:
 			move_animation["captured_texture"] = get_previous_state_texture(captured_state, captured_color)
+			move_animation["captured_had_crown"] = bool(captured_state.get("has_crown", false))
+			move_animation["captured_was_half"] = int(captured_state.get("respawn_cooldown_turns", 0)) > 0
 	else:
 		var hidden_captured_texture: Texture2D = get_hidden_captured_piece_texture(current_last_move)
 		if hidden_captured_texture != null:

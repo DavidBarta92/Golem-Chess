@@ -22,6 +22,7 @@ func finish(visual_context: Dictionary) -> void:
 	var state_piece_shatter_animations: Array[Dictionary] = visual_context.get("state_piece_shatter_animations", [] as Array[Dictionary])
 	# Not before the bomb warning: a golem blown up onto its own square has to stand
 	# there for the warning to play over.
+	match_board.get_piece_respawn_fragment_coordinator().hand_over_struck_halves(state_piece_shatter_animations)
 	match_board.get_piece_respawn_fragment_coordinator().prepare_piece_shatter_respawn_reveals(state_piece_shatter_animations)
 	match_board.get_piece_display_controller().display_board()
 
@@ -39,13 +40,17 @@ func finish(visual_context: Dictionary) -> void:
 	var pending_respawn_arrival_animations: Array = visual_context.get("pending_respawn_arrival_animations", [])
 	if !state_affix_animations.is_empty():
 		await match_board.get_piece_effect_flow_controller().play_state_affix_animations(state_affix_animations)
+	# Wards the move or a stamp brought grow once those have played.
+	match_board.get_piece_display_controller().reveal_new_shields()
 	# After the move and the stamp that set an effect off, every piece whose
-	# duration it raised or lowered shows its count change at once.
-	for animation: Dictionary in visual_context.get("state_duration_change_animations", []):
-		match_board.get_piece_duration_change_animator().play(
-			BoardConfig.value_to_vector2(animation.get("position", invalid_board_pos), invalid_board_pos),
-			int(animation.get("old_duration", 0)),
-			int(animation.get("new_duration", 0))
+	# duration it raised or lowered shows its count change, in a wave out from
+	# the effect's square.
+	var state_duration_change_animations: Array = visual_context.get("state_duration_change_animations", [])
+	if !state_duration_change_animations.is_empty():
+		var duration_change_animator = match_board.get_piece_duration_change_animator()
+		duration_change_animator.play_effect_changes(
+			state_duration_change_animations,
+			duration_change_animator.get_duration_effect_sources(visual_context.get("recent_effect_activations", []))
 		)
 	if !state_piece_revert_animations.is_empty():
 		match_board.call_deferred("play_piece_revert_animations", state_piece_revert_animations)

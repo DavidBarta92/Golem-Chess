@@ -43,6 +43,35 @@ const VICTORY_SPARKLE_COLOR: Color = Color(1.0, 0.82, 0.36, 1.0)
 ## The star's size, in shares of the ring's width.
 const VICTORY_SPARKLE_SIZE: float = 5.5
 const VICTORY_SPARKLE_SECONDS: float = 1.1
+# Knocked off with its golem: it flies off the way the blow went, bounces on
+# the board and goes in a flash. Board units (a square is
+# BoardConfig.CELL_WIDTH) and seconds.
+const KNOCK_DISTANCE: float = 16.0
+## Off to one side of the blow, in radians, not straight along it: the striker
+## now standing on the square would hide where it lands, and its flash would
+## read as the striker's.
+const KNOCK_SIDE_ANGLE_MIN: float = 1.0
+const KNOCK_SIDE_ANGLE_MAX: float = 1.3
+const KNOCK_UP_SPEED: float = 60.0
+const KNOCK_GRAVITY: float = 420.0
+## How much of its speed a bounce gives back, and below what speed it lies still.
+const KNOCK_BOUNCE: float = 0.42
+const KNOCK_REST_SPEED: float = 9.0
+## The tumble while it flies, in radians, dying away by its rest.
+const KNOCK_TUMBLE: float = 0.9
+const KNOCK_TUMBLE_SPEED: float = 15.0
+const KNOCK_TUMBLE_DECAY: float = 4.0
+const KNOCK_REST_SECONDS: float = 0.22
+## The flash it goes in: brighter, a little larger, gone.
+const KNOCK_FLASH_COLOR: Color = Color(1.9, 1.7, 1.25, 1.0)
+const KNOCK_FLASH_IN_SECONDS: float = 0.05
+const KNOCK_FLASH_OUT_SECONDS: float = 0.22
+const KNOCK_FLASH_GROW: float = 1.35
+const KNOCK_SPARKLE_SIZE: float = 3.2
+const KNOCK_SPARKLE_SECONDS: float = 0.6
+const KNOCK_CLINK_PITCH: float = 1.8
+const KNOCK_CLINK_VOLUME_DB: float = -9.0
+const KNOCK_VANISH_VOLUME_DB: float = -8.0
 
 ## The centre of the head and the figure's first row, by texture.
 static var _heads: Dictionary = {}
@@ -54,6 +83,8 @@ var _rest_position: Vector2 = Vector2.ZERO
 ## How far above its place it is while it drops on, as a share of its width.
 var _drop_height: float = 0.0
 var _far_side: Node2D
+## Off its golem (knock_off): it no longer sits on a head, the flight places it.
+var _loose: bool = false
 
 ## The near side is one step over its golem, or the ice that grows on a new
 ## crown's golem would be drawn across it. The far side goes behind the golem,
@@ -73,6 +104,8 @@ func _init() -> void:
 ## crown is measured off the picture. The hover goes by the clock and not by a
 ## count of its own, as the board may make this node anew at any moment.
 func _process(_delta: float) -> void:
+	if _loose:
+		return
 	var holder: Sprite2D = get_parent() as Sprite2D
 	if holder != null and holder.texture != null and (holder.texture != _fitted_texture or holder.offset != _fitted_offset):
 		fit_to_holder(holder)
@@ -142,6 +175,108 @@ func _draw_side(canvas: CanvasItem, part: Rect2) -> void:
 	part = part.intersection(Rect2(0.0, 0.0, 1.0, 1.0))
 	var shown := Vector2(_width, _width * picture_size.y / picture_size.x)
 	canvas.draw_texture_rect_region(picture, Rect2(part.position * shown - shown * 0.5, part.size * shown), Rect2(part.position * picture_size, part.size * picture_size))
+
+## Puts a crown on `holder`'s golem, one that is not on the board: the struck
+## golem of a capture, until it breaks.
+static func put_on(holder: Sprite2D):
+	if holder == null or holder.texture == null:
+		return null
+	var mark = holder.get_node_or_null(MARK_NODE_NAME)
+	if mark == null:
+		mark = new()
+		mark.name = MARK_NODE_NAME
+		holder.add_child(mark)
+	mark.fit_to_holder(holder)
+	return mark
+
+## The golem under the crown on `holder` has been struck on `board_pos` and
+## breaks: the crown flies off it the way the blow went (`blow_direction`, in
+## board steps), bounces on the board and goes in a flash. It does not come
+## back: the crown is lost.
+static func knock_off(match_board, holder: Sprite2D, board_pos: Vector2, blow_direction: Vector2) -> void:
+	if holder == null or !is_instance_valid(holder) or holder.texture == null:
+		return
+	var mark = holder.get_node_or_null(MARK_NODE_NAME)
+	var effects: Node2D = match_board.piece_effects_node
+	if mark == null or effects == null or !is_instance_valid(effects):
+		return
+	var shatter = match_board.get_piece_shatter_animator()
+	var ground: Vector2 = shatter.get_feet_ground_point(board_pos, holder.texture)
+	var plane: Transform2D = shatter.get_board_plane_transform(board_pos)
+	var flat_blow := Vector2.ZERO
+	if blow_direction != Vector2.ZERO:
+		flat_blow = (BoardConfig.get_cell_center_local(board_pos + blow_direction) - BoardConfig.get_cell_center_local(board_pos)).normalized()
+	var up: Vector2 = shatter.get_screen_up()
+	# Knocked away from the viewer, it goes behind the striker now standing on
+	# the square, and the pieces further off are behind it; knocked towards
+	# the viewer or sideways, it is in front of the striker.
+	var away: bool = flat_blow != Vector2.ZERO and plane.basis_xform(flat_blow).dot(up) > 0.0
+	var depth_z: int = holder.z_index if !holder.z_as_relative else match_board.pieces_node.z_index + match_board.get_piece_visuals().get_depth_z_index(board_pos)
+	mark._loose = true
+	mark.name = "KnockedOffCrown"
+	mark.reparent(effects, true)
+	mark.z_as_relative = false
+	mark.z_index = depth_z - 1 if away else depth_z + 1
+	mark._fly(match_board, ground, plane, flat_blow, up)
+
+## The flight, worked out at the start: how high it is over the board at each
+## moment, from the head down to the board and through its bounces, and how
+## far along the board it has slid.
+func _fly(match_board, ground: Vector2, plane: Transform2D, flat_blow: Vector2, up: Vector2) -> void:
+	var start: Vector2 = position
+	var height: float = maxf((start - ground).dot(up), 0.0)
+	var beside: Vector2 = (start - ground) - up * height
+	var along: Vector2 = flat_blow if flat_blow != Vector2.ZERO else Vector2.RIGHT.rotated(randf() * TAU)
+	along = along.rotated((1.0 if randf() < 0.5 else -1.0) * randf_range(KNOCK_SIDE_ANGLE_MIN, KNOCK_SIDE_ANGLE_MAX))
+	var travel: Vector2 = plane.basis_xform(along * KNOCK_DISTANCE)
+	var tumble_side: float = 1.0 if randf() < 0.5 else -1.0
+	var resting_rotation: float = rotation
+
+	# Each hop: when it leaves the board and how fast. The first leaves the head.
+	var hops: Array[Vector2] = []
+	var speed: float = KNOCK_UP_SPEED
+	var hop_start: float = 0.0
+	var first_fall: float = (speed + sqrt(speed * speed + 2.0 * KNOCK_GRAVITY * height)) / KNOCK_GRAVITY
+	hops.append(Vector2(0.0, speed))
+	hop_start = first_fall
+	speed = (KNOCK_GRAVITY * first_fall - speed) * KNOCK_BOUNCE
+	var landings: Array[float] = [first_fall]
+	while speed > KNOCK_REST_SPEED:
+		hops.append(Vector2(hop_start, speed))
+		hop_start += 2.0 * speed / KNOCK_GRAVITY
+		landings.append(hop_start)
+		speed *= KNOCK_BOUNCE
+	var settled: float = hop_start
+
+	var place := func(time: float) -> void:
+		var lift: float = 0.0
+		for hop_index in range(hops.size() - 1, -1, -1):
+			var hop: Vector2 = hops[hop_index]
+			if time >= hop.x:
+				var since: float = time - hop.x
+				lift = (height if hop_index == 0 else 0.0) + hop.y * since - 0.5 * KNOCK_GRAVITY * since * since
+				break
+		var slide: float = 1.0 - pow(1.0 - clampf(time / settled, 0.0, 1.0), 2.0)
+		position = ground + beside + travel * slide + up * maxf(lift, 0.0)
+		rotation = resting_rotation + tumble_side * KNOCK_TUMBLE * exp(-KNOCK_TUMBLE_DECAY * time) * sin(KNOCK_TUMBLE_SPEED * time)
+
+	var flight: Tween = create_tween()
+	flight.tween_method(place, 0.0, settled, settled)
+	for landing: float in landings:
+		flight.parallel().tween_callback(SFXManager.play_pitched.bind("piece_placed", KNOCK_CLINK_PITCH, KNOCK_CLINK_VOLUME_DB)).set_delay(landing)
+	flight.tween_interval(KNOCK_REST_SECONDS)
+	flight.tween_callback(_vanish.bind(match_board))
+
+func _vanish(match_board) -> void:
+	SFXManager.play_pitched("pack_foil_tease", 1.0, KNOCK_VANISH_VOLUME_DB)
+	if is_instance_valid(match_board):
+		var animator = match_board.get_piece_effect_animator()
+		animator.play_sparkle_at(position, z_index + 1, _width * absf(scale.x) * KNOCK_SPARKLE_SIZE, VICTORY_SPARKLE_COLOR, KNOCK_SPARKLE_SECONDS)
+	var flash: Tween = create_tween()
+	flash.tween_property(self, "modulate", KNOCK_FLASH_COLOR, KNOCK_FLASH_IN_SECONDS)
+	flash.tween_property(self, "scale", scale * KNOCK_FLASH_GROW, KNOCK_FLASH_OUT_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	flash.parallel().tween_property(self, "modulate:a", 0.0, KNOCK_FLASH_OUT_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	flash.tween_callback(queue_free)
 
 ## The crown drops onto the head, then the light goes off. The board may redraw
 ## its holders meanwhile, so the flash finds the holder again when it is due.

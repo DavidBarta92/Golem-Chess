@@ -66,6 +66,19 @@ const STAIN_BLOT_SIZE: float = 22.0
 const PUFF_RADIUS: float = 0.26
 const PUFF_ALPHA: float = 1.0
 const PUFF_SOAK_DURATION: float = 0.9
+## A stamp pressed onto a piece: a ring of ink runs out from its feet across
+## its square and soaks away. Its radius as a share of a square, where it
+## starts as a share of that, how long it runs and soaks, how dark.
+const INK_RING_RADIUS: float = 0.55
+const INK_RING_START: float = 0.3
+const INK_RING_SPREAD_DURATION: float = 0.45
+const INK_RING_SOAK_DURATION: float = 1.1
+const INK_RING_ALPHA: float = 1.8
+## Drawn back in (a count lowered): the ring comes up faint at its full size,
+## darkens as it gathers, runs in to the feet and soaks away there.
+const INK_RING_GATHER_DURATION: float = 0.5
+const INK_RING_GATHER_FIRST_SOAK: float = 0.7
+const INK_RING_GATHER_DARKEN_DURATION: float = 0.14
 ## Where its soaking starts: a little ink is already gone, so the blot's edge
 ## is ragged from the first.
 const STAIN_FIRST_SOAK: float = 0.18
@@ -186,6 +199,7 @@ var stains: Array[Sprite2D] = []
 var debris_material: ShaderMaterial
 var stain_material: ShaderMaterial
 var stain_texture: Texture2D
+var ink_ring_texture: Texture2D
 
 func configure(config: Dictionary) -> void:
 	geometry = config.get("geometry", geometry)
@@ -738,6 +752,68 @@ func play_ground_puff(board_pos: Vector2, texture_value: Texture2D, radius_share
 	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
 		return
 	play_stain(get_feet_ground_point(board_pos, texture_value), get_board_plane_transform(board_pos), Vector2.ZERO, radius_share, 1.0, alpha, soak_duration)
+
+## A ring of ink running out from the feet of `texture_value`'s drawing on
+## `board_pos`, across the square, soaking away as it goes. `radius_share` is
+## its size as a share of a square. `inward` runs it the other way: it gathers
+## at its full size and is drawn back in to the feet.
+func play_ink_ring(board_pos: Vector2, texture_value: Texture2D, radius_share: float = INK_RING_RADIUS, inward: bool = false) -> void:
+	if texture_value == null or !MoveRules.is_valid_position(board_pos):
+		return
+	if piece_effects_node == null or !is_instance_valid(piece_effects_node):
+		return
+	var plane: Transform2D = get_board_plane_transform(board_pos)
+	var radius: float = float(cell_width) * radius_share
+	var half_texture: float = float(STAIN_TEXTURE_SIZE) * 0.5
+	var along: Vector2 = Vector2.RIGHT.rotated(randf() * TAU)
+	var x_axis: Vector2 = plane.basis_xform(along) * radius / half_texture
+	var y_axis: Vector2 = plane.basis_xform(along.orthogonal()) * radius / half_texture
+	var center: Vector2 = get_feet_ground_point(board_pos, texture_value)
+
+	var ring := Sprite2D.new()
+	ring.name = "PieceInkRing"
+	ring.texture = get_ink_ring_texture()
+	ring.material = get_stain_material()
+	ring.self_modulate = Color(STAIN_COLOR, minf(STAIN_COLOR.a * INK_RING_ALPHA, 1.0))
+	ring.light_mask = 0
+	ring.z_as_relative = false
+	ring.z_index = STAIN_Z_INDEX
+	piece_effects_node.add_child(ring)
+	ring.set_instance_shader_parameter(&"soak_seed", randf() * 10.0)
+	set_stain_soak(ring, INK_RING_GATHER_FIRST_SOAK if inward else STAIN_FIRST_SOAK)
+	set_stain_spread(ring, x_axis, y_axis, center, 1.0 if inward else INK_RING_START)
+	stains.append(ring)
+
+	var spread_to := func(spread: float): set_stain_spread(ring, x_axis, y_axis, center, spread)
+	var soak_to := func(soak: float): set_stain_soak(ring, soak)
+	var tween: Tween = ring.create_tween()
+	if inward:
+		tween.tween_method(spread_to, 1.0, INK_RING_START, INK_RING_GATHER_DURATION).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+		var soaking: Tween = ring.create_tween()
+		soaking.tween_method(soak_to, INK_RING_GATHER_FIRST_SOAK, STAIN_FIRST_SOAK, INK_RING_GATHER_DARKEN_DURATION).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+		soaking.tween_method(soak_to, STAIN_FIRST_SOAK, 1.0, INK_RING_GATHER_DURATION - INK_RING_GATHER_DARKEN_DURATION).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	else:
+		tween.tween_method(spread_to, INK_RING_START, 1.0, INK_RING_SPREAD_DURATION).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+		tween.parallel().tween_method(soak_to, STAIN_FIRST_SOAK, 1.0, INK_RING_SOAK_DURATION).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_callback(func():
+		stains.erase(ring)
+		if is_instance_valid(ring):
+			ring.queue_free()
+	)
+
+## A soft ring, white, for `play_ink_ring`: its ragged edge comes from the
+## soaking, as a stain's does.
+func get_ink_ring_texture() -> Texture2D:
+	if ink_ring_texture != null:
+		return ink_ring_texture
+	var image := Image.create(STAIN_TEXTURE_SIZE, STAIN_TEXTURE_SIZE, false, Image.FORMAT_RGBA8)
+	var half_size: float = float(STAIN_TEXTURE_SIZE) * 0.5
+	for y in range(STAIN_TEXTURE_SIZE):
+		for x in range(STAIN_TEXTURE_SIZE):
+			var distance: float = Vector2(float(x) + 0.5 - half_size, float(y) + 0.5 - half_size).length() / half_size
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, smoothstep(0.5, 0.8, distance) * (1.0 - smoothstep(0.84, 1.0, distance))))
+	ink_ring_texture = ImageTexture.create_from_image(image)
+	return ink_ring_texture
 
 ## The point on the board under the feet of `texture_value`'s drawing, stood
 ## on `board_pos`.

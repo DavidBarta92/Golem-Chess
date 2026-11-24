@@ -76,6 +76,7 @@ func get_piece_visual_state_snapshot() -> Dictionary:
 			"texture": get_piece_visual_texture(piece),
 			"respawn_cooldown_turns": piece.respawn_cooldown_turns,
 			"turns_remaining": piece.turns_remaining,
+			"has_crown": piece.has_crown,
 		}
 
 	return snapshot

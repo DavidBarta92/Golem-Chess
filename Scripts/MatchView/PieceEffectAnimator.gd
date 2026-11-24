@@ -1,5 +1,6 @@
 extends RefCounted
 
+const PieceMoveAnimator = preload("res://Scripts/MatchView/PieceMoveAnimator.gd")
 const PIECE_CAPTURE_SPARKLE_SHADER: Shader = preload("res://Shaders/piece_capture_sparkle.gdshader")
 const BOMB_WARNING_TEXTURE: Texture2D = preload("res://Assets/stamp_pattern_bomb.svg")
 const BOMB_WARNING_Z_OFFSET: int = 7
@@ -53,6 +54,17 @@ const PIECE_ATTACH_POST_SWITCH_HOLD_DURATION: float = 0.20
 const PIECE_ATTACH_MORPH_NOISE_STRENGTH: float = 0.14
 const PIECE_ATTACH_MORPH_SHINE_STRENGTH: float = 0.34
 const PIECE_ATTACH_OUT_DURATION: float = 0.32
+# The stamp pressed on: the golem gives under its weight as the flash comes up
+# and stays a little pressed down through it; when the new look comes in it
+# springs up a little larger than itself and settles back. Squashes are
+# (width, height) about the feet. The springing is over well before the morph
+# ends, which redraws the piece at its new size.
+const PIECE_ATTACH_PRESS_SQUASH: Vector2 = Vector2(1.08, 0.86)
+const PIECE_ATTACH_PRESS_DURATION: float = 0.07
+const PIECE_ATTACH_PRESSED_SQUASH: Vector2 = Vector2(1.04, 0.93)
+const PIECE_ATTACH_POP_STRETCH: Vector2 = Vector2(1.06, 1.1)
+const PIECE_ATTACH_POP_DURATION: float = 0.2
+const PIECE_ATTACH_SETTLE_DURATION: float = 0.5
 const PIECE_ATTACH_RAYS_START_SIZE: float = 10.0
 const PIECE_ATTACH_RAYS_SWITCH_SIZE: float = 1.0
 const PIECE_ATTACH_RAYS_TEXTURE_SIZE: int = 256
@@ -395,6 +407,9 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 
 	var disable_holder_occluder: bool = bool(options.get("disable_holder_occluder", true))
 	var post_morph_callback: Callable = options.get("post_morph_callback", Callable())
+	# Called as the stamp comes down on the piece, and as its new look springs up.
+	var press_callback: Callable = options.get("press_callback", Callable())
+	var pop_callback: Callable = options.get("pop_callback", Callable())
 	var occlusion_dimmers: Array[Sprite2D] = begin_effect_occlusion_dimming(holder, board_pos)
 	var attach_point_light: PointLight2D = create_attach_point_light(holder)
 	var attach_piece_light: PointLight2D = null
@@ -429,6 +444,11 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 	# comes back as it dies down.
 	if piece_visuals != null:
 		piece_visuals.fade_shadow(holder, 0.0, PIECE_ATTACH_IN_DURATION)
+	var press_base_scale: Vector2 = holder.scale
+	var press_base_position: Vector2 = holder.position
+	var press_tween: Tween = play_affix_press(holder, press_base_scale, press_base_position)
+	if press_callback.is_valid():
+		press_callback.call()
 	in_tween.tween_property(glow_material, "shader_parameter/glow_strength", PIECE_ATTACH_GLOW_BASE_STRENGTH, PIECE_ATTACH_IN_DURATION)
 	in_tween.parallel().tween_property(rays_material, "shader_parameter/size", PIECE_ATTACH_RAYS_SWITCH_SIZE, PIECE_ATTACH_IN_DURATION)
 	in_tween.parallel().tween_property(rays_material, "shader_parameter/alpha_strength", 1.0, PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DURATION_RATIO).set_delay(PIECE_ATTACH_IN_DURATION * PIECE_ATTACH_RAYS_FADE_IN_DELAY_RATIO)
@@ -462,11 +482,21 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
+	if press_tween != null and press_tween.is_valid():
+		press_tween.kill()
+	press_tween = play_affix_pop(holder, press_base_scale, press_base_position)
+	if pop_callback.is_valid():
+		pop_callback.call()
 	await play_texture_morph(holder, target_texture, PIECE_ATTACH_MORPH_DURATION, attach_point_light, attach_piece_light, target_glow_overlay)
 	if !is_affix_holder_active(holder):
 		cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 		return false
 
+	# The piece is redrawn at its new size next: whatever is left of the
+	# springing would put the old size back over it.
+	if press_tween != null and press_tween.is_valid():
+		press_tween.kill()
+		PieceMoveAnimator.set_squash(holder, press_base_scale, press_base_position, Vector2.ONE)
 	if post_morph_callback.is_valid():
 		post_morph_callback.call(holder)
 	else:
@@ -518,6 +548,31 @@ func play_affix_sequence(holder: Sprite2D, board_pos: Vector2, target_texture: T
 		rays_overlay.queue_free()
 	cleanup_affix_animation_layers(holder, attach_point_light, attach_piece_light, occlusion_dimmers)
 	return true
+
+## The stamp comes down: the piece gives under it, then stays a little
+## pressed down. On the holder, so a redraw of the board stops it.
+func play_affix_press(holder: Sprite2D, base_scale: Vector2, base_position: Vector2) -> Tween:
+	if holder == null or !is_instance_valid(holder) or holder.texture == null:
+		return null
+	var squash_to := func(from: Vector2, to: Vector2) -> Callable:
+		return func(progress: float): PieceMoveAnimator.set_squash(holder, base_scale, base_position, from.lerp(to, progress))
+	var tween: Tween = holder.create_tween()
+	tween.tween_method(squash_to.call(Vector2.ONE, PIECE_ATTACH_PRESS_SQUASH), 0.0, 1.0, PIECE_ATTACH_PRESS_DURATION).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_method(squash_to.call(PIECE_ATTACH_PRESS_SQUASH, PIECE_ATTACH_PRESSED_SQUASH), 0.0, 1.0, PIECE_ATTACH_IN_DURATION + PIECE_ATTACH_PRE_SWITCH_HOLD_DURATION - PIECE_ATTACH_PRESS_DURATION).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	return tween
+
+## The new look comes in: the piece springs up out of the press a little
+## larger than itself and settles back, overshooting once.
+func play_affix_pop(holder: Sprite2D, base_scale: Vector2, base_position: Vector2) -> Tween:
+	if holder == null or !is_instance_valid(holder) or holder.texture == null:
+		return null
+	var from_squash: Vector2 = Vector2(holder.scale.x / base_scale.x if absf(base_scale.x) > 0.0001 else 1.0, holder.scale.y / base_scale.y if absf(base_scale.y) > 0.0001 else 1.0)
+	var squash_to := func(from: Vector2, to: Vector2) -> Callable:
+		return func(progress: float): PieceMoveAnimator.set_squash(holder, base_scale, base_position, from.lerp(to, progress))
+	var tween: Tween = holder.create_tween()
+	tween.tween_method(squash_to.call(from_squash, PIECE_ATTACH_POP_STRETCH), 0.0, 1.0, PIECE_ATTACH_POP_DURATION).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_method(squash_to.call(PIECE_ATTACH_POP_STRETCH, Vector2.ONE), 0.0, 1.0, PIECE_ATTACH_SETTLE_DURATION).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	return tween
 
 func begin_effect_occlusion_dimming(effect_holder: Sprite2D, board_pos: Vector2) -> Array[Sprite2D]:
 	var dimmers: Array[Sprite2D] = []

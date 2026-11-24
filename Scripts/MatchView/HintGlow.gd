@@ -27,7 +27,7 @@ static func attach(target: Control, centre: Vector2, glow_size: Vector2) -> Hint
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	glow.stretch_mode = TextureRect.STRETCH_SCALE
-	glow.texture = _make_texture()
+	glow.texture = make_texture()
 	glow.place(centre, glow_size)
 	target.add_child(glow)
 	return glow
@@ -38,7 +38,8 @@ func place(centre: Vector2, glow_size: Vector2) -> void:
 	size = glow_size
 	position = centre - glow_size * 0.5
 
-static func _make_texture() -> GradientTexture2D:
+## The glow's picture, also used by PieceHintGlow on the board.
+static func make_texture() -> GradientTexture2D:
 	# A bright core that holds for a while before it thins out, so it still
 	# reads against the light paper and not only against the dark board.
 	var half: Color = GLOW_COLOR

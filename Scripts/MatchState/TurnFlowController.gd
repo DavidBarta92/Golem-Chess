@@ -69,48 +69,55 @@ func can_affix_action_now() -> bool:
 		return false
 
 	var owner_color: int = match_board.get_controllable_color()
-	var hand_stamps: Array[Stamp] = match_board.get_stamp_hand_state_controller().get_stamp_hand(owner_color)
-	if hand_stamps.is_empty():
-		return false
+	for stamp: Stamp in match_board.get_stamp_hand_state_controller().get_stamp_hand(owner_color):
+		if can_affix_stamp_now(stamp):
+			return true
+	return false
 
+## Whether `stamp`, on the open codex page, could go onto one of the
+## player's golems now. Asked once the turn is known to be theirs.
+func can_affix_stamp_now(stamp: Stamp) -> bool:
+	if stamp == null or !MoveRules.stamp_can_be_used(stamp):
+		return false
+	var owner_color: int = match_board.get_controllable_color()
+	if !MoveRules.can_affix_stamp_for_turn(match_board.piece_objects, owner_color, stamp):
+		return false
 	for position_value in match_board.piece_objects:
 		var piece: Piece = match_board.piece_objects[position_value] as Piece
-		if piece == null or piece.color != owner_color:
+		if piece == null or piece.color != owner_color or !piece.can_receive_stamp(stamp):
 			continue
-
-		for stamp: Stamp in hand_stamps:
-			if !MoveRules.stamp_can_be_used(stamp) or !piece.can_receive_stamp(stamp):
-				continue
-			if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, {
-				"owner_color": owner_color,
-				"piece_pos": position_value,
-				"stamp_name": stamp.stamp_name,
-			}):
-				continue
-			if MoveRules.can_affix_stamp_for_turn(match_board.piece_objects, owner_color, stamp):
-				return true
-
+		if match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_AFFIX_STAMP, {
+			"owner_color": owner_color,
+			"piece_pos": position_value,
+			"stamp_name": stamp.stamp_name,
+		}):
+			return true
 	return false
 
 func can_move_action_now() -> bool:
-	if !match_board.can_control_current_turn():
-		return false
-	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE):
-		return false
+	return !get_movable_piece_positions().is_empty()
 
+## The squares of the pieces the player can move now: their own, and the
+## other side's that carry a Shared stamp (StampEffectResolver.can_player_control_piece),
+## each able to move and with somewhere to go. Empty outside their turn and
+## once they have moved.
+func get_movable_piece_positions() -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	if !match_board.can_control_current_turn():
+		return positions
+	if !match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE):
+		return positions
 	var owner_color: int = match_board.get_controllable_color()
 	if match_board.get_turn_action_state_controller().has_moved_piece_this_turn(owner_color):
-		return false
-	return has_tutorial_allowed_piece_move(owner_color)
+		return positions
 
-func has_tutorial_allowed_piece_move(owner_color: int) -> bool:
+	var player_id: int = BoardConfig.get_player_id_for_color(owner_color)
 	for position_value in match_board.piece_objects:
 		var piece_pos: Vector2 = BoardConfig.value_to_vector2(position_value, invalid_board_pos)
 		var piece: Piece = match_board.piece_objects[position_value] as Piece
-		if piece == null or piece.color != owner_color or !piece.can_move():
+		if piece == null or piece.hidden_from_viewer or !piece.can_move() or !StampEffectResolver.can_player_control_piece(piece, player_id):
 			continue
 
-		var player_id: int = BoardConfig.get_player_id_for_color(owner_color)
 		var valid_moves: Array[Vector2] = MoveRules.get_piece_moves_for_player(match_board.piece_objects, piece_pos, player_id, board_size, match_board.current_board_effects)
 		for target_pos: Vector2 in valid_moves:
 			if match_board.get_tutorial_match_adapter().is_action_allowed(match_board.TUTORIAL_ACTION_MOVE_PIECE, {
@@ -118,8 +125,9 @@ func has_tutorial_allowed_piece_move(owner_color: int) -> bool:
 				"from_pos": piece_pos,
 				"to_pos": target_pos,
 			}):
-				return true
-	return false
+				positions.append(piece_pos)
+				break
+	return positions
 
 func on_turn_timer_timeout(expected_turn_color: int) -> void:
 	if !match_board.is_inside_tree():

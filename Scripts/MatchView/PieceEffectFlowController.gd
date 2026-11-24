@@ -118,9 +118,21 @@ func play_piece_stamp_affix_animation(piece_position: Vector2, stamp: Stamp, sta
 
 	SFXManager.play("attach_stamp")
 	var reveal_visual: StampVisual = match_board.get_stamp_animation_controller().play_stamp_affix_reveal(stamp, piece.color)
+	# Pressed on: a ring of ink runs out across the square. The new look comes
+	# up with the stamp's duration knocked onto it, and then whatever its own
+	# effect did to that count.
+	var spread_ink_ring := func() -> void:
+		if is_instance_valid(holder):
+			match_board.get_piece_shatter_animator().play_ink_ring(piece_position, holder.texture)
+	var knock_duration_on := func() -> void:
+		var stamped_piece: Piece = match_board.piece_objects.get(piece_position, null) as Piece
+		if stamped_piece != null and stamped_piece.affixed_stamp != null:
+			match_board.get_piece_duration_change_animator().play_stamped_change(piece_position, stamped_piece.affixed_stamp.duration, stamped_piece.turns_remaining)
 	await match_board.get_piece_effect_animator().play_affix_sequence(holder, piece_position, affixed_texture, {
 		"post_morph_callback": Callable(self, "apply_visible_piece_attach_morph_result").bind(piece_position, affixed_texture),
 		"disable_holder_occluder": true,
+		"press_callback": spread_ink_ring,
+		"pop_callback": knock_duration_on,
 	})
 	match_board.get_stamp_animation_controller().finish_stamp_affix_reveal(reveal_visual)
 
@@ -178,6 +190,15 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 	var capture_placeholder: Sprite2D = create_piece_move_capture_placeholder(move_to_pos, captured_texture)
 	if capture_placeholder != null and bool(state_piece_move_animation.get("captured_reveal_from_invisibility", false)):
 		play_capture_invisibility_reveal(capture_placeholder)
+	# A half golem waiting for its top is struck as it lies, in its fragments
+	# (PieceRespawnFragmentCoordinator.hand_over_struck_halves): a whole golem
+	# drawn over them would be one too many. It still takes the blow unseen.
+	if capture_placeholder != null and bool(state_piece_move_animation.get("captured_was_half", false)):
+		capture_placeholder.visible = false
+	# A crowned golem wears its crown until the blow, which knocks it off.
+	var captured_had_crown: bool = capture_placeholder != null and bool(state_piece_move_animation.get("captured_had_crown", false))
+	if captured_had_crown:
+		CrownMark.put_on(capture_placeholder)
 
 	var capture_shatter_animation_index: int = get_piece_shatter_animation_index_for_source(state_piece_shatter_animations, move_to_pos) if capture_placeholder != null else -1
 	var capture_shatter_animation: Dictionary = state_piece_shatter_animations[capture_shatter_animation_index] if capture_shatter_animation_index >= 0 else {}
@@ -193,6 +214,8 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 				remove_piece_shatter_animation_from_list(state_piece_shatter_animations, capture_shatter_animation, capture_shatter_animation_index)
 				captured_color = int(capture_shatter_animation.get("piece_color", 0))
 				break_callback = func() -> void:
+					if captured_had_crown:
+						CrownMark.knock_off(match_board, capture_placeholder, move_to_pos, move_to_pos - move_from_pos)
 					match_board.get_piece_respawn_fragment_coordinator().play_capture_shatter_animation(
 						move_to_pos,
 						BoardConfig.value_to_vector2(capture_shatter_animation.get("respawn_pos", invalid_board_pos), invalid_board_pos),
@@ -229,10 +252,12 @@ func play_state_piece_move_animation(state_piece_move_animation: Dictionary, sta
 	if state_piece_move_animation.has("old_duration"):
 		var old_duration: int = int(state_piece_move_animation.get("old_duration", 0))
 		var new_duration: int = int(state_piece_move_animation.get("new_duration", 0))
-		if old_duration != new_duration:
-			var moved_piece: Piece = match_board.piece_objects.get(move_to_pos, null) as Piece
-			if moved_piece != null and moved_piece.affixed_stamp != null:
-				match_board.get_piece_duration_change_animator().play(move_to_pos, old_duration, new_duration)
+		var moved_piece: Piece = match_board.piece_objects.get(move_to_pos, null) as Piece
+		if moved_piece != null and moved_piece.affixed_stamp != null:
+			# The turn the move used is the quiet tick; anything more came from
+			# an effect, shown as one before it - also when the effect gave the
+			# turn back and the count is where it was.
+			match_board.get_piece_duration_change_animator().play_move_change(move_to_pos, old_duration, new_duration)
 
 func should_play_piece_move_animation(from_pos: Vector2, to_pos: Vector2, visible_to_enemy: bool = true) -> bool:
 	if match_board == null:

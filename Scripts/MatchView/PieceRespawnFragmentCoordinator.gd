@@ -2,6 +2,10 @@ extends RefCounted
 
 var match_board
 var invalid_board_pos: Vector2 = Vector2(-1, -1)
+## The fragments of half golems struck in this update, by their square: off
+## that square, so the piece that took it stands there in sight, and still
+## lying about until the blow breaks them (`shatter_piece`).
+var _struck_half_markers: Dictionary = {}
 
 func configure(config: Dictionary) -> void:
 	match_board = config.get("match_board", match_board)
@@ -45,12 +49,56 @@ func clear_piece_shatter_respawn_fragment_markers(respawn_pos: Vector2) -> void:
 	if !match_board.respawn_piece_shatter_fragment_markers.has(respawn_pos):
 		return
 
-	var markers: Array = match_board.respawn_piece_shatter_fragment_markers[respawn_pos]
+	free_markers(match_board.respawn_piece_shatter_fragment_markers[respawn_pos])
+	match_board.respawn_piece_shatter_fragment_markers.erase(respawn_pos)
+
+func free_markers(markers: Array) -> void:
 	for marker in markers:
 		var marker_node: Node = marker as Node
 		if marker_node != null and is_instance_valid(marker_node):
 			marker_node.queue_free()
-	match_board.respawn_piece_shatter_fragment_markers.erase(respawn_pos)
+
+## A half golem waiting for its top that is taken or blown up breaks again,
+## so its fragments must not stay on its square: they hid the piece that took
+## it, and showed a second half golem on that side. Those struck now are kept
+## in sight for the blow to break (`shatter_piece`); any left on a square with
+## no golem of their colour on it any more go at once (a sync that plays no
+## animation). Called with the update's shatters before the board is drawn.
+func hand_over_struck_halves(animations: Array[Dictionary]) -> void:
+	for board_pos in _struck_half_markers.keys():
+		break_struck_half(board_pos)
+	for animation: Dictionary in animations:
+		var source_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("source_pos", invalid_board_pos), invalid_board_pos)
+		var respawn_pos: Vector2 = BoardConfig.value_to_vector2(animation.get("respawn_pos", invalid_board_pos), invalid_board_pos)
+		# Blown up and back on its own square: the same golem lies there still.
+		if source_pos == respawn_pos or !has_piece_shatter_respawn_fragment_markers(source_pos):
+			continue
+		_struck_half_markers[source_pos] = match_board.respawn_piece_shatter_fragment_markers[source_pos]
+		match_board.respawn_piece_shatter_fragment_markers.erase(source_pos)
+	for board_pos in match_board.respawn_piece_shatter_fragment_markers.keys():
+		if !markers_belong_to_piece_on(board_pos):
+			clear_piece_shatter_respawn_fragment_markers(board_pos)
+
+## The fragments struck on `board_pos` this update go as the blow lands.
+func break_struck_half(board_pos: Vector2) -> void:
+	if !_struck_half_markers.has(board_pos):
+		return
+	free_markers(_struck_half_markers[board_pos])
+	_struck_half_markers.erase(board_pos)
+
+## Whether the golem standing on `board_pos` is the one these fragments make
+## up: one of their colour (they are cut from its golem drawing). A half golem
+## coming together, or one whose top is on its way, is such a golem.
+func markers_belong_to_piece_on(board_pos: Vector2) -> bool:
+	var piece: Piece = match_board.piece_objects.get(board_pos, null) as Piece
+	if piece == null:
+		return false
+	var golem_texture: Texture2D = match_board.get_piece_texture_resolver().get_default_piece_texture(piece.color)
+	for marker in match_board.respawn_piece_shatter_fragment_markers.get(board_pos, []):
+		var fragment: Polygon2D = marker as Polygon2D
+		if fragment != null and is_instance_valid(fragment) and fragment.texture == golem_texture:
+			return true
+	return false
 
 ## Every fragment lying around for a piece still to come back, removed at
 ## once - for a board that is being replaced wholesale, as the tutorial's
@@ -58,6 +106,8 @@ func clear_piece_shatter_respawn_fragment_markers(respawn_pos: Vector2) -> void:
 func clear_all_fragment_markers() -> void:
 	for respawn_pos in match_board.respawn_piece_shatter_fragment_markers.keys():
 		clear_piece_shatter_respawn_fragment_markers(respawn_pos)
+	for board_pos in _struck_half_markers.keys():
+		break_struck_half(board_pos)
 	for key in match_board.pending_edge_respawn_fragment_markers:
 		for marker in match_board.pending_edge_respawn_fragment_markers[key]:
 			var marker_node: Node = marker as Node
@@ -192,6 +242,8 @@ func play_capture_shatter_animation(source_pos: Vector2, respawn_pos: Vector2, p
 	shatter_piece(source_pos, respawn_pos, piece_color, fragment_group, captured_texture, blow_direction, false)
 
 func shatter_piece(source_pos: Vector2, respawn_pos: Vector2, piece_color: int, fragment_group: String, captured_texture: Texture2D, blow_direction: Vector2, with_impact_effects: bool) -> void:
+	# A half golem broken here goes with the blow, whatever else is shown.
+	break_struck_half(source_pos)
 	if match_board.should_skip_visual_animations():
 		return
 	if piece_color == 0:
