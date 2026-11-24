@@ -12,11 +12,47 @@ const DURATION_BUBBLE_TEXTURE = preload("res://Assets/dot.svg")
 # from UV, so it looks identically soft at any display size.
 const DURATION_BUBBLE_SHADER = preload("res://Shaders/move_option_dot.gdshader")
 
+## The info coming up from nothing: the stamp flutters in from the right -
+## this far, turned this much further, over this long - and the piece pops up
+## from behind it, past its place, and drops back onto it with a squash.
+## Screen pixels, degrees and seconds.
+const ENTER_SLIDE_DISTANCE: float = 70.0
+const ENTER_TURN_DEGREES: float = 9.0
+const ENTER_SECONDS: float = 0.2
+const PIECE_POP_DELAY: float = 0.07
+const PIECE_POP_START_DROP: float = 110.0
+const PIECE_POP_START_SCALE: float = 0.8
+const PIECE_POP_OVERSHOOT: float = 22.0
+const PIECE_POP_RISE_SECONDS: float = 0.15
+const PIECE_POP_FALL_SECONDS: float = 0.11
+const PIECE_LAND_SQUASH: Vector2 = Vector2(1.08, 0.9)
+const PIECE_LAND_SQUASH_SECONDS: float = 0.04
+const PIECE_LAND_SETTLE_SECONDS: float = 0.14
+const DESCRIPTION_DELAY: float = 0.1
+## Going, and moving on to another piece or stamp: quick.
+const LEAVE_SECONDS: float = 0.1
+const SWITCH_FROM_ALPHA: float = 0.3
+const SWITCH_SECONDS: float = 0.1
+
+enum Arrival { ENTER, SWITCH, STAY }
+
+## How close the description may come to the board (BoardCanvas.BOARD_RIGHT_X).
+const BOARD_GAP: float = 12.0
+## A faint wash of paper behind the description, so the ink lines drawn on
+## the table behind it do not cut through the words: this opaque, its edge
+## feathered out this far, the corners this round, reaching this far past
+## the text's top and bottom. It is as tall as the text.
+const BACKING_ALPHA: float = 0.6
+const BACKING_FEATHER_ALPHA: float = 0.35
+const BACKING_FEATHER: int = 10
+const BACKING_CORNER_RADIUS: int = 12
+const BACKING_PAD: float = 4.0
+
 var canvas_layer: CanvasLayer
 var stamp_visual_scene: PackedScene
 var stamp_ui_size: Vector2 = Vector2(168.7, 229)
-var hover_stamp_margin: float = 24.0
-var hover_stamp_extra_left_offset: float = 16.0
+## The info column's distance from the screen's right edge.
+var hover_stamp_margin: float = 14.0
 var hover_stamp_preview_scale: float = 0.82
 var hover_stamp_vertical_offset: float = 54.0
 var hover_stamp_rotation_degrees: float = -4.0
@@ -59,6 +95,7 @@ var _duration_overflow_viewport: SubViewport
 var _duration_overflow_label: Label
 var _duration_overflow_display: TextureRect
 var hover_description_panel: Control
+var hover_description_backing: Panel
 var hover_description_label: RichTextLabel
 var description_icon_font_size: int = 16
 var hover_fade_in_duration: float = 0.16
@@ -66,9 +103,12 @@ var duration_fade_out_duration: float = 0.35
 
 var is_reveal_blocked_provider: Callable
 
-var _stamp_group_fade_tween: Tween
-var _piece_preview_fade_tween: Tween
-var _description_panel_fade_tween: Tween
+## Each part's coming-up and going tweens, by part.
+var _appear_tweens: Dictionary = {}
+var _leave_tweens: Dictionary = {}
+## Where the stamp and the piece rest, from their layout in create_ui().
+var _stamp_rest_offset_right: float = 0.0
+var _piece_rest_offset_top: float = 0.0
 var _duration_bubble_spawn_tween: Tween
 var _duration_overflow_fade_tween: Tween
 var _duration_bubble_needs_initial_burst: bool = false
@@ -78,7 +118,6 @@ func configure(config: Dictionary) -> void:
 	stamp_visual_scene = config.get("stamp_visual_scene", stamp_visual_scene)
 	stamp_ui_size = config.get("stamp_ui_size", stamp_ui_size)
 	hover_stamp_margin = float(config.get("hover_stamp_margin", hover_stamp_margin))
-	hover_stamp_extra_left_offset = float(config.get("hover_stamp_extra_left_offset", hover_stamp_extra_left_offset))
 	hover_stamp_preview_scale = float(config.get("hover_stamp_preview_scale", hover_stamp_preview_scale))
 	hover_stamp_vertical_offset = float(config.get("hover_stamp_vertical_offset", hover_stamp_vertical_offset))
 	hover_stamp_rotation_degrees = float(config.get("hover_stamp_rotation_degrees", hover_stamp_rotation_degrees))
@@ -113,8 +152,6 @@ func create_ui() -> void:
 	hover_stamp_group.anchor_right = 1.0
 	hover_stamp_group.anchor_top = 0.5
 	hover_stamp_group.anchor_bottom = 0.5
-	hover_stamp_group.offset_right = -hover_stamp_margin - hover_stamp_extra_left_offset
-	hover_stamp_group.offset_left = hover_stamp_group.offset_right - stamp_ui_size.x
 	hover_stamp_group.offset_top = -stamp_ui_size.y * 0.5 + hover_stamp_vertical_offset
 	hover_stamp_group.offset_bottom = hover_stamp_group.offset_top + stamp_ui_size.y
 	hover_stamp_group.pivot_offset = stamp_ui_size * 0.5
@@ -126,6 +163,44 @@ func create_ui() -> void:
 	create_piece_preview()
 	create_stamp_preview()
 	create_duration_label()
+	layout()
+	var viewport: Viewport = canvas_layer.get_viewport()
+	if viewport != null and !viewport.size_changed.is_connected(layout):
+		viewport.size_changed.connect(layout)
+
+## Places the column across: the description's right edge `hover_stamp_margin`
+## from the screen's, as wide as the room up to the board allows
+## (`description_panel_width` at most), the stamp and the piece centred over
+## it. The board's reach comes off the drawn room (BoardCanvas), so the column
+## keeps clear of it on every screen shape, and is placed again when the
+## window changes shape. Up and down it keeps its place by the screen's middle.
+func layout() -> void:
+	if canvas_layer == null or !is_instance_valid(canvas_layer) or hover_stamp_group == null:
+		return
+	var viewport_size: Vector2 = canvas_layer.get_viewport().get_visible_rect().size
+	var board_right: float = BoardCanvas.to_viewport(Vector2(BoardCanvas.BOARD_RIGHT_X, 0.0), viewport_size).x
+	var room: float = viewport_size.x - hover_stamp_margin - (board_right + BOARD_GAP)
+	var width: float = clampf(room, stamp_ui_size.x * hover_stamp_preview_scale, description_panel_width)
+	# From the right edge, where every part of the column is anchored.
+	var centre_x: float = -hover_stamp_margin - width * 0.5
+
+	_stamp_rest_offset_right = centre_x + stamp_ui_size.x * 0.5
+	_set_stamp_slide(0.0)
+	hover_piece_preview.offset_left = centre_x - hover_piece_preview_size.x * 0.5
+	hover_piece_preview.offset_right = centre_x + hover_piece_preview_size.x * 0.5
+	hover_description_panel.offset_left = centre_x - width * 0.5
+	hover_description_panel.offset_right = centre_x + width * 0.5
+	_fit_backing()
+
+## The wash behind the description, as wide as its box and as tall as the
+## text in it now.
+func _fit_backing() -> void:
+	if hover_description_backing == null or hover_description_label == null:
+		return
+	var text_height: float = float(hover_description_label.get_content_height()) if !hover_description_label.text.is_empty() else 0.0
+	hover_description_backing.visible = text_height > 0.0
+	hover_description_backing.position = Vector2(0.0, description_text_margin.y - BACKING_PAD)
+	hover_description_backing.size = Vector2(hover_description_panel.size.x, text_height + BACKING_PAD * 2.0)
 
 func create_description_panel() -> void:
 	hover_description_panel = Control.new()
@@ -133,15 +208,29 @@ func create_description_panel() -> void:
 	hover_description_panel.name = "HoverDescriptionPanel"
 	hover_description_panel.visible = false
 	hover_description_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Under the stamp (and the piece over it): beside it, on the left, it
+	# reached onto the board on every screen narrower than 16:9. Across, it is
+	# placed by layout().
 	hover_description_panel.anchor_left = 1.0
 	hover_description_panel.anchor_right = 1.0
 	hover_description_panel.anchor_top = 0.5
 	hover_description_panel.anchor_bottom = 0.5
-	hover_description_panel.offset_right = -hover_stamp_margin - stamp_ui_size.x - description_panel_gap
-	hover_description_panel.offset_left = hover_description_panel.offset_right - description_panel_width
-	hover_description_panel.offset_top = -description_panel_height * 0.5 + hover_stamp_vertical_offset
-	hover_description_panel.offset_bottom = description_panel_height * 0.5 + hover_stamp_vertical_offset
+	var stamp_bottom: float = hover_stamp_vertical_offset + stamp_ui_size.y * hover_stamp_preview_scale * 0.5
+	hover_description_panel.offset_top = stamp_bottom + description_panel_gap
+	hover_description_panel.offset_bottom = hover_description_panel.offset_top + description_panel_height
 	hover_description_panel.z_index = 899
+
+	hover_description_backing = Panel.new()
+	hover_description_panel.add_child(hover_description_backing)
+	hover_description_backing.name = "Backing"
+	hover_description_backing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var wash := StyleBoxFlat.new()
+	wash.bg_color = Color(UiPalette.PAPER, BACKING_ALPHA)
+	wash.shadow_color = Color(UiPalette.PAPER, BACKING_FEATHER_ALPHA)
+	wash.shadow_size = BACKING_FEATHER
+	wash.set_corner_radius_all(BACKING_CORNER_RADIUS)
+	wash.anti_aliasing = true
+	hover_description_backing.add_theme_stylebox_override("panel", wash)
 
 	hover_description_label = RichTextLabel.new()
 	hover_description_panel.add_child(hover_description_label)
@@ -159,7 +248,7 @@ func create_description_panel() -> void:
 	hover_description_label.offset_bottom = -description_text_margin.y
 	hover_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hover_description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hover_description_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hover_description_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	hover_description_label.add_theme_font_size_override("normal_font_size", description_icon_font_size)
 	hover_description_label.add_theme_color_override("default_color", UiPalette.INK)
 	hover_description_label.add_theme_color_override("font_shadow_color", Color(1.0, 0.96, 0.82, 0.48))
@@ -175,9 +264,9 @@ func create_piece_preview() -> void:
 	hover_piece_preview.anchor_right = 1.0
 	hover_piece_preview.anchor_top = 0.5
 	hover_piece_preview.anchor_bottom = 0.5
-	hover_piece_preview.offset_left = -hover_piece_preview_size.x - hover_stamp_margin
-	hover_piece_preview.offset_right = -hover_stamp_margin
-	hover_piece_preview.offset_top = -hover_piece_preview_size.y * 0.5 + hover_piece_preview_vertical_offset
+	# Across, it is placed by layout().
+	_piece_rest_offset_top = -hover_piece_preview_size.y * 0.5 + hover_piece_preview_vertical_offset
+	hover_piece_preview.offset_top = _piece_rest_offset_top
 	hover_piece_preview.offset_bottom = hover_piece_preview_size.y * 0.5 + hover_piece_preview_vertical_offset
 	hover_piece_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	hover_piece_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -287,91 +376,168 @@ func show_stamp_only(preview_stamp: Stamp) -> void:
 	if preview_stamp == null or hover_stamp_preview == null or is_reveal_blocked():
 		return
 
+	var arrival: int = _take_arrival(hover_stamp_group)
 	hover_stamp_preview.set_stamp(preview_stamp)
 	hover_stamp_preview.set_face_down(false)
 	hover_stamp_preview.disabled = true
 	hover_stamp_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hover_stamp_preview.rotation_degrees = 0.0
 	hover_stamp_preview.set_rest_scale(Vector2.ONE)
-	var was_group_visible: bool = hover_stamp_group.visible
 	hover_stamp_group.visible = true
 	hover_stamp_preview.visible = true
-	if !was_group_visible:
-		fade_in_stamp_group()
+	match arrival:
+		Arrival.ENTER:
+			_enter_stamp()
+		Arrival.SWITCH:
+			_switch_in(hover_stamp_group)
 	show_description(preview_stamp.get_display_description().strip_edges())
 
 func show_description(description: String) -> void:
 	if hover_description_label == null or hover_description_panel == null:
 		return
+	var arrival: int = _take_arrival(hover_description_panel)
 	hover_description_label.text = DescriptionMarkup.to_bbcode(description, description_icon_font_size)
-	var should_show: bool = !description.is_empty()
-	var was_visible: bool = hover_description_panel.visible
-	hover_description_panel.visible = should_show
-	if should_show and !was_visible:
-		fade_in_description_panel()
+	if description.is_empty():
+		_put_away(hover_description_panel)
+		return
+	hover_description_panel.visible = true
+	_fit_backing()
+	match arrival:
+		Arrival.ENTER:
+			_fade_in(hover_description_panel, DESCRIPTION_DELAY)
+		Arrival.SWITCH:
+			_switch_in(hover_description_panel)
 
 func show_piece_preview(preview_texture: Texture2D) -> void:
 	if hover_piece_preview == null:
 		return
+	var arrival: int = _take_arrival(hover_piece_preview)
 	if preview_texture == null:
-		hover_piece_preview.visible = false
-		hover_piece_preview.texture = null
+		_put_away(hover_piece_preview)
 		return
 
-	var was_visible: bool = hover_piece_preview.visible
 	hover_piece_preview.texture = preview_texture
 	hover_piece_preview.visible = true
-	if !was_visible:
-		fade_in_piece_preview()
+	match arrival:
+		Arrival.ENTER:
+			_pop_piece()
+		Arrival.SWITCH:
+			_switch_in(hover_piece_preview)
 
-func fade_in_stamp_group() -> void:
-	if hover_stamp_group == null or !is_instance_valid(hover_stamp_group):
-		return
-	if _stamp_group_fade_tween != null and _stamp_group_fade_tween.is_valid():
-		_stamp_group_fade_tween.kill()
+## How a part comes up now: from nothing, in place of what it was just
+## showing (hide() and a show in the same frame is the cursor moving on to
+## another piece or stamp), or over itself. A part on its way out stays.
+func _take_arrival(part: Control) -> int:
+	var leaving: Tween = _leave_tweens.get(part, null)
+	if leaving != null and leaving.is_valid():
+		leaving.kill()
+		_leave_tweens.erase(part)
+		return Arrival.SWITCH
+	return Arrival.STAY if part.visible else Arrival.ENTER
+
+## The stamp flutters in from the right and turns into its place.
+func _enter_stamp() -> void:
+	_kill_appear(hover_stamp_group)
+	_set_stamp_slide(ENTER_SLIDE_DISTANCE)
+	hover_stamp_group.rotation_degrees = hover_stamp_rotation_degrees + ENTER_TURN_DEGREES
 	hover_stamp_group.modulate.a = 0.0
-	_stamp_group_fade_tween = hover_stamp_group.create_tween()
-	_stamp_group_fade_tween.tween_property(hover_stamp_group, "modulate:a", 1.0, hover_fade_in_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	var tween: Tween = hover_stamp_group.create_tween()
+	tween.tween_method(_set_stamp_slide, ENTER_SLIDE_DISTANCE, 0.0, ENTER_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.parallel().tween_property(hover_stamp_group, "rotation_degrees", hover_stamp_rotation_degrees, ENTER_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.parallel().tween_property(hover_stamp_group, "modulate:a", 1.0, ENTER_SECONDS * 0.6).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	_appear_tweens[hover_stamp_group] = tween
 
-func fade_in_piece_preview() -> void:
-	if hover_piece_preview == null or !is_instance_valid(hover_piece_preview):
-		return
-	if _piece_preview_fade_tween != null and _piece_preview_fade_tween.is_valid():
-		_piece_preview_fade_tween.kill()
+## The piece pops up from behind the stamp, past its place, and drops back
+## onto it with a little squash.
+func _pop_piece() -> void:
+	_kill_appear(hover_piece_preview)
+	hover_piece_preview.pivot_offset = Vector2(hover_piece_preview_size.x * 0.5, hover_piece_preview_size.y)
+	_set_piece_lift(-PIECE_POP_START_DROP)
+	hover_piece_preview.scale = Vector2.ONE * PIECE_POP_START_SCALE
 	hover_piece_preview.modulate.a = 0.0
-	_piece_preview_fade_tween = hover_piece_preview.create_tween()
-	_piece_preview_fade_tween.tween_property(hover_piece_preview, "modulate:a", 1.0, hover_fade_in_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	var tween: Tween = hover_piece_preview.create_tween()
+	tween.tween_interval(PIECE_POP_DELAY)
+	tween.tween_method(_set_piece_lift, -PIECE_POP_START_DROP, PIECE_POP_OVERSHOOT, PIECE_POP_RISE_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(hover_piece_preview, "scale", Vector2.ONE, PIECE_POP_RISE_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(hover_piece_preview, "modulate:a", 1.0, PIECE_POP_RISE_SECONDS * 0.4)
+	tween.tween_method(_set_piece_lift, PIECE_POP_OVERSHOOT, 0.0, PIECE_POP_FALL_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(hover_piece_preview, "scale", PIECE_LAND_SQUASH, PIECE_LAND_SQUASH_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(hover_piece_preview, "scale", Vector2.ONE, PIECE_LAND_SETTLE_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	_appear_tweens[hover_piece_preview] = tween
 
-func fade_in_description_panel() -> void:
-	if hover_description_panel == null or !is_instance_valid(hover_description_panel):
+func _fade_in(part: Control, delay: float) -> void:
+	_kill_appear(part)
+	part.modulate.a = 0.0
+	var tween: Tween = part.create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	tween.tween_property(part, "modulate:a", 1.0, hover_fade_in_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	_appear_tweens[part] = tween
+
+## Showing something else in its place: back where it rests, the new content
+## coming up quickly from faint.
+func _switch_in(part: Control) -> void:
+	_kill_appear(part)
+	_rest(part)
+	part.modulate.a = SWITCH_FROM_ALPHA
+	var tween: Tween = part.create_tween()
+	tween.tween_property(part, "modulate:a", 1.0, SWITCH_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	_appear_tweens[part] = tween
+
+## Fades a part out quickly, then puts it away.
+func _leave(part: Control) -> void:
+	if part == null or !is_instance_valid(part) or !part.visible:
 		return
-	if _description_panel_fade_tween != null and _description_panel_fade_tween.is_valid():
-		_description_panel_fade_tween.kill()
-	hover_description_panel.modulate.a = 0.0
-	_description_panel_fade_tween = hover_description_panel.create_tween()
-	_description_panel_fade_tween.tween_property(hover_description_panel, "modulate:a", 1.0, hover_fade_in_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	var leaving: Tween = _leave_tweens.get(part, null)
+	if leaving != null and leaving.is_valid():
+		return
+	_kill_appear(part)
+	var tween: Tween = part.create_tween()
+	tween.tween_property(part, "modulate:a", 0.0, LEAVE_SECONDS).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	tween.tween_callback(_put_away.bind(part))
+	_leave_tweens[part] = tween
+
+func _put_away(part: Control) -> void:
+	_kill_appear(part)
+	_leave_tweens.erase(part)
+	part.visible = false
+	part.modulate.a = 1.0
+	_rest(part)
+	if part == hover_stamp_group and hover_stamp_preview != null:
+		hover_stamp_preview.visible = false
+	elif part == hover_piece_preview:
+		hover_piece_preview.texture = null
+	elif part == hover_description_panel and hover_description_label != null:
+		hover_description_label.text = ""
+
+func _rest(part: Control) -> void:
+	if part == hover_stamp_group:
+		_set_stamp_slide(0.0)
+		hover_stamp_group.rotation_degrees = hover_stamp_rotation_degrees
+	elif part == hover_piece_preview:
+		_set_piece_lift(0.0)
+		hover_piece_preview.scale = Vector2.ONE
+
+func _kill_appear(part: Control) -> void:
+	var appearing: Tween = _appear_tweens.get(part, null)
+	if appearing != null and appearing.is_valid():
+		appearing.kill()
+	_appear_tweens.erase(part)
+
+## The stamp's place, moved `distance` to the right; computed from its layout,
+## never read back off the control (see MATCH_SCENE.md).
+func _set_stamp_slide(distance: float) -> void:
+	hover_stamp_group.offset_right = _stamp_rest_offset_right + distance
+	hover_stamp_group.offset_left = _stamp_rest_offset_right + distance - stamp_ui_size.x
+
+## The piece's place, raised by `height` (lowered when below 0).
+func _set_piece_lift(height: float) -> void:
+	hover_piece_preview.offset_top = _piece_rest_offset_top - height
+	hover_piece_preview.offset_bottom = _piece_rest_offset_top - height + hover_piece_preview_size.y
 
 func hide() -> void:
-	if _stamp_group_fade_tween != null and _stamp_group_fade_tween.is_valid():
-		_stamp_group_fade_tween.kill()
-	if _piece_preview_fade_tween != null and _piece_preview_fade_tween.is_valid():
-		_piece_preview_fade_tween.kill()
-	if _description_panel_fade_tween != null and _description_panel_fade_tween.is_valid():
-		_description_panel_fade_tween.kill()
-	if hover_stamp_group:
-		hover_stamp_group.visible = false
-		hover_stamp_group.modulate.a = 1.0
-	if hover_stamp_preview:
-		hover_stamp_preview.visible = false
-	if hover_piece_preview:
-		hover_piece_preview.visible = false
-		hover_piece_preview.texture = null
-		hover_piece_preview.modulate.a = 1.0
-	if hover_description_panel:
-		hover_description_panel.visible = false
-		hover_description_panel.modulate.a = 1.0
-	if hover_description_label:
-		hover_description_label.text = ""
+	for part in [hover_stamp_group, hover_piece_preview, hover_description_panel]:
+		_leave(part)
 	if hover_duration_display != null and is_instance_valid(hover_duration_display) and hover_duration_display.visible:
 		_start_duration_overflow_fade_out()
 		hover_duration_label.visible = false

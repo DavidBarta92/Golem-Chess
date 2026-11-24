@@ -59,17 +59,21 @@ const DECK_STAMP_SCALE = STAMP_HAND_SCALE
 const STAMP_RETURN_TO_DECK_END_SCALE: float = DECK_STAMP_SCALE * 0.50
 const STAMP_UI_GAP = 10
 const BOTTOM_STAMP_HAND_MARGIN = 34
-const HOVER_STAMP_MARGIN = 24
-const HOVER_STAMP_EXTRA_LEFT_OFFSET: float = 16.0
+## The hover info is a column at the right: the description at the bottom,
+## this far from the screen's edge and as wide as the room up to the board
+## allows (HOVER_DESCRIPTION_PANEL_WIDTH at most), the stamp and the piece
+## centred over it (StampHoverPreviewController.layout).
+const HOVER_STAMP_MARGIN = 14
 const HOVER_STAMP_PREVIEW_SCALE: float = 0.82
-const HOVER_STAMP_VERTICAL_OFFSET: float = 26.0
+const HOVER_STAMP_VERTICAL_OFFSET: float = 6.0
 const HOVER_STAMP_ROTATION_DEGREES: float = -4.0
 const HOVER_PIECE_PREVIEW_SIZE = Vector2(188, 224)
-const HOVER_PIECE_PREVIEW_VERTICAL_OFFSET: float = -78.0
-const HOVER_DESCRIPTION_TEXT_MARGIN = Vector2(22, 30)
-const HOVER_DESCRIPTION_PANEL_GAP: float = 8.0
-const HOVER_DESCRIPTION_PANEL_WIDTH: float = 271.6
-const HOVER_DESCRIPTION_PANEL_HEIGHT: float = 229.0
+const HOVER_PIECE_PREVIEW_VERTICAL_OFFSET: float = -98.0
+## Under the stamp, top-aligned; the height only bounds the longest text.
+const HOVER_DESCRIPTION_TEXT_MARGIN = Vector2(10, 4)
+const HOVER_DESCRIPTION_PANEL_GAP: float = 10.0
+const HOVER_DESCRIPTION_PANEL_WIDTH: float = 320.0
+const HOVER_DESCRIPTION_PANEL_HEIGHT: float = 260.0
 const HOVER_DURATION_SHADOW_COLOR: Color = Color(0.070588, 0.070588, 0.474510, 0.9)
 const HOVER_DURATION_SHADOW_BLUR: float = 1.6
 const HOVER_DURATION_OUTLINE_SIZE: int = 3

@@ -10,6 +10,21 @@ const STAMP_RETURN_TO_DECK_DURATION: float = 0.62
 ## Lifts the big stamp that appears at the side when one is played, so it
 ## clears the clock below it.
 const STAMP_SIDE_REVEAL_VERTICAL_OFFSET: float = -28.0
+## The played stamp flies along the way from its owner's codex - this
+## player's at the foot of the screen, the opponent's across the table - to
+## the side, so the side it comes in from says whose it is (it only comes into
+## sight halfway, see APPEAR below). Its path bows out away from the middle of
+## the screen by this share of its length, so it goes round the board rather
+## than over the pieces; it turns sideways along the way by up to this much.
+const STAMP_AFFIX_REVEAL_FLIGHT_SECONDS: float = 0.5
+const STAMP_AFFIX_REVEAL_ARC_SHARE: float = 0.22
+const STAMP_AFFIX_REVEAL_TURN_PEAK_DEGREES: float = 30.0
+## It is unseen for the first part of the way and comes into sight over the
+## rest: shown leaving the codex, it drew the eye off the board, and it read
+## as the stamp flying away when it has just been pressed onto a golem. From
+## and to these shares of the way.
+const STAMP_AFFIX_REVEAL_APPEAR_FROM: float = 0.45
+const STAMP_AFFIX_REVEAL_APPEAR_TO: float = 1.0
 
 var canvas_layer: CanvasLayer
 var tween_owner: Node
@@ -22,11 +37,10 @@ var return_to_deck_end_scale: float = 0.324
 var piece_stamp_return_duration: float = 0.4
 var stamp_side_reveal_scale: float = 0.82
 var stamp_side_reveal_z_index: int = 905
-var stamp_affix_reveal_grow_duration: float = 0.16
 var stamp_affix_reveal_settle_duration: float = 0.36
 var stamp_affix_reveal_overshoot_ratio: float = 1.22
-var stamp_affix_reveal_start_scale_ratio: float = 0.08
-var stamp_affix_reveal_travel_distance: float = 260.0
+## About the size of a stamp in the codex, which it leaves.
+var stamp_affix_reveal_start_scale_ratio: float = 0.4
 var stamp_affix_reveal_fade_out_duration: float = 0.25
 var stamp_affix_reveal_tilt_peak_degrees: float = 46.0
 var stamp_affix_reveal_warp_strength: float = 0.16
@@ -56,11 +70,9 @@ func configure(config: Dictionary) -> void:
 	return_to_deck_end_scale = float(config.get("return_to_deck_end_scale", return_to_deck_end_scale))
 	stamp_side_reveal_scale = float(config.get("stamp_side_reveal_scale", stamp_side_reveal_scale))
 	stamp_side_reveal_z_index = int(config.get("stamp_side_reveal_z_index", stamp_side_reveal_z_index))
-	stamp_affix_reveal_grow_duration = float(config.get("stamp_affix_reveal_grow_duration", stamp_affix_reveal_grow_duration))
 	stamp_affix_reveal_settle_duration = float(config.get("stamp_affix_reveal_settle_duration", stamp_affix_reveal_settle_duration))
 	stamp_affix_reveal_overshoot_ratio = float(config.get("stamp_affix_reveal_overshoot_ratio", stamp_affix_reveal_overshoot_ratio))
 	stamp_affix_reveal_start_scale_ratio = float(config.get("stamp_affix_reveal_start_scale_ratio", stamp_affix_reveal_start_scale_ratio))
-	stamp_affix_reveal_travel_distance = float(config.get("stamp_affix_reveal_travel_distance", stamp_affix_reveal_travel_distance))
 	stamp_affix_reveal_fade_out_duration = float(config.get("stamp_affix_reveal_fade_out_duration", stamp_affix_reveal_fade_out_duration))
 	stamp_affix_reveal_tilt_peak_degrees = float(config.get("stamp_affix_reveal_tilt_peak_degrees", stamp_affix_reveal_tilt_peak_degrees))
 	stamp_affix_reveal_warp_strength = float(config.get("stamp_affix_reveal_warp_strength", stamp_affix_reveal_warp_strength))
@@ -424,11 +436,10 @@ func play_stamp_affix_reveal(stamp: Stamp, owner_color: int) -> StampVisual:
 	# tilt shader only covers its background layer and leaves the art/text on
 	# top rigid.
 	stamp_visual.visible = false
-	var is_local: bool = owner_color == get_local_view_color()
-	_play_stamp_affix_intro(stamp, stamp_visual, is_local)
+	_play_stamp_affix_intro(stamp, stamp_visual, owner_color)
 	return stamp_visual
 
-func _play_stamp_affix_intro(stamp: Stamp, stamp_visual: StampVisual, is_local: bool) -> void:
+func _play_stamp_affix_intro(stamp: Stamp, stamp_visual: StampVisual, owner_color: int) -> void:
 	var front_snapshot: Texture2D = await capture_stamp_front_snapshot(stamp)
 	if !is_instance_valid(stamp_visual):
 		return
@@ -437,14 +448,20 @@ func _play_stamp_affix_intro(stamp: Stamp, stamp_visual: StampVisual, is_local: 
 		return
 
 	var final_position: Vector2 = stamp_visual.home_position
-	var direction_sign: float = 1.0 if is_local else -1.0
-	var vertical_offset: float = stamp_affix_reveal_travel_distance * direction_sign
+	# Up out of this player's codex, down out of the opponent's.
+	var direction_sign: float = 1.0 if owner_color == get_local_view_color() else -1.0
+	# The intro is a full-size card scaled about its middle, so its top left
+	# at scale 1 puts that middle on the codex.
+	var start_position: Vector2 = get_stamp_codex_return_target_position(owner_color, 1.0)
+	var arc_control: Vector2 = get_stamp_affix_reveal_arc_control(start_position, final_position)
+	var turn_sign: float = signf(final_position.x - start_position.x)
 	var final_scale: Vector2 = Vector2.ONE * stamp_side_reveal_scale
 	var overshoot_scale: Vector2 = final_scale * stamp_affix_reveal_overshoot_ratio
 
 	var intro_material := ShaderMaterial.new()
 	intro_material.shader = STAMP_TILT_SHADER
 	intro_material.set_shader_parameter("x_rot", stamp_affix_reveal_tilt_peak_degrees * direction_sign)
+	intro_material.set_shader_parameter("y_rot", STAMP_AFFIX_REVEAL_TURN_PEAK_DEGREES * turn_sign)
 	intro_material.set_shader_parameter("warp_strength", stamp_affix_reveal_warp_strength)
 
 	var intro_rect := TextureRect.new()
@@ -459,21 +476,39 @@ func _play_stamp_affix_intro(stamp: Stamp, stamp_visual: StampVisual, is_local: 
 	intro_rect.z_index = stamp_side_reveal_z_index
 	intro_rect.size = stamp_ui_size
 	intro_rect.pivot_offset = stamp_ui_size * 0.5
-	intro_rect.position = final_position + Vector2(0.0, vertical_offset)
+	intro_rect.position = start_position
 	intro_rect.scale = final_scale * stamp_affix_reveal_start_scale_ratio
+	intro_rect.modulate.a = 0.0
 	stamp_visual.set_meta("affix_intro_rect", intro_rect)
 
-	var total_duration: float = stamp_affix_reveal_grow_duration + stamp_affix_reveal_settle_duration
+	var total_duration: float = STAMP_AFFIX_REVEAL_FLIGHT_SECONDS + stamp_affix_reveal_settle_duration
 
-	# Scale is split in two: a quick burst past the final size, then a
-	# slower settle back down to it -- position and tilt just ease over the
-	# whole span so they land in sync with the end of the settle.
+	# It flies along the bowed path growing past its final size, arriving as
+	# it peaks, then settles back down to it; the tilt eases out over the
+	# whole span so it lands flat with the end of the settle.
+	var fly := func(progress: float) -> void:
+		intro_rect.position = start_position.bezier_interpolate(arc_control, arc_control, final_position, progress)
+		intro_rect.modulate.a = smoothstep(STAMP_AFFIX_REVEAL_APPEAR_FROM, STAMP_AFFIX_REVEAL_APPEAR_TO, progress)
 	var reveal_tween: Tween = intro_rect.create_tween()
-	reveal_tween.tween_property(intro_rect, "scale", overshoot_scale, stamp_affix_reveal_grow_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	reveal_tween.parallel().tween_property(intro_rect, "position", final_position, total_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	# Eased at both ends: out of the codex slowly enough to be seen leaving it.
+	reveal_tween.tween_method(fly, 0.0, 1.0, STAMP_AFFIX_REVEAL_FLIGHT_SECONDS).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	reveal_tween.parallel().tween_property(intro_rect, "scale", overshoot_scale, STAMP_AFFIX_REVEAL_FLIGHT_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	reveal_tween.parallel().tween_property(intro_material, "shader_parameter/x_rot", 0.0, total_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	reveal_tween.tween_property(intro_rect, "scale", final_scale, stamp_affix_reveal_settle_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	reveal_tween.parallel().tween_property(intro_material, "shader_parameter/y_rot", 0.0, total_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	# The settle starts as it arrives, not once the tilt is done.
+	reveal_tween.parallel().tween_property(intro_rect, "scale", final_scale, stamp_affix_reveal_settle_duration).set_delay(STAMP_AFFIX_REVEAL_FLIGHT_SECONDS).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 	reveal_tween.tween_callback(Callable(self, "_finish_stamp_affix_intro").bind(intro_rect, stamp_visual))
+
+## The bend of a played stamp's path from `start` to `end`: their middle,
+## pushed out away from the middle of the screen, so the path goes round the
+## board on the side away from it.
+func get_stamp_affix_reveal_arc_control(start: Vector2, end: Vector2) -> Vector2:
+	var middle: Vector2 = (start + end) * 0.5
+	var across: Vector2 = (end - start).orthogonal().normalized()
+	var screen_middle: Vector2 = get_viewport_size() * 0.5 - stamp_ui_size * 0.5
+	if across.dot(middle - screen_middle) < 0.0:
+		across = -across
+	return middle + across * start.distance_to(end) * STAMP_AFFIX_REVEAL_ARC_SHARE
 
 func _finish_stamp_affix_intro(intro_rect: TextureRect, stamp_visual: StampVisual) -> void:
 	if is_instance_valid(intro_rect):

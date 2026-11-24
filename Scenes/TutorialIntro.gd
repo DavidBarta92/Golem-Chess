@@ -568,7 +568,6 @@ func _build_codex() -> void:
 		"stamp_visual_scene": STAMP_VISUAL_SCENE,
 		"stamp_ui_size": MATCH_BOARD_SCRIPT.STAMP_UI_SIZE,
 		"hover_stamp_margin": MATCH_BOARD_SCRIPT.HOVER_STAMP_MARGIN,
-		"hover_stamp_extra_left_offset": MATCH_BOARD_SCRIPT.HOVER_STAMP_EXTRA_LEFT_OFFSET,
 		"hover_stamp_preview_scale": MATCH_BOARD_SCRIPT.HOVER_STAMP_PREVIEW_SCALE,
 		"hover_stamp_vertical_offset": MATCH_BOARD_SCRIPT.HOVER_STAMP_VERTICAL_OFFSET,
 		"hover_stamp_rotation_degrees": MATCH_BOARD_SCRIPT.HOVER_STAMP_ROTATION_DEGREES,

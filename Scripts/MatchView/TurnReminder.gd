@@ -1,6 +1,6 @@
 extends Node
 
-## Twelve seconds into the player's own turn with nothing done, everything
+## Thirty seconds into the player's own turn with nothing done, everything
 ## they can still do lights up with the soft yellow glow new main menu buttons
 ## and the tutorial use (HintGlow): the Turn Page and End Turn tabs while they
 ## are up, the stamps on the open codex page that can go onto a golem, and
@@ -15,7 +15,7 @@ extends Node
 
 const PIECE_HINT_GLOW_SCRIPT = preload("res://Scripts/MatchView/PieceHintGlow.gd")
 const NODE_NAME: String = "TurnReminder"
-const IDLE_SECONDS: float = 12.0
+const IDLE_SECONDS: float = 30.0
 ## While lit, what can be done is looked at again this often: a codex coming
 ## up late, or a board drawn anew, gets its glows without a click.
 const RECHECK_SECONDS: float = 0.5

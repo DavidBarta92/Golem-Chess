@@ -43,6 +43,12 @@ const RIM_CENTRE: Vector2 = Vector2(959.5, 893.75)
 ## along which a small object can be hung.
 const RIGHT_SIDE_X: float = 1700.0
 
+## The right end of the board's near edge, its dark front included: the
+## furthest right the board reaches. Its right edge runs from x 1296 at canvas
+## y 560 out to this at y 960. Measured on a 16:9 frame; measure it again if
+## the board drawing or its perspective fit changes.
+const BOARD_RIGHT_X: float = 1405.0
+
 ## How much a canvas pixel is stretched to fill this viewport. The same number
 ## the background's TextureRects arrive at on their own.
 static func cover(viewport_size: Vector2) -> float:

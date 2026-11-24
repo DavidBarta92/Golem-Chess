@@ -862,7 +862,6 @@ func sync_stamp_hover_preview_controller() -> void:
 		"stamp_visual_scene": STAMP_VISUAL,
 		"stamp_ui_size": match_board.STAMP_UI_SIZE,
 		"hover_stamp_margin": match_board.HOVER_STAMP_MARGIN,
-		"hover_stamp_extra_left_offset": match_board.HOVER_STAMP_EXTRA_LEFT_OFFSET,
 		"hover_stamp_preview_scale": match_board.HOVER_STAMP_PREVIEW_SCALE,
 		"hover_stamp_vertical_offset": match_board.HOVER_STAMP_VERTICAL_OFFSET,
 		"hover_stamp_rotation_degrees": match_board.HOVER_STAMP_ROTATION_DEGREES,
