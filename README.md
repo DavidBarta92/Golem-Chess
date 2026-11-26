@@ -37,6 +37,10 @@
   matches: the player profile sent once and the state sent after every action,
   where new per-player or per-stamp data belongs, the RPC and version rules,
   and how to test with several instances.
+- [Docs/SceneTransition/SCENE_TRANSITION.md](Docs/SceneTransition/SCENE_TRANSITION.md)
+  — changing screens: the paper fade, waiting for the new screen to settle,
+  warming the match and the Collection up at launch, and why scenes do not
+  load on a thread.
 - [Docs/MainMenu/MAIN_MENU.md](Docs/MainMenu/MAIN_MENU.md) — the main menu: its
   art layers and the build that trims them, how the room and its buttons
   arrive, which button the story unlocks when, and covers.

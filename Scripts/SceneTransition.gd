@@ -11,6 +11,18 @@ const FADE_FROM_COLOR_START_SCALE := 0.97
 const PAPER_OVERLAY_NAME := "PaperTextureOverlay"
 const VIGNETTE_OVERLAY_NAME := "VignetteOverlay"
 const PAPER_NEUTRAL_COLOR := Color(1.0, 1.0, 1.0, 1.0)
+## An arriving scene settles in over its first frames - the Collection builds
+## its page, a match deals and builds its board - and one of those frames can
+## take half a second. The fade waits under cover until this many frames in a
+## row have each taken no longer than SETTLE_FRAME_SECONDS, so it plays out
+## whole instead of jumping half way through in that one frame. It waits at
+## least SETTLE_MIN_SECONDS, which covers a match's own 0.1 s wait before it
+## deals, and never longer than SETTLE_MAX_SECONDS, for a machine that never
+## gets that quick.
+const SETTLE_SHORT_FRAMES := 3
+const SETTLE_FRAME_SECONDS := 0.05
+const SETTLE_MIN_SECONDS := 0.15
+const SETTLE_MAX_SECONDS := 1.5
 
 var _overlay: ColorRect
 ## A copy of the leaving scene's vignette, laid over the fade so the screen
@@ -38,6 +50,8 @@ var _arriving_paper_opacity: float = 0.0
 var _arriving_paper_tint: Color = PAPER_NEUTRAL_COLOR
 var _scene_base_canvas_transform := Transform2D.IDENTITY
 var _transition_in_progress := false
+## The paths warm_up() has loaded this session.
+var _warmed_up: Dictionary = {}
 
 
 func _ready() -> void:
@@ -81,6 +95,9 @@ func change_scene(scene_path: String) -> void:
 	_borrow_screen_finish(get_tree().current_scene)
 	await _fade_to(1.0, FADE_TO_COLOR_DURATION)
 
+	# The scene loads on the main thread, under the paper. Not on a thread: in
+	# Godot 4.7.2 a threaded load of this game's scenes now and then never
+	# finishes (Docs/SceneTransition/SCENE_TRANSITION.md).
 	get_tree().node_added.connect(_catch_arriving_paper)
 	var change_error := get_tree().change_scene_to_file(scene_path)
 	if change_error != OK:
@@ -91,10 +108,56 @@ func change_scene(scene_path: String) -> void:
 
 	# The leaving screen is gone, and with it what its cut-out kept clear.
 	_paper_cutout = 0.0
-	# Let the new scene finish entering the tree while the screen is fully covered.
-	await get_tree().process_frame
+	await _wait_for_arrival_to_settle()
 	await _fade_from_color_with_zoom()
 	_finish_transition()
+
+
+## Keeps the screen covered while the arriving scene settles in (SETTLE_*).
+func _wait_for_arrival_to_settle() -> void:
+	var tree := get_tree()
+	var started_msec := Time.get_ticks_msec()
+	# The new scene enters the tree at the end of the frame it was changed in.
+	while tree.current_scene == null and _seconds_since(started_msec) < SETTLE_MAX_SECONDS:
+		await tree.process_frame
+	var arrived_msec := Time.get_ticks_msec()
+	var short_frames := 0
+	var last_frame_usec := Time.get_ticks_usec()
+	while short_frames < SETTLE_SHORT_FRAMES or _seconds_since(arrived_msec) < SETTLE_MIN_SECONDS:
+		if _seconds_since(arrived_msec) >= SETTLE_MAX_SECONDS:
+			return
+		await tree.process_frame
+		var frame_usec := Time.get_ticks_usec()
+		var frame_seconds := float(frame_usec - last_frame_usec) / 1000000.0
+		short_frames = short_frames + 1 if frame_seconds <= SETTLE_FRAME_SECONDS else 0
+		last_frame_usec = frame_usec
+
+
+func _seconds_since(msec: int) -> float:
+	return float(Time.get_ticks_msec() - msec) / 1000.0
+
+
+## Loads these scenes (or scripts) once a session and lets them go again. What
+## stays is their compiled scripts, which are most of what the first visit to a
+## screen waits for. The main menu calls this first thing, and at launch that
+## is still under Godot's boot splash: the wait shows as a longer splash rather
+## than as a first match or Collection that keeps the paper up. Later calls
+## cost nothing. It blocks, on the main thread - not on a thread
+## (Docs/SceneTransition/SCENE_TRANSITION.md).
+func warm_up(paths: Array[String]) -> void:
+	if _should_skip_animation():
+		return
+	var started_msec := Time.get_ticks_msec()
+	var loaded := 0
+	for path in paths:
+		if _warmed_up.has(path):
+			continue
+		_warmed_up[path] = true
+		if ResourceLoader.exists(path) and !ResourceLoader.has_cached(path):
+			load(path)
+			loaded += 1
+	if loaded > 0:
+		DebugLog.info("SceneTransition warmed up %d paths in %d ms" % [loaded, Time.get_ticks_msec() - started_msec])
 
 
 func _fade_to(target_alpha: float, duration: float) -> void:

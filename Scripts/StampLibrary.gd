@@ -1,6 +1,13 @@
 extends Node
 
 var all_stamps: Dictionary = {}  # stamp_code -> Stamp resource
+## Every stamp by its code, alias resolved, for get_stamp_by_code: walking all
+## the stamps for each look-up cost the Collection half a second or more every
+## time it opened, since sorting its prints by name looks a stamp up by code
+## a few thousand times. Rebuilt with the library, and again should all_stamps
+## ever change size behind its back.
+var _stamps_by_code: Dictionary = {}
+var _indexed_stamp_count: int = 0
 
 const STAMPS_PATH: String = "res://Stamps/"
 
@@ -46,6 +53,7 @@ func _ready():
 
 func load_all_stamps():
 	all_stamps.clear()
+	_index_stamp_codes()
 	var dir: DirAccess = DirAccess.open(STAMPS_PATH)
 
 	if dir == null:
@@ -53,6 +61,18 @@ func load_all_stamps():
 		return
 
 	_load_stamps_from_directory(STAMPS_PATH)
+	_index_stamp_codes()
+
+## The first stamp with a code keeps it, as the walk it replaces found first.
+func _index_stamp_codes() -> void:
+	_stamps_by_code.clear()
+	for stamp_value in all_stamps.values():
+		if stamp_value is Stamp:
+			var stamp := stamp_value as Stamp
+			var stamp_code: String = resolve_stamp_code_alias(stamp.stamp_code)
+			if !stamp_code.is_empty() and !_stamps_by_code.has(stamp_code):
+				_stamps_by_code[stamp_code] = stamp
+	_indexed_stamp_count = all_stamps.size()
 
 func _load_stamps_from_directory(directory_path: String) -> void:
 	var dir: DirAccess = DirAccess.open(directory_path)
@@ -106,12 +126,9 @@ func get_stamp_by_code(stamp_code: String) -> Stamp:
 	if normalized_stamp_code.is_empty():
 		return null
 
-	for stamp_value in all_stamps.values():
-		if stamp_value is Stamp:
-			var stamp := stamp_value as Stamp
-			if resolve_stamp_code_alias(stamp.stamp_code) == normalized_stamp_code:
-				return stamp
-	return null
+	if _indexed_stamp_count != all_stamps.size():
+		_index_stamp_codes()
+	return _stamps_by_code.get(normalized_stamp_code) as Stamp
 
 func resolve_stamp_code_alias(stamp_code: String) -> String:
 	var normalized_stamp_code: String = stamp_code.strip_edges().to_lower()

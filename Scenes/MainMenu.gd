@@ -15,6 +15,13 @@ const TOP_BAR_LAYER_UNDER_DIALOGS: int = 1000
 const DEV_TOOLS_PADDING: int = 18
 const DEV_TOOLS_SCREEN_MARGIN: int = 8
 const BourseSaleNotice = preload("res://Scripts/Bourse/BourseSaleNotice.gd")
+## Compiled once a session, at launch (SceneTransition.warm_up): the match,
+## the AI's script, which a match loads only when it deals, and the Collection.
+const WARM_UP_PATHS: Array[String] = [
+	"res://Scenes/main.tscn",
+	"res://Scripts/HeuristicAIPlayer.gd",
+	"res://Scenes/Collection.tscn",
+]
 
 @onready var dev_tools_window: Window = $DevToolsWindow
 @onready var dev_tools_root: VBoxContainer = $DevToolsWindow/DevToolsRoot
@@ -76,6 +83,10 @@ func _ready():
 		prepare_dedicated_server_launch()
 		call_deferred("launch_dedicated_server_scene")
 		return
+
+	# First thing, so at launch it is still under the boot splash, and before
+	# the story can take over, so its first match gains from it too.
+	SceneTransition.warm_up(WARM_UP_PATHS)
 
 	# Reaching the hub always ends any story match that was in flight - a
 	# player who quit mid-fight must not have their next result reported
